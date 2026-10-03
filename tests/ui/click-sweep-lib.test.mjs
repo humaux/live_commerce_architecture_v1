@@ -40,6 +40,6 @@ test("the markdown ledger has one row per interaction and names the verdict", ()
 });
 
 test("protocolHrefOK accepts well-formed tel:/mailto: and rejects malformed ones", () => {
-  for (const ok of ["tel:+886223456789", "tel:+886 2 2345 6789", "mailto:support@example.com"]) assert.equal(protocolHrefOK(ok), true, ok);
-  for (const bad of ["tel:", "tel:12345", "tel:+88622345678901234567", "tel:+886abc", "mailto:", "mailto:a@b", "mailto:a@b.com?subject=x", "javascript:alert(1)"]) assert.equal(protocolHrefOK(bad), false, bad);
+  for (const ok of ["tel:+886223456789", "tel:+886 2 2345 6789", "tel:02-2345-6789", "tel:0912345678", "mailto:support@example.com"]) assert.equal(protocolHrefOK(ok), true, ok);
+  for (const bad of ["tel:", "tel:12345", "tel:123456", "tel:+88622345678901234567", "tel:+886abc", "mailto:", "mailto:a@b", "mailto:a@b.com?subject=x", "javascript:alert(1)"]) assert.equal(protocolHrefOK(bad), false, bad);
 });

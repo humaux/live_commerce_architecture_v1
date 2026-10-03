@@ -145,8 +145,9 @@ export const INIT_SCRIPT = `(() => {
   };
 })();`;
 
-// protocolHrefOK: tel: is + and 6-15 digits (spaces, hyphens and parentheses allowed); mailto: is one plain address.
-export const protocolHrefOK = (href) => /^tel:\+[0-9][0-9 ()\-]{5,20}$/i.test(href) && href.replace(/\D/g, "").length <= 15
+// protocolHrefOK: tel: is an optional + then 7-15 digits (spaces, hyphens and parentheses allowed; merchants may enter a
+// national number such as 02-2345-6789); mailto: is one plain address.
+export const protocolHrefOK = (href) => /^tel:\+?[0-9][0-9 ()\-]{5,24}$/i.test(href) && href.replace(/\D/g, "").length >= 7 && href.replace(/\D/g, "").length <= 15
   || /^mailto:[^@\s?]+@[^@\s?]+\.[^@\s?]+$/i.test(href);
 
 // ---- monitor: console / page errors / 5xx / dialogs / popups / downloads / external navigation, per context ----------------------------------------------------

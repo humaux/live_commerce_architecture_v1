@@ -86,7 +86,7 @@ R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的�
 
 买家能打开店铺需要店铺**已发布**，且至少有一个 **ACTIVE** 域名（缺一个都是 404）：
 
-1. **平台子域名（自动，无需运维）**：商家 onboarding 创建店铺时，系统按英文店名自动分配店铺 handle 并写入
+1. **平台子域名（自动，无需运维）**：商家 onboarding 创建店铺时，系统自动分配一个随机 8 位数字店铺编号作为 handle（owner 2026-10-03；不按店名，不可预览）并写入
    ACTIVE 的 `https://<handle>.<LC_STORE_BASE_DOMAIN>`（证据 `platform-subdomain`）。只要商家在「设置」→「网店发布」卡片点「发布」，买家立刻可达，**没有运维步骤**。
 2. **商家自有域名（自助）**：持有 `integration:manage` 的 owner/admin 在「设置」→「网店发布」输入主机名，系统生成
    TXT 校验令牌并显示要添加的 DNS 记录（`TXT _lc-verify.<host> = <token>`；`CNAME <host> → stores.<LC_STORE_BASE_DOMAIN>`，apex 用 A 记录指向边缘 IP）。
