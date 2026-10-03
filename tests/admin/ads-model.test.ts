@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
-  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, emptyForm, epochToLocal,
+  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, draftFailureCode, emptyForm, epochToLocal,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
 } from "../../apps/admin/lib/ads-model.ts";
@@ -31,6 +31,17 @@ function draftJSON(over: Record<string, unknown> = {}) {
     created_at: ts, remote: {}, ops: [], ...over,
   };
 }
+
+test("Taiwan guidance uses the latest failed operation of the current attempt, never stale history or kind ordering", () => {
+  const op = { kind: "adset", seq: 1, attempt: 1, state: "FAILED_FINAL", code: "tw_advertiser_unverified", updated_at: ts };
+  const draft = parseDraft(draftJSON({ status: "FAILED", ops: [op] }));
+  assert.equal(draftFailureCode(draft), "tw_advertiser_unverified");
+  assert.equal(draftFailureCode({ ...draft, publish_attempt: 2 }), null);
+  assert.equal(draftFailureCode({ ...draft, status: "SUBMITTING" }), null);
+  const later = { ...draft.ops[0], kind: "campaign", code: "graph_190", updated_at: "2026-10-01T03:03:04Z" };
+  assert.equal(draftFailureCode({ ...draft, ops: [later, ...draft.ops] }), "graph_190");
+  assert.equal(draftFailureCode({ ...draft, ops: [{ ...later, state: "UNKNOWN" }, ...draft.ops] }), "tw_advertiser_unverified");
+});
 
 test("frozen error codes: model list equals the frozen list, each is read from both error shapes", () => {
   assert.deepEqual([...adsServerCodes], frozenCodes);

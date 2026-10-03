@@ -181,6 +181,9 @@ func TestBrowserMetaAds(t *testing.T) {
 				fail(err)
 				return
 			}
+		case "/reject/taiwan":
+			// Runner-only MOCK: one proven Graph refusal, never a production account.
+			e.g.Inject(fakegraph.Fault{Route: fakegraph.RouteCreateAdset, Kind: fakegraph.FaultGraphError, Code: 100, Subcode: 3858495})
 		case "/drive":
 			if err := e.driveSafe(14); err != nil {
 				fail(err)

@@ -434,6 +434,80 @@ test("MA09a report: three separate blocks with window, timezone and fetched_at, 
   await noSecrets(page);
 });
 
+test("MA09 Taiwan verification refusal: real create/approve/publish, three locales, help and explicit new-attempt retry", async ({ page }) => {
+  await signedLogin(page);
+  const help = "https://www.facebook.com/business/help/983527276402621";
+  // Only the help destination is mocked; all app commands go through real BFF/Go/PG.
+  await page.context().route(help, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<h1>Meta help destination (MOCK)</h1>" }));
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const c = adsCopy[locale];
+    await page.goto(`/${locale}/ads?store=${store}`);
+    await page.getByTestId("ads-setup-checklist").locator("summary").click();
+    await expect(page.getByTestId("ads-setup-checklist")).toContainText(c.setupTaiwan);
+    await expect(page.getByTestId("ads-setup-checklist").getByRole("link")).toHaveAttribute("href", help);
+    const checklistPopup = page.waitForEvent("popup");
+    await page.getByTestId("ads-setup-checklist").getByRole("link").click();
+    const checklistHelp = await checklistPopup;
+    await expect(checklistHelp).toHaveURL(help);
+    await checklistHelp.close();
+    await page.getByTestId("ads-new-draft").click();
+    await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
+    await page.getByTestId("ads-f-budget").fill("3000");
+    await page.getByTestId("ads-f-starts").fill(localInput(3 * 3600_000));
+    await page.getByTestId("ads-f-ends").fill(localInput(27 * 3600_000));
+    const createdPost = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith("/ads/drafts"));
+    await page.getByTestId("ads-f-save").click();
+    await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "DRAFT");
+    const draft = (await (await createdPost).json()).id as string;
+    expect(draft).toMatch(uuidRe);
+    await page.getByTestId("ads-approve").click();
+    await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "APPROVED");
+    await ctl("reject/taiwan");
+    const firstPost = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith(`/drafts/${draft}/publish`));
+    await page.getByTestId("ads-publish").click();
+    const first = await firstPost;
+    expect(first.status()).toBe(200);
+    await ctl("drive");
+    const failedRead = page.waitForResponse((r) => r.request().method() === "GET" && r.url().endsWith(`/drafts/${draft}`));
+    await page.getByTestId("ads-refresh").click();
+    const payload = await (await failedRead).json();
+    expect(payload.ops).toEqual(expect.arrayContaining([expect.objectContaining({ attempt: 1, state: "FAILED_FINAL", code: "tw_advertiser_unverified" })]));
+    await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "FAILED");
+    await expect(page.getByTestId("ads-tw-verification")).toContainText(c.twVerification);
+    await expect(page.getByTestId(`ads-draft-${draft}`).locator("[data-state]")).toHaveText(c.twStatus);
+    await expect(page.getByTestId("ads-detail").getByText(c.statuses.FAILED, { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("ads-publish")).toHaveText(c.twRetry);
+    await expect(page.getByTestId("ads-tw-help")).toHaveAttribute("href", help);
+    const popup = page.waitForEvent("popup");
+    await page.getByTestId("ads-tw-help").click();
+    const helpPage = await popup;
+    await expect(helpPage).toHaveURL(help);
+    await helpPage.close();
+    await page.goto(`/${locale}/ads?store=${store}&draft=${draft}`);
+    await expect(page.getByTestId("ads-tw-verification")).toContainText(c.twVerification);
+    for (const viewport of [{ name: "desktop", width: 1586, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.getByTestId("ads-tw-verification").scrollIntoViewIfNeeded();
+      await shot(page, "ads-tw-verification", locale, viewport.name);
+    }
+    const retryPost = page.waitForResponse((r) => r.request().method() === "POST" && r.url().endsWith(`/drafts/${draft}/publish`));
+    await page.getByTestId("ads-publish").click();
+    const retry = await retryPost;
+    expect(retry.status()).toBe(200);
+    expect(retry.request().postDataJSON()).toEqual({ publish_attempt: 1 });
+    expect(retry.request().headers()["idempotency-key"]).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+    expect(retry.request().headers()["idempotency-key"]).not.toBe(first.request().headers()["idempotency-key"]);
+    await expect(page.getByTestId("ads-tw-verification")).toHaveCount(0);
+    await ctl("drive");
+    await page.getByTestId("ads-refresh").click();
+    await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "ACTIVE");
+    await page.getByTestId("ads-pause").click();
+    await ctl("drive");
+    await page.getByTestId("ads-refresh").click();
+    await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "PAUSED");
+  }
+});
+
 test("MA09a three locales, desktop 1586x992 and 390 px: no horizontal scroll, screenshots hashed", async ({ page }) => {
   await signedLogin(page);
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {

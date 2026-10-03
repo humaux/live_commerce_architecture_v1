@@ -279,6 +279,16 @@ export function hasRemote(d: Pick<Draft, "remote">): boolean {
 }
 // UI hints only (the server re-authorizes and re-validates every action).
 export const canEdit = (d: Draft) => d.status === "DRAFT";
+// ops are ordered by kind, not completion time. Never surface a past attempt's refusal.
+export function draftFailureCode(d: Draft): string | null {
+  if (d.status !== "FAILED") return null;
+  const latest = d.ops.reduce<Op | null>((last, op) => {
+    if (op.attempt !== d.publish_attempt || op.state !== "FAILED_FINAL") return last;
+    return !last || Date.parse(op.updated_at) >= Date.parse(last.updated_at) ? op : last;
+  }, null);
+  return latest?.code ?? null;
+}
+export const taiwanVerificationHelp = "https://www.facebook.com/business/help/983527276402621";
 export const canApprove = (d: Draft) => d.status === "DRAFT";
 export const canPublish = (d: Draft) => d.status === "APPROVED" || d.status === "FAILED";
 export const canPause = (d: Draft) => hasRemote(d) && d.status !== "ENDED";
