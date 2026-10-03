@@ -52,6 +52,151 @@
       "result": 200
     },
     {
+      "url": "/privacy/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/privacy/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/terms/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/terms/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/data-deletion/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/data-deletion/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/contact/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/contact?from=review&x=%2F"
+    },
+    {
+      "url": "/contact/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/contact?from=review&x=%2F"
+    },
+    {
+      "url": "/en/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/en?from=review&x=%2F"
+    },
+    {
+      "url": "/en/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/en?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-CN?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-CN?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-TW?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-TW?from=review&x=%2F"
+    },
+    {
+      "url": "/en/privacy/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/en/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/en/privacy/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/en/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/terms/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-CN/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/terms/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-CN/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/data-deletion/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-TW/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/data-deletion/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-TW/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/api/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/site/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/en/orders/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/privacy//",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/privacy/",
+      "method": "POST",
+      "result": 404
+    },
+    {
       "url": "/api",
       "result": 404
     },
@@ -89,7 +234,7 @@
       "alt-svc": "h3=\":443\"; ma=2592000",
       "location": "https://platform.localhost/en/privacy?from=review&x=1",
       "strict-transport-security": "max-age=31536000",
-      "date": "Sat, 03 Oct 2026 19:07:57 GMT",
+      "date": "Sat, 03 Oct 2026 19:55:15 GMT",
       "content-length": "0"
     },
     "text": ""

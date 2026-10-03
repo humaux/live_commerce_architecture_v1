@@ -1,9 +1,63 @@
-# platform-site — approved A implemented; PS1–PS4 PASS; PS5 BLOCKED
+# platform-site — FIX FIRST corrections; PS1–PS4 PASS; full smoke BLOCKED
 
 Date: 2026-10-04 (Asia/Shanghai). Branch: `unit/platform-site`.
 Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site`.
-Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c`. Final implementation: `8f567049`.
-This replaces the historical pre-approval checkpoint; its earlier evidence remains in Git and the named logs.
+Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c`. Reviewed delivery: `8f058df7`; latest implementation: `3e26a969` (includes `e360e6b8`, `bb50ec5a`).
+This review-fix section supersedes the earlier acceptance status below. Original red runs remain evidence, not a current PS5 verdict.
+
+## Independent-review corrections (2026-10-04)
+
+Scope: the user's three P1 and four P2 requests. No push, merge, deployment, migration, production secret access or product Go/SQL change. The existing Caddy Go **test fixture** is the only Go edit. Approved A design remains intact.
+
+| Review item | Change and result |
+|---|---|
+| P1 Meta disclosures | **FIXED**, `e360e6b8`: privacy and terms in all three locales describe Facebook Page / linked Instagram information, post/live comments, Messenger/IG direct messages, identifiers/name/username/text, and private comment replies containing order-claim links. Grounded in `internal/metaconnect/graph.go`, `internal/integrations/meta/normalize.go` and `internal/integrations/metareply/{routes,render}.go`. No promise of a general DM inbox, public replies, automatic deletion callback or fixed retention period. |
+| P1 pinned Caddy fixture | **PASS**, `bb50ec5a`: add synthetic `LC_PLATFORM_HOST=platform.localhost`; exact requested Go test exits 0 on final Caddy source. |
+| P1 smoke S07 build ordering | **FIXED; full acceptance BLOCKED**, `bb50ec5a`: export the same synthetic platform/admin/contact configuration as `make_config` before the first image build. Build validation remains fail-closed. Actual native `smoke.sh full` exits 3: EUID 501, root required for UID 999 backup ownership; no S07+ case executed. See supplementary admin-image check below. |
+| P2 Host canonical comparison | **PASS**, `e360e6b8`: one strict actual-Host parser strips numeric port and one terminal dot, lowercases DNS, rejects malformed authorities; used in proxy, public layout, robots and sitemap. Canonical links still come only from configured env. 16 successful public Host-variant requests + 3 www negatives; no locale cookie/admin fallback. |
+| P2 public trailing slash | **PASS**, `bb50ec5a`: known GET/HEAD documents only receive 301 to slashless path, preserving query bytes; unknown/admin/API paths, double trailing slash and POST remain 404. Pinned Caddy covers 47 requests. Uses Caddy's documented [`{?query}` placeholder](https://caddyserver.com/docs/caddyfile/concepts#placeholders). |
+| P2 admin robots regression | **PASS**, `e360e6b8`: restore the old `/robots.txt` 404, without redirect or locale cookie. Tested against built Next on the admin Host. |
+| P2 deletion button copy | **PASS**, `e360e6b8`: exact settings-card and button labels in all three locales, including zh-TW「中斷連接」; tested against the actual `metaConnectCopy`. |
+
+### Current verification (all commands executed in this worktree)
+
+| Command | Exit | Evidence / count |
+|---|---:|---|
+| `node --test --experimental-strip-types tests/admin/platform-site.test.ts` | 0 | `review-fix/node-final.log`: 10/10, including the supplemental image manifest regression |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-platform-site` | 0 | `review-fix/browser-green.log`: PS1/2/4, 30 page cases, 15 SSR checks, 16 tag cases, 390 actual clicks + 30 reloads; additionally 20 new Host/www/admin-robots assertions |
+| `node tests/deploy/platform-edge.mjs` | 0 | `review-fix/edge-green.log`, refreshed `ps3-edge.json`: PS3, 47 real pinned-Caddy requests (MOCK upstream) |
+| `bash scripts/dev/test-node.sh` | 0 | `review-fix/test-node.log`: 339 PASS / 0 FAIL; optional R04 NOT_RUN (binary unset) |
+| `pnpm --filter admin exec tsc --noEmit` | 0 | `review-fix/admin-tsc.log` |
+| `bash scripts/dev/check-gates.sh` | 0 | `review-fix/check-gates.log`: 61 modes; existing warning allowlist unchanged |
+| `go test -count=1 -run '^TestCaddyfileLoadsOnPinnedCaddy$' ./internal/storefrontdomains` | 0 | `review-fix/caddy-go-final.log`: final Caddy source |
+| `gofmt -l internal/storefrontdomains/caddyfile_test.go`; `git diff --check` | 0 | No output / no formatting errors |
+| `bash deploy/scripts/smoke.sh full` | **3 BLOCKED** | `review-fix/smoke-full.log`: static S01–S06 pass, shellcheck NOT_RUN; all full cases BLOCKED by root prerequisite. Raw result/case/command manifest retained in `review-fix/smoke-full/`. |
+| `bash deploy/scripts/smoke.sh static` | 0 | `review-fix/smoke-static.log`: S01–S06 PASS, shellcheck NOT_RUN (not installed); `review-fix/smoke-static/` contains the raw manifests |
+| S07 supplemental admin Docker image build with synthetic env (exact command below) | 0 | `review-fix/admin-docker-build.log`, `admin-image.txt`: real clean Linux image build; not a substitute for full smoke/all four images |
+
+```sh
+LC_PLATFORM_HOST=platform.localhost LC_ADMIN_HOST=admin.localhost \
+LC_COMPANY_CONTACT_EMAIL=contact@example.invalid \
+docker build --pull=false -f deploy/docker/admin.Dockerfile \
+  -t lc-platform-review-admin:ps-fix-20261004 \
+  --build-arg GIT_SHA=bb50ec5a2409e0af7f42be999c92c230af091832-review-dirty \
+  --build-arg LC_PLATFORM_HOST --build-arg LC_ADMIN_HOST \
+  --build-arg LC_COMPANY_CONTACT_EMAIL .
+```
+
+**Additional build failure caught and fixed:** the first actual admin Docker build passed public configuration and compilation, then failed on `packages/ui/src/AppShell.tsx` missing React types. The deps stage installed before copying W0 `ui` / `format` manifests, so the clean image lacked UI peer dependencies, unlike the local workspace. `3e26a969` adds exactly those two manifest COPY lines before frozen install (no dependency/lockfile/component change). The new manifest test first failed (9 pass / 1 fail, `image-manifest-red.log`) and then passed. The same Docker build then exited 0. The failed build is preserved as `admin-docker-build-red.log`. The resulting local test image is retained for review; no container or production service was started from it, and shared build caches were not pruned.
+
+**Red evidence:** `review-fix/node-red.log` exits 1 (7 pass / 2 fail); `browser-red.log` exits 1 (Host variant writes admin locale cookie); `edge-red.log` exits 1 (slash path 404); `caddy-go-red.log` exits 1 (empty Caddy block). During repair, `edge-double-slash-red.log` caught Caddy's normalized double-slash match; fixed without removing that negative. `node-runner-error.log` is a command setup error (`tsx` absent), corrected to the repository's native Node strip-types runner, not a product failure. Native `build-images.sh --only admin` also hit an existing macOS Bash 3.2 empty-array error (`s07-admin-build.log`); product/Linux script semantics were not weakened for that host.
+
+**Independent check:** `/root/ps_review_fix_final`, security_reviewer, gpt-6.1-sol / high, read-only, base `8f058df7`; no writable paths, no recursive delegation. No actionable scoped P1/P2; independently ran 9 Node tests and diff check, both exit 0. Follow-up review at `bb50ec5a` covered the two manifest COPY lines and new regression: 10/10 Node and diff check exit 0, no actionable P1/P2. No claim that this reviewer reran Docker/Go/browser. Research helpers were read-only gpt-6-luna / medium: `ps_review_legal_facts`, `ps_review_smoke_plan`. All findings stored in Humaux.
+
+**Screenshots:** refreshed three-language privacy/terms/deletion screenshots at 390×844 and 1586×992 viewport settings (full-page captures), in this directory. Root visually checked English mobile privacy and zh-TW desktop deletion; legal columns/buttons remain readable. Impeccable clarify guidance was used to match instructions to actual UI labels without changing approved A.
+
+**PS5: DEFERRED TO INTEGRATOR by explicit user instruction.** Not rerun or altered in this round. User reported the `c2f41c91` baseline sweep passed and is independently testing `8f567049`; these are user-supplied attribution updates, not this branch's new execution results.
+
+**Legal text: 需 owner/律師審閱.** Source-aligned disclosure is not legal approval or a promise of Meta approval.
+
+## Original delivery scope and historical evidence
 
 ## Result and scope
 
@@ -14,7 +68,7 @@ This replaces the historical pre-approval checkpoint; its earlier evidence remai
 - Host/email configuration remains env-only. No real-looking default mailbox. Missing production contact config fails the build. The pilot email appears only in the authorized deploy runbook; test fixtures use `contact@example.invalid`.
 - Public routing uses the actual Host, a path allowlist and a separate public root layout. It does not expose BFF/API or internal rewrite routes on the platform host, and does not expand the existing auth-body proxy matcher.
 - Optional domain-verification tag is absent when unset; when set it renders exactly once on each locale's apex home page, never a legal page or admin page.
-- Caddy platform block and www 301, compose/admin build arguments, preflight, smoke fixture and runbook are delivered. No migration, Go/SQL, production configuration, DNS, Meta settings, mail delivery, push, merge or deployment.
+- Caddy platform block and www 301, compose/admin build arguments, preflight, smoke fixture and runbook are delivered. No migration, product Go/SQL, production configuration, DNS, Meta settings, mail delivery, push, merge or deployment.
 
 **Legal text: 需 owner/律師審閱.** It describes current account/Meta/buyer/payment processing, manual email deletion requests and retention obligations. It invents no signed-request callback or fixed deletion SLA. This is a draft, not a certification of legal compliance.
 
@@ -30,10 +84,13 @@ This replaces the historical pre-approval checkpoint; its earlier evidence remai
 | `38cee4d8` | Formal public browser mode, strict release-gate registration, shared test queue |
 | `f626bb71` | Source-backed public-surface DESIGN and sidecar, without replacing the W0 design system |
 | `8f567049` | First-viewport proof in addition to full-page captures |
+| `e360e6b8` | FIX FIRST: actual Meta disclosures, exact UI labels, normalized public Host and admin robots |
+| `bb50ec5a` | FIX FIRST: known-document slash 301, Caddy fixture host, S07 synthetic build configuration |
+| `3e26a969` | Supplemental S07 image red-green: install W0 workspace manifests before frozen dependencies |
 
 All commits have `Co-Authored-By: Codex <noreply@openai.com>`. Earlier proposal/checkpoint commits remain in history; they are not the current acceptance state.
 
-## PS1–PS5 evidence
+## Original PS1–PS5 evidence (historical, before this review-fix)
 
 | Gate | Status | Evidence |
 |---|---|---|
@@ -43,7 +100,7 @@ All commits have `Co-Authored-By: Codex <noreply@openai.com>`. Earlier proposal/
 | PS4 | PASS (LOCAL) | 16 verification-tag cases, unset and set; production-Next crawler checks |
 | PS5 | **BLOCKED / NOT ALL GREEN** | Node/tsc/check-gates are green. Serial full click-sweep exits 1 on existing merchant-storefront routes: 120 pages / 32 load failures, 983 controls / 960 pass / 3 fail / 20 skip; 18 journeys pass. Public-matrix standalone result is separate, not a replacement. |
 
-## Commands and exit codes
+## Original commands and exit codes (historical)
 
 All commands below run in this worktree. Browser queue uses `LC_TEST_LOCK_WAIT=14400`; no foreign lock was removed or process terminated.
 
@@ -101,15 +158,15 @@ Their findings were stored in Humaux. The integrator's separate final acceptance
 ## NOT_RUN / release boundary
 
 - LIVE/SANDBOX deployment, real DNS/TLS issuance, Meta domain/business/App Review configuration, real registrations, emails or provider operations: **NOT_RUN**.
-- Full Docker application image build / full production compose startup / full preflight against real hosts: **NOT_RUN**. Local actual Caddy and compose syntax/config are separately passed above.
+- Full production compose startup / full preflight against real hosts: **NOT_RUN**. Local Caddy/compose and the review-fix smoke attempts are distinguished above; no live deployment acceptance is claimed.
 - Full strict release gate and full G07: **NOT_RUN**; no migration/SQL/ACL change in this unit. The release catalog registration was checked.
 - Optional `tests/media/r04-input-runner.test.mjs`: **NOT_RUN**, `COMMERCE_R04_LIVEKIT_BINARY` unset; test-node explicitly reports it.
 - No claim that Meta will approve the business or application. Owner/legal review, deployment and integrator independent acceptance remain outside local delivery.
-- Final local delivery remains **blocked only on PS5**, not represented as complete release acceptance. Independent integrator review and a green complete sweep remain required. The last standalone public retest on `8f567049` exited 0 with the same 30 pages / 390 clicks / 30 reloads, and refreshed the first-viewport proof. Root inspected that proof: company facts remain below the first viewport.
+- Final review-fix handoff is **not full release acceptance**: full Linux/root smoke remains blocked locally, and PS5 is integrator-owned this round. The historical `8f567049` first-viewport proof remains; company facts are below the hero and approved A was not changed.
 - Runners closed their owned Next/browser/fixture processes. The choice server on port 58620 was already absent (`lsof` exit 1, no listener); no unrelated service was stopped. No task-owned public runner/Next process remained in the postflight process check. No shared cache was deleted.
 
 ## Handoff stop line
 
-1. PS5 is not waived. Preserve both red sweeps; before another full rerun, collect the first primary-origin resolver status/latency/error in the existing merchant-storefront test fixture. It is not available in the retained startup-only Next log.
-2. The integrator should separately decide the correction to the existing monitor's per-page event attribution while retaining the first real 503 as a failure. No changes to that old runner or the canonical security guard were made in this unit.
-3. Re-run the complete click-sweep after the underlying failure is understood. Standalone PS1–PS4 green results do not replace it. Then perform the integrator's independent review and owner/legal review before any authorized deployment.
+1. Integrator: rerun `bash deploy/scripts/smoke.sh full` on the repository's Linux/root test runner (see `.github/workflows/deploy-smoke.yml`). This unit does not push or trigger remote CI. The old documented dind smoke has no reproducible outer runner here; no unverified dind recreation or host privilege escalation was used.
+2. PS5 is not waived, but explicitly belongs to the integrator. Retain old red evidence; no sweep fixture/threshold/assertion was relaxed in this repair.
+3. Owner/legal review and independent integrator acceptance remain necessary before authorized deployment. Public-site green evidence is not production or Meta review approval.

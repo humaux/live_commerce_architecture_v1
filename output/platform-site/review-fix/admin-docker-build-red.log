@@ -1,0 +1,332 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from admin.Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 5.11kB 0.1s done
+#1 DONE 1.4s
+
+#2 [internal] load metadata for docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#2 ...
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#4 [internal] load metadata for docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#4 ...
+
+#5 [auth] library/golang:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#2 ...
+
+#4 [internal] load metadata for docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#4 DONE 10.4s
+
+#2 [internal] load metadata for docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#2 DONE 11.0s
+
+#6 [internal] load .dockerignore
+#6 transferring context:
+#6 transferring context: 1.50kB 0.0s done
+#6 DONE 0.2s
+
+#7 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#7 resolve docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7 0.0s done
+#7 ...
+
+#8 [internal] load build context
+#8 transferring context: 3.76MB 0.2s done
+#8 DONE 0.4s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 resolve docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183 0.0s done
+#9 ...
+
+#7 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#7 DONE 1.0s
+
+#7 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#7 sha256:cebbefaf41310e73bb5e70cad7495e7c914721d128acdec7adfce41a36a317c4 0B / 449B 0.2s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 0B / 30.14MB 0.2s
+#7 sha256:b1a6981888abee66953e2062ffaec998e1846e1f4f6c3ce2a1977df90dbba468 0B / 1.72MB 0.2s
+#7 sha256:2402d1826d820eee08a362c6359aaa1820e660812245f520d2f55938eaa7e62a 0B / 3.31kB 0.2s
+#7 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 DONE 2.6s
+
+#7 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#7 sha256:b1a6981888abee66953e2062ffaec998e1846e1f4f6c3ce2a1977df90dbba468 1.72MB / 1.72MB 1.5s
+#7 sha256:2402d1826d820eee08a362c6359aaa1820e660812245f520d2f55938eaa7e62a 3.31kB / 3.31kB 1.4s done
+#7 sha256:b1a6981888abee66953e2062ffaec998e1846e1f4f6c3ce2a1977df90dbba468 1.72MB / 1.72MB 1.5s done
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 0B / 49.69MB 0.2s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 2.10MB / 30.14MB 2.0s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 5.24MB / 30.14MB 2.3s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 7.34MB / 30.14MB 2.4s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 9.44MB / 30.14MB 2.6s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 12.58MB / 30.14MB 2.7s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 14.68MB / 30.14MB 2.9s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 16.78MB / 30.14MB 3.0s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 20.97MB / 30.14MB 3.3s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 24.12MB / 30.14MB 3.6s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 27.26MB / 30.14MB 3.7s
+#7 sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 30.14MB / 30.14MB 4.0s done
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 4.19MB / 49.69MB 2.6s
+#7 extracting sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 11.53MB / 49.69MB 3.2s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 16.78MB / 49.69MB 3.5s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 23.07MB / 49.69MB 3.9s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 27.26MB / 49.69MB 4.2s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 31.72MB / 49.69MB 4.5s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 37.75MB / 49.69MB 5.3s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 41.94MB / 49.69MB 5.4s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 47.19MB / 49.69MB 5.7s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 49.69MB / 49.69MB 5.9s
+#7 sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 49.69MB / 49.69MB 5.9s done
+#7 extracting sha256:cda3d70ae7d7c3d0b3b57a99a2085f9d93e919a846913dc6517a420b348c123d 3.4s done
+#7 extracting sha256:2402d1826d820eee08a362c6359aaa1820e660812245f520d2f55938eaa7e62a
+#7 extracting sha256:2402d1826d820eee08a362c6359aaa1820e660812245f520d2f55938eaa7e62a 0.1s done
+#7 extracting sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4
+#7 extracting sha256:7cab0f620ec6404eed5ecd1f6b77b8801a947bdcc5c1979315cac60ebcc029c4 1.2s done
+#7 DONE 10.0s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 sha256:463e536fb8d50ca966c977dd42c75920f5b91c6c3d71720f7f0a9fbff5d6934a 126B / 126B 0.7s done
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 53.48MB / 98.49MB 7.1s
+#9 sha256:125215c6056cfe0a165d14de8a72a3546ec1167a4468ebcd93c0f403469ef15d 67.65MB / 67.65MB 4.9s done
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 30.41MB / 67.62MB 4.7s
+#9 sha256:1a48a960533f349c100af0847a3bcf602ee922ba6929053341585cdec455dde6 17.83MB / 25.04MB 1.5s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 0B / 49.75MB 1.4s
+#9 ...
+
+#7 [base 1/3] FROM docker.io/library/node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+#7 extracting sha256:b1a6981888abee66953e2062ffaec998e1846e1f4f6c3ce2a1977df90dbba468 0.1s done
+#7 extracting sha256:cebbefaf41310e73bb5e70cad7495e7c914721d128acdec7adfce41a36a317c4 0.0s done
+#7 DONE 10.1s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 sha256:1a48a960533f349c100af0847a3bcf602ee922ba6929053341585cdec455dde6 25.04MB / 25.04MB 1.7s done
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 58.72MB / 98.49MB 7.4s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 36.70MB / 67.62MB 5.0s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 65.01MB / 98.49MB 7.8s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 42.99MB / 67.62MB 5.4s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 70.25MB / 98.49MB 8.1s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 49.28MB / 67.62MB 5.9s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 76.55MB / 98.49MB 8.6s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 54.53MB / 67.62MB 6.3s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 3.15MB / 49.75MB 3.0s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 83.89MB / 98.49MB 9.0s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 6.29MB / 49.75MB 3.3s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 58.72MB / 67.62MB 6.8s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 10.49MB / 49.75MB 3.7s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 91.23MB / 98.49MB 9.5s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 13.63MB / 49.75MB 3.9s
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 96.47MB / 98.49MB 9.9s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 16.78MB / 49.75MB 4.1s
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 63.96MB / 67.62MB 7.5s
+#9 ...
+
+#10 [base 2/3] RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+#10 0.368 Preparing pnpm@10.33.0 for immediate activation...
+#10 DONE 2.8s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 98.49MB / 98.49MB 10.1s done
+#9 sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 67.62MB / 67.62MB 7.7s done
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 19.92MB / 49.75MB 4.4s
+#9 ...
+
+#11 [base 3/3] WORKDIR /app
+#11 DONE 0.1s
+
+#12 [deps 1/5] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+#12 DONE 0.1s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 23.07MB / 49.75MB 4.5s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 26.21MB / 49.75MB 4.7s
+#9 ...
+
+#13 [deps 2/5] COPY apps/admin/package.json apps/admin/
+#13 DONE 0.2s
+
+#14 [deps 3/5] COPY apps/storefront/package.json apps/storefront/
+#14 DONE 0.0s
+
+#15 [deps 4/5] COPY packages/i18n/package.json packages/i18n/
+#15 DONE 0.1s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 29.88MB / 49.75MB 5.0s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 37.22MB / 49.75MB 5.4s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 40.89MB / 49.75MB 5.7s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 44.04MB / 49.75MB 5.9s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 47.19MB / 49.75MB 6.2s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 49.75MB / 49.75MB 6.3s
+#9 sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 49.75MB / 49.75MB 6.4s done
+#9 extracting sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7
+#9 extracting sha256:ccd9dba13ae33c050c13176f84743269a9457dcb0cfd091e368aa5131dd9e9c7 1.6s done
+#9 DONE 16.5s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 0.479 Scope: all 4 workspace projects
+#16 0.533 Lockfile is up to date, resolution step is skipped
+#16 0.543 Progress: resolved 1, reused 0, downloaded 0, added 0
+#16 0.560 Packages: +49
+#16 0.560 +++++++++++++++++++++++++++++++++++++++++++++++++
+#16 1.545 Progress: resolved 49, reused 0, downloaded 10, added 8
+#16 2.549 Progress: resolved 49, reused 0, downloaded 40, added 40
+#16 3.549 Progress: resolved 49, reused 0, downloaded 42, added 42
+#16 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:1a48a960533f349c100af0847a3bcf602ee922ba6929053341585cdec455dde6 0.5s done
+#9 DONE 17.0s
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502
+#9 ...
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 4.553 Progress: resolved 49, reused 0, downloaded 46, added 44
+#16 79.66 Progress: resolved 49, reused 0, downloaded 46, added 45
+#16 81.03 Progress: resolved 49, reused 0, downloaded 47, added 45
+#16 82.28 Progress: resolved 49, reused 0, downloaded 47, added 46
+#16 95.44 Progress: resolved 49, reused 0, downloaded 48, added 46
+#16 97.26 Progress: resolved 49, reused 0, downloaded 48, added 47
+#16 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:8dbc42934ae55dd8b0dae5d89dbe5ee202f4708b362d63ab1ceadbac29cbe502 95.7s done
+#9 extracting sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0
+#9 extracting sha256:0a6cb9f75a45a0768de4f9b42f4a8278affd220c6baa52ff545ba9d1f2cb7af0 3.8s done
+#9 DONE 116.5s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 99.48 Progress: resolved 49, reused 0, downloaded 48, added 48
+#16 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:125215c6056cfe0a165d14de8a72a3546ec1167a4468ebcd93c0f403469ef15d
+#9 extracting sha256:125215c6056cfe0a165d14de8a72a3546ec1167a4468ebcd93c0f403469ef15d 6.2s done
+#9 DONE 122.8s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:463e536fb8d50ca966c977dd42c75920f5b91c6c3d71720f7f0a9fbff5d6934a
+#9 extracting sha256:463e536fb8d50ca966c977dd42c75920f5b91c6c3d71720f7f0a9fbff5d6934a 0.2s done
+#9 DONE 123.0s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#9 [lcentry 1/5] FROM docker.io/library/golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+#9 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 0.7s done
+#9 DONE 123.6s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#17 [lcentry 2/5] WORKDIR /src
+#17 DONE 1.7s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#18 [lcentry 3/5] COPY go.mod go.sum ./
+#18 DONE 0.4s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#19 [lcentry 4/5] COPY deploy/tools/lcentry ./deploy/tools/lcentry
+#19 DONE 0.4s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 ...
+
+#20 [lcentry 5/5] RUN go build -buildvcs=false -ldflags=-buildid= -o /out/lcentry ./deploy/tools/lcentry
+#20 DONE 62.8s
+
+#16 [deps 5/5] RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
+#16 182.1 Progress: resolved 49, reused 0, downloaded 49, added 48
+#16 190.9 Progress: resolved 49, reused 0, downloaded 49, added 49
+#16 190.9 Progress: resolved 49, reused 0, downloaded 49, added 49, done
+#16 191.2 
+#16 191.2 devDependencies:
+#16 191.2 + @playwright/test 1.63.0
+#16 191.2 + axe-core 4.13.0
+#16 191.2 + livekit-client 2.22.3
+#16 191.2 + prettier 3.9.8
+#16 191.2 + typescript 7.0.2
+#16 191.2 + typescript-api <- typescript 6.0.3
+#16 191.2 
+#16 191.6 Done in 3m 11.4s using pnpm v10.33.0
+#16 DONE 192.1s
+
+#21 [build 1/4] COPY packages ./packages
+#21 DONE 0.5s
+
+#22 [build 2/4] COPY apps/admin ./apps/admin
+#22 DONE 0.2s
+
+#23 [build 3/4] COPY scripts/dev/package-admin.mjs ./scripts/dev/package-admin.mjs
+#23 DONE 0.0s
+
+#24 [build 4/4] RUN LC_PLATFORM_HOST="platform.localhost" LC_ADMIN_HOST="admin.localhost" LC_COMPANY_CONTACT_EMAIL="contact@example.invalid" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+#24 0.429 
+#24 0.429 > live-commerce-workspace@ build:admin /app
+#24 0.429 > pnpm --filter @live-commerce/admin build
+#24 0.429 
+#24 0.686 
+#24 0.686 > @live-commerce/admin@ build /app/apps/admin
+#24 0.686 > next build && node ../../scripts/dev/package-admin.mjs
+#24 0.686 
+#24 1.114 ▲ Next.js 16.3.5 (Turbopack)
+#24 1.243 ✓ Running next.config.ts took 129ms
+#24 1.243 ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+#24 1.276 
+#24 1.292   Creating an optimized production build ...
+#24 13.52 ✓ Compiled successfully in 11.2s
+#24 13.59   Running TypeScript ...
+#24 29.13 Failed to type check.
+#24 29.13 
+#24 29.09 ../../packages/ui/src/AppShell.tsx(3,51): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+#24 29.09 ../../packages/ui/src/AppShell.tsx(37,23): error TS18046: 'e' is of type 'unknown'.
+#24 29.09 ../../packages/ui/src/AppShell.tsx(38,20): error TS2339: Property 'focus' does not exist on type '{}'.
+#24 29.09 ../../packages/ui/src/AppShell.tsx(50,17): error TS2339: Property 'focus' does not exist on type '{}'.
+#24 29.09 ../../packages/ui/src/AppShell.tsx(53,18): error TS2339: Property 'focus' does not exist on type '{}'.
+#24 29.09 ../../packages/ui/src/AppShell.tsx(66,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+#24 30.60 /app/apps/admin:
+#24 30.60  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ build: `next build && node ../../scripts/dev/package-admin.mjs`
+#24 30.60 Exit status 1
+#24 31.03  ELIFECYCLE  Command failed with exit code 1.
+#24 ERROR: process "/bin/sh -c LC_PLATFORM_HOST=\"$LC_PLATFORM_HOST\" LC_ADMIN_HOST=\"$LC_ADMIN_HOST\" LC_COMPANY_CONTACT_EMAIL=\"$LC_COMPANY_CONTACT_EMAIL\" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin" did not complete successfully: exit code: 1
+------
+ > [build 4/4] RUN LC_PLATFORM_HOST="platform.localhost" LC_ADMIN_HOST="admin.localhost" LC_COMPANY_CONTACT_EMAIL="contact@example.invalid" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin:
+29.09 ../../packages/ui/src/AppShell.tsx(3,51): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+29.09 ../../packages/ui/src/AppShell.tsx(37,23): error TS18046: 'e' is of type 'unknown'.
+29.09 ../../packages/ui/src/AppShell.tsx(38,20): error TS2339: Property 'focus' does not exist on type '{}'.
+29.09 ../../packages/ui/src/AppShell.tsx(50,17): error TS2339: Property 'focus' does not exist on type '{}'.
+29.09 ../../packages/ui/src/AppShell.tsx(53,18): error TS2339: Property 'focus' does not exist on type '{}'.
+29.09 ../../packages/ui/src/AppShell.tsx(66,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+30.60 /app/apps/admin:
+30.60  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ build: `next build && node ../../scripts/dev/package-admin.mjs`
+30.60 Exit status 1
+31.03  ELIFECYCLE  Command failed with exit code 1.
+------
+admin.Dockerfile:59
+--------------------
+  57 |     ARG LC_COMPANY_CONTACT_EMAIL
+  58 |     # Public non-secret config validates the build; dynamic pages read runtime values.
+  59 | >>> RUN LC_PLATFORM_HOST="$LC_PLATFORM_HOST" LC_ADMIN_HOST="$LC_ADMIN_HOST" LC_COMPANY_CONTACT_EMAIL="$LC_COMPANY_CONTACT_EMAIL" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+  60 |     
+  61 |     FROM ${NODE_IMAGE}
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c LC_PLATFORM_HOST=\"$LC_PLATFORM_HOST\" LC_ADMIN_HOST=\"$LC_ADMIN_HOST\" LC_COMPANY_CONTACT_EMAIL=\"$LC_COMPANY_CONTACT_EMAIL\" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin" did not complete successfully: exit code: 1
+
+View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/i2ved3jlaqkahmwsp949g5v2s

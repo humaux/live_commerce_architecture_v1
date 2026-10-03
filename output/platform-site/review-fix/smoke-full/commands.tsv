@@ -1,0 +1,32 @@
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/build-images.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/check-pins.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/collect-diagnostics.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/deploy.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/host-setup.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/lib.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/ops-admin.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/pg-ops.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/preflight.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/secrets-init.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/smoke.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/watchdog.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/provision-logins.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/backup.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/basebackup.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/lib.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/pitr-install.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/restore-dump.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/restore-pitr.sh
+S01	0	bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/postgres/ops/rotate-superuser.sh
+S02	0	/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/scripts/check-pins.sh
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.two-host-db.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.two-host-db.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.two-host-db.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml config -q
+S03	0	docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.HNagHsRoQH/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/compose.two-host-db.yml config -q
+S04	0	go vet ./deploy/tools/...
+S04	0	go test -count=1 -cover ./deploy/tools/...
+S05	0	docker run --rm --network none -e LC_PLATFORM_HOST=platform.localhost -e LC_ADMIN_HOST=admin.localhost -e LC_STORE_HOST=shop.localhost -e LC_API_HOST=api.localhost -e LC_HOOKS_HOST=hooks.localhost -e ACME_EMAIL=smoke@example.com -v /Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
