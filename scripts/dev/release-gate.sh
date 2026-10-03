@@ -123,7 +123,7 @@ catalogue = [  # (row id glob, item glob, reason)
     ("G07+", "TestMailPA12SMTPProbe", "owner-run LIVE on the pilot 2026-10-03: PASS (smtp.qq.com, MAIL FROM own=250 / other=501, no RCPT/DATA); re-run when the owner switches SMTP"),
     ("G07+", "TestCustomersBillingCB10Sandbox", "owner 2026-10-03: platform subscription billing is tested once the product is complete; billing is off on the pilot"),
     ("G07+", "TestMetaAdsSandboxS2", "owner 2026-10-03: Instagram deferred until after app publish (FB first); the test Page has no linked IG professional account"),
-    ("G07+", "TestMetaAdsSandboxS*", "owner-run SANDBOX on the owner's sandbox ad account act_1094780649810303 (created 2026-10-03); S3 needs an owner FLfB login, S4 a test dataset; ads are off on the pilot"),
+    ("G07+", "TestMetaAdsSandboxS*", "owner-run 2026-10-03: S1 campaign+ad set verified (sandbox act_1094780649810303 + real-account validate_only), creative validate_only OK on the real account; ad create/activate/pause need app 大梦 Live (the sandbox owner is not an app role, dev mode cannot read Page posts); S3 needs an owner FLfB login, S4 a test dataset; ads are off on the pilot"),
     ("G07+", "TestStripeSL08RestrictedKey", "owner chose 2026-10-03 to verify the rk_live_ key instead: LIVE zero-side-effect probe, required set present, writes locked (output/stripe-live/rak-live-probe-20261003.md); no rk_test_ key"),
     ("G06s", "*TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
     ("G07+", "TestStripe*Sandbox", "runs in G07z with the Stripe test key"),
