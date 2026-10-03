@@ -1,9 +1,9 @@
-# platform-site — FIX FIRST corrections; PS1–PS4 PASS; full smoke BLOCKED
+# platform-site — review corrections; PS1–PS5 PASS; full smoke BLOCKED
 
 Date: 2026-10-04 (Asia/Shanghai). Branch: `unit/platform-site`.
 Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site`.
 Base: `c2f41c91ac38aa2da9db0e39b0fcba207e33cc5c`. Reviewed delivery: `8f058df7`; latest implementation: `3e26a969` (includes `e360e6b8`, `bb50ec5a`).
-This review-fix section supersedes the earlier acceptance status below. Original red runs remain evidence, not a current PS5 verdict.
+This review-fix section supersedes the earlier acceptance status below. PS5 is PASS by the integrator's quiet-machine rerun on `8f567049`, not a new author-run sweep on the current HEAD. Original red runs remain historical evidence.
 
 ## Independent-review corrections (2026-10-04)
 
@@ -19,10 +19,11 @@ Scope: the user's three P1 and four P2 requests. No push, merge, deployment, mig
 | P2 admin robots regression | **PASS**, `e360e6b8`: restore the old `/robots.txt` 404, without redirect or locale cookie. Tested against built Next on the admin Host. |
 | P2 deletion button copy | **PASS**, `e360e6b8`: exact settings-card and button labels in all three locales, including zh-TW「中斷連接」; tested against the actual `metaConnectCopy`. |
 
-### Current verification (all commands executed in this worktree)
+### Current verification (author worktree unless explicitly marked integrator)
 
 | Command | Exit | Evidence / count |
 |---|---:|---|
+| Full `--browser-click-sweep` (integrator, clean `8f567049`, quiet machine) | 0 | **PS5 PASS (integrator quiet-machine rerun)**; evidence and provenance below. 120 pages / 0 load failures; 996 controls: 978 pass / 0 fail / 18 skip; all 18 journey steps pass. |
 | `node --test --experimental-strip-types tests/admin/platform-site.test.ts` | 0 | `review-fix/node-final.log`: 10/10, including the supplemental image manifest regression |
 | `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-platform-site` | 0 | `review-fix/browser-green.log`: PS1/2/4, 30 page cases, 15 SSR checks, 16 tag cases, 390 actual clicks + 30 reloads; additionally 20 new Host/www/admin-robots assertions |
 | `node tests/deploy/platform-edge.mjs` | 0 | `review-fix/edge-green.log`, refreshed `ps3-edge.json`: PS3, 47 real pinned-Caddy requests (MOCK upstream) |
@@ -53,7 +54,13 @@ docker build --pull=false -f deploy/docker/admin.Dockerfile \
 
 **Screenshots:** refreshed three-language privacy/terms/deletion screenshots at 390×844 and 1586×992 viewport settings (full-page captures), in this directory. Root visually checked English mobile privacy and zh-TW desktop deletion; legal columns/buttons remain readable. Impeccable clarify guidance was used to match instructions to actual UI labels without changing approved A.
 
-**PS5: DEFERRED TO INTEGRATOR by explicit user instruction.** Not rerun or altered in this round. User reported the `c2f41c91` baseline sweep passed and is independently testing `8f567049`; these are user-supplied attribution updates, not this branch's new execution results.
+### PS5 PASS — integrator quiet-machine rerun (2026-10-04)
+
+- **Accepted result:** the integrator ran the full click-sweep in a clean worktree at `8f567049`, exit **0**: **120 pages, 0 load failures; 996 controls: 978 PASS / 0 FAIL / 18 SKIP; all 18 journey steps PASS**. Evidence: [quiet-machine run directory](/Volumes/data/live_commerce_architecture_v1/output/r5-final2/sweep-ps-quiet/), [click-sweep.log](/Volumes/data/live_commerce_architecture_v1/output/r5-final2/sweep-ps-quiet/click-sweep.log), [load.log](/Volumes/data/live_commerce_architecture_v1/output/r5-final2/sweep-ps-quiet/load.log). Root read back the passing log (TestBrowserClickSweep 665.94 s, followed by the public matrix PASS) and the referenced [ledger summary](/Volumes/data/live_commerce_architecture_v1/.worktrees/sweep-ps-8f56704/output/ui-click-sweep/ledger.json), which confirms those exact counts. The integrator supplies the tested SHA and exit-code attribution. The runner's fixed “5 click journeys” console wording is not the ledger's 18 executed journey-step count.
+- **Control:** the clean `c2f41c91` baseline also passes; [baseline evidence directory](/Volumes/data/live_commerce_architecture_v1/output/r5-final2/sweep-base/), [baseline click-sweep.log](/Volumes/data/live_commerce_architecture_v1/output/r5-final2/sweep-base/click-sweep.log) (TestBrowserClickSweep 642.96 s). This supersedes the earlier “baseline NOT_RUN” boundary.
+- **Integrator attribution / ruling:** two high-load runs (load about 38) returned `503 storefront_unavailable` after the primary-origin **8-second timeout**; the quiet-machine run passed with peak load about **13.5**. The integrator attributes those intermittent failures to host load, not this unit. This documents the supplied controlled-run conclusion; it does not claim that the retained quiet log alone reproduces the overloaded timeout.
+- **History stays intact:** all earlier `red/` runs, logs, ledgers, and screenshots remain unchanged. Their failures are historical observations, not a current PS5 blocker. The separately documented author-caused concurrent-build mistake is not retroactively relabelled as host load. No timeout, assertion, selector or frozen defect rule was relaxed. No sweep was rerun in this documentation-only update.
+- The three P1 and four requested P2 code fixes remain in `e360e6b8` and `bb50ec5a`; supplemental clean-image dependency fix is `3e26a969`, with review-fix evidence in `609bde49`. **Full Linux/root smoke remains separately BLOCKED** as recorded above. PS5 PASS does not clear that deployment prerequisite or replace owner/legal review.
 
 **Legal text: 需 owner/律師審閱.** Source-aligned disclosure is not legal approval or a promise of Meta approval.
 
@@ -98,7 +105,7 @@ All commits have `Co-Authored-By: Codex <noreply@openai.com>`. Earlier proposal/
 | PS2 | PASS (LOCAL/MOCK) | 30 page/viewport/language cases, 390 actual clicks plus 30 reloads; no horizontal overflow; real document navigation, language changes, admin links, skip link, mailto activation |
 | PS3 | PASS (LOCAL Caddy TLS / MOCK upstream) | Pinned Caddy adapt/validate/fmt plus 22 requests: platform pages/static, rejected API/internal paths/POST/forwarded-host spoof, HEAD, www 301 preserving path/query, admin host |
 | PS4 | PASS (LOCAL) | 16 verification-tag cases, unset and set; production-Next crawler checks |
-| PS5 | **BLOCKED / NOT ALL GREEN** | Node/tsc/check-gates are green. Serial full click-sweep exits 1 on existing merchant-storefront routes: 120 pages / 32 load failures, 983 controls / 960 pass / 3 fail / 20 skip; 18 journeys pass. Public-matrix standalone result is separate, not a replacement. |
+| PS5 | **HISTORICAL FAIL; superseded by integrator PASS above** | Serial full click-sweep exited 1: 120 pages / 32 load-failure records, 983 controls / 960 pass / 3 fail / 20 skip; 18 journeys passed. Original evidence retained unchanged. |
 
 ## Original commands and exit codes (historical)
 
@@ -130,8 +137,8 @@ The earlier brand-only `--browser-admin-shell` run also exited 0: W0 24-case mat
 - PS3 fixture initially returned empty 200 because the mock upstream matched a loopback Host rather than the preserved platform Host; a second run hit a stale Docker Desktop bind-mounted file after rewrite. Read-only independent diagnosis confirmed both. Hostless loopback fixture and a distinct immutable runtime Caddyfile fixed the fixture; final 22 checks passed. Red logs: `red/ps3-fixture.log`, `red/caddy-fixture.log`.
 - First full click-sweep exited 1: 120 pages / 1 load failure; 984 controls / 957 pass / 1 fail / 26 skip; 18 journeys passed. **Author-caused same-worktree Next rebuild overlap** invalidated active static chunks. Evidence is under `red/click-sweep-concurrent-build/`. Public test mode now joins the same machine-level queue; final rerun is strictly serial. No test assertion or threshold was relaxed.
 - Corrected the public click ledger's source reset after independent review. Reloads are reported separately, not inflated into click count. Mailto activation is not proof of OS mail handling or email delivery.
-- Serial rerun also failed, with a different signature: merchant-storefront 503s for collections, cart and a static JS chunk; the admin matrix and 18 journey steps passed. Complete red logs/ledger and all 35 failure captures are under `red/click-sweep-serial/`. There was no parallel Next build in this rerun. `git diff c2f41c91..HEAD -- apps/storefront internal tests/ui/click-sweep.mjs tests/foundation/browser_click_sweep_test.go` is empty; this does not by itself prove a baseline failure, and a baseline full sweep was NOT_RUN.
-- Diagnostic boundary: `apps/storefront/lib/primary-origin.ts` returns 503 when its server-authoritative origin resolver fails; the synthetic relay's catch returns 502 instead. Storefront Next output has startup only, so the precise failing upstream response/timeout is not captured. The sweep's reused storefront monitor reads `since(0)` for each page and therefore propagates earlier errors into later page records. **32 failed page records are not evidence of 32 independent faults.** Do not weaken that gate or the canonical-host security check to make this unit pass. The integrator must adjudicate the existing-path failure/instrumentation before PS5 can be green.
+- Serial rerun also failed, with a different signature: merchant-storefront 503s for collections, cart and a static JS chunk; the admin matrix and 18 journey steps passed. Complete red logs/ledger and all 35 failure captures are under `red/click-sweep-serial/`. There was no parallel Next build in this rerun. At that historical checkpoint, the relevant storefront/runtime/sweep code had no diff from baseline and a baseline full sweep was NOT_RUN. The integrator has since supplied passing baseline and quiet-machine control runs; see PS5 PASS above.
+- Historical diagnostic boundary: `apps/storefront/lib/primary-origin.ts` returns 503 when its server-authoritative origin resolver fails; the synthetic relay's catch returns 502 instead. The author's retained startup-only Next log did not establish the precise timeout. The sweep's reused storefront monitor reads `since(0)` for each page and propagates earlier errors into later page records, so **32 failed page records are not evidence of 32 independent faults**. This limitation remains true of the old evidence; it no longer blocks PS5 after the integrator's controlled-run ruling above.
 - The combined sweep stops before its final public stage when the legacy suite fails. The formal standalone public mode was rerun on final source; its result is recorded separately above. No assertion or frozen known-defect list was changed.
 
 ## Screenshots and visual review
@@ -162,11 +169,11 @@ Their findings were stored in Humaux. The integrator's separate final acceptance
 - Full strict release gate and full G07: **NOT_RUN**; no migration/SQL/ACL change in this unit. The release catalog registration was checked.
 - Optional `tests/media/r04-input-runner.test.mjs`: **NOT_RUN**, `COMMERCE_R04_LIVEKIT_BINARY` unset; test-node explicitly reports it.
 - No claim that Meta will approve the business or application. Owner/legal review, deployment and integrator independent acceptance remain outside local delivery.
-- Final review-fix handoff is **not full release acceptance**: full Linux/root smoke remains blocked locally, and PS5 is integrator-owned this round. The historical `8f567049` first-viewport proof remains; company facts are below the hero and approved A was not changed.
+- Final review-fix handoff is **not full release acceptance**: PS5 is PASS (integrator quiet-machine rerun), while full Linux/root smoke remains blocked locally. The historical `8f567049` first-viewport proof remains; company facts are below the hero and approved A was not changed.
 - Runners closed their owned Next/browser/fixture processes. The choice server on port 58620 was already absent (`lsof` exit 1, no listener); no unrelated service was stopped. No task-owned public runner/Next process remained in the postflight process check. No shared cache was deleted.
 
 ## Handoff stop line
 
 1. Integrator: rerun `bash deploy/scripts/smoke.sh full` on the repository's Linux/root test runner (see `.github/workflows/deploy-smoke.yml`). This unit does not push or trigger remote CI. The old documented dind smoke has no reproducible outer runner here; no unverified dind recreation or host privilege escalation was used.
-2. PS5 is not waived, but explicitly belongs to the integrator. Retain old red evidence; no sweep fixture/threshold/assertion was relaxed in this repair.
+2. PS5 is PASS, not waived: use the cited integrator quiet-machine and baseline control evidence. Keep old red runs unchanged; no further PS5 fix is assigned to this unit under the current ruling.
 3. Owner/legal review and independent integrator acceptance remain necessary before authorized deployment. Public-site green evidence is not production or Meta review approval.
