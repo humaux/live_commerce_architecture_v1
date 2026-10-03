@@ -62,9 +62,12 @@ BEGIN
    o.snapshot#>>'{destination,pickup,verification_kind}' AS pickup_vk,
    NULL::jsonb AS snapshot,
    'LC-'||upper(replace(o.id::text,'-','')) AS order_number,
-   left(o.snapshot#>>'{destination,recipient_name}',1)||'***' AS recipient_masked,
+   -- Legacy display gaps must not poison otherwise valid transaction rows.
+   CASE WHEN nullif(btrim(o.snapshot#>>'{destination,recipient_name}'),'') IS NULL THEN '—'
+     ELSE left(btrim(o.snapshot#>>'{destination,recipient_name}'),1)||'***' END AS recipient_masked,
    CASE WHEN o.snapshot#>>'{destination,kind}'='home' THEN 'home'
-     ELSE o.snapshot#>>'{destination,pickup,kind}' END AS delivery_kind,
+     WHEN o.snapshot#>>'{destination,pickup,kind}' IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart')
+       THEN o.snapshot#>>'{destination,pickup,kind}' ELSE 'unknown' END AS delivery_kind,
    coalesce((SELECT jsonb_agg(jsonb_build_object('id',l.session_id,'name',l.name) ORDER BY l.session_id)
      FROM linked l WHERE l.order_id=o.id),'[]'::jsonb) AS live_sessions,
    o.commercial_state NOT IN ('DRAFT','CANCELLED') AND

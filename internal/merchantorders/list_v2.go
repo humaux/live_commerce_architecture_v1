@@ -164,8 +164,8 @@ func ListV2(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, 
 		row.Source = src
 		if err != nil || seen[row.OrderID] || (src != "storefront" && src != "merchant_manual") ||
 			row.OrderNumber != "LC-"+strings.ToUpper(strings.ReplaceAll(row.OrderID, "-", "")) ||
-			!textValue(row.RecipientMasked, 4, true) || !strings.HasSuffix(row.RecipientMasked, "***") ||
-			!slices.Contains(orderDeliveries, row.DeliveryKind) || !validOrderSessions(row.LiveSessions, 100) {
+			(row.RecipientMasked != "—" && (!textValue(row.RecipientMasked, 4, true) || len([]rune(row.RecipientMasked)) != 4 || !strings.HasSuffix(row.RecipientMasked, "***"))) ||
+			(row.DeliveryKind != "unknown" && !slices.Contains(orderDeliveries, row.DeliveryKind)) || !validOrderSessions(row.LiveSessions, 100) {
 			return PageV2{}, ErrUnavailable
 		}
 		seen[row.OrderID] = true

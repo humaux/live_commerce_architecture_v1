@@ -35,6 +35,10 @@ summary with `order_number`, `recipient_masked`, `delivery_kind`, `live_sessions
 Order number is the collision-free readable `LC-` + complete uppercase UUID hex,
 not a fabricated short/sequence number. Recipient exposes only the first Unicode
 character plus `***`; no phone/address/snapshot is returned in list responses.
+Legacy missing/blank recipients use `—`; unrecognized delivery projections use
+`delivery_kind: "unknown"` with a localized UI label. These are display-only row
+fallbacks, not new accepted filter values. Transaction and authority validation
+remain strict, and valid rows/counts are not discarded because of a display gap.
 `live_sessions` and `sessions` contain `{id,name}`. Sessions are only those proved
 by this store's orders' durable live-price-use -> bundle -> session chain, not
 ad/visitor attribution. Multiple sessions per order are retained. Missing proof
