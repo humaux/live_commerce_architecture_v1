@@ -149,3 +149,27 @@ Evidence: owner sandbox ad account `act_1094780649810303`, validate-only probes.
    - Browser: the message and link are visible after a MOCK refusal, checked with real clicks in three locales.
    - Sandbox: `META_ADS_SANDBOX_COUNTRY=TW` must end in `tw_advertiser_unverified`, never `graph_100`.
 5. Contract `meta-ads-v1.md` gains F-rows for both facts; U-rows are closed or added accordingly.
+
+### Amendment (2026-10-03, owner: "复用 Meta 的广告法"): country table, not Taiwan-only code
+The owner asked for other countries to be covered by reusing Meta's own regulation mechanism. We do not write our own ad-law engine: Meta reviews ad content, and the API names the declaration each country needs. Probe: sandbox validate-only ad sets for 20 countries, nothing created; evidence in `output/meta-ads-sandbox/regional-categories-probe-20261003.txt`.
+
+**Meta's answers**
+
+| Country | What Meta requires |
+|---|---|
+| TW | `TAIWAN_UNIVERSAL` (subcode 3858498), plus a verified advertiser (3858495) |
+| SG | `SINGAPORE_UNIVERSAL` (3858550) |
+| TH | Age minimum ≥20 (1870249) |
+| DE, FR (EU / DSA) | A beneficiary and a payer (3858081) |
+| HK, MO, MY, VN, PH, ID, JP, KR, AU, NZ, US, CA, GB, BR, IN | Nothing extra for this boost-post ad set |
+
+**Ruling (supersedes items 1–2 above where they conflict)**
+1. **One table.** A single country table in `internal/integrations/meta_ads` (regulation.go) holds only VERIFIED rows: TW → `TAIWAN_UNIVERSAL`, SG → `SINGAPORE_UNIVERSAL`. Each row adds its category to `regional_regulated_categories` when that country is targeted. New rows require a probe as evidence; values are never guessed.
+2. **TH age.** The ads domain (`internal/ads/validate.go`) refuses age_min <20 when TH is targeted, with a new refusal `age_min_for_country`. The UI shows the rule before submit.
+3. **EU / DSA.** Not supported for now: the ads domain refuses EU-27 targets with `country_not_supported` and a clear message. The pilot targets TW, and DSA beneficiary/payer input is a separate feature. ponytail: add `dsa_beneficiary`/`dsa_payor` when a merchant needs the EU.
+4. **Refusals.**
+   - Known subcodes map to stable codes:
+     - 3858495 and the analogous "unverified advertiser" subcode for SG (if the probe shows one) → `regional_advertiser_unverified`, carrying the country.
+     - 3858498 / 3858550 → `regional_category_missing`, which should never happen after item 1.
+   - Any other Graph refusal surfaces Meta's own `error_user_msg` (plain text, ≤300 characters, HTML stripped) to the merchant, beside our code. That message is how Meta's ad law reaches the merchant; we do not paraphrase it.
+5. **Merchant guidance.** The guidance from the first ruling (verify in Meta and set the default beneficiary/payer, plus the help link) applies to every `regional_advertiser_unverified` country.
