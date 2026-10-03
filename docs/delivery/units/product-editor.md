@@ -440,3 +440,69 @@ edit:   PUT  products/{id}/document   (expected_version)
   - 门禁：PE01–PE11 的 PG 和 Go 部分。
 - **product-core 独立测试（K3）**：并发（PE05、PE09）、幂等（PE02）、隔离（PE10）的对抗测试。
 - **product-ui（Codex）**：按视觉稿 02/03 做一页式新增和编辑页、矩阵和批量填充、完成度清单、列表的页签、勾选批量、行内快改和复制。门禁 PE12–PE17。
+
+## g. 集成者裁决：编辑语义（2026-10-03，product-ui 停工线的后端补口）
+来源：`output/product-ui/REVIEW.md`（unit/product-ui 42221139）的 Backend blockers 1–2，已在 product-core-tests e904ce5 源码核实。
+按 PE14「只带改动」和 PE15，编辑命令改为合并补丁（merge-patch），新增商品命令保持整份文档不变。
+
+**裁决**
+1. **编辑 = 合并补丁**（`expected_version ≥ 1`，operation 仍是 `product.save:<id>`，同一个 `command.Run` 事务，需要 Idempotency-Key）。
+   - **顶层字段看「是否出现」**：没出现就保留原值；出现了就覆盖。适用于 name、description、status、slug、seo_title、seo_description、options、collection_ids。
+     - `collection_ids: []` 表示清空，不出现表示不动。
+     - 实现时用指针或 `json.RawMessage` 判断出现与否，不能用零值猜。
+   - **`skus` 不出现**：任何 SKU 都不动。
+   - **`skus` 出现时**：
+     - 带 `id` 的条目只改它给出的字段：price_minor；compare_at_minor（显式 null 表示清除）；stock；keyword（`""` 表示清除，不出现表示不动）；active；option_values；origin_country、customs_name、hs_candidate；以及第 3 条的单 SKU 物流字段。
+     - 不带 `id` 的条目是新 SKU，按新增时的完整校验处理。
+     - **没被提到的现有 SKU 一律保持原样。**
+   - **归档 SKU 只能显式写 `active:false`**，不再靠「省略」。
+     - 改了 `options` 之后，所有仍为 active 的 SKU 都必须符合新的轴，组合也不能重复，否则整笔返回 `invalid` 并回滚。
+     - 要退役的 SKU 由客户端显式发 `active:false`。
+   - **任何 SKU 改动都会让商品 `version+1`**，以 `expected_version` 防并发覆盖。
+   - **幂等哈希用规范化后的补丁本身。** 审计只记被改字段的名称，不记字段值。
+2. **库存目标值**：
+   - 编辑时 `target_qty` 出现（**包括 0**），就把现有量设成目标值；不出现就不动。修 `document.go:213` 的 `*stock.qty != 0` 判断。
+   - 新增时 `opening_qty` 为 0 仍然不写流水。
+   - 目标值低于「已预留 + 已分配 + 不可用」时返回 `insufficient`，现有映射不变，不新增错误码。
+3. **物流**：
+   - 顶层 weight/length/width/height 只在新增时生效，作为所有 SKU 的默认值。**编辑时出现顶层物流字段一律返回 `invalid`**。
+   - 编辑按单个 SKU 进行：SKU 条目新增 `weight_grams`、`length_mm`、`width_mm`、`height_mm`，类型为指针。界面的「列批量」逐个 SKU 填写。
+4. **详情 GET 补字段**（`GetProductDetail`）：
+   - 商品级 `collection_ids`：全部成员，不分页。
+   - 每个 SKU 的 `keyword`：`""` 表示没有。
+   - 商品级 `warehouse_id`：店里**恰好 1 个**启用仓时为该仓，否则为 null。
+   - 每个 SKU 的 `on_hand` 和 `committed`（committed = reserved + allocated + unavailable）：只在 `warehouse_id` 非 null 时给出，取自该仓，否则为 null。
+   - 现有的 `available` 保留。
+   - `warehouse_id` 为 null 时，界面禁用「改后库存」，并说明原因、链接到库存页。不能用 `available` 冒充现有量。
+5. **开放中的直播窗口**（沿用 §f.3 的判断：OPEN 窗口里有 active offer 的 SKU）：
+   - 编辑时下列操作逐项返回 `live_window_open`，整笔回滚：
+     - 把商品改成非 active；
+     - 对窗口内的 SKU 写 `active:false`；
+     - **改或清空窗口内 SKU 的 keyword**（留言匹配依赖它）。
+   - 改价允许：直播价在场次里单独生效，目录价只影响非直播买家。
+6. **列表**：搜索、状态页签、计数和游标分页都已在服务端实现，就以服务端为准，不做本页过滤。
+   - 排序只有 updated_at 倒序。
+   - 视觉稿里的其他「智能筛选」没有后端支持，**不画**（W0「没有行为的控件不出现」）。
+7. **行内快改**（PE15）：用同一个编辑命令发单 SKU 补丁，例如 `{expected_version, skus:[{id, price_minor}]}`。
+   - 只有单 SKU 商品可以在行内直接改。
+   - 多 SKU 商品点铅笔，打开该商品 SKU 列表的浮层（读详情），在浮层里逐个 SKU 改。
+
+**拆单**
+- **product-core-edit（DeepSeek，后端）**：
+  - 基于 unit/product-core-tests e904ce5 新开 worktree 和分支 unit/product-core-edit。
+  - write_paths：`internal/catalog/**`、`tests/**/catalog*`、`contracts/` 中 catalog 文档补丁的小节。
+  - **不碰 apps/**。不新增迁移；若必须新增，先停下申请编号。
+  - 门禁（先红后绿，PG 真库）：
+    - PE18：只改价时，其他字段、关键字、分类、其他 SKU 原样保留。
+    - PE19：`target_qty:0` 把现有量清零；低于已承诺量时返回 `insufficient`。
+    - PE20：改轴后漏发 `active:false` 返回 `invalid`，并且回滚。
+    - PE21：开放窗口内改关键字或归档 SKU 返回 `live_window_open`，改价可以。
+    - PE22：详情的 keyword、collection_ids、warehouse_id、on_hand 和 committed 正确；多仓时为 null。
+    - PE23：顶层物流出现在编辑请求里时返回 `invalid`。
+    - 以及 G07 全量（`release-gate.sh --strict --only G07`）。
+- **独立审查**：K3。Kimi 额度用完时由 Claude 中档接手。
+- **product-ui 续做（Codex）**：rebase 到 product-core-edit 后完成以下内容：
+  - PE14、PE15；
+  - 现有商品的图片编辑（catalog-media）；
+  - 把 catalog-core 和 merchant-buyer 的旧创建流程改成用真实点击驱动新编辑页，断言不放宽；
+  - 四个红色门禁转绿。
