@@ -430,6 +430,19 @@ func SaveProductEdit(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, 
 		}
 		finishProduct(&out.Product)
 
+		if in.Options != nil && in.SKUs == nil {
+			// §g.1: an options change must not strand an active SKU — the fit check runs even when the patch
+			// carries no skus array (applySKUPatch covers the in.SKUs != nil case).
+			active, err := loadActiveSKUs(ctx, tx, scope, id)
+			if err != nil {
+				return err
+			}
+			for _, s := range active {
+				if !valuesFit(axes, s.OptionValues) {
+					return command.ErrInvalid
+				}
+			}
+		}
 		if in.SKUs != nil {
 			skuChanged, err := applySKUPatch(ctx, tx, scope, id, out.Product.Slug, currency, axes, *in.SKUs, operation, key)
 			if err != nil {
@@ -635,7 +648,11 @@ func applySKUPatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, product
 			return nil, command.ErrInvalid // §g.1: an active SKU stranded by the new axes
 		}
 		if len(values) > 0 {
-			seen[strings.Join(values, "\x00")] = true
+			k := strings.Join(values, "\x00")
+			if seen[k] {
+				return nil, command.ErrInvalid // two active SKUs with the same combination (§g.1; the 0086 index backstops)
+			}
+			seen[k] = true
 		}
 	}
 	for _, values := range newValues {
