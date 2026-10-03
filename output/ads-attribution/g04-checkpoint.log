@@ -1,0 +1,5 @@
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+release-gate  commit=e530bfdc5a18  dirty_files=1  modes_in_test-local=62  evidence=output/ads-attribution/g04-checkpoint
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

@@ -1,73 +1,113 @@
-# ads-attribution — initial checkpoint, NOT RELEASE ACCEPTANCE
+# ads-attribution — Amendment 1 checkpoint (NOT ACCEPTED)
 
-## Scope and state
+## Scope and release stop line
 
-- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution`
-- Branch: `unit/ads-attribution`; base: `d282c98816a6bcab46d1eb862974608d297dd298`.
-- Read D1–D9 and AT1–AT9, AGENTS, PROCESS, DESIGN and relevant symbols. Offline installation exited 0, with no package downloads.
-- Latest integrated brief reserves **0113**. The chat says **0112**, already allocated to the preceding ads-tw-regulation unit. An asynchronous clarification was sent; **no new migration has been created**.
-- This base does not yet contain prior-unit source `b7afdf1d` (`git merge-base --is-ancestor b7afdf1d HEAD` exited 1). No merge/cherry-pick was performed. Do not accidentally replace the prior unit's refusal-text fields when integrating this unit later.
-- **Open P2 — do not wire this cookie prototype into runtime:** independent review found the browser ID lifetime coupled to the seven-day attribution lifetime. After seven days, a new click creates a new `fbp`. D2 requires a stable browser identifier, but does not set its retention lifetime. The exact red counterexample is in `red-fbp-lifetime.log` (exit 1). Separate authenticated browser identity from touch eligibility once the retention rule is confirmed; do not silently invent an indefinite or longer retention policy.
-- No push, merge, deployment, credentials access, sandbox execution, production write or Meta mutation.
+- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution`; branch `unit/ads-attribution`.
+- Runtime source through `e530bfdc`, browser fixtures through `bac64356`. Full G07 is an earlier compiled checkpoint `3dab4b9f`, not the final source. Authorized merge `ea131b56` contains `fbbe22cc` and `b7afdf1d`; ancestor checks exit 0.
+- Migration **0113** belongs to this unit. Migration **0112** refusal fields are unchanged from `fbbe22cc` (empty diff).
+- **BLOCKED — do not merge/release:** `orders.freeze_attribution` rejects legitimate Begin transactions with `PT404 / attribution order unavailable`. This affects ordinary checkout, not only reports.
+- Two attempted creation guards failed in REAL_PG: top-level transaction xmin, then the creating backend's transaction locks. The latter remains in source. The suspected cause is the `begin_hold` exception subtransaction, but exact transaction lineage is not proved. Per PROCESS, no third fix or relaxed historical-order assertion without integrator ruling.
+- Proposed explicit creation-transaction marker was sent for a decision. **Not approved or implemented.** It must prevent historical-order attribution and leave financial snapshots unchanged.
+- No push, deployment, Meta mutation, production request, sandbox event, real buyer data or credentials access. All exercised Graph traffic is local MOCK.
+- Old initial checkpoint `2ca36a7c` remains in Git history; its cookie/design questions are superseded by Amendment 1, not current blockers.
 
-## Checkpoint commits
+## Implementation / ruling ledger
 
-- `a0c7d3fc`: preserve ad query through the locale redirect; regression red then green.
-- `79eb1643`: isolated cookie prototype plus six unit tests; deliberately not wired to runtime, known retention P2 remains.
-- Both commits carry `Co-Authored-By: Codex <noreply@openai.com>`.
+| Ruling / area | Implementation and evidence | State |
+|---|---|---|
+| R1 baseline | Authorized merge; 0112 untouched | PASS |
+| R2 storage | Narrow scoped orders.order_attribution; Begin transaction; financial snapshot unchanged | IMPLEMENTED, **FAIL at guard** |
+| R3 erasure / IP | Erasure nulls pseudonyms; terminal CAPI trigger + bounded purge; final lease/consent guarded CAPI context | IMPLEMENTED, checkout-dependent PG blocked |
+| R4 precedence | Valid click wins; simultaneous boosts yield draft NULL, never split | IMPLEMENTED, PG FAIL before assertions |
+| R5 cookies | Independent rolling90d fbp; fbc replaced only by fbclid; no ordinary-visitor cookies; no fbclid-only touch; Host-only Secure/HttpOnly/Lax | UNIT PASS9; browser NOT_RUN |
+| R6 comment identity | Server-owned claim line version, exact claim→intake→post; no session fan-out; independent of discounted price | IMPLEMENTED, PG blocked |
+| R7 time | timezone_name persisted; absolute hourly time; daily account-day label retained | PG/MOCK storage PASS; browser NOT_RUN |
+| R8 audience | GET-only Page-token route, explicit read command, insufficient/unknown not zero, view-time buckets, no buyer join | REAL_PG/MOCK read chain PASS; LIVE NOT_RUN |
+| Own / Meta reports | Separate figures; own net minus refunds; pending COD separate; exact county allowlist excludes address/name free text | IMPLEMENTED; populated report PG/browser blocked |
+| Session report | Timeline, funnel, ambiguity, buyer aggregates, Meta panels; snapshot ordering by request not completion | Read chain PASS; populated browser NOT_RUN |
 
-## Implemented checkpoint (not wired to runtime)
+R7 currently fetches account timezone once per independently queued draft/day read operation and reuses it for all five breakdown requests; not a global cache across operations. No daily relabelling as Taipei.
 
-1. **Locale hop**: `/products/{id}` still redirects to a fixed relative `/zh-TW/products/{id}`, now preserving the query. A red test first proved the old code discarded `lc_ad` / `fbclid`.
-2. **Cookie primitive**: `ad-touch.ts` signs a bounded first-party envelope with a host-bound HMAC; validates duplicates, malformed identifiers, signature and plain-cookie agreement, future timestamps and a seven-day age limit. It has no network calls and no PII fields. It is **not imported by proxy or BFF yet**; no visitors receive these cookies from this checkpoint.
-3. **Independent test design**: readonly `at_capture_map` supplied 12 negative cases. Its initial incorrect statement that 0110 was unavailable was corrected: `claims.order_live_sources` exists at lines 17–29 and yields order→session only, not exact comment post.
+## Logical commits
+
+All implementation/test commits carry `Co-Authored-By: Codex <noreply@openai.com>`.
+
+- `ea131b56`: authorized integration baseline merge.
+- `dc4186fe`: bounded Meta breakdown reads and attributed URL.
+- `033f3e6a`, `b8fd65f4`: runtime cookies/Begin/CAPI, 0113, exact claim origins and reports.
+- `911318eb`: live SQL, nullable claim CHECK, **current blocked creation guard**.
+- `947255dc`, `b54a5b55`, `66027dc1`: three-locale report UI, shell recovery, explicit audience read/fence.
+- `f15f5e3b`, `fc5d3f97`, `197572c5`: scoped audience plan/Page custody/GET-only dispatcher/policy.
+- `3f66c274`: county PII protection, request-ordered snapshots and bounded buckets.
+- `2371cd77`, `185ce287`, `d15d52b5`: independent core PG, real-click AT5 driver, audience PG tests.
+- `db911b57`, `1c861cdb`: scoped aggregate grants, frozen privacy-version grammar, typed AD403/AD422.
+- `3dab4b9f`: formal browser mode, contract and empty-report PG test.
+- `10c46962`: exact populated report PG and actual checkout/admin browser runners (no fixture bypass).
+- `bac64356`: exact audience/hourly/privacy assertions and draft-only six-order browser report.
+- `e530bfdc`: remove unused direct customers consent authority from checkout; frozen CB02 ACL tests unchanged.
 
 ## Commands actually run
 
+Evidence paths below are relative to this directory unless absolute. Earlier red logs are retained. Empty output does not constitute a test count.
+
 | Command | Exit | Evidence / count |
 |---|---:|---|
-| `pnpm install --offline --frozen-lockfile` | 0 | 49 reused, 0 downloaded |
-| `node --test --experimental-strip-types apps/storefront/tests/ad-link-route.test.mjs` (pre-fix) | 1 | 3 tests: 2 PASS, 1 FAIL; `red-ad-link.md` |
-| Same command after fix | 0 | 3 PASS, 0 FAIL |
-| `node --test --experimental-strip-types apps/storefront/tests/ad-touch.test.mjs apps/storefront/tests/ad-link-route.test.mjs` | 0 | 9 PASS, 0 FAIL |
-| `bash scripts/dev/test-node.sh` | 0 | `node-preflight.log`; 336 PASS, 0 FAIL, 0 SKIP; optional R04 binary suite NOT_RUN |
-| `pnpm --filter storefront exec tsc --noEmit` | 0 | `storefront-tsc-preflight.log` |
-| `bash scripts/dev/check-gates.sh` | 0 | `check-gates-preflight.log`; existing 60 modes |
-| `git diff --check` | 0 | Clean |
-| Independent-review lifetime counterexample, root reproduced with `assert.equal(next.touch.fbp,first.touch.fbp)` after `AD_TOUCH_TTL*1000+1` | 1 | `red-fbp-lifetime.log`; known P2, intentionally unresolved pending retention decision |
+| R5 cookie test before amendment implementation | 1 | red-r5-amendment.log; initial red-fbp-lifetime.log retained |
+| `node --test --experimental-strip-types apps/storefront/tests/ad-touch.test.mjs` after R5 | 0 | green-r5-amendment.log: 9 PASS, 0 FAIL, 0 SKIP |
+| `go build ./...` | 0 | Root tool transcript; final-source rerun required after blocker |
+| `go vet ./...` | 0 | Root tool transcript |
+| `gofmt -l` changed Go packages/tests; `git diff --check` | 0 | No files/whitespace reported |
+| `go test -race ./internal/integrations/meta_ads ./internal/integrations/metareply ./internal/attribution/... ./internal/checkout ./internal/httpapi` | 0 | go-pure-runtime.log: six packages PASS |
+| `bash scripts/dev/test-node.sh` | 0 | node-runtime-4.log: 359 PASS, 0 FAIL; optional R04 binary suite NOT_RUN |
+| `pnpm --filter admin exec tsc --noEmit` | 0 | admin-tsc-runtime.log |
+| `pnpm --filter storefront exec tsc --noEmit` | 0 | storefront-tsc-runtime.log |
+| Final fixture source: normal and browser-tag `go test ./tests/foundation -run '^$'`, browser-tag `go vet ./tests/foundation` | 0 each | report-fixture-compile.log, browser-fixture-compile.log, browser-fixture-vet.log; compile only, zero tests run |
+| Strict targeted TypeScript compile of attribution.spec.ts and attribution-checkout.spec.ts | 0 | browser-facts-tsc.log; exact command in author output/ads-attribution-ui/SUMMARY.md |
+| Fixture-source test-node, admin/storefront tsc, check-gates | 0 each | node-fixtures.log (359 PASS), admin-tsc-fixtures.log, storefront-tsc-fixtures.log, check-gates-fixtures.log |
+| `bash scripts/dev/check-gates.sh` | 0 | check-gates-runtime.log:62 documented modes; >500-line warnings retained |
+| `bash scripts/dev/release-gate.sh --list` | 0 | Formal B-browser-ads-attribution present, not an alias |
+| `LC_RELEASE_GATE_OUT=output/ads-attribution/g04-checkpoint bash scripts/dev/release-gate.sh --strict --only G04` | 0 | g04-checkpoint/results.tsv; selected secret gate only, not a release verdict |
+| `bash scripts/dev/test-focused.sh '^(TestAdsAttributionSessionAudience\|TestAdsAttributionEmptyProjection\|TestAdsAttributionAT8BreakdownDispatch\|TestLiveClaimsKC03Schema)'` | 0 | live-read-pg.log:top-level PASS7 FAIL0 SKIP0, REAL_PG + MOCK |
+| `bash scripts/dev/test-focused.sh '^TestAdsAttributionEmptyProjection$'` | 0 | empty-report-pg.log:PASS1 FAIL0 SKIP0 |
+| `bash scripts/dev/test-focused.sh '^TestAdsAttributionReport$'` | 1 | report-pg-2.log:PASS0 FAIL1, Begin PT404 |
+| Independent core PG (author; exact command in log) | 1 | /Volumes/data/live_commerce_architecture_v1/output/ads-attribution-tests/core-pg-fourth.log:PASS1 FAIL10; root reproduces blocker |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-focused.sh '^TestCustomersBillingCB02Schema$'` after e530bfdc | 0 | consent-acl-pg.log:PASS1 FAIL0 SKIP0; original frozen customers ACL assertions unchanged |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/release-gate.sh --strict --only G07` on 3dab4b9f | RUNNING | /Volumes/data/live_commerce_architecture_v1/output/release-gate/20261003T215312Z-3dab4b9ff854/G07.log; PT404 reproduced; started load~3, sampled~5.4 |
 
-These preflight greens do not satisfy AT1–AT9 or full release G07. Re-run final affected suites after runtime integration.
+Full G07 exit/count pending. No locks deleted or foreign processes stopped.
 
-## Gate ledger
+## AT1–AT9 verdict / NOT_RUN
 
-| Gate | State |
+| Gate | Verdict |
 |---|---|
-| AT1 | PARTIAL: locale-hop regression and cookie pure tests only; proxy/BFF, Go Begin, PG and browser NOT_RUN |
-| AT2 | NOT_RUN: CAPI frozen fields / consent / unchanged event_id |
-| AT3 | NOT_RUN: comment attribution and boost-window boundaries |
-| AT4 | NOT_RUN: per-draft exact order/refund/COD totals and separate Meta figures |
-| AT5 | NOT_RUN: full real-click journey, three locales and 390/1586 screenshots |
-| AT6 | NOT_RUN: owner dataset/test event code and Events Manager sandbox validation are not available to this checkpoint |
-| AT7 | NOT_RUN: full G07 and new-report click sweep |
-| AT8 | NOT_RUN: dimensional snapshot replacement and isolation |
-| AT9 | NOT_RUN: session timeline, buyer distribution, live audience MOCK; read_insights-dependent LIVE verification |
+| AT1 | PARTIAL UNIT PASS / REAL_PG FAIL. Cookie cases green; Begin and browser blocked. |
+| AT2 | PARTIAL pure policy PASS; consent/terminal IP/erasure PG not accepted because Begin fails. |
+| AT3 | FAIL. Exact comment/ambiguity tests fail before expected assertions. No negative assertion relaxed. |
+| AT4 | NOT_ACCEPTED. Exact populated refund/COD/report fixture compiled; no green runtime result. |
+| AT5 | NOT_RUN. Real-click driver/runner/spec compiled; no six-matrix screenshots claimed. |
+| AT6 | NOT_RUN accepted prerequisite: owner dataset ID, test_event_code and Events Manager sandbox evidence. |
+| AT7 | NOT_ACCEPTED. Full G07 running/red; click sweep NOT_RUN pending working Begin. |
+| AT8 | PARTIAL REAL_PG/MOCK PASS for dimensions/replacement/isolation; browser display NOT_RUN. |
+| AT9 | PARTIAL REAL_PG/MOCK PASS for Page plan/dispatch/persistence/report, denials, exact lease and overlapping completions. Populated funnel/timeline/browser NOT_RUN; LIVE NOT_RUN pending read_insights. |
 
-Go build/vet/gofmt, admin tsc and focused PG were not run (no Go/SQL/admin change in this checkpoint). Full G07 remains mandatory for the final storefront/runtime unit.
+Browser acceptance requires actual clicks at 390/1586 in zh-TW/zh-CN/en. No patched DOM, fabricated network responses or pre-seeded replacement for the six AT5 orders.
 
-## Design boundaries for continuation (not settled rulings)
+## Independent evidence / team
 
-- **Erasure**: `customers.apply_erasure` (0078:254–295) retains order facts and referenced snapshots for legal retention, unlike D8's assumption. Implement selective removal of advertising pseudonyms / CAPI context, never removal of financial facts. Decide retention/storage of checkout IP separately from the pseudonymous attribution snapshot.
-- **Multiple factual paths**: D3 and D4 do not specify a winner if both a recent click and a promoted-post claim exist, or if several live drafts promote the same post. Do not double-count or invent paid-comment precision. Record the chosen tie/ambiguity policy before its SQL and tests.
-- **Cookie policy**: the missing-`fbclid` case and browser-ID retention are not fixed by the seven-day attribution rule. Proposed separation: signed browser identity independent of the last-touch age; owner/integrator sets its retention. Until then, the prototype stays unreachable from runtime.
-- **Post identity**: the existing `claims.order_live_sources` helper is order→session, not order→comment. Join from specific claims/intake evidence, not all sources of a session.
-- **Time axis**: Meta hourly buckets use the advertiser account's timezone; the merchant's report uses Taipei days. Align those explicitly; do not relabel account-local hours as Taipei hours.
-- **Live audience**: empty demographics are unavailable/privacy-threshold, not zeros. Age/gender buckets represent view time, not unique people. No buyer demographic join.
+- Red lifetime evidence → green-r5-amendment.log. Red read-chain logs → root live-read-pg.log. Root/author failure logs retained, never counted as current greens.
+- Scoped security reviewer identified raw county free-text leakage and stale completion ordering; 3f66c274 fixes both. Source review cleared within that scope, **not PG/browser/release acceptance**. County synthetic-private-string PG negative remains blocked at Begin.
+- Full G07 found extra checkout-writer customers consent grants. e530bfdc removes the unused grants rather than changing frozen CB02 expectations; consent-acl-pg.log independently turns the original assertion green.
+- Full G07 also found historical pre-0113 upgrade fixtures using the current cart writer without claim_line_version. This is separate from PT404; investigation pending, not dismissed as an environment issue.
+- Root codex-ads-attribution task:6d5e18a9-696a-4671-b9bf-6c154f066042; sole root worktree writer/integrator. No model override.
+- Independent worktrees: ads-attribution-insights (Go adapter/audience tests), ads-attribution-ui (UI/TS browser tests), ads-attribution-tests (PG/Go browser fixtures). Children do not edit this worktree.
+- ps_security_final: read-only scoped review; no production write ownership. Author is not sole reviewer.
+- Humaux records/canvas hold progress; unit not marked complete. Skills: frontend-architect (capture/authority/report boundaries), impeccable (audit existing report layout), playwright (real-click acceptance).
+- All 55 changed Go/TS/TSX/MJS/SQL files submitted to incremental code indexing; AudienceRoutes linked to independently verified read-chain memory.
 
-## Agent record
+## Next steps
 
-- Root Codex: implementation and local verification; sole writer in this worktree. No model override.
-- `at_capture_map`: explorer, gpt-6-luna / medium, readonly symbols and negative-test design, same base; no tests, PG or browser. Humaux unavailable to that child; root stored the corrected result.
-- `at_insights_map`: explorer, gpt-6-luna / medium, readonly ads/report/live/ACL map, same base; research stored as `ads-attribution current branch symbol map and D9 gaps` (queued).
-- `at_cookie_review`: security_reviewer, gpt-6.1-sol / high, readonly cookie/redirect diff review. No confirmed P0/P1; P2 fbp lifetime coupling. Reviewer reran the focused tests: 9 PASS, exit 0. Humaux review ID `0f5bdbe1-6f46-42ac-90e1-81f2c9546901`. Missing/stripped `fbclid` behavior is UNKNOWN in the brief, not a proven bug. No PG/browser/full release verdict.
-
-Skills used for preparation: frontend-architect (separate cookie boundary from transaction authority), impeccable (audit existing reporting structure), playwright (planned real-click gates). No new UI/visual surface has been built or approved here.
+1. Obtain integrator decision for Begin creation-transaction guard; preserve historical denial and receipt replay semantics.
+2. Implement approved design, rerun core and populated report PG including ordinary checkout.
+3. Integrate/compile browser fixtures; run formal browser-ads-attribution six matrices and real-click ledger.
+4. Re-run final-source build/vet/gofmt/node/tsc/check-gates, full G07 on quiet machine and click sweep. Record exit/count/screenshots; retain red history.
+5. Keep AT6 SANDBOX and AT9 LIVE as explicit NOT_RUN until prerequisites exist. Update evidence/Humaux/canvas and obtain independent release review. No push/deploy.

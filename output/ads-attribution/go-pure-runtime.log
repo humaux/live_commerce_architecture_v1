@@ -1,0 +1,6 @@
+ok  	livecommerce/internal/integrations/meta_ads	1.980s
+ok  	livecommerce/internal/integrations/metareply	1.682s
+ok  	livecommerce/internal/attribution	1.642s
+ok  	livecommerce/internal/attribution/capiroute	1.396s
+ok  	livecommerce/internal/checkout	1.612s
+ok  	livecommerce/internal/httpapi	1.651s

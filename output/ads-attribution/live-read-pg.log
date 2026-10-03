@@ -1,0 +1,43 @@
+=== RUN   TestAdsAttributionAT8BreakdownDispatch
+--- PASS: TestAdsAttributionAT8BreakdownDispatch (3.49s)
+=== RUN   TestAdsAttributionEmptyProjection
+--- PASS: TestAdsAttributionEmptyProjection (0.12s)
+=== RUN   TestAdsAttributionSessionAudiencePipeline
+--- PASS: TestAdsAttributionSessionAudiencePipeline (1.60s)
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/read_insights
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging
+--- PASS: TestAdsAttributionSessionAudiencePermissionDenials (1.24s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement (0.24s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/read_insights (0.30s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging (0.35s)
+=== RUN   TestAdsAttributionSessionAudienceExactLease
+--- PASS: TestAdsAttributionSessionAudienceExactLease (0.31s)
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/AthenB
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/BthenA
+--- PASS: TestAdsAttributionSessionAudienceOverlappingReads (3.00s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/AthenB (1.41s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/BthenA (1.59s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (4.01s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.07s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.31s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.87s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.27s)
+PASS
+ok  	livecommerce/tests/foundation	15.755s
+test-focused: top-level PASS=7 FAIL=0 SKIP=0 exit=0
