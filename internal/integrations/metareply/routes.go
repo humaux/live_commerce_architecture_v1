@@ -212,6 +212,13 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 // inside the dispatcher's transaction. Zero rows or a missing attested scope is a pre-dispatch
 // denial (capability evidence, arch §10.2/I07).
 func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {
+	return pageSecretLoader(a.keys, a.v2, provider, requiredScopes[provider], `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
+			FROM integration.load_meta_page_token($1::uuid,$2::bigint,$3::bytea)`)
+}
+
+// pageSecretLoader shares custody/opening, while each route supplies its own
+// constant lease-fenced SQL loader and exact capability scopes.
+func pageSecretLoader(keys *PageTokenKeyring, v2 *pageopen.Keyring, provider string, scopes []string, query string) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {
 	return func(ctx context.Context, tx pgx.Tx, claim core.SecretClaim) (core.Secret, error) {
 		var row struct {
 			tenant, store, binding, provider, asset, keyID string
@@ -219,8 +226,7 @@ func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, c
 			nonce, ciphertext                              []byte
 			scopes                                         []string
 		}
-		err := tx.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
-			FROM integration.load_meta_page_token($1::uuid,$2::bigint,$3::bytea)`,
+		err := tx.QueryRow(ctx, query,
 			claim.OperationID, claim.Generation, claim.LeaseToken).
 			Scan(&row.tenant, &row.store, &row.binding, &row.provider, &row.asset, &row.version, &row.keyID, &row.nonce, &row.ciphertext, &row.scopes)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -229,10 +235,10 @@ func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, c
 		if err != nil {
 			return core.Secret{}, errors.New("metareply: credential load failed")
 		}
-		if row.provider != provider || !hasScopes(row.scopes, requiredScopes[provider]) {
+		if row.provider != provider || !hasScopes(row.scopes, scopes) {
 			return core.Secret{}, fmt.Errorf("page token lacks attested scope: %w", core.ErrPolicyDenied)
 		}
-		secret, err := openPageToken(a.keys, a.v2, PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
+		secret, err := openPageToken(keys, v2, PageTokenScope{TenantID: row.tenant, StoreID: row.store, BindingID: row.binding,
 			Provider: row.provider, AssetID: row.asset, Version: row.version}, row.keyID, row.nonce, row.ciphertext)
 		if errors.Is(err, errNoPrivateRing) {
 			return core.Secret{}, fmt.Errorf("page token v2 without private ring: %w", core.ErrPolicyDenied)
