@@ -30,6 +30,26 @@ func atTouch(d string, age time.Duration) *checkout.AdTouch {
 	return &checkout.AdTouch{DraftID: d, ClickedAt: time.Now().Add(-age), FBC: &fbc, FBP: atFBP}
 }
 
+// Meta comment fixtures serialize Unix seconds. Wait for the actual next whole
+// second after successful activation; never backdate the operation or invent a
+// future comment to satisfy the attribution interval.
+func atAfterActivationSecond(t *testing.T, e *adsEnv, draft string) time.Time {
+	t.Helper()
+	var activated time.Time
+	if err := e.f.owner.QueryRow(e.ctx, `SELECT max(o.updated_at) FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id
+ WHERE r.tenant_id=$1 AND r.store_id=$2 AND r.draft_id=$3 AND r.kind='activate' AND o.state='SUCCEEDED'`, e.tenant, e.store, draft).Scan(&activated); err != nil {
+		t.Fatal("read successful activation", err)
+	}
+	if wait := time.Until(activated.Truncate(time.Second).Add(time.Second)); wait > 0 {
+		time.Sleep(wait)
+	}
+	at := time.Now()
+	if !at.Truncate(time.Second).After(activated) {
+		t.Fatal("actual comment second must follow activation completion")
+	}
+	return at
+}
+
 // A genuine signed Meta comment flows through the intake worker, claim redemption
 // and Begin. The offer has NO live price: attribution is provenance, not a discount.
 func TestAdsAttributionAT3ExactComment(t *testing.T) {
@@ -46,7 +66,7 @@ func TestAdsAttributionAT3ExactComment(t *testing.T) {
 			e.mustPublish(d)
 			e.driveTo(d, "activate", 1)
 			e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '1 hour',ends_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, d)
-			at := time.Now()
+			at := atAfterActivationSecond(t, e, d)
 			post := m.postID
 			if which == "simultaneous boosts" {
 				d2 := e.newDraft(adsDraftIn{Source: post})
@@ -54,7 +74,7 @@ func TestAdsAttributionAT3ExactComment(t *testing.T) {
 				e.mustPublish(d2)
 				e.driveTo(d2, "activate", 1)
 				e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '1 hour',ends_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, d2)
-				at = time.Now()
+				at = atAfterActivationSecond(t, e, d2)
 			}
 			if which == "outside window" {
 				e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '3 hours',ends_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, d)

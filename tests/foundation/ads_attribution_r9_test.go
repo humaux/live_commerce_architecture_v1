@@ -31,7 +31,7 @@ func atR9Committed(t *testing.T, b bcHarness, xid string) {
 }
 
 func TestAdsAttributionR9BeginNeverFails(t *testing.T) {
-	for _, name := range []string{"legitimate click", "garbage", "expired", "foreign", "missing"} {
+	for _, name := range []string{"legitimate click", "garbage", "expired", "foreign", "missing", "unmarshalable timestamp"} {
 		t.Run(name, func(t *testing.T) {
 			b := bcSetup(t)
 			e := newAdsEnv(t, adsOpts{fx: b.f})
@@ -47,6 +47,11 @@ func TestAdsAttributionR9BeginNeverFails(t *testing.T) {
 				b.input.AdTouch.DraftID = foreign.newDraft(adsDraftIn{})
 			case "missing":
 				b.input.AdTouch = nil
+			case "unmarshalable timestamp":
+				b.input.AdTouch.ClickedAt = time.Date(10000, time.January, 1, 0, 0, 0, 0, time.UTC)
+				if _, err := json.Marshal(b.input.AdTouch); err == nil {
+					t.Fatal("year10000 fixture unexpectedly marshals")
+				}
 			}
 			key := t04Key("r9-begin")
 			r, err := b.begin(key)
@@ -100,7 +105,7 @@ func TestAdsAttributionR9RefusalCommitsUnchanged(t *testing.T) {
 					t.Fatal("other-store probe did not establish different store")
 				}
 			case "garbage timestamp":
-				touch, _ = json.Marshal(map[string]any{"draft_id": d, "clicked_at": "not-a-timestamp", "fbc": "malformed", "fbp": "malformed"})
+				touch, _ = json.Marshal(map[string]any{"draft_id": d, "clicked_at": "not-a-timestamp", "fbc": atFBC, "fbp": atFBP})
 			}
 			before := atR9Rows(t, b, r.OrderID)
 			var xid string
