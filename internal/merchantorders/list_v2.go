@@ -162,9 +162,13 @@ func ListV2(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, 
 		rest, _ := json.Marshal(parts)
 		row.Summary, err = decodeSummary(rest)
 		row.Source = src
+		// A mask that is not exactly one printable rune + "***" (an unprintable first rune in a legacy name, or a projection
+		// bug) degrades THIS row to the placeholder: it hides, never reveals, and never makes the whole store list 503.
+		if row.RecipientMasked != "—" && (!textValue(row.RecipientMasked, 4, true) || len([]rune(row.RecipientMasked)) != 4 || !strings.HasSuffix(row.RecipientMasked, "***")) {
+			row.RecipientMasked = "—"
+		}
 		if err != nil || seen[row.OrderID] || (src != "storefront" && src != "merchant_manual") ||
 			row.OrderNumber != "LC-"+strings.ToUpper(strings.ReplaceAll(row.OrderID, "-", "")) ||
-			(row.RecipientMasked != "—" && (!textValue(row.RecipientMasked, 4, true) || len([]rune(row.RecipientMasked)) != 4 || !strings.HasSuffix(row.RecipientMasked, "***"))) ||
 			(row.DeliveryKind != "unknown" && !slices.Contains(orderDeliveries, row.DeliveryKind)) || !validOrderSessions(row.LiveSessions, 100) {
 			return PageV2{}, ErrUnavailable
 		}

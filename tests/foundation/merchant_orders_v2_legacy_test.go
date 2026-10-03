@@ -84,7 +84,8 @@ func TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient(t *testing.T) {
    (2,E'\u00a0Linda'),
    (3,E'\u2003\u200b\ufeffAnna'),
    (4,E' \u3000 Bob'),
-   (5,E'\u3000\u00a0\u2003\u200b\ufeff')) AS n(i,name) WHERE o.id=$1
+   (5,E'\u3000\u00a0\u2003\u200b\ufeff'),
+   (6,E'\ue000Zed')) AS n(i,name) WHERE o.id=$1
  RETURNING tenant_id,store_id,id,owner_id,creator_session_id,generation,created_at,expires_at)
  INSERT INTO inventory.reservations(tenant_id,store_id,id,state,expires_at,created_at,checkout_id,buyer_owner_id,buyer_session_id,generation)
  SELECT tenant_id,store_id,id,'RELEASED',expires_at,created_at,id,owner_id,creator_session_id,generation FROM inserted`, q.hold.OrderID)
@@ -102,7 +103,7 @@ func TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if len(out.Items) != 6 || out.Total != 6 {
+	if len(out.Items) != 7 || out.Total != 7 {
 		t.Fatalf("lost rows: %s", w.Body.String())
 	}
 	var got, keys []string
@@ -125,13 +126,14 @@ func TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient(t *testing.T) {
 			got = append(got, recipient)
 		}
 	}
-	want := []string{"A***", "B***", "L***", "—", "\u738b***"}
+	// Row 6 starts with U+E000 (private use: not whitespace, not printable): the SQL mask keeps it, so Go degrades that row alone.
+	want := []string{"A***", "B***", "L***", "—", "—", "\u738b***"}
 	slices.Sort(got)
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
 		t.Fatalf("masks=%q want=%q", got, want)
 	}
-	for _, secret := range []string{"\u5c0f\u660e", "inda", "nna", "Bob"} {
+	for _, secret := range []string{"\u5c0f\u660e", "inda", "nna", "Bob", "Zed"} {
 		if strings.Contains(w.Body.String(), secret) {
 			t.Fatalf("list leaks recipient remainder %q: %s", secret, w.Body.String())
 		}
