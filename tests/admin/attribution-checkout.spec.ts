@@ -115,11 +115,26 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const)
         await page
           .getByRole("button", { name: "Sign in with identity service" })
           .click();
+        if (width === 390)
+          await page
+            .getByRole("button", { name: "Open navigation", exact: true })
+            .click();
         await expect(page.getByTestId("nav-group-marketing")).toBeVisible();
+        if (width === 390) {
+          await page
+            .locator("[data-shell-rail]")
+            .getByRole("button", { name: "Close navigation", exact: true })
+            .click();
+          await expect(
+            page.getByRole("button", { name: "Open navigation", exact: true }),
+          ).toHaveAttribute("aria-expanded", "false");
+          await expect(page.locator("[data-shell-rail]")).toBeHidden();
+        }
         ledger.push({
-          control: "identity sign-in",
-          action: "click",
-          expected: "authenticated merchant shell",
+          control: "identity sign-in / mobile navigation",
+          action: width === 390 ? "click/open/assert/close" : "click/assert",
+          expected:
+            "authenticated marketing navigation visible; mobile drawer closed",
           actual: "PASS",
         });
         await page.goto(`/${locale}/ads?store=${store}`);

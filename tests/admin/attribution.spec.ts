@@ -74,12 +74,26 @@ test.use({
 });
 test.describe.configure({ mode: "serial" }); // Preserve one manifest writer in the existing runner.
 
-async function login(page: Page) {
+async function login(page: Page, width: number) {
   await page.goto("/en/");
   await page
     .getByRole("button", { name: "Sign in with identity service" })
     .click();
+  if (width === 390)
+    await page
+      .getByRole("button", { name: "Open navigation", exact: true })
+      .click();
   await expect(page.getByTestId("nav-group-marketing")).toBeVisible();
+  if (width === 390) {
+    await page
+      .locator("[data-shell-rail]")
+      .getByRole("button", { name: "Close navigation", exact: true })
+      .click();
+    await expect(
+      page.getByRole("button", { name: "Open navigation", exact: true }),
+    ).toHaveAttribute("aria-expanded", "false");
+    await expect(page.locator("[data-shell-rail]")).toBeHidden();
+  }
 }
 async function visibleFacts(page: Page, locale: Locale) {
   const c = attributionCopy[locale],
@@ -304,7 +318,14 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         }[] = [];
       try {
         await page.setViewportSize({ width, height: 992 });
-        await login(page);
+        await login(page, width);
+        ledger.push({
+          control: "identity sign-in / mobile navigation",
+          action: width === 390 ? "click/open/assert/close" : "click/assert",
+          expected:
+            "authenticated marketing navigation visible; mobile drawer closed",
+          actual: "PASS",
+        });
         await page.goto(`/${locale}/ads?store=${store}`);
         await page.getByTestId("ads-attribution-link").click();
         await expect(page.getByTestId("ads-attribution")).toBeVisible();
