@@ -209,12 +209,12 @@ WHERE ((n.nspname = 'integration' AND p.proname IN ('register_stripe_account','r
     OR (n.nspname = 'payments' AND p.proname IN ('set_stripe_webhook_endpoint','qualify_stripe_method','set_stripe_method')))
   AND has_function_privilege('lc_stripe_registrar', p.oid, 'EXECUTE');
 SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-WHERE n.nspname = 'control' AND p.proname IN ('operator_bind_domain','operator_suspend_domain','operator_detach_domain','operator_storefront_status')
+WHERE n.nspname = 'control' AND p.proname IN ('operator_bind_domain','operator_suspend_domain','operator_detach_domain','operator_storefront_status','operator_set_store_handle')
   AND has_function_privilege('lc_store_registrar', p.oid, 'EXECUTE');
 SQL
 )" || die "registrar privilege query failed"
 { read -r meta_reg; read -r stripe_reg; read -r store_reg; } <<<"$regs"
-[[ "$meta_reg" == 4 && "$stripe_reg" == 5 && "$store_reg" == 4 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg store=$store_reg (want 4, 5 and 4)"
+[[ "$meta_reg" == 4 && "$stripe_reg" == 5 && "$store_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg store=$store_reg (want 4, 5 and 5)"
 log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg store=$store_reg"
 
 # claims-retention-purge-v1 §4/§10(5): the retention-job login runs exactly run_retention + retention_status

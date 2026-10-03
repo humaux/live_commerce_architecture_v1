@@ -132,6 +132,8 @@ func mapError(err error) error {
 				return ErrDomainOwnedElsewhere
 			case "store has no owner principal":
 				return ErrNoOwner
+			case "store_published":
+				return ErrStorePublished
 			}
 			return command.ErrConflict
 		case "40001", "40P01", "55P03", "57014", "23505":

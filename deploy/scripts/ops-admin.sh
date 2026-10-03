@@ -44,7 +44,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -56,7 +56,7 @@ case "$tool:$sub" in
 stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:method) ;;
 stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
-store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status) ;;
+store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set) ;;
 *) usage ;;
 esac
 

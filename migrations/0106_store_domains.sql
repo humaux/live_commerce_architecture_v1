@@ -226,13 +226,15 @@ COMMENT ON POLICY storefront_writer_domains_insert ON control.storefront_domains
  '0081 + 0106: definer owner insert (operator bind ACTIVE, merchant request REQUESTED, platform ensure ACTIVE).';
 COMMENT ON POLICY storefront_writer_domains_update ON control.storefront_domains IS
  '0081 + 0106: definer owner lifecycle moves (operator bind/suspend/detach, merchant suspend/detach, DNS/TLS worker transitions, merchant re-request refresh); each bumps version.';
--- Extend the 0081 audit policy (same policy, same count) with the merchant self-service domain actions.
+-- Extend the 0081 audit policy (same policy, same count) with the merchant self-service domain actions and the
+-- operator handle change (Decision 1, P1-4).
 ALTER POLICY storefront_writer_audit_insert ON ops.audit_events WITH CHECK (action IN (
   'merchant.storefront_published','merchant.storefront_unpublished',
   'operator.domain_bound','operator.domain_bound:rebind_from_detached','operator.domain_suspended','operator.domain_detached',
-  'merchant.domain_requested','merchant.domain_suspended','merchant.domain_detached'));
+  'merchant.domain_requested','merchant.domain_suspended','merchant.domain_detached',
+  'operator.handle_set'));
 COMMENT ON POLICY storefront_writer_audit_insert ON ops.audit_events IS
- '0081 + 0106: the nine fixed storefront audit actions (six operator/merchant publication + three merchant self-service domain).';
+ '0081 + 0106: the ten fixed storefront audit actions (six operator/merchant publication + three merchant self-service domain + operator.handle_set).';
 
 -- ---------------------------------------------------------------------------------------
 -- D2: control.ensure_store_platform_domain. Idempotent writer of the ACTIVE platform subdomain row
@@ -695,3 +697,82 @@ BEGIN
         PERFORM control.backfill_platform_domains(lower(btrim(base)));
     END IF;
 END $$;
+
+-- ---------------------------------------------------------------------------------------
+-- D1 operator handle change (Decision 1, P1-4): control.operator_set_store_handle is the only way to change a
+-- store's handle after the fact — 0106 assigns it only at onboarding/backfill. SECURITY DEFINER
+-- commerce_storefront_writer (owner like operator_bind_domain), EXECUTE commerce_storefront_registrar only, never
+-- commerce_worker. Validates format/reserved/xn--/uniqueness exactly like assignment; refuses PT409 store_published
+-- when the store was ever published unless the operator passes the --after-publish override (Decision 1). Changes the
+-- handle, and in the SAME transaction the stores_handle_after_update trigger detaches the old platform origin (no
+-- silent redirect chains) while ensure_store_platform_domain writes the new ACTIVE https://<handle>.<base> row. The
+-- base domain comes from the session GUC lc.store_base_domain (cmd/store-admin sets it from LC_STORE_BASE_DOMAIN);
+-- an unset GUC is refused (PT409 base domain not configured). One operator.handle_set audit row (no secrets).
+-- ---------------------------------------------------------------------------------------
+-- The operator definer validates with the same two IMMUTABLE helpers assignment uses; they are owned by
+-- commerce_identity_writer and are NOT SECURITY DEFINER, so the storefront writer needs EXECUTE on them (the
+-- caller's privilege is used at run time).
+GRANT EXECUTE ON FUNCTION control.store_handle_reserved(text) TO commerce_storefront_writer;
+GRANT EXECUTE ON FUNCTION control.store_handle_valid(text) TO commerce_storefront_writer;
+
+-- The handle change needs a column-limited UPDATE on control.stores.handle; control.stores has FORCE ROW LEVEL
+-- SECURITY, so the definer's single update path needs its own policy (the column grant alone would update 0 rows).
+CREATE POLICY storefront_writer_stores_update ON control.stores FOR UPDATE TO commerce_storefront_writer
+  USING (true) WITH CHECK (true);
+GRANT UPDATE(handle) ON control.stores TO commerce_storefront_writer;
+COMMENT ON POLICY storefront_writer_stores_update ON control.stores IS
+ '0106 D1: operator_set_store_handle is the only handle updater (column grant = handle only; forced RLS needs this policy for the UPDATE to reach rows).';
+
+CREATE FUNCTION control.operator_set_store_handle(p_store uuid, p_handle text, p_after_publish boolean)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_tenant uuid; v_principal uuid; v_old text; v_base text; v_origin text; v_published boolean;
+BEGIN
+    IF p_store IS NULL THEN RAISE EXCEPTION 'invalid store request' USING ERRCODE='PT400'; END IF;
+    IF p_handle IS NULL OR NOT control.store_handle_valid(p_handle) THEN
+        RAISE EXCEPTION 'invalid store handle' USING ERRCODE='PT400';
+    END IF;
+    SELECT s.tenant_id, s.handle INTO v_tenant, v_old FROM control.stores s WHERE s.id = p_store FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'store not found' USING ERRCODE='PT404'; END IF;
+    IF v_old IS NULL THEN RAISE EXCEPTION 'store has no handle' USING ERRCODE='PT409'; END IF;
+    IF v_old = p_handle THEN
+        RETURN jsonb_build_object('store_id', p_store, 'handle', p_handle, 'origin', NULL, 'changed', false, 'after_publish', coalesce(p_after_publish, false));
+    END IF;
+    -- Uniqueness exactly like assignment (the partial unique index remains the concurrency backstop); store_handle_taken
+    -- also refuses a still-serving platform origin https://<p_handle>.<base> (P1-4: a freed handle stays unavailable).
+    IF EXISTS (SELECT 1 FROM control.stores WHERE handle = p_handle) OR control.store_handle_taken(p_handle) THEN
+        RAISE EXCEPTION 'handle_taken' USING ERRCODE='PT409';
+    END IF;
+    -- Decision 1: the handle can change freely only while the store has never been published; after that only the
+    -- operator may, and only with the explicit --after-publish override.
+    SELECT coalesce(p.published, false) INTO v_published FROM control.storefront_publications p
+     WHERE p.tenant_id = v_tenant AND p.store_id = p_store;
+    IF v_published AND NOT coalesce(p_after_publish, false) THEN
+        RAISE EXCEPTION 'store_published' USING ERRCODE='PT409';
+    END IF;
+    v_base := current_setting('lc.store_base_domain', true);
+    IF v_base IS NULL OR btrim(v_base) = '' THEN
+        RAISE EXCEPTION 'base domain not configured' USING ERRCODE='PT409';
+    END IF;
+    v_base := lower(btrim(v_base));
+    v_origin := 'https://' || p_handle || '.' || v_base;
+    IF octet_length(v_origin) NOT BETWEEN 11 AND 261 OR right(v_origin,10) = '.localhost'
+       OR v_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid base domain' USING ERRCODE='PT400';
+    END IF;
+    -- The handle change fires stores_handle_after_update (SECURITY DEFINER commerce_storefront_writer), which detaches
+    -- the old platform origin in this same transaction (P1-4).
+    UPDATE control.stores SET handle = p_handle WHERE id = p_store;
+    -- The new ACTIVE platform origin is written in the same transaction (idempotent, D2).
+    PERFORM control.ensure_store_platform_domain(p_store, v_base);
+    -- Audit attribution follows the other operator definers: the store's owner principal (identity.initial_stores).
+    SELECT i.principal_id INTO v_principal FROM identity.initial_stores i WHERE i.tenant_id = v_tenant AND i.store_id = p_store;
+    IF NOT FOUND THEN RAISE EXCEPTION 'store has no owner principal' USING ERRCODE='PT409'; END IF;
+    INSERT INTO ops.audit_events(tenant_id, store_id, principal_id, action)
+     VALUES (v_tenant, p_store, v_principal, 'operator.handle_set');
+    RETURN jsonb_build_object('store_id', p_store, 'handle', p_handle, 'origin', v_origin, 'changed', true, 'after_publish', coalesce(p_after_publish, false));
+END $$;
+ALTER FUNCTION control.operator_set_store_handle(uuid,text,boolean) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) TO commerce_storefront_registrar;
+COMMENT ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) IS
+ '0106 D1 (Decision 1, P1-4): internal/storefrontadmin HandleSet, cmd/store-admin handle-set only; EXECUTE commerce_storefront_registrar. The only way to change a store''s handle after onboarding/backfill. Validates format/reserved/xn--/uniqueness exactly like assign_store_handle; PT409 store_published when the store was ever published without the --after-publish override; PT409 handle_taken on any collision (another store or a still-serving platform origin). Changes the handle and, in the SAME transaction, detaches the old platform origin (stores_handle_after_update) and writes the new ACTIVE https://<handle>.<base> row (ensure_store_platform_domain, base from the lc.store_base_domain GUC set by the CLI; unset = PT409). One operator.handle_set audit row, no secrets. Never commerce_worker.';

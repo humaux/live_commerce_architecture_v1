@@ -22,6 +22,7 @@ import (
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/storefrontadmin"
 	"livecommerce/internal/storefrontdomains"
 )
 
@@ -32,6 +33,7 @@ type sdFix struct {
 	f     *t06GoFixture
 	b     *testFixture
 	reg   *pgxpool.Pool
+	op    *pgxpool.Pool
 	buyer *pgxpool.Pool
 	base  string
 }
@@ -45,6 +47,7 @@ func sdSetup(t *testing.T) *sdFix {
 		f:     f,
 		b:     b,
 		reg:   miPool(t, b, "commerce_storefront_verifier"),
+		op:    miPool(t, b, "commerce_storefront_registrar"),
 		buyer: miPool(t, b, "commerce_buyer_runtime"),
 		base:  "example.com",
 	}
@@ -442,13 +445,14 @@ var sdFns = []struct {
 	secdef    bool
 	exec      []string
 }{
-	{"control.store_handle_reserved(text)", "commerce_identity_writer", false, nil},
+	{"control.store_handle_reserved(text)", "commerce_identity_writer", false, []string{"commerce_storefront_writer"}},
 	{"control.slug_store_handle(text)", "commerce_identity_writer", false, nil},
-	{"control.store_handle_valid(text)", "commerce_identity_writer", false, nil},
+	{"control.store_handle_valid(text)", "commerce_identity_writer", false, []string{"commerce_storefront_writer"}},
 	{"control.store_handle_taken(text)", "commerce_storefront_writer", true, []string{"commerce_identity_writer"}},
 	{"control.assign_store_handle(text,uuid)", "commerce_identity_writer", true, nil},
 	{"control.stores_handle_default()", "commerce_identity_writer", true, nil},
 	{"control.stores_handle_changed()", "commerce_storefront_writer", true, nil},
+	{"control.operator_set_store_handle(uuid,text,boolean)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
 	{"control.suggest_store_handle(text,text)", "commerce_identity_writer", true, []string{"commerce_identity"}},
 	{"control.ensure_store_platform_domain(uuid,text)", "commerce_storefront_writer", true, []string{"commerce_identity", "commerce_storefront_registrar"}},
 	{"control.backfill_platform_domains(text)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
@@ -575,10 +579,143 @@ func TestStoreDomainsSDW06SchemaAndACLInventory(t *testing.T) {
 	if err := o.QueryRow(ctx, `SELECT pg_get_expr(polwithcheck,polrelid) FROM pg_policy WHERE polname='storefront_writer_audit_insert' AND polrelid='ops.audit_events'::regclass`).Scan(&withCheck); err != nil {
 		t.Fatal(err)
 	}
-	for _, action := range []string{"merchant.domain_requested", "merchant.domain_suspended", "merchant.domain_detached", "operator.domain_bound"} {
+	for _, action := range []string{"merchant.domain_requested", "merchant.domain_suspended", "merchant.domain_detached", "operator.domain_bound", "operator.handle_set"} {
 		if !strings.Contains(withCheck, "'"+action+"'") {
 			t.Fatalf("audit policy lost %s: %s", action, withCheck)
 		}
+	}
+}
+
+// publish flips the merchant's publication on a store through control.set_storefront_published, as the Settings card
+// does — so SDW07 can assert the operator refuses a published store without --after-publish.
+func (s *sdFix) publish(store string) {
+	s.t.Helper()
+	if err := s.merchant("integration:manage", s.f.token, store, func(tx pgx.Tx, sc platform.Scope) error {
+		_, e := storefrontadmin.SetPublished(context.Background(), tx, sc, s.f.token, true, 0)
+		return e
+	}); err != nil {
+		s.t.Fatal(err)
+	}
+}
+
+// handleSetRaw runs control.operator_set_store_handle directly on the registrar pool with the base GUC set
+// transaction-locally, independent of the Go HandleSet wrapper, so the SQL definer's own validation is asserted.
+func (s *sdFix) handleSetRaw(store, handle string, afterPublish, setBase bool) error {
+	s.t.Helper()
+	ctx := context.Background()
+	tx, err := s.op.Begin(ctx)
+	if err != nil {
+		s.t.Fatal(err)
+	}
+	defer tx.Rollback(context.Background())
+	if setBase {
+		if _, err := tx.Exec(ctx, `SELECT set_config('lc.store_base_domain','example.com',true)`); err != nil {
+			s.t.Fatal(err)
+		}
+	}
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT control.operator_set_store_handle($1::uuid,$2,$3)`, store, handle, afterPublish).Scan(&raw); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// opBeginner adapts the registrar pool to storefrontadmin.Beginner (pgx.Tx satisfies storefrontadmin.Tx), so the Go
+// HandleSet wrapper can be exercised against a real pool exactly as the CLI does.
+type opBeginner struct{ pool *pgxpool.Pool }
+
+func (b opBeginner) Begin(ctx context.Context) (storefrontadmin.Tx, error) { return b.pool.Begin(ctx) }
+
+func (s *sdFix) opBegin() storefrontadmin.Beginner { return opBeginner{s.op} }
+
+// TestStoreDomainsSDW07OperatorHandleSet is the R5 Decision 1 gate: control.operator_set_store_handle validates like
+// assignment, refuses a published store without --after-publish, and in one transaction changes the handle, detaches
+// the old platform origin and creates the new ACTIVE origin, with one audit row.
+func TestStoreDomainsSDW07OperatorHandleSet(t *testing.T) {
+	s := sdSetup(t)
+	ctx := context.Background()
+	o := s.b.owner
+
+	oldHandle := handleOf(t, o, s.f.store)
+	_, oldOrigin := platformOrigin(t, o, s.f.store, s.base)
+	otherHandle := handleOf(t, o, s.f.otherStore)
+	if otherHandle == oldHandle {
+		t.Fatalf("fixture handles collide: %q", oldHandle)
+	}
+
+	// The operator definer attributes its audit row to the store's owner principal (identity.initial_stores); the t06
+	// fixture inserts stores directly (no onboarding), so seed the owner row + warehouse here (as spSetup does).
+	wh := randomUUID()
+	mustExec(t, o, `INSERT INTO inventory.warehouses(tenant_id,store_id,id,name) VALUES($1,$2,$3,'sdw07-wh')`, s.f.tenant, s.f.store, wh)
+	mustExec(t, o, `INSERT INTO identity.initial_stores(principal_id,idempotency_key,request_hash,tenant_id,store_id,warehouse_id)
+		VALUES($1,$2,decode(repeat('ab',32),'hex'),$3,$4,$5)`, s.f.principal, "sdw07-"+randomUUID()[:16], s.f.tenant, s.f.store, wh)
+	t.Cleanup(func() {
+		_, _ = o.Exec(context.Background(), `DELETE FROM identity.initial_stores WHERE tenant_id=$1`, s.f.tenant)
+		_, _ = o.Exec(context.Background(), `DELETE FROM inventory.warehouses WHERE tenant_id=$1 AND name='sdw07-wh'`, s.f.tenant)
+	})
+
+	// The SQL definer's own validation, asserted directly (independent of the Go parity wrapper).
+	if c := pgCode(s.handleSetRaw(s.f.store, "UPPER", false, true)); c != "PT400" {
+		t.Errorf("invalid handle: %q, want PT400", c)
+	}
+	if c := pgCode(s.handleSetRaw(s.f.store, "admin", false, true)); c != "PT400" {
+		t.Errorf("reserved handle: %q, want PT400", c)
+	}
+	if c := pgCode(s.handleSetRaw(s.f.store, "xn--puny", false, true)); c != "PT400" {
+		t.Errorf("xn-- handle: %q, want PT400", c)
+	}
+	if c := pgCode(s.handleSetRaw(randomUUID(), "fresh-handle", false, true)); c != "PT404" {
+		t.Errorf("unknown store: %q, want PT404", c)
+	}
+	if c := pgCode(s.handleSetRaw(s.f.store, "fresh-handle", false, false)); c != "PT409" {
+		t.Errorf("base GUC unset: %q, want PT409", c)
+	}
+	if c := pgCode(s.handleSetRaw(s.f.store, otherHandle, false, true)); c != "PT409" {
+		t.Errorf("taken handle: %q, want PT409", c)
+	}
+
+	// Valid change on a never-published store: the handle changes, the old platform origin is DETACHED and the new
+	// one ACTIVE in the same transaction, and exactly one audit row is written.
+	res, err := storefrontadmin.HandleSet(ctx, s.opBegin(), s.f.store, "renamed-handle", false, s.base)
+	if err != nil || !res.Changed || res.StoreID != s.f.store || res.Handle != "renamed-handle" ||
+		res.Origin != "https://renamed-handle.example.com" || res.AfterPublish {
+		t.Fatalf("HandleSet valid = %+v %v", res, err)
+	}
+	if got := handleOf(t, o, s.f.store); got != "renamed-handle" {
+		t.Fatalf("stores.handle = %q, want renamed-handle", got)
+	}
+	if state, _ := domainState(t, o, oldOrigin); state != "DETACHED" {
+		t.Fatalf("old origin %s = %q, want DETACHED", oldOrigin, state)
+	}
+	if state, token := domainState(t, o, "https://renamed-handle.example.com"); state != "ACTIVE" || token != nil {
+		t.Fatalf("new origin = %q %v, want ACTIVE with no token", state, token)
+	}
+	if n := countRows(t, o, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='operator.handle_set'`, s.f.store); n != 1 {
+		t.Fatalf("audit operator.handle_set rows = %d, want 1", n)
+	}
+
+	// The Go wrapper mirrors the SQL validation: invalid/reserved refused before the DB, taken -> ErrConflict.
+	for _, h := range []string{"UPPER", "admin", "xn--puny"} {
+		if _, err := storefrontadmin.HandleSet(ctx, s.opBegin(), s.f.store, h, false, s.base); !errors.Is(err, command.ErrInvalid) {
+			t.Errorf("HandleSet(%q) = %v, want ErrInvalid", h, err)
+		}
+	}
+	if _, err := storefrontadmin.HandleSet(ctx, s.opBegin(), s.f.store, otherHandle, false, s.base); !errors.Is(err, command.ErrConflict) {
+		t.Errorf("HandleSet(taken) = %v, want ErrConflict", err)
+	}
+
+	// A published store refuses the change without --after-publish, and allows it with the flag.
+	s.publish(s.f.store)
+	if _, err := storefrontadmin.HandleSet(ctx, s.opBegin(), s.f.store, "published-handle", false, s.base); !errors.Is(err, storefrontadmin.ErrStorePublished) {
+		t.Errorf("HandleSet on a published store = %v, want ErrStorePublished", err)
+	}
+	res2, err := storefrontadmin.HandleSet(ctx, s.opBegin(), s.f.store, "published-handle", true, s.base)
+	if err != nil || !res2.Changed || res2.Handle != "published-handle" ||
+		res2.Origin != "https://published-handle.example.com" || !res2.AfterPublish {
+		t.Fatalf("HandleSet --after-publish = %+v %v", res2, err)
+	}
+	if state, _ := domainState(t, o, "https://published-handle.example.com"); state != "ACTIVE" {
+		t.Fatalf("published-handle origin = %q, want ACTIVE", state)
 	}
 }
 

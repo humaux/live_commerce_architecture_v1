@@ -1,0 +1,33 @@
+depmap: docs/engineering/dependency-map.md is stale; run: bash scripts/dev/depmap.sh
+--- docs/engineering/dependency-map.md	2026-10-03 08:17:34
++++ /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.vxt6aDAbNQ	2026-10-03 08:26:18
+@@ -97,7 +97,7 @@
+ 
+ Command store-admin owns the operator-only storefront domain CLI (R3 unit storefront-publish, ruling SP2/SP5): the platform's act of binding a public origin to a store after it has verified ownership and TLS out of band.
+ 
+-- Depends on (internal): `internal/command`, `internal/domains`, `internal/platform`, `internal/storefrontadmin`
++- Depends on (internal): `internal/command`, `internal/domains`, `internal/platform`, `internal/storefrontadmin`, `internal/storehandles`
+ - Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
+ - Used by: — (entry point or unused)
+ 
+@@ -575,9 +575,9 @@
+ 
+ ## `internal/storefrontadmin`
+ 
+-Package storefrontadmin owns the production writer of storefront publication and domain binding (R3 unit storefront-publish, migrations/0081, contracts/published-storefront-resolver-v1.md "Writer (R3)"): the merchant's publish/unpublish consent (Read, SetPublished, on the caller's WithScope transaction) and the platform operator's domain lifecycle (BindDomain, SuspendDomain, DetachDomain, Status, on the registrar pool).
++Package storefrontadmin owns the production writer of storefront publication and domain binding (R3 unit storefront-publish, migrations/0081, contracts/published-storefront-resolver-v1.md "Writer (R3)"): the merchant's publish/unpublish consent (Read, SetPublished, on the caller's WithScope transaction), the platform operator's domain lifecycle (BindDomain, SuspendDomain, DetachDomain, Status, on the registrar pool), and the operator store-handle change (HandleSet, R5 store-domains Decision 1, migrations/0106).
+ 
+-- Depends on (internal): `internal/command`, `internal/domains`, `internal/platform`
++- Depends on (internal): `internal/command`, `internal/domains`, `internal/platform`, `internal/storehandles`
+ - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+ - Used by: `cmd/store-admin`, `internal/httpapi`
+ 
+@@ -595,7 +595,7 @@
+ 
+ - Depends on (internal): —
+ - Depends on (third-party): —
+-- Used by: — (entry point or unused)
++- Used by: `cmd/store-admin`, `internal/storefrontadmin`
+ 
+ ## `internal/tlsask`
+ 

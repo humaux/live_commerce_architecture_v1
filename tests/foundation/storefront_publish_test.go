@@ -242,8 +242,8 @@ func spAssertSchema(t *testing.T, pool *pgxpool.Pool) {
 			t.Fatalf("registrar has direct access to %s (err=%v)", tbl, err)
 		}
 	}
-	if n := countRows(t, pool, `SELECT count(*) FROM pg_policy WHERE polname LIKE 'storefront\_writer\_%'`); n != 8 {
-		t.Fatalf("storefront_writer policies = %d, want 8 (publications r/i/u, domains r/i/u, stores read, audit insert)", n)
+	if n := countRows(t, pool, `SELECT count(*) FROM pg_policy WHERE polname LIKE 'storefront\_writer\_%'`); n != 9 {
+		t.Fatalf("storefront_writer policies = %d, want 9 (publications r/i/u, domains r/i/u, stores read, stores update [handle-set], audit insert)", n)
 	}
 }
 
@@ -1189,14 +1189,16 @@ func TestStorefrontPublishSPW10DeployWiring(t *testing.T) {
 		t.Fatalf("services mounting dsn_lc_store_registrar = %d, want exactly store-admin", mounts)
 	}
 	ops := read("deploy/scripts/ops-admin.sh")
-	if !strings.Contains(ops, "store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status)") ||
+	// handle-set joins the operator allowlist (store-domains Decision 1: operator-only handle change after publish).
+	if !strings.Contains(ops, "store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set)") ||
 		regexp.MustCompile(`store-admin:(publish|unpublish|domain-attach|\*)`).MatchString(ops) {
-		t.Fatal("ops-admin.sh allowlist for store-admin is not exactly domain-bind|domain-suspend|domain-detach|status")
+		t.Fatal("ops-admin.sh allowlist for store-admin is not exactly domain-bind|domain-suspend|domain-detach|status|handle-set")
 	}
 	prov := read("deploy/postgres/provision-logins.sh")
+	// The registrar matrix counts five EXECUTE grants now: the four 0081 operator definers + 0106's operator_set_store_handle.
 	if !strings.Contains(prov, "('commerce_storefront_registrar')") || !strings.Contains(prov, "operator_bind_domain") ||
-		!strings.Contains(prov, `"$store_reg" == 4`) || !strings.Contains(prov, "lc_store_registrar") {
-		t.Fatal("provision-logins.sh does not list the authority in its matrix or verify the four EXECUTE grants")
+		!strings.Contains(prov, "operator_set_store_handle") || !strings.Contains(prov, `"$store_reg" == 5`) || !strings.Contains(prov, "lc_store_registrar") {
+		t.Fatal("provision-logins.sh does not list the authority in its matrix or verify the five EXECUTE grants")
 	}
 	rb := read("docs/runbooks/merchant-onboarding.md")
 	for _, must := range []string{"domain-bind", "domain-suspend", "domain-detach", "--valid-until", "openssl", "网店发布", "store-admin status"} {

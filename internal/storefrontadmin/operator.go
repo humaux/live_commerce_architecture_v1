@@ -11,14 +11,17 @@ package storefrontadmin
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/domains"
+	"livecommerce/internal/storehandles"
 )
 
 // Operator-visible refusals of the bind lifecycle; the CLI prints a fixed code for each.
@@ -26,6 +29,7 @@ var (
 	ErrDomainDetached       = errors.New("domain detached") // detach refused, or a re-bind with the same evidence_ref
 	ErrDomainOwnedElsewhere = errors.New("domain owned by another store")
 	ErrNoOwner              = errors.New("store has no owner principal")
+	ErrStorePublished       = errors.New("store was already published") // handle change refused without --after-publish (Decision 1)
 )
 
 // MaxProofLifetime caps --valid-until: a public-CA certificate lives at most 398 days, rounded up to 400, so a
@@ -35,6 +39,21 @@ const MaxProofLifetime = 400 * 24 * time.Hour
 // Querier is the one method the operator calls need; *pgxpool.Pool and pgx.Tx satisfy it, tests fake it.
 type Querier interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// Tx is the transaction surface HandleSet needs: set the base-domain GUC (SET LOCAL) and run the definer in one
+// transaction. pgx.Tx satisfies it.
+type Tx interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+}
+
+// Beginner opens a Tx for HandleSet. The CLI adapts its *pgxpool.Pool (whose Begin returns pgx.Tx, a Tx) to this
+// interface; tests fake it with a bare in-memory transaction.
+type Beginner interface {
+	Begin(ctx context.Context) (Tx, error)
 }
 
 // BindResult names the domain row; Renewed is true when the origin was already ACTIVE (proof restamped).
@@ -152,6 +171,57 @@ func Status(ctx context.Context, q Querier, storeID string) (StoreStatus, error)
 		if !domains.ValidOrigin(d.Origin) || d.State == "" || d.Version < 1 {
 			return StoreStatus{}, ErrUnavailable
 		}
+	}
+	return out, nil
+}
+
+// HandleSetResult names the outcome of an operator handle change; Changed is false when the store already had the
+// requested handle (a no-op that writes nothing).
+type HandleSetResult struct {
+	StoreID      string `json:"store_id"`
+	Handle       string `json:"handle"`
+	Origin       string `json:"origin"`
+	Changed      bool   `json:"changed"`
+	AfterPublish bool   `json:"after_publish"`
+}
+
+// handleSetGUC sets the lc.store_base_domain GUC with SET LOCAL semantics. It runs as its own statement inside the
+// HandleSet transaction: PostgreSQL applies a set_config change only once the current statement finishes, so a value
+// set earlier in the SAME statement is not yet visible to current_setting — the definer must read it from a later
+// statement in the same transaction (the codebase-wide idiom: tx.Exec(set_config(...true)) then tx.QueryRow).
+const handleSetGUC = `SELECT set_config('lc.store_base_domain', $1, true)`
+
+// HandleSet changes a store's handle (cmd/store-admin handle-set; Decision 1, P1-4). baseDomain is the platform base
+// zone from LC_STORE_BASE_DOMAIN, lower-cased here and re-validated by the definer. The definer refuses when the store
+// was ever published unless afterPublish is set; changing detaches the old platform origin and writes the new ACTIVE
+// row in the same transaction.
+func HandleSet(ctx context.Context, b Beginner, storeID, handle string, afterPublish bool, baseDomain string) (HandleSetResult, error) {
+	base := strings.ToLower(strings.TrimSpace(baseDomain))
+	if ctx == nil || b == nil || !command.ValidID(storeID) || !storehandles.Valid(handle) || base == "" {
+		return HandleSetResult{}, command.ErrInvalid
+	}
+	tx, err := b.Begin(ctx)
+	if err != nil {
+		return HandleSetResult{}, mapError(err)
+	}
+	defer tx.Rollback(ctx)
+	// control.operator_set_store_handle (0106, owner commerce_storefront_writer, EXECUTE commerce_storefront_registrar):
+	// validate exactly like assignment, refuse store_published without the override, change the handle, detach the old
+	// platform origin and write the new ACTIVE row in one transaction, audit operator.handle_set. The definer reads the
+	// base zone from the lc.store_base_domain GUC set transaction-locally here (unset = PT409 base domain not configured).
+	if _, err := tx.Exec(ctx, handleSetGUC, base); err != nil {
+		return HandleSetResult{}, mapError(err)
+	}
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT control.operator_set_store_handle($1::uuid, $2, $3)`, storeID, handle, afterPublish).Scan(&raw); err != nil {
+		return HandleSetResult{}, mapError(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return HandleSetResult{}, mapError(err)
+	}
+	var out HandleSetResult
+	if !strictDecode(raw, &out) || out.StoreID != storeID || out.Handle != handle || (out.Changed && !domains.ValidOrigin(out.Origin)) {
+		return HandleSetResult{}, ErrUnavailable
 	}
 	return out, nil
 }

@@ -95,6 +95,7 @@ R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的�
 3. **运维 CLI（break-glass）**：`store-admin domain-bind`/`domain-suspend`/`domain-detach` 保留为代商家修复/续证时的
    break-glass（证据、400 天上限、退出码同 0081）；普通 onboarding **不再需要** `domain-bind`。handle 变更在店铺发布过之后只能由运维操作。
    证书 `notAfter` 就是 `--valid-until`（RFC 3339，必须在未来且不超过 400 天）；`--evidence` 是你留存证明的引用（工单号、DNS 检查日期、证书指纹），不要写密钥。
+   改 handle 用 `store-admin handle-set <store-uuid> <handle>`：在同一个事务里改掉 `control.stores.handle`、把旧平台子域名 DETACHED、写入新的 ACTIVE `https://<handle>.<base>`（base 取自 `LC_STORE_BASE_DOMAIN`，未设置则拒绝）。店铺**发布过之后**需要显式 `--after-publish` 才会放行，避免误改已上线的买家地址。
 
    ```sh
    set -a; . /etc/live-commerce/compose.env; set +a          # 取得 LC_STORE_HOST / LC_STORE_BASE_DOMAIN
@@ -104,6 +105,7 @@ R5 起（迁移 0106，store-domains 单元）每间店铺自动获得自己的�
    deploy/scripts/ops-admin.sh store-admin domain-bind --store <store-uuid> --origin "https://$HOST" \
      --evidence "<工单/检查引用>" --valid-until "$VALID_UNTIL"
    deploy/scripts/ops-admin.sh store-admin status --store <store-uuid>   # domains[].serving 为 true 才算上线
+   deploy/scripts/ops-admin.sh store-admin handle-set <store-uuid> <handle> [--after-publish]   # 改店铺 handle（发布过需 --after-publish）
    ```
 
 ### 5.2 owner 前置：边缘泛域名 DNS（仅 owner，工程无法代办）

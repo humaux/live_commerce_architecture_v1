@@ -21,6 +21,7 @@ import (
 const (
 	cliStore  = "3f1b0c9e-5a77-4d1e-9d2a-0a7f4c2b9e11"
 	cliOrigin = "https://shop.example.com"
+	cliHandle = "new-handle"
 	cliDSN    = "COMMERCE_STORE_REGISTRAR_DATABASE_URL"
 )
 
@@ -38,15 +39,28 @@ func (r row) Scan(dest ...any) error {
 }
 
 type querier struct {
-	r    row
-	sql  string
-	args []any
+	r        row
+	sql      string
+	args     []any
+	execSQL  string
+	execArgs []any
 }
 
 func (q *querier) QueryRow(_ context.Context, sql string, args ...any) pgx.Row {
 	q.sql, q.args = sql, args
 	return q.r
 }
+
+func (q *querier) Exec(_ context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	q.execSQL, q.execArgs = sql, args
+	return pgconn.CommandTag{}, nil
+}
+
+// Begin returns the querier itself as the HandleSet transaction: it already satisfies storefrontadmin.Tx.
+func (q *querier) Begin(_ context.Context) (storefrontadmin.Tx, error) { return q, nil }
+
+func (q *querier) Commit(_ context.Context) error   { return nil }
+func (q *querier) Rollback(_ context.Context) error { return nil }
 
 // fake replaces the database step and records whether it was reached.
 func fake(t *testing.T, q *querier) *int {
@@ -55,9 +69,9 @@ func fake(t *testing.T, q *querier) *int {
 	t.Cleanup(func() { withDB, now = orig, origNow })
 	now = func() time.Time { return time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC) }
 	opened := new(int)
-	withDB = func(_ context.Context, dsn string, fn func(storefrontadmin.Querier) (any, error)) (any, error) {
+	withDB = func(_ context.Context, dsn string, fn func(storefrontadmin.Querier, storefrontadmin.Beginner) (any, error)) (any, error) {
 		*opened++
-		return fn(q)
+		return fn(q, q)
 	}
 	return opened
 }
@@ -84,26 +98,63 @@ func TestBindHappyPathPrintsOneJSONLine(t *testing.T) {
 	}
 }
 
+func TestHandleSetHappyPathPrintsOneJSONLine(t *testing.T) {
+	q := &querier{r: row{raw: []byte(`{"store_id":"3f1b0c9e-5a77-4d1e-9d2a-0a7f4c2b9e11","handle":"new-handle","origin":"https://new-handle.example.com","changed":true,"after_publish":false}`)}}
+	opened := fake(t, q)
+	var out bytes.Buffer
+	err := run(context.Background(), []string{"handle-set", cliStore, cliHandle}, env(map[string]string{cliDSN: "postgres://x", "LC_STORE_BASE_DOMAIN": "Example.COM"}), &out)
+	if err != nil || *opened != 1 {
+		t.Fatalf("err=%v opened=%d", err, *opened)
+	}
+	if got := out.String(); got != `{"store_id":"3f1b0c9e-5a77-4d1e-9d2a-0a7f4c2b9e11","handle":"new-handle","origin":"https://new-handle.example.com","changed":true,"after_publish":false}`+"\n" {
+		t.Fatalf("stdout = %q", got)
+	}
+	// the base domain is lower-cased, then set as the GUC (SET LOCAL) in its own statement before the definer runs.
+	if !strings.Contains(q.execSQL, "set_config('lc.store_base_domain'") {
+		t.Fatalf("exec sql = %s", q.execSQL)
+	}
+	if len(q.execArgs) != 1 || q.execArgs[0] != "example.com" {
+		t.Fatalf("exec args = %v", q.execArgs)
+	}
+	if !strings.Contains(q.sql, "operator_set_store_handle") {
+		t.Fatalf("sql = %s", q.sql)
+	}
+	if len(q.args) != 3 || q.args[0] != cliStore || q.args[1] != cliHandle || q.args[2] != false {
+		t.Fatalf("args = %v", q.args)
+	}
+}
+
 func TestUsageErrorsNeverOpenTheDatabase(t *testing.T) {
 	opened := fake(t, &querier{})
 	good := env(map[string]string{cliDSN: "postgres://x"})
+	handleGood := env(map[string]string{cliDSN: "postgres://x", "LC_STORE_BASE_DOMAIN": "example.com"})
 	for name, args := range map[string][]string{
-		"no args":            {},
-		"unknown command":    {"domain-rebind"},
-		"bind no store":      {"domain-bind", "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z"},
-		"bind no valid":      {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e"},
-		"bind bad time":      {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "tomorrow"},
-		"bind past":          {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-09-01T00:00:00Z"},
-		"bind over 400 days": {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2028-01-01T00:00:00Z"},
-		"bind http origin":   {"domain-bind", "--store", cliStore, "--origin", "http://shop.example.com", "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z"},
-		"bind extra arg":     {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z", "x"},
-		"unknown flag":       {"status", "--store", cliStore, "--tenant", cliStore},
-		"suspend no origin":  {"domain-suspend"},
-		"detach localhost":   {"domain-detach", "--origin", "https://shop.localhost"},
-		"status bad store":   {"status", "--store", "nope"},
+		"no args":             {},
+		"unknown command":     {"domain-rebind"},
+		"bind no store":       {"domain-bind", "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z"},
+		"bind no valid":       {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e"},
+		"bind bad time":       {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "tomorrow"},
+		"bind past":           {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-09-01T00:00:00Z"},
+		"bind over 400 days":  {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2028-01-01T00:00:00Z"},
+		"bind http origin":    {"domain-bind", "--store", cliStore, "--origin", "http://shop.example.com", "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z"},
+		"bind extra arg":      {"domain-bind", "--store", cliStore, "--origin", cliOrigin, "--evidence", "e", "--valid-until", "2026-12-01T00:00:00Z", "x"},
+		"unknown flag":        {"status", "--store", cliStore, "--tenant", cliStore},
+		"suspend no origin":   {"domain-suspend"},
+		"detach localhost":    {"domain-detach", "--origin", "https://shop.localhost"},
+		"status bad store":    {"status", "--store", "nope"},
+		"handle-set no args":  {"handle-set"},
+		"handle-set one arg":  {"handle-set", cliStore},
+		"handle-set bad id":   {"handle-set", "nope", cliHandle},
+		"handle-set reserved": {"handle-set", cliStore, "admin"},
+		"handle-set invalid":  {"handle-set", cliStore, "UPPER"},
+		"handle-set extra":    {"handle-set", cliStore, cliHandle, "x"},
 	} {
 		var out bytes.Buffer
-		if err := run(context.Background(), args, good, &out); !errors.Is(err, errUsage) {
+		envf := good
+		if strings.HasPrefix(name, "handle-set") {
+			envf = handleGood
+		}
+		if err := run(context.Background(), args, envf, &out); !errors.Is(err, errUsage) {
 			t.Errorf("%s: err = %v, want store_admin_usage", name, err)
 		}
 		if out.Len() != 0 {
@@ -115,6 +166,14 @@ func TestUsageErrorsNeverOpenTheDatabase(t *testing.T) {
 	}
 	if err := run(context.Background(), []string{"status", "--store", cliStore}, env(nil), &bytes.Buffer{}); !errors.Is(err, errConfig) {
 		t.Fatalf("missing DSN: %v", err)
+	}
+	// handle-set refuses an unset/blank base domain before any connection opens.
+	var out bytes.Buffer
+	if err := run(context.Background(), []string{"handle-set", cliStore, cliHandle}, good, &out); !errors.Is(err, errConfig) {
+		t.Fatalf("handle-set without LC_STORE_BASE_DOMAIN: %v, want store_admin_config", err)
+	}
+	if *opened != 0 {
+		t.Fatalf("database opened %d times for a missing base domain", *opened)
 	}
 }
 
@@ -145,5 +204,28 @@ func TestFailuresReduceToFixedCodes(t *testing.T) {
 	// the real database step: an unparsable DSN is reported fixed, without echoing it
 	if _, err := realWithDB(context.Background(), "postgres://u:"+"secret-pw@h:notaport/db", nil); err != errDatabase {
 		t.Fatalf("bad DSN: %v", err)
+	}
+}
+
+func TestHandleSetFailuresReduceToFixedCodes(t *testing.T) {
+	good := env(map[string]string{cliDSN: "postgres://u:" + "secret-pw@h/db", "LC_STORE_BASE_DOMAIN": "example.com"})
+	for _, tc := range []struct {
+		err  error
+		want error
+	}{
+		{&pgconn.PgError{Code: "PT404", Message: "store not found"}, errNotFound},
+		{&pgconn.PgError{Code: "PT409", Message: "store_published"}, errPublished},
+		{&pgconn.PgError{Code: "PT409", Message: "handle_taken"}, errConflict},
+		{&pgconn.PgError{Code: "PT409", Message: "base domain not configured"}, errConflict},
+		{&pgconn.PgError{Code: "42501", Message: "permission denied for function control.operator_set_store_handle"}, errFailed},
+	} {
+		fake(t, &querier{r: row{err: tc.err}})
+		err := run(context.Background(), []string{"handle-set", cliStore, cliHandle}, good, &bytes.Buffer{})
+		if err != tc.want {
+			t.Errorf("%v -> %v, want %v", tc.err, err, tc.want)
+		}
+		if err != nil && (strings.Contains(err.Error(), "secret-pw") || strings.Contains(err.Error(), "permission denied")) {
+			t.Errorf("leak in %q", err)
+		}
 	}
 }
