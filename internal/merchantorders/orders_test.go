@@ -208,7 +208,7 @@ func TestListSQLBindingsAndErrorClasses(t *testing.T) {
 	if err != nil || tx.args[3] != 3 || tx.args[4] != "2026-09-25T04:05:06.123456Z" || tx.args[5] != orderID {
 		t.Fatalf("cursor args=%v err=%v", tx.args[3:], err)
 	}
-	for code, expected := range map[string]error{"PT401": platform.ErrUnauthorized, "PT403": platform.ErrForbidden, "PT404": platform.ErrScopeNotFound, "XX001": ErrUnavailable} {
+	for code, expected := range map[string]error{"PT400": command.ErrInvalid, "PT401": platform.ErrUnauthorized, "PT403": platform.ErrForbidden, "PT404": platform.ErrScopeNotFound, "XX001": ErrUnavailable} {
 		tx = &fakeTx{err: &pgconn.PgError{Code: code}}
 		_, err := Get(context.Background(), tx, scope, token, orderID)
 		if !errors.Is(err, expected) {

@@ -1,0 +1,7 @@
+=== RUN   TestMerchantOrdersV2LegacyDisplayFallback
+    merchant_orders_v2_legacy_test.go:34: legacy display field poisoned whole list: status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"81e0a7ba8d111b1c1989f5d57083bd1b","retryable":true,"details":{}}
+--- FAIL: TestMerchantOrdersV2LegacyDisplayFallback (5.19s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.147s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

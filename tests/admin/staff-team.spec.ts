@@ -277,6 +277,14 @@ for (const { locale, vp, first } of chains) {
       await expect(invitee.page.getByTestId("orders-export"), "fulfilment holds orders:export").toBeVisible();
       await noHorizontalScroll(invitee.page, "orders page (fulfilment)");
       await shot(invitee.page, "orders-fulfilment", locale, vp);
+      if (vp === "mobile") {
+        // Opening More filters adds the status select above Refresh/Export; the pair must stay on its own row, in view.
+        await invitee.page.getByTestId("orders-more-filters").click();
+        await expect(invitee.page.getByTestId("state-filter")).toBeVisible();
+        await expect(invitee.page.getByTestId("orders-export")).toBeVisible();
+        await noHorizontalScroll(invitee.page, "orders page (fulfilment, filters open)");
+        await shot(invitee.page, "orders-fulfilment-filters-open", locale, vp);
+      }
       if (vp === "desktop") {
         await invitee.page.goto(`/${locale}/`);
         await invitee.page.getByTestId("nav-orders").click();

@@ -1,0 +1,26 @@
+✖ legacy display sentinels preserve a list row without admitting arbitrary or private data (8.165542ms)
+✔ orders-v2 accepts bounded filters and Taipei inclusive dates; rejects ambiguity (7.626708ms)
+✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.360667ms)
+✔ all three locales label every task queue, payment and delivery mode (1.757542ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.663542
+
+✖ failing tests:
+
+test at tests/admin/orders-v2.test.ts:7:1
+✖ legacy display sentinels preserve a list row without admitting arbitrary or private data (8.165542ms)
+  Error: unavailable
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/apps/admin/lib/orders-v2.ts:70:126
+      at Array.map (<anonymous>)
+      at parseOrderListV2 (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/apps/admin/lib/orders-v2.ts:65:25)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/orders-v2-fix/tests/admin/orders-v2.test.ts:17:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

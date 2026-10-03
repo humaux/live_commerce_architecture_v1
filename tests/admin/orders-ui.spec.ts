@@ -27,7 +27,7 @@ const expiredToken = required("LC_BROWSER_EXPIRED_TOKEN");
 const revokedToken = required("LC_BROWSER_REVOKED_TOKEN");
 const cookieName = "__Host-commerce_session";
 const pii = ["Synthetic Buyer", "+886900000001", "Synthetic home address"];
-const v2Evidence = resolve(evidence, "../../../orders-v2");
+const v2Evidence = resolve(evidence, "../../../orders-v2-fix");
 
 test.use({
   baseURL: origin,
@@ -49,9 +49,9 @@ async function signedLogin(page: Page) {
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`/en/orders`));
-  const selector = page.getByTestId("store-selector");
+  const selector = page.getByTestId("shell-store-selector");
   if ((await selector.inputValue()) !== store)
-    await selector.selectOption(store);
+    await switchOrderStore(page, store);
   await expect(page.getByTestId("orders-table")).toBeVisible();
   // These frozen MOU scenarios explicitly inspect drafts. v2's default is tested
   // separately; choose the all-states inspection scope via the actual control.
@@ -59,6 +59,20 @@ async function signedLogin(page: Page) {
   await expect(page).toHaveURL(/state=all/);
   await expect(page.getByTestId("orders-table")).toBeVisible();
   expect(await detailCalls(page)).toBe(before);
+}
+
+async function switchOrderStore(page: Page, next: string) {
+  // W0 owns store navigation: a real switch goes through overview, not a page-local setter.
+  await page.getByTestId("shell-store-selector").selectOption(next);
+  await expect(page).toHaveURL(new URL(`/en?store=${next}`, origin).href);
+  await expect(page.getByTestId("merchant-orders")).toHaveCount(0);
+  // This fixture's role has one Orders route: wait for the singleton navigation
+  // after the full reload instead of branching on a pre-hydration snapshot.
+  await expect(page.getByTestId("nav-orders")).toBeVisible();
+  await page.getByTestId("nav-orders").click();
+  await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${next}$`));
+  await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
+  await expect(page.getByTestId("store-selector")).toHaveCount(0);
 }
 
 async function session(context: BrowserContext, token: string) {
@@ -281,8 +295,10 @@ test("MOU02 two principals, store authority and invalid sessions never reveal PI
   );
   expect(missing.status).toBe(404);
   expect(missing.body).not.toContain("Synthetic Buyer");
-  await page.getByTestId("store-selector").selectOption(foreignStore);
+  await switchOrderStore(page, foreignStore);
   await expect(page).toHaveURL(new RegExp(`store=${foreignStore}`));
+  await page.getByTestId("state-filter").selectOption("all");
+  await expect(page.getByTestId(`order-row-${ids.pending}`)).toHaveCount(0);
   await expand(page, foreignOrder);
   await expect(page.getByTestId("order-detail")).toContainText(
     "Synthetic Buyer",
@@ -565,7 +581,7 @@ test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure r
   }
 });
 
-test("MOU03 delayed old success/error cannot repaint store, filter, locale or new session", async ({
+test("MOU03 delayed old success/error cannot repaint filter, locale or new session; shell store switch cancels the in-flight old-store read", async ({
   page,
   context,
 }) => {
@@ -603,9 +619,14 @@ test("MOU03 delayed old success/error cannot repaint store, filter, locale or ne
     return { intercepted, release, remove: () => page.unroute(path, handler) };
   }
   const oldStore = await delayed(`**/api/stores/${store}/orders?*`, false);
+  // This subcase proves only that the shell store switch (a full navigation) cancels the
+  // in-flight old-store read: the late response is never observed repainting. It does NOT
+  // prove the in-page generation fence for a store change, because a store can no longer
+  // change in-page. The filter/locale cases below exercise the late-response generation fences.
   await page.getByTestId("state-filter").selectOption("DRAFT");
   await oldStore.intercepted;
-  await page.getByTestId("store-selector").selectOption(foreignStore);
+  await switchOrderStore(page, foreignStore);
+  await page.getByTestId("state-filter").selectOption("DRAFT");
   await expect(page.getByTestId(`order-row-${foreignOrder}`)).toBeVisible();
   oldStore.release();
   await oldStore.remove();
@@ -669,7 +690,23 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await mkdir(v2Evidence, { recursive: true });
   await signedLogin(page);
   const clicks: Array<{control:string; result:string}> = [];
+  await switchOrderStore(page, foreignStore);
+  await page.getByTestId("state-filter").selectOption("all");
+  await expect(page.getByTestId(`order-row-${foreignOrder}`)).toBeVisible();
+  await expect(page.getByTestId(`order-row-${ids.pending}`)).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId(`order-row-${foreignOrder}`)).toBeVisible();
+  await expect(page.getByTestId(`order-row-${ids.pending}`)).toHaveCount(0);
+  await switchOrderStore(page, store);
+  await expect(page.getByTestId(`order-row-${ids.pending}`)).toBeVisible();
+  await expect(page.getByTestId(`order-row-${foreignOrder}`)).toHaveCount(0);
+  await page.getByTestId("state-filter").selectOption("all");
+  clicks.push({control:"shell store A → B → reload B → A", result:"real shell selection + Orders navigation; selected store persisted; other store rows absent in both directions"});
   async function apply(control: string, action: () => Promise<unknown>) {
+    // Filters stay mounted during loading so late-response tests can change
+    // intent. The SQL readback must first await the current read, not capture
+    // that older response as if it belonged to the next click.
+    await expect(page.getByTestId("orders-table")).toBeVisible();
     const response = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/orders`) && r.url().includes("view=v2")).then(async r => { expect(r.status(), control).toBe(200); expect(r.headers()["cache-control"]).toBe("private, no-store"); return r.json(); });
     await action();
     const data = await response;
@@ -678,6 +715,15 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
     clicks.push({ control, result: `visible SQL total ${data.total}; counts match response` });
     return data;
   }
+  await apply("explicit cancelled state", () => page.getByTestId("state-filter").selectOption("CANCELLED"));
+  await apply("cancelled queue retains state", () => page.getByTestId("orders-bucket-cancelled").click());
+  await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
+  await expect(page).toHaveURL(/state=CANCELLED/);
+  await page.reload();
+  await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
+  await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed", "true");
+  await apply("all queue retains state", () => page.getByTestId("orders-bucket-all").click());
+  await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
   await apply("default hide drafts", () => page.getByTestId("state-filter").selectOption("active"));
   await expect(page.getByTestId(`order-row-${ids.draft0}`)).toHaveCount(0);
   for (const bucket of ["unpaid","transfer_review","ready_to_ship","ready_to_consign","shipped","completed","cancelled","all"]) {
@@ -726,8 +772,10 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await apply("active ledger", () => page.getByTestId("state-filter").selectOption("active"));
   for (const locale of ["zh-TW","zh-CN","en"]) {
     await page.getByTestId("locale-switch").selectOption(locale);
+    await expect(page).toHaveURL(new RegExp(`/${locale}/orders`));
+    await expect(page.getByRole("heading", {level:1})).toHaveText(locale === "zh-TW" ? "訂單" : locale === "zh-CN" ? "订单" : "Orders");
     await expect(page.getByTestId("orders-table")).toBeVisible();
-    for (const [width,height] of [[1586,992],[390,844]]) {
+    for (const [width,height] of [[1586,992],[1366,768],[390,844]]) {
       await page.setViewportSize({width,height});
       if (width === 390) {
         // Real responsive transition must finish; never screenshot a half-open rail.
@@ -735,6 +783,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         const more = page.getByTestId("orders-more-filters");
         await expect(more).toHaveAttribute("aria-expanded", "false");
         await expect(page.getByTestId("orders-payment-filter")).toBeHidden();
+        await expect(page.getByTestId("state-filter")).toBeHidden();
         await more.click();
         await expect(more).toHaveAttribute("aria-expanded", "true");
         await page.getByTestId("orders-payment-filter").selectOption("card");
@@ -747,20 +796,50 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         await page.getByTestId("orders-reset").click();
         await expect(page).not.toHaveURL(/payment_mode=/);
         await expect(more).toHaveAttribute("aria-expanded", "false");
+        await more.click();
+        const refreshRead = page.waitForResponse(r => r.url().includes(`/api/stores/${store}/orders?`) && r.status() === 200);
+        await page.getByTestId("orders-refresh").click();
+        await refreshRead;
+        await expect(page.getByTestId("orders-table")).toBeVisible();
+        await more.click();
+        await expect(more).toHaveAttribute("aria-expanded", "false");
+        clicks.push({control:`mobile refresh ${locale}`,result:"open secondary controls, real refresh/readback, collapse"});
       }
+      if (width === 390) {
+        const rail = page.getByTestId("orders-tabs");
+        // Native click/keyboard drive scrolling; evaluate below only measures geometry.
+        await rail.hover();
+        await page.mouse.wheel(1200, 0);
+        await expect.poll(() => rail.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+        await page.getByTestId("orders-bucket-cancelled").click();
+        await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed", "true");
+        await page.reload();
+        await expect.poll(() => rail.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+        const bounds = await rail.boundingBox(), active = await page.getByTestId("orders-bucket-cancelled").boundingBox();
+        expect(active!.x).toBeGreaterThanOrEqual(bounds!.x - 1);
+        expect(active!.x + active!.width).toBeLessThanOrEqual(bounds!.x + bounds!.width + 1);
+        const tabs = await rail.locator("button").evaluateAll(nodes => nodes.map(node => ({y:node.getBoundingClientRect().y,h:node.getBoundingClientRect().height,w:node.getBoundingClientRect().width})));
+        expect(new Set(tabs.map(tab => Math.round(tab.y))).size).toBe(1);
+        expect(tabs.every(tab => tab.h >= 44 && tab.w >= 44)).toBe(true);
+        await screenshot(page,resolve(v2Evidence,`queue-scroll-${locale}-390x844.png`));
+        await page.getByTestId("orders-bucket-all").click();
+        await expect(page.getByTestId("orders-bucket-all")).toHaveAttribute("aria-pressed", "true");
+        clicks.push({control:`horizontal queue ${locale}`,result:"real horizontal wheel then click, single row, 44px targets, cancelled visible after reload; returned to all"});
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       await page.getByRole("heading",{level:1}).scrollIntoViewIfNeeded();
       await screenshot(page,resolve(v2Evidence,`orders-${locale}-${width}x${height}.png`));
       if (width === 390) {
         const row = await page.locator('[data-testid^="order-expand-"]').first().boundingBox();
         expect(row).not.toBeNull();
         expect(row!.y).toBeLessThan(height); // The first order, not only a filter form, is in the initial viewport.
-        clicks.push({control:`mobile secondary filters ${locale}`, result:"native toggle, select, apply, reopen persisted value, reset; first order above fold"});
+        clicks.push({control:`mobile secondary filters ${locale}`, result:`native toggle, select, apply, reopen persisted value, reset; first order y=${row!.y} < ${height}`});
       }
       await page.getByTestId("orders-table").scrollIntoViewIfNeeded();
       await screenshot(page,resolve(v2Evidence,`ledger-${locale}-${width}x${height}.png`));
     }
   }
-  await writeFile(resolve(v2Evidence,"click-ledger.json"),JSON.stringify(clicks,null,2));
+  await writeFile(resolve(v2Evidence,"click-ledger.json"),JSON.stringify(clicks.map(item => ({page:"Orders",control:item.control,action:item.control,expected:"Assertions and persisted readback described by the named scenario pass",actual:item.result,status:"PASS"})),null,2));
 });
 
 for (const privateCursor of [false, true]) test(`MOU08 authoritative poll denial clears list and full detail (private cursor=${privateCursor})`, async ({page}) => {
@@ -874,6 +953,8 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       path: testInfo.outputPath(`inline-full-${locale}-390.png`),
       fullPage: true,
     });
+    await page.getByTestId("orders-more-filters").click();
+    await expect(page.getByTestId("state-filter")).toBeVisible();
     await page.getByTestId("state-filter").focus();
     await page.keyboard.press("Tab");
     await expect(page.getByTestId("orders-refresh")).toBeFocused();
