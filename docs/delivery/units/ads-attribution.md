@@ -91,6 +91,15 @@ Merchants buy FB ads mainly to bring viewers into their FB live selling, so the 
   - total view time;
   - viewers / view time by `age_bucket_and_gender` and by region, where Meta returns them for that video.
   - Needs `read_insights` and `pages_read_engagement`. Both join the App Review permission list (contract O3).
+- **Verified 2026-10-03 with read-only probes** (`output/meta-ads-validate/insights-breakdown-probe-20261003.txt`).
+  - **Ads Insights:** these breakdowns are all accepted with `spend,reach,impressions,clicks,actions,action_values` at campaign level: `age,gender`, `region`, `country`, `publisher_platform,platform_position`, `device_platform`, `hourly_stats_aggregated_by_advertiser_time_zone`.
+  - **Live videos:** `/{page}/live_videos` lists them. On `/{video}/video_insights` these metrics are valid and need `read_insights`:
+    - `total_video_views` (34 for the latest 大夢甄選女包 live);
+    - `total_video_view_time_by_age_bucket_and_gender`;
+    - `total_video_view_time_by_region_id`;
+    - `total_video_views_by_distribution_type`.
+  - `live_video_views_by_age_bucket_and_gender` does not exist.
+  - The demographic metrics came back EMPTY for a 34-view live, because of Meta's privacy thresholds. The UI must show 「觀眾數不足，Meta 未提供輪廓」 rather than a blank panel or zeros. Live demographics are view TIME by bucket, not unique viewers, and the label must say so.
 - **Buyers (ours, real orders).** Per session and per draft:
   - orders and net revenue by the buyer's ship-to county/city (Taiwan 縣市, from the frozen order destination; store pickup uses the store's county);
   - new versus returning buyers;
