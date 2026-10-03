@@ -18,6 +18,7 @@ import { driveDocument } from "./catalog-document-driver";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
 import { registerProductEditorAcceptance } from "./product-editor.acceptance";
+import { registerProductReviewAcceptance } from "./product-review.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -90,7 +91,10 @@ const variants = [
 ];
 
 // Additive product-editor gate: never removes or weakens the frozen CC12 cases below.
-if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") registerProductEditorAcceptance();
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") {
+  registerProductEditorAcceptance();
+  registerProductReviewAcceptance();
+}
 
 for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
   test.describe(`CC12 ${v.vp} ${v.locale}`, () => {
@@ -174,9 +178,10 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await membership.uncheck(); await saveBasics(page); await expect(membership).not.toBeChecked();
       await membership.check(); await saveBasics(page); await expect(membership).toBeChecked();
       await page.getByTestId("product-status").selectOption("active");
-      await expect(page.getByTestId("product-status")).toHaveValue("active");
+      await expect(page.getByTestId("product-status-help")).toHaveText(cc.statusHelp.active);
       await saveBasics(page);
       await expect(page.getByTestId("product-status")).toHaveValue("active");
+      await expect(page.getByTestId("product-status-help")).toHaveText(cc.statusHelp.active);
 
       // ---- the shopper view (real buyer catalog v2 HTTP): price range, compare-at, stock hints, cover, collection ----
       const found = await list(uniq);

@@ -39,15 +39,15 @@ export const collectionImageURL = (store: string, id: string, imageID: string) =
 export type Command = { key: string; method: "POST" | "PATCH" | "PUT"; resource: string; body: string };
 export const command = (method: Command["method"], resource: string, body: unknown): Command =>
   ({ key: crypto.randomUUID(), method, resource, body: JSON.stringify(body) });
-export type Outcome<T> = { ok: true; value: T } | { ok: false; code: string; uncertain: boolean };
+export type Outcome<T> = { ok: true; value: T } | { ok: false; code: string; uncertain: boolean; reconcile?: boolean };
 
 // One fenced write. `boundary` is the session fence of the read that rendered the screen: a changed session sends nothing.
 export async function send<T>(store: string, c: Command, boundary: string, parse: (value: unknown) => T): Promise<Outcome<T>> {
   const csrf = csrfCookie();
   try {
-    if (!csrf || (await sessionBoundary(csrf)) !== boundary || csrfCookie() !== csrf) return { ok: false, code: "unauthorized", uncertain: false };
+    if (!csrf || (await sessionBoundary(csrf)) !== boundary || csrfCookie() !== csrf) return { ok: false, code: "unauthorized", uncertain: false, reconcile: true };
   } catch {
-    return { ok: false, code: "unauthorized", uncertain: false };
+    return { ok: false, code: "unauthorized", uncertain: false, reconcile: true };
   }
   try {
     const response = await fetch(`${base(store)}/${c.resource}`, {
@@ -56,6 +56,10 @@ export async function send<T>(store: string, c: Command, boundary: string, parse
       body: c.body, signal: AbortSignal.timeout(12000),
     });
     const value: unknown = await response.json().catch(() => null);
+    // An auth gate is not a receipt from command.Run. On a retry the earlier
+    // attempt may have committed; never remove its fence or issue a fresh key.
+    if (response.status === 401 || response.status === 403)
+      return { ok: false, code: response.status === 401 ? "unauthorized" : "forbidden", uncertain: false, reconcile: true };
     if (!response.ok) return { ok: false, code: safeError(value).code, uncertain: response.status >= 500 };
     try {
       return { ok: true, value: parse(value) };

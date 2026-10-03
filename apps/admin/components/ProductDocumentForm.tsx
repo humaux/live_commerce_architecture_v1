@@ -25,6 +25,7 @@ import {
 import { useProductDocument } from "@/lib/use-product-document";
 import type { ProductNavigationState } from "@/lib/use-product-leave-guard";
 import { productEditorCopy } from "@/lib/product-editor-copy";
+import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
@@ -376,6 +377,7 @@ export function ProductDocumentForm({
                 {c.visibility}
                 <select
                   data-testid="product-status"
+                  aria-describedby="product-status-help"
                   value={targetStatus}
                   onChange={(e) =>
                     setTargetStatus(e.target.value as "draft" | "active")
@@ -389,6 +391,9 @@ export function ProductDocumentForm({
                     </option>
                   )}
                 </select>
+                <span id="product-status-help" data-testid="product-status-help" className="hint">
+                  {catalogCopy[locale].statusHelp[targetStatus]}
+                </span>
               </label>
             )}
             <label>
@@ -682,7 +687,7 @@ export function ProductDocumentForm({
             data-testid="product-message"
           >
             <p>{write.message}</p>
-            {write.pending && !write.busy && (
+            {write.pending && !write.busy && !write.recoveryBlocked && (
               <button
                 type="button"
                 data-testid="product-retry"
