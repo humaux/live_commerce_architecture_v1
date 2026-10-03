@@ -41,9 +41,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0110 adds only the orders-v2 read projection and its scoped indexes.
 	// 0111 adds product image renditions (S1 B); keep an exact migration-set count.
 	// 0112 adds the lease-fenced public Meta refusal projection (Amendment 2).
+	// 0113 adds the scoped attribution projection and live-audience read helpers (AT7).
 	// 0109 (product-core: A6 inventory_tracked + max_per_order, image cap 12) and post-River 0021 (product-core begin_hold rebuilt on 0020) add two more.
-	if len(r2) != 48 {
-		t.Fatalf("R2 migration set = %d files %v, want 48", len(r2), r2)
+	if len(r2) != 49 {
+		t.Fatalf("R2 migration set = %d files %v, want 49", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
