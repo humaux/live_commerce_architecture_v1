@@ -73,6 +73,16 @@ test("Studio BFF signed browser session, exact six routes and fail-closed transp
     const csrfValue = cookies.find((item) => item.name === csrfCookie)?.value;
     assert.ok(sessionValue && csrfValue, "signed session and CSRF cookies required");
     assert.equal(cookies.find((item) => item.name === sessionCookie)?.httpOnly, true);
+    // The signed-in page lands on the first allowed route (W0) and may still be loading it (e.g. Studio's own
+    // live-sessions?limit=20). Leave the app and wait until the upstream request count is stable, so every exact
+    // last_uri assertion below observes only this test's own requests (the release gate caught that race once).
+    await page.goto("about:blank");
+    for (let stable = 0, last = -1; stable < 3; ) {
+      const { count } = await observation();
+      stable = count === last ? stable + 1 : 0;
+      last = count;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
     const cookie = `${sessionCookie}=${sessionValue}; ${csrfCookie}=${csrfValue}`;
     const authorized = { Cookie: cookie };
     const write = (key: string) => ({ ...authorized, Origin: origin, "X-CSRF-Token": csrfValue, "Content-Type": "application/json", "Idempotency-Key": key });
