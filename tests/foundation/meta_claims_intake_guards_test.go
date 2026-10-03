@@ -203,7 +203,8 @@ func TestMetaClaimsMCI10NoNetworkInIntakeCode(t *testing.T) {
 
 // TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret: core.SecretClaim (operation id, generation, lease
 // token) may be named only by the dispatcher that builds it and by the one LoadSecret loader that
-// forwards it to the lease-fenced SQL function; Check, Dispatch and Reconcile never see it.
+// forwards it to the lease-fenced SQL function, plus explicitly contracted Finish hooks;
+// Check, Dispatch and Reconcile never see it.
 func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 	srcs := mciSources(t, "internal", "cmd")
 	mentions := 0
@@ -251,6 +252,16 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				continue
 			}
 			mentions++
+			// meta-ads-v1 F24/§5: the existing Finish completion hook passes only the
+			// lease fence to the ads-owned text projection. This is not a token loader.
+			// Check this name before the generic loader exceptions, so adding a loader
+			// to FinishRefusal cannot make the otherwise forbidden function pass.
+			if fn.Name.Name == "FinishRefusal" {
+				if !mciAdsRefusalFinish(s, fn) {
+					t.Errorf("%s: FinishRefusal must be the exact lease-fenced ads text projection, with no loader or extra claim access", s.path)
+				}
+				continue
+			}
 			// ads-capi C2 (meta-ads-v1 §6.4): the CAPI route's LoadSecret is the third lease-fenced loader; it calls the same
 			// integration.load_meta_ads_token and reads ads.capi_user_data in that fenced transaction.
 			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) &&
@@ -276,6 +287,107 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 		if base := filepath.Base(s.path); base != "dispatcher.go" && base != "secret.go" {
 			t.Errorf("%s mentions SecretClaim; only dispatcher.go and secret.go may", s.path)
 		}
+	}
+}
+
+// The exception is an actual Exec call in one file/function, not a SQL substring
+// in a comment or unused constant. Ordinary callbacks and aliases remain forbidden.
+func mciAdsRefusalFinish(s mciSrc, fn *ast.FuncDecl) bool {
+	if s.path != "internal/integrations/meta_ads/finish.go" || fn.Name.Name != "FinishRefusal" || fn.Recv != nil || len(fn.Type.Params.List) != 4 {
+		return false
+	}
+	selector := func(expr ast.Expr, object, field string) bool {
+		x, ok := expr.(*ast.SelectorExpr)
+		if !ok || x.Sel.Name != field {
+			return false
+		}
+		id, ok := x.X.(*ast.Ident)
+		return ok && id.Name == object
+	}
+	param := fn.Type.Params.List[2]
+	if len(param.Names) != 1 || param.Names[0].Name != "claim" || !selector(param.Type, "core", "SecretClaim") {
+		return false
+	}
+	execs, claimRefs, valid := 0, 0, true
+	ast.Inspect(fn, func(n ast.Node) bool {
+		if id, ok := n.(*ast.Ident); ok && id.Name == "claim" {
+			claimRefs++
+		}
+		call, ok := n.(*ast.CallExpr)
+		if !ok || selector(call.Fun, "graphCodePattern", "MatchString") {
+			return true
+		}
+		if !selector(call.Fun, "tx", "Exec") || len(call.Args) != 9 {
+			valid = false
+			return true
+		}
+		execs++
+		lit, ok := call.Args[1].(*ast.BasicLit)
+		if !ok || lit.Kind != token.STRING {
+			valid = false
+			return true
+		}
+		sql, err := strconv.Unquote(lit.Value)
+		if err != nil || sql != "SELECT ads.finish_operation_refusal($1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text,$7::text)" {
+			valid = false
+		}
+		for i, field := range []string{"OperationID", "Generation", "LeaseToken", "Mode"} {
+			if !selector(call.Args[i+2], "claim", field) {
+				valid = false
+			}
+		}
+		return true
+	})
+	return valid && execs == 1 && claimRefs == 5 // parameter + four fenced SQL arguments, no escape
+}
+
+func TestMetaClaimsMCI10AdsRefusalFinishException(t *testing.T) {
+	const path = "internal/integrations/meta_ads/finish.go"
+	body, err := os.ReadFile(filepath.Join("../..", path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(body)
+	const statement = "_, err := tx.Exec(ctx, `SELECT ads.finish_operation_refusal($1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text,$7::text)`,\n\t\tclaim.OperationID, claim.Generation, claim.LeaseToken, claim.Mode, out.State, out.Code, message)"
+	if !strings.Contains(source, statement) {
+		t.Fatal("fixture mutation anchor absent")
+	}
+	for _, tc := range []struct {
+		name, path, source string
+		allowed            bool
+	}{
+		{"contracted Finish", path, source, true},
+		{"moved file", "internal/integrations/meta_ads/other.go", source, false},
+		{"renamed function", path, strings.Replace(source, "func FinishRefusal(", "func FinishOther(", 1), false},
+		{"Check callback", path, strings.Replace(source, "func FinishRefusal(", "func Check(", 1), false},
+		{"Dispatch callback", path, strings.Replace(source, "func FinishRefusal(", "func Dispatch(", 1), false},
+		{"Reconcile callback", path, strings.Replace(source, "func FinishRefusal(", "func Reconcile(", 1), false},
+		{"alias", path, strings.Replace(source, "claim core.SecretClaim", "claim ClaimAlias", 1), false},
+		{"loader substituted", path, strings.Replace(source, "SELECT ads.finish_operation_refusal", "SELECT integration.load_meta_ads_token", 1), false},
+		{"loader added", path, strings.Replace(source, "return err", "_, _ = tx.Query(ctx, `SELECT integration.load_meta_ads_token()`)\nreturn err", 1), false},
+		{"comment only", path, strings.Replace(source, statement, "// SELECT ads.finish_operation_refusal()\nvar err error", 1), false},
+		{"unused literal only", path, strings.Replace(source, statement, "_ = `SELECT ads.finish_operation_refusal()`\nvar err error", 1), false},
+		{"wrong fence", path, strings.Replace(source, "claim.LeaseToken, claim.Mode", "claim.Mode, claim.LeaseToken", 1), false},
+		{"claim escapes", path, strings.Replace(source, "return err", "out.Detail = claim\nreturn err", 1), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			file, err := parser.ParseFile(token.NewFileSet(), tc.path, tc.source, parser.ParseComments)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var fn *ast.FuncDecl
+			for _, decl := range file.Decls {
+				if f, ok := decl.(*ast.FuncDecl); ok {
+					fn = f
+				}
+			}
+			if fn == nil {
+				t.Fatal("fixture has no function")
+			}
+			if got := mciAdsRefusalFinish(mciSrc{path: tc.path, file: file, text: tc.source}, fn); got != tc.allowed {
+				t.Fatalf("exception allowed=%v, want %v", got, tc.allowed)
+			}
+		})
 	}
 }
 

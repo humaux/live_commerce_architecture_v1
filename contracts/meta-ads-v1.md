@@ -356,7 +356,7 @@ do not infer recency from kind-sorted array order or show a previous attempt's f
 completion also writes that code to `integration.operation_events.reason_code`; a concurrent binding
 change may instead annotate the event as `completed_binding_changed` while `ops[].code` correctly
 retains Meta's operation outcome. Amendment 2 requires a durable text projection (migration 0112,
-provisional unit reservation): `ads.operation_refusals`, one latest row per operation. The existing
+owner-confirmed 2026-10-03): `ads.operation_refusals`, one latest row per operation. The existing
 completion transaction runs `ads.finish_operation_refusal` before Complete with the exact operation,
 generation, token, mode and expiry fence. Its owner is `commerce_ads_writer`; only `commerce_ads_worker`
 gets EXECUTE, no runtime/worker direct table access or cross-domain UPDATE privilege. Success clears
