@@ -252,26 +252,9 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 				continue
 			}
 			mentions++
-			// meta-ads-v1 F24/§5: the existing Finish completion hook passes only the
-			// lease fence to the ads-owned text projection. This is not a token loader.
-			// Check this name before the generic loader exceptions, so adding a loader
-			// to FinishRefusal cannot make the otherwise forbidden function pass.
-			if fn.Name.Name == "FinishRefusal" {
-				if !mciAdsRefusalFinish(s, fn) {
-					t.Errorf("%s: FinishRefusal must be the exact lease-fenced ads text projection, with no loader or extra claim access", s.path)
-				}
-				continue
-			}
 			// ads-capi C2 (meta-ads-v1 §6.4): the CAPI route's LoadSecret is the third lease-fenced loader; it calls the same
 			// integration.load_meta_ads_token and reads ads.capi_user_data in that fenced transaction.
-			if !(s.dir == "internal/integrations/metareply" && loads) && !(s.dir == "internal/integrations/meta_ads" && loadsAds) &&
-				!(s.dir == "internal/attribution/capiroute" && loadsAds) &&
-				// R2 integration (the CVS lane never met this guard): in ecpayroute only the fenced loader/finisher
-				// (load, finishOn: they run loadSQL/finishSQL = integration.load_cvs_create / finish_cvs_create, checked
-				// below) and their two one-line dispatcher hooks (loadSecret, finish) may take the claim.
-				!(s.dir == "internal/integrations/shipping/ecpay/ecpayroute" && (cvsSQL || fn.Name.Name == "loadSecret" || fn.Name.Name == "finish") &&
-					strings.Contains(s.text, "FROM integration.load_cvs_create(") && strings.Contains(s.text, "SELECT integration.finish_cvs_create(") &&
-					strings.Count(s.text, "integration.load_") == strings.Count(s.text, "integration.load_cvs_create")) {
+			if !mciSecretClaimAllowed(s, fn, loads, loadsAds, cvsSQL) {
 				t.Errorf("%s: function %s references SecretClaim but is not the load_meta_page_token loader in metareply, the load_meta_ads_token loader in meta_ads or attribution/capiroute, or the load_cvs_create/finish_cvs_create route in ecpayroute", s.path, fn.Name.Name)
 			}
 		}
@@ -288,6 +271,24 @@ func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 			t.Errorf("%s mentions SecretClaim; only dispatcher.go and secret.go may", s.path)
 		}
 	}
+}
+
+// Shared by the repository scan and the adversarial fixtures, so a helper-only
+// rejection cannot be bypassed by a wider branch of the composed allowlist.
+func mciSecretClaimAllowed(s mciSrc, fn *ast.FuncDecl, loads, loadsAds, cvsSQL bool) bool {
+	// meta-ads-v1 F24/§5: this Finish passes the fence to an ads-owned projection,
+	// never a token loader. Check it before generic loader exceptions.
+	if fn.Name.Name == "FinishRefusal" {
+		return mciAdsRefusalFinish(s, fn)
+	}
+	return (s.dir == "internal/integrations/metareply" && loads) ||
+		(s.path == "internal/integrations/meta_ads/routes.go" && fn.Name.Name == "LoadSecret" && loadsAds) ||
+		(s.path == "internal/attribution/capiroute/route.go" && fn.Name.Name == "loadSecret" && loadsAds) ||
+		// R2 CVS: only the contracted fenced loader/finisher and their dispatcher
+		// hooks; the original statement and package-scope restrictions are unchanged.
+		(s.dir == "internal/integrations/shipping/ecpay/ecpayroute" && (cvsSQL || fn.Name.Name == "loadSecret" || fn.Name.Name == "finish") &&
+			strings.Contains(s.text, "FROM integration.load_cvs_create(") && strings.Contains(s.text, "SELECT integration.finish_cvs_create(") &&
+			strings.Count(s.text, "integration.load_") == strings.Count(s.text, "integration.load_cvs_create"))
 }
 
 // The exception is an actual Exec call in one file/function, not a SQL substring
@@ -348,6 +349,7 @@ func TestMetaClaimsMCI10AdsRefusalFinishException(t *testing.T) {
 		t.Fatal(err)
 	}
 	source := string(body)
+	forgedCallback := strings.Replace(strings.Replace(source, "func FinishRefusal(", "func Dispatch(", 1), "return err", "_ = `integration.load_meta_ads_token`\nreturn err", 1)
 	const statement = "_, err := tx.Exec(ctx, `SELECT ads.finish_operation_refusal($1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text,$7::text)`,\n\t\tclaim.OperationID, claim.Generation, claim.LeaseToken, claim.Mode, out.State, out.Code, message)"
 	if !strings.Contains(source, statement) {
 		t.Fatal("fixture mutation anchor absent")
@@ -369,6 +371,8 @@ func TestMetaClaimsMCI10AdsRefusalFinishException(t *testing.T) {
 		{"unused literal only", path, strings.Replace(source, statement, "_ = `SELECT ads.finish_operation_refusal()`\nvar err error", 1), false},
 		{"wrong fence", path, strings.Replace(source, "claim.LeaseToken, claim.Mode", "claim.Mode, claim.LeaseToken", 1), false},
 		{"claim escapes", path, strings.Replace(source, "return err", "out.Detail = claim\nreturn err", 1), false},
+		{"renamed callback with unused loader literal", path, forgedCallback, false},
+		{"moved callback with unused loader literal", "internal/attribution/capiroute/route.go", forgedCallback, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			file, err := parser.ParseFile(token.NewFileSet(), tc.path, tc.source, parser.ParseComments)
@@ -384,7 +388,14 @@ func TestMetaClaimsMCI10AdsRefusalFinishException(t *testing.T) {
 			if fn == nil {
 				t.Fatal("fixture has no function")
 			}
-			if got := mciAdsRefusalFinish(mciSrc{path: tc.path, file: file, text: tc.source}, fn); got != tc.allowed {
+			loadsAds := false
+			ast.Inspect(fn, func(n ast.Node) bool {
+				if lit, ok := n.(*ast.BasicLit); ok && lit.Kind == token.STRING && strings.Contains(lit.Value, "integration.load_meta_ads_token") {
+					loadsAds = true
+				}
+				return true
+			})
+			if got := mciSecretClaimAllowed(mciSrc{path: tc.path, dir: filepath.ToSlash(filepath.Dir(tc.path)), file: file, text: tc.source}, fn, false, loadsAds, false); got != tc.allowed {
 				t.Fatalf("exception allowed=%v, want %v", got, tc.allowed)
 			}
 		})
