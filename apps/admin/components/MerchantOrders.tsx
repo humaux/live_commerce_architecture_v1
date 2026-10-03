@@ -32,7 +32,7 @@ import {
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
-import { appendOrderFilters, buckets, emptyFilters, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
+import { appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -73,7 +73,6 @@ function url(
 
 export function MerchantOrders({
   locale,
-  stores,
   store,
   state,
   filters: routeFilters,
@@ -83,7 +82,6 @@ export function MerchantOrders({
   renderKey,
 }: {
   locale: Locale;
-  stores: Store[];
   store: Store | null;
   state: OrderFilter;
   filters: OrderFilters;
@@ -120,6 +118,7 @@ export function MerchantOrders({
   // OP2: ids already shown for this store+filter, and the ones that arrived after. Order ids only, never PII.
   const seen = useRef<{ scope: string; ids: Set<string> } | null>(null);
   const polling = useRef(false);
+  const queueRail = useRef<HTMLElement>(null);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
   const current =
     (blocked.current && ["signed-out", "forbidden", "not-found"].includes(view.status)) ||
@@ -482,6 +481,20 @@ export function MerchantOrders({
     if (!previous.current.length || current.status !== "ready") return;
     navigate(store?.id ?? "", state, previous.current.pop() ?? "", "");
   }
+  useEffect(() => {
+    // Only move the queue's horizontal viewport, never scroll the document.
+    const reveal = () => {
+      const rail = queueRail.current;
+      const selected = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
+      if (!rail || !selected || rail.scrollWidth <= rail.clientWidth) return;
+      const bounds = rail.getBoundingClientRect(), tab = selected.getBoundingClientRect();
+      if (tab.left < bounds.left) rail.scrollLeft += tab.left - bounds.left;
+      else if (tab.right > bounds.right) rail.scrollLeft += tab.right - bounds.right;
+    };
+    reveal();
+    window.addEventListener("resize", reveal);
+    return () => window.removeEventListener("resize", reveal);
+  }, [filters.bucket, current.status]);
   const message = (status: Status) =>
     status === "signed-out"
       ? c.signedOut
@@ -505,26 +518,9 @@ export function MerchantOrders({
           <h1>{c.title}</h1>
           <p>{c.subtitle}</p>
         </header>
-        <div className="orders-controls">
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select
-                data-testid="store-selector"
-                value={store?.id ?? ""}
-                onChange={(event) => {
-                  previous.current = [];
-                  navigate(event.target.value, state, "", "", emptyFilters);
-                }}
-              >
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+        {!["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
+          onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }}>
+        <div className="orders-controls orders-v2-state-controls">
           <label>
             {c.filter}
             <select
@@ -570,6 +566,7 @@ export function MerchantOrders({
             </>
           )}
         </div>
+        </OrderListFilters>}
         {current.status === "loading" && (
           <p className="orders-message" role="status">
             {c.loading}
@@ -595,11 +592,9 @@ export function MerchantOrders({
           )}
         {current.status === "ready" && current.page && (
           <>
-            <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page.sessions} disabled={false}
-              onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }} />
-            <nav className="orders-v2-tabs" aria-label={v2.counts} data-testid="orders-tabs">
+            <nav ref={queueRail} className="orders-v2-tabs" aria-label={v2.counts} data-testid="orders-tabs">
               {buckets.map(bucket => <button type="button" key={bucket} data-testid={`orders-bucket-${bucket}`} aria-pressed={filters.bucket === bucket}
-                onClick={() => { previous.current = []; navigate(store?.id ?? "", "active", "", "", { ...filters, bucket }); }}>
+                onClick={() => { previous.current = []; navigate(store?.id ?? "", state, "", "", { ...filters, bucket }); }}>
                 {v2.tabs[bucket]} <span data-testid={`orders-count-${bucket}`}>{current.page!.counts[bucket]}</span>
               </button>)}
             </nav>

@@ -63,7 +63,7 @@ export default async function OrdersPage({
       }
     }
   }
-  return <MerchantOrders locale={locale} stores={stores} store={store}
+  return <MerchantOrders locale={locale} store={store}
     state={state as OrderFilter} filters={filters} order={order} cursor={cursor} initialError={error}
     renderKey={crypto.randomUUID()} />;
 }
