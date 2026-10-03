@@ -271,10 +271,10 @@ func TestCreateClassificationTable(t *testing.T) {
 		"400 code 100":           {status(400, errBody(100)), failedFinal("graph_100")},
 		"400 code 190":           {status(400, errBody(190)), failedFinal("graph_190")},
 		"403 code 200":           {status(403, errBody(200)), failedFinal("graph_200")},
-		"rate limit 4":           {status(400, errBody(4)), failedFinal("graph_4")},
-		"rate limit 17":          {status(400, errBody(17)), failedFinal("graph_17")},
-		"rate limit 613":         {status(400, errBody(613)), failedFinal("graph_613")},
-		"rate limit 80004 (429)": {status(429, errBody(80004)), failedFinal("graph_80004")},
+		"rate limit 4":           {status(400, errBody(4)), failedFinal("rate_limited")},
+		"rate limit 17":          {status(400, errBody(17)), failedFinal("rate_limited")},
+		"rate limit 613":         {status(400, errBody(613)), failedFinal("rate_limited")},
+		"rate limit 80004 (429)": {status(429, errBody(80004)), failedFinal("rate_limited")},
 		"4xx unparseable body":   {status(400, `oops`), unconfirmed()},
 		"4xx without code":       {status(400, `{"error":{}}`), unconfirmed()},
 		"5xx":                    {status(500, `{}`), unconfirmed()},
@@ -312,8 +312,8 @@ func TestActivatePauseNeverFailedFinal(t *testing.T) {
 			"success false":   {reply200(`{"success":false}`), unconfirmed()},
 			"2xx other":       {reply200(`{"id":"1"}`), unconfirmed()},
 			"4xx graph error": {status(400, errBody), unknown("graph_100")},
-			"rate limited":    {status(429, `{"error":{"code":80004}}`), unknown("graph_80004")},
-			"code 613":        {status(400, `{"error":{"code":613}}`), unknown("graph_613")},
+			"rate limited":    {status(429, `{"error":{"code":80004}}`), unknown("rate_limited")},
+			"code 613":        {status(400, `{"error":{"code":613}}`), unknown("rate_limited")},
 			"5xx":             {status(503, ``), unconfirmed()},
 			"unparseable":     {reply200(`<html>`), unconfirmed()},
 		} {
@@ -517,7 +517,7 @@ func TestReadInsights(t *testing.T) {
 	}
 	// Rejected reads retain Meta's code; the planner still plans the next seq.
 	c, _ = newFake(t, status(429, `{"error":{"code":80004}}`))
-	if out, _ := c.dispatch(context.Background(), dreq(ActionReadInsights, body), secret); out != failedFinal("graph_80004") {
+	if out, _ := c.dispatch(context.Background(), dreq(ActionReadInsights, body), secret); out != failedFinal("rate_limited") {
 		t.Fatalf("rate limited = %+v", out)
 	}
 }
@@ -542,7 +542,7 @@ func TestPostEvent(t *testing.T) {
 		"received 2":       {reply200(`{"events_received":2}`), unconfirmed()},
 		"2xx unparseable":  {reply200(`x`), unconfirmed()},
 		"4xx error":        {status(400, `{"error":{"code":100}}`), failedFinal("graph_100")},
-		"4xx rate limited": {status(400, `{"error":{"code":17}}`), failedFinal("graph_17")},
+		"4xx rate limited": {status(400, `{"error":{"code":17}}`), failedFinal("rate_limited")},
 		"5xx":              {status(500, `{}`), unconfirmed()},
 		"4xx unparseable":  {status(400, `x`), unconfirmed()},
 	} {

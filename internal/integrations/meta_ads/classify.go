@@ -13,6 +13,17 @@ import (
 	"livecommerce/internal/integrations/core"
 )
 
+// Graph error codes that mean "throttled", not "rejected" (contract §3: FAILED_FINAL `rate_limited`, a retry is a new
+// publish attempt, §5.3). Throttling is not an ad-policy refusal, so ads-graph Amendment 2 (pass Meta's wording through)
+// does not replace it; Meta's message, if any, still rides along. Sources: F13 insights best practices (code 4), F21 rate
+// limiting (BUC 80004); codes 17 and 613 are named by contract §3 (retrieved 2026-09-29).
+const (
+	codeAppLimit    = 4
+	codeUserLimit   = 17
+	codeCustomLimit = 613
+	codeBUCLimit    = 80004
+)
+
 func unknown(code string) core.Outcome     { return core.Outcome{State: "UNKNOWN", Code: code} }
 func failedFinal(code string) core.Outcome { return core.Outcome{State: "FAILED_FINAL", Code: code} }
 func unconfirmed() core.Outcome            { return unknown("graph_unconfirmed") }
@@ -44,6 +55,10 @@ func rejection(rep reply, err error) (core.Outcome, bool) {
 		return core.Outcome{}, false
 	}
 	out := failedFinal("graph_" + strconv.Itoa(code))
+	switch code {
+	case codeAppLimit, codeUserLimit, codeCustomLimit, codeBUCLimit:
+		out = failedFinal("rate_limited")
+	}
 	if message != "" {
 		out.Detail = GraphRefusal{UserMessage: message}
 	}
