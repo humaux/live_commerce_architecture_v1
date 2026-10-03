@@ -516,6 +516,38 @@ func (s *Service) AttributionReport(ctx context.Context, tx pgx.Tx, scope platfo
 	return s.reportQuery(ctx, tx, scope, token, from, to, `SELECT ads.attribution_report($1,$2,$3::date,$4::date)`)
 }
 
+// ReadLiveAudience plans a read-only Page Insights operation. It neither reads
+// provider credentials in the API process nor mutates a Meta asset. The command
+// receipt and default-lane job commit together; UNKNOWN is never blindly replayed.
+func (s *Service) ReadLiveAudience(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string) (json.RawMessage, error) {
+	hash, err := tokenHash(token)
+	if err != nil {
+		return nil, err
+	}
+	if !command.ValidID(sessionID) {
+		return nil, refusal("invalid_request")
+	}
+	var out json.RawMessage
+	err = command.Run(ctx, tx, scope, "ads.audience.read", key, struct {
+		PrincipalID string `json:"principal_id"`
+		SessionID   string `json:"session_id"`
+	}{scope.PrincipalID, sessionID}, &out, func() error {
+		op, e := newID(ctx, tx)
+		if e != nil {
+			return e
+		}
+		job, e := core.InsertOperationJob(ctx, s.jobs, tx, op)
+		if e != nil {
+			return e
+		}
+		if e = tx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,$4,$5)`, hash, scope.StoreID, sessionID, op, job).Scan(&out); e != nil {
+			return e
+		}
+		return command.Audit(ctx, tx, scope, "ads.audience.read_requested")
+	})
+	return out, mapError(err)
+}
+
 func (s *Service) reportQuery(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, query string) (json.RawMessage, error) {
 	hash, err := tokenHash(token)
 	if err != nil {

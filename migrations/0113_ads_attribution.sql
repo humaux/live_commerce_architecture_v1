@@ -403,11 +403,23 @@ REVOKE ALL ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) FROM 
 GRANT EXECUTE ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) TO commerce_ads_writer;
 COMMENT ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) IS 'internal/ads D9 session-only aggregate of received comment intake, accepted claim events and current issued checkout links; no actor identifiers or message text.';
 
+CREATE FUNCTION claims.attribution_sources(p_tenant uuid,p_store uuid,p_session uuid)
+RETURNS TABLE(id uuid,session_id uuid,binding_id uuid,asset_id text,source_object_id text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT s.id,s.session_id,s.binding_id,s.asset_id,s.source_object_id FROM live.claim_sources s
+ WHERE s.tenant_id=p_tenant AND s.store_id=p_store AND s.session_id=p_session AND s.object='page' AND s.active
+$$;
+ALTER FUNCTION claims.attribution_sources(uuid,uuid,uuid) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.attribution_sources(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.attribution_sources(uuid,uuid,uuid) TO commerce_media_writer,commerce_integration_writer,commerce_ads_writer;
+GRANT USAGE ON SCHEMA claims TO commerce_media_writer,commerce_integration_writer;
+COMMENT ON FUNCTION claims.attribution_sources(uuid,uuid,uuid) IS 'internal/ads D9 narrow source projection for aggregate reads only; domain owner retains table rights; exact tenant/store/session and active Page sources.';
+
 CREATE FUNCTION live.attribution_sessions(p_tenant uuid,p_store uuid,p_from date,p_to date)
 RETURNS TABLE(session_id uuid,title text,starts_at timestamptz,ends_at timestamptz,post_ids text[])
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT s.id,s.title,coalesce(s.scheduled_at,s.created_at),NULL::timestamptz,
-  ARRAY(SELECT DISTINCT src.source_object_id FROM live.claim_sources src WHERE src.tenant_id=p_tenant AND src.store_id=p_store AND src.session_id=s.id ORDER BY src.source_object_id)
+  ARRAY(SELECT DISTINCT src.source_object_id FROM claims.attribution_sources(p_tenant,p_store,s.id) src ORDER BY src.source_object_id)
  FROM live.sessions s WHERE s.tenant_id=p_tenant AND s.store_id=p_store
   AND coalesce(s.scheduled_at,s.created_at)>=p_from::timestamp AT TIME ZONE 'Asia/Taipei'
   AND coalesce(s.scheduled_at,s.created_at)<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
@@ -487,9 +499,9 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;s record;b record;j record;n integer;req jsonb;
 BEGIN
  SELECT * INTO a FROM ads.auth(p_hash,p_store,ARRAY['ads:read','live:read']);
- SELECT count(*) INTO n FROM live.claim_sources x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.session_id=p_session AND x.object='page' AND x.active;
+ SELECT count(*) INTO n FROM claims.attribution_sources(a.out_tenant,p_store,p_session);
  IF n<>1 THEN RAISE EXCEPTION 'live audience source unavailable' USING ERRCODE='PT422'; END IF;
- SELECT * INTO s FROM live.claim_sources x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.session_id=p_session AND x.object='page' AND x.active;
+ SELECT * INTO s FROM claims.attribution_sources(a.out_tenant,p_store,p_session);
  SELECT * INTO b FROM integration.bindings x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.id=s.binding_id FOR SHARE;
  IF NOT FOUND OR NOT b.enabled OR b.provider<>'facebook' OR b.external_asset_id<>s.asset_id THEN RAISE EXCEPTION 'live audience binding unavailable' USING ERRCODE='PT422'; END IF;
  IF NOT EXISTS(SELECT 1 FROM integration.meta_page_heads h JOIN integration.meta_page_credentials c
@@ -520,8 +532,8 @@ BEGIN
  SELECT * INTO o FROM integration.operations x WHERE x.id=p_operation AND x.provider='facebook' AND x.action='meta.live_insights' AND x.purpose='service' AND x.actor_kind='MERCHANT';
  IF NOT FOUND THEN RETURN 'invalid_request'; END IF;
  IF NOT identity.principal_holds(o.tenant_id,o.store_id,o.principal_id,ARRAY['ads:read','live:read']) THEN RETURN 'principal_revoked'; END IF;
- IF NOT EXISTS(SELECT 1 FROM live.claim_sources s WHERE s.tenant_id=o.tenant_id AND s.store_id=o.store_id AND s.id::text=o.request->>'source_id'
-  AND s.session_id::text=o.request->>'session_id' AND s.binding_id=o.binding_id AND s.source_object_id=o.request->>'post_id' AND s.active)
+ IF NOT EXISTS(SELECT 1 FROM claims.attribution_sources(o.tenant_id,o.store_id,(o.request->>'session_id')::uuid) s WHERE s.id::text=o.request->>'source_id'
+  AND s.binding_id=o.binding_id AND s.source_object_id=o.request->>'post_id')
   THEN RETURN 'source_changed'; END IF;
  RETURN '';
 END $$;
@@ -557,22 +569,36 @@ CREATE FUNCTION integration.finish_meta_audience(p_operation uuid,p_generation b
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE o integration.operations;
 BEGIN
- SELECT * INTO o FROM integration.operations x WHERE x.id=p_operation AND x.action='meta.live_insights' AND x.provider='facebook';
+ SELECT * INTO o FROM integration.operations x WHERE x.id=p_operation AND x.action='meta.live_insights' AND x.provider='facebook' FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'audience unavailable' USING ERRCODE='P0002'; END IF;
  IF p_token IS NULL OR octet_length(p_token)<>32 OR p_mode IS DISTINCT FROM 'dispatch' OR o.generation IS DISTINCT FROM p_generation
   OR o.lease_mode IS DISTINCT FROM p_mode OR o.lease_until IS NULL OR o.lease_until<=clock_timestamp()
   OR o.lease_token_hash IS DISTINCT FROM sha256(p_token) OR o.state<>'DISPATCHING' THEN RAISE EXCEPTION 'audience lease conflict' USING ERRCODE='40001'; END IF;
- IF jsonb_typeof(p_result) IS DISTINCT FROM 'object' OR p_result->>'status' NOT IN ('available','insufficient')
-  OR jsonb_typeof(p_result->'age_gender') IS DISTINCT FROM 'array' OR jsonb_typeof(p_result->'regions') IS DISTINCT FROM 'array'
-  OR jsonb_array_length(p_result->'age_gender')>200 OR jsonb_array_length(p_result->'regions')>200 THEN RAISE EXCEPTION 'invalid audience result' USING ERRCODE='22023'; END IF;
- INSERT INTO ads.live_audience_snapshots(tenant_id,store_id,session_id,source_id,operation_id,snapshot)
- VALUES(o.tenant_id,o.store_id,(o.request->>'session_id')::uuid,(o.request->>'source_id')::uuid,o.id,p_result)
- ON CONFLICT(tenant_id,store_id,session_id) DO UPDATE SET source_id=EXCLUDED.source_id,operation_id=EXCLUDED.operation_id,snapshot=EXCLUDED.snapshot,fetched_at=clock_timestamp();
+ IF integration.check_meta_audience(p_operation)<>'' THEN RAISE EXCEPTION 'audience source changed' USING ERRCODE='42501'; END IF;
+ PERFORM 1 FROM integration.load_meta_audience_token(p_operation,p_generation,p_token);
+ IF NOT FOUND THEN RAISE EXCEPTION 'audience permission revoked' USING ERRCODE='42501'; END IF;
+ PERFORM ads.store_live_audience_snapshot(o.tenant_id,o.store_id,(o.request->>'session_id')::uuid,(o.request->>'source_id')::uuid,o.id,o.created_at,p_result);
 END $$;
-ALTER FUNCTION integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb) OWNER TO commerce_ads_writer;
+ALTER FUNCTION integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb) OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb) TO commerce_claims_worker;
 COMMENT ON FUNCTION integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb) IS 'internal/integrations/metareply Finish in completion transaction; aggregate-only latest snapshot, exact lease, no individual linkage.';
+
+CREATE FUNCTION ads.store_live_audience_snapshot(p_tenant uuid,p_store uuid,p_session uuid,p_source uuid,p_operation uuid,p_requested_at timestamptz,p_result jsonb) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF jsonb_typeof(p_result) IS DISTINCT FROM 'object' OR coalesce(p_result->>'status','') NOT IN ('available','insufficient')
+  OR jsonb_typeof(p_result->'age_gender') IS DISTINCT FROM 'array' OR jsonb_typeof(p_result->'regions') IS DISTINCT FROM 'array'
+  OR jsonb_array_length(p_result->'age_gender')>200 OR jsonb_array_length(p_result->'regions')>200 THEN RAISE EXCEPTION 'invalid audience result' USING ERRCODE='22023'; END IF;
+ INSERT INTO ads.live_audience_snapshots(tenant_id,store_id,session_id,source_id,operation_id,snapshot)
+ VALUES(p_tenant,p_store,p_session,p_source,p_operation,p_result)
+ ON CONFLICT(tenant_id,store_id,session_id) DO UPDATE SET source_id=EXCLUDED.source_id,operation_id=EXCLUDED.operation_id,snapshot=EXCLUDED.snapshot,fetched_at=clock_timestamp()
+ WHERE ads.live_audience_snapshots.fetched_at<=p_requested_at;
+END $$;
+ALTER FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) OWNER TO commerce_ads_writer;
+REVOKE ALL ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) TO commerce_integration_writer;
+COMMENT ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) IS 'internal/integrations lease-fenced private aggregate persistence seam; no runtime table access, stale overlapping read cannot overwrite newer result.';
 
 -- Patch only the audience projection, keeping the already checked report shape.
 DO $patch$
@@ -580,8 +606,8 @@ DECLARE body text;needle text:='jsonb_build_object(''status'',''not_authorized''
 BEGIN
  SELECT prosrc INTO body FROM pg_proc WHERE oid='ads.attribution_report(bytea,uuid,date,date)'::regprocedure;
  IF strpos(body,needle)=0 THEN RAISE EXCEPTION 'audience report patch shape changed'; END IF;
- body:=replace(body,needle,'coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.session_id=s.session_id),'||needle||')');
- EXECUTE 'CREATE OR REPLACE FUNCTION ads.attribution_report(bytea,uuid,date,date) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
+ body:=replace(body,needle,'coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.session_id=s.session_id AND EXISTS(SELECT 1 FROM claims.attribution_sources(a.out_tenant,p_store,s.session_id) src WHERE src.id=x.source_id)),'||needle||')');
+ EXECUTE 'CREATE OR REPLACE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
 END $patch$;
 
 DO $comments$
