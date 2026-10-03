@@ -527,6 +527,12 @@
   .pe-catalog .product-table td:first-child {
     width: auto;
   }
+  /* The shared card-table clips its heading on mobile. Keep the actionable
+     select-all header visible while leaving the descriptive headings hidden. */
+  .pe-catalog .product-table > thead { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  .pe-catalog .product-table > thead > tr { display: block; }
+  .pe-catalog .product-table > thead > tr > th { display: none; }
+  .pe-catalog .product-table > thead > tr > th:first-child { display: block; width: auto; height: auto; padding: 8px 16px; }
 }
 .pe-quick { width: min(720px, calc(100vw - 32px)); max-height: 85dvh; border: 1px solid var(--pe-rule, #dde5ee); border-radius: 8px; padding: 20px; color: inherit; }
 .pe-quick::backdrop { background: rgb(0 0 0 / 35%); }

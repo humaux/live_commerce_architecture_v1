@@ -51,6 +51,21 @@ export const newRow = (values: string[]): DraftRow => ({
   keyword: "",
   active: true,
 });
+export const emptyDraft = (): ProductDraft => ({
+  name: "",
+  description: "",
+  slug: "",
+  seo_title: "",
+  seo_description: "",
+  axes: [],
+  rows: [newRow([])],
+  collections: [],
+  weight: "",
+  length: "",
+  width: "",
+  height: "",
+  warehouse: "",
+});
 export const rowKey = (row: Pick<DraftRow, "values">) =>
   JSON.stringify(row.values);
 export function syncMatrix(

@@ -15,6 +15,7 @@ import {
 import { imageURL, listImages } from "@/lib/images-client";
 import {
   newRow,
+  emptyDraft,
   rowKey,
   syncMatrix,
   draftFromDetail,
@@ -26,21 +27,6 @@ import { productEditorCopy } from "@/lib/product-editor-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
-const emptyDraft = (): ProductDraft => ({
-  name: "",
-  description: "",
-  slug: "",
-  seo_title: "",
-  seo_description: "",
-  axes: [],
-  rows: [newRow([])],
-  collections: [],
-  weight: "",
-  length: "",
-  width: "",
-  height: "",
-  warehouse: "",
-});
 function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
   return draftFromDetail(detail);
@@ -260,33 +246,43 @@ export function ProductDocumentForm({
     setSection(id);
   }
   const save = (publish: boolean, requestedStatus = targetStatus) => {
-    if (!disabled) {
-      if (axisError) write.setMessage(axisError);
-      else if (
-        mode === "create" &&
-        draft.rows.some((r) => r.tracked && Number(r.quantity) > 0) &&
-        warehouses.length !== 1 &&
-        !draft.warehouse
-      ) {
-        write.setMessage(c.chooseWarehouse);
-        focus("shipping");
-      } else if (
-        detail &&
-        (rowArchive.current.some((r) => r.id) ||
-          draft.rows.some((r) => r.id && !r.active)) &&
-        !window.confirm(c.archiveRows)
-      )
-        return;
-      else
-        write.save(
-          draft,
-          photos,
-          publish || (mode === "edit" && requestedStatus === "active"),
-          mode === "edit" && requestedStatus !== "archived"
-            ? requestedStatus
-            : undefined,
-        );
+    if (disabled) return;
+    if (axisError) {
+      write.setMessage(axisError);
+      return;
     }
+    if (
+      mode === "create" &&
+      draft.rows.some((r) => r.tracked && Number(r.quantity) > 0) &&
+      warehouses.length !== 1 &&
+      !draft.warehouse
+    ) {
+      write.setMessage(c.chooseWarehouse);
+      focus("shipping");
+      return;
+    }
+    if (
+      detail &&
+      (rowArchive.current.some((r) => r.id) ||
+        draft.rows.some((r) => r.id && !r.active)) &&
+      !window.confirm(c.archiveRows)
+    )
+      return;
+    if (
+      !publish &&
+      requestedStatus === "draft" &&
+      (write.savedDetail ?? detail)?.status === "active" &&
+      !window.confirm(c.unpublishConfirm)
+    )
+      return;
+    void write.save(
+      draft,
+      photos,
+      publish || (mode === "edit" && requestedStatus === "active"),
+      mode === "edit" && requestedStatus !== "archived"
+        ? requestedStatus
+        : undefined,
+    );
   };
   return (
     <form
