@@ -1,0 +1,95 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.60s)
+=== RUN   TestIdentityFunctionsAreTheOnlyLoginAuthority
+--- PASS: TestIdentityFunctionsAreTheOnlyLoginAuthority (0.03s)
+=== RUN   TestIdentityConcurrentFlowsShareOneLiteralIdentity
+--- PASS: TestIdentityConcurrentFlowsShareOneLiteralIdentity (0.04s)
+=== RUN   TestIdentitySameSubjectFromDifferentIssuerDoesNotMerge
+--- PASS: TestIdentitySameSubjectFromDifferentIssuerDoesNotMerge (0.03s)
+=== RUN   TestIdentitySessionIssueAuditFailureRollsBackButConsumesFlow
+--- PASS: TestIdentitySessionIssueAuditFailureRollsBackButConsumesFlow (0.03s)
+=== RUN   TestIdentityLogoutAndInitialStoreSerialize
+--- PASS: TestIdentityLogoutAndInitialStoreSerialize (0.04s)
+=== RUN   TestIdentityFlowBindingExpiryReplayAndMapping
+--- PASS: TestIdentityFlowBindingExpiryReplayAndMapping (0.08s)
+=== RUN   TestIdentityConcurrentConsumeAndProviderFailure
+--- PASS: TestIdentityConcurrentConsumeAndProviderFailure (0.04s)
+=== RUN   TestIdentityInitialStoreAtomicIdempotentAndScoped
+--- PASS: TestIdentityInitialStoreAtomicIdempotentAndScoped (0.06s)
+=== RUN   TestIdentityRollbackWhenLastAuditInsertFails
+--- PASS: TestIdentityRollbackWhenLastAuditInsertFails (0.04s)
+=== RUN   TestIdentityDatabaseAuthoritySeparation
+--- PASS: TestIdentityDatabaseAuthoritySeparation (0.09s)
+=== RUN   TestIdentityPolicyValidationAndExpiredAudience
+--- PASS: TestIdentityPolicyValidationAndExpiredAudience (0.04s)
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/CREATEROLE
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/CREATEDB
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/REPLICATION
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/relation
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/function
+=== RUN   TestIdentityPoolRejectsPrivilegeAndObjectOwnership/writer_membership
+--- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership (0.32s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/CREATEROLE (0.07s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/CREATEDB (0.05s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/REPLICATION (0.05s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/relation (0.05s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/function (0.05s)
+    --- PASS: TestIdentityPoolRejectsPrivilegeAndObjectOwnership/writer_membership (0.05s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.92s)
+=== RUN   TestStoreDomainsSDW07AskAdmitDenyMatrix
+--- PASS: TestStoreDomainsSDW07AskAdmitDenyMatrix (0.11s)
+=== RUN   TestStoreDomainsSDW08DNSVerifierRefusesForeignAddr
+--- PASS: TestStoreDomainsSDW08DNSVerifierRefusesForeignAddr (0.00s)
+=== RUN   TestStoreDomainsSDW09AskRateLimitFairness
+--- PASS: TestStoreDomainsSDW09AskRateLimitFairness (0.00s)
+=== RUN   TestStoreDomainsSDW10AskHTTPMatrix
+--- PASS: TestStoreDomainsSDW10AskHTTPMatrix (0.01s)
+=== RUN   TestStoreDomainsSDW11HandleChangeDetachesOldOrigin
+--- PASS: TestStoreDomainsSDW11HandleChangeDetachesOldOrigin (0.09s)
+=== RUN   TestStoreDomainsSDW12CaddyOnDemandEnabled
+--- PASS: TestStoreDomainsSDW12CaddyOnDemandEnabled (0.00s)
+=== RUN   TestStoreDomainsSDW13VerifySweepHasProductionRunner
+--- PASS: TestStoreDomainsSDW13VerifySweepHasProductionRunner (0.00s)
+=== RUN   TestStoreDomainsSDW14RefusalsHold
+--- PASS: TestStoreDomainsSDW14RefusalsHold (0.06s)
+=== RUN   TestStoreDomainsSDW15PlatformOriginSurvivesSelfService
+--- PASS: TestStoreDomainsSDW15PlatformOriginSurvivesSelfService (0.05s)
+=== RUN   TestStoreDomainsBackfillsPre0106Stores
+--- PASS: TestStoreDomainsBackfillsPre0106Stores (2.07s)
+=== RUN   TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix
+--- PASS: TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix (0.18s)
+=== RUN   TestStoreDomainsSDW02PlatformRowActive
+--- PASS: TestStoreDomainsSDW02PlatformRowActive (0.07s)
+=== RUN   TestStoreDomainsSDW03MerchantDomainLifecycle
+--- PASS: TestStoreDomainsSDW03MerchantDomainLifecycle (0.08s)
+=== RUN   TestStoreDomainsSDW04RefusalsAndOwnerOnly
+--- PASS: TestStoreDomainsSDW04RefusalsAndOwnerOnly (0.08s)
+=== RUN   TestStoreDomainsSDW05Worker301AndTLSAsk
+--- PASS: TestStoreDomainsSDW05Worker301AndTLSAsk (0.08s)
+=== RUN   TestStoreDomainsSDW06SchemaAndACLInventory
+--- PASS: TestStoreDomainsSDW06SchemaAndACLInventory (0.08s)
+=== RUN   TestStoreDomainsSDW07OperatorHandleSet
+--- PASS: TestStoreDomainsSDW07OperatorHandleSet (0.10s)
+=== RUN   TestStoreDomainsIdempotency
+--- PASS: TestStoreDomainsIdempotency (0.05s)
+=== RUN   TestStoreDomainsMerchantViewKind
+--- PASS: TestStoreDomainsMerchantViewKind (0.05s)
+=== RUN   TestStoreDomainsApexEdgeInstructions
+--- PASS: TestStoreDomainsApexEdgeInstructions (0.06s)
+=== RUN   TestStoreDomainsDeployPassesBaseDomainToMigrate
+--- PASS: TestStoreDomainsDeployPassesBaseDomainToMigrate (0.01s)
+=== RUN   TestStoreDomainsNumericConcurrentCreation
+--- PASS: TestStoreDomainsNumericConcurrentCreation (0.10s)
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false
+=== RUN   TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true
+--- PASS: TestStoreDomainsNumericCandidateRetryAndBound (0.06s)
+    --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=false (0.00s)
+    --- PASS: TestStoreDomainsNumericCandidateRetryAndBound/exhausted=true (0.01s)
+=== RUN   TestStoreDomainsNumericConcurrentCandidateCollision
+--- PASS: TestStoreDomainsNumericConcurrentCandidateCollision (0.06s)
+PASS
+ok  	livecommerce/tests/foundation	12.770s
+test-focused: top-level PASS=38 FAIL=0 SKIP=0 exit=0

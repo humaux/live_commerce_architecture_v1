@@ -3,7 +3,7 @@ package foundation_test
 // R5 unit store-domains, independent PG gate (REAL_PG; evidence MOCK: nothing here verifies DNS or a certificate).
 // Written from docs/delivery/units/store-domains.md and migrations/0106_store_domains.sql, not from the implementation:
 //
-//	SDW01 handle format / reserved / uniqueness / suffix       SDW02 platform row ACTIVE + idempotence
+//	SDW01 handle format / reserved / numeric uniqueness       SDW02 platform row ACTIVE + idempotence
 //	SDW03 merchant domain lifecycle (request -> ACTIVE)        SDW04 refusals + owner-only scope
 //	SDW05 worker transitions + 301 primary + TLS ask           SDW06 schema/ACL inventory + EXECUTE matrix
 
@@ -189,27 +189,27 @@ func TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix(t *testing.T) {
 		}
 	}
 
-	// Slug + fallback + suffix (the single writer control.assign_store_handle).
+	// Owner 2026-10-03: every display name gets a random eight-digit ID, never a slug.
 	var slug string
-	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('Acme Shop', $1::uuid)`, randomUUID()).Scan(&slug); err != nil || slug != "acme-shop" {
-		t.Fatalf("assign_store_handle slug = %q, %v", slug, err)
+	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('Acme Shop', $1::uuid)`, randomUUID()).Scan(&slug); err != nil || !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(slug) {
+		t.Fatalf("assign_store_handle numeric ID = %q, %v", slug, err)
 	}
 	id := randomUUID()
 	var fallback string
-	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('店铺名', $1::uuid)`, id).Scan(&fallback); err != nil || fallback != "store-"+strings.ReplaceAll(id, "-", "")[:8] {
-		t.Fatalf("assign_store_handle fallback = %q, %v (want store-<id8>)", fallback, err)
+	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('店铺名', $1::uuid)`, id).Scan(&fallback); err != nil || !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(fallback) {
+		t.Fatalf("assign_store_handle non-ASCII name numeric ID = %q, %v", fallback, err)
 	}
-	// Uniqueness backstop + suffix: an occupied handle takes -2 for a different id.
+	// Persisted numbers cannot be reassigned; the unique index remains the race backstop.
 	taken := randomUUID()
-	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('Taken Name', $1::uuid)`, taken).Scan(&slug); err != nil || slug != "taken-name" {
+	if err := o.QueryRow(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Taken Name','USD') RETURNING handle`, s.f.tenant, taken).Scan(&slug); err != nil || !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(slug) {
 		t.Fatalf("first assign = %q, %v", slug, err)
 	}
-	mustExec(t, o, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Taken Name','USD','taken-name')`, s.f.tenant, taken)
-	if err := o.QueryRow(ctx, `SELECT control.assign_store_handle('Taken Name', $1::uuid)`, randomUUID()).Scan(&slug); err != nil || slug != "taken-name-2" {
-		t.Fatalf("suffix assign = %q, %v (want taken-name-2)", slug, err)
+	var other string
+	if err := o.QueryRow(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Taken Name','USD') RETURNING handle`, s.f.tenant, randomUUID()).Scan(&other); err != nil || other == slug || !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(other) {
+		t.Fatalf("second numeric ID = %q, %v; first %q", other, err, slug)
 	}
 	// The unique index is the concurrency backstop: a raw duplicate handle is a 23505, not silently accepted.
-	if err := o.QueryRow(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Dup','USD','taken-name') RETURNING id`, s.f.tenant, randomUUID()).Scan(&id); pgCode(err) != "23505" {
+	if err := o.QueryRow(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency,handle) VALUES($1,$2,'Dup','USD',$3) RETURNING id`, s.f.tenant, randomUUID(), slug).Scan(&id); pgCode(err) != "23505" {
 		t.Fatalf("duplicate handle: err=%v, want 23505", err)
 	}
 }
@@ -220,8 +220,8 @@ func TestStoreDomainsSDW02PlatformRowActive(t *testing.T) {
 	o := s.b.owner
 
 	handle := handleOf(t, o, s.f.store)
-	if handle == "" || !strings.HasPrefix(handle, "t06-go-store") {
-		t.Fatalf("auto handle = %q, want the t06-go-store slug", handle)
+	if !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(handle) {
+		t.Fatalf("auto handle = %q, want a random eight-digit store number", handle)
 	}
 	h, origin := platformOrigin(t, o, s.f.store, s.base)
 	if h != handle || origin != "https://"+handle+".example.com" {
@@ -436,7 +436,7 @@ func TestStoreDomainsSDW05Worker301AndTLSAsk(t *testing.T) {
 	}
 }
 
-// sdFns is the full 0106 function surface: function -> owner, whether it is SECURITY DEFINER (the three pure-SQL
+// sdFns is the full 0106 function surface: function -> owner, whether it is SECURITY DEFINER (the two pure-SQL
 // handle helpers are not: they are IMMUTABLE and touch no table), and the non-owner EXECUTE grantees. The owner
 // always keeps EXECUTE (materialised into the ACL by every REVOKE ALL ... FROM PUBLIC), so it is asserted by the
 // test itself rather than listed here; nil means the function is owner-only.
@@ -446,14 +446,12 @@ var sdFns = []struct {
 	exec      []string
 }{
 	{"control.store_handle_reserved(text)", "commerce_identity_writer", false, []string{"commerce_storefront_writer"}},
-	{"control.slug_store_handle(text)", "commerce_identity_writer", false, nil},
 	{"control.store_handle_valid(text)", "commerce_identity_writer", false, []string{"commerce_storefront_writer"}},
 	{"control.store_handle_taken(text)", "commerce_storefront_writer", true, []string{"commerce_identity_writer"}},
 	{"control.assign_store_handle(text,uuid)", "commerce_identity_writer", true, nil},
 	{"control.stores_handle_default()", "commerce_identity_writer", true, nil},
 	{"control.stores_handle_changed()", "commerce_storefront_writer", true, nil},
 	{"control.operator_set_store_handle(uuid,text,boolean)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
-	{"control.suggest_store_handle(text,text)", "commerce_identity_writer", true, []string{"commerce_identity"}},
 	{"control.ensure_store_platform_domain(uuid,text)", "commerce_storefront_writer", true, []string{"commerce_identity", "commerce_storefront_registrar"}},
 	{"control.backfill_platform_domains(text)", "commerce_storefront_writer", true, []string{"commerce_storefront_registrar"}},
 	{"control.request_merchant_domain(bytea,uuid,text,text,text)", "commerce_storefront_writer", true, []string{"commerce_runtime"}},

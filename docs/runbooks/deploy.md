@@ -168,7 +168,7 @@ deploy/scripts/deploy.sh upgrade <tag>
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
 4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
-5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0111 + post_river 0020、0021，0106 会给已有店铺按店名补 handle 和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
+5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0111 + post_river 0020、0021，0106 会给已有店铺补随机 8 位数字编号和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
 6. **升级后必查**：
    - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+8>`（0106–0111、post_river 0020、0021）。
    - 后台商品列表与订单列表（v2 队列计数）能打开；已有商品的 SKU 都显示「追踪库存」。
@@ -176,9 +176,9 @@ deploy/scripts/deploy.sh upgrade <tag>
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
    - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
    - 店铺、商品、订单数据仍在。
-7. **设定店铺英文 ID（owner 提供）**：店铺尚未发布时执行
-   `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <英文ID>`（同一事务里解绑旧平台地址、建立新地址；保留字、已占用、格式错误会被拒绝）。之后 `store-admin status` 确认新地址。
-8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问 `https://<英文ID>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
+7. **核对自动分配的地址；handle-set 可选**：0106 为存量店铺自动分配随机 8 位数字编号，新建店铺也走同一分配函数；使用 `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 核对 `https://<数字编号>.xgdwm.com`，不需要 owner 先提供英文 ID。
+   运维确需改号时可选用 `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <handle>`；现有发布后限制、同事务解绑旧平台地址、保留字/占用/格式校验保持不变。执行后必须用 `store-admin status` 核对实际地址。
+8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问核对过的 `https://<数字编号>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
 9. **回滚**：同 §4.1 第 8 步，迁移之后应用回滚被拒绝，只能前向修复；必要时由 owner 决定从 `pre-upgrade-<tag>` 恢复。
 
 ## 5. 回滚决策树

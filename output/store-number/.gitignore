@@ -1,0 +1,3 @@
+# Raw disposable browser fixtures include sentinel credentials/canaries. Keep local only.
+browser-evidence/
+child-pg.lock/

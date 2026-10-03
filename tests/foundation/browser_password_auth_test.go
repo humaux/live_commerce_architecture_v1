@@ -31,6 +31,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/integrations/core"
@@ -46,6 +47,12 @@ func TestBrowserPasswordAuth(t *testing.T) {
 	// Daily mail cap 5000: the deployment-wide mail shares (§6) are not what this gate measures, and the
 	// matrix + BFF checks send well over the default 200/day. Per-source limits stay at their contract values.
 	e := newPwa(t, pwaCap(5000))
+	// Match a deployed storefront base for the registration receipt; other password fixtures stay unchanged.
+	var identityErr error
+	e.oidc, identityErr = identity.New(e.pool, &identityProvider{subject: randomUUID()}, identity.Policy{ProviderKey: "isolated-test-provider-v1", SessionTTL: time.Hour, OnboardingEnabled: true, Currencies: []string{"TWD", "USD"}, StoreBaseDomain: "example.com"})
+	if identityErr != nil {
+		t.Fatal(identityErr)
+	}
 	f := e.f
 	root, err := filepath.Abs("../..")
 	if err != nil {

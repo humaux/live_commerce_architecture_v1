@@ -1,0 +1,5 @@
+--- FAIL: TestIdentityHandleSuggestRemoved (0.00s)
+    handler_test.go:23: retired POST suggestion route returned 200
+FAIL
+FAIL	livecommerce/internal/identityhttp	0.839s
+FAIL

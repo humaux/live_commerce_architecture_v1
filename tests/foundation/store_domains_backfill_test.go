@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,8 +50,8 @@ func TestStoreDomainsBackfillsPre0106Stores(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT handle FROM control.stores WHERE id=$1`, storeID).Scan(&handle); err != nil {
 		t.Fatal(err)
 	}
-	if handle == "" {
-		t.Fatal("pre-0106 store did not get a handle from the 0106 handle backfill")
+	if len(handle) != 8 || handle[0] < '1' || handle[0] > '9' || strings.Trim(handle, "0123456789") != "" {
+		t.Fatalf("pre-0106 store must receive a random eight-digit number, got %q", handle)
 	}
 	var origin, state, evidence string
 	var validUntil time.Time
