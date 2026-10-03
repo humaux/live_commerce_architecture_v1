@@ -210,7 +210,7 @@ export function Attribution({
                   : c.unavailable}
             </p>
             {error === "signed-out" ? (
-              <Link href={`/${locale}/login`}>{c.signIn}</Link>
+            <Link href={`/${locale}/`}>{c.signIn}</Link>
             ) : (
               error === "unavailable" && (
                 <button
