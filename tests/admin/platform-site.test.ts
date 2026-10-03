@@ -9,6 +9,8 @@ test("PS1 legal identity is one untranslated source", () => {
   assert.equal(company.legalEnglish, "Hong Kong Da Wan Trading Limited");
   assert.equal(company.legalChinese, "香港大碗貿易有限公司");
   assert.equal(company.registrationNumber, "81215167");
+  assert.equal(company.businessRegistrationNumber, "81215167-000-09-26-2");
+  assert.equal(company.incorporatedOn, "2026-09-11");
   assert.equal(company.address, "RM 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong");
   assert.equal(operatedBy, `${company.productName} is operated by ${company.legalEnglish}`);
 });
@@ -17,7 +19,7 @@ test("PS1 contact and hosts come only from configuration; production fails close
   for (const field of ["LC_COMPANY_CONTACT_EMAIL", "LC_PLATFORM_HOST", "LC_ADMIN_HOST"] as const) {
     assert.throws(() => companyConfig({ ...env, [field]: "" }), new RegExp(field));
   }
-  for (const value of ["bad", "<a>@example.invalid", "a@example.invalid\r\nBcc:x"]) {
+  for (const value of ["bad", "<a>@example.invalid", "a@example.invalid\r\nBcc:x", ".a@example.invalid", "a..b@example.invalid", "a@example..invalid", "a@-example.invalid"]) {
     assert.throws(() => companyConfig({ ...env, LC_COMPANY_CONTACT_EMAIL: value }));
   }
   for (const host of ["https://evil.invalid", "host.invalid/path", "host.invalid:443", "evil.invalid@ok.invalid"]) {

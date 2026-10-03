@@ -27,6 +27,9 @@ export function companyConfig(env: Env = process.env) {
   const email = env.LC_COMPANY_CONTACT_EMAIL ?? "";
   // This is a public address, not a mailbox credential. Never invent a default.
   if (email.length > 254 || !/^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$/.test(email)) throw new Error("Invalid LC_COMPANY_CONTACT_EMAIL");
+  const [local, domain] = email.split("@");
+  if (local.length > 64 || local.startsWith(".") || local.endsWith(".") || local.includes("..")) throw new Error("Invalid LC_COMPANY_CONTACT_EMAIL");
+  host(domain, "LC_COMPANY_CONTACT_EMAIL");
   const platformHost = host(env.LC_PLATFORM_HOST, "LC_PLATFORM_HOST");
   const adminHost = host(env.LC_ADMIN_HOST, "LC_ADMIN_HOST");
   if (platformHost === adminHost || `www.${platformHost}` === adminHost) throw new Error("LC_ADMIN_HOST must differ from LC_PLATFORM_HOST");
