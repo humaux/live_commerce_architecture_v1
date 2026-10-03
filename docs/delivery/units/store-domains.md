@@ -86,3 +86,29 @@ All K3 red tests (SDW07–SDW15, `--browser-store-domains`) stay as written; the
   - **P2-7:** docs and GATES must describe only shipped behaviour.
   - **P2-8:** merchants cannot suspend or detach the platform-subdomain row, and the card shows no such buttons.
 - **P2-5 (handle-suggest is unauthenticated and unrate-limited):** accepted as low risk; logged. Revisit when the public signup is opened.
+
+## Owner ruling (2026-10-03): system-assigned numeric store ID replaces the name-derived handle
+The owner asked how 1688 does it: 1688 and Taobao give every shop a system-generated number, with addresses like `shop<number>.1688.com`; a vanity subdomain is optional and comes later. The owner chose `<number>.xgdwm.com`. 0106 has not been deployed yet, so it is changed in place.
+
+1. **Assignment.** `control.assign_store_handle` returns a **random 8-digit number** (`^[1-9][0-9]{7}$`).
+   - The number is non-sequential, so it reveals neither the store count nor neighbouring stores.
+   - It must not be reserved, not already in `control.stores.handle`, and not taken by `control.store_handle_taken`. Retries are bounded (e.g. 50), then `PT409`; the unique index remains the race backstop.
+   - Both paths use this: the BEFORE INSERT trigger for new stores, and 0106's backfill of existing stores (so the pilot store gets a number at upgrade; the owner does not have to supply anything).
+   - `control.slug_store_handle` and the name-derived logic are removed.
+   - ponytail: the handle doubles as the store ID; if vanity handles arrive later, add an immutable `store_no` column at that point.
+2. **Onboarding.**
+   - Remove `POST /v1/identity/handle-suggest`, the BFF route `/api/onboarding/handle-suggest`, `SuggestStoreHandle` and the client code. A random number cannot be previewed before insert.
+   - After signup creates the store, show the assigned address `https://<number>.xgdwm.com` (initial-store already returns the handle).
+   - Copy: 「系統會自動分配店鋪編號」 in three locales.
+3. **Not changed.**
+   - `store-admin handle-set` stays as an ops tool (moving to a vanity handle or another number in the same transaction).
+   - Merchant custom domains, the subdomain origin model, Caddy, tls-ask, verification jobs.
+4. **Tests are re-aligned to the new contract, not weakened.**
+   - Old assertions that expect name-derived handles are rewritten as assertions of the numeric format, uniqueness and reservation rules.
+   - Additions:
+     - (a) 50 concurrent store inserts all receive distinct 8-digit numbers;
+     - (b) 0106 backfill gives existing stores a number;
+     - (c) an occupied number is retried;
+     - (d) the handle-suggest route returns 404/405 and the BFF route no longer exists;
+     - (e) the onboarding browser flow shows the assigned numeric address after real clicks.
+5. **Gate.** Full G07 plus the store-domains, password-auth/onboarding, admin-shell and click-sweep browser modes. Runbook §4.2 step 7 becomes "check the auto-assigned address; handle-set is optional".
