@@ -22,6 +22,8 @@ import { navAccessFrom } from "@/lib/team-model";
 import type { Store } from "@/lib/model";
 import { BillingBanner } from "./BillingBanner";
 import { Icon } from "./Icon";
+import { company } from "@/lib/company";
+import { OperatorFooter } from "./OperatorFooter";
 
 export function WorkspaceFrame({
   locale,
@@ -239,6 +241,7 @@ export function WorkspaceFrame({
         skipLabel={c.skip}
         rail={
           <>
+            <div className="platform-shell-brand" data-testid="shell-platform-brand">{company.productName}</div>
             {selectedStore && (
               <div className={s.brand} data-testid="shell-store-brand">
                 <span className={s.brandMark} aria-hidden="true">
@@ -409,6 +412,7 @@ export function WorkspaceFrame({
             {children}
           </>
         )}
+        <OperatorFooter />
       </AppShell>
     </>
   );

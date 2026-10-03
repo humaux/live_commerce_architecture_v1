@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { otherID } from "./shell-fixture.mjs";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
+import { company, operatedBy, brandedTitle } from "../../apps/admin/lib/company.ts";
 const require = createRequire(import.meta.url);
 const sizes = [
   [1366, 768],
@@ -36,6 +37,8 @@ export async function runShellGate({
     await page
       .locator('[data-testid="nav-group-overview"]')
       .waitFor({ state: "attached" });
+    assert.equal(await page.getByTestId("shell-platform-brand").textContent(), company.productName);
+    assert.equal(await page.getByTestId("operator-footer").innerText(), operatedBy);
   };
   const openMenu = async () => {
     if (
@@ -553,8 +556,8 @@ export async function runShellGate({
       await page.goto(`${base}/${locale}${path}`);
       assert.equal(
         await page.title(),
-        shellCopy[locale][label],
-        "Public page title from registry",
+        label === "invite" ? shellCopy[locale][label] : brandedTitle(shellCopy[locale][label]),
+        "Owner brand ruling: exact branded signup/reset title; invitation metadata unchanged",
       );
       if (label === "invite")
         assert.equal(

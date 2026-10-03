@@ -1,7 +1,7 @@
 // PS1/PS4: platform identity/configuration and host routing; no provider calls.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { company, companyConfig, operatedBy, platformRoute } from "../../apps/admin/lib/company.ts";
+import { company, companyConfig, operatedBy, platformRoute, brandedTitle } from "../../apps/admin/lib/company.ts";
 
 const env = { NODE_ENV: "production", LC_PLATFORM_HOST: "platform.example.invalid", LC_ADMIN_HOST: "admin.example.invalid", LC_COMPANY_CONTACT_EMAIL: "contact@example.invalid" };
 test("PS1 legal identity is one untranslated source", () => {
@@ -39,4 +39,9 @@ test("PS2 public routes default to zh-TW, restrict page/locale, and never includ
 test("PS4 optional Meta verification value never has a fake default", () => {
   assert.equal(companyConfig(env).verification, undefined);
   assert.equal(companyConfig({ ...env, LC_META_DOMAIN_VERIFICATION: "fixture-domain-proof" }).verification, "fixture-domain-proof");
+});
+test("PS1 every locale uses the same product name in auth page titles", () => {
+  for (const title of ["登入", "登录", "Sign in", "建立帳號", "创建账号", "Create account", "重設密碼", "重设密码", "Reset password"]) {
+    assert.equal(brandedTitle(title), `DaWan Live · ${title}`);
+  }
 });

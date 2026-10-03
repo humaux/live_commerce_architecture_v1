@@ -10,6 +10,9 @@ export const company = {
   address: "RM 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong",
 } as const;
 export const operatedBy = `${company.productName} is operated by ${company.legalEnglish}`;
+export function brandedTitle(pageName: string): string {
+  return `${company.productName} · ${pageName}`;
+}
 export const platformLocales = ["zh-TW", "zh-CN", "en"] as const;
 export type PlatformLocale = (typeof platformLocales)[number];
 export const platformPages = ["home", "privacy", "terms", "data-deletion", "contact"] as const;

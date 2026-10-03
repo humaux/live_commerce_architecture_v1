@@ -8,7 +8,9 @@ import { validStorefrontReceipt } from "@/lib/storefront-handle";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { localeNames, locales, type Locale } from "@live-commerce/i18n";
-import { entryCopy } from "@/lib/entry-copy";
+import { entryCopy, passwordCopy } from "@/lib/entry-copy";
+import { company, brandedTitle } from "@/lib/company";
+import { OperatorFooter } from "./OperatorFooter";
 import {
   ENTRY_TTL_MS,
   emptyEntryDraft,
@@ -342,8 +344,10 @@ export function Entry({
 
   return (
     <div className="entry-root">
+      {/* Signup/reset use registry metadata; the root entry's title must not affect the signed-in dashboard. */}
+      {!path && <title>{brandedTitle(passwordMode === "signin" ? passwordCopy[locale].signinTitle : status === "onboarding" ? c.title : c.signInTitle)}</title>}
       <header className="entry-topbar">
-        <div className="entry-brand">{c.product}</div>
+        <div className="entry-brand" data-testid="platform-brand">{company.productName}</div>
         <div className="entry-manage">
           <Icon name="inventory" size={20} />
           {c.manage}
@@ -706,6 +710,7 @@ export function Entry({
           </>
         )}
       </main>
+      <OperatorFooter />
     </div>
   );
 }

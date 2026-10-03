@@ -182,6 +182,8 @@ try {
     const { runShellGate } = await import("./shell-browser.mjs");
     try {
       await runShellGate({ page, context, f, base, output, storeID });
+      const { runBrandGate } = await import("./platform-brand-browser.mjs");
+      await runBrandGate({ browser, base, output: "output/platform-site/brand-browser" });
     } catch (error) {
       const red = `${output}/red/run-${Date.now()}`;
       await mkdir(red, { recursive: true });

@@ -998,6 +998,21 @@ code {
 }
 
 /* Merchant entry and first-workspace setup: approved T03 wizard C. */
+.operator-footer {
+  padding: 24px 16px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.operator-footer p { margin: 0; }
+.platform-shell-brand {
+  padding: 16px 16px 0;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 750;
+}
 .entry-root {
   min-height: 100vh;
   background: #f7f9fc;
