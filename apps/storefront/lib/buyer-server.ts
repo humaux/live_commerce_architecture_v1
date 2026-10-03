@@ -11,6 +11,7 @@
 // Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
+import { readAdTouch } from "./ad-touch.ts";
 import { strictJSON } from "./strict-json.ts";
 import {
   validHostedHandoff,
@@ -785,6 +786,13 @@ async function upstream(
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
   // Guest lookup throttles per client IP (Go hashes it into a bucket, never stores it); Caddy always sets X-Forwarded-For.
   if (clientIP) outbound.set("X-Commerce-Client-IP", clientIP);
+  if (path === "checkout" && method === "POST") {
+    // Only this authenticated server hop derives attribution; browser headers/body are never trusted.
+    const touch = readAdTouch(request.headers.get("cookie") ?? "", origin, config.signing);
+    if (touch) outbound.set("X-Commerce-Ad-Touch", Buffer.from(JSON.stringify(touch)).toString("base64url"));
+    const checkoutIP = forwardedIP(request);
+    if (checkoutIP) outbound.set("X-Commerce-Client-IP", checkoutIP);
+  }
   // meta-ads-v1 A-3: Go consentPut records the BROWSER User-Agent for CAPI after an ads_personalization grant
   // (ads.put_capi_context); without this the API would see this server's fetch agent. Consents PUT only.
   const agent = request.headers.get("user-agent");
@@ -974,6 +982,7 @@ function forbiddenHeaders(request: Request): boolean {
     "x-commerce-buyer-bff-key",
     "x-commerce-storefront-origin",
     "x-commerce-bff-key",
+    "x-commerce-ad-touch",
   ].some((name) => request.headers.has(name));
 }
 

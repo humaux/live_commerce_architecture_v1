@@ -4,6 +4,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 export const AD_TOUCH_COOKIE = "lc_ad_touch";
 export const AD_TOUCH_TTL = 7 * 24 * 60 * 60;
+export const AD_ID_TTL = 90 * 24 * 60 * 60;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const CLICK = /^[A-Za-z0-9_-]{1,500}$/;
 const DECIMAL = /^[0-9]{1,20}$/;
@@ -12,10 +13,10 @@ const names = [AD_TOUCH_COOKIE, "lc_fbc", "lc_fbp"] as const;
 export type AdTouch = Readonly<{
   draft_id: string;
   clicked_at: string;
-  fbc: string;
+  fbc: string | null;
   fbp: string;
 }>;
-export type AdTouchCapture = Readonly<{ touch: AdTouch; cookies: readonly string[] }>;
+export type AdTouchCapture = Readonly<{ touch: AdTouch | null; cookies: readonly string[] }>;
 
 function cookieValues(header: string): Map<string, string> | null {
   if (header.length > 16_384) return null;
@@ -39,8 +40,8 @@ function originOK(origin: string): boolean {
   } catch { return false; }
 }
 
-function signature(payload: string, origin: string, key: Buffer): Buffer {
-  return createHmac("sha256", key).update("ad-touch-v1\0").update(origin).update("\0").update(payload).digest();
+function signature(payload: string, origin: string, key: Buffer, name: string): Buffer {
+  return createHmac("sha256", key).update("ad-touch-v2\0").update(name).update("\0").update(origin).update("\0").update(payload).digest();
 }
 
 function timestamp(value: string): number | null {
@@ -57,27 +58,45 @@ function metaID(value: unknown, click: boolean, now: number): value is string {
   return created !== null && created <= now && (click ? CLICK : DECIMAL).test(parts[3]);
 }
 
-export function readAdTouch(header: string, origin: string, key: Buffer, now = Date.now()): AdTouch | null {
-  if (key.length !== 32 || !originOK(origin) || !Number.isSafeInteger(now) || now < 1) return null;
-  const cookies = cookieValues(header);
-  const envelope = cookies?.get(AD_TOUCH_COOKIE);
-  if (!cookies || !envelope || envelope.length > 2048) return null;
+function unseal(envelope: string | undefined, name: string, origin: string, key: Buffer): Record<string, unknown> | null {
+  if (!envelope || envelope.length > 2048) return null;
   const parts = envelope.split(".");
   if (parts.length !== 2 || !/^[A-Za-z0-9_-]+$/.test(parts[0]) || !/^[A-Za-z0-9_-]{43}$/.test(parts[1])) return null;
   const actual = Buffer.from(parts[1], "base64url");
   if (actual.length !== 32 || actual.toString("base64url") !== parts[1] ||
-      !timingSafeEqual(actual, signature(parts[0], origin, key))) return null;
+      !timingSafeEqual(actual, signature(parts[0], origin, key, name))) return null;
   let value: unknown;
   try { value = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8")); } catch { return null; }
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const row = value as Record<string, unknown>;
+  return value as Record<string, unknown>;
+}
+
+function seal(value: object, name: string, origin: string, key: Buffer): string {
+  const payload = Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${payload}.${signature(payload, origin, key, name).toString("base64url")}`;
+}
+
+function readID(cookies: Map<string, string>, name: "lc_fbc" | "lc_fbp", origin: string, key: Buffer, now: number): string | null {
+  const row = unseal(cookies.get(name), name, origin, key);
+  if (!row || Object.keys(row).sort().join(",") !== "expires,value" ||
+      typeof row.expires !== "number" || !Number.isSafeInteger(row.expires) || row.expires < now ||
+      row.expires > now + AD_ID_TTL * 1000 || !metaID(row.value, name === "lc_fbc", now)) return null;
+  return row.value;
+}
+
+export function readAdTouch(header: string, origin: string, key: Buffer, now = Date.now()): AdTouch | null {
+  if (key.length !== 32 || !originOK(origin) || !Number.isSafeInteger(now) || now < 1) return null;
+  const cookies = cookieValues(header);
+  if (!cookies) return null;
+  const row = unseal(cookies.get(AD_TOUCH_COOKIE), AD_TOUCH_COOKIE, origin, key);
+  if (!row) return null;
   if (Object.keys(row).sort().join(",") !== "clicked_at,draft_id,fbc,fbp" ||
       typeof row.draft_id !== "string" || !UUID.test(row.draft_id) || typeof row.clicked_at !== "string" ||
-      !metaID(row.fbc, true, now) || !metaID(row.fbp, false, now)) return null;
+      (row.fbc !== null && !metaID(row.fbc, true, now)) || !metaID(row.fbp, false, now)) return null;
   const clicked = Date.parse(row.clicked_at);
   if (!Number.isSafeInteger(clicked) || clicked < 1 || clicked > now || now - clicked > AD_TOUCH_TTL * 1000 ||
-      new Date(clicked).toISOString() !== row.clicked_at || row.fbc.split(".")[2] !== String(clicked) ||
-      cookies.get("lc_fbc") !== row.fbc || cookies.get("lc_fbp") !== row.fbp) return null;
+      new Date(clicked).toISOString() !== row.clicked_at) return null;
+  // A later fbclid-only landing cannot rewrite this already signed draft touch.
   return { draft_id: row.draft_id, clicked_at: row.clicked_at, fbc: row.fbc, fbp: row.fbp };
 }
 
@@ -90,18 +109,19 @@ export function captureAdTouch(
       now > 8_640_000_000_000_000 || !DECIMAL.test(randomDecimal)) return null;
   const drafts = url.searchParams.getAll("lc_ad");
   const clicks = url.searchParams.getAll("fbclid");
-  if (drafts.length !== 1 || !UUID.test(drafts[0]) || clicks.length !== 1 || !CLICK.test(clicks[0])) return null;
-  const previous = readAdTouch(header, origin, key, now);
-  // Meta wire shape (D2); raw IDs are not hashed. The signature authenticates both cookie values together.
+  if ((!drafts.length && !clicks.length) || drafts.length > 1 || clicks.length > 1 ||
+      (drafts.length && !UUID.test(drafts[0])) || (clicks.length && !CLICK.test(clicks[0]))) return null;
+  const previous = cookieValues(header) ?? new Map<string, string>();
+  // Meta wire shape (D2). IDs are authenticated independently of the 7-day touch (R5).
   // https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/fbp-and-fbc/ (2026-10-04;
   // docs login wall; fbc shape corroborated in facebook/facebook-for-woocommerce's _collectAttribution).
-  const touch: AdTouch = {
-    draft_id: drafts[0], clicked_at: new Date(now).toISOString(),
-    fbc: `fb.1.${now}.${clicks[0]}`, fbp: previous?.fbp ?? `fb.1.${now}.${randomDecimal}`,
-  };
-  const payload = Buffer.from(JSON.stringify(touch)).toString("base64url");
-  const envelope = `${payload}.${signature(payload, origin, key).toString("base64url")}`;
-  const cookie = (name: string, value: string) =>
-    `${name}=${value}; Path=/; Max-Age=${AD_TOUCH_TTL}; HttpOnly; Secure; SameSite=Lax`;
-  return { touch, cookies: [cookie(AD_TOUCH_COOKIE, envelope), cookie("lc_fbc", touch.fbc), cookie("lc_fbp", touch.fbp)] };
+  const fbp = readID(previous, "lc_fbp", origin, key, now) ?? `fb.1.${now}.${randomDecimal}`;
+  const fbc = clicks.length ? `fb.1.${now}.${clicks[0]}` : readID(previous, "lc_fbc", origin, key, now);
+  const touch: AdTouch | null = drafts.length ? { draft_id: drafts[0], clicked_at: new Date(now).toISOString(), fbc, fbp } : null;
+  const cookie = (name: string, value: object, ttl: number) =>
+    `${name}=${seal(value, name, origin, key)}; Path=/; Max-Age=${ttl}; HttpOnly; Secure; SameSite=Lax`;
+  const cookies = [cookie("lc_fbp", { value: fbp, expires: now + AD_ID_TTL * 1000 }, AD_ID_TTL)];
+  if (clicks.length) cookies.push(cookie("lc_fbc", { value: fbc, expires: now + AD_ID_TTL * 1000 }, AD_ID_TTL));
+  if (touch) cookies.push(cookie(AD_TOUCH_COOKIE, touch, AD_TOUCH_TTL));
+  return { touch, cookies };
 }

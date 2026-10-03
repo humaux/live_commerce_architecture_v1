@@ -10,6 +10,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { canonicalRedirect } from "./lib/primary-origin";
+import { adLandingCookies } from "./lib/ad-landing";
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -26,6 +27,9 @@ export async function proxy(request: NextRequest) {
   const preview = token !== null && TOKEN.test(token);
   if (preview) headers.set("x-shop-preview", token);
   const response = NextResponse.next({ request: { headers } });
+  const adCookies = adLandingCookies(request);
+  for (const cookie of adCookies) response.headers.append("Set-Cookie", cookie);
+  if (adCookies.length) response.headers.set("Cache-Control", "private, no-store");
   if (token !== null) {
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
