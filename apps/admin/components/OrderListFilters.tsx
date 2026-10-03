@@ -29,14 +29,14 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
     if (!validOrderFilters(next)) { setInvalid(true); return; }
     onApply(next);
   }
-  return <form className="orders-v2-filters" data-testid="orders-v2-filters" onSubmit={submit}>
+  return <form className="orders-v2-filters" data-testid="orders-v2-filters" data-expanded={expanded} onSubmit={submit}>
     <label className="orders-v2-search">{c.search}
       <input type="search" data-testid="orders-search" value={draft.q} maxLength={160} onChange={e => change("q", e.target.value)} aria-describedby="orders-search-hint" />
       <small id="orders-search-hint">{c.hint}</small>
     </label>
-    <button type="button" className="orders-v2-filter-toggle" data-testid="orders-more-filters" aria-expanded={expanded} aria-controls="orders-secondary-filters" onClick={() => setExpanded(value => !value)}>{expanded ? c.lessFilters : c.moreFilters}</button>
-    <div id="orders-secondary-filters" className="orders-v2-secondary" hidden={!expanded}>
+    <button type="button" className="orders-v2-filter-toggle" data-testid="orders-more-filters" aria-expanded={expanded} aria-controls="orders-state-field orders-secondary-filters" onClick={() => setExpanded(value => !value)}>{expanded ? c.lessFilters : c.moreFilters}</button>
     {children}
+    <div id="orders-secondary-filters" className="orders-v2-secondary" hidden={!expanded}>
     <label>{c.payment}<select data-testid="orders-payment-filter" value={draft.payment_mode} onChange={e => change("payment_mode", e.target.value)}><option value="">{c.all}</option>{modes.map(mode => <option key={mode} value={mode}>{c.modes[mode]}</option>)}</select></label>
     <label>{c.delivery}<select data-testid="orders-delivery-filter" value={draft.delivery} onChange={e => change("delivery", e.target.value)}><option value="">{c.all}</option>{deliveries.map(kind => <option key={kind} value={kind}>{c.deliveries[kind]}</option>)}</select></label>
     <label>{c.session}<select data-testid="orders-session-filter" value={draft.session_id} onChange={e => change("session_id", e.target.value)}><option value="">{c.all}</option>{draft.session_id && !sessions.some(s => s.id === draft.session_id) && <option value={draft.session_id}>{c.selectedSession}</option>}{sessions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>

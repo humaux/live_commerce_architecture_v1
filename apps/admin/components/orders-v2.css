@@ -35,6 +35,12 @@
   .orders-v2-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-secondary { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-filter-toggle { display: block; justify-self: start; min-height: 44px; padding: 9px 12px; }
+  /* Only "Order status" lives behind More filters; Refresh and Export stay on one compact 44px row. */
+  .orders-v2-filters[data-expanded="false"] .orders-v2-state-field { display: none; }
+  .orders-v2-filters .orders-v2-state-controls { align-items: stretch; }
+  .orders-v2-filters .orders-v2-state-field { flex-basis: 100%; }
+  .orders-v2-filters .orders-v2-state-controls > button, .orders-v2-filters .orders-v2-state-controls > .orders-export { flex: 1 1 0; min-width: 0; min-height: 44px; justify-content: center; padding: 9px 12px; }
+  .orders-v2-filters .orders-v2-state-controls > .orders-export-hint { margin-top: -4px; }
   .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td { display: grid; gap: 4px; padding: 8px 3px; }
   .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td:first-child { display: block; }
   .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td:nth-child(2) { display: flex; flex-wrap: wrap; }

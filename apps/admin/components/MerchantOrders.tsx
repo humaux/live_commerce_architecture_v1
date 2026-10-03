@@ -521,7 +521,7 @@ export function MerchantOrders({
         {!["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
           onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }}>
         <div className="orders-controls orders-v2-state-controls">
-          <label>
+          <label id="orders-state-field" className="orders-v2-state-field">
             {c.filter}
             <select
               data-testid="state-filter"
