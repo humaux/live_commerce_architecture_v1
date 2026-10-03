@@ -1,0 +1,49 @@
+
+Running 1 test using 1 worker
+
+(node:78880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger (19.7s)
+
+
+  1) tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByTestId('shell-store-selector')
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByTestId('shell-store-selector') with timeout 10000ms
+      - waiting for getByTestId('shell-store-selector')
+        24 × locator resolved to <select aria-label="Switch store" data-testid="shell-store-selector">…</select>
+           - unexpected value "enabled"
+
+
+      473 |       const quickStart = writes.length;
+      474 |       await single.getByTestId("quick-price").click();
+    > 475 |       await expect(page.getByTestId("shell-store-selector")).toBeDisabled();
+          |                                                              ^
+      476 |       await page.getByTestId("quick-price-0").fill("90");
+      477 |       await page.getByTestId("quick-price-0").press("Enter");
+      478 |       await expect(page.getByTestId("product-quick-edit")).toHaveCount(0);
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/tests/admin/product-editor.acceptance.ts:475:62
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261003T065324.893706000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261003T065324.893706000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261003T065324.893706000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261003T065324.893706000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger 

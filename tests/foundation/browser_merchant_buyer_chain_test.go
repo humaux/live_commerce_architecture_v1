@@ -3,8 +3,10 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -79,6 +81,23 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true}))
 	var productWrites, skuWrites atomic.Int32
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The new UI creates the product and SKU atomically. Count the submitted SKU entries,
+		// preserving the original exactly-one-product / exactly-one-SKU assertion below.
+		if r.Method == "POST" && r.URL.Path == "/v1/admin/stores/"+h.f.storeA1+"/products/document" {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Error(err)
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			var document struct {
+				SKUs []json.RawMessage `json:"skus"`
+			}
+			if err := json.Unmarshal(body, &document); err != nil {
+				t.Error(err)
+			}
+			productWrites.Add(1)
+			skuWrites.Add(int32(len(document.SKUs)))
+		}
 		if r.Method == "POST" && r.URL.Path == "/v1/admin/stores/"+h.f.storeA1+"/products" {
 			productWrites.Add(1)
 		}
@@ -99,6 +118,11 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 		return out
 	}
 	before := facts()
+	expectedOperations := []string{"product.save", "catalog.image.upload", "catalog.image.reorder", "catalog.product.bulk_status"}
+	beforeOperations := make(map[string]int, len(expectedOperations))
+	for _, operation := range expectedOperations {
+		beforeOperations[operation] = countRows(t, h.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3`, h.f.tenantA, h.f.storeA1, operation)
+	}
 	controlKey := randomToken()
 	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Gate-Key") != controlKey {
@@ -178,10 +202,15 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 			t.Fatalf("unexpected purchase side effect in %s", table)
 		}
 	}
-	// stop-bleed D01: the product is made in the product editor (no inline quick-add any more): create (a draft), first SKU, then the activation PATCH.
-	// The old quick-add created the product live in its single receipt, hence the former two.
-	if after["ops.command_results"]-before["ops.command_results"] != 3 {
-		t.Fatal("expected exactly three merchant command receipts (product create, first SKU, product activation)")
+	// Product-editor c6/A: one atomic document (including the SKU), one image,
+	// one order, then publish. Verify every stage exactly once, not only the total.
+	if after["ops.command_results"]-before["ops.command_results"] != len(expectedOperations) {
+		t.Fatal("expected exactly four merchant command receipts (document, image, image order, publication)")
+	}
+	for _, operation := range expectedOperations {
+		if n := countRows(t, h.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3`, h.f.tenantA, h.f.storeA1, operation) - beforeOperations[operation]; n != 1 {
+			t.Fatalf("expected one %s receipt, got %d", operation, n)
+		}
 	}
 	if countRows(t, h.f.owner, `SELECT count(*) FROM identity.sessions WHERE principal_id=$1 AND audience='merchant'`, principal) != 1 || countRows(t, h.f.owner, `SELECT count(*) FROM control.storefront_publications WHERE store_id=$1 AND published`, h.f.storeA1) != 0 {
 		t.Fatal("real merchant session or unpublish readback failed")

@@ -1,0 +1,52 @@
+[
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/document",
+    "method": "POST",
+    "key": "d7c31751-75b6-4eed-ac7c-b3f4ef56388a"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/images",
+    "method": "POST",
+    "key": "abcdbea3-d8b4-4def-834f-7e9f083dbd89"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/images",
+    "method": "POST",
+    "key": "3661f06d-addd-4f06-acf0-660ef676a62d"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/images",
+    "method": "POST",
+    "key": "a68ad338-c70c-4f1e-86a1-e10adcb75eb3"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/images/order",
+    "method": "POST",
+    "key": "286474cb-8a06-456c-aa5d-59c073178564"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/bulk-status",
+    "method": "POST",
+    "key": "f706c48d-aead-4b3f-81eb-8ff7803fc8b8"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/document",
+    "method": "POST",
+    "key": "621fde8b-b5fd-44c6-bce5-9376ece9eb46"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/copy",
+    "method": "POST",
+    "key": "d2f178ba-65db-479a-94ca-a5b7d4d4b85d"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/bulk-status",
+    "method": "POST",
+    "key": "7ea43844-b8eb-4a0d-bd38-5b6ad6156ddd"
+  },
+  {
+    "path": "/api/stores/bfc91c3d-26af-49fb-81c1-826e64d577c7/products/8bee0094-7f5a-4761-9b34-7fcde4db175c/copy",
+    "method": "POST",
+    "key": "63ac33bd-74aa-43dd-89cc-7e2c6203d807"
+  }
+]

@@ -9,7 +9,7 @@ import type { ProductImage } from "./model";
 import { csrfToken, unknownError } from "./client";
 
 export const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
-export const MAX_PHOTOS = 8;
+export const MAX_PHOTOS = 12;
 export const PHOTO_ACCEPT = "image/jpeg,image/png,image/webp";
 const PHOTO_TYPES = new Set(PHOTO_ACCEPT.split(","));
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

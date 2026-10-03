@@ -1,0 +1,152 @@
+✔ destructive / irreversible / sign-out classification (owner list, en + zh) (1.596666ms)
+✔ alike controls (rows with ids / numbers) share one class key (0.168792ms)
+✔ known defects classify, never silence: stale entries are reported (0.459708ms)
+✔ the markdown ledger has one row per interaction and names the verdict (0.231125ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 51.604542
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 108ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 887ms
+  Running TypeScript ...
+  Finished TypeScript in 321ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 45ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 34ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1051ms
+  Running TypeScript ...
+  Finished TypeScript in 249ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/16) ...
+  Generating static pages using 9 workers (4/16) 
+  Generating static pages using 9 workers (8/16) 
+  Generating static pages using 9 workers (12/16) 
+✓ Generating static pages using 9 workers (16/16) in 71ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/handle-suggest
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+└ ƒ /api/team/[action]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserClickSweep
+2026/10/03 15:04:09 INFO orders.export_unshipped store_id=d3ff526c-afd0-4d8d-9a3d-3ea470b7fbd7 rows=2 truncated=false duration_ms=5
+2026/10/03 15:04:35 INFO orders.export_unshipped store_id=d3ff526c-afd0-4d8d-9a3d-3ea470b7fbd7 rows=2 truncated=false duration_ms=14
+2026/10/03 15:05:01 INFO orders.export_unshipped store_id=d3ff526c-afd0-4d8d-9a3d-3ea470b7fbd7 rows=2 truncated=false duration_ms=9
+    browser_click_sweep_test.go:477: G-UI8 click sweep passed; ledger=/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/ui-click-sweep evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2/output/playwright/click-sweep/20261003T070331.822465000
+--- PASS: TestBrowserClickSweep (720.97s)
+PASS
+ok  	livecommerce/tests/foundation	722.660s
+PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.

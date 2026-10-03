@@ -1,8 +1,8 @@
 // Shared merchant step of the joint browser gates (merchant-buyer-gate, storefront-publish-gate, catalog-media-gate): create ONE live product
 // with ONE SKU through the real admin UI, signed in as the MOCK-IdP merchant.
 // stop-bleed D01 (product-editor §c9): the inventory page no longer has the inline "quick add" (product, then first SKU); the only product
-// creation UI is the product editor, so the gates go through it: /products/new (name, description) -> the editor opens on the draft ->
-// the default variant (code + price) -> status "active" -> save. Prices are typed in MAJOR units ("123.45"; whole dollars for TWD, D02).
+// creation UI is the product editor: /products/new -> document with default SKU -> cover upload/order -> publish.
+// Prices are typed in MAJOR units ("123.45"; whole dollars for TWD, D02).
 // The helper never writes anywhere but through those controls: every request is the admin BFF's own (Idempotency-Key, CSRF), nothing is
 // seeded around the UI.
 import assert from "node:assert/strict";
@@ -14,28 +14,18 @@ export async function createProductInEditor(merchant, { adminOrigin, store, loca
   await expect(merchant.getByTestId("product-create-form")).toBeVisible();
   await merchant.getByTestId("product-name").fill(name);
   await merchant.getByTestId("product-description").fill(description);
-  const productReply = api("POST", "products");
-  await merchant.getByTestId("product-create").click();
-  const created = await productReply;
-  assert.equal(created.status(), 200, "product create");
-  const product = await created.json();
-  await merchant.waitForURL(url => url.pathname.endsWith(`/products/${product.id}`));
-  // the first SKU: a product without option axes has one default variant row
-  await expect(merchant.getByTestId("new-variants")).toBeVisible();
-  await merchant.getByTestId("new-code-0").fill(code);
-  await merchant.getByTestId("new-price-0").fill(price);
-  const skuReply = api("POST", "skus");
-  await merchant.getByTestId("new-variants-create").click();
-  const skuResponse = await skuReply;
-  assert.equal(skuResponse.status(), 200, "first SKU create");
-  const sku = await skuResponse.json();
-  assert.equal(sku.product_id, product.id);
-  // a new product is a draft (contracts/storefront-v2.md A); the old quick-add made it live at once, so the gates publish it the same way
-  await expect(merchant.getByTestId("product-status")).toHaveValue("draft");
-  await merchant.getByTestId("product-status").selectOption("active");
-  const saved = api("PATCH", `products/${product.id}`);
-  await merchant.getByTestId("product-save").click();
-  assert.equal((await saved).status(), 200, "product activate");
+  await merchant.getByTestId("product-price").fill(price);
+  await merchant.getByTestId("product-quantity").fill("0");
+  await merchant.locator("#pricing details summary").click();
+  await merchant.locator("#pricing details input").fill(code);
+  const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"+"CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==","base64");
+  await merchant.getByTestId("photo-input").setInputFiles({name:"fixture.png",mimeType:"image/png",buffer:png});
+  const productReply=api("POST","products/document");
+  await merchant.getByTestId("product-publish").click();
+  const created=await productReply; assert.equal(created.status(),200,"product document create");
+  const product=await created.json(),sku=product.skus[0];assert.equal(sku.product_id,product.id);
+  await expect(merchant.getByTestId("product-save-result")).toBeVisible();
+  const link=merchant.getByTestId("product-save-result").locator(`a[href*="/products/${product.id}"]`);await link.click();await merchant.waitForURL(url=>url.pathname.endsWith("/products/"+product.id));await merchant.reload();
   await expect(merchant.getByTestId("product-status")).toHaveValue("active");
   return { product, sku };
 }

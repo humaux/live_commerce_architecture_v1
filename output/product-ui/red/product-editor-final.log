@@ -1,0 +1,54 @@
+
+Running 3 tests using 1 worker
+
+(node:57780) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/product-editor.acceptance.ts:9:3 › PE12-17 document workflow, matrix, list actions and click ledger (16.7s)
+  -  2 tests/admin/catalog-core.spec.ts:96:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en)
+  -  3 tests/admin/catalog-core.spec.ts:96:5 › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW)
+
+
+  1) tests/admin/product-editor.acceptance.ts:9:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+
+    Error: PE14 requires safe editable document
+
+    expect(locator).toBeEnabled() failed
+
+    Locator:  getByTestId('product-create')
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - PE14 requires safe editable document getByTestId('product-create') with timeout 10000ms
+      - waiting for getByTestId('product-create')
+        24 × locator resolved to <button disabled type="submit" data-testid="product-create">Save changes</button>
+           - unexpected value "disabled"
+
+
+      387 |         page.getByTestId("product-create"),
+      388 |         "PE14 requires safe editable document",
+    > 389 |       ).toBeEnabled();
+          |         ^
+      390 |     } finally {
+      391 |       await saveEvidence();
+      392 |       await writeFile(path.join(evidence, "product-ui-output.txt"), out);
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/admin/product-editor.acceptance.ts:389:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261002T164226.445950000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261002T164226.445950000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261002T164226.445950000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261002T164226.445950000/results/catalog-core-PE12-17-docum-0e9d3-st-actions-and-click-ledger/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-editor.acceptance.ts:9:3 › PE12-17 document workflow, matrix, list actions and click ledger 
+  2 did not run

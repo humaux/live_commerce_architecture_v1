@@ -348,46 +348,64 @@ async function journeyProduct(state, journeys) {
   const c = await browser.newContext(ctxOptions(VARIANTS[0], { storageState: state }));
   const page = await c.newPage();
   const u = (p) => `${adminOrigin}/zh-TW${p}${p.includes("?") ? "&" : "?"}store=${store}`;
+  page.on("response", async response => {
+    if(/\/(warehouses|products\/document)$/.test(new URL(response.url()).pathname)) {
+      const data=await response.json().catch(()=>null);
+      log(`J1 catalog response ${response.status()} ${new URL(response.url()).pathname}: ${JSON.stringify(data)}`);
+    }
+  });
   try {
     await step(unit, "open the product list and click New product", "the create form opens", async () => {
       await page.goto(u("/products")); await expect(page.getByTestId("products-page")).toBeVisible();
       await page.getByTestId("product-new").click(); await expect(page).toHaveURL(/\/products\/new/); await expect(page.getByTestId("product-create-form")).toBeVisible();
     }, page);
-    await step(unit, "fill the name + description and click Create", "a draft product page opens", async () => {
+    await step(unit, "fill the name and description", "the draft fields retain the entered values", async () => {
       await page.getByTestId("product-name").fill(title);
       await page.getByTestId("product-description").fill("Synthetic click-sweep journey product");
-      await page.getByTestId("product-create").click();
-      await page.waitForURL(/\/products\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
-      await expect(page.getByTestId("product-status")).toHaveValue("draft");
+      await expect(page.getByTestId("product-name")).toHaveValue(title);
     }, page);
-    await step(unit, "add the option axis Size = S, M and click Save axes", "two variant rows are proposed", async () => {
+    await step(unit, "add Size = S, M", "the editor proposes two SKU rows", async () => {
       await page.getByTestId("axis-add").click();
       await page.getByTestId("axis-name-0").fill("Size");
       await page.getByTestId("axis-values-0").fill("S, M");
-      await page.getByTestId("axis-save").click();
-      await expect(page.getByTestId("new-variants")).toBeVisible();
-      await expect(page.locator('[data-testid^="new-variant-"]')).toHaveCount(2);
+      await page.getByTestId("axis-values-0").press("Enter");
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
     }, page);
-    await step(unit, "type prices and click Create variants", "two variant rows exist with the typed prices", async () => {
-      await page.getByTestId("new-price-0").fill("450"); await page.getByTestId("new-price-1").fill("480");
-      await page.getByTestId("new-variants-create").click();
-      await expect(page.locator('[data-testid^="variant-row-"]')).toHaveCount(2);
+    await step(unit, "type both SKU prices", "the matrix retains both prices", async () => {
+      await page.getByTestId("new-price-0").fill("450");
+      await page.getByTestId("new-price-1").fill("480");
+      await expect(page.getByTestId("new-price-1")).toHaveValue("480");
     }, page);
-    await step(unit, "adjust the stock of both variants (+9, +7)", "each variant row shows its stock", async () => {
-      const rows = page.locator('[data-testid^="variant-row-"]');
-      for (const [i, qty] of [[0, 9], [1, 7]]) {
-        const id = (await rows.nth(i).getAttribute("data-testid")).replace("variant-row-", "");
-        await page.getByTestId(`variant-adjust-${id}`).click();
-        await page.getByTestId("adjust-delta").fill(String(qty));
-        await page.getByTestId("adjust-reason").fill("click sweep opening stock");
-        await page.getByTestId("adjust-apply").click();
-        await expect(page.getByTestId(`variant-stock-${id}`)).toContainText(String(qty));
+    await step(unit, "set opening quantities 9 and 7, then save the document", "both SKU quantities persist", async () => {
+      await page.getByTestId("matrix-quantity-0").fill("9");
+      await page.getByTestId("matrix-quantity-1").fill("7");
+      if(await page.getByTestId("product-warehouse").count()){
+        await page.locator("#shipping summary").click();
+        const warehouse=page.getByTestId("product-warehouse");
+        const value=await warehouse.locator('option').nth(1).getAttribute("value");
+        await warehouse.selectOption(value);
       }
+      await page.getByTestId("product-create").click();
+      await expect(page.getByTestId("product-save-result")).toBeVisible();
+      await page.getByTestId("product-save-result").locator('a[href*="/products/"]').click();
+      await page.waitForURL(/\/products\/[0-9a-f-]{36}/);
+      await page.reload();
+      const editURL=page.url(), codes=await Promise.all([0,1].map(i=>page.getByTestId(`matrix-code-${i}`).inputValue()));
+      for(const [index,qty] of [[0,9],[1,7]]){
+        await page.goto(u("/inventory"));
+        await page.locator(".ledger-card .search-field input").fill(codes[index]);
+        await page.locator('.ledger-card .search-field button[type="submit"]').click();
+        await expect(page.locator("tbody tr").filter({has:page.getByText(codes[index],{exact:true})}).locator(".available-value")).toHaveText(String(qty));
+      }
+      await page.goto(editURL);
     }, page);
-    await step(unit, "set the status to Active and click Save", "the product is active and persists after a reload", async () => {
+    await step(unit, "upload a cover, set Active and save", "the product is active and persists after a reload", async () => {
+      const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==","base64");
+      await page.getByTestId("photo-input").setInputFiles({name:"sweep-cover.png",mimeType:"image/png",buffer:png});
+      await expect(page.getByTestId("photo-row")).toHaveCount(1);
       await page.getByTestId("product-status").selectOption("active");
       await page.getByTestId("product-save").click();
-      await expect(page.getByTestId("product-status")).toHaveValue("active");
+      await expect(page.getByTestId("product-save")).toBeEnabled();
       await page.reload();
       await expect(page.getByTestId("product-status")).toHaveValue("active");
       journeys.product_title = title;
@@ -513,6 +531,8 @@ async function journeySignOut(state) {
       await page.locator("header[data-shell-topbar] summary", { hasText: /^(帳號|Account)$/ }).click(); // the sign-out button lives inside the closed Account disclosure
       await page.getByTestId("workspace-sign-out").click();
       await expect(page.getByTestId("nav-orders")).toHaveCount(0, { timeout: 15000 });
+      await page.waitForURL(url => /^\/zh-TW\/?$/.test(url.pathname) && !url.search, {timeout:15000});
+      await page.waitForLoadState("domcontentloaded");
     }, page);
     await step(unit, "reload after sign out", "the dashboard is not shown without a session", async () => {
       await page.goto(`${adminOrigin}/zh-TW/orders?store=${store}`);

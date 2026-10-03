@@ -1,0 +1,94 @@
+[
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-TW-1366.png",
+    "sha256": "b3862381e04e956e1f99bdbaf9477bfd49bf14331a469022d112322aac94f0f5"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-TW-1366.png",
+    "sha256": "323ad7631bf6ecc4fa3af27903f39913c494d9fe1aa4bfa2bce1d27d98b7ac66"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-TW-1586.png",
+    "sha256": "d0f02c6f9699598b48a1ceebc70afb87f4fcc7c1c28a3e2870fba7e8d771618a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-TW-1586.png",
+    "sha256": "0fb704efdd267ab6f04afa462adafad1abee718e46deaf840399190271ae5d2a"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-TW-375.png",
+    "sha256": "fa2d4369e17e8a48867d044ca2280131777926782c709dd715fd93f615d2e90d"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-TW-375.png",
+    "sha256": "df3efc179d6a04a0d1b3b0724fd3664f9d8e96da38f6ab52eb208774ede01a90"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-CN-1366.png",
+    "sha256": "a97b4c755f717cd2e4aa3b002b4d4345fef61589326fb158ba6f4d0f583229d6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-CN-1366.png",
+    "sha256": "edf5f62bf250c23d179da5036966da61bb4d1e2a3b7ae908adb2676f291633f0"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-CN-1586.png",
+    "sha256": "48ff4cab0a87401e9343ac570cace13f197309dffa6ff1cb59a8661e401cd9a6"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-CN-1586.png",
+    "sha256": "fbd939a70feff807b178a5b4e5817ff00b7159def92c57d74f185ff6cd2fe514"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-zh-CN-375.png",
+    "sha256": "bfd22611abf04049fe8672f01559871a5cd9dd27ee0dd8c6b8faff906e564287"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-zh-CN-375.png",
+    "sha256": "45156e4fd916391d26cd065520182e9f02447d27abb72a7200e03523097db3d7"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-en-1366.png",
+    "sha256": "422ab3fec2aab0f77a0a721519e864c7119ebda53e21ab056fd2bd9e54926458"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-en-1366.png",
+    "sha256": "57b64bb41b8c8399010029176dfecffa8b85c81c3507ccad5317f00021120179"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-en-1586.png",
+    "sha256": "cefb1523d52a95ed03f6a870e4ba7c433cd7bbe97258c95f85d2d229e63cd536"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-en-1586.png",
+    "sha256": "4f431591124c63925dceb558fc4616000730a2f2a0832be5c1dd1dba748dc6f4"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/list-en-375.png",
+    "sha256": "0462de8ba6aac3852c72792bb773220d760570127f497865be783a365227989b"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-en-375.png",
+    "sha256": "bab61a2f3845ff23bf933401082a0f0c39097c087cfc014d4b1f451dbed06560"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/matrix-en-1586.png",
+    "sha256": "9d40867205679b46cfa9c0e1f8a3f816ebdbb161c665f51dbab6023d1ba6d5a1"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/batch-result-en-1586.png",
+    "sha256": "01284738aa0a14cf26f808cba3d2940dfa8c684b05addcae36fc9b3fedd1f7f8"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/inventory-en-1366.png",
+    "sha256": "5245d73721ab789e2722f68f9d258460cc05a211fa779ba3b7be16adae1e0318"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/inventory-en-1586.png",
+    "sha256": "5ea7570388d3009c6cab783cc5087c7d9a263fa7503b87cbc32bb11f0c49f65f"
+  },
+  {
+    "file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/output/product-ui/editor-bottom-en-375.png",
+    "sha256": "4442461dd31e222c016402b25c546540271475c653b81b93293c3ddf22371b54"
+  }
+]

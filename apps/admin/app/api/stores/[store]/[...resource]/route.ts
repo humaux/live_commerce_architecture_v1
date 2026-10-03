@@ -49,6 +49,8 @@ const collectionsRoot = "collections";
 const collectionItem = `collections/${uuid}`;
 const collectionImage = `${collectionItem}/image`;
 const catalogV2Writes = `${collectionsRoot}|${collectionItem}/delete|${collectionImage}|${collectionImage}/delete`;
+// Product-core: exact document/bulk/copy commands, with the same authenticated, keyed JSON policy.
+const productCommands = `products/document|products/bulk-status|products/${uuid}/copy`;
 const orders = `orders(?:/${uuid})?`;
 // R3 storefront-publish: GET storefront (state + bound origins), POST storefront/publication {published, expected_version}
 // -> Go internal/httpapi/storefront.go.
@@ -69,11 +71,11 @@ const routes: Record<string, RegExp> = {
     `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
   ),
   POST: new RegExp(
-    `^(orders/search|products|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
+    `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(${setting}|${policy}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
+  PUT: new RegExp(`^(products/${uuid}/document|${setting}|${policy}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -89,7 +91,7 @@ const collectionImageRoute = new RegExp(`^${collectionImage}$`);
 // catalog-core: only these two GETs carry a query (Go is the grammar authority; the BFF caps the key set).
 const catalogQueryRoute = new RegExp(`^(?:${catalogProducts}|${collectionsRoot})$`);
 const catalogQueryKeys = new Set(["q", "status", "cursor", "limit"]);
-const catalogV2Any = new RegExp(`^(?:${catalogProducts}|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionItem}/(?:delete|products|image|image/delete))$`);
+const catalogV2Any = new RegExp(`^(?:${catalogProducts}|${productCommands}|products/${uuid}/document|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionItem}/(?:delete|products|image|image/delete))$`);
 const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/delete|${imagesRoot}/order)$`);
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };

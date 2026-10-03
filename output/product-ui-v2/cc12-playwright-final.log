@@ -1,0 +1,9 @@
+
+Running 2 tests using 1 worker
+
+(node:83341) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/catalog-core.spec.ts:99:5 › CC12 desktop en › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (desktop, en) (7.9s)
+  ✓  2 tests/admin/catalog-core.spec.ts:99:5 › CC12 mobile zh-TW › catalog v2: draft product, 2x3 matrix, prices, compare-at, stock, photo, collection, activate, shopper view, archive a variant, deactivate (mobile, zh-TW) (7.5s)
+
+  2 passed (16.0s)

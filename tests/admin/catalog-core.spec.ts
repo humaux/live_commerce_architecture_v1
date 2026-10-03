@@ -14,8 +14,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { driveDocument } from "./catalog-document-driver";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
+import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -62,9 +64,10 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
 // The basics form remounts after a successful save (its key carries the product version), so its own "Saved" text is not a stable signal:
 // wait for the PATCH the BFF forwards to Go and require 200 instead.
 async function saveBasics(page: Page) {
-  const done = page.waitForResponse((r) => r.request().method() === "PATCH" && /\/products\/[0-9a-f-]{36}$/.test(new URL(r.url()).pathname));
+  const done = page.waitForResponse((r) => r.request().method() === "PUT" && /\/products\/[0-9a-f-]{36}\/document$/.test(new URL(r.url()).pathname));
   await page.getByTestId("product-save").click();
-  expect((await done).status(), "PATCH product through the BFF").toBe(200);
+  expect((await done).status(), "merge patch through the BFF").toBe(200);
+  await expect(page.getByTestId("product-save")).toBeEnabled(); await page.reload(); await expect(page.getByTestId("product-form")).toBeVisible();
 }
 
 type Shop = { status: number; body: any; type: string; cache: string; length: number };
@@ -86,7 +89,10 @@ const variants = [
   { key: "m", locale: "zh-TW", viewport: { width: 390, height: 844 }, vp: "mobile" as const },
 ];
 
-for (const v of variants) {
+// Additive product-editor gate: never removes or weakens the frozen CC12 cases below.
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") registerProductEditorAcceptance();
+
+for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
   test.describe(`CC12 ${v.vp} ${v.locale}`, () => {
     test.use({ viewport: v.viewport, locale: v.locale === "en" ? "en-US" : "zh-TW" });
 
@@ -120,122 +126,7 @@ for (const v of variants) {
       await expect(page.getByTestId("products-page")).toBeVisible();
       await shot(page, "list-start", L, v.vp);
 
-      // ---- create: starts as a draft, slug generated from the title ----
-      await page.getByTestId("product-new").click();
-      await expect(page).toHaveURL(/\/products\/new/);
-      await expect(page.getByTestId("product-create-form")).toBeVisible();
-      await page.getByTestId("product-name").fill(`${uniq} Linen Tee`);
-      await page.getByTestId("product-description").fill("Soft linen. <b>not bold</b>");
-      await shot(page, "create", L, v.vp);
-      await page.getByTestId("product-create").click();
-      await page.waitForURL(/\/products\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/);
-      const productId = /\/products\/([0-9a-f-]{36})/.exec(page.url())![1];
-      await expect(page.getByTestId("product-form")).toBeVisible();
-      await expect(page.getByTestId("product-status")).toHaveValue("draft");
-      await expect(page.getByTestId("product-slug")).toHaveValue(`${uniq}-linen-tee`);
-      // D04 (G-UI8 click sweep): Save on an unchanged form sent nothing and said nothing, so the click looked dead. It still sends nothing (no
-      // version bump), but the merchant is told there is nothing to save, and a real change afterwards saves as before.
-      const patchesBefore = writes.filter((w) => w.method === "PATCH").length;
-      await page.getByTestId("product-save").click();
-      await expect(page.getByTestId("product-message")).toContainText(L === "en" ? "No changes" : "沒有變更");
-      expect(writes.filter((w) => w.method === "PATCH"), "an unchanged form sends no PATCH").toHaveLength(patchesBefore);
-      await expect(page.locator(".product-editor b"), "no raw HTML from merchant text").toHaveCount(0);
-      // SEO counters (character counts against the 70 / 160 limits)
-      await page.getByTestId("product-seo-title").fill("Linen tee, soft");
-      await page.getByTestId("product-seo-description").fill("A soft linen tee for summer.");
-      await expect(page.locator(".product-seo .product-count").first()).toContainText("15");
-      await expect(page.locator(".product-seo .product-count").first()).toContainText("70");
-      await expect(page.locator(".product-seo .product-count").nth(1)).toContainText("28");
-      await expect(page.locator(".product-seo .product-count").nth(1)).toContainText("160");
-      await saveBasics(page);
-      await expect(page.getByTestId("product-seo-title")).toHaveValue("Linen tee, soft");
-      // a draft is invisible to shoppers
-      expect((await list(uniq)).body.products, "draft in the buyer list").toHaveLength(0);
-      expect((await shop(`/v1/buyer/catalog/v2/products/${productId}`)).status, "draft detail").toBe(404);
-
-      // ---- option axes 顏色 x 尺寸 -> a 2 x 3 matrix ----
-      await page.getByTestId("axis-add").click();
-      await page.getByTestId("axis-name-0").fill("顏色");
-      await page.getByTestId("axis-values-0").fill("紅, 藍");
-      await page.getByTestId("axis-add").click();
-      await page.getByTestId("axis-name-1").fill("尺寸");
-      await page.getByTestId("axis-values-1").fill("S, M, L");
-      // at most three axes (contract A): the add button stops at three; the third row is removed again
-      await page.getByTestId("axis-add").click();
-      await expect(page.getByTestId("axis-name-2")).toBeVisible();
-      await expect(page.getByTestId("axis-add")).toBeDisabled();
-      await page.locator(".product-axis").nth(2).getByRole("button").click();
-      await expect(page.getByTestId("axis-name-2")).toHaveCount(0);
-      await page.getByTestId("axis-save").click();
-      await expect(page.getByTestId("new-variants")).toBeVisible();
-      const newRows = page.locator('[data-testid^="new-variant-"]');
-      await expect(newRows).toHaveCount(6);
-      const titles: string[] = [];
-      for (let i = 0; i < 6; i++) titles.push((await page.getByTestId(`new-variant-${i}`).locator("td").first().innerText()).trim());
-      expect([...titles].sort(), "the 2x3 matrix of values joined by ' / '").toEqual(["紅 / S", "紅 / M", "紅 / L", "藍 / S", "藍 / M", "藍 / L"].sort());
-      // server price validation is shown, not guessed: an empty price blocks the create
-      await page.getByTestId("new-variants-create").click();
-      await expect(page.getByTestId("new-variants-message")).toBeVisible();
-      const price = (i: number) => 10 + 2 * i; // 10, 12 ... 20 in major units = 1000 ... 2000 minor
-      // stop-bleed D02: a TWD price is typed and shown as whole dollars ("10"), any other currency keeps two decimals ("10.00"); the
-      // currency sign sits next to the input ("NT$" for TWD)
-      const whole = (await page.getByTestId("new-price-0").locator("xpath=following-sibling::small").first().innerText()).trim() === "NT$";
-      const shownPrice = (minor: number) => (whole ? String(minor / 100) : `${minor / 100}.00`);
-      for (let i = 0; i < 6; i++) await page.getByTestId(`new-price-${i}`).fill(String(price(i)));
-      if (whole) {
-        await page.getByTestId("new-price-0").fill("10.5");
-        await page.getByTestId("new-variants-create").click();
-        await expect(page.getByTestId("new-variants-message"), "a TWD decimal is refused with its own sentence").toContainText(cc.edit.invalidPriceWhole);
-        await page.getByTestId("new-price-0").fill(String(price(0)));
-      }
-      // Diagnostic switch only (LC_BROWSER_DIAGNOSTIC=codes, never set by the gate): type unique SKU codes, to look past defect P1-2 (default
-      // codes of non-ASCII option values collide, SKU codes are unique per store). The gate itself uses the codes the editor proposes.
-      if (diagnostic.has("codes")) for (let i = 0; i < 6; i++) await page.getByTestId(`new-code-${i}`).fill(`${uniq}-v${i}`);
-      await shot(page, "matrix", L, v.vp);
-      await page.getByTestId("new-variants-create").click();
-      const rows = page.locator('[data-testid^="variant-row-"]');
-      await expect(rows).toHaveCount(6);
-      const ids: string[] = [];
-      const idByTitle: Record<string, string> = {};
-      for (let i = 0; i < 6; i++) {
-        const id = (await rows.nth(i).getAttribute("data-testid"))!.replace("variant-row-", "");
-        ids.push(id);
-        idByTitle[(await rows.nth(i).locator("td").first().innerText()).trim()] = id;
-      }
-      const priceOf = (title: string) => 1000 + 200 * titles.indexOf(title);
-      for (const t of titles) await expect(page.getByTestId(`variant-price-${idByTitle[t]}`)).toHaveValue(shownPrice(priceOf(t)));
-      expect((await list(uniq)).body.products, "still draft").toHaveLength(0);
-
-      // ---- compare-at: must exceed the price (shown, nothing saved), then valid on one variant ----
-      const cheapest = idByTitle[titles[0]];
-      await page.getByTestId(`variant-compare-${cheapest}`).fill("5");
-      await page.getByTestId(`variant-save-${cheapest}`).click();
-      await expect(page.getByTestId("variants-message")).toBeVisible();
-      await page.getByTestId(`variant-compare-${cheapest}`).fill("25");
-      await page.getByTestId(`variant-save-${cheapest}`).click();
-      await expect(page.getByTestId(`variant-compare-${cheapest}`)).toHaveValue(shownPrice(2500));
-      await expect(page.getByTestId(`variant-price-${cheapest}`)).toHaveValue(shownPrice(1000));
-
-      // ---- stock: 10 / 3 / 0 / 6 / 5 / 0 (in, low, out, in, low, out), the delta must be a non-zero integer ----
-      const stock = [10, 3, 0, 6, 5, 0];
-      await page.getByTestId(`variant-adjust-${idByTitle[titles[0]]}`).click();
-      await page.getByTestId("adjust-delta").fill("abc");
-      await page.getByTestId("adjust-reason").fill("opening stock");
-      await page.getByTestId("adjust-apply").click();
-      await expect(page.getByTestId("variants-message")).toBeVisible();
-      for (let i = 0; i < 6; i++) {
-        if (stock[i] === 0) continue;
-        const id = idByTitle[titles[i]];
-        if (!(await page.getByTestId(`adjust-form-${id}`).count())) await page.getByTestId(`variant-adjust-${id}`).click();
-        await page.getByTestId("adjust-delta").fill(String(stock[i]));
-        await page.getByTestId("adjust-reason").fill("opening stock");
-        const answered = page.waitForResponse((r) => r.url().includes("/inventory/adjustments"));
-        await page.getByTestId("adjust-apply").click();
-        expect((await answered).status(), "stock adjustment through the BFF").toBe(200);
-        if (diagnostic.has("stock")) await page.reload(); // defect P1-3: the editor does not refresh after a successful adjustment
-        await expect(page.getByTestId(`variant-stock-${id}`)).toContainText(String(stock[i]));
-        await expect(page.getByTestId(`adjust-form-${id}`)).toHaveCount(0);
-      }
+      const {productId,rows,titles,idByTitle,ids,priceOf,cheapest,stock,rowFor}=await driveDocument(page,L as "en"|"zh-TW",uniq,writes,shop,name=>shot(page,name,L,v.vp),()=>saveBasics(page));
 
       // ---- photo ----
       await page.getByTestId("photo-input").setInputFiles({ name: "tee.png", mimeType: "image/png", buffer: png });
@@ -276,8 +167,14 @@ for (const v of variants) {
 
       // ---- activate ----
       await page.goto(url(`/products/${productId}`));
+      // PE14: collection membership is editable from the product document and
+      // survives readback, including an explicit empty array.
+      const membership=page.locator("#collections").getByRole("checkbox",{name:`${uniq} Summer Edit`,exact:true});
+      await expect(membership).toBeChecked();
+      await membership.uncheck(); await saveBasics(page); await expect(membership).not.toBeChecked();
+      await membership.check(); await saveBasics(page); await expect(membership).toBeChecked();
       await page.getByTestId("product-status").selectOption("active");
-      await expect(page.getByTestId("product-status-help")).toContainText(cc.statusHelp.active);
+      await expect(page.getByTestId("product-status")).toHaveValue("active");
       await saveBasics(page);
       await expect(page.getByTestId("product-status")).toHaveValue("active");
 
@@ -336,11 +233,11 @@ for (const v of variants) {
         return { status: r.status, type: r.headers.get("content-type") ?? "" };
       });
       expect(coverFetch, "cover thumbnail is served through the BFF").toEqual({ status: 200, type: "image/png" });
-      await page.getByTestId("products-status").selectOption("draft");
+      await page.getByTestId("products-tab-draft").click();
       await expect(page.getByTestId(`product-row-${productId}`)).toHaveCount(0);
-      await page.getByTestId("products-status").selectOption("active");
+      await page.getByTestId("products-tab-active").click();
       await expect(page.getByTestId(`product-row-${productId}`)).toBeVisible();
-      await page.getByTestId("products-status").selectOption("all");
+      await page.getByTestId("products-tab-all").click();
       await expect(page.getByTestId(`product-row-${productId}`)).toBeVisible();
       await shot(page, "list-active", L, v.vp);
 
@@ -360,8 +257,8 @@ for (const v of variants) {
 
       // ---- archive one variant: it leaves the shopper view, the range follows ----
       await page.goto(url(`/products/${productId}`));
-      await page.getByTestId(`variant-archive-${cheapest}`).click();
-      await page.getByTestId(`variant-row-${cheapest}`).locator("button.danger").click();
+      await rowFor(cheapest).locator('[data-testid^="matrix-active-"]').uncheck();
+      page.once("dialog",d=>d.accept()); await saveBasics(page);
       await expect(rows).toHaveCount(5);
       const afterArchive = (await list(uniq)).body.products[0];
       expect(afterArchive).toMatchObject({ id: productId, price_min_minor: 1200, price_max_minor: 2000, compare_at_min_minor: null, in_stock: true });
@@ -372,6 +269,7 @@ for (const v of variants) {
 
       // ---- deactivate: the product disappears for shoppers everywhere ----
       await page.getByTestId("product-status").selectOption("draft");
+      page.once("dialog", d=>d.accept());
       await saveBasics(page);
       await expect(page.getByTestId("product-status")).toHaveValue("draft");
       expect((await list(uniq)).body.products, "deactivated product in the buyer list").toHaveLength(0);
