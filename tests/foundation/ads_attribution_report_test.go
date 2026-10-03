@@ -256,6 +256,12 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	}
 	e.sweep("insights")
 	e.settle()
+	// Dispatch persists breakdowns; the real advance worker ingests completed
+	// daily reads. Idle dispatch alone does not mean daily reports are ready.
+	e.sweep("advance")
+	if n := miCount(t, p.f.owner, `SELECT count(*) FROM ads.insights_daily WHERE tenant_id=$1 AND store_id=$2 AND day=$3 AND ((draft_id=$4 AND spend_minor=1230) OR (draft_id=$5 AND spend_minor=500))`, p.f.tenantA, p.f.storeA1, x.day, x.firstDraft, x.secondDraft); n != 2 {
+		t.Fatalf("actual advance must ingest both exact daily spend snapshots: %d", n)
+	}
 	// Real Page custody -> lease-fenced claims dispatcher -> aggregate snapshot.
 	var err error
 	m.pageKeys, err = metareply.NewPageTokenKeyring("at9_page", map[string][]byte{"at9_page": randomBytes(32)})
