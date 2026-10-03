@@ -128,6 +128,18 @@ test("attribution is a read-only BFF resource with exact bounded query grammar",
       query,
     );
 });
+
+test("audience-read is exactly the new local intention POST and never a data GET or queried write", () => {
+  const path = `ads/sessions/${attributionFixture.sessions[0].session_id}/audience-read`;
+  assert.match(path, new RegExp(`^${adsRoutes.POST}$`));
+  for (const method of ["GET", "PUT"] as const)
+    assert.doesNotMatch(path, new RegExp(`^${adsRoutes[method]}$`));
+  assert.equal(validAdsQuery("https://local.invalid", path), true);
+  assert.equal(
+    validAdsQuery("https://local.invalid?from=2026-10-01&to=2026-10-03", path),
+    false,
+  );
+});
 test("route fails closed without ads:read and is not a duplicate navigation entry; locale keys match", () => {
   const route = matchRoute("/ads/attribution")!;
   assert.equal(route.permission, "ads:read");

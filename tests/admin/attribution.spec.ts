@@ -17,6 +17,7 @@ const origin = required("LC_BROWSER_PUBLIC_ORIGIN"),
   store = required("LC_BROWSER_STORE"),
   evidence = required("LC_BROWSER_EVIDENCE");
 type Fixture = {
+  audience_read?: "queued" | "forbidden";
   from: string;
   to: string;
   draft_id: string;
@@ -68,7 +69,7 @@ async function visibleFacts(page: Page, locale: Locale) {
       .filter({ has: page.getByText(label, { exact: true }) });
     await expect(row.locator("dd")).toHaveText(value);
   };
-  const num = (n: number) => new Intl.NumberFormat(locale).format(n);
+  const num = (n: number) => String(n);
   await fact(c.orders, num(expected.orders));
   await fact(c.net, money(locale, "TWD", expected.net_minor));
   await fact(c.pending, num(expected.pending_orders));
@@ -184,6 +185,36 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         expected: "exact fixture facts",
         actual: "PASS",
       });
+      const audiencePath = `/api/stores/${store}/ads/sessions/${fixture.session_id}/audience-read`;
+      const observeRead = () =>
+        page.waitForResponse(
+          (r) =>
+            r.request().method() === "POST" &&
+            new URL(r.url()).pathname === audiencePath,
+        );
+      const firstRead = observeRead();
+      await page.getByTestId("attribution-audience-refresh").click();
+      const firstResponse = await firstRead;
+      const firstKey = firstResponse.request().headers()["idempotency-key"];
+      expect(firstKey).toMatch(/^audience-read-[0-9a-f-]+$/);
+      if (fixture.audience_read === "forbidden") {
+        expect(firstResponse.status()).toBe(403);
+        await expect(
+          page.getByTestId("attribution-audience-problem"),
+        ).toHaveText(c.audienceForbidden);
+      } else {
+        expect(firstResponse.ok()).toBe(true);
+        expect((await firstResponse.json()).state).toBe("READY");
+        await expect(
+          page.getByTestId("attribution-audience-queued"),
+        ).toHaveText(c.audienceQueued);
+      }
+      ledger.push({
+        control: "audience-refresh",
+        action: "click",
+        expected: fixture.audience_read ?? "queued READY, not fetched",
+        actual: "PASS",
+      });
       await page.reload();
       await expect(page.getByTestId("attribution-draft")).toHaveValue(
         fixture.draft_id,
@@ -192,6 +223,27 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         fixture.session_id,
       );
       await visibleFacts(page, locale);
+      if (fixture.audience_read !== "forbidden") {
+        await expect(
+          page.getByTestId("attribution-audience-queued"),
+        ).toHaveText(c.audienceQueued);
+        const nextRead = observeRead();
+        await page.getByTestId("attribution-audience-refresh").click();
+        const nextResponse = await nextRead;
+        expect(nextResponse.ok()).toBe(true);
+        expect(nextResponse.request().headers()["idempotency-key"]).not.toBe(
+          firstKey,
+        );
+        await expect(
+          page.getByTestId("attribution-audience-queued"),
+        ).toHaveText(c.audienceQueued);
+        ledger.push({
+          control: "audience-refresh new read",
+          action: "reload/click",
+          expected: "queued survives reload, new explicit request gets new key",
+          actual: "PASS",
+        });
+      }
       ledger.push({
         control: "URL filters",
         action: "reload",

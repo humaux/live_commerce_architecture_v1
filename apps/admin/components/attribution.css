@@ -139,6 +139,13 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+.attribution-audience-read {
+  margin: 12px 0;
+}
+.attribution-audience-read p {
+  margin: 8px 0;
+  font-size: 13px;
+}
 @media (max-width: 1000px) {
   .attribution-pair {
     grid-template-columns: 1fr;

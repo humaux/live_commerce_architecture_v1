@@ -146,13 +146,9 @@ const day: Reader<string> = (v) => {
 };
 const zone: Reader<string> = (v) => {
   const s = string(v);
-  if (!s) return fail();
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: s });
-    return s;
-  } catch {
-    return fail();
-  }
+  // Structural account-zone label only. Go owns IANA resolution and hourly conversion;
+  // this page renders absolute timestamps through packages/format, never this string.
+  return /^(?:UTC|GMT|[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+)$/.test(s) ? s : fail();
 };
 const currency = choices(["TWD", "HKD", "USD"] as const);
 const minute = object<Buyers["orders_per_minute"][number]>({

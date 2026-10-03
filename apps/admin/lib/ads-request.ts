@@ -12,7 +12,7 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 // like `claimsRoutes`; the BFF forwards each path unchanged.
 export const adsRoutes = {
   GET: `ads/(?:settings|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
-  POST: `ads/(?:meta/bindings|drafts|drafts/${uuid}/(?:approve|publish|pause|end))`,
+  POST: `ads/(?:meta/bindings|drafts|drafts/${uuid}/(?:approve|publish|pause|end)|sessions/${uuid}/audience-read)`,
   PUT: `ads/(?:drafts/${uuid}|capi)`,
 } as const;
 export const adsAny = new RegExp(`^(?:${adsRoutes.GET}|${adsRoutes.POST}|${adsRoutes.PUT})$`);

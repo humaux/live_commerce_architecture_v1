@@ -2,6 +2,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
+import { instantToTaipei } from "@live-commerce/format";
 import {
   authConfig,
   authenticatedStores,
@@ -45,12 +46,7 @@ export default async function AttributionPage({
     [requested, draftID, sessionID].some((id) => id && !canonicalUUID.test(id))
   )
     notFound();
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Taipei",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
+  const today = instantToTaipei(new Date().toISOString()).slice(0, 10);
   const first = new Date(`${today}T00:00:00Z`);
   first.setUTCDate(first.getUTCDate() - 6);
   const suppliedFrom = single("from"),

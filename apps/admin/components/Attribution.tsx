@@ -1,6 +1,6 @@
 "use client";
 // D7/D9 readonly page. BFF GET /api/stores/{store}/ads/attribution -> Go GET /v1/admin/stores/{store}/ads/attribution.
-// URL holds only report filters. PG/Go own amounts and order facts; no client transaction or Meta write exists here.
+// URL holds only report filters. PG/Go own amounts and order facts; audience-read queues guarded Meta GETs only.
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +20,7 @@ import type {
   SessionAttribution,
 } from "@/lib/attribution-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AttributionAudienceRead } from "./AttributionAudienceRead";
 import "./attribution.css";
 
 export function Attribution({
@@ -210,7 +211,7 @@ export function Attribution({
                   : c.unavailable}
             </p>
             {error === "signed-out" ? (
-            <Link href={`/${locale}/`}>{c.signIn}</Link>
+              <Link href={`/${locale}/`}>{c.signIn}</Link>
             ) : (
               error === "unavailable" && (
                 <button
@@ -274,7 +275,12 @@ export function Attribution({
               <DraftPanel c={c} locale={locale} draft={selectedDraft} />
             )}
             {selectedSession && (
-              <SessionPanel c={c} locale={locale} session={selectedSession} />
+              <SessionPanel
+                c={c}
+                locale={locale}
+                session={selectedSession}
+                store={store!.id}
+              />
             )}
           </>
         )}
@@ -320,7 +326,7 @@ function Table({
   );
 }
 const number = (locale: Locale, n: number | null, c: AttributionCopy) =>
-  n === null ? c.unknown : new Intl.NumberFormat(locale).format(n);
+  n === null ? c.unknown : String(n);
 const amount = (
   locale: Locale,
   currency: string,
@@ -541,10 +547,12 @@ function SessionPanel({
   c,
   locale,
   session: s,
+  store,
 }: {
   c: AttributionCopy;
   locale: Locale;
   session: SessionAttribution;
+  store: string;
 }) {
   const audience = s.live_audience;
   return (
@@ -645,6 +653,12 @@ function SessionPanel({
       <div className="attribution-pair">
         <div data-testid="attribution-live-audience">
           <h3>{c.liveAudience}</h3>
+          <AttributionAudienceRead
+            key={`${store}:${s.session_id}`}
+            store={store}
+            session={s.session_id}
+            c={c}
+          />
           {audience.status === "not_authorized" ? (
             <p data-testid="attribution-not-authorized">{c.notAuthorized}</p>
           ) : (
