@@ -2,7 +2,7 @@
 --
 -- Every store gets an address automatically; merchants can bring their own domain. Six Decisions:
 --   D1 store handle: control.stores.handle (lower-case ASCII, UNIQUE platform-wide, reserved list refused), assigned by a
---      BEFORE INSERT trigger from the store name, backfilled for existing stores, suffixed -2/-3 on collision.
+--      BEFORE INSERT trigger as a random 8-digit number, also backfilled for existing stores.
 --   D2 platform address: ensure_store_platform_domain writes an ACTIVE https://<handle>.<base> row (evidence platform-subdomain);
 --      the platform owns that zone so ownership is implied and the merchant is reachable the moment they publish.
 --   D3 merchant self-service domain: request_merchant_domain (REQUESTED + TXT token + CNAME/A instructions), the DNS/TLS
@@ -18,8 +18,8 @@
 -- commerce_buyer_issuer (301 primary lookup). New: commerce_storefront_verifier (N-P1-1) — the narrow worker authority
 -- of the DNS/TLS verify sweep login (the four transitions + the TLS renewal), no operator authority.
 -- commerce_worker stays retired: nothing here grants to it.
--- The onboarding login (commerce_identity) calls control.suggest_store_handle and control.ensure_store_platform_domain
--- only; it needs USAGE on control to name them, and gains no table privilege from it.
+-- The onboarding login (commerce_identity) calls control.ensure_store_platform_domain only;
+-- it needs USAGE on control to name it, and gains no table privilege from it.
 GRANT USAGE ON SCHEMA control TO commerce_identity;
 
 -- ---------------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ ALTER TABLE control.stores ADD COLUMN handle text
         handle IS NULL OR handle ~ '^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$');
 CREATE UNIQUE INDEX stores_handle_unique ON control.stores(handle) WHERE handle IS NOT NULL;
 COMMENT ON COLUMN control.stores.handle IS
- '0106 R5: the platform-wide store address handle (https://<handle>.<LC_STORE_BASE_DOMAIN>). Lower-case ASCII, 3..30 chars, single interior hyphens, no reserved word/xn--. Assigned by control.stores_handle_default from the store name; UNIQUE while set; changed only while never published (operator-only afterwards, D3).';
+ '0106 R5: the platform-wide store address handle (https://<handle>.<LC_STORE_BASE_DOMAIN>). Lower-case ASCII, 3..30 chars, single interior hyphens, no reserved word/xn--. Assigned by control.stores_handle_default as a random 8-digit number; UNIQUE while set; changed only while never published (operator-only afterwards, D3).';
 
 -- Reserved words are case-normalised before the comparison. `stores` is the CNAME apex; anything xn-- is punycode.
 CREATE FUNCTION control.store_handle_reserved(p_handle text) RETURNS boolean
@@ -44,19 +44,7 @@ ALTER FUNCTION control.store_handle_reserved(text) OWNER TO commerce_identity_wr
 REVOKE ALL ON FUNCTION control.store_handle_reserved(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION control.store_handle_reserved(text) TO commerce_identity_writer;
 COMMENT ON FUNCTION control.store_handle_reserved(text) IS
- '0106 D1: true when p_handle (already lower-cased) is a reserved platform word or punycode (xn--). Immutable; called by assign/suggest/trigger.';
-
--- The slug from a display name: lower-case, every run of non-alphanumerics becomes one hyphen, trimmed. A non-ASCII
--- name (e.g. a Chinese store name) yields the empty string and the caller falls back to store-<id8>.
-CREATE FUNCTION control.slug_store_handle(p_name text) RETURNS text
-LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
-    SELECT lower(regexp_replace(regexp_replace(regexp_replace(coalesce(p_name,''), '[^a-zA-Z0-9]+', '-', 'g'), '^-+', '', 'g'), '-+$', '', 'g'))
-$$;
-ALTER FUNCTION control.slug_store_handle(text) OWNER TO commerce_identity_writer;
-REVOKE ALL ON FUNCTION control.slug_store_handle(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.slug_store_handle(text) TO commerce_identity_writer;
-COMMENT ON FUNCTION control.slug_store_handle(text) IS
- '0106 D1: slug of a store display name for the handle (lower-case ASCII, runs of non-alphanumerics -> one hyphen). Empty for non-ASCII names; callers fall back to store-<id8>.';
+ '0106 D1: true when p_handle (already lower-cased) is a reserved platform word or punycode (xn--). Immutable; called by assign/trigger/operator validation.';
 
 CREATE FUNCTION control.store_handle_valid(p_handle text) RETURNS boolean
 LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
@@ -86,37 +74,31 @@ GRANT EXECUTE ON FUNCTION control.store_handle_taken(text) TO commerce_identity_
 COMMENT ON FUNCTION control.store_handle_taken(text) IS
  '0106 D1 (P1-4): true while a non-DETACHED platform-subdomain origin of the form https://<p_handle>.<base> exists. SECURITY DEFINER commerce_storefront_writer; EXECUTE commerce_identity_writer (called by assign_store_handle and the backfill so a freed-but-still-serving handle is never re-issued).';
 
--- control.assign_store_handle: the single writer of a derived handle. SECURITY DEFINER as commerce_identity_writer
--- (which holds SELECT/INSERT on control.stores via 0004 policies), so the BEFORE INSERT trigger can always read the
--- existing handle set for the uniqueness/suffix check regardless of the inserting role. Falls back to store-<first 8 hex
--- of id> when the slug is empty or reserved; suffixes -2,-3,... (bounded) on collision. The unique index is the backstop
--- for a concurrent race; the suffix loop only resolves committed collisions.
+-- Owner 2026-10-03: one random numeric allocator for inserts and migration backfill.
+-- The legacy internal signature stays stable; neither display name nor UUID contributes
+-- to the number. IDs are public identifiers, not credentials. No client controls the draw.
+-- Candidate-scoped transaction locks serialize concurrent allocators before returning;
+-- stores_handle_unique still rejects races with explicit operator writes.
 CREATE FUNCTION control.assign_store_handle(p_name text, p_id uuid) RETURNS text
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE base text; cand text; i int := 2;
+DECLARE cand text; attempt integer;
 BEGIN
-    base := control.slug_store_handle(p_name);
-    IF base = '' OR length(base) < 3 OR control.store_handle_reserved(base) THEN
-        base := 'store-' || left(replace(p_id::text, '-', ''), 8);
-    END IF;
-    base := left(base, 30);
-    base := regexp_replace(base, '-+$', '', 'g'); -- truncation must not leave a trailing hyphen
-    IF base = '' OR length(base) < 3 OR control.store_handle_reserved(base) THEN
-        base := 'store-' || left(replace(p_id::text, '-', ''), 8);
-    END IF;
-    cand := base;
-    WHILE EXISTS (SELECT 1 FROM control.stores WHERE handle = cand) OR control.store_handle_taken(cand) LOOP
-        IF i > 9999 THEN RAISE EXCEPTION 'handle space exhausted' USING ERRCODE='PT409'; END IF;
-        cand := left(base, 30 - length('-' || i::text)) || '-' || i;
-        i := i + 1;
+    FOR attempt IN 1..50 LOOP
+        cand := (10000000 + floor(random() * 90000000))::bigint::text;
+        IF NOT control.store_handle_valid(cand) THEN CONTINUE; END IF;
+        PERFORM pg_advisory_xact_lock(hashtextextended('control.store_handle:' || cand, 0));
+        IF NOT EXISTS (SELECT 1 FROM control.stores WHERE handle = cand)
+           AND NOT control.store_handle_taken(cand) THEN
+            RETURN cand;
+        END IF;
     END LOOP;
-    RETURN cand;
+    RAISE EXCEPTION 'handle space exhausted' USING ERRCODE='PT409';
 END $$;
 ALTER FUNCTION control.assign_store_handle(text,uuid) OWNER TO commerce_identity_writer;
 REVOKE ALL ON FUNCTION control.assign_store_handle(text,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION control.assign_store_handle(text,uuid) TO commerce_identity_writer;
 COMMENT ON FUNCTION control.assign_store_handle(text,uuid) IS
- '0106 D1: derive a free handle from a store name + id (slug, store-<id8> fallback, -2/-3 suffix on committed collision). SECURITY DEFINER commerce_identity_writer; called by the BEFORE INSERT trigger and the 0106 backfill. Reads control.stores.handle only (uniqueness/suffix); the unique index remains the concurrency backstop.';
+ '0106 owner ruling 2026-10-03: random 8-digit store ID, 50 bounded draws then PT409. SECURITY DEFINER commerce_identity_writer; insert trigger and backfill only. Ignores legacy name/id arguments, refuses reserved/existing/still-serving origins; candidate xact lock and unique index protect allocation. Not an authentication secret or an operator vanity-handle allocator.';
 
 CREATE FUNCTION control.stores_handle_default() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -131,7 +113,7 @@ END $$;
 ALTER FUNCTION control.stores_handle_default() OWNER TO commerce_identity_writer;
 REVOKE ALL ON FUNCTION control.stores_handle_default() FROM PUBLIC;
 COMMENT ON FUNCTION control.stores_handle_default() IS
- '0106 D1: BEFORE INSERT trigger on control.stores; fills a missing handle from the name and refuses an explicit reserved/invalid one. SECURITY DEFINER commerce_identity_writer.';
+ '0106 D1: BEFORE INSERT trigger on control.stores; fills a missing handle with a random 8-digit number and refuses an explicit reserved/invalid one. SECURITY DEFINER commerce_identity_writer.';
 
 CREATE TRIGGER stores_handle_before_insert
     BEFORE INSERT ON control.stores
@@ -171,30 +153,6 @@ CREATE TRIGGER stores_handle_after_update
     FOR EACH ROW EXECUTE FUNCTION control.stores_handle_changed();
 COMMENT ON TRIGGER stores_handle_after_update ON control.stores IS
  '0106 D1: on a handle change, detach the old platform-subdomain origin (no silent redirect chains).';
-
--- The live availability/suggest probe for onboarding: the slug the wizard previews and whether it is taken.
-CREATE FUNCTION control.suggest_store_handle(p_name text, p_id text) RETURNS jsonb
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE base text;
-BEGIN
-    IF p_id IS NULL OR p_id !~ '^[0-9a-f]{32}$' THEN RAISE EXCEPTION 'invalid handle suggestion' USING ERRCODE='PT400'; END IF;
-    base := control.slug_store_handle(p_name);
-    IF base = '' OR length(base) < 3 OR control.store_handle_reserved(base) THEN
-        base := 'store-' || left(p_id, 8);
-    END IF;
-    base := left(base, 30);
-    base := regexp_replace(base, '-+$', '', 'g');
-    IF base = '' OR length(base) < 3 OR control.store_handle_reserved(base) THEN
-        base := 'store-' || left(p_id, 8);
-    END IF;
-    RETURN jsonb_build_object('suggested', base,
-        'available', NOT EXISTS (SELECT 1 FROM control.stores WHERE handle = base));
-END $$;
-ALTER FUNCTION control.suggest_store_handle(text,text) OWNER TO commerce_identity_writer;
-REVOKE ALL ON FUNCTION control.suggest_store_handle(text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION control.suggest_store_handle(text,text) TO commerce_identity;
-COMMENT ON FUNCTION control.suggest_store_handle(text,text) IS
- '0106 D1: onboarding slug preview + live availability for a proposed store name (no write). EXECUTE commerce_identity (the onboarding login). p_id is a 32-hex caller nonce used only for the store-<id8> fallback display.';
 
 -- ---------------------------------------------------------------------------------------
 -- D3 merchant self-service domain: extra columns on control.storefront_domains for the REQUESTED lifecycle.

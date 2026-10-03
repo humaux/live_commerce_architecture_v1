@@ -15,6 +15,19 @@ import (
 
 var testSecret = strings.Repeat("A", 43)
 
+func TestIdentityHandleSuggestRemoved(t *testing.T) {
+	for _, method := range []string{http.MethodPost, http.MethodGet} {
+		s := &fakeService{}
+		w := privateRequest(t, s, method, "/v1/identity/handle-suggest", `{"store_name":"New shop"}`, nil)
+		if w.Code != http.StatusNotFound && w.Code != http.StatusMethodNotAllowed {
+			t.Fatalf("retired %s suggestion route returned %d", method, w.Code)
+		}
+		if s.calls != 0 {
+			t.Fatal("retired route called identity service")
+		}
+	}
+}
+
 type fakeService struct {
 	calls      int
 	err        error
@@ -36,10 +49,6 @@ func (s *fakeService) CreateInitialStore(ctx context.Context, token, key string,
 	s.key = key
 	s.request = in
 	return identity.Store{TenantID: "tenant", StoreID: "store", WarehouseID: "warehouse"}, s.err
-}
-func (s *fakeService) SuggestStoreHandle(ctx context.Context, name string) (identity.SuggestedHandle, error) {
-	s.calls++
-	return identity.SuggestedHandle{Suggested: "suggested", Available: true}, s.err
 }
 func (s *fakeService) Logout(ctx context.Context, token string) error {
 	s.calls++

@@ -176,9 +176,9 @@ deploy/scripts/deploy.sh upgrade <tag>
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
    - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
    - 店铺、商品、订单数据仍在。
-7. **设定店铺英文 ID（owner 提供）**：店铺尚未发布时执行
-   `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <英文ID>`（同一事务里解绑旧平台地址、建立新地址；保留字、已占用、格式错误会被拒绝）。之后 `store-admin status` 确认新地址。
-8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问 `https://<英文ID>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
+7. **核对自动分配的地址；handle-set 可选**：0106 为存量店铺自动分配随机 8 位数字编号，新建店铺也走同一分配函数；使用 `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 核对 `https://<数字编号>.xgdwm.com`，不需要 owner 先提供英文 ID。
+   运维确需改号时可选用 `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <handle>`；现有发布后限制、同事务解绑旧平台地址、保留字/占用/格式校验保持不变。执行后必须用 `store-admin status` 核对实际地址。
+8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问核对过的 `https://<数字编号>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。
 9. **回滚**：同 §4.1 第 8 步，迁移之后应用回滚被拒绝，只能前向修复；必要时由 owner 决定从 `pre-upgrade-<tag>` 恢复。
 
 ## 5. 回滚决策树

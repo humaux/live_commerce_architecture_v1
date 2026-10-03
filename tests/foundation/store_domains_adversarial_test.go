@@ -294,12 +294,22 @@ func TestStoreDomainsSDW11HandleChangeDetachesOldOrigin(t *testing.T) {
 	s := sdSetup(t)
 	o := s.b.owner
 	name := "Handle Move " + randomUUID()[:8]
-	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	// Owner 2026-10-03: allocation no longer derives from a name. Pin the real
+	// PG PRNG on one session to exercise the SAME freed number on both inserts.
+	ctx := context.Background()
+	conn, err := o.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, `SELECT setseed(0.618034)`); err != nil {
+		t.Fatal(err)
+	}
 
 	storeA := randomUUID()
-	mustExec(t, o, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,$3,'USD')`, s.f.tenant, storeA, name)
-	if h := handleOf(t, o, storeA); h != slug {
-		t.Fatalf("store A handle = %q, want %q", h, slug)
+	var slug string
+	if err := conn.QueryRow(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,$3,'USD') RETURNING handle`, s.f.tenant, storeA, name).Scan(&slug); err != nil || !regexp.MustCompile(`^[1-9][0-9]{7}$`).MatchString(slug) {
+		t.Fatalf("store A numeric handle = %q, %v", slug, err)
 	}
 	_, originA := platformOrigin(t, o, storeA, s.base) // ACTIVE https://<slug>.example.com
 
@@ -314,7 +324,12 @@ func TestStoreDomainsSDW11HandleChangeDetachesOldOrigin(t *testing.T) {
 
 	// A new store B takes the freed handle at onboarding.
 	storeB := randomUUID()
-	mustExec(t, o, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,$3,'USD')`, s.f.tenant, storeB, name)
+	if _, err := conn.Exec(ctx, `SELECT setseed(0.618034)`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec(ctx, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,$3,'USD')`, s.f.tenant, storeB, name); err != nil {
+		t.Fatal(err)
+	}
 	if h := handleOf(t, o, storeB); h != slug {
 		t.Fatalf("store B handle = %q, want the freed %q", h, slug)
 	}

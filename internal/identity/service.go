@@ -176,16 +176,10 @@ type Store struct {
 	TenantID    string `json:"tenant_id"`
 	StoreID     string `json:"store_id"`
 	WarehouseID string `json:"warehouse_id"`
-	// Handle is the store's platform handle (https://<handle>.<base>), assigned by the DB trigger from the name.
+	// Handle is the store's platform handle (https://<handle>.<base>), assigned randomly by the DB trigger (8 digits).
 	Handle string `json:"handle"`
 	// StorefrontOrigin is the ACTIVE platform subdomain written at onboarding ("" when no base domain is set).
 	StorefrontOrigin string `json:"storefront_origin"`
-}
-
-// SuggestedHandle is the onboarding slug preview + live availability (no write).
-type SuggestedHandle struct {
-	Suggested string `json:"suggested"`
-	Available bool   `json:"available"`
 }
 
 func (s *Service) CreateInitialStore(ctx context.Context, token, key string, input StoreRequest) (Store, error) {
@@ -236,29 +230,6 @@ func (s *Service) CreateInitialStore(ctx context.Context, token, key string, inp
 		return Store{}, ErrUnavailable
 	}
 	return result, nil
-}
-
-// SuggestStoreHandle previews the handle slug the onboarding wizard would assign for a store name and whether it is
-// still free (Decision 1 "suggests slug, checks availability live"). It never writes: the DB trigger assigns the real
-// handle from the same name on create, suffixing on collision. The nonce is only the store-<id8> fallback preview.
-func (s *Service) SuggestStoreHandle(ctx context.Context, name string) (SuggestedHandle, error) {
-	name = strings.TrimSpace(name)
-	if !validName(name) {
-		return SuggestedHandle{}, ErrInvalid
-	}
-	var raw []byte
-	err := s.transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
-		// control.suggest_store_handle (0106, owner commerce_identity_writer, EXECUTE commerce_identity): slug + availability.
-		return tx.QueryRow(ctx, `SELECT control.suggest_store_handle($1,$2)`, name, randomNonce()).Scan(&raw)
-	})
-	if err != nil {
-		return SuggestedHandle{}, ErrUnavailable
-	}
-	var out SuggestedHandle
-	if err := json.Unmarshal(raw, &out); err != nil || out.Suggested == "" {
-		return SuggestedHandle{}, ErrUnavailable
-	}
-	return out, nil
 }
 
 func (s *Service) Logout(ctx context.Context, token string) error {
