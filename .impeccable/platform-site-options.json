@@ -1,0 +1,12 @@
+{
+  "title": "DaWan Live 官方網站：首頁結構",
+  "question": "三版沿用已定品牌；請選希望採用的首頁结构。公司、隱私與聯絡資訊都會完整保留。",
+  "options": [
+    {"id":"workflow","label":"A · 從留言到訂單","kicker":"THE ROLL","thesis":"以一條清楚的業務流程，說明平台到底做什麼。","palette":["#FFFFFF","#1F2937","#FF6A00"],"materials":["白底","細分隔線","流程示意"],"viewport":"上方產品名稱與登入，下方大標題和三步流程：Facebook 留言 → 商家網店 → 訂單管理。","risk":"流程是產品說明，不能被理解為每家商戶均已接通。","comp":".impeccable/mocks/decision/platform-workflow.png"},
+    {"id":"operator","label":"B · 產品與公司並列","thesis":"訪客一眼確認平台用途，以及背後的營運公司。","palette":["#FFFFFF","#1F2937","#FF6A00"],"materials":["白底","雙欄","公司資料"],"viewport":"左邊產品用途和開店入口，右邊完整營運公司資料；下方逐項說明功能。","risk":"公司資料會比業務流程更搶眼。","comp":".impeccable/mocks/decision/platform-operator.png"},
+    {"id":"guide","label":"C · 商家操作導覽","thesis":"讓商家按自己要完成的工作了解平台。","palette":["#FFFFFF","#1F2937","#FF6A00"],"materials":["白底","縱向目錄","分段說明"],"viewport":"左側短目錄、右側大字主張，依序說明留言收單、網店、訂單與廣告管理。","risk":"內容較密，初次訪客需要多讀一點。","comp":".impeccable/mocks/decision/platform-guide.png"}
+  ],
+  "reroll": true,
+  "steer": true,
+  "buildPath": {"value":"comp","toggle":true}
+}
