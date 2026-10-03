@@ -430,6 +430,19 @@ func SaveProductEdit(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, 
 		}
 		finishProduct(&out.Product)
 
+		if in.Options != nil && in.SKUs == nil {
+			// §g.1: an options change must not strand an active SKU — the fit check runs even when the patch
+			// carries no skus array (applySKUPatch covers the in.SKUs != nil case).
+			active, err := loadActiveSKUs(ctx, tx, scope, id)
+			if err != nil {
+				return err
+			}
+			for _, s := range active {
+				if !valuesFit(axes, s.OptionValues) {
+					return command.ErrInvalid
+				}
+			}
+		}
 		if in.SKUs != nil {
 			skuChanged, err := applySKUPatch(ctx, tx, scope, id, out.Product.Slug, currency, axes, *in.SKUs, operation, key)
 			if err != nil {
@@ -543,6 +556,12 @@ func validDocumentPatch(in ProductDocumentPatch) bool {
 // validPatchSKUFields checks the present fields of an id-carrying patch entry in isolation. Cross-field checks that need
 // the current value (compare_at > price, whole-TWD, tracked/untracked cap rules) run at write time in patchExistingSKU.
 func validPatchSKUFields(e *DocumentSKUPatch) bool {
+	// An archive entry carries only id + active:false: any other field would be silently dropped, so it is refused.
+	if e.Active != nil && !*e.Active && (e.OptionValues != nil || e.PriceMinor != nil || e.CompareAtMinor.Set ||
+		e.OriginCountry != nil || e.CustomsName != nil || e.HSCandidate != nil || e.Stock != nil || e.Keyword.Set ||
+		e.WeightGrams != nil || e.LengthMM != nil || e.WidthMM != nil || e.HeightMM != nil) {
+		return false
+	}
 	if e.PriceMinor != nil && (*e.PriceMinor < 0 || *e.PriceMinor > command.MaxMoney) {
 		return false
 	}
@@ -627,6 +646,10 @@ func applySKUPatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, product
 			final[e.ID] = *e.OptionValues
 		}
 	}
+	// The edit may not leave more active SKUs than create allows (ListSKUs and the detail read assume the cap).
+	if len(final)+len(newValues) > maxActiveSKUsPerProduct {
+		return nil, command.ErrInvalid
+	}
 	// Combination uniqueness applies to non-empty combinations only, as on create and in the 0086 partial index: an
 	// axis-less product may hold several SKUs with no option values.
 	seen := map[string]bool{}
@@ -635,7 +658,11 @@ func applySKUPatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, product
 			return nil, command.ErrInvalid // §g.1: an active SKU stranded by the new axes
 		}
 		if len(values) > 0 {
-			seen[strings.Join(values, "\x00")] = true
+			k := strings.Join(values, "\x00")
+			if seen[k] {
+				return nil, command.ErrInvalid // two active SKUs with the same combination (§g.1; the 0086 index backstops)
+			}
+			seen[k] = true
 		}
 	}
 	for _, values := range newValues {
