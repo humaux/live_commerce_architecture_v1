@@ -306,7 +306,7 @@ func audienceBuckets(raw json.RawMessage) ([]LiveAudienceBucket, bool) {
 		return buckets, true
 	}
 	var values map[string]json.RawMessage
-	if json.Unmarshal(raw, &values) != nil || values == nil || len(values) > 1000 {
+	if json.Unmarshal(raw, &values) != nil || values == nil || len(values) > 200 {
 		return nil, false
 	}
 	labels := make([]string, 0, len(values))

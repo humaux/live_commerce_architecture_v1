@@ -349,7 +349,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   (coalesce(f.captured,0)>0 OR o.collected_at IS NOT NULL OR bt.confirmed_at IS NOT NULL) AS paid,
   (o.collection_state='PENDING' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION')) IS TRUE AS pending,
   o.total_minor+coalesce(o.cod_surcharge_minor,0) AS due,
-  coalesce(nullif(o.snapshot#>>'{destination,home_address,region}',''),nullif(o.snapshot#>>'{destination,home_address,city}',''),
+  coalesce(
+   substring(btrim(o.snapshot#>>'{destination,home_address,region}') FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)$'),
+   substring(btrim(o.snapshot#>>'{destination,home_address,city}') FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)$'),
    substring(o.snapshot#>>'{destination,pickup,address}' FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)'), '—') AS county,
   EXISTS(SELECT 1 FROM checkout.orders old WHERE old.tenant_id=o.tenant_id AND old.store_id=o.store_id AND old.owner_id=o.owner_id
    AND (old.created_at,old.id)<(o.created_at,o.id) AND (old.commercial_state='CONFIRMED' OR old.collected_at IS NOT NULL)) AS is_returning
@@ -485,7 +487,7 @@ GRANT EXECUTE ON FUNCTION ads.auth(bytea,uuid,text[]) TO commerce_integration_wr
 CREATE TABLE ads.live_audience_snapshots (
  tenant_id uuid NOT NULL,store_id uuid NOT NULL,session_id uuid NOT NULL,source_id uuid NOT NULL,
  operation_id uuid NOT NULL REFERENCES integration.operations(id),snapshot jsonb NOT NULL CHECK(jsonb_typeof(snapshot)='object' AND octet_length(snapshot::text)<=65536),
- fetched_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(tenant_id,store_id,session_id),
+ requested_at timestamptz NOT NULL,fetched_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(tenant_id,store_id,session_id),
  FOREIGN KEY(tenant_id,store_id,session_id) REFERENCES live.sessions(tenant_id,store_id,id));
 ALTER TABLE ads.live_audience_snapshots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ads.live_audience_snapshots FORCE ROW LEVEL SECURITY;
@@ -593,10 +595,10 @@ BEGIN
  IF jsonb_typeof(p_result) IS DISTINCT FROM 'object' OR coalesce(p_result->>'status','') NOT IN ('available','insufficient')
   OR jsonb_typeof(p_result->'age_gender') IS DISTINCT FROM 'array' OR jsonb_typeof(p_result->'regions') IS DISTINCT FROM 'array'
   OR jsonb_array_length(p_result->'age_gender')>200 OR jsonb_array_length(p_result->'regions')>200 THEN RAISE EXCEPTION 'invalid audience result' USING ERRCODE='22023'; END IF;
- INSERT INTO ads.live_audience_snapshots(tenant_id,store_id,session_id,source_id,operation_id,snapshot)
- VALUES(p_tenant,p_store,p_session,p_source,p_operation,p_result)
- ON CONFLICT(tenant_id,store_id,session_id) DO UPDATE SET source_id=EXCLUDED.source_id,operation_id=EXCLUDED.operation_id,snapshot=EXCLUDED.snapshot,fetched_at=clock_timestamp()
- WHERE ads.live_audience_snapshots.fetched_at<=p_requested_at;
+ INSERT INTO ads.live_audience_snapshots(tenant_id,store_id,session_id,source_id,operation_id,requested_at,snapshot)
+ VALUES(p_tenant,p_store,p_session,p_source,p_operation,p_requested_at,p_result)
+ ON CONFLICT(tenant_id,store_id,session_id) DO UPDATE SET source_id=EXCLUDED.source_id,operation_id=EXCLUDED.operation_id,requested_at=EXCLUDED.requested_at,snapshot=EXCLUDED.snapshot,fetched_at=clock_timestamp()
+ WHERE ads.live_audience_snapshots.requested_at<=EXCLUDED.requested_at;
 END $$;
 ALTER FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) OWNER TO commerce_ads_writer;
 REVOKE ALL ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) FROM PUBLIC;
