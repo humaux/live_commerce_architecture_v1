@@ -191,14 +191,22 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 		if err != nil {
 			return createSpec{}, false
 		}
-		return createSpec{path: account + "/adsets", listPath: r.CampaignID + "/adsets", name: tag, payload: map[string]any{
+		payload := map[string]any{
 			"name": tag, "campaign_id": r.CampaignID, "lifetime_budget": budget,
 			"start_time": start.Format(time.RFC3339), "end_time": end.Format(time.RFC3339),
 			"billing_event": pair[1], "optimization_goal": pair[0], "bid_strategy": bidStrategy,
 			"targeting": map[string]any{"geo_locations": map[string]any{"countries": r.Countries},
 				"age_min": r.AgeMin, "age_max": r.AgeMax},
 			"status": statusActive, // AD3: children ACTIVE under a PAUSED campaign (effective CAMPAIGN_PAUSED)
-		}}, true
+		}
+		for _, country := range r.Countries {
+			if country == "TW" {
+				// Use the advertiser's Ads Manager beneficiary/payer defaults (F23/F24).
+				payload["regional_regulated_categories"] = []string{"TAIWAN_UNIVERSAL"}
+				break
+			}
+		}
+		return createSpec{path: account + "/adsets", listPath: r.CampaignID + "/adsets", name: tag, payload: payload}, true
 	case ActionCreateCreative:
 		var r struct {
 			baseReq

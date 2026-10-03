@@ -25,26 +25,28 @@ const (
 	codeCustomLimit = 613
 	codeBUCLimit    = 80004
 	// codeInvalidParameter (100) is the generic "invalid parameter" error (also the U9 dev-mode
-	// creative failure, subcode 1885183). It is deliberately NOT special-cased: it ends an op as
-	// FAILED_FINAL graph_100 like every other rejected request. Same F-pages, retrieved 2026-09-29.
-	codeInvalidParameter = 100
+	// creative failure, subcode 1885183). Only the proven Taiwan verification subcode gets
+	// actionable merchant guidance; other invalid parameters remain graph_100.
+	codeInvalidParameter    = 100
+	subcodeTaiwanUnverified = 3858495
 )
 
 func unknown(code string) core.Outcome     { return core.Outcome{State: "UNKNOWN", Code: code} }
 func failedFinal(code string) core.Outcome { return core.Outcome{State: "FAILED_FINAL", Code: code} }
 func unconfirmed() core.Outcome            { return unknown("graph_unconfirmed") }
 
-// graphErrorCode extracts error.code from a Graph error body.
-func graphErrorCode(body []byte) (int, bool) {
+// graphErrorCode extracts the numeric code/subcode without exposing Graph's raw message.
+func graphErrorCode(body []byte) (int, int, bool) {
 	var doc struct {
 		Error *struct {
-			Code int `json:"code"`
+			Code    int `json:"code"`
+			Subcode int `json:"error_subcode"`
 		} `json:"error"`
 	}
 	if json.Unmarshal(body, &doc) != nil || doc.Error == nil || doc.Error.Code < 1 || doc.Error.Code > 999999 {
-		return 0, false
+		return 0, 0, false
 	}
-	return doc.Error.Code, true
+	return doc.Error.Code, doc.Error.Subcode, true
 }
 
 // rejection is the FAILED_FINAL outcome for a 4xx Graph error body, or ok=false when the response is
@@ -53,9 +55,12 @@ func rejection(rep reply, err error) (core.Outcome, bool) {
 	if err != nil || rep.status < 400 || rep.status > 499 {
 		return core.Outcome{}, false
 	}
-	code, ok := graphErrorCode(rep.body)
+	code, subcode, ok := graphErrorCode(rep.body)
 	if !ok {
 		return core.Outcome{}, false
+	}
+	if code == codeInvalidParameter && subcode == subcodeTaiwanUnverified {
+		return failedFinal("tw_advertiser_unverified"), true
 	}
 	switch code {
 	case codeAppLimit, codeUserLimit, codeCustomLimit, codeBUCLimit:

@@ -109,9 +109,13 @@ Rejected alternatives:
 | F20 | Sandbox ad account: one per app; no delivery, no spend; "Insights API is currently not supported"; API only. | <https://developers.facebook.com/blog/post/2023/06/21/marketing-api-sandbox-capability-now-re-enabled/> |
 | F21 | BUC rate limits per ad account; header `X-Business-Use-Case-Usage` with `estimated_time_to_regain_access`; error 80004 (search excerpt). | <https://developers.facebook.com/docs/marketing-api/overview/rate-limiting/> |
 | F22 | Ad set `status`/`configured_status`: "The status set at the ad set level. It can be different from the effective status due to its parent campaign"; `effective_status` includes `CAMPAIGN_PAUSED` (fetched 2026-09-30). | <https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/> |
+| F23 | Targeting includes TW: send `regional_regulated_categories=["TAIWAN_UNIVERSAL"]`; omit it when TW is absent. Without the category, owner sandbox validate-only returned subcode 3858498. We omit `regional_regulation_identities` and use the merchant's verified Ads Manager beneficiary/payer defaults. | Owner SANDBOX evidence and integrator ruling 2026-10-03, `docs/delivery/units/ads-graph.md` final section; reference <https://developers.facebook.com/docs/marketing-api/reference/ad-campaign/>. |
+| F24 | Category present but advertiser unverified: Graph code 100 / subcode 3858495. A proven 4xx create refusal is `FAILED_FINAL/tw_advertiser_unverified`. Show Taiwan verification/default beneficiary and payer guidance, the help link, and an explicit new-attempt retry (§5.3). | Owner SANDBOX evidence and integrator ruling 2026-10-03; merchant help <https://www.facebook.com/business/help/983527276402621> (current help fetch required login; no claim of re-verifying its contents). |
 
-UNKNOWN (must be closed by a SANDBOX/LIVE gate, never guessed): U1 `special_ad_categories` value for
-"none" in v26 (MA-S1); U2 valid `optimization_goal`/`billing_event` pairs per objective (MA-S1); U3
+Closed by the owner's 2026-10-03 sandbox validate-only probes: U1 `special_ad_categories=[]` is
+accepted for "none"; U2 the `POST_ENGAGEMENT` / `IMPRESSIONS` pair, `LOWEST_COST_WITHOUT_CAP`, lifetime
+budget and schedule validate with the HK control. This is not proof of delivery or other objectives.
+UNKNOWN (must be closed by a SANDBOX/LIVE gate, never guessed): U3
 whether BISU tokens can create Page-post creatives without a Page token (MA-S2); U4 whether a finished
 Live video's Page post is accepted as `object_story_id` (MA-S2); U5 whether a CAPI-only dataset is
 enough for `OUTCOME_SALES` (deferred); U6 Taiwan PDPA legal basis for ad-measurement consent
@@ -120,6 +124,9 @@ merchant re-login (MA-S3; safe either way: §4.1 `client_business_id` check); U8
 response can coexist with a created object (MA-S1); U9 whether creative/ad creation needs app 大梦 in
 Live mode (earlier Daerdo sandbox run: code 100 / subcode 1885183 in dev mode; MA-S1); U10 whether the
 BISU code exchange accepts/needs `redirect_uri` (MA-S3; we send it, identical to the dialog value).
+U11 merchant-specific Taiwan verification and default beneficiary/payer readiness remain external
+prerequisites (F23/F24); a successful connection does not attest them. MA-S1 with country TW is the
+unverified sandbox refusal check; HK retains the full-chain control. This unit does not execute either.
 
 ## 2. Flow
 
@@ -139,6 +146,8 @@ BISU code exchange accepts/needs `redirect_uri` (MA-S3; we send it, identical to
 - Every call bounded by the dispatcher `CallTimeout`; token only from `LoadSecret` (AD11); redacted formatters.
 - **Money conversion (I05):** `metaBudget(currency, amount_minor)`: TWD → `amount_minor/100` only when `amount_minor % 100 == 0`, else `ErrNotWholeUnit` (never truncates; Meta offset 1, F19); USD/HKD → `amount_minor`; any other currency → `ErrUnsupportedCurrency`. `spendMinor(currency, s)`: Meta's decimal `spend` string (account currency) → exact decimal parse × 100 for TWD/USD/HKD; more than 2 fraction digits, sign, exponent or non-digits → error (op FAILED_FINAL `bad_spend`, never rounded).
 - **Classification, creates** (`create_campaign|adset|creative|ad`): 2xx with an `id` → SUCCEEDED + provider_reference; HTTP 4xx with a parseable Graph `error` body → FAILED_FINAL `graph_<error.code>`, except codes 4/17/613/80004 → FAILED_FINAL `rate_limited` (retry = new publish attempt, §5.3); timeout, 5xx, transport error, unparseable body → UNKNOWN. U8 is closed by MA-S1 negative probes.
+  Code 100 with subcode 3858495 is the additional F24 exception: `FAILED_FINAL/tw_advertiser_unverified`.
+  The same specific rejection code is available on reads; the activate/pause UNKNOWN rule below is unchanged.
 - **Classification, `activate`/`pause`:** 2xx `{"success":true}` → SUCCEEDED; **any other response → UNKNOWN**, reconciled by `GET /{campaign_id}?fields=status,effective_status`; never FAILED_FINAL (a rate-limited or rejected status POST does not prove the campaign's state).
 - **Classification, reads** (`preflight_account`, `read_insights`): 2xx parsed → SUCCEEDED with the result in `provider_reference` (grammar below); 4xx with error body → FAILED_FINAL `graph_<code>`/`rate_limited` (a read has no effect; the planner plans the next seq); else UNKNOWN, and Reconcile simply repeats the read.
 - **Read results** (`provider_reference`, ≤255 chars, `^v1(;[a-z]{2,3}=[A-Za-z0-9_./+-]{1,40}){1,9}$`): preflight `v1;st=<account_status>;cur=<ISO>;fund=<0|1>;tz=<timezone_name>`; insights (one day) `v1;es=<campaign effective_status>;sp=<spend decimal>;im=<int>;cl=<int>;pu=<int|na>;pv=<decimal|na>;cur=<ISO>;tz=<tz>`. `# ponytail: results ride in provider_reference (no schema change); add an operation result column if a read ever needs >255 chars.`
@@ -340,6 +349,14 @@ context row. Already-sent events are not recalled (no documented CAPI delete; di
 | PUBLIC | every new function/table | none (REVOKE ALL) | default deny |
 
 ## 5. State machine and rules
+
+The existing authenticated draft/list API already returns `ops[].code` from
+`integration.operations.result_code`, alongside `attempt`, `state`, and `updated_at`. For FAILED
+draft guidance select the most recently completed FAILED_FINAL op in the current `publish_attempt`;
+do not infer recency from kind-sorted array order or show a previous attempt's failure. Normal
+completion also writes that code to `integration.operation_events.reason_code`; a concurrent binding
+change may instead annotate the event as `completed_binding_changed` while `ops[].code` correctly
+retains Meta's operation outcome. No new event endpoint, grant or migration is needed for F24.
 
 ### 5.1 Draft status (derived, never stored as a mutable column)
 

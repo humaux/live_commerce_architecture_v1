@@ -71,6 +71,7 @@ type Fault struct {
 	Effect  bool
 	HTTP    int // FaultGraphError only, default 400
 	Code    int // FaultGraphError only
+	Subcode int // FaultGraphError only, omitted when zero
 	Times   int
 	Hold    chan struct{} // FaultHold only
 	Arrived chan struct{} // FaultHold only (buffered; a non-blocking send)
@@ -346,10 +347,14 @@ func (s *Server) campaignOfLocked(o *Object) *Object {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-func graphError(w http.ResponseWriter, status, code int, msg string) {
+func graphError(w http.ResponseWriter, status, code int, msg string, subcode ...int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{"message": msg, "type": "OAuthException", "code": code, "fbtrace_id": "SYNTHTRACE"}})
+	err := map[string]any{"message": msg, "type": "OAuthException", "code": code, "fbtrace_id": "SYNTHTRACE"}
+	if len(subcode) > 0 && subcode[0] != 0 {
+		err["error_subcode"] = subcode[0]
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"error": err})
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
@@ -511,7 +516,7 @@ func (s *Server) applyFault(w http.ResponseWriter, r *http.Request, f *Fault) in
 		if st == 0 {
 			st = 400
 		}
-		graphError(w, st, f.Code, "synthetic graph error")
+		graphError(w, st, f.Code, "synthetic graph error", f.Subcode)
 		return st
 	case FaultGarbled:
 		_, _ = w.Write([]byte("<html>not json"))
