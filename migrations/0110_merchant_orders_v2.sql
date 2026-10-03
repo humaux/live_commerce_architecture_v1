@@ -63,8 +63,10 @@ BEGIN
    NULL::jsonb AS snapshot,
    'LC-'||upper(replace(o.id::text,'-','')) AS order_number,
    -- Legacy display gaps must not poison otherwise valid transaction rows.
-   CASE WHEN nullif(btrim(o.snapshot#>>'{destination,recipient_name}'),'') IS NULL THEN '—'
-     ELSE left(btrim(o.snapshot#>>'{destination,recipient_name}'),1)||'***' END AS recipient_masked,
+   -- btrim only trims ASCII spaces; a leading U+3000/NBSP/zero-width char would yield a mask the Go validator rejects.
+   -- Start at the first non-whitespace rune; an all-whitespace name falls back to the placeholder.
+   coalesce(left(nullif(regexp_replace(o.snapshot#>>'{destination,recipient_name}',
+     '^[\s\u0085\u00a0\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f\u2060\u3000\ufeff]+',''),''),1)||'***','—') AS recipient_masked,
    CASE WHEN o.snapshot#>>'{destination,kind}'='home' THEN 'home'
      WHEN o.snapshot#>>'{destination,pickup,kind}' IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart')
        THEN o.snapshot#>>'{destination,pickup,kind}' ELSE 'unknown' END AS delivery_kind,
