@@ -508,6 +508,15 @@ func (s *Service) pause(ctx context.Context, tx pgx.Tx, scope platform.Scope, to
 
 // Report is GET report (ads:read): ads.report, three separate blocks.
 func (s *Service) Report(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (json.RawMessage, error) {
+	return s.reportQuery(ctx, tx, scope, token, from, to, `SELECT ads.report($1,$2,$3::date,$4::date)`)
+}
+
+// AttributionReport keeps authenticated factual orders separate from Meta snapshots.
+func (s *Service) AttributionReport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (json.RawMessage, error) {
+	return s.reportQuery(ctx, tx, scope, token, from, to, `SELECT ads.attribution_report($1,$2,$3::date,$4::date)`)
+}
+
+func (s *Service) reportQuery(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, query string) (json.RawMessage, error) {
 	hash, err := tokenHash(token)
 	if err != nil {
 		return nil, err
@@ -520,7 +529,7 @@ func (s *Service) Report(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 	if e1 != nil || e2 != nil || t.Before(f) || t.Sub(f) > 91*24*time.Hour {
 		return nil, refusal("invalid_request")
 	}
-	return queryJSON(ctx, tx, `SELECT ads.report($1,$2,$3::date,$4::date)`, hash, scope.StoreID, from, to)
+	return queryJSON(ctx, tx, query, hash, scope.StoreID, from, to)
 }
 
 // CapiInput is the PUT capi body; dataset_binding_id and test_event_code are optional (absent = none).

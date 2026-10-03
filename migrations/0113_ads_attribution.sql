@@ -10,7 +10,7 @@ CREATE TABLE orders.order_attribution (
  order_id uuid PRIMARY KEY, tenant_id uuid NOT NULL, store_id uuid NOT NULL,
  path text NOT NULL CHECK(path IN ('ad_click','boosted_post')), draft_id uuid, post_id text,
  clicked_at timestamptz, frozen_at timestamptz NOT NULL DEFAULT clock_timestamp(),
- fbc text CHECK(fbc ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]{1,500}$'),
+ fbc text CHECK(fbc ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$' AND char_length(split_part(fbc,'.',4))<=500),
  fbp text CHECK(fbp ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$'), client_ip inet,
  FOREIGN KEY(tenant_id,store_id,order_id) REFERENCES checkout.orders(tenant_id,store_id,id),
  FOREIGN KEY(tenant_id,store_id,draft_id) REFERENCES ads.campaign_drafts(tenant_id,store_id,id),
@@ -25,19 +25,46 @@ CREATE POLICY attribution_owner ON orders.order_attribution TO commerce_checkout
 COMMENT ON TABLE orders.order_attribution IS 'internal/checkout Begin writes once through orders.freeze_attribution; only scoped definers may read. Erasure clears pseudonyms, never financial facts.';
 COMMENT ON INDEX orders.order_attribution_draft IS 'internal/ads: scoped factual attribution report, not a buyer identity index.';
 
--- Domain-owned helper reads exact accepted comment evidence; no runtime table grants.
+-- Every redeemed claim has provenance even without a discounted price. Keep its
+-- exact imported version, then freeze an anonymous order/source association at Begin.
+ALTER TABLE storefront.cart_lines ADD COLUMN claim_line_version bigint CHECK(claim_line_version>0 AND claim_bundle_id IS NOT NULL);
+COMMENT ON COLUMN storefront.cart_lines.claim_line_version IS 'internal/claims RedeemLink only: exact imported version, server input only; old carts null and cannot invent a comment source.';
+CREATE TABLE claims.order_origins (
+ tenant_id uuid NOT NULL,store_id uuid NOT NULL,order_id uuid NOT NULL,bundle_id uuid NOT NULL,offer_id uuid NOT NULL,
+ line_version bigint NOT NULL CHECK(line_version>0),session_id uuid NOT NULL,post_id text,occurred_at timestamptz NOT NULL,
+ PRIMARY KEY(order_id,bundle_id,offer_id),
+ FOREIGN KEY(tenant_id,store_id,order_id) REFERENCES checkout.orders(tenant_id,store_id,id));
+ALTER TABLE claims.order_origins ENABLE ROW LEVEL SECURITY;
+ALTER TABLE claims.order_origins FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON claims.order_origins FROM PUBLIC;
+GRANT SELECT,INSERT ON claims.order_origins TO commerce_claims_writer;
+CREATE POLICY claims_origin_owner ON claims.order_origins TO commerce_claims_writer USING(true) WITH CHECK(true);
+COMMENT ON TABLE claims.order_origins IS 'internal/claims: immutable consumed cart origin to order association independent of live discounts; anonymous event version/post/session facts, no buyer identity or comment text. No claim FK so retention can erase source bindings.';
+CREATE FUNCTION claims.capture_order_origins(p_tenant uuid,p_store uuid,p_owner uuid,p_order uuid,p_origins jsonb) RETURNS void
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ INSERT INTO claims.order_origins
+ SELECT p_tenant,p_store,p_order,b.id,e.offer_id,e.line_version,e.session_id,src.source_object_id,e.occurred_at
+ FROM jsonb_to_recordset(p_origins) x(bundle_id uuid,offer_id uuid,sku_id uuid,line_version bigint,quantity bigint)
+ JOIN claims.bundles b ON b.tenant_id=p_tenant AND b.store_id=p_store AND b.id=x.bundle_id AND b.owner_id=p_owner
+ JOIN claims.lines l ON l.tenant_id=p_tenant AND l.store_id=p_store AND l.bundle_id=b.id AND l.offer_id=x.offer_id AND l.sku_id=x.sku_id
+ JOIN claims.events e ON e.tenant_id=p_tenant AND e.store_id=p_store AND e.bundle_id=b.id AND e.offer_id=x.offer_id
+  AND e.line_version=x.line_version AND e.outcome='ACCEPTED' AND x.quantity<=e.quantity
+ LEFT JOIN claims.meta_intake i ON i.tenant_id=p_tenant AND i.store_id=p_store AND i.applied_event_id=e.id AND i.inbox_event_id=e.source_event_id AND i.state='APPLIED'
+ LEFT JOIN live.claim_sources src ON src.tenant_id=p_tenant AND src.store_id=p_store AND src.id=i.source_id
+ ON CONFLICT DO NOTHING
+$$;
+ALTER FUNCTION claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) TO commerce_checkout_writer;
+GRANT USAGE ON SCHEMA claims TO commerce_checkout_writer;
+COMMENT ON FUNCTION claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) IS 'internal/checkout same creation transaction only: scoped server cart origins proved against exact accepted claim event, no runtime caller or client fields; price-neutral.';
+
+-- Domain-owned helper reads exact frozen comment evidence; no runtime table grants.
 CREATE FUNCTION claims.order_comment_posts(p_tenant uuid,p_store uuid,p_order uuid)
 RETURNS TABLE(post_id text,occurred_at timestamptz,session_id uuid)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
- SELECT DISTINCT src.source_object_id,i.occurred_at,i.session_id
- FROM claims.live_price_uses u
- JOIN claims.lines l ON l.tenant_id=u.tenant_id AND l.store_id=u.store_id AND l.bundle_id=u.bundle_id AND l.offer_id=u.offer_id
- JOIN claims.events e ON e.tenant_id=l.tenant_id AND e.store_id=l.store_id AND e.bundle_id=l.bundle_id AND e.offer_id=l.offer_id
-  AND e.line_version=l.version AND e.outcome='ACCEPTED' AND e.source_kind='meta'
- JOIN claims.meta_intake i ON i.tenant_id=e.tenant_id AND i.store_id=e.store_id AND i.applied_event_id=e.id
-  AND i.inbox_event_id=e.source_event_id AND i.state='APPLIED'
- JOIN live.claim_sources src ON src.tenant_id=i.tenant_id AND src.store_id=i.store_id AND src.id=i.source_id
- WHERE u.tenant_id=p_tenant AND u.store_id=p_store AND u.order_id=p_order
+ SELECT DISTINCT x.post_id,x.occurred_at,x.session_id FROM claims.order_origins x
+ WHERE x.tenant_id=p_tenant AND x.store_id=p_store AND x.order_id=p_order AND x.post_id IS NOT NULL
 $$;
 ALTER FUNCTION claims.order_comment_posts(uuid,uuid,uuid) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.order_comment_posts(uuid,uuid,uuid) FROM PUBLIC;
@@ -101,9 +128,13 @@ DECLARE s record; o record; d uuid; ds uuid[]; posts text[]; c record; click_at 
 BEGIN
  SELECT * INTO s FROM buyer.resolve_scope(p_hash,p_store);
  SELECT x.* INTO o FROM checkout.orders x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store AND x.owner_id=s.owner_id
-  AND x.id=p_order AND x.creator_session_id=s.session_id AND x.created_at>=clock_timestamp()-interval '1 minute';
+  AND x.id=p_order AND x.creator_session_id=s.session_id AND x.xmin=pg_current_xact_id()::xid;
  IF NOT FOUND THEN RAISE EXCEPTION 'attribution order unavailable' USING ERRCODE='PT404'; END IF;
  IF EXISTS(SELECT 1 FROM orders.order_attribution a WHERE a.order_id=p_order) THEN RETURN; END IF;
+ PERFORM claims.capture_order_origins(s.tenant_id,p_store,s.owner_id,p_order,
+  coalesce((SELECT jsonb_agg(jsonb_build_object('bundle_id',l.claim_bundle_id,'offer_id',l.claim_offer_id,'sku_id',l.sku_id,
+   'line_version',l.claim_line_version,'quantity',l.quantity)) FROM storefront.cart_lines l
+   WHERE l.tenant_id=s.tenant_id AND l.store_id=p_store AND l.owner_id=s.owner_id AND l.cart_id=o.cart_id AND l.claim_line_version IS NOT NULL),'[]'::jsonb));
  -- Invalid/foreign measurement is ignored; it cannot deny a legitimate order or change its financial snapshot.
  IF jsonb_typeof(p_touch)='object' AND (p_touch->>'draft_id') ~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$' THEN
   BEGIN click_at:=(p_touch->>'clicked_at')::timestamptz; EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN click_at:=NULL; END;
@@ -111,7 +142,7 @@ BEGIN
    SELECT m.draft_id INTO d FROM ads.attribution_match(s.tenant_id,p_store,(p_touch->>'draft_id')::uuid,NULL,NULL) m;
    IF d IS NOT NULL THEN
     v_path:='ad_click';
-    IF p_touch->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]{1,500}$' THEN v_fbc:=p_touch->>'fbc'; END IF;
+    IF p_touch->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$' AND char_length(split_part(p_touch->>'fbc','.',4))<=500 THEN v_fbc:=p_touch->>'fbc'; END IF;
     IF p_touch->>'fbp' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$' THEN v_fbp:=p_touch->>'fbp'; END IF;
    END IF;
   END IF;
@@ -291,6 +322,143 @@ ALTER FUNCTION ads.finish_insights_breakdowns(uuid,bigint,bytea,text,jsonb) OWNE
 REVOKE ALL ON FUNCTION ads.finish_insights_breakdowns(uuid,bigint,bytea,text,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ads.finish_insights_breakdowns(uuid,bigint,bytea,text,jsonb) TO commerce_ads_worker;
 COMMENT ON FUNCTION ads.finish_insights_breakdowns(uuid,bigint,bytea,text,jsonb) IS 'internal/integrations/meta_ads Finish hook: validated aggregate detail, exact claim lease and same transaction as completion/0112 refusal cleanup; replace whole day, idempotent and store scoped.';
+
+CREATE FUNCTION claims.attribution_session_orders(p_tenant uuid,p_store uuid,p_session uuid) RETURNS SETOF uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT DISTINCT u.order_id FROM claims.order_origins u
+ WHERE u.tenant_id=p_tenant AND u.store_id=p_store AND u.session_id=p_session
+$$;
+ALTER FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) TO commerce_checkout_writer;
+COMMENT ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) IS 'internal/attribution D9: consumed claim order IDs of exact session, no post fan-out, no actor/line data; checkout aggregate definer only.';
+
+CREATE FUNCTION orders.attribution_metrics(p_tenant uuid,p_store uuid,p_from date,p_to date,p_draft uuid,p_session uuid) RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH cohort AS MATERIALIZED (
+ SELECT o.id,o.owner_id,o.created_at,o.currency,o.snapshot,a.path,a.draft_id,a.post_id,
+  CASE WHEN o.payment_mode='card' THEN coalesce(f.captured,0)-coalesce(f.refunded,0)
+   WHEN o.payment_mode IN ('pay_at_pickup','cash_on_delivery') AND o.collection_state='COLLECTED' THEN o.total_minor+coalesce(o.cod_surcharge_minor,0)
+   WHEN o.payment_mode='bank_transfer' AND bt.state='CONFIRMED' THEN o.total_minor ELSE 0 END::bigint AS net_minor,
+  (coalesce(f.captured,0)>0 OR o.collected_at IS NOT NULL OR bt.confirmed_at IS NOT NULL) AS paid,
+  (o.collection_state='PENDING' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION')) IS TRUE AS pending,
+  o.total_minor+coalesce(o.cod_surcharge_minor,0) AS due,
+  coalesce(nullif(o.snapshot#>>'{destination,home_address,region}',''),nullif(o.snapshot#>>'{destination,home_address,city}',''),
+   substring(o.snapshot#>>'{destination,pickup,address}' FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)'), '—') AS county,
+  EXISTS(SELECT 1 FROM checkout.orders old WHERE old.tenant_id=o.tenant_id AND old.store_id=o.store_id AND old.owner_id=o.owner_id
+   AND (old.created_at,old.id)<(o.created_at,o.id) AND (old.commercial_state='CONFIRMED' OR old.collected_at IS NOT NULL)) AS is_returning
+ FROM checkout.orders o LEFT JOIN orders.order_attribution a ON a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.order_id=o.id
+ LEFT JOIN checkout.bank_transfers bt ON bt.tenant_id=o.tenant_id AND bt.store_id=o.store_id AND bt.order_id=o.id
+ LEFT JOIN LATERAL (SELECT
+  (SELECT sum(x.amount_minor) FROM checkout.payment_attempts p JOIN payments.facts x ON x.tenant_id=p.tenant_id AND x.store_id=p.store_id AND x.attempt_id=p.id AND x.kind='CAPTURED'
+   WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id) AS captured,
+  (SELECT sum(x.amount_minor) FROM checkout.payment_attempts p JOIN payments.refund_facts x ON x.tenant_id=p.tenant_id AND x.store_id=p.store_id AND x.attempt_id=p.id AND x.kind='SUCCEEDED'
+   WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id) AS refunded) f ON true
+ WHERE o.tenant_id=p_tenant AND o.store_id=p_store
+  AND o.created_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND o.created_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
+  AND ((p_draft IS NOT NULL AND a.draft_id=p_draft) OR (p_session IS NOT NULL AND o.id IN
+   (SELECT * FROM claims.attribution_session_orders(p_tenant,p_store,p_session))))
+ ), counts AS (
+ SELECT count(*)::bigint orders,coalesce(sum(net_minor),0)::bigint net_minor,count(*) FILTER(WHERE pending)::bigint pending_orders,
+  coalesce(sum(due) FILTER(WHERE pending),0)::bigint pending_minor,count(*) FILTER(WHERE paid)::bigint paid_orders,
+  count(*) FILTER(WHERE path='boosted_post' AND draft_id IS NULL)::bigint ambiguous_orders FROM cohort
+ ), customer_groups AS (SELECT owner_id,bool_or(is_returning) AS is_returning FROM cohort WHERE paid GROUP BY owner_id)
+ SELECT to_jsonb(counts)||jsonb_build_object(
+ 'paths',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT path,count(*)::bigint orders,sum(net_minor)::bigint net_minor,
+  count(*) FILTER(WHERE pending)::bigint pending_orders,coalesce(sum(due) FILTER(WHERE pending),0)::bigint pending_minor
+  FROM cohort WHERE path IS NOT NULL GROUP BY path ORDER BY path) x),'[]'::jsonb),
+ 'buyers',jsonb_build_object(
+  'counties',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT county AS name,count(*)::bigint orders,sum(net_minor)::bigint net_minor FROM cohort WHERE paid GROUP BY county ORDER BY count(*) DESC,county) x),'[]'::jsonb),
+  'new_buyers',(SELECT count(*) FROM customer_groups WHERE NOT is_returning),'returning_buyers',(SELECT count(*) FROM customer_groups WHERE is_returning),
+  'average_order_minor',(SELECT CASE WHEN count(*) FILTER(WHERE paid)>0 THEN round(sum(net_minor)::numeric/(count(*) FILTER(WHERE paid)))::bigint ELSE NULL END FROM cohort),
+  'top_products',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT line->>'product_id' AS product_id,min(line->>'name') AS name,sum((line->>'quantity')::bigint)::bigint quantity
+   FROM cohort CROSS JOIN LATERAL jsonb_array_elements(snapshot#>'{quote,lines}') line WHERE paid GROUP BY line->>'product_id' ORDER BY sum((line->>'quantity')::bigint) DESC,line->>'product_id' LIMIT 20) x),'[]'::jsonb),
+  'orders_per_minute',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY at) FROM (SELECT date_trunc('minute',created_at) AS at,count(*)::bigint orders,sum(net_minor)::bigint net_minor FROM cohort GROUP BY date_trunc('minute',created_at)) x),'[]'::jsonb))) FROM counts
+$$;
+ALTER FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) TO commerce_ads_writer;
+COMMENT ON FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) IS 'internal/ads D1/D6/D9 narrow aggregate; Taipei order-created cohort with all known refunds, COD pending separate. No buyer identity/phone/address/age/gender exposed; only county, new/returning and purchased product aggregates.';
+
+CREATE FUNCTION claims.attribution_funnel(p_tenant uuid,p_store uuid,p_session uuid,p_from date,p_to date) RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH comments AS MATERIALIZED (SELECT i.occurred_at FROM claims.meta_intake i WHERE i.tenant_id=p_tenant AND i.store_id=p_store AND i.session_id=p_session
+  AND i.occurred_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND i.occurred_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'),
+ accepted AS MATERIALIZED (SELECT e.occurred_at,e.bundle_id FROM claims.events e WHERE e.tenant_id=p_tenant AND e.store_id=p_store AND e.session_id=p_session AND e.outcome='ACCEPTED'
+  AND e.occurred_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND e.occurred_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei')
+ SELECT jsonb_build_object('comments',(SELECT count(*) FROM comments),'claims',(SELECT count(*) FROM accepted),
+  'checkout_links',(SELECT count(*) FROM claims.links l JOIN claims.bundles b ON b.tenant_id=l.tenant_id AND b.store_id=l.store_id AND b.id=l.bundle_id
+   WHERE b.tenant_id=p_tenant AND b.store_id=p_store AND b.session_id=p_session AND l.issued_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND l.issued_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'),
+  'timeline',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY at) FROM (SELECT at,sum(comments)::bigint comments,sum(claims)::bigint claims FROM
+   (SELECT date_trunc('minute',occurred_at) at,1 comments,0 claims FROM comments UNION ALL SELECT date_trunc('minute',occurred_at),0,1 FROM accepted) m GROUP BY at) x),'[]'::jsonb))
+$$;
+ALTER FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) TO commerce_ads_writer;
+COMMENT ON FUNCTION claims.attribution_funnel(uuid,uuid,uuid,date,date) IS 'internal/ads D9 session-only aggregate of received comment intake, accepted claim events and current issued checkout links; no actor identifiers or message text.';
+
+CREATE FUNCTION live.attribution_sessions(p_tenant uuid,p_store uuid,p_from date,p_to date)
+RETURNS TABLE(session_id uuid,title text,starts_at timestamptz,ends_at timestamptz,post_ids text[])
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT s.id,s.title,coalesce(s.scheduled_at,s.created_at),NULL::timestamptz,
+  ARRAY(SELECT DISTINCT src.source_object_id FROM live.claim_sources src WHERE src.tenant_id=p_tenant AND src.store_id=p_store AND src.session_id=s.id ORDER BY src.source_object_id)
+ FROM live.sessions s WHERE s.tenant_id=p_tenant AND s.store_id=p_store
+  AND coalesce(s.scheduled_at,s.created_at)>=p_from::timestamp AT TIME ZONE 'Asia/Taipei'
+  AND coalesce(s.scheduled_at,s.created_at)<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
+ ORDER BY coalesce(s.scheduled_at,s.created_at) DESC,s.id LIMIT 100
+$$;
+ALTER FUNCTION live.attribution_sessions(uuid,uuid,date,date) OWNER TO commerce_media_writer;
+REVOKE ALL ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) TO commerce_ads_writer;
+GRANT USAGE ON SCHEMA claims,live TO commerce_ads_writer;
+COMMENT ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) IS 'internal/ads D9: at most 100 scoped live sessions with bound public post IDs, not stream keys or credentials. Unknown end stays null.';
+
+CREATE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a record; d record; s record; metrics jsonb; drafts jsonb:='[]'; sessions jsonb:='[]'; bd jsonb; mr record;
+ f jsonb; ids uuid[]; timeline jsonb; currency text;
+BEGIN
+ SELECT * INTO a FROM ads.auth(p_hash,p_store,ARRAY['ads:read']);
+ IF p_from IS NULL OR p_to IS NULL OR p_to<p_from OR p_to-p_from>91 THEN PERFORM ads.deny('invalid_request'); END IF;
+ FOR d IN SELECT * FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store ORDER BY x.created_at DESC,x.id LIMIT 100 LOOP
+  metrics:=orders.attribution_metrics(a.out_tenant,p_store,p_from,p_to,d.id,NULL);
+  SELECT coalesce(sum(i.spend_minor),0)::bigint AS spend,sum(i.meta_purchases)::bigint AS purchases,sum(i.meta_purchase_value_minor)::bigint AS value,
+   CASE WHEN count(DISTINCT i.account_timezone)=1 THEN min(i.account_timezone) WHEN count(*)>0 THEN 'mixed' ELSE NULL END tz,
+   coalesce(bool_or(i.day>=(clock_timestamp() AT TIME ZONE i.account_timezone)::date-2),false) provisional
+  INTO mr FROM ads.insights_daily i WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=d.id AND i.currency=d.currency AND i.day BETWEEN p_from AND p_to;
+  SELECT coalesce(jsonb_agg(to_jsonb(i)-'tenant_id'-'store_id'-'draft_id'-'source_operation_id'-'fetched_at' ORDER BY i.day,i.dimension,i.bucket),'[]'::jsonb)
+   INTO bd FROM ads.insights_breakdowns i WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=d.id AND i.day BETWEEN p_from AND p_to;
+  drafts:=drafts||jsonb_build_array(jsonb_build_object('draft_id',d.id,'source_ref',d.source_ref,'template',d.template,'currency',d.currency,
+   'meta_account_timezone',mr.tz,'spend_minor',mr.spend,'orders',metrics->'paths','meta',jsonb_build_object('purchases',mr.purchases,'purchase_value_minor',mr.value),
+   'roas',CASE WHEN mr.spend>0 THEN round((metrics->>'net_minor')::numeric/mr.spend,4) ELSE NULL END,
+   'provisional',mr.provisional,'breakdowns',bd,'buyers',metrics->'buyers'));
+ END LOOP;
+ SELECT coalesce((SELECT st.currency FROM control.stores st WHERE st.tenant_id=a.out_tenant AND st.id=p_store),'TWD') INTO currency;
+ FOR s IN SELECT * FROM live.attribution_sessions(a.out_tenant,p_store,p_from,p_to) LOOP
+  SELECT array_agg(x.id) INTO ids FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.template='BOOST_POST' AND x.source_ref=ANY(s.post_ids);
+  metrics:=orders.attribution_metrics(a.out_tenant,p_store,p_from,p_to,NULL,s.session_id);
+  f:=claims.attribution_funnel(a.out_tenant,p_store,s.session_id,p_from,p_to);
+  SELECT coalesce(sum(i.spend_minor),0)::bigint spend INTO mr FROM ads.insights_daily i
+   WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=ANY(ids) AND i.currency=currency AND i.day BETWEEN p_from AND p_to;
+  SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY at),'[]'::jsonb) INTO timeline FROM
+   (SELECT at,sum(spend_minor)::bigint spend_minor,sum(orders)::bigint orders,sum(net_minor)::bigint net_minor,sum(comments)::bigint comments,sum(claims)::bigint claims,NULL::bigint viewers
+    FROM (SELECT i.hour_start at,i.spend_minor,0::bigint orders,0::bigint net_minor,0::bigint comments,0::bigint claims FROM ads.insights_breakdowns i
+      WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=ANY(ids) AND i.currency=currency AND i.day BETWEEN p_from AND p_to AND i.dimension='hourly'
+     UNION ALL SELECT x.at,0,x.orders,x.net_minor,0,0 FROM jsonb_to_recordset(metrics#>'{buyers,orders_per_minute}') x(at timestamptz,orders bigint,net_minor bigint)
+     UNION ALL SELECT x.at,0,0,0,x.comments,x.claims FROM jsonb_to_recordset(f->'timeline') x(at timestamptz,comments bigint,claims bigint)) z GROUP BY at) q;
+  sessions:=sessions||jsonb_build_array(jsonb_build_object('session_id',s.session_id,'title',s.title,'starts_at',s.starts_at,'ends_at',s.ends_at,
+   'post_ids',to_jsonb(s.post_ids),'draft_ids',to_jsonb(coalesce(ids,'{}'::uuid[])),'currency',currency,'spend_minor',mr.spend,
+   'orders',metrics->'orders','net_minor',metrics->'net_minor','pending_orders',metrics->'pending_orders','pending_minor',metrics->'pending_minor',
+   'ambiguous_orders',metrics->'ambiguous_orders','funnel',(f-'timeline')||jsonb_build_object('paid_orders',metrics->'paid_orders'),
+   'buyers',metrics->'buyers','timeline',timeline,
+   'live_audience',jsonb_build_object('status','not_authorized','views',NULL,'peak_concurrent',NULL,'total_view_time_ms',NULL,'age_gender','[]'::jsonb,'regions','[]'::jsonb)));
+ END LOOP;
+ RETURN jsonb_build_object('window',jsonb_build_object('from',p_from,'to',p_to),'order_timezone','Asia/Taipei','drafts',drafts,'sessions',sessions);
+END $$;
+ALTER FUNCTION ads.attribution_report(bytea,uuid,date,date) OWNER TO commerce_ads_writer;
+REVOKE ALL ON FUNCTION ads.attribution_report(bytea,uuid,date,date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ads.attribution_report(bytea,uuid,date,date) TO commerce_runtime;
+COMMENT ON FUNCTION ads.attribution_report(bytea,uuid,date,date) IS 'internal/ads GET attribution: auth ads:read, bounded dates, factual local aggregates and Meta account-day snapshots never blended; session hourly timestamps already absolute. No provider call or mutation.';
 
 DO $comments$
 DECLARE c record;
