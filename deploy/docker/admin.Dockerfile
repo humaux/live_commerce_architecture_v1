@@ -52,7 +52,11 @@ COPY packages ./packages
 COPY apps/admin ./apps/admin
 COPY scripts/dev/package-admin.mjs ./scripts/dev/package-admin.mjs
 # Exact tested build (scripts/dev/test-local.sh): `next build && node ../../scripts/dev/package-admin.mjs`.
-RUN COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
+ARG LC_PLATFORM_HOST
+ARG LC_ADMIN_HOST
+ARG LC_COMPANY_CONTACT_EMAIL
+# Public non-secret config validates the build; dynamic pages read runtime values.
+RUN LC_PLATFORM_HOST="$LC_PLATFORM_HOST" LC_ADMIN_HOST="$LC_ADMIN_HOST" LC_COMPANY_CONTACT_EMAIL="$LC_COMPANY_CONTACT_EMAIL" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
 
 FROM ${NODE_IMAGE}
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1

@@ -164,6 +164,8 @@ deploy/scripts/deploy.sh upgrade <tag>
 2. **配置差异**：
    - `compose.env` **必须新增** `LC_STORE_BASE_DOMAIN=xgdwm.com`（P19 在缺失时 FAIL）。compose 会把它传给 api、claims-worker 和 migrate。
    - **platform-site 公开联系邮箱（owner 已确认）**：pilot 的 `compose.env` 取值为 `LC_COMPANY_CONTACT_EMAIL=ailun@xgdwm.com`。应用只从环境变量读取，不设默认值、不在 UI 或法律文本中写死邮箱。`deploy/env/compose.env.example` 仅放注释示例；测试 fixture 统一使用 `contact@example.invalid`。此项是配置说明，不代表官网已通过上线门禁或已在 pilot 生效；随 platform-site 交付并获准部署时再配置、核对实际页面。
+   - **platform-site 上线前附加检查**：设置 `LC_PLATFORM_HOST` 为平台官网裸域，必须不同于 `LC_ADMIN_HOST` 等服务 host；`LC_STORE_BASE_DOMAIN` 是独立配置，允许与平台裸域相同（店铺使用其数字子域）。运营公司资料统一来自 `apps/admin/lib/company.ts`。法律文本须 owner／律師審閱。公网 DNS 裸域及 `www` 指向 edge（DNS-only），不要改现有店铺路由。构建前将这三个公开变量（平台域名、后台域名、联系邮箱）导出给 `build-images.sh`；构建缺值直接失败。compose 给 admin/Caddy 注入运行时值，不使用 `NEXT_PUBLIC_*` 固化域名。
+   - **Meta 与外网核验（需授权部署后执行）**：优先按 Meta 要求添加域名验证 TXT；如选 meta 标签法，再设置可选 `LC_META_DOMAIN_VERIFICATION`，仅平台官网首页输出。核对 www → 裸域为 301 且路径／查询串保留；三语首页、privacy、terms、data-deletion、contact 返回 200，公司中英文名称、编号、地址与 CI/BRC 逐字一致；robots/sitemap 可访问，公开 host 的 `/api/*` 返回 404，后台入口仍只在后台 host。再把 App Domains、Website URL、Privacy Policy URL、Terms URL、Data Deletion Instructions URL 更新为实际平台官网地址。保留 CI/BRC 供 Meta 审核；本站不提供虚构的 signed_request 自动删除回调。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
    - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波不新增环境变量或密钥。
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。

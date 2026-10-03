@@ -129,6 +129,28 @@
 	}
 }
 
+# Public platform site (same Next standalone process; separate host allowlist).
+{$LC_PLATFORM_HOST} {
+	import edge
+	# The public host never exposes the admin BFF. Keep this before the proxy:
+	# /api/auth is deliberately excluded from Next's body-buffering proxy matcher.
+	@public {
+		method GET HEAD
+		path / /zh-TW /zh-CN /en /privacy /terms /data-deletion /contact /zh-TW/privacy /zh-TW/terms /zh-TW/data-deletion /zh-TW/contact /zh-CN/privacy /zh-CN/terms /zh-CN/data-deletion /zh-CN/contact /en/privacy /en/terms /en/data-deletion /en/contact /robots.txt /sitemap.xml /_next/static/*
+	}
+	handle @public {
+		reverse_proxy 127.0.0.1:3100
+	}
+	handle {
+		respond 404
+	}
+}
+
+www.{$LC_PLATFORM_HOST} {
+	import edge
+	redir https://{$LC_PLATFORM_HOST}{uri} 301
+}
+
 # Merchant back office (Next standalone, lc-admin).
 {$LC_ADMIN_HOST} {
 	import edge
