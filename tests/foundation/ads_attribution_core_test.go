@@ -553,15 +553,24 @@ func TestAdsAttributionR2ScopeAndACL(t *testing.T) {
 			t.Fatalf("%s raw measurement access: %v", role, err)
 		}
 	}
-	// Even its original owner cannot add tracking after the order's creation transaction.
+	// R9: an older-than-one-minute historical order cannot acquire tracking,
+	// but attribution refusal must not abort an otherwise valid transaction.
+	mustExec(t, b.f.owner, `UPDATE checkout.orders SET created_at=clock_timestamp()-interval '2 minutes',expires_at=clock_timestamp()+interval '8 minutes' WHERE id=$1`, result.OrderID)
+	before := atR9Rows(t, b, result.OrderID)
+	var xid string
 	err = buyer.WithScope(context.Background(), b.pool, b.cap.Token, b.f.storeA1, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
 		raw, _ := json.Marshal(atTouch(foreignDraft, time.Minute))
 		_, err := tx.Exec(ctx, `SELECT orders.freeze_attribution($1,$2,$3,$4::jsonb,'192.0.2.8')`, tokenHash(b.cap.Token), b.f.storeA1, result.OrderID, string(raw))
-		return err
+		if err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx, `SELECT pg_current_xact_id()::text`).Scan(&xid)
 	})
-	if sqlState(err) != "PT404" {
-		t.Fatalf("post-Begin mutation was not refused: %v", err)
+	if err != nil {
+		t.Fatalf("historical attribution refusal aborted transaction: %v", err)
 	}
+	atR9Committed(t, b, xid)
+	lcSameSet(t, "historical freeze remains no-op", atR9Rows(t, b, result.OrderID), before)
 	if n := miCount(t, b.f.owner, `SELECT count(*) FROM orders.order_attribution WHERE order_id=$1`, result.OrderID); n != 0 {
 		t.Fatal("rejected mutation left tracking")
 	}
