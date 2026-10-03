@@ -155,21 +155,23 @@ deploy/scripts/deploy.sh upgrade <tag>
    - 商家域名绑定：`ops-admin.sh store-admin domain-bind`，见 `docs/runbooks/merchant-onboarding.md`。
 8. **应用回滚在这些迁移之后被拒绝**：`deploy.sh app-rollback <4dc08b3的tag>` 会因 ledger 行数变化而拒绝（§5），只能前向修复；仅当备份之后没有任何新的外部业务事实时，才由 owner 决定按 `backup-restore.md` 从 `pre-upgrade-<tag>` 恢复。升级前确认备份目录有该备份文件并记下路径。
 
-### 4.2 升级 R4 351089f → R5（试点主机，保留真实 owner 数据，只能前向）
+### 4.2 升级 R4 351089f → R5（第一波 + 第二波，试点主机，保留真实 owner 数据，只能前向）
 
-范围：迁移 0106（店铺 handle、平台子域、商家自有域名、证书按需签发、`store-admin handle-set`）、0107 + post_river 0020（宅配货到付款、`collected_at` 财务日期锚点）、0108（一个店铺最多 10 个 Facebook 专页）；后台 W0 新外壳（注册表导航）、止血包（金额按元、台北时间）、前台 R5（配送付款说明、同系列、分类条、防诈骗页、图库放大）。
+范围：迁移 0106（店铺 handle、平台子域、商家自有域名、证书按需签发、`store-admin handle-set`）、0107 + post_river 0020（宅配货到付款、`collected_at` 财务日期锚点）、0108（一个店铺最多 10 个 Facebook 专页）；第二波：0109 + post_river 0021（商品 A6 不追踪库存与单次上限、图片上限 12、一页式商品编辑的合并补丁保存）、0110（订单列表 v2：任务队列、私密搜索，只读；跨域读取经各领域的窄定义者函数）、0111（商品图片 360/720/1080 渲染图）；后台 W0 新外壳（注册表导航）、止血包（金额按元、台北时间）、前台 R5（配送付款说明、同系列、分类条、防诈骗页、图库放大）。
 没有 owner 在聊天里的明确批准，不得执行（AGENTS.md）。
 
 1. **取代码**：同 §4.1 第 1 步，用 git bundle 带发布 SHA 到 `/opt/live-commerce`，`git status` 必须干净。
 2. **配置差异**：
    - `compose.env` **必须新增** `LC_STORE_BASE_DOMAIN=xgdwm.com`（P19 在缺失时 FAIL）。compose 会把它传给 api、claims-worker 和 migrate。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
-   - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。
+   - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波不新增环境变量或密钥。
+   - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，直到商家在商品页对某张图执行「生成多尺寸」（逐张、幂等、记审计）。新上传的图片在上传时生成。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
 4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
-5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0108 + post_river 0020，0106 会给已有店铺按店名补 handle 和平台子域）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
+5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0111 + post_river 0020、0021，0106 会给已有店铺按店名补 handle 和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
 6. **升级后必查**：
-   - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+4>`（0106、0107、0108、post_river 0020）。
+   - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+8>`（0106–0111、post_river 0020、0021）。
+   - 后台商品列表与订单列表（v2 队列计数）能打开；已有商品的 SKU 都显示「追踪库存」。
    - provision-logins 有 `login=lc_store_domain_verify ... membership=ok`，`registrars execute=ok`（店铺注册员 EXECUTE 数为 5），无 `DRIFT`。
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
    - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
