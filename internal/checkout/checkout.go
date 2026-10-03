@@ -388,11 +388,10 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		// orders.freeze_attribution (0113): same transaction, no mutation of retained order snapshots.
 		var touch any
 		if in.AdTouch != nil {
-			raw, e := json.Marshal(in.AdTouch)
-			if e != nil {
-				return e
+			// R9: malformed optional measurement is discarded, never a checkout error.
+			if raw, e := json.Marshal(in.AdTouch); e == nil {
+				touch = string(raw)
 			}
-			touch = string(raw)
 		}
 		if _, err = tx.Exec(callCtx, `SELECT orders.freeze_attribution($1::bytea,$2::uuid,$3::uuid,$4::jsonb,$5::text)`,
 			tokenHash[:], storeID, orderID, touch, ValidClientIP(in.ClientIP)); err != nil {

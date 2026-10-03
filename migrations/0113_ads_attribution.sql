@@ -131,25 +131,31 @@ COMMENT ON FUNCTION ads.capi_ip_needed(uuid,uuid,uuid,uuid) IS 'internal/attribu
 
 CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE s record; o record; d uuid; ds uuid[]; posts text[]; c record; click_at timestamptz;
+DECLARE s record; o record; d uuid; ds uuid[]; posts text[]; click_at timestamptz;
  v_path text; v_post text; v_fbc text; v_fbp text; v_ip inet;
 BEGIN
+ IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL THEN
+  RAISE EXCEPTION 'invalid attribution request' USING ERRCODE='PT400'; END IF;
  SELECT * INTO s FROM buyer.resolve_scope(p_hash,p_store);
+ IF NOT FOUND THEN RETURN; END IF;
+ PERFORM set_config('app.tenant_id',s.tenant_id::text,true),set_config('app.store_id',p_store::text,true),
+  set_config('app.buyer_id',s.owner_id::text,true),set_config('app.buyer_session_id',s.session_id::text,true),set_config('app.principal_id','',true);
+ -- R9: same creating-session/minute predicate as 0088 set_order_buyer_email.
+ -- Optional attribution must not abort a purchase when its target is ineligible.
  SELECT x.* INTO o FROM checkout.orders x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store AND x.owner_id=s.owner_id
   AND x.id=p_order AND x.creator_session_id=s.session_id
-  -- begin_hold uses a PL/pgSQL exception subtransaction. Its xmin can differ
-  -- from the top-level xid; the creating backend retains that subxid lock
-  -- until commit. A committed historical order cannot pass this test.
-  AND EXISTS(SELECT 1 FROM pg_catalog.pg_locks l WHERE l.pid=pg_backend_pid()
-   AND l.locktype='transactionid' AND l.mode='ExclusiveLock' AND l.granted AND l.transactionid=x.xmin);
- IF NOT FOUND THEN RAISE EXCEPTION 'attribution order unavailable' USING ERRCODE='PT404'; END IF;
+  AND x.created_at>=clock_timestamp()-interval '1 minute';
+ IF NOT FOUND THEN RETURN; END IF;
  IF EXISTS(SELECT 1 FROM orders.order_attribution a WHERE a.order_id=p_order) THEN RETURN; END IF;
  PERFORM claims.capture_order_origins(s.tenant_id,p_store,s.owner_id,p_order,
   coalesce((SELECT jsonb_agg(jsonb_build_object('bundle_id',l.claim_bundle_id,'offer_id',l.claim_offer_id,'sku_id',l.sku_id,
    'line_version',l.claim_line_version,'quantity',l.quantity)) FROM storefront.cart_lines l
    WHERE l.tenant_id=s.tenant_id AND l.store_id=p_store AND l.owner_id=s.owner_id AND l.cart_id=o.cart_id AND l.claim_line_version IS NOT NULL),'[]'::jsonb));
  -- Invalid/foreign measurement is ignored; it cannot deny a legitimate order or change its financial snapshot.
- IF jsonb_typeof(p_touch)='object' AND (p_touch->>'draft_id') ~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$' THEN
+ IF jsonb_typeof(p_touch)='object' AND (p_touch->>'draft_id') ~ '^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$'
+  AND p_touch->>'fbp' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$'
+  AND (p_touch->>'fbc' IS NULL OR (p_touch->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$'
+   AND char_length(split_part(p_touch->>'fbc','.',4))<=500)) THEN
   BEGIN click_at:=(p_touch->>'clicked_at')::timestamptz; EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN click_at:=NULL; END;
   IF click_at BETWEEN clock_timestamp()-interval '7 days' AND clock_timestamp() THEN
    SELECT m.draft_id INTO d FROM ads.attribution_match(s.tenant_id,p_store,(p_touch->>'draft_id')::uuid,NULL,NULL) m;
@@ -181,7 +187,7 @@ END $$;
 ALTER FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) TO commerce_checkout_runtime;
-COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS 'internal/checkout Begin-only, authenticated fresh order, same transaction, click beats exact comment, ambiguous boost draft NULL. Does not alter money or immutable snapshot.';
+COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS 'internal/checkout R9: authenticated creating session within one minute, write-once; ineligible attribution is a no-op. Same Begin transaction, click beats exact comment, ambiguous boost draft NULL. No money or immutable snapshot mutation.';
 
 CREATE FUNCTION orders.erase_ad_context(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
