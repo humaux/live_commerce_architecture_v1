@@ -731,7 +731,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
       await page.setViewportSize({width,height});
       if (width === 390) {
         // Real responsive transition must finish; never screenshot a half-open rail.
-        await expect.poll(() => page.locator(".rail").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
+        await expect.poll(() => page.locator("aside[data-shell-rail]").evaluate(node => node.getBoundingClientRect().right)).toBeLessThanOrEqual(0);
         const more = page.getByTestId("orders-more-filters");
         await expect(more).toHaveAttribute("aria-expanded", "false");
         await expect(page.getByTestId("orders-payment-filter")).toBeHidden();
