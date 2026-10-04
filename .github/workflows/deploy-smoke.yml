@@ -71,6 +71,12 @@ jobs:
           ev=$(ls -td deploy/.evidence/*/ | head -n1)
           # preflight prints rule ids and names only, never values: show why a preflight-gated case failed.
           sudo grep -hE '^P[0-9]+[a-z]? (FAIL|WARN) ' "$ev"/logs/S10.log "$ev"/logs/S37.log 2>/dev/null | sort -u || true
+          # Why a case FAILED: the tail of its own log. smoke.sh secret-scans every evidence log against the per-run generated
+          # secrets before it exits, so these tails carry no secret (2026-10-04: S37 failed with no visible cause).
+          sudo awk -F'\t' '$2 == "FAIL" { print $1 }' "$ev/cases.tsv" 2>/dev/null | while read -r id; do
+            echo "::group::$id.log (last 60 lines)"; sudo tail -n 60 "$ev/logs/$id.log" 2>/dev/null || true; echo "::endgroup::"
+          done || true
+          sudo chmod -R a+rX deploy/.evidence || true # root-owned evidence was unreadable for the upload step
           python3 .github/scripts/smoke-verdict.py "$ev/result.json" "$rc" full
       - name: Upload smoke evidence
         if: always()

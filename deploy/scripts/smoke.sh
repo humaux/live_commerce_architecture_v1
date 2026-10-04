@@ -428,11 +428,13 @@ full_cases() {
   negative S10p P08 neg_p
   pos_q() { # the green side: buyer mail on with a valid mailbox + a non-placeholder secret, meta-connect on with the pilot values
     printf 'LC_BUYER_MAIL_ENABLED=1\nLC_SMTP_HOST=smtp.example.test\nLC_SMTP_USERNAME=sender@example.test\nLC_MAIL_FROM=sender@example.test\n' >>"$1/compose.env"
-    # secrets are 0440: replace the files (rm needs only the directory), keep the mode
+    # secrets are 0440 root:LC_SECRETS_GID: replace the files (rm needs only the directory), then restore mode AND group —
+    # a new file gets root's group and P02 refuses it (S10q never ran in CI before 2026-10-04 and failed exactly there)
     rm -f "$1/secrets/commerce_smtp_password" "$1/secrets/commerce_meta_apps_json"
     printf 'smoke-not-a-real-smtp-code\n' >"$1/secrets/commerce_smtp_password"
     printf '{"apps":[{"app_id":"1","object":"page","app_secret":"smoke-not-a-real-app-secret","verify_token":"smoke-verify"}]}\n' >"$1/secrets/commerce_meta_apps_json"
     chmod 0440 "$1/secrets/commerce_smtp_password" "$1/secrets/commerce_meta_apps_json"
+    chgrp "$(stat -c %g "$1/secrets/commerce_bff_key")" "$1/secrets/commerce_smtp_password" "$1/secrets/commerce_meta_apps_json"
     printf 'COMMERCE_META_WEBHOOK_ENABLED=1\nCOMMERCE_META_LOGIN_CONFIG_ID=2952863798433821\nCOMMERCE_META_LOGIN_REDIRECT_URI=https://admin.localhost/api/meta/callback\n' >>"$1/env/api.env"
   }
   positive S10q pos_q

@@ -219,15 +219,17 @@ if selected G03; then
   fi
 fi
 
-# ---- G04 key-shaped secret literals (copy of the CI step; fails if the CI pattern changes) ---------
-SECRET_RE='(sk|rk|pk)_(test|live)_[A-Za-z0-9]{8,}|whsec_[A-Za-z0-9]{8,}|EAA[A-Za-z0-9]{40,}|postgres(ql)?://[A-Za-z0-9_.-]+:[^@"$ {%]+@'
+# ---- G04 key-shaped secret literals (the CI step's own pattern, read from foundation.yml: one source) ---------
+# A copied pattern plus a substring "drift" check let the CI add an alternative (string-concatenated inline-password DSNs) that
+# G04 never ran: G04 PASSed while CI failed (2026-10-04). Reading the CI line itself removes the copy.
+SECRET_RE=$(sed -n "s/.*if git grep -nE '\(.*\)' -- ':!\*\.md'.*/\1/p" .github/workflows/foundation.yml 2>/dev/null | head -n1)
 if selected G04; then
   LOG="$OUT/G04.log"
   if ! have git; then
     record G04 STATIC NOT_RUN "git missing"
-  elif ! grep -qF -- "$SECRET_RE" .github/workflows/foundation.yml 2>/dev/null; then
-    printf 'the pattern in release-gate.sh no longer matches .github/workflows/foundation.yml\n' >"$LOG"
-    record G04 STATIC FAIL "secret pattern drifted from the CI step: update both" 1 "$LOG"
+  elif [[ -z "$SECRET_RE" ]]; then
+    printf 'cannot read the secret pattern from the "No key-shaped secret literals" step of .github/workflows/foundation.yml\n' >"$LOG"
+    record G04 STATIC FAIL "CI secret pattern not found in foundation.yml" 1 "$LOG"
   else
     # -c prints counts only, so a hit never puts the matching text into the gate output or log.
     git grep -cE "$SECRET_RE" -- ':!*.md' ':!pnpm-lock.yaml' ':!tests/payments/stripe-webhook-vectors.json' >"$LOG" 2>&1
