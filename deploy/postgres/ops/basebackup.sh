@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # File: deploy/postgres/ops/basebackup.sh
-# Purpose: weekly physical base backup for PITR (deploy-design §15): pg_basebackup in
+# Purpose: daily physical base backup for PITR (deploy-design §15): pg_basebackup in
 #   compressed tar format with streamed WAL and a SHA256 manifest, verified with
 #   pg_verifybackup, then keep the newest N bases and prune archived WAL older than the
-#   oldest kept base (pg_archivecleanup to its START WAL segment from backup_label).
+#   oldest kept base (pg_archivecleanup to its START WAL segment from backup_label). Daily
+#   (not weekly) keeps the WAL retention window at <= 2 days: the pilot's weekly bases kept up to
+#   14 days of WAL, 79 GB at 16 MB/segment, and filled the disk (2026-10-03, invariant I23).
 # Runs as/in: pg-ops container (UID 999, socket only) via `deploy/scripts/pg-ops.sh basebackup`;
-#   cron Sunday 03:23 (deploy/host/crontab.example).
+#   cron daily 03:23 (deploy/host/crontab.example).
 # Reads env: LC_BASE_KEEP (default 2).
 # Reads secrets: pg_superuser_password (pgpass on tmpfs; pg_hba allows `local replication postgres`).
-# Output: /backup/base/<UTC>/{base.tar.gz,pg_wal.tar.gz,backup_manifest}; prunes /backup/wal.
+# Output: /backup/base/<UTC>/{base.tar.gz,pg_wal.tar.gz,backup_manifest}; prunes /backup/wal (both the
+#   compressed <seg>.gz and legacy plain segments, plus backup-history labels, older than the oldest kept base).
 # Used by: restore-pitr.sh, watchdog W3, docs/runbooks/backup-restore.md.
-# Depends on: ops/lib.sh; archive_command writing /backup/wal (postgresql.conf).
+# Depends on: ops/lib.sh; archive_command writing /backup/wal (postgresql.conf, postgres/archive-wal.sh).
 # Status: DESIGN; verified by smoke S30 (V3: pg_verifybackup on PG 18 tar format; WAL parsing
 #   is skipped with -n because WAL inside a tar cannot be parsed — WAL completeness is proven
 #   by the PITR drill S31 instead).
@@ -52,6 +55,9 @@ oldest=${bases[0]}
 segment=$(tar -xzOf "$OPS_BACKUP/base/$oldest/base.tar.gz" backup_label |
   sed -n 's/^START WAL LOCATION: .* (file \([0-9A-F]\{24\}\))$/\1/p')
 [[ "$segment" =~ ^[0-9A-F]{24}$ ]] || ops_die "cannot read START WAL segment of base $oldest"
-pg_archivecleanup "$OPS_BACKUP/wal" "$segment"
+# -x .gz: compressed segments (archive-wal.sh) are matched by their segment name, so one pass prunes <seg>.gz and
+# legacy plain <seg> alike; -b also drops the .backup labels of bases older than the oldest kept one. Without -x .gz the
+# compressed archive would never be pruned (unbounded growth, I23). .history files are never removed.
+pg_archivecleanup -b -x .gz "$OPS_BACKUP/wal" "$segment"
 ops_log "wal_pruned_before=$segment oldest_base=$oldest kept_bases=${#bases[@]} result=ok"
 printf '%s\n' "$final"

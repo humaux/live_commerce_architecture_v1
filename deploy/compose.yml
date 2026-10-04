@@ -614,6 +614,7 @@ services:
       - pgsocket:/var/run/postgresql                    # shared with migrate/provision/pg-ops
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ./postgres/archive-wal.sh:/etc/postgresql/archive-wal.sh:ro   # archive_command (gzip + verify + atomic rename)
       - ${LC_BACKUP_DIR:?set LC_BACKUP_DIR}/wal:/backup/wal   # archive_command target
     tmpfs: ["/tmp:rw,noexec,nosuid,nodev,size=64m"]
     shm_size: 512m
