@@ -1,6 +1,78 @@
-# ads-attribution — R9 delivery evidence
+# ads-attribution — R10 source checkpoint / historical R9 evidence
 
 ## Current verdict
+
+**R10 SOURCE IMPLEMENTED; final acceptance NOT_RUN pending the second review batch.**
+Checkpoint source: `210edc01`; authorized integration ruling `e6740574` merged as `0d8f9392`.
+Only `.worktrees/ads-attribution` and separately assigned child worktrees were used for code.
+No push, deployment, Meta mutation, production data or credentials.
+The old `068874fc` G07 had already exited before this request; it was not restarted and is not current acceptance.
+
+### R10 changes
+
+| Finding | Source status | Commits / evidence |
+|---|---|---|
+| P1 paid-only order counts | Implemented: card capture, confirmed transfer, collected COD/pickup; inactive/unpaid orders do not count. Pending collection remains separate. Totals, paths, buyer aggregates and minute series use paid facts. Signals-only rows excluded. | `1c14d77f`; independent 9-order real-Begin cohort in `a5f4d6de`: 4 paid, 1 pending COD, 4 excluded; PG runtime NOT_RUN |
+| P2-1 independent Begin signals | Implemented: BFF reads signed host-bound 90-day IDs independently of seven-day touch. Separate authenticated signals header and optional sixth freeze argument. Consented signals-only rows have NULL path/draft/post/click time; no consent stores no pseudonyms/IP. Existing R9 creation/replay guard retained. Historical shim rejects signals and uses the new signature. | `60c0ac06`, `1c14d77f`; cookie/BFF/parser RED→GREEN, real Begin/report PG tests added but NOT_RUN |
+| P2-2 UI states | Mandatory three-language browser assertions and actual PG-generated audience state fixtures added: insufficient, not authorized, Los Angeles timezone, provisional marker, promoted-post source. Six actual unpaid-transfer orders show 0 collected, 0 pending COD. | `399ef520`, `a5f4d6de`, `1c14d77f`; compile only, browser NOT_RUN |
+| P3 ROAS / cookies / edge | Exactly 2 decimals via `packages/format`; same fbclid retains fbc timestamp and expiry. Actual pinned Caddy verifies XFF equals the connection peer and XFH never changes actual Host. Browser-supplied private tracking rejected. | `60c0ac06`, `a29256d8`, `210edc01`; LOCAL/MOCK edge root rerun exit 0 |
+
+`packages/format` is the only numeric-format implementation. Root check-gates caught the child
+app-local Intl implementation and the missing formal Node-suite registration; both fixed without
+growing any allowlist or weakening assertions. These red runs remain in `r12-review/`.
+The edge test's unknown-Host 404 uses an explicit MOCK upstream allowlist; it is not a live
+domain-authorization test. BFF XFF validation alone is not claimed to authenticate the edge.
+Signals-only report exclusion has a paid read-projection negative in addition to genuine Begin tests.
+
+### R10 preliminary commands (not final post-second-batch gates)
+
+All root commands ran in `/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution`.
+Logs below are relative to `output/ads-attribution/r12-review/`.
+
+| Command | Exit / count | Evidence |
+|---|---|---|
+| `node --test --experimental-strip-types apps/storefront/tests/ad-touch.test.mjs` | RED 1; GREEN 0 | `fbc-red.log`, `signals-red.log`, `cookie-green.log` |
+| `node --test --experimental-strip-types apps/storefront/tests/buyer-server.test.mjs` | RED 1; GREEN 0 / 7 pass | `bff-red.log`, `bff-green.log` |
+| `go test ./internal/checkout -run '^TestAdSignals'` | RED 1 (new API absent); GREEN 0 | `signals-go-red.log`, `signals-go-green.log` |
+| `node --test --experimental-strip-types apps/storefront/tests/ad-touch.test.mjs apps/storefront/tests/buyer-server.test.mjs tests/admin/attribution-format.test.ts` | 0 / 25 pass | `root-node.log` |
+| `go test ./tests/foundation -run '^$'` | 0 / **zero tests**, compile only | `foundation-compile.log` |
+| `go build ./...` | 0 | `go-build.log` |
+| `go vet ./...` | 0 | `go-vet.log` |
+| `git ls-files -z -- '*.go' \| xargs -0 gofmt -l` then assert empty output | 0 / no unformatted files | `gofmt.log` |
+| `pnpm --filter admin exec tsc --noEmit` | 0 after shared formatter fix | `admin-tsc-final.log` |
+| `pnpm --filter storefront exec tsc --noEmit` | 0 | `storefront-tsc-final.log` |
+| `bash scripts/dev/test-node.sh` | 0 / **369 pass, 0 fail**; optional R04 binary NOT_RUN | `test-node-final.log`; earlier architecture-red `test-node.log` retained |
+| `bash scripts/dev/check-gates.sh` | 0 / 62 modes; all tracked tests registered | `check-gates-final.log`; `check-gates.log` and `check-gates-green.log` retain the two distinct integration failures |
+| `LC_PLATFORM_EDGE_EVIDENCE=output/ads-attribution/r12-review/edge-root node tests/deploy/platform-edge.mjs` | 0 / 47 existing + 4 new edge cases | `edge-root.log`, `edge-root/ps3-edge.json`; child mutation RED exit 1 in `../ads-attribution-r10-edge/edge-red.log` |
+
+### R10 NOT_RUN / next acceptance
+
+- Second reviewer batch is pending the integrator's handoff; integrate it before final gates.
+- Final focused PG, real-click browser 390/1586 × zh-TW/zh-CN/en, screenshots, and full G07: **NOT_RUN by instruction** until that batch is integrated. Compile success is not proof the new PG fixtures run.
+- Preserve final G07 source identity: finish all review fixes, commit source, then run focused PG → browser matrix → full G07 from that exact final source on a quiet machine, with `LC_TEST_LOCK_WAIT=14400`.
+- Mixed-cohort RED is ready in the independent test-author branch `unit/ads-attribution-r10-tests` (`f4c108af`, based on old R10 merge, before product fixes): `bash scripts/dev/test-focused.sh '^(TestAdsAttributionR10PaidOnlyMixedCohort|TestAdsAttributionAT4AT9ExactReport)$'`. This is not yet a recorded red runtime.
+- New independent-signals tests: `TestAdsAttributionR10IndependentBeginSignals`, `TestAdsAttributionR10SignalsOnlyExcludedFromReports`; also retain R9 creation/transaction negatives and historical upgrade tests.
+- AT6 SANDBOX remains NOT_RUN pending owner dataset. AT9 LIVE remains NOT_RUN pending `read_insights`. No external Meta mutation was attempted.
+- Non-author SOURCE review found no confirmed P0/P1/P2 in the reviewed R10 seams, but reviewed a moving WIP snapshot, not final acceptance. Humaux title: `R10 WIP independent patch review a5f4d6de to a29256d8 SOURCE no confirmed defects NOT_RUN`.
+
+### R10 team provenance
+
+| Agent / role | Assigned model / reasoning | Base / worktree | Owned paths |
+|---|---|---|---|
+| `r10_pg_author` / test_worker | gpt-6.1-sol / high | `0d8f9392`, `.worktrees/ads-attribution-r10-tests` | `ads_attribution_report_test.go`, `ads_attribution_r10_test.go` |
+| `r10_ui_author` / ui_worker | gpt-6.1-sol / high | `0d8f9392`, `.worktrees/ads-attribution-r10-ui` | Attribution UI/format and browser specs; later separately scoped Caddy test |
+| `r10_patch_review` / security_reviewer | gpt-6.1-sol / high | read-only root WIP, `a5f4d6de`→`a29256d8` | none |
+| `r10_metrics_tests` / explorer | gpt-6-luna / medium | read-only root | none |
+| `r10_signal_seam` / explorer | gpt-6.1-sol / medium | read-only `0d8f9392` | none |
+
+Skills used: frontend-architect preserved API/state boundaries and centralized formatting;
+playwright guided real-click assertions without DOM or response substitution. No new UI redesign.
+
+## Historical R9 verdict — not current R10 acceptance
+
+**REOPENED — R10 review fixes in progress (2026-10-04).** Integrator ruling `e6740574` is merged as `0d8f9392`. Paid-only metrics, independent Begin signals and UI/trust-boundary regression tests are being corrected. The backend/SQL review's second batch is pending the integrator's message; final focused PG, browser and full G07 will run only after both batches are resolved and a new final source commit is frozen. All `068874fc` results below are retained historical evidence, not acceptance of these new changes.
+
+### Previous R9 delivery (historical)
 
 **LOCAL GATES PASS — ready for integrator review; not a production release verdict.** The PT404 blocker in checkpoint `4b338a89` is resolved. Final G07 on `068874fc` exits0: **2007 top-level PASS,0 FAIL,10 top-level SKIP;6687 tests/subtests PASS,13 total prerequisite skips**. Exact0113 ACL inventory and D9 AST guard contract drift are corrected without new authority. The English desktop header collision has independently verified browser RED→GREEN evidence. No source changed during the final run. Final G04 exits0; the delivery commit changes evidence only, not the tested source.
 

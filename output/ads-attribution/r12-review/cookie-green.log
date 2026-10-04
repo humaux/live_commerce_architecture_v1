@@ -1,0 +1,20 @@
+✔ R10: standalone signed signals survive a missing or expired seven-day touch (2.365125ms)
+✔ R10: standalone signals reject expiry, bad signature, duplicates and another host (0.194834ms)
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (0.148583ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.158375ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.122208ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.20025ms)
+✔ AT1: a later valid click replaces the draft but preserves the browser identifier (0.094208ms)
+✔ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.172834ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (0.29175ms)
+✔ AT1: host and key binding reject copied cookies (0.15525ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.112167ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.114875ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 70.431084

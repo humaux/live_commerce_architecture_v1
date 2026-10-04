@@ -1,0 +1,33 @@
+✔ R10: standalone signed signals survive a missing or expired seven-day touch (7.192667ms)
+✔ R10: standalone signals reject expiry, bad signature, duplicates and another host (0.43975ms)
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (0.207584ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.211875ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.149584ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.251834ms)
+✔ AT1: a later valid click replaces the draft but preserves the browser identifier (0.110833ms)
+✔ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.192292ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (0.305042ms)
+✔ AT1: host and key binding reject copied cookies (0.159958ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.128625ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.134375ms)
+✔ disabled and invalid configuration fail closed before private fetch (11.51025ms)
+✔ private authority, cookie lifecycle and strict local denial (9.007208ms)
+✔ bad host, cookie, query and method never reach private API (0.922417ms)
+✔ stalled inbound POST body is canceled at its deadline without a cookie or private call (0.614459ms)
+✔ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (2.304958ms)
+✔ CVS BFF: exact routes, keyed open/store, keyless verify, validated answers, no generic proxy (3.377875ms)
+✔ CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a definite (non-retryable) 429 (1.896541ms)
+✔ R10 ROAS has exactly two decimals in en (20.976ms)
+✔ R10 unknown ROAS is never fabricated as zero in en (0.079541ms)
+✔ R10 ROAS has exactly two decimals in zh-TW (0.430166ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-TW (0.051667ms)
+✔ R10 ROAS has exactly two decimals in zh-CN (0.132ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-CN (0.033875ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 115.15525

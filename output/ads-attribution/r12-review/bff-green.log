@@ -1,0 +1,15 @@
+✔ disabled and invalid configuration fail closed before private fetch (10.805417ms)
+✔ private authority, cookie lifecycle and strict local denial (10.245042ms)
+✔ bad host, cookie, query and method never reach private API (0.99275ms)
+✔ stalled inbound POST body is canceled at its deadline without a cookie or private call (0.622583ms)
+✔ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (2.239708ms)
+✔ CVS BFF: exact routes, keyed open/store, keyless verify, validated answers, no generic proxy (2.718708ms)
+✔ CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a definite (non-retryable) 429 (2.447167ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.810542
