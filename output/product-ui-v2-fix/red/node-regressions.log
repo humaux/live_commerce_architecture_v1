@@ -1,0 +1,87 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/apps/admin/lib/customers-client.ts:22
+export class ReadError extends Error {
+  constructor(readonly code: ReadCode) {
+                       ^^^^^^^^^^^^^^
+    super(code);
+
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]: TypeScript parameter property is not supported in strip-only mode
+    at parseTypeScript (node:internal/modules/typescript:68:40)
+    at processTypeScriptCode (node:internal/modules/typescript:146:42)
+    at stripTypeScriptModuleTypes (node:internal/modules/typescript:209:22)
+    at ModuleLoader.<anonymous> (node:internal/modules/esm/translators:641:29)
+    at #translate (node:internal/modules/esm/loader:451:20)
+    at afterLoad (node:internal/modules/esm/loader:507:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:512:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:555:36)
+    at afterResolve (node:internal/modules/esm/loader:603:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:609:12) {
+  code: 'ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX'
+}
+
+Node.js v24.15.0
+✖ tests/admin/catalog-receipt.test.ts (111.923375ms)
+✔ PE14 new edit SKU carries its own shipping and clears no existing fields (30.792834ms)
+✔ PE14 patch changes only price and preserves unmentioned fields (0.17575ms)
+✔ PE14 on_hand is not available, zero target is transmitted, ambiguous warehouse refuses (0.474583ms)
+✔ PE14 explicit clears and shipping remain per SKU on an active row (0.124917ms)
+✖ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.656417ms)
+✔ PE14 no-op has no command fields and changed axes explicitly archive omitted variants (0.111375ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 5
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.334417
+
+✖ failing tests:
+
+test at tests/admin/catalog-receipt.test.ts:1:1
+✖ tests/admin/catalog-receipt.test.ts (111.923375ms)
+  'test failed'
+
+test at tests/admin/product-patch.test.ts:115:1
+✖ PE14 archive supersedes every other edit on that SKU (b77eeb11) (0.656417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+      collection_ids: [],
+      expected_version: 4,
+      skus: [
+        {
+          active: false,
+  +       compare_at_minor: null,
+  +       height_mm: 60,
+          id: '44444444-4444-4444-8444-444444444444',
+  +       keyword: '',
+  +       length_mm: 40,
+  +       price_minor: 8000,
+  +       stock: {
+  +         target_qty: 0
+  +       },
+  +       weight_grams: 50,
+  +       width_mm: 50
+        }
+      ]
+    }
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui-v2-fix/tests/admin/product-patch.test.ts:122:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { expected_version: 4, collection_ids: [], skus: [ [Object] ] },
+    expected: { expected_version: 4, collection_ids: [], skus: [ [Object] ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

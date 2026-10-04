@@ -2,11 +2,13 @@ package checkout
 
 import (
 	"encoding/base64"
+	"errors"
 	"strings"
 	"testing"
 
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
 )
 
 func TestOptionsCursorCanonicalAndScoped(t *testing.T) {
@@ -47,5 +49,65 @@ func TestOptionsCursorCanonicalAndScoped(t *testing.T) {
 		if _, err := decodeOptionsCursor(value, binding); err != command.ErrInvalid {
 			t.Fatalf("accepted malformed cursor %q: %v", value, err)
 		}
+	}
+}
+
+// OP1: card is offered only while the process can take card payment; a row with no mode at all is dropped.
+func TestPaymentModesOP1(t *testing.T) {
+	for _, c := range []struct {
+		card, pap, bank, cod bool
+		want                 string
+	}{{true, false, false, false, "card"}, {true, true, false, false, "card,pay_at_pickup"}, {false, true, false, false, "pay_at_pickup"}, {false, false, false, false, ""},
+		// storefront-v2 §C: bank_transfer joins after pay_at_pickup, and alone it keeps a row offered when card cannot be taken.
+		{true, true, true, false, "card,pay_at_pickup,bank_transfer"}, {false, false, true, false, "bank_transfer"},
+		// home-cod R5: cash_on_delivery joins last (home rows only), and alone it keeps a row offered when card cannot be taken.
+		{true, false, true, true, "card,bank_transfer,cash_on_delivery"}, {false, false, false, true, "cash_on_delivery"}} {
+		if got := strings.Join(paymentModes(c.card, c.pap, c.bank, c.cod), ","); got != c.want {
+			t.Fatalf("paymentModes(%v,%v,%v,%v)=%q want %q", c.card, c.pap, c.bank, c.cod, got, c.want)
+		}
+	}
+}
+
+// OP1: home rows are card-only, so without card payment decorateCVS offers none of them (no DB needed: no CVS row, no offer query).
+func TestDecorateHomeRowsOP1(t *testing.T) {
+	rows := []Option{{DeliveryKind: "home", DeliveryCode: "home_delivery"}}
+	on, err := (&Service{}).decorateCVS(nil, nil, nil, "", rows, transferOffer{}, codOffer{})
+	if err != nil || len(on) != 1 || on[0].PaymentModes != nil {
+		t.Fatalf("card on: %v %v", on, err)
+	}
+	off, err := (&Service{noCard: true}).decorateCVS(nil, nil, nil, "", rows, transferOffer{}, codOffer{})
+	if err != nil || len(off) != 0 {
+		t.Fatalf("card off must drop home rows: %v %v", off, err)
+	}
+	// storefront-v2 §C: with bank transfer on, a home row lists its modes (and the window); without card it stays offered as bank-only.
+	bt := transferOffer{enabled: true, windowHours: 72}
+	both, err := (&Service{}).decorateCVS(nil, nil, nil, "", rows, bt, codOffer{})
+	if err != nil || len(both) != 1 || strings.Join(both[0].PaymentModes, ",") != "card,bank_transfer" || both[0].TransferWindowHours != 72 {
+		t.Fatalf("home card+bank: %+v %v", both, err)
+	}
+	only, err := (&Service{noCard: true}).decorateCVS(nil, nil, nil, "", rows, bt, codOffer{})
+	if err != nil || len(only) != 1 || strings.Join(only[0].PaymentModes, ",") != "bank_transfer" {
+		t.Fatalf("home bank only: %+v %v", only, err)
+	}
+	// home-cod R5: with cash on delivery on, a home row lists its modes and the surcharge; without card it stays offered as COD-only.
+	cod := codOffer{enabled: true, surchargeTWD: 50}
+	bothCod, err := (&Service{}).decorateCVS(nil, nil, nil, "", rows, transferOffer{}, cod)
+	if err != nil || len(bothCod) != 1 || strings.Join(bothCod[0].PaymentModes, ",") != "card,cash_on_delivery" || bothCod[0].CodSurchargeMinor != 5000 {
+		t.Fatalf("home card+cod: %+v %v", bothCod, err)
+	}
+	codOnly, err := (&Service{noCard: true}).decorateCVS(nil, nil, nil, "", rows, transferOffer{}, cod)
+	if err != nil || len(codOnly) != 1 || strings.Join(codOnly[0].PaymentModes, ",") != "cash_on_delivery" || codOnly[0].CodSurchargeMinor != 5000 {
+		t.Fatalf("home cod only: %+v %v", codOnly, err)
+	}
+}
+
+// OP1: the shared Begin refusal is a typed 422 for card only; pay_at_pickup and a card-capable process pass.
+func TestCardRefusalOP1(t *testing.T) {
+	var refusal *fulfillment.CVSError
+	if err := cardRefusal("card", true); !errors.As(err, &refusal) || refusal.Status != 422 || refusal.Code != "card_unavailable" {
+		t.Fatalf("card with no PSP must be refused: %v", err)
+	}
+	if cardRefusal("card", false) != nil || cardRefusal("pay_at_pickup", true) != nil {
+		t.Fatal("only card without a PSP is refused")
 	}
 }

@@ -1,0 +1,34 @@
+=== RUN   TestAdsAttributionR11UnknownClearsAllSignals
+    payment_query_test.go:58: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11UnknownClearsAllSignals (0.62s)
+=== RUN   TestAdsAttributionR11SQLHashesEmail
+    payment_query_test.go:58: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11SQLHashesEmail (0.00s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:31: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (0.00s)
+=== RUN   TestAdsAttributionR11ClickLiveWindow
+    ads_attribution_r11_test.go:88: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11ClickLiveWindow (0.00s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+    ads_attribution_r11_test.go:155: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11UnknownDraft (0.00s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:196: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (0.00s)
+=== RUN   TestAdsAttributionR11SessionCap
+    ads_attribution_r11_test.go:291: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11SessionCap (0.00s)
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+    ads_attribution_r11_test.go:328: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11OptionalBreakdownAndNull (0.00s)
+=== RUN   TestAdsAttributionR11PurgeNoStarvation
+    payment_query_test.go:58: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11PurgeNoStarvation (0.00s)
+=== RUN   TestAdsAttributionR11AgedRetryAndFinalDaily
+    ads_attribution_r11_test.go:454: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "day" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionR11AgedRetryAndFinalDaily (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.356s
+FAIL
+test-focused: top-level PASS=0 FAIL=10 SKIP=0 exit=1

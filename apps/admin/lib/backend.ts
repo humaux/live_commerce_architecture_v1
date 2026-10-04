@@ -143,6 +143,8 @@ export async function workspaceData(
   query = "",
   status = "all",
   cursor = "",
+  // The dashboard landing only needs "signed in, which store" (merchant-tools): skip the warehouse and ledger reads.
+  signInOnly = false,
 ): Promise<WorkspaceData> {
   const empty: WorkspaceData = {
     storeID: "",
@@ -164,6 +166,7 @@ export async function workspaceData(
       a.id.localeCompare(b.id),
     )[0];
     if (!store) return { ...empty, error: null };
+    if (signInOnly) return { ...empty, storeID: store.id, storeName: store.name, error: null };
     const warehouseResult = await callBackend(
       "warehouses",
       {},
@@ -207,6 +210,7 @@ export async function workspaceData(
   }
   const session = fixtureSession();
   if (!session) return empty;
+  if (signInOnly) return { ...empty, storeID: session.storeID, storeName: "Demo store", fixture: true, error: null };
   const result = await callBackend("warehouses");
   if (!result.ok)
     return {

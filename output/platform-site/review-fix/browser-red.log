@@ -1,0 +1,25 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: never enter the admin locale flow
++ actual - expected
+
++ [
++   'commerce_locale=zh-CN; Path=/; Expires=Sun, 03 Oct 2027 19:50:27 GMT; Max-Age=31536000; SameSite=lax'
++ ]
+- undefined
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-runner.mjs:370:16
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [
+    'commerce_locale=zh-CN; Path=/; Expires=Sun, 03 Oct 2027 19:50:27 GMT; Max-Age=31536000; SameSite=lax'
+  ],
+  expected: undefined,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

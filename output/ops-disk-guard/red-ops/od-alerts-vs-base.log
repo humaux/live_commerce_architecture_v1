@@ -1,0 +1,49 @@
+PASS OD4 1 first failure: exit 1
+FAIL OD4 1 first failure: exactly one mail
+sed: can't read /w/mail.1.eml: No such file or directory
+FAIL OD4 1 subject names the failing set
+grep: /w/mail.1.eml: No such file or directory
+FAIL OD4 1 body carries the value-free FAIL line
+grep: /w/mail.1.eml: No such file or directory
+FAIL OD4 1 recipient and sender
+grep: /w/curl.argv: No such file or directory
+FAIL OD4 1 mailed through smtps on 465, config from a pipe (-K /dev/fd/N), message on stdin (-T -)
+FAIL OD4 1 state remembers the set
+FAIL OD4 2 unchanged set: still exit 1, no new mail
+FAIL OD4 3 changed set: second mail
+sed: can't read /w/mail.2.eml: No such file or directory
+FAIL OD4 3 subject lists both checks
+FAIL OD4 3b unchanged again: no new mail
+FAIL OD4 4 after 6 h: third mail
+sed: can't read /w/mail.3.eml: No such file or directory
+FAIL OD4 4 marked as still failing
+FAIL OD4 4b only 5 h later: no mail
+PASS OD4 5 recovery: exit 0
+FAIL OD4 5 recovery: one RECOVERED mail
+PASS OD4 5 state cleared
+FAIL OD4 5b all-pass stays silent
+FAIL OD4 6 SMTP down: watchdog result unchanged (exit 1 from W1), warning logged
+FAIL OD4 6 SMTP down: no mail counted, state not advanced
+FAIL OD4 6 SMTP back: the retry sends exactly one mail
+FAIL OD4 6b RECOVERED mail fails: exit still 0, set kept for the retry
+FAIL OD4 6b retry sends the recovered mail
+PASS OD4 7 webhook still posts the failing ids
+FAIL OD4 7 and the e-mail went out
+FAIL OD4 8 malformed LC_ALERT_EMAIL: warning, no mail attempt, exit 1
+FAIL OD4 8 LC_ALERT_EMAIL unset: behaves as before (no mail, exit 1)
+FAIL OD4 8b --test-mail sends exactly one TEST mail and exits 0 without running checks
+PASS OD4 8b --test-mail with the relay down exits 1 (the operator asked for exactly this)
+FAIL OD4 8b unknown argument: usage error (exit 2)
+grep: /w/curl.stdin.1: No such file or directory
+FAIL OD4 9 the credential did reach curl (via the -K pipe)
+PASS OD4 9 password in NO curl argv
+PASS OD4 9 password in NO watchdog output or log
+PASS OD4 9 password in NO state file
+cat: '/w/mail.*.eml': No such file or directory
+PASS OD4 9 password in NO mail message
+PASS OD4 9 no argv carries --user/-u
+OD4 summary: watchdog runs=19 mails=0 fails=26
+FAIL OD4b cannot extract alert_mail from watchdog.sh
+ops-disk-guard (alerts): FAIL (2 failing checks)
+tests/deploy/ops-disk-guard.sh: line 331: 58949 Terminated: 15          python3 "$D/mock.py" "$D/port" "$D/crt.pem" "$D/key.pem" "$D" > "$D/mock.out" 2>&1
+exit=1

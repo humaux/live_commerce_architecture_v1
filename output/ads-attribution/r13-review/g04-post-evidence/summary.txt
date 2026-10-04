@@ -1,0 +1,4 @@
+release-gate  commit=4acbad535381  dirty_files=208  modes_in_test-local=62  evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/output/ads-attribution/r13-review/g04-post-evidence
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

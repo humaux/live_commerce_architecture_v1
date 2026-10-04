@@ -50,7 +50,7 @@ func ewSetup(t *testing.T, f *testFixture, lines int, historical ...string) psHa
 	return p
 }
 
-// ewCloseSeedPools releases only the five role pools created for one finished
+// ewCloseSeedPools releases only the six role pools created for one finished
 // producer seed. The fixture owner and runtime pools belong to the caller.
 func ewCloseSeedPools(t *testing.T, p psHarness) {
 	t.Helper()
@@ -68,14 +68,14 @@ func ewCloseSeedPools(t *testing.T, p psHarness) {
 		return n
 	}
 	max, reserved, super := show("max_connections"), show("reserved_connections"), show("superuser_reserved_connections")
-	if max != 30 || reserved < 0 || super < 0 || reserved+super >= max {
+	if max != 60 || reserved < 0 || super < 0 || reserved+super >= max {
 		t.Fatalf("unexpected isolated PG capacity: max=%d reserved=%d super=%d", max, reserved, super)
 	}
 	seeds := []struct {
 		kind string
 		pool *pgxpool.Pool
 	}{
-		{"checkout", p.pool}, {"worker", p.worker},
+		{"checkout", p.pool}, {"worker", p.worker}, {"expiry", p.expiry},
 		{"buyer_runtime", p.a.runtime}, {"buyer_issuer", p.a.issuer}, {"identity", p.a.identity},
 	}
 	ownerRole, sharedRole := p.f.owner.Config().ConnConfig.User, p.f.runtime.Config().ConnConfig.User
@@ -304,7 +304,7 @@ func ewOldBegin(t *testing.T, p psHarness, historical ...string) checkout.Result
 func TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger(t *testing.T) {
 	f := lriPre0032Fixture(t)
 	p := ewSetup(t, f, 1, "river")
-	worker := p.worker
+	worker := p.expiry
 	if !ewReady(t, worker) {
 		t.Fatal("fresh migration not ready")
 	}
@@ -495,7 +495,7 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 	}
 	ewDue(t, one)
 	ewDue(t, two)
-	client := ewClient(t, one.worker, 2)
+	client := ewClient(t, one.expiry, 2)
 	for _, p := range []psHarness{one, two} {
 		ewAwait(t, f.owner, p.hold.JobID, "completed")
 		ewAssertOrder(t, p, "CANCELLED", "EXPIRED", len(p.stock.skus))
@@ -508,7 +508,7 @@ func TestBuyerCheckoutExpiryRuntimeRiverTwoTenantReplayAndIsolation(t *testing.T
 		_, beforeAttempts[i] = ewJob(t, f.owner, p.hold.JobID)
 		mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 	}
-	restarted := ewClient(t, one.worker, 2)
+	restarted := ewClient(t, one.expiry, 2)
 	for i, p := range []psHarness{one, two} {
 		attempt := ewAwait(t, f.owner, p.hold.JobID, "completed")
 		if attempt <= beforeAttempts[i] {
@@ -546,7 +546,7 @@ func TestBuyerCheckoutExpiryRuntimeEarlyStalePendingAndConfirmed(t *testing.T) {
 		t.Fatal(err)
 	}
 	ewDue(t, confirmed.psHarness)
-	client := ewClient(t, early.worker, 2)
+	client := ewClient(t, early.expiry, 2)
 	ewAwaitSnooze(t, f.owner, early.hold.JobID)
 	ewAwait(t, f.owner, stale.hold.JobID, "completed")
 	ewAwait(t, f.owner, pending.hold.JobID, "completed")
@@ -588,7 +588,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 				t.Fatal(err)
 			}
 			mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
-			client := ewClient(t, p.worker, 1)
+			client := ewClient(t, p.expiry, 1)
 			mustExec(t, f.owner, `UPDATE river_expiry.river_job SET scheduled_at=clock_timestamp() WHERE id=$1`, p.hold.JobID)
 			type paymentOutcome struct {
 				result checkout.PaymentResult
@@ -602,7 +602,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			var state string
 			var paymentWaiting, expiryWaiting bool
 			for time.Now().Before(deadline) {
-				state, _, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User, holderPID)
+				state, _, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
 				if state == "running" && expiryWaiting {
 					break
 				}
@@ -620,7 +620,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			deadline = time.Now().Add(2 * time.Second)
 			witness := false
 			for time.Now().Before(deadline) {
-				state, paymentWaiting, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User, holderPID)
+				state, paymentWaiting, expiryWaiting = ewBlockedContenders(t, f.owner, p.hold.JobID, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User, holderPID)
 				if state == "running" && paymentWaiting && expiryWaiting {
 					witness = true
 					break
@@ -629,7 +629,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 			}
 			if !witness {
 				t.Fatalf("payment and River expiry did not contend: state=%s payment_blocked=%t expiry_blocked=%t roles=%s/%s",
-					state, paymentWaiting, expiryWaiting, p.pool.Config().ConnConfig.User, p.worker.Config().ConnConfig.User)
+					state, paymentWaiting, expiryWaiting, p.pool.Config().ConnConfig.User, p.expiry.Config().ConnConfig.User)
 			}
 			if dueWhileWaiting {
 				if _, err := lock.Exec(context.Background(), `UPDATE checkout.orders SET expires_at=clock_timestamp()-interval '1 second',created_at=clock_timestamp()-interval '901 seconds' WHERE id=$1`, p.hold.OrderID); err != nil {
@@ -680,7 +680,7 @@ func TestBuyerCheckoutExpiryRuntimePaymentStartRace(t *testing.T) {
 func TestBuyerCheckoutExpiryRuntimeLateOldProducerPoll(t *testing.T) {
 	f := ewFixture(t)
 	p := ewSetup(t, f, 1)
-	client := ewClient(t, p.worker, 1)
+	client := ewClient(t, p.expiry, 1)
 	late := ewOldBegin(t, p)
 	if queue := pwQueueIn(t, f.owner, "river_expiry.river_job", late.JobID); queue != ewQueue {
 		t.Fatalf("late old producer committed to %s", queue)
@@ -721,7 +721,7 @@ func ewBuildBinary(t *testing.T) string {
 
 func ewWorkerDSN(t *testing.T, f *testFixture) (string, string) {
 	t.Helper()
-	u, err := url.Parse(bcRole(t, f, "commerce_worker"))
+	u, err := url.Parse(bcRole(t, f, waExpiry))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -815,9 +815,7 @@ func TestBuyerCheckoutExpiryRuntimeBinarySignalAndPoolCleanup(t *testing.T) {
 		t.Fatal("ready process has no worker DB connection")
 	}
 	ewExit(t, p, syscall.SIGTERM, true)
-	if remaining := ewConnections(t, f, app); remaining != 0 {
-		t.Fatalf("SIGTERM left %d worker connections", remaining)
-	}
+	waitPoolsGone(t, f, "SIGTERM left worker connections", app)
 }
 
 func TestBuyerCheckoutExpiryRuntimeBinaryCrashRiverRescue(t *testing.T) {
@@ -894,7 +892,5 @@ func TestBuyerCheckoutExpiryRuntimeBinaryCrashRiverRescue(t *testing.T) {
 	}
 	ewExit(t, restarted, syscall.SIGTERM, true)
 	ewAssertOrder(t, p, "CANCELLED", "EXPIRED", 1)
-	if remaining := ewConnections(t, f, app); remaining != 0 {
-		t.Fatalf("restarted process left %d worker connections", remaining)
-	}
+	waitPoolsGone(t, f, "restarted process left worker connections", app)
 }

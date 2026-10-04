@@ -7,6 +7,7 @@ test.use({ baseURL: origin, trace: "off", actionTimeout: 10_000 });
 test.describe.configure({ timeout: 90_000 });
 
 async function noSecrets(page: Page, secrets: string[]) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const storage = await page.evaluate(() =>
     JSON.stringify({
       local: { ...localStorage },
@@ -53,7 +54,10 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page
     .getByRole("button", { name: "Open workspace", exact: true })
     .click();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  // W0 shell: the owner sees Settings, Team and Billing under the Settings group, so the group button expands it and the
+  // Settings entry (registry id "settings") is the real click that opens the wizard.
+  await page.getByTestId("nav-group-settings").click();
+  await page.getByTestId("nav-settings").click();
   await expect(page.getByTestId("settings-wizard")).toBeVisible();
   await page.getByLabel("PAYUNi payment", { exact: true }).check();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -62,6 +66,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await expect(
     page.getByText("Loading saved configuration…", { exact: true }),
   ).toBeHidden();
+  // G-UI8 audit [READ/MEASURE]: computes rendered text contrast (read only)
   const renderedStyle = await page.evaluate(() => {
     const subtitle = document.querySelector(".settings-heading p")!;
     const color = getComputedStyle(subtitle).color;
@@ -108,11 +113,12 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.setViewportSize({ width: 390, height: 844 });
   await expect
     .poll(async () => {
-      const rail = await page.locator(".rail").boundingBox();
+      const rail = await page.locator("#workspace-navigation").boundingBox(); // W0 shell rail (off-canvas drawer at 390px)
       return rail ? Math.round(rail.x + rail.width) : 0;
     })
     .toBeLessThanOrEqual(0);
   expect(
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
@@ -222,11 +228,11 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
     .getByLabel("English name", { exact: true })
     .fill("Credit card");
   await paymentForm
-    .getByLabel("Minimum amount (minor units)", { exact: true })
-    .fill("100");
+    .getByLabel("Minimum amount (NT$)", { exact: true })
+    .fill("1"); // stop-bleed D02: money fields are NT$ whole dollars now (1 = 100 minor on the wire)
   await paymentForm
-    .getByLabel("Maximum amount (minor units)", { exact: true })
-    .fill("100000");
+    .getByLabel("Maximum amount (NT$)", { exact: true })
+    .fill("1000");
   const methodRequests: Array<{ key: string; body: string }> = [];
   let loseMethod = true;
   await page.route("**/payment-methods/payuni_credit", async (route) => {
@@ -275,6 +281,7 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await paymentForm
     .getByLabel("English name", { exact: true })
     .fill("Local unsaved name");
+  // G-UI8 audit [FIXTURE/SETUP]: a concurrent write by another operator (stale-form fixture)
   const concurrent = await page.evaluate(async (store) => {
     const prefix = `/api/stores/${store}/markets`;
     const markets = await (await fetch(prefix)).json();
@@ -446,15 +453,28 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   const policyForm = page.getByTestId("settings-policy-form");
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
+  // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused locally with its own sentence and nothing is sent
+  let policyWrites = 0;
+  page.on("request", (r) => {
+    if (r.method() === "PUT" && r.url().includes("/policy")) policyWrites++;
+  });
   await policyForm
-    .getByLabel("Flat shipping (minor units)", { exact: true })
-    .fill("6000");
-  await policyForm
-    .getByRole("combobox", { name: "Tax mode", exact: true })
-    .selectOption("none");
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("60.5");
   await policyForm
     .getByLabel(/^Configuration reference \/ reason/)
     .fill("Fixture explicit merchant tariff; not provider validation");
+  await policyForm
+    .getByRole("button", { name: "Save pricing policy", exact: true })
+    .click();
+  await expect(page.getByText("NT$ amounts are whole dollars, for example 60.")).toBeVisible();
+  expect(policyWrites).toBe(0);
+  await policyForm
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("60");
+  await policyForm
+    .getByRole("combobox", { name: "Tax mode", exact: true })
+    .selectOption("none");
   await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
   await policyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
@@ -497,8 +517,8 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   });
   await context.addCookies([{ ...originalCSRF, value: `${"X".repeat(42)}A` }]);
   await page
-    .getByLabel("Flat shipping (minor units)", { exact: true })
-    .fill("6100");
+    .getByLabel("Flat shipping (NT$)", { exact: true })
+    .fill("61");
   await page
     .getByLabel(/^Configuration reference \/ reason/)
     .fill("Must not be sent under changed session");
@@ -508,21 +528,13 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await expect(page.getByText(/Your session changed\./)).toBeVisible();
   expect(changedSessionWrites).toBe(0);
   await context.addCookies([originalCSRF]);
-  // End the real session through the BFF, after proving old-tab writes stayed zero.
-  const logout = await page.evaluate(async () => {
-    const csrf =
-      document.cookie
-        .split(";")
-        .map((part) => part.trim())
-        .find((part) => part.startsWith("__Host-commerce_csrf="))
-        ?.split("=")[1] ?? "";
-    return (
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
-        body: "{}",
-      })
-    ).status;
-  });
+  // End the real session the way the merchant does, after proving old-tab writes stayed zero: Account menu -> Sign out (a real click path; the
+  // BFF answer is read from the response the click triggers).
+  await page.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();
+  const [logoutResponse] = await Promise.all([
+    page.waitForResponse((r) => new URL(r.url()).pathname === "/api/auth/logout" && r.request().method() === "POST"),
+    page.getByTestId("workspace-sign-out").click(),
+  ]);
+  const logout = logoutResponse.status();
   expect(logout).toBe(204);
 });

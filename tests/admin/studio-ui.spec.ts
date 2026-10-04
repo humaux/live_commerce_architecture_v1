@@ -2,6 +2,7 @@ import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { parseDraft } from "../../apps/admin/lib/studio-model";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string) => {
@@ -26,8 +27,11 @@ test.setTimeout(240_000);
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  await expect(page.getByRole("button", { name: "Live workspace" })).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").waitFor({ state: "attached" });
+  const menu = page.locator('button[aria-controls="workspace-navigation"]');
+  if (await menu.isVisible()) await menu.click();
+  await expect(page.getByTestId("nav-group-live")).toBeVisible();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Live Studio" })).toBeVisible();
 }
@@ -42,6 +46,7 @@ async function setSession(context: BrowserContext, token: string) {
 }
 
 async function storageIsSafe(page: Page) {
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only) + CacheStorage names
   const value = await page.evaluate(async () => JSON.stringify({
     local: { ...localStorage }, session: { ...sessionStorage },
     caches: "caches" in window ? await caches.keys() : [],
@@ -53,7 +58,9 @@ async function storageIsSafe(page: Page) {
 
 async function hideAndReveal(page: Page) {
   await page.bringToFront();
+  // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
   await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+  // G-UI8 audit [READ/MEASURE]: installs a read-only visibilitychange recorder (isTrusted evidence)
   await page.evaluate(() => {
     const observed = window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] };
     observed.studioVisibility = [];
@@ -64,10 +71,13 @@ async function hideAndReveal(page: Page) {
   try {
     await other.goto("about:blank");
     await other.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
     await expect(page.getByLabel("Scene name")).toHaveCount(0);
     await page.bringToFront();
+    // G-UI8 audit [READ/MEASURE]: reads document.visibilityState
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+    // G-UI8 audit [READ/MEASURE]: reads the recorded native visibility events
     const events = await page.evaluate(() =>
       (window as typeof window & { studioVisibility?: { state: string; trusted: boolean }[] }).studioVisibility);
     expect(events).toEqual([{ state: "hidden", trusted: true }, { state: "visible", trusted: true }]);
@@ -85,11 +95,14 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   if (width <= 680) {
     // A desktop-to-phone resize animates the fixed rail off-screen; capture
     // only its settled position, never a partially obscured first viewport.
-    await expect.poll(() => page.locator(".rail").evaluate((rail) =>
+    await expect.poll(() => page.locator("[data-shell-rail]").evaluate((rail) =>
       Math.ceil(rail.getBoundingClientRect().right))).toBeLessThanOrEqual(0);
   }
+  // G-UI8 audit [FIXTURE/SETUP]: scrolls to the top before a screenshot (viewport positioning)
   await page.evaluate(() => window.scrollTo(0, 0));
+  // G-UI8 audit [READ/MEASURE]: reads scrollY
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   await page.screenshot({ path: `${evidence}/${name}.png`, fullPage: false, animations: "disabled" });
   if (width <= 680)
@@ -116,10 +129,10 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByText("Prepared rehearsal authority")).toBeVisible();
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toBeEnabled();
-  const schedule = page.getByLabel("Scheduled time (UTC, optional)");
+  const schedule = page.getByLabel("Scheduled time (Taipei time, optional)");
   await expect(schedule).toHaveAttribute("type", "text");
   await expect(schedule).toHaveAttribute("placeholder", "YYYY-MM-DDTHH:mm");
-  const picker = page.getByLabel("Choose scheduled date and time (UTC)");
+  const picker = page.getByLabel("Choose scheduled date and time (Taipei time)");
   await expect(page.locator(".studio-schedule-picker")).toBeVisible();
   await expect(picker).toHaveAttribute("type", "datetime-local");
   await expect(picker).toBeEnabled();
@@ -135,15 +148,15 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await schedule.fill("2030-02-30T00:00");
   const beforeInvalid = createRequests.length;
   await page.getByRole("button", { name: "Create draft" }).click();
-  await expect(page.getByText("Enter a valid UTC time from year 2000 through 2199, or leave it blank.")).toBeVisible();
+  await expect(page.getByText("Enter a valid Taipei time from year 2000 through 2199, or leave it blank.")).toBeVisible();
   expect(createRequests).toHaveLength(beforeInvalid);
-  await schedule.fill("2030-01-01T00:00");
+  await schedule.fill("2030-01-01T08:00");
   await page.getByLabel("Canvas ratio").selectOption("16:9");
   const beforeCreateURL = page.url();
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect.poll(() => page.url()).not.toBe(beforeCreateURL);
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-created scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
   const createdURL = page.url();
   expect(createdURL).toMatch(/scene=[0-9a-f-]{36}/);
   await expect(page.getByText("No current prepared authority", { exact: false })).toBeVisible();
@@ -155,7 +168,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 browser-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 browser-edited scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
 
   // Native Chromium popups are not page DOM dialogs. A screenshot between
   // click and keys redirects them to the input, so capture after selection.
@@ -165,20 +178,20 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await page.keyboard.press("Enter");
   const picked = await picker.inputValue();
   expect(picked).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d$/);
-  expect(picked).not.toBe("2030-01-01T00:00");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
+  expect(picked).not.toBe("2030-01-01T08:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue(picked);
   await page.screenshot({ path: `${evidence}/en-native-calendar-selected.png`, fullPage: false });
   const beforePickerVersion = await displayedVersion(page);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect.poll(() => displayedVersion(page)).toBe(beforePickerVersion + 1);
   await page.reload();
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue(picked);
-  await page.getByLabel("Scheduled time (UTC, optional)").fill("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue(picked);
+  await page.getByLabel("Scheduled time (Taipei time, optional)").fill("2030-01-01T08:00");
   const beforeRestoreVersion = await displayedVersion(page);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect.poll(() => displayedVersion(page)).toBe(beforeRestoreVersion + 1);
   await page.reload();
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
 
   // Two real signed UI views race on the same version. The stale tab must
   // report a conflict, not overwrite the newer persisted edit.
@@ -247,14 +260,14 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("STU04 phone-edited scene").first()).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Scene name")).toHaveValue("STU04 phone-edited scene");
-  await expect(page.getByLabel("Scheduled time (UTC, optional)")).toHaveValue("2030-01-01T00:00");
+  await expect(page.getByLabel("Scheduled time (Taipei time, optional)")).toHaveValue("2030-01-01T08:00");
   await page.setViewportSize({ width: 1586, height: 992 });
 
   // Establish a real Orders→Studio route boundary before the uncertain write.
   // Back/forward below must cross a page that unmounts Studio if permitted.
   await page.getByTestId("nav-orders").click();
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
-  await page.getByRole("button", { name: "Live workspace" }).click();
+  await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
 
   // Fault applies only after the real Go write has committed; retry must
@@ -286,6 +299,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("Public status unverified").first()).toBeVisible();
   await storageIsSafe(page);
 
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (POST without CSRF)
   const csrfDenied = await page.evaluate(async (target) => {
     const response = await fetch(target, { method: "POST", credentials: "same-origin", cache: "no-store",
       headers: { "Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID() },
@@ -346,6 +360,29 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   }), { mode: 0o600 });
 });
 
+// D02 (G-UI8 click sweep): /studio with NO ?scene= used to re-fetch live-sessions about 370 times a second and never leave "Loading scenes..."
+// (the first scene id comes from the page data, which each reload of the page effect reset). Every STU04 case above passes ?scene=, so only a
+// landing without a scene exposes it: sign in, click Live, open the store that has scenes and reload that bare route several times, counting
+// the reads while the page settles.
+test("STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens", async ({ page }) => {
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "GET" && /\/api\/stores\/[^/]+\/live-sessions(\?|$)/.test(request.url())) reads.push(request.url());
+  });
+  await signedLogin(page); // clicks the Live nav group
+  for (let round = 0; round < 4; round++) {
+    reads.length = 0;
+    if (round === 0) await page.goto(`/en/studio?store=${store}`);
+    else await page.reload();
+    await expect(page.getByText("Loading scenes…")).toHaveCount(0);
+    await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+    await expect(page.getByLabel("Scene name")).toBeVisible(); // the first scene is opened without a ?scene= in the URL
+    // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
+    await page.waitForTimeout(2500);
+    expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);
+  }
+});
+
 test("STU04 exact draft timestamp parser accepts offsets without admitting malformed dates", () => {
   const base = {
     session_id: "11111111-1111-4111-8111-111111111111",
@@ -371,15 +408,23 @@ test("STU04 read-only and expired sessions cannot mutate", async ({ browser }) =
   await expect(page.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Request stop" })).toBeDisabled();
   await expect(page.getByLabel("Scene name")).toBeDisabled();
-  await expect(page.getByLabel("Choose scheduled date and time (UTC)")).toBeDisabled();
+  await expect(page.getByLabel("Choose scheduled date and time (Taipei time)")).toBeDisabled();
   await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
   await context.close();
   const expired = await browser.newContext({ baseURL: origin });
   await setSession(expired, expiredToken);
   const expiredPage = await expired.newPage();
   await expiredPage.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
-  await expect(expiredPage.getByText("Sign in again to open Studio.").first()).toBeVisible();
+  await expect(expiredPage.getByTestId("shell-session-expired")).toContainText(shellCopy.en.sessionExpired);
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expect(expiredPage.getByRole("button", { name: "Start MOCK rehearsal" })).toHaveCount(0);
+  const recovery = expiredPage.getByTestId("shell-sign-in");
+  await expect(recovery).toHaveText(shellCopy.en.signIn);
+  await expect(recovery).toHaveAttribute("href", "/en");
+  await recovery.click();
+  await expect(expiredPage).toHaveURL(new URL("/en", origin).toString());
+  await expect(expiredPage.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
+  await expect(expiredPage.getByTestId("merchant-studio")).toHaveCount(0);
   await expired.close();
 });
 

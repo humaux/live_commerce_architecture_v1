@@ -94,7 +94,7 @@ func TestMetaRuntimeIsolationWorkerObjectACL(t *testing.T) {
 func TestMetaRuntimeIsolationWorkerRoleMatrix(t *testing.T) {
 	f := mrFixture(t)
 	ctx := context.Background()
-	for _, role := range []string{"postgres", "commerce_worker", "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer"} {
+	for _, role := range []string{"postgres", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer"} {
 		t.Run("wrong role "+role, func(t *testing.T) {
 			roleDSN := f.databaseURL
 			if role != "postgres" {
@@ -117,7 +117,7 @@ func TestMetaRuntimeIsolationWorkerRoleMatrix(t *testing.T) {
 		t.Fatal(err)
 	}
 	login := pgx.Identifier{u.User.Username()}.Sanitize()
-	for _, other := range []string{"commerce_worker", "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer", "pg_read_all_data", "pg_write_all_data"} {
+	for _, other := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_runtime", "commerce_meta_ingress", "commerce_meta_consumer", "pg_read_all_data", "pg_write_all_data"} {
 		t.Run("mixed "+other, func(t *testing.T) {
 			granted := pgx.Identifier{other}.Sanitize()
 			mustExec(t, f.owner, `GRANT `+granted+` TO `+login+` WITH INHERIT TRUE, SET FALSE`)
@@ -159,8 +159,10 @@ func TestMetaRuntimeIsolationWorkerRoleMatrix(t *testing.T) {
 	if err := platform.ValidateMetaWorkerPool(ctx, borrowed); err == nil {
 		t.Fatal("borrowed inherited owner admitted")
 	}
-	if _, err := miPool(t, f, "commerce_worker").Exec(ctx, `UPDATE river_meta.river_job SET state='available' WHERE id=-1`); miSQLState(err) != "42501" {
-		t.Fatalf("ordinary worker crossed Meta schema state=%s", miSQLState(err))
+	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims} {
+		if _, err := miPool(t, f, role).Exec(ctx, `UPDATE river_meta.river_job SET state='available' WHERE id=-1`); miSQLState(err) != "42501" {
+			t.Fatalf("ordinary worker %s crossed Meta schema state=%s", role, miSQLState(err))
+		}
 	}
 	if _, err := borrowed.Exec(ctx, `UPDATE river.river_job SET state='available' WHERE id=-1`); miSQLState(err) != "42501" {
 		t.Fatalf("Meta worker crossed ordinary River schema state=%s", miSQLState(err))

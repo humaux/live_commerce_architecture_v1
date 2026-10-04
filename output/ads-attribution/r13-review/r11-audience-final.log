@@ -1,0 +1,5 @@
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+--- PASS: TestAdsAttributionR11AudienceBoundReplay (1.36s)
+PASS
+ok  	livecommerce/tests/foundation	3.329s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

@@ -1,0 +1,15 @@
+▲ Next.js 16.3.5
+- Local:         http://127.0.0.1:59224
+- Network:       http://127.0.0.1:59224
+✓ Ready in 129ms
+✓ Running next.config.ts took 109ms
+⨯ Error: storefront_unavailable
+    at d (.next/server/chunks/ssr/[root-of-the-server]__01pa0jf._.js:1:1503)
+    at async Module.h [as generateMetadata] (.next/server/chunks/ssr/apps_storefront_04-_5-9._.js:1:230) {
+  digest: '1209465853'
+}
+⨯ Error: storefront_unavailable
+    at d (.next/server/chunks/ssr/[root-of-the-server]__01pa0jf._.js:1:1503)
+    at async i (.next/server/chunks/ssr/apps_storefront_04-_5-9._.js:1:704) {
+  digest: '3470431736'
+}

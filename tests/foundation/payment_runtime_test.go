@@ -51,7 +51,7 @@ func pwIsolatedFixture(t *testing.T) *testFixture {
 		"--tmpfs", "/var/lib/postgresql:rw,size=268435456", "-e", "POSTGRES_PASSWORD="+password,
 		"-e", "POSTGRES_DB=lc_foundation_test", "-p", "127.0.0.1::5432",
 		"postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280",
-		"-c", "shared_buffers=32MB", "-c", "max_connections=30").CombinedOutput()
+		"-c", "shared_buffers=32MB", "-c", "max_connections=60").CombinedOutput()
 	if err != nil {
 		t.Fatalf("start labelled local PG container: %v", err)
 	}
@@ -101,6 +101,9 @@ func pwIsolatedFixture(t *testing.T) *testFixture {
 	if err := migrations.Apply(ctx, owner); err != nil {
 		t.Fatal(err)
 	}
+	if pgStripeRevoke { // promotions-tests only: disclosed workaround of BASE defect B1, see promotions_gate_test.go / DEFECTS.md
+		mustExec(t, owner, `REVOKE EXECUTE ON FUNCTION catalog.products_default_slug(), design.refuse_history_change() FROM PUBLIC`)
+	}
 	f := &testFixture{owner: owner, databaseURL: u.String(), tenantA: randomUUID(), tenantB: randomUUID(), storeA1: randomUUID(), storeA2: randomUUID(), storeB: randomUUID(), principalA: randomUUID(), tokens: map[string]string{"a": randomToken(), "a2": randomToken(), "b": randomToken(), "expired": randomToken(), "revoked": randomToken(), "buyer": randomToken(), "revoked_grant": randomToken()}}
 	if err := f.seed(ctx); err != nil {
 		t.Fatal(fmt.Errorf("seed isolated worker database: %w", err))
@@ -126,12 +129,7 @@ func pwKeys(t *testing.T) *accounts.Keyring {
 
 func pwWorkerPool(t *testing.T, f *testFixture) *pgxpool.Pool {
 	t.Helper()
-	pool, err := platform.OpenWorkerPool(context.Background(), bcRole(t, f, "commerce_worker"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(pool.Close)
-	return pool
+	return waOpen(t, f, waPayment, platform.WorkerPayment)
 }
 
 // Force the pre-upgrade producer's requested default queue before River's
@@ -150,7 +148,7 @@ func pwOldQuerySetupOn(t *testing.T, f *testFixture, keys *accounts.Keyring, his
 	}
 	q := pqFixture{psHarness: p, keys: keys, accountService: service, schema: schema}
 	q.rotate(t, 1, pqOldSecret)
-	mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
+	qualExec(t, p.f.owner, `UPDATE payments.account_qualifications SET credential_version=2 WHERE id=$1`, p.proof)
 	middleware := river.JobInsertMiddlewareFunc(func(ctx context.Context, params []*rivertype.JobInsertParams, next func(context.Context) ([]*rivertype.JobInsertResult, error)) ([]*rivertype.JobInsertResult, error) {
 		for _, row := range params {
 			if row.Kind == "payment_query_v1" {
@@ -484,7 +482,7 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	if out, err := invalid.CombinedOutput(); err == nil || !strings.Contains(string(out), "payment_worker_invalid_config") || strings.Contains(string(out), "invalid\n") {
 		t.Fatalf("production binary accepted MOCK or leaked config: %v %q", err, out)
 	}
-	role := bcRole(t, f, "commerce_worker")
+	role := bcRole(t, f, waPayment)
 	u, err := url.Parse(role)
 	if err != nil {
 		t.Fatal(err)
@@ -575,10 +573,7 @@ func TestBuyerPaymentWorkerProcessSignalAndPoolCleanup(t *testing.T) {
 	case <-time.After(8 * time.Second):
 		t.Fatal("payment-worker did not stop after SIGTERM with no due jobs")
 	}
-	var remaining int
-	if err := f.owner.QueryRow(context.Background(), `SELECT count(*) FROM pg_stat_activity WHERE datname='lc_foundation_test' AND application_name=$1`, app).Scan(&remaining); err != nil || remaining != 0 {
-		t.Fatalf("worker pool leaked connections: %d %v", remaining, err)
-	}
+	waitPoolsGone(t, f, "worker pool leaked connections", app)
 }
 
 func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
@@ -586,7 +581,7 @@ func TestBuyerPaymentWorkerCrashChild(t *testing.T) {
 		return
 	}
 	ctx := context.Background()
-	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_PW_CHILD_DSN"))
+	pool, err := platform.OpenWorkerPool(ctx, os.Getenv("LC_PW_CHILD_DSN"), platform.WorkerPayment)
 	if err != nil {
 		t.Fatal("child worker authority")
 	}

@@ -1,0 +1,146 @@
+[
+  {
+    "File": "attribution-landing-zh-TW-390.png",
+    "Sha256": "9f768236f2382f049673ae320d91c3e7105c221f20d6471aa1488729fdbe031f",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-zh-TW-390.png",
+    "Sha256": "15d63f1c52504542527b92b70ac91c6e9a65db5fecf205e61a189d44a69bc92f",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-placed-zh-TW-390.png",
+    "Sha256": "87e36a1f1e71c74ef863a4daf32897b59753cdcbdf6a49e4c91f7aa9d98b65ea",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-order-zh-TW-390.png",
+    "Sha256": "3b2b6d94311d76bf9aa4f4e1ed32a5e0d2d0111aa6f2e30fe5f2abf5d6547947",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-landing-zh-TW-1586.png",
+    "Sha256": "5ccaff72279ae55c671108da7417ed33899a43b7c85c90d98226b7884387e97c",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-checkout-zh-TW-1586.png",
+    "Sha256": "04e939eab2dff0f02643141c0a93ae4ac9647bfcc0667676f432750099614686",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-placed-zh-TW-1586.png",
+    "Sha256": "d13cc1e8542e0c4545dbc3821522559bb3f9411327963a3dc49cd4063e31175a",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-order-zh-TW-1586.png",
+    "Sha256": "04145e5ba2b388f68a1f318c790a21d52798bd811271056a32406377ad254b8d",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-landing-zh-CN-390.png",
+    "Sha256": "b449389c83f221291df152d9437e080736df6c566cde26fe86ede1e132a00d01",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-zh-CN-390.png",
+    "Sha256": "986ee213a95c4afe0865983ca1c4ca9ed995312873d1c3b110b03e56991ea534",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-placed-zh-CN-390.png",
+    "Sha256": "9f5ab0897625ff9d042022c914780de47c7044df16849a919a62d5ffdc962115",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-order-zh-CN-390.png",
+    "Sha256": "8ae072d0f1500113552692253a0d19c3ff221ad5e51257cb912e6ead10d990c4",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-landing-zh-CN-1586.png",
+    "Sha256": "4e82b1670a631f706b2fe1be6f9d3a80af2af53800ae202b81acb430be6bd2ff",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-checkout-zh-CN-1586.png",
+    "Sha256": "675cec0f8764b03554ab031b8a43a5bd79f9f5d2deec02d5fec0bc09c312ddba",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-placed-zh-CN-1586.png",
+    "Sha256": "e0c91168a8a43e951c0ca24ada2d7849a331ec89864be2170eb1c9ce8358d42b",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-order-zh-CN-1586.png",
+    "Sha256": "f524b02987e3278fb3ce71cf14a49d482838e13f4bc848e84976b4e10792aa00",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-landing-en-390.png",
+    "Sha256": "f52b3abcf912430d2dacaee2407fcf8cc317e8cb6fd0a37f85d802be89ea818d",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-en-390.png",
+    "Sha256": "9ff65629fd3b92d0222f66ef510cd81daa5173e12df568039ea81ced95560bd3",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-placed-en-390.png",
+    "Sha256": "92ce4ae7fd5f5f5cc082f05fd2d46dc13d763dcd609d78e63c114f4da78c7f52",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-order-en-390.png",
+    "Sha256": "ff1a609c9cfd7c208abe1cb151793a741b7d23f63196e9ce498ed917f85a0375",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-landing-en-1586.png",
+    "Sha256": "1fc7edabc2d07d632795579b64c3ae5a3af37733c76121e3ee98bb08bf28cdab",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-checkout-en-1586.png",
+    "Sha256": "469e8c33682ffcad5f54a43bf382416dc2f83de0fc4f5386dff5e82488493aee",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-placed-en-1586.png",
+    "Sha256": "a87dda5f04dfe10a9bc2cff7e7beba0ef5f7590746dd7d7ae49831a5bb0776ed",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-order-en-1586.png",
+    "Sha256": "47d4272d182957a2ba405e3078211620fdaa1001b3774aaa79300c3412f2b6fc",
+    "Locale": "en",
+    "Viewport": "1586"
+  }
+]

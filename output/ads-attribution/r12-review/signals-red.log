@@ -1,0 +1,90 @@
+✖ R10: standalone signed signals survive a missing or expired seven-day touch (1.628625ms)
+✖ R10: standalone signals reject expiry, bad signature, duplicates and another host (0.1355ms)
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (0.230916ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.225125ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.134166ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.449ms)
+✖ AT1: a later valid click replaces the draft but preserves the browser identifier (0.395334ms)
+✖ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.142458ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (0.312833ms)
+✔ AT1: host and key binding reject copied cookies (0.1525ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.115917ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.119833ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 8
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 71.177083
+
+✖ failing tests:
+
+test at apps/storefront/tests/ad-touch.test.mjs:16:1
+✖ R10: standalone signed signals survive a missing or expired seven-day touch (1.628625ms)
+  TypeError: adIDs.readAdSignals is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:20:26)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at apps/storefront/tests/ad-touch.test.mjs:33:1
+✖ R10: standalone signals reject expiry, bad signature, duplicates and another host (0.1355ms)
+  TypeError: adIDs.readAdSignals is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:43:25)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+
+test at apps/storefront/tests/ad-touch.test.mjs:82:1
+✖ AT1: a later valid click replaces the draft but preserves the browser identifier (0.395334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'fb.1.1800000001000.synthetic-click_01'
+  - 'fb.1.1800000000000.synthetic-click_01'
+                   ^
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:89:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'fb.1.1800000001000.synthetic-click_01',
+    expected: 'fb.1.1800000000000.synthetic-click_01',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/ad-touch.test.mjs:92:1
+✖ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.142458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'fb.1.1800000001000.synthetic-click_01'
+  - 'fb.1.1800000000000.synthetic-click_01'
+                   ^
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:95:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'fb.1.1800000001000.synthetic-click_01',
+    expected: 'fb.1.1800000000000.synthetic-click_01',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

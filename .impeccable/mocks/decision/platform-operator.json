@@ -1,0 +1,7 @@
+{
+  "prompt": "Use case: ui-mockup. Create a high-fidelity desktop website first-viewport screenshot at 1586 by 992 for DaWan Live, a merchant live-commerce SaaS public corporate website. Input reference supplies ONLY white surface, dark slate #1F2937, orange #FF6A00, crisp system sans typography, fine separators, 8px corners. Do not carry over the admin rail, dashboard numbers, search or imagery. Structure B: full-width header DaWan Live at left and 功能 / 公司 / 聯絡 / 繁體中文 / 登入 on right. Hero is a strongly asymmetric two-column spread: at left 60% width large headline '直播生意，從這裡接起。', explanatory text '整合 Facebook 留言收單、商家網店與訂單管理。', orange '建立商家帳戶' button. Right 40% an editorial operator-details panel, not a floating card: label '營運公司', Hong Kong Da Wan Trading Limited, 香港大碗貿易有限公司, Company No. 81215167, 'RM 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong'. Below both columns 3 horizontal service statements with simple line icons and brief text: 留言收單 / 商家網店 / 訂單與履約. Footer legal links visible and 'DaWan Live is operated by Hong Kong Da Wan Trading Limited'. Restrained trustworthy public software company page; no gradients, fake testimonials, claims of certification or business statistics. Real content readable as a complete website composition, not a poster.",
+  "source": "built-in image_gen",
+  "approved": false,
+  "reference": "01-admin-overview.png",
+  "purpose": "composition proposal; not implementation copy or data"
+}

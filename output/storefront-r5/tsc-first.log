@@ -1,0 +1,6 @@
+components/ProductAssurance.tsx(22,56): error TS2322: Type 'OptionRow[]' is not assignable to type 'Option[]'.
+  Type 'OptionRow' is not assignable to type 'Option'.
+    Type 'UnavailableOption' is missing the following properties from type 'Option': service_version, allocation_version, mode
+undefined
+/Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/apps/storefront:
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command failed with exit code 1: tsc --noEmit

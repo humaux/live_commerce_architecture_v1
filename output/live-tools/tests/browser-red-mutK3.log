@@ -1,0 +1,109 @@
+# live-tools browser gate — RED run (mutation mutK3), worktree branch unit/live-tools-tests @ db36a06
+# command: bash scripts/dev/test-local.sh --browser-e2e        exit code: 1
+# date: 2026-10-01 (run id output/playwright/live-tools/20261001T150145.194845000)
+# mutation (reverted after the run; `git diff internal/` empty): internal/storefront/claim_price.go applyLivePrices cart_lines query
+#   `... AND quantity<=claim_quantity AND false` — the live price never reaches any quote. Expected: every matrix cell fails at the
+#   money assertion "the quotation shows the 400 total" (live price 2x200) because the page shows the catalog 600.
+# D1 workaround armed (fixture grant, disclosed in test): output/live-tools/LTG_WORKAROUND_D1.on = 1
+#
+# Result: TestBrowserE2EDealLoop PASS (20.19s); TestBrowserE2EDealLoopSandbox SKIP (NOT_RUN, SANDBOX tier needs owner keys);
+# TestBrowserLiveTools FAIL (90.86s) — all 4 cells (zh-TW/en x desktop/390px) failed at exactly the mutated assertion.
+# Each failed cell still ran control step end-run (window closed) via the spec's finally, so cells did not cascade.
+#
+# Playwright per-cell failures (output/playwright/live-tools/20261001T150145.194845000/playwright.log):
+#   cell 1 zh-TW desktop: "buyer-claim-1: the quotation shows the 400 total" — .quotation showed Total 600.00 (catalog)
+#   cell 2 zh-TW mobile:  "buyer-claim-2: the quotation shows the 400 total" — same
+#   cell 3 en desktop:    "buyer-claim-3: the quotation shows the 400 total" — quotation text: "TotalNT$600.00"
+#   cell 4 en mobile:     "buyer-claim-4: the quotation shows the 400 total" — same
+#   => 4 failed, 0 passed (live-tools spec); exit status 1.
+#
+# Side observation (NOT a defect): the previous red attempt (run id 20261001T145153.553707000) also failed
+# TestBrowserE2EDealLoop early at the Studio scene-creation waitForURL (30s timeout) while the mutation was applied;
+# the same mutation with an unchanged spec passes here and passed in run 20261001T144424.210271000, so that was a
+# transient stall, not mutation-attributable. The Go driver's "scanner self-test" line in that run is the secondary
+# effect of finishing an incomplete evidence directory.
+#
+# ---- Go test output (TLS handshake noise lines removed; they are the expected fake-Graph probing) ----
+=== RUN   TestBrowserE2EDealLoop
+    browser_e2e_test.go:594: T12 provisioned; PG connections=18 of 60: commerce_worker=4 commerce_meta_worker=3 commerce_checkout_runtime=1 commerce_claims_intake=1 commerce_hosted_runtime=1 commerce_identity=1 commerce_meta_consumer=1 commerce_meta_ingress=1 commerce_runtime=1 commerce_stripe_ingress=1 commerce_buyer_issuer=1 postgres=1 commerce_buyer_runtime=1
+    browser_e2e_test.go:187: T12 step provision ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step comment ok
+    browser_e2e_test.go:187: T12 step await-reply ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step replay ok
+    browser_e2e_test.go:187: T12 step negatives ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step pay ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step settle-refund ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step isolation ok
+    browser_e2e_test.go:199: T12 PG connection peak: 29 of 60 (max_connections)
+    browser_e2e_test.go:199: T12 evidence logs scanned clean
+    browser_e2e_test.go:200: T12 BROWSER (MOCK Meta, MOCK Stripe): the deal loop passed end to end; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/live-tools-tests/output/playwright/e2e/20261001T150125.002396000
+--- PASS: TestBrowserE2EDealLoop (20.19s)
+=== RUN   TestBrowserE2EDealLoopSandbox
+    browser_e2e_test.go:1153: NOT_RUN: SANDBOX tier needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys
+--- SKIP: TestBrowserE2EDealLoopSandbox (0.00s)
+=== RUN   TestBrowserLiveTools
+    browser_live_tools_test.go:95: LC_LTG_WORKAROUND_D1 armed: checkout runtime granted claims USAGE + live_prices EXECUTE by the fixture (defect D1 masked, NOT acceptance)
+    browser_live_tools_test.go:143: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step end-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step end-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step end-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:143: LIVE-TOOLS step end-run ok
+    browser_live_tools_test.go:148: live-tools evidence logs scanned clean
+    browser_live_tools_test.go:149: live-tools browser chain failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/live-tools-tests/output/playwright/live-tools/20261001T150145.194845000
+--- FAIL: TestBrowserLiveTools (90.86s)
+FAIL
+FAIL	livecommerce/tests/foundation	111.728s
+FAIL
+
+[exited with code 1]
+4:  ✘  1 tests/e2e/live-tools.spec.ts:111:3 › live tools zh-TW desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (23.4s)
+5:  ✘  2 tests/e2e/live-tools.spec.ts:111:3 › live tools zh-TW mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (19.7s)
+6:  ✘  3 tests/e2e/live-tools.spec.ts:111:3 › live tools en desktop: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (21.5s)
+7:  ✘  4 tests/e2e/live-tools.spec.ts:111:3 › live tools en mobile: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price (21.1s)
+12:    Error: buyer-claim-1: the quotation shows the 400 total
+14:    expect(locator).toContainText(expected) failed
+50:    Error: buyer-claim-2: the quotation shows the 400 total
+52:    expect(locator).toContainText(expected) failed
+88:    Error: buyer-claim-3: the quotation shows the 400 total
+90:    expect(locator).toContainText(expected) failed
+126:    Error: buyer-claim-4: the quotation shows the 400 total
+128:    expect(locator).toContainText(expected) failed
+162:  4 failed

@@ -1,0 +1,5 @@
+{"level":"info","ts":1791082628.2375147,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x4c36dde4000"}
+{"level":"info","ts":1791082628.2375567,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv1"}
+{"level":"info","ts":1791082628.3399255,"logger":"http","msg":"servers shutting down with eternal grace period"}
+{"level":"info","ts":1791082628.3399792,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0x4c36dde4000"}
+Valid configuration

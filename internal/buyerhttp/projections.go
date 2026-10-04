@@ -5,6 +5,7 @@ import (
 
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/pagination"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
@@ -24,6 +25,22 @@ type optionResponse struct {
 	NameHant          string `json:"name_hant"`
 	NameEN            string `json:"name_en"`
 	SortOrder         int    `json:"sort_order"`
+	// taiwan-cvs-logistics-v1 §5.1/§16.5: CVS rows only, omitted otherwise (unavailable rows carry available:false + reason).
+	PickupSelection string   `json:"pickup_selection,omitempty"`
+	PaymentModes    []string `json:"payment_modes,omitempty"`
+	StoreSearchURL  string   `json:"store_search_url,omitempty"`
+	Available       *bool    `json:"available,omitempty"`
+	Reason          string   `json:"reason,omitempty"`
+	// storefront-v2 §C: present only when payment_modes lists bank_transfer (the hold the order will keep, 6..168 hours).
+	TransferWindowHours int `json:"transfer_window_hours,omitempty"`
+	// storefront-v2 §C: the delivery policy's free-shipping threshold (minor units) or null; always present (a hint only, the quote decides).
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor"`
+	// home-cod R5: present only on a home row whose payment_modes lists cash_on_delivery (the whole-TWD surcharge in minor units; 0 = none).
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// home-cod R5 (P2-4/P2-3): the COD carrier label and the whole-TWD per-order cap in minor units, present only alongside
+	// cod_surcharge_minor. The cap lets the storefront omit COD from a row it knows will exceed it (the options request has no basket).
+	CodCarrier  string `json:"cod_carrier,omitempty"`
+	CodMaxMinor int64  `json:"cod_max_minor,omitempty"`
 }
 
 type optionsResponse struct {
@@ -39,7 +56,10 @@ func projectOptions(page pagination.Page[checkout.Option]) optionsResponse {
 			Country: item.Country, Currency: item.Currency, DeliveryCode: item.DeliveryCode, Method: item.Method,
 			ServiceVersion: item.ServiceVersion, AllocationVersion: item.AllocationVersion,
 			DeliveryKind: item.DeliveryKind, Mode: item.Mode, NameHans: item.NameHans, NameHant: item.NameHant,
-			NameEN: item.NameEN, SortOrder: item.SortOrder,
+			NameEN: item.NameEN, SortOrder: item.SortOrder, PickupSelection: item.PickupSelection,
+			PaymentModes: item.PaymentModes, StoreSearchURL: item.StoreSearchURL, Available: item.Available, Reason: item.Reason,
+			TransferWindowHours: item.TransferWindowHours, FreeShippingThresholdMinor: item.FreeShippingThresholdMinor,
+			CodSurchargeMinor: item.CodSurchargeMinor, CodCarrier: item.CodCarrier, CodMaxMinor: item.CodMaxMinor,
 		})
 	}
 	return out
@@ -53,19 +73,40 @@ type catalogItemResponse struct {
 	SKUCode     string `json:"sku_code"`
 	Currency    string `json:"currency"`
 	PriceMinor  int64  `json:"price_minor"`
+	// Images is the product's photos in display order, [] when none (catalog-media CM4); bytes are fetched from
+	// /media/p/{product_id}/{id} on the storefront origin.
+	Images []catalogImageResponse `json:"images"`
+}
+
+type catalogImageResponse struct {
+	ID     string `json:"id"`
+	Width  *int   `json:"width"`
+	Height *int   `json:"height"`
+}
+
+// catalogResult is one scoped transaction's catalog page plus the store name (same buyer.WithScope read).
+type catalogResult struct {
+	page pagination.Page[storefront.CatalogItem]
+	name string
 }
 
 type catalogResponse struct {
 	Items      []catalogItemResponse `json:"items"`
 	NextCursor string                `json:"next_cursor"`
+	// StoreName is the published store's public name (storefront home heading), set by the route, not projectCatalog.
+	StoreName string `json:"store_name"`
 }
 
 func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogResponse {
 	out := catalogResponse{Items: make([]catalogItemResponse, 0, len(page.Items)), NextCursor: page.NextCursor}
 	for _, item := range page.Items {
+		images := make([]catalogImageResponse, 0, len(item.Images))
+		for _, img := range item.Images {
+			images = append(images, catalogImageResponse{ID: img.ID, Width: img.Width, Height: img.Height})
+		}
 		out.Items = append(out.Items, catalogItemResponse{
 			ProductID: item.ProductID, SKUID: item.SKUID, Name: item.Name, Description: item.Description,
-			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor,
+			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor, Images: images,
 		})
 	}
 	return out
@@ -74,6 +115,9 @@ func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogRespons
 type cartItemResponse struct {
 	SKUID    string `json:"sku_id"`
 	Quantity int64  `json:"quantity"`
+	// LiveUnitPriceMinor is the live (claim-origin) unit price for this line when claims.live_prices still
+	// honours its origin, omitted otherwise (the storefront then shows the catalog price).
+	LiveUnitPriceMinor int64 `json:"live_unit_price_minor,omitempty"`
 }
 
 type cartResponse struct {
@@ -86,7 +130,7 @@ type cartResponse struct {
 func projectCart(cart storefront.Cart) cartResponse {
 	out := cartResponse{ID: cart.ID, Currency: cart.Currency, Version: cart.Version, Items: make([]cartItemResponse, 0, len(cart.Items))}
 	for _, item := range cart.Items {
-		out.Items = append(out.Items, cartItemResponse{SKUID: item.SKUID, Quantity: item.Quantity})
+		out.Items = append(out.Items, cartItemResponse{SKUID: item.SKUID, Quantity: item.Quantity, LiveUnitPriceMinor: item.LiveUnitPriceMinor})
 	}
 	return out
 }
@@ -129,6 +173,7 @@ type quoteResponse struct {
 	ExpiresAt   time.Time           `json:"expires_at"`
 	Lines       []quoteLineResponse `json:"lines"`
 	Amount      quoteAmountResponse `json:"amount"`
+	Promotion   *promotionResponse  `json:"promotion,omitempty"`
 }
 
 func projectQuoteLines(lines []storefront.QuoteLine) []quoteLineResponse {
@@ -154,6 +199,7 @@ func projectQuote(quote storefront.Quote) quoteResponse {
 			ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 			TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 		},
+		Promotion: projectPromotion(quote.Promotion),
 	}
 	return out
 }
@@ -216,16 +262,37 @@ func projectDestination(destination storefront.Destination) destinationResponse 
 type checkoutResponse struct {
 	OrderID       string    `json:"order_id"`
 	HoldExpiresAt time.Time `json:"hold_expires_at"`
+	// §16.2: how the order is paid and its state at placement (pay_at_pickup orders are CONFIRMED with no payment step).
+	PaymentMode     string `json:"payment_mode"`
+	CommercialState string `json:"commercial_state"`
 }
 
 func projectCheckout(result checkout.Result) checkoutResponse {
-	return checkoutResponse{OrderID: result.OrderID, HoldExpiresAt: result.ExpiresAt}
+	return checkoutResponse{OrderID: result.OrderID, HoldExpiresAt: result.ExpiresAt,
+		PaymentMode: result.PaymentMode, CommercialState: result.CommercialState}
 }
 
 type orderQuoteResponse struct {
-	Currency string              `json:"currency"`
-	Lines    []quoteLineResponse `json:"lines"`
-	Amount   quoteAmountResponse `json:"amount"`
+	Currency  string              `json:"currency"`
+	Lines     []quoteLineResponse `json:"lines"`
+	Amount    quoteAmountResponse `json:"amount"`
+	Promotion *promotionResponse  `json:"promotion,omitempty"`
+}
+
+// promotionResponse is the buyer's view of the code a quote/order was priced with (storefront-v2 §F). Present only when a code applied (the
+// key is absent otherwise, so code-less responses keep their exact pre-0091 shape); the merchant's internal ids and version never leave Go.
+type promotionResponse struct {
+	Code       string `json:"code"`
+	Kind       string `json:"kind"`
+	Percent    int64  `json:"percent"`
+	FixedMinor int64  `json:"fixed_minor"`
+}
+
+func projectPromotion(p *pricing.Promo) *promotionResponse {
+	if p == nil {
+		return nil
+	}
+	return &promotionResponse{Code: p.Code, Kind: p.Kind, Percent: p.Percent, FixedMinor: p.FixedMinor}
 }
 
 type orderPickupResponse struct {
@@ -269,6 +336,20 @@ type orderResponse struct {
 	FulfillmentState string                `json:"fulfillment_state"`
 	HoldExpiresAt    *time.Time            `json:"hold_expires_at,omitempty"`
 	Snapshot         orderSnapshotResponse `json:"snapshot"`
+	// Shipment is always emitted, null unless the merchant's manual shipment head is SHIPPED
+	// (manual-fulfilment-v1 §5.2); checkout.Get reads it under buyer RLS without merchant-only columns.
+	Shipment *checkout.BuyerShipment `json:"shipment"`
+	// taiwan-cvs-logistics-v1 §5.3/§16: payment mode, pay-at-pickup collection state (null for card) and the current ECPay attempt.
+	PaymentMode     string                     `json:"payment_mode"`
+	CollectionState *string                    `json:"collection_state"`
+	CVSShipment     *checkout.BuyerCVSShipment `json:"cvs_shipment"`
+	// home-cod R5: present only on cash_on_delivery orders — the cash due on delivery (total + surcharge) and the surcharge folded
+	// into it, so the order page states 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」.
+	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4): the placement-time carrier label (black_cat/hsinchu) of a cash_on_delivery order; present
+	// only on COD orders (null otherwise) and never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
 }
 
 func projectOrder(order checkout.Order) orderResponse {
@@ -276,7 +357,9 @@ func projectOrder(order checkout.Order) orderResponse {
 	destination := order.Snapshot.Destination
 	out := orderResponse{
 		OrderID: order.OrderID, CommercialState: order.CommercialState, FulfillmentState: order.FulfillmentState,
-		CartID: quote.CartID, CartVersion: quote.CartVersion,
+		CartID: quote.CartID, CartVersion: quote.CartVersion, Shipment: order.Shipment,
+		PaymentMode: order.PaymentMode, CollectionState: order.CollectionState, CVSShipment: order.CVSShipment,
+		CodCollectMinor: order.CodCollectMinor, CodSurchargeMinor: order.CodSurchargeMinor, CodCarrier: order.CodCarrier,
 		Snapshot: orderSnapshotResponse{
 			Quote: orderQuoteResponse{
 				Currency: quote.Currency, Lines: projectQuoteLines(quote.Lines),
@@ -285,6 +368,7 @@ func projectOrder(order checkout.Order) orderResponse {
 					ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 					TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 				},
+				Promotion: projectPromotion(quote.Promotion),
 			},
 			Destination: orderDestinationResponse{
 				Kind: destination.Kind, Country: destination.Country, RecipientName: destination.RecipientName,

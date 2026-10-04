@@ -1,9 +1,14 @@
-// Package pricing owns merchant market policy writes and the pure quote money calculation.
+// Package pricing owns merchant market policy writes (markets and their currency) and the pure quote
+// money calculation.
+//
+// It never reads a client-supplied amount, never touches stock or payment state, and never rounds
+// money outside Calculate.
 package pricing
 
 import (
 	"context"
 	"errors"
+	"math/bits"
 	"regexp"
 	"strings"
 	"unicode"
@@ -50,6 +55,10 @@ type Policy struct {
 	TaxRateBPS      int64  `json:"tax_rate_bps"`
 	QuoteTTLSeconds int64  `json:"quote_ttl_seconds"`
 	Enabled         bool   `json:"enabled"`
+	// FreeShippingThresholdMinor (storefront-v2 §C): merchandise subtotal at or above which Calculate charges shipping 0; nil = never.
+	// It is part of the quote snapshot, so a quote keeps the outcome it was priced with. omitempty: a nil threshold leaves the key out, so a
+	// quote snapshot stored before 0088 still round-trips byte-equal through checkout.begin_hold's "quote changed" comparison.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor,omitempty"`
 }
 
 type PolicyInput struct {
@@ -66,6 +75,8 @@ type PolicyInput struct {
 	QuoteTTLSeconds  int64  `json:"quote_ttl_seconds"`
 	Enabled          bool   `json:"enabled"`
 	ConfigurationRef string `json:"configuration_ref"`
+	// FreeShippingThresholdMinor: optional (absent or null = no threshold). omitempty keeps the request digest of a pre-0088 body unchanged.
+	FreeShippingThresholdMinor *int64 `json:"free_shipping_threshold_minor,omitempty"`
 }
 
 type AmountLine struct {
@@ -194,12 +205,15 @@ func SetPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string,
 		}
 		out = Policy{MarketID: in.MarketID, Country: in.Country, Method: in.Method, Currency: in.Currency,
 			ShippingMode: in.ShippingMode, TaxMode: in.TaxMode, TaxBasis: in.TaxBasis, Version: current + 1,
-			ShippingMinor: *in.ShippingMinor, TaxRateBPS: *in.TaxRateBPS, QuoteTTLSeconds: in.QuoteTTLSeconds, Enabled: in.Enabled}
+			ShippingMinor: *in.ShippingMinor, TaxRateBPS: *in.TaxRateBPS, QuoteTTLSeconds: in.QuoteTTLSeconds, Enabled: in.Enabled,
+			FreeShippingThresholdMinor: in.FreeShippingThresholdMinor}
 		_, err = tx.Exec(ctx, `INSERT INTO pricing.policy_versions(tenant_id,store_id,market_id,country,method,version,currency,
-			shipping_mode,shipping_minor,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`, scope.TenantID, scope.StoreID,
+			shipping_mode,shipping_minor,tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id,
+			free_shipping_threshold_minor)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`, scope.TenantID, scope.StoreID,
 			out.MarketID, out.Country, out.Method, out.Version, out.Currency, out.ShippingMode, out.ShippingMinor,
-			out.TaxMode, out.TaxBasis, out.TaxRateBPS, out.QuoteTTLSeconds, out.Enabled, in.ConfigurationRef, scope.PrincipalID)
+			out.TaxMode, out.TaxBasis, out.TaxRateBPS, out.QuoteTTLSeconds, out.Enabled, in.ConfigurationRef, scope.PrincipalID,
+			in.FreeShippingThresholdMinor)
 		if err != nil {
 			return mapError(err)
 		}
@@ -236,11 +250,11 @@ func LockCurrent(ctx context.Context, tx pgx.Tx, tenantID, storeID, marketID, co
 		return out, mapError(err)
 	}
 	err = tx.QueryRow(ctx, `SELECT market_id::text,country,method,currency,shipping_mode,tax_mode,tax_basis,
-		version,shipping_minor,tax_rate_bps,quote_ttl_seconds,enabled FROM pricing.policy_versions
+		version,shipping_minor,tax_rate_bps,quote_ttl_seconds,enabled,free_shipping_threshold_minor FROM pricing.policy_versions
 		WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country=$4 AND method=$5 AND version=$6`,
 		tenantID, storeID, marketID, country, method, currentVersion).Scan(
 		&out.MarketID, &out.Country, &out.Method, &out.Currency, &out.ShippingMode, &out.TaxMode, &out.TaxBasis,
-		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled)
+		&out.Version, &out.ShippingMinor, &out.TaxRateBPS, &out.QuoteTTLSeconds, &out.Enabled, &out.FreeShippingThresholdMinor)
 	if err != nil {
 		return out, mapError(err)
 	}
@@ -250,43 +264,143 @@ func LockCurrent(ctx context.Context, tx pgx.Tx, tenantID, storeID, marketID, co
 	return out, nil
 }
 
+// Promo is the frozen effect of one discount code (storefront-v2 section F). ID/Code/Version identify the merchant's code row at pricing
+// time (BeginCheckout compares Version under a lock, so an edit or pause after the quote is a typed refusal); Kind/Percent/FixedMinor are
+// all Calculate reads. omitempty on the numbers keeps a snapshot of the other kind byte-stable through checkout.begin_hold's comparison.
+type Promo struct {
+	ID         string `json:"id"`
+	Code       string `json:"code"`
+	Version    int64  `json:"version"`
+	Kind       string `json:"kind"`
+	Percent    int64  `json:"percent,omitempty"`
+	FixedMinor int64  `json:"fixed_minor,omitempty"`
+}
+
+// wholeStep is the smallest chargeable step of a currency in minor units. TWD is charged in whole dollars (stripe-psp-v1 D15 and the section 4
+// table: TWD 2500..99999900 step 100; PAYUNi amount%100=0), so a discount must not leave a fractional-dollar total that payment start would
+// refuse after the order was already placed. Every other currency of the closed allowlist charges at its minor unit.
+func wholeStep(currency string) int64 {
+	if currency == "TWD" {
+		return 100
+	}
+	return 1
+}
+
+// discountOn is the ONE place a code becomes money. I05: integer minor units only, floor rounding for percent, rounded DOWN to the currency's
+// chargeable step (whole dollars for TWD), and the result never exceeds the merchandise subtotal, so the goods charge cannot go below zero.
+// Shipping is not an input: a code never discounts shipping.
+func (p Promo) discountOn(subtotal, step int64) (int64, error) {
+	if subtotal < 0 || subtotal > command.MaxMoney || step < 1 {
+		return 0, command.ErrInvalid
+	}
+	var discount int64
+	switch p.Kind {
+	case "percent":
+		if p.Percent < 1 || p.Percent > 90 || p.FixedMinor != 0 {
+			return 0, command.ErrInvalid
+		}
+		discount = subtotal * p.Percent / 100 // subtotal <= 1e12 and percent <= 90: no overflow
+	case "fixed":
+		if p.FixedMinor < 1 || p.FixedMinor > command.MaxMoney || p.Percent != 0 {
+			return 0, command.ErrInvalid
+		}
+		discount = min(p.FixedMinor, subtotal)
+	default:
+		return 0, command.ErrInvalid
+	}
+	return discount - discount%step, nil
+}
+
+// allocateDiscount splits discount over the line subtotals proportionally (floor, then the leftover units one by one to the largest
+// fractional remainders, ties to the lower index) so the line discounts sum to exactly discount and none exceeds its line. 128-bit
+// product via math/bits: discount <= total <= 1e12 makes discount*line overflow int64.
+func allocateDiscount(discount int64, subtotals []int64, total int64) []int64 {
+	out := make([]int64, len(subtotals))
+	if discount == 0 || total == 0 {
+		return out
+	}
+	rems := make([]uint64, len(subtotals))
+	var given int64
+	for i, sub := range subtotals {
+		hi, lo := bits.Mul64(uint64(discount), uint64(sub))
+		q, r := bits.Div64(hi, lo, uint64(total)) // hi < total because discount <= total
+		out[i], rems[i] = int64(q), r
+		given += int64(q)
+	}
+	for left := discount - given; left > 0; left-- {
+		best := -1
+		for i := range rems {
+			if out[i] < subtotals[i] && (best < 0 || rems[i] > rems[best]) {
+				best = i
+			}
+		}
+		out[best]++
+		rems[best] = 0
+	}
+	return out
+}
+
+// Calculate prices a cart without a discount code; see CalculateWith.
 func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
+	return CalculateWith(policy, lines, nil)
+}
+
+// CalculateWith is the pure quote calculator. promo == nil is byte-identical to the pre-0091 calculation (discount 0).
+func CalculateWith(policy Policy, lines []AmountLine, promo *Promo) (Calculation, error) {
 	result := Calculation{ShippingMinor: policy.ShippingMinor, Lines: make([]LineAmount, 0, len(lines))}
 	if !validPolicy(policy) || len(lines) == 0 || len(lines) > 50 {
 		return Calculation{}, command.ErrInvalid
 	}
-	for _, line := range lines {
+	subtotals := make([]int64, len(lines))
+	for i, line := range lines {
 		subtotal, err := command.CheckMoney(line.UnitPriceMinor, line.Quantity)
 		if err != nil {
 			return Calculation{}, err
 		}
-		tax := taxMinor(subtotal, policy.TaxRateBPS, policy.TaxMode)
-		lineTotal := subtotal
+		subtotals[i] = subtotal
+		if result.SubtotalMinor, err = addMoney(result.SubtotalMinor, subtotal); err != nil {
+			return Calculation{}, err
+		}
+	}
+	if promo != nil {
+		var err error
+		if result.DiscountMinor, err = promo.discountOn(result.SubtotalMinor, wholeStep(policy.Currency)); err != nil {
+			return Calculation{}, err
+		}
+	}
+	shares := allocateDiscount(result.DiscountMinor, subtotals, result.SubtotalMinor)
+	for i, subtotal := range subtotals {
+		net := subtotal - shares[i] // >= 0: a share never exceeds its line
+		tax := taxMinor(net, policy.TaxRateBPS, policy.TaxMode)
+		lineTotal := net
+		var err error
 		if policy.TaxMode == "exclusive" {
-			lineTotal, err = addMoney(subtotal, tax)
-			if err != nil {
+			if lineTotal, err = addMoney(net, tax); err != nil {
 				return Calculation{}, err
 			}
 		}
-		result.SubtotalMinor, err = addMoney(result.SubtotalMinor, subtotal)
-		if err != nil {
+		if result.TaxMinor, err = addMoney(result.TaxMinor, tax); err != nil {
 			return Calculation{}, err
 		}
-		result.TaxMinor, err = addMoney(result.TaxMinor, tax)
-		if err != nil {
-			return Calculation{}, err
-		}
-		result.Lines = append(result.Lines, LineAmount{SubtotalMinor: subtotal, TaxMinor: tax, TotalMinor: lineTotal})
+		result.Lines = append(result.Lines, LineAmount{SubtotalMinor: subtotal, DiscountMinor: shares[i], TaxMinor: tax, TotalMinor: lineTotal})
 	}
+	shipping := policy.ShippingMinor
+	// I05 / storefront-v2 §C: free shipping is decided here, from the server-side merchandise subtotal (BEFORE any code discount, section F)
+	// and the policy's threshold, never from a client value. Shipping 0 also zeroes the shipping tax below because both read this variable.
+	if policy.FreeShippingThresholdMinor != nil && result.SubtotalMinor >= *policy.FreeShippingThresholdMinor {
+		shipping = 0
+	}
+	result.ShippingMinor = shipping
 	if policy.TaxBasis == "goods_and_shipping" {
-		result.ShippingTaxMinor = taxMinor(policy.ShippingMinor, policy.TaxRateBPS, policy.TaxMode)
+		result.ShippingTaxMinor = taxMinor(shipping, policy.TaxRateBPS, policy.TaxMode)
 	}
 	var err error
 	result.TaxMinor, err = addMoney(result.TaxMinor, result.ShippingTaxMinor)
 	if err != nil {
 		return Calculation{}, err
 	}
-	total, err := addMoney(result.SubtotalMinor, result.ShippingMinor)
+	// I05: total = goods after discount + shipping (+ tax when exclusive); the discount is subtracted from goods only.
+	total, err := addMoney(result.SubtotalMinor-result.DiscountMinor, shipping)
 	if err != nil {
 		return Calculation{}, err
 	}
@@ -304,14 +418,16 @@ func validPolicyInput(in PolicyInput) bool {
 		currencyPattern.MatchString(in.Currency) && countryPattern.MatchString(in.Country) && ValidMethod(in.Method) &&
 		in.ShippingMode == "country_flat" && validTax(in.TaxMode, in.TaxBasis, *in.TaxRateBPS) &&
 		*in.ShippingMinor >= 0 && *in.ShippingMinor <= command.MaxMoney && in.QuoteTTLSeconds >= 60 && in.QuoteTTLSeconds <= 1800 &&
-		printable(in.ConfigurationRef, 240)
+		printable(in.ConfigurationRef, 240) &&
+		(in.FreeShippingThresholdMinor == nil || (*in.FreeShippingThresholdMinor >= 0 && *in.FreeShippingThresholdMinor <= command.MaxMoney))
 }
 
 func validPolicy(p Policy) bool {
 	return command.ValidID(p.MarketID) && p.Version > 0 && p.Enabled && currencyPattern.MatchString(p.Currency) &&
 		countryPattern.MatchString(p.Country) && ValidMethod(p.Method) && p.ShippingMode == "country_flat" &&
 		p.ShippingMinor >= 0 && p.ShippingMinor <= command.MaxMoney && validTax(p.TaxMode, p.TaxBasis, p.TaxRateBPS) &&
-		p.QuoteTTLSeconds >= 60 && p.QuoteTTLSeconds <= 1800
+		p.QuoteTTLSeconds >= 60 && p.QuoteTTLSeconds <= 1800 &&
+		(p.FreeShippingThresholdMinor == nil || (*p.FreeShippingThresholdMinor >= 0 && *p.FreeShippingThresholdMinor <= command.MaxMoney))
 }
 
 func validTax(mode, basis string, bps int64) bool {

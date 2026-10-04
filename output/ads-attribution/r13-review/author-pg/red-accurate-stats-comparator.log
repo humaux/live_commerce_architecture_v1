@@ -1,0 +1,11 @@
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:265: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=2.370334s status=200 bytes=71807
+    ads_attribution_r11_test.go:271: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:265: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=2.517782875s status=200 bytes=71513
+    ads_attribution_r11_test.go:271: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:295: REAL_PG direct runtime SQL elapsed=2.512664333s bytes=77697 error=<nil>
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (17.45s)
+FAIL
+FAIL	livecommerce/tests/foundation	18.987s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

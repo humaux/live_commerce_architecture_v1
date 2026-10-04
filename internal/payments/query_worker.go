@@ -72,6 +72,7 @@ type QueryWorker struct {
 	options QueryWorkerOptions
 	core    core.Service
 	jobs    *river.Client[pgx.Tx]
+	stripe  *StripeRuntime
 }
 
 var _ river.Worker[paymentQueryArgs] = (*QueryWorker)(nil)
@@ -82,7 +83,7 @@ func NewQueryWorker(ctx context.Context, pool *pgxpool.Pool, keys *accounts.Keyr
 		(profile == "PROVIDER_MOCK") != (options.MockTransport != nil) {
 		return nil, errPaymentQueryJob
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, WorkerAuthority(profile)); err != nil {
 		return nil, errPaymentQueryDatabase
 	}
 	// Reconciliation jobs enter the same schema that payment consumers maintain.
@@ -124,11 +125,23 @@ func (w *QueryWorker) Work(ctx context.Context, job *river.Job[paymentQueryArgs]
 	}
 	id := job.Args.OperationID
 	op, err := w.read(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		// T21-02: RLS shows this authority only payment-lane operations, so a job naming a foreign-family (or missing)
+		// operation reads as no row: same outcome as the explicit family check below, nothing claimed, no provider call.
+		return river.JobCancel(errPaymentQueryFamily)
+	}
 	if err != nil {
 		return w.dbError(ctx)
 	}
 	if !validQueryOperation(op) {
 		return river.JobCancel(errPaymentQueryFamily)
+	}
+	if op.Provider == "stripe" {
+		// A disabled Stripe worker leaves the job and operation untouched for an enabled worker.
+		if w.stripe == nil {
+			return river.JobSnooze(5 * time.Second)
+		}
+		return w.stripeStep(ctx, id, op)
 	}
 	if op.ResultCode == "payment_query_budget_exhausted" && op.LeaseUntil == nil {
 		return river.JobCancel(errPaymentQueryBudget)
@@ -205,8 +218,9 @@ func queryRetryDelay(configured time.Duration, source string) time.Duration {
 }
 
 func validQueryOperation(op queryOperation) bool {
-	return op.ActorKind == "BUYER_PAYMENT_QUERY" && op.Provider == "payuni" &&
-		op.Purpose == "transactional" && op.Action == "payuni.query"
+	return op.ActorKind == "BUYER_PAYMENT_QUERY" && op.Purpose == "transactional" &&
+		((op.Provider == "payuni" && op.Action == "payuni.query") ||
+			(op.Provider == "stripe" && op.Action == "stripe.checkout_session"))
 }
 
 func terminalQueryState(state string) bool {

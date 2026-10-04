@@ -1,0 +1,6 @@
+source=40128fe5db6f04c8284ddc74fe2a302ba628900d
+started=2026-10-04T03:54:04Z
+command=go test -race ./internal/attribution/capiroute ./internal/integrations/meta_ads ./internal/metaconnect 
+ok  	livecommerce/internal/attribution/capiroute	2.305s
+ok  	livecommerce/internal/integrations/meta_ads	3.021s
+ok  	livecommerce/internal/metaconnect	2.507s

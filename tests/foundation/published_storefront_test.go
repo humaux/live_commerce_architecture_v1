@@ -166,7 +166,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 			t.Fatal("constructor accepted wrong authority")
 		}
 	}
-	for _, dsn := range []string{a.mixedURL, bcRole(t, f, "commerce_worker"), bcRole(t, f, "commerce_checkout_runtime"), bcRole(t, f, "commerce_auth")} {
+	for _, dsn := range []string{a.mixedURL, bcRole(t, f, waPayment), bcRole(t, f, waLive), bcRole(t, f, waExpiry), bcRole(t, f, waAds), bcRole(t, f, waClaims), bcRole(t, f, "commerce_checkout_runtime"), bcRole(t, f, "commerce_auth")} {
 		pool, err := pgxpool.New(ctx, dsn)
 		if err != nil {
 			t.Fatal("fixture pool")
@@ -178,7 +178,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 			}
 		}()
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_auth", "commerce_identity", "commerce_buyer_runtime", "commerce_checkout_runtime", "commerce_worker"} {
+	for _, role := range []string{"commerce_runtime", "commerce_auth", "commerce_identity", "commerce_buyer_runtime", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		t.Run(role, func(t *testing.T) {
 			tx, err := f.owner.Begin(ctx)
 			if err != nil {
@@ -193,7 +193,7 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		})
 	}
 	for _, table := range []string{"control.storefront_publications", "control.storefront_domains"} {
-		for _, role := range []string{"commerce_runtime", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", "commerce_worker"} {
+		for _, role := range []string{"commerce_runtime", "commerce_identity", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 			var access bool
 			if err := f.owner.QueryRow(ctx, `SELECT has_table_privilege($1,$2,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege($1,$2,'SELECT,INSERT,UPDATE,REFERENCES')`, role, table).Scan(&access); err != nil || access {
 				t.Fatalf("unexpected direct table or column privilege: role=%s table=%s err=%v", role, table, err)
@@ -219,11 +219,17 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 			requirePGCode(t, err, "42501", "issuer direct table access")
 		}
 	}
+	// commerce_ads_writer: meta-ads-v1 §4.4 (0080) — ads.feed_rows resolves the store from the verified origin through this
+	// function only; the ACL stays a closed list. commerce_catalog_media (0082, docs/delivery/units/catalog-media.md CM4) is the
+	// third grantee: its two origin-keyed definers (buyer_media_image, buyer_feed_images) resolve the store here too; commerce_design_reader
+	// (0087) is the fourth.
 	var safe bool
 	err := f.owner.QueryRow(ctx, `SELECT p.prosecdef AND p.proowner='commerce_buyer_writer'::regrole
 		AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND NOT EXISTS (
 		 SELECT 1 FROM aclexplode(p.proacl) a WHERE a.privilege_type='EXECUTE'
-		 AND a.grantee NOT IN ('commerce_buyer_writer'::regrole,'commerce_buyer_issuer'::regrole))
+		 AND a.grantee NOT IN ('commerce_buyer_writer'::regrole,'commerce_buyer_issuer'::regrole,'commerce_ads_writer'::regrole,'commerce_catalog_media'::regrole,
+		  -- 0087 store-design (contracts/storefront-v2.md §B): the published design document is resolved by verified origin too.
+		  'commerce_design_reader'::regrole))
 		FROM pg_proc p WHERE p.oid='buyer.resolve_published_store(text)'::regprocedure`).Scan(&safe)
 	if err != nil || !safe {
 		t.Fatalf("function owner/ACL/search_path: %v", err)

@@ -1,0 +1,9 @@
+=== RUN   TestMerchantOrdersV2TenThousandScopedSearch
+    merchant_orders_v2_perf_test.go:24: exec test setup: ERROR: insert or update on table "orders" violates foreign key constraint "order_reservation_fk" (SQLSTATE 23503)
+--- FAIL: TestMerchantOrdersV2TenThousandScopedSearch (12.93s)
+=== RUN   TestMerchantOrdersV2ReadContract
+--- PASS: TestMerchantOrdersV2ReadContract (0.33s)
+FAIL
+FAIL	livecommerce/tests/foundation	13.888s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1

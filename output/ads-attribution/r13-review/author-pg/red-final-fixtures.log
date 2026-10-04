@@ -1,0 +1,14 @@
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:253: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=5.002119667s status=503 bytes=138
+    ads_attribution_r11_test.go:255: report 5-second API deadline violated: status=503 elapsed=5.002119667s
+    ads_attribution_r11_test.go:253: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=5.001015334s status=503 bytes=138
+    ads_attribution_r11_test.go:255: report 5-second API deadline violated: status=503 elapsed=5.001015334s
+    ads_attribution_r11_test.go:283: REAL_PG direct runtime SQL elapsed=2.599601917s bytes=77697 error=<nil>
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (22.75s)
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+    ads_attribution_r11_test.go:337: optional breakdown failure blocked genuine D7 daily row: rows=0
+--- FAIL: TestAdsAttributionR11OptionalBreakdownAndNull (2.16s)
+FAIL
+FAIL	livecommerce/tests/foundation	25.879s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

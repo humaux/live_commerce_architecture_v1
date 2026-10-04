@@ -1,5 +1,28 @@
-// Package checkout owns the trusted buyer checkout transaction. Its pool is a
-// separate SQL authority; buyer capability scope remains the buyer identity.
+// Package checkout owns the trusted buyer checkout transaction: Begin turns a priced cart snapshot
+// into an order plus a stock hold, then hosted payment start (PAYUNi always, Stripe Checkout when
+// enabled), the buyer's order and payment views, and the checkout-expiry worker that releases due
+// holds. Its pool is a separate SQL authority; buyer capability scope remains the buyer identity.
+//
+// Beyond card orders it also places pay-at-pickup orders (payment_mode, taiwan-cvs-logistics-v1 §16.2:
+// CONFIRMED at Begin, no payment attempt) and serves the buyer CVS surface (cvs.go: e-map selection, directory
+// verification, buyer-entered store) plus the CVS checkout options.
+//
+// bank_transfer (storefront-v2 §C, migration 0088 + post_river/0018) is the third mode: the order waits AWAITING_TRANSFER with its stock
+// RESERVED for the merchant's window, the buyer submits transfer details (transfer.go), and only a merchant act (internal/merchantorders)
+// confirms it; the same ExpiryWorker releases an unpaid window. An optional buyer email is stored on the order.
+//
+// cash_on_delivery (home-cod R5, migration 0107 + post_river/0020) is the fourth mode: a home-delivery order waits AWAITING_COLLECTION with
+// its stock held as for pay_at_pickup (committed at placement, no online charge), the merchant ships it manually and records the carrier's
+// collection through the shared collection state machine (internal/fulfillment CVS.RecordCollection / Release).
+//
+// A live-priced (claim-origin) order consumes its claimed quantity in the Begin transaction through
+// storefront.ConsumeLivePrices (claims.consume_live_prices, migration 0105); cancellation releases it by state alone.
+//
+// It never computes prices (internal/pricing and the storefront snapshot do), never settles money on
+// a provider's word alone (payments.apply_capture is the single stock writer for captures), never
+// reads STRIPE_* secrets, never holds pay-at-pickup money, and never accepts a client-supplied amount.
+// External services only through internal/integrations/psp/{payuni,stripe} and, for the CVS directory
+// lookup, internal/integrations/shipping/ecpay (logistics(-stage).ecpay.com.tw).
 package checkout
 
 import (
@@ -8,6 +31,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"net/mail"
 	"regexp"
 	"sort"
 	"strings"
@@ -24,6 +48,7 @@ import (
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/jobqueue"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/promotions"
 	"livecommerce/internal/storefront"
 )
 
@@ -32,17 +57,52 @@ var errCheckoutDatabase = errors.New("checkout database unavailable")
 
 const holdDuration = 15 * time.Minute
 
+// A bank_transfer hold lasts the merchant's window (6..168 h, checkout.bank_transfer_settings); Go does not know the window before
+// begin_hold, so Begin only bounds the answer: begin_hold alone sets it and the SQL CHECK orders_expiry_window caps it at 168 h.
+const (
+	minTransferHold = 6 * time.Hour
+	maxTransferHold = 168 * time.Hour
+)
+
 type Service struct {
 	pool *pgxpool.Pool
 	jobs *river.Client[pgx.Tx]
+	// paymentEnv is the deployment payment environment ("SANDBOX" | "LIVE" | "") Begin passes to checkout.begin_hold as
+	// p_payment_environment (taiwan-cvs-logistics-v1 §4.3, R2-3); "" refuses every ECPay path in SQL. cvs is the buyer CVS surface;
+	// nil (the default) means ECPay is off for options (unit default C9, TCV11 kill switch).
+	paymentEnv string
+	cvs        *BuyerCVS
+	// noCard is true when this process has no buyer payment service (cmd/api: COMMERCE_BUYER_PAYMENT_ENABLED off), so a card order
+	// could never be paid. The zero value keeps card allowed: only the one production wiring site (cmd/api/buyer.go) turns it on.
+	noCard bool
 }
 
 type Input struct {
-	QuoteID           string `json:"quote_id"`
-	DestinationID     string `json:"destination_id"`
-	CartVersion       int64  `json:"cart_version"`
-	ServiceVersion    int64  `json:"service_version"`
-	AllocationVersion int64  `json:"allocation_version"`
+	// Private BFF context, deliberately excluded from public JSON and the receipt digest.
+	AdTouch           *AdTouch   `json:"-"`
+	AdSignals         *AdSignals `json:"-"`
+	ClientIP          string     `json:"-"`
+	QuoteID           string     `json:"quote_id"`
+	DestinationID     string     `json:"destination_id"`
+	CartVersion       int64      `json:"cart_version"`
+	ServiceVersion    int64      `json:"service_version"`
+	AllocationVersion int64      `json:"allocation_version"`
+	// PaymentMode is "card" (or empty, the same thing) or "pay_at_pickup" (§16.2, CVS destinations only; SQL decides).
+	// omitempty keeps the request digest of an old card request unchanged, so pre-upgrade replays still match.
+	// "bank_transfer" (storefront-v2 §C) places the order AWAITING_TRANSFER with the stock reserved for the merchant's window.
+	// "cash_on_delivery" (home-cod R5) places a home order AWAITING_COLLECTION with the stock held as for pay_at_pickup.
+	PaymentMode string `json:"payment_mode,omitempty"`
+	// BuyerEmail is optional (storefront-v2 §C), validated by validBuyerEmail and stored on the order for notifications (PII: customers
+	// export/erasure cover it). omitempty keeps pre-0088 request digests unchanged.
+	BuyerEmail string `json:"buyer_email,omitempty"`
+	// Locale is the buyer's storefront locale ("zh-CN" | "zh-TW" | "en"); empty means the zh-TW default (notify.DefaultLocale).
+	// Validated by validInput and persisted on the order (checkout.orders.locale, migration 0097) so buyer notification
+	// mails render in the buyer's own language (internal/notify localeOf). omitempty keeps old request digests unchanged.
+	Locale string `json:"locale,omitempty"`
+	// ExpectedCodSurchargeMinor (home-cod R5, P2-1) is the COD surcharge the buyer was shown at options/quote time, echoed back so
+	// begin_hold can refuse (PT409 cod_surcharge_changed) when the merchant changed it between quote and begin. nil/absent means the
+	// snapshot stays a 4-key object and no re-quote check runs; omitempty keeps pre-0107 request digests unchanged.
+	ExpectedCodSurchargeMinor *int64 `json:"expected_cod_surcharge_minor,omitempty"`
 }
 
 type Result struct {
@@ -51,6 +111,10 @@ type Result struct {
 	Generation    int64     `json:"generation"`
 	ExpiresAt     time.Time `json:"expires_at"`
 	JobID         int64     `json:"job_id"`
+	// PaymentMode / CommercialState come from begin_hold (§16.2): pay_at_pickup orders are CONFIRMED at placement; bank_transfer orders are
+	// AWAITING_TRANSFER until the merchant confirms or the window ends.
+	PaymentMode     string `json:"payment_mode"`
+	CommercialState string `json:"commercial_state"`
 }
 
 type Snapshot struct {
@@ -58,6 +122,9 @@ type Snapshot struct {
 	Destination storefront.Destination `json:"destination"`
 	Service     fulfillment.Service    `json:"service"`
 	Allocation  fulfillment.Allocation `json:"allocation"`
+	// ExpectedCodSurchargeMinor (home-cod R5, P2-1) is the 5th snapshot key, present only on cash_on_delivery orders that echo the
+	// shown surcharge; begin_hold compares it to the current setting and refuses PT409 cod_surcharge_changed on a mismatch.
+	ExpectedCodSurchargeMinor *int64 `json:"expected_cod_surcharge_minor,omitempty"`
 }
 
 type Order struct {
@@ -65,6 +132,97 @@ type Order struct {
 	CommercialState  string   `json:"commercial_state"`
 	FulfillmentState string   `json:"fulfillment_state"`
 	Snapshot         Snapshot `json:"snapshot"`
+	// Shipment is always emitted: null unless the order's manual shipment head is SHIPPED
+	// (manual-fulfilment-v1 §5.2). Merchant-only fields (note, void_reason, principal) are never read.
+	Shipment *BuyerShipment `json:"shipment"`
+	// PaymentMode, CollectionState and CVSShipment are the taiwan-cvs-logistics-v1 §5.3/§16 buyer fields: how the order is paid,
+	// where a pay-at-pickup collection stands (null for card orders) and the current ECPay attempt (null without one).
+	PaymentMode     string            `json:"payment_mode"`
+	CollectionState *string           `json:"collection_state"`
+	CVSShipment     *BuyerCVSShipment `json:"cvs_shipment"`
+	// CodCollectMinor / CodSurchargeMinor (home-cod R5, migration 0107) are present only on cash_on_delivery orders: the cash due
+	// on delivery (total_minor + cod_surcharge_minor) and the surcharge folded into it, so the order page and the mails can state
+	// 「到貨需付 NT$X（含貨到付款手續費 NT$Y）」. Zero for every other payment mode (omitted from the JSON).
+	CodCollectMinor   int64 `json:"cod_collect_minor,omitempty"`
+	CodSurchargeMinor int64 `json:"cod_surcharge_minor,omitempty"`
+	// CodCarrier (home-cod R5, P2-4) is the carrier label (black_cat 黑貓 / hsinchu 新竹) snapshotted at placement from
+	// checkout.cash_on_delivery_settings.carrier. Present only on cash_on_delivery orders (null otherwise); it is the order-time
+	// snapshot, never derived from the current settings.
+	CodCarrier *string `json:"cod_carrier,omitempty"`
+}
+
+// BuyerCVSShipment is the buyer's view of the current ECPay attempt (§5.3): state, chain, store name and code, never the
+// trade number, the label codes or provider ids.
+type BuyerCVSShipment struct {
+	State     string    `json:"state"`
+	Chain     string    `json:"chain"`
+	StoreName string    `json:"store_name"`
+	StoreCode string    `json:"store_code"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// BuyerShipment is the merchant's attestation that the parcel was dispatched with this carrier and
+// tracking (MERCHANT_SHIPPED); it is never in-transit or delivered evidence (I13).
+type BuyerShipment struct {
+	Status         string    `json:"status"`
+	CarrierCode    string    `json:"carrier_code"`
+	CarrierName    *string   `json:"carrier_name"`
+	TrackingNumber string    `json:"tracking_number"`
+	TrackingURL    *string   `json:"tracking_url"`
+	RecordedAt     time.Time `json:"recorded_at"`
+}
+
+// WithPaymentEnvironment returns a copy that passes env to checkout.begin_hold as the deployment payment environment
+// (cmd/api derives it from COMMERCE_PAYMENT_PROFILE, PROVIDER_MOCK => SANDBOX). Anything but SANDBOX/LIVE means "" (ECPay off).
+func (s *Service) WithPaymentEnvironment(env string) *Service {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	if env != "SANDBOX" && env != "LIVE" {
+		env = ""
+	}
+	c.paymentEnv = env
+	return &c
+}
+
+// WithBuyerCVS returns a copy that serves CVS options with the store's ECPay mode and the process kill switch, and exposes the
+// buyer CVS surface to internal/buyerhttp (which reaches it through CVS(), so no handler constructor changes).
+func (s *Service) WithBuyerCVS(b *BuyerCVS) *Service {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	c.cvs = b
+	return &c
+}
+
+// WithoutCardPayment returns a copy that neither lists "card" in options nor accepts a card Begin (ops-polish OP1). cmd/api calls it
+// when no hosted payment service is wired; the per-store method check is order-bound SQL (checkout.hosted_payment_view*) and stays there.
+func (s *Service) WithoutCardPayment() *Service {
+	if s == nil {
+		return nil
+	}
+	c := *s
+	c.noCard = true
+	return &c
+}
+
+// cardRefusal is the one place a card Begin is refused when card cannot be paid (OP1). The code is the typed 422 the buyer API
+// already serializes for coded refusals (httperror "card_unavailable"); pay_at_pickup is never affected.
+func cardRefusal(mode string, noCard bool) error {
+	if mode == "card" && noCard {
+		return &fulfillment.CVSError{Status: 422, Code: "card_unavailable"}
+	}
+	return nil
+}
+
+// CVS returns the buyer CVS surface, nil when not wired (routes then answer 404).
+func (s *Service) CVS() *BuyerCVS {
+	if s == nil {
+		return nil
+	}
+	return s.cvs
 }
 
 func New(ctx context.Context, checkoutPool *pgxpool.Pool, jobs *river.Client[pgx.Tx]) (*Service, error) {
@@ -82,6 +240,13 @@ func New(ctx context.Context, checkoutPool *pgxpool.Pool, jobs *river.Client[pgx
 func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Input) (Result, error) {
 	if ctx == nil || s == nil || s.pool == nil || s.jobs == nil || !checkoutKey.MatchString(key) || !validInput(in) {
 		return Result{}, command.ErrInvalid
+	}
+	mode := in.PaymentMode
+	if mode == "" {
+		mode = "card"
+	}
+	if mode == "card" {
+		in.PaymentMode = "" // "" == card: one canonical digest for both spellings
 	}
 	request, err := json.Marshal(in)
 	if err != nil {
@@ -105,6 +270,10 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			out = saved
 			return nil
 		}
+		// OP1: refuse a card order nobody can pay, after the receipt lookup so an exact replay of an already placed order still returns it.
+		if err = cardRefusal(mode, s.noCard); err != nil {
+			return err
+		}
 		if err = advisory(callCtx, tx, "checkout.cart|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.OwnerID); err != nil {
 			return err
 		}
@@ -115,7 +284,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		var active bool
 		err = tx.QueryRow(callCtx, `SELECT EXISTS(SELECT 1 FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2
 			AND owner_id=$3 AND cart_id=$4 AND cart_version=$5
-			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','CONFIRMED'))`,
+			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION'))`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion).Scan(&active)
 		if err != nil {
 			return err
@@ -139,11 +308,14 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err != nil {
 			return err
 		}
-		if service.Version != in.ServiceVersion || !service.Enabled || !service.Visible || service.Mode != "MANUAL" ||
+		// MANUAL services carry no binding; an API service (taiwan-cvs-logistics-v1 R-2) carries its ecpay_logistics binding, and
+		// begin_hold proves that binding belongs to the store's enabled qualified profile.
+		manual := service.Mode == "MANUAL" && service.BindingID == "" && service.BindingVersion == 0
+		api := service.Mode == "API" && service.BindingID != "" && service.BindingVersion > 0
+		if service.Version != in.ServiceVersion || !service.Enabled || !service.Visible || !(manual || api) ||
 			service.MarketID != quote.Policy.MarketID || service.Country != quote.Policy.Country ||
 			service.Currency != quote.Currency || service.PolicyMethod != quote.Policy.Method ||
-			service.PolicyVersion != quote.Policy.Version || service.DeliveryKind != destination.Kind ||
-			service.BindingID != "" || service.BindingVersion != 0 {
+			service.PolicyVersion != quote.Policy.Version || service.DeliveryKind != destination.Kind {
 			return command.ErrConflict
 		}
 		allocation, err := lockAllocation(callCtx, tx, scope, service.MarketID, service.Country, service.Code)
@@ -153,7 +325,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if allocation.Version != in.AllocationVersion || len(allocation.WarehouseIDs) == 0 {
 			return command.ErrConflict
 		}
-		plan, err := planLocked(callCtx, tx, allocation, quote)
+		plan, err := planLocked(callCtx, tx, scope, allocation, quote)
 		if err != nil {
 			return err
 		}
@@ -178,7 +350,12 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err != nil {
 			return err
 		}
-		snapshotJSON, err := json.Marshal(Snapshot{Quote: quote, Destination: destination, Service: service, Allocation: allocation})
+		snapshot := Snapshot{Quote: quote, Destination: destination, Service: service, Allocation: allocation}
+		if mode == "cash_on_delivery" {
+			// P2-1: pass the surcharge the buyer was shown through as the 5th snapshot key (begin_hold re-checks it, PT409 on change).
+			snapshot.ExpectedCodSurchargeMinor = in.ExpectedCodSurchargeMinor
+		}
+		snapshotJSON, err := json.Marshal(snapshot)
 		if err != nil {
 			return command.ErrInvalid
 		}
@@ -187,17 +364,74 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			return command.ErrInvalid
 		}
 		var response []byte
-		err = tx.QueryRow(callCtx, `SELECT checkout.begin_hold($1,$2::uuid,$3,$4,$5::uuid,$6::jsonb,$7::jsonb,$8::bigint)`,
-			tokenHash[:], storeID, key, digest[:], orderID, string(snapshotJSON), string(linesJSON), job.Job.ID).Scan(&response)
+		// checkout.begin_hold (post_river/0017, 10 arguments): the deployment payment environment pins the ECPay environment and
+		// the payment mode selects the pay-at-pickup branch (§16.2); every CVS refusal is a PT422/PT429 with zero holds.
+		err = tx.QueryRow(callCtx, `SELECT checkout.begin_hold($1,$2::uuid,$3,$4,$5::uuid,$6::jsonb,$7::jsonb,$8::bigint,$9,$10)`,
+			tokenHash[:], storeID, key, digest[:], orderID, string(snapshotJSON), string(linesJSON), job.Job.ID,
+			s.paymentEnv, mode).Scan(&response)
 		if err != nil {
 			return err
 		}
 		if err = json.Unmarshal(response, &out); err != nil {
 			return command.ErrConflict
 		}
+		command.InLocalTime(&out) // same location as row-scanned reads/replays
 		if out.OrderID != orderID || out.ReservationID != orderID || out.Generation != 1 ||
-			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || out.ExpiresAt.After(now.Add(holdDuration+5*time.Second)) {
+			out.JobID != job.Job.ID || !out.ExpiresAt.After(now) || !holdWithinBounds(mode, now, out.ExpiresAt) ||
+			out.PaymentMode != mode || out.CommercialState != commercialAtPlacement(mode) {
 			return command.ErrConflict
+		}
+		// R4S-01 (0105): the claimed quantity behind every live-priced line is consumed in this same transaction, so a second order can
+		// never re-use it; a PT409 (taken meanwhile) rolls the order, hold, expiry job and receipt back and the buyer re-quotes.
+		if err = storefront.ConsumeLivePrices(callCtx, tx, quote, orderID); err != nil {
+			return err
+		}
+		// orders.freeze_attribution (0113): same transaction, no mutation of retained order snapshots.
+		var touch, signals any
+		if in.AdTouch != nil {
+			// R9: malformed optional measurement is discarded, never a checkout error.
+			if raw, e := json.Marshal(in.AdTouch); e == nil {
+				touch = string(raw)
+			}
+		}
+		if in.AdSignals != nil {
+			if raw, e := json.Marshal(in.AdSignals); e == nil {
+				signals = string(raw)
+			}
+		}
+		if _, err = tx.Exec(callCtx, `SELECT orders.freeze_attribution($1::bytea,$2::uuid,$3::uuid,$4::jsonb,$5::text,$6::jsonb)`,
+			tokenHash[:], storeID, orderID, touch, ValidClientIP(in.ClientIP), signals); err != nil {
+			return err
+		}
+		if in.BuyerEmail != "" {
+			// checkout.set_order_buyer_email: same transaction as the placement, so a rolled-back Begin leaves no email and a replay (receipt
+			// above) never re-attaches one. The expiry job above stays 15 minutes: expire_held answers NOT_DUE with the real due time.
+			if _, err = tx.Exec(callCtx, `SELECT checkout.set_order_buyer_email($1,$2::uuid,$3::uuid,$4)`,
+				tokenHash[:], storeID, orderID, in.BuyerEmail); err != nil {
+				return err
+			}
+		}
+		{
+			// checkout.set_order_locale (0097): persist the buyer's locale in the same placement transaction so buyer notification
+			// mails render in the buyer's language (notify.claim_batch -> Payload.Locale -> notify.localeOf). An empty input means
+			// the zh-TW default (notify.DefaultLocale); set once by the creating session, like the email above.
+			locale := in.Locale
+			if locale == "" {
+				locale = "zh-TW"
+			}
+			if _, err = tx.Exec(callCtx, `SELECT checkout.set_order_locale($1,$2::uuid,$3::uuid,$4)`,
+				tokenHash[:], storeID, orderID, locale); err != nil {
+				return err
+			}
+		}
+		if quote.Promotion != nil {
+			// storefront-v2 §F: promotions.redeem is the authoritative, locking usage check + redemption insert. It runs AFTER begin_hold
+			// (the order row it joins must exist) and in this same transaction: a refusal (promo_changed / promo_used_up / promo_expired ...)
+			// is a PT422 that rolls the order, the stock hold, the expiry job and the receipt back together, and the buyer re-quotes.
+			// Not retried: the refusal is a fact about the code, a retry with the same key would get the same answer.
+			if err = promotions.Redeem(callCtx, tx, tokenHash[:], storeID, orderID, in.BuyerEmail, destination.Phone); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -216,11 +450,16 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 	tokenHash := sha256.Sum256([]byte(token))
 	err := buyer.WithScope(ctx, s.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
 		var snapshotJSON []byte
+		var codSurcharge *int64
+		var codCarrier *string
+		var totalMinor int64
 		err := tx.QueryRow(callCtx, `SELECT id::text,id::text,generation,expires_at,job_id,
-			commercial_state,fulfillment_state,snapshot FROM checkout.orders
+			commercial_state,fulfillment_state,snapshot,payment_mode,collection_state,
+			cod_surcharge_minor,cod_carrier,total_minor FROM checkout.orders
 			WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`,
 			scope.TenantID, scope.StoreID, scope.OwnerID, orderID).Scan(&out.OrderID, &out.ReservationID,
-			&out.Generation, &out.ExpiresAt, &out.JobID, &out.CommercialState, &out.FulfillmentState, &snapshotJSON)
+			&out.Generation, &out.ExpiresAt, &out.JobID, &out.CommercialState, &out.FulfillmentState, &snapshotJSON,
+			&out.PaymentMode, &out.CollectionState, &codSurcharge, &codCarrier, &totalMinor)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return command.ErrNotFound
 		}
@@ -230,9 +469,61 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 		if err = json.Unmarshal(snapshotJSON, &out.Snapshot); err != nil {
 			return command.ErrConflict
 		}
+		// The snapshot is SQL-built JSON; align it with pgx-scanned quote reads.
+		command.InLocalTime(&out.Snapshot)
 		if out.OrderID != orderID || out.Generation < 1 || out.JobID < 1 ||
 			out.Snapshot.Quote.ID == "" || out.Snapshot.Destination.ID == "" {
 			return command.ErrConflict
+		}
+		// fulfillment.manual_shipment_*: buyer RLS (owner scope) and column grants (0063) hide the
+		// merchant-only columns; only a SHIPPED head is shown, a voided head reads as null.
+		var shipment BuyerShipment
+		err = tx.QueryRow(callCtx, `SELECT v.status,v.carrier_code,v.carrier_name,v.tracking_number,v.tracking_url,v.recorded_at
+			FROM fulfillment.manual_shipment_heads h JOIN fulfillment.manual_shipment_versions v
+			 ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.order_id=h.order_id AND v.version=h.current_version
+			WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.owner_id=$3 AND h.order_id=$4 AND v.status='SHIPPED'`,
+			scope.TenantID, scope.StoreID, scope.OwnerID, orderID).Scan(&shipment.Status, &shipment.CarrierCode,
+			&shipment.CarrierName, &shipment.TrackingNumber, &shipment.TrackingURL, &shipment.RecordedAt)
+		if err == nil {
+			shipment.RecordedAt = shipment.RecordedAt.UTC()
+			out.Shipment = &shipment
+		} else if !errors.Is(err, pgx.ErrNoRows) {
+			return err
+		}
+		// The deferred 0063 guard makes MERCHANT_SHIPPED <=> SHIPPED head; a disagreement is drift, not data.
+		if (out.Shipment != nil) != (out.FulfillmentState == "MERCHANT_SHIPPED") {
+			return command.ErrConflict
+		}
+		// fulfillment.read_buyer_cvs_shipment: the current ECPay attempt as the buyer may see it (no trade no, codes or ids).
+		var cvsRaw []byte
+		if err = tx.QueryRow(callCtx, `SELECT fulfillment.read_buyer_cvs_shipment($1,$2::uuid,$3::uuid)`,
+			tokenHash[:], storeID, orderID).Scan(&cvsRaw); err != nil {
+			return err
+		}
+		if len(cvsRaw) > 0 {
+			var view BuyerCVSShipment
+			if err = json.Unmarshal(cvsRaw, &view); err != nil || view.State == "" || view.Chain == "" || view.UpdatedAt.IsZero() {
+				return command.ErrConflict
+			}
+			view.UpdatedAt = view.UpdatedAt.UTC()
+			out.CVSShipment = &view
+		}
+		// payment_mode <=> collection_state (orders_payment_collection CHECK): only pay_at_pickup and cash_on_delivery carry one; card and
+		// bank_transfer never do.
+		if (out.PaymentMode != "card" && out.PaymentMode != "pay_at_pickup" && out.PaymentMode != "bank_transfer" && out.PaymentMode != "cash_on_delivery") ||
+			(out.PaymentMode == "pay_at_pickup" || out.PaymentMode == "cash_on_delivery") != (out.CollectionState != nil) {
+			return command.ErrConflict
+		}
+		// home-cod R5: the cash due on delivery is total_minor + cod_surcharge_minor for a COD order, and the carrier label is the
+		// placement-time snapshot (black_cat/hsinchu). All three are server-computed and a COD order always has the surcharge and
+		// carrier columns set (orders_cod_surcharge / orders_cod_carrier CHECKs), so a nil is drift; never derived from current settings.
+		if out.PaymentMode == "cash_on_delivery" {
+			if codSurcharge == nil || codCarrier == nil || (*codCarrier != "black_cat" && *codCarrier != "hsinchu") {
+				return command.ErrConflict
+			}
+			out.CodSurchargeMinor = *codSurcharge
+			out.CodCollectMinor = totalMinor + *codSurcharge
+			out.CodCarrier = codCarrier
 		}
 		return checkCapability(callCtx, tx, tokenHash[:], storeID, scope)
 	})
@@ -244,7 +535,56 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 
 func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
-		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0
+		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
+		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer" || in.PaymentMode == "cash_on_delivery") &&
+		validBuyerEmail(in.BuyerEmail) && validLocale(in.Locale)
+}
+
+// validLocale admits "" (the field is optional; the order then persists the zh-TW default) or exactly one of the
+// three storefront locales. The SQL CHECK on orders.locale and the NOT-NULL guard in checkout.set_order_locale are the twins.
+func validLocale(locale string) bool {
+	switch locale {
+	case "", "zh-CN", "zh-TW", "en":
+		return true
+	}
+	return false
+}
+
+// validBuyerEmail admits "" (the field is optional) or one plain address of at most 254 bytes: net/mail must parse it and return it
+// unchanged, so a display name, angle brackets, comments or surrounding space are all refused. The SQL CHECK on orders.buyer_email is the twin.
+func validBuyerEmail(email string) bool {
+	if email == "" {
+		return true
+	}
+	if len(email) > 254 || strings.ContainsAny(email, " \t\r\n<>(),;:\"") {
+		return false
+	}
+	addr, err := mail.ParseAddress(email)
+	return err == nil && addr.Address == email && addr.Name == ""
+}
+
+// holdWithinBounds checks begin_hold's answer: 15 minutes for card/pay_at_pickup, the 6..168 h window for bank_transfer.
+func holdWithinBounds(mode string, now, expires time.Time) bool {
+	if mode == "bank_transfer" {
+		return !expires.Before(now.Add(minTransferHold-5*time.Second)) && !expires.After(now.Add(maxTransferHold+5*time.Second))
+	}
+	return !expires.After(now.Add(holdDuration + 5*time.Second))
+}
+
+// commercialAtPlacement is the order state begin_hold writes: pay_at_pickup orders are CONFIRMED at placement (§16.2, no Stripe
+// session); bank_transfer orders wait AWAITING_TRANSFER for the merchant (never auto-confirmed); cash_on_delivery orders wait
+// AWAITING_COLLECTION for the carrier's delivery (home-cod R5, never CONFIRMED); card orders start DRAFT and are confirmed by the
+// captured payment.
+func commercialAtPlacement(mode string) string {
+	switch mode {
+	case "pay_at_pickup":
+		return "CONFIRMED"
+	case "bank_transfer":
+		return "AWAITING_TRANSFER"
+	case "cash_on_delivery":
+		return "AWAITING_COLLECTION"
+	}
+	return "DRAFT"
 }
 
 func readReceipt(ctx context.Context, tx pgx.Tx, scope buyer.Scope, key string, digest [32]byte) (Result, bool, error) {
@@ -266,6 +606,11 @@ func readReceipt(ctx context.Context, tx pgx.Tx, scope buyer.Scope, key string, 
 		out.ReservationID != out.OrderID || out.Generation < 1 || out.JobID < 1 || out.ExpiresAt.IsZero() {
 		return Result{}, false, command.ErrConflict
 	}
+	// Receipts written before the CVS migration carry neither key: they are card orders that started DRAFT.
+	if out.PaymentMode == "" {
+		out.PaymentMode, out.CommercialState = "card", "DRAFT"
+	}
+	command.InLocalTime(&out) // replay equals the first result on any host TZ
 	return out, true, nil
 }
 
@@ -300,9 +645,20 @@ func safeError(ctx context.Context, err error) error {
 			return known
 		}
 	}
+	var refusal *fulfillment.CVSError
+	if errors.As(err, &refusal) {
+		return err
+	}
+	var promo *promotions.Coded // §F: a coded promotion refusal reaches the buyer as its 422 promo_* code, not as "unavailable"
+	if errors.As(err, &promo) {
+		return err
+	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
+		case "PT422", "PT429":
+			// begin_hold / CVS definers: the fixed §-named message is the contract code (cvs_amount_exceeds, pay_at_pickup_limit ...).
+			return cvsRefusal(pgErr)
 		case "PT400":
 			return command.ErrInvalid
 		case "PT401":
@@ -312,6 +668,10 @@ func safeError(ctx context.Context, err error) error {
 		case "PT404":
 			return command.ErrNotFound
 		case "PT409":
+			// P2-1: a coded PT409 (cod_surcharge_changed) is a re-quote signal surfaced to the buyer, not a plain conflict.
+			if cvsCode.MatchString(pgErr.Message) {
+				return &fulfillment.CVSError{Status: 409, Code: pgErr.Message}
+			}
 			return command.ErrConflict
 		}
 	}
@@ -397,7 +757,7 @@ func lockAllocation(ctx context.Context, tx pgx.Tx, scope buyer.Scope, marketID,
 	return out, nil
 }
 
-func planLocked(ctx context.Context, tx pgx.Tx, allocation fulfillment.Allocation, quote storefront.Quote) ([]inventory.Line, error) {
+func planLocked(ctx context.Context, tx pgx.Tx, scope buyer.Scope, allocation fulfillment.Allocation, quote storefront.Quote) ([]inventory.Line, error) {
 	warehouses := sortedIDs(allocation.WarehouseIDs)
 	for _, id := range warehouses {
 		var active bool
@@ -409,11 +769,47 @@ func planLocked(ctx context.Context, tx pgx.Tx, allocation fulfillment.Allocatio
 			return nil, err
 		}
 	}
+	// A6: only tracked SKUs are locked and deducted; an untracked SKU stays in the quote but is absent from the plan,
+	// and its per-order cap (max_per_order) is enforced by checkout.begin_hold against the live SKU row (single, race-free
+	// authority). The tenant/store predicate is explicit (not RLS alone), so the tracked filter stays scoped even if the
+	// checkout_runtime_read policy drifts; it fails closed to an empty plan otherwise.
+	ids := make([]string, 0, len(quote.Lines))
+	for _, line := range quote.Lines {
+		ids = append(ids, line.SKUID)
+	}
+	tracked := make(map[string]bool, len(ids))
+	if len(ids) > 0 {
+		rows, err := tx.Query(ctx, `SELECT id::text FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND id=ANY($3::uuid[]) AND inventory_tracked`, scope.TenantID, scope.StoreID, ids)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			tracked[id] = true
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+	}
 	demands := make([]inventory.Demand, 0, len(quote.Lines))
 	skus := make([]string, 0, len(quote.Lines))
 	for _, line := range quote.Lines {
+		if !tracked[line.SKUID] {
+			continue
+		}
 		demands = append(demands, inventory.Demand{SKUID: line.SKUID, Quantity: line.Quantity})
 		skus = append(skus, line.SKUID)
+	}
+	if len(demands) == 0 {
+		// Every line is untracked: nothing to lock or deduct. The plan must stay a non-nil [] so begin_hold's
+		// jsonb_typeof(p_lines)='array' gate passes (a nil slice marshals to null).
+		return []inventory.Line{}, nil
 	}
 	sort.Strings(skus)
 	balances := make([]inventory.Balance, 0, len(warehouses)*len(skus))
@@ -442,3 +838,22 @@ func sortedIDs(ids []string) []string {
 	sort.Strings(out)
 	return out
 }
+
+// cvsRefusal maps a PT422/PT429 of the CVS-aware definers to a coded refusal the buyer HTTP layer classifies (unit default C7):
+// 422 with the message as code, or 429 with Retry-After 60. A message outside the code grammar is a plain invalid request.
+func cvsRefusal(pg *pgconn.PgError) error {
+	if pg.Code == "PT429" {
+		// A rate limit stays a 429 even when its message is not a code (same fallback as fulfillment.mapCVSError).
+		code := "rate_limited"
+		if cvsCode.MatchString(pg.Message) {
+			code = pg.Message
+		}
+		return &fulfillment.CVSError{Status: 429, Code: code, RetryAfter: 60}
+	}
+	if !cvsCode.MatchString(pg.Message) {
+		return command.ErrInvalid
+	}
+	return &fulfillment.CVSError{Status: 422, Code: pg.Message}
+}
+
+var cvsCode = regexp.MustCompile(`^[a-z][a-z0-9_]{2,59}$`)

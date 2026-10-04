@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+    meta_ads_harness_test.go:1001: count metadata ERROR: column "order_id" does not exist (SQLSTATE 42703)
+--- FAIL: TestAdsAttributionR10SignalsOnlyExcludedFromReports (22.87s)
+FAIL
+FAIL	livecommerce/tests/foundation	24.980s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

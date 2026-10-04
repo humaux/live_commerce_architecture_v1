@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR11AgedRetryAndFinalDaily
+    ads_attribution_r11_test.go:468: exec test setup: ERROR: draft frozen (SQLSTATE 23514)
+--- FAIL: TestAdsAttributionR11AgedRetryAndFinalDaily (3.05s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.042s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

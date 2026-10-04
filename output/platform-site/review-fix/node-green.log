@@ -1,0 +1,17 @@
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (1.058ms)
+✔ PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels (0.227917ms)
+✔ PS1 legal identity is one untranslated source (0.107959ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.696042ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.799791ms)
+✔ PS4 optional Meta verification value never has a fake default (0.129917ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.101709ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.60925ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (1.552541ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 118.501209

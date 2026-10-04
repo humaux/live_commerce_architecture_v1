@@ -1,0 +1,34 @@
+=== RUN   TestAdsAttributionR11UnknownClearsAllSignals
+--- PASS: TestAdsAttributionR11UnknownClearsAllSignals (5.19s)
+=== RUN   TestAdsAttributionR11SQLHashesEmail
+    ads_attribution_core_test.go:614: exec test setup: ERROR: new row for relation "orders" violates check constraint "orders_buyer_email_check" (SQLSTATE 23514)
+--- FAIL: TestAdsAttributionR11SQLHashesEmail (0.43s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:60: put_claim_source page: ERROR: duplicate key value violates unique constraint "claim_sources_one_active" (SQLSTATE 23505)
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (0.29s)
+=== RUN   TestAdsAttributionR11ClickLiveWindow
+--- PASS: TestAdsAttributionR11ClickLiveWindow (2.70s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+    ads_attribution_r11_test.go:185: no insights session roas must be explicit null: present=false value=<nil>
+--- FAIL: TestAdsAttributionR11UnknownDraft (0.28s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:254: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=5.002953708s status=503 bytes=138
+    ads_attribution_r11_test.go:256: report 5-second API deadline violated: status=503 elapsed=5.002953708s
+    ads_attribution_r11_test.go:254: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=5.004274541s status=503 bytes=138
+    ads_attribution_r11_test.go:256: report 5-second API deadline violated: status=503 elapsed=5.004274541s
+    ads_attribution_r11_test.go:284: REAL_PG direct runtime SQL elapsed=5.001931417s bytes=0 error=timeout: context deadline exceeded
+    ads_attribution_r11_test.go:286: runtime SQL deadline: timeout: context deadline exceeded
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (24.54s)
+=== RUN   TestAdsAttributionR11SessionCap
+--- PASS: TestAdsAttributionR11SessionCap (0.36s)
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+--- PASS: TestAdsAttributionR11OptionalBreakdownAndNull (2.13s)
+=== RUN   TestAdsAttributionR11PurgeNoStarvation
+--- PASS: TestAdsAttributionR11PurgeNoStarvation (1.31s)
+=== RUN   TestAdsAttributionR11AgedRetryAndFinalDaily
+    ads_attribution_r11_test.go:497: bounded aged retry days=[2026-09-25 00:00:00 +0000 UTC 2026-09-26 00:00:00 +0000 UTC 2026-09-27 00:00:00 +0000 UTC 2026-09-28 00:00:00 +0000 UTC 2026-10-01 00:00:00 +0000 UTC] found old=false count=4
+--- FAIL: TestAdsAttributionR11AgedRetryAndFinalDaily (2.17s)
+FAIL
+FAIL	livecommerce/tests/foundation	40.838s
+FAIL
+test-focused: top-level PASS=5 FAIL=5 SKIP=0 exit=1

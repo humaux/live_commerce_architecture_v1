@@ -1,0 +1,14 @@
+=== RUN   TestAdsAttributionR12UnknownReadCooldown
+    ads_attribution_r12_test.go:21: operation persisted UNKNOWN/reconcile_budget_exhausted/job=cancelled, want UNKNOWN (job [completed])
+--- FAIL: TestAdsAttributionR12UnknownReadCooldown (12.14s)
+=== RUN   TestAdsAttributionR12GrantAwareUnread
+=== RUN   TestAdsAttributionR12GrantAwareUnread/missing-read-insights
+=== RUN   TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot
+    ads_attribution_r12_test.go:54: audience status=not_authorized want=not_read
+--- FAIL: TestAdsAttributionR12GrantAwareUnread (0.53s)
+    --- PASS: TestAdsAttributionR12GrantAwareUnread/missing-read-insights (0.30s)
+    --- FAIL: TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot (0.23s)
+FAIL
+FAIL	livecommerce/tests/foundation	16.126s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

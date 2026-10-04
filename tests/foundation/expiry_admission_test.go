@@ -19,7 +19,7 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 	p := psSetupItemsOn(t, f, 1)
 	assertReady := func(t *testing.T, want bool) {
 		t.Helper()
-		client, err := checkout.NewExpiryClient(context.Background(), p.worker, 1)
+		client, err := checkout.NewExpiryClient(context.Background(), p.expiry, 1)
 		if want {
 			if client == nil || err != nil {
 				t.Fatalf("valid expiry router rejected: %v", err)
@@ -35,10 +35,10 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 		pool        *pgxpool.Pool
 		concurrency int
 	}{
-		{"nil context", nil, p.worker, 1},
+		{"nil context", nil, p.expiry, 1},
 		{"nil pool", context.Background(), nil, 1},
-		{"zero concurrency", context.Background(), p.worker, 0},
-		{"excess concurrency", context.Background(), p.worker, 17},
+		{"zero concurrency", context.Background(), p.expiry, 0},
+		{"excess concurrency", context.Background(), p.expiry, 17},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			client, err := checkout.NewExpiryClient(tc.ctx, tc.pool, tc.concurrency)
@@ -100,18 +100,18 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 		})
 	}
 	assertReady(t, true)
-	for _, role := range []string{"commerce_runtime", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_identity", "commerce_worker"} {
+	for _, role := range []string{"commerce_runtime", "commerce_checkout_runtime", "commerce_hosted_runtime", "commerce_buyer_runtime", "commerce_buyer_issuer", "commerce_identity", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		t.Run("authority "+role, func(t *testing.T) {
 			for _, signature := range []string{"checkout.expiry_job_linked(bigint)", "checkout.route_expiry_queue_v1()", "checkout.expiry_queue_ready()"} {
 				var allowed bool
 				if err := f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,$2,'EXECUTE')`, role, signature).Scan(&allowed); err != nil {
 					t.Fatal(err)
 				}
-				if allowed != (role == "commerce_worker" && signature == "checkout.expiry_queue_ready()") {
+				if allowed != (role == waExpiry && signature == "checkout.expiry_queue_ready()") {
 					t.Fatalf("unexpected EXECUTE %s %s", role, signature)
 				}
 			}
-			if role == "commerce_worker" {
+			if role == waExpiry {
 				return
 			}
 			pool, err := pgxpool.New(context.Background(), bcRole(t, f, role))
@@ -146,7 +146,7 @@ func TestBuyerCheckoutExpiryRuntimeAdmission(t *testing.T) {
 	 CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
 	 WHERE n.nspname='checkout' AND p.proname IN ('expiry_job_linked','route_expiry_queue_v1','expiry_queue_ready')
 	 AND a.privilege_type='EXECUTE' AND a.grantee<>p.proowner
-	 AND NOT (p.proname='expiry_queue_ready' AND a.grantee='commerce_worker'::regrole)`); n != 0 {
+	 AND NOT (p.proname='expiry_queue_ready' AND a.grantee='commerce_expiry_worker'::regrole)`); n != 0 {
 		t.Fatal("expiry functions grant PUBLIC or another unexpected principal EXECUTE")
 	}
 	t.Run("bounded audit", func(t *testing.T) {

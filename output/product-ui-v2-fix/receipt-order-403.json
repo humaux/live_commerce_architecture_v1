@@ -1,0 +1,10 @@
+{
+  "page": "order",
+  "control": "save/copy → retry → reload",
+  "denial": "403",
+  "expected": "one commit, original key retained, fresh write disabled",
+  "requests": 2,
+  "committed": 1,
+  "tier": "FAULT_INJECTED+REAL_PG",
+  "status": "PASS"
+}

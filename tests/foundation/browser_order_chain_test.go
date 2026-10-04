@@ -24,6 +24,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	}
 	h := bhSetup(t)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser order product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
+	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -132,7 +133,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			}
 			var disposition string
 			var retry *time.Time
-			e = h.worker.QueryRow(r.Context(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, id).Scan(&disposition, &retry)
+			e = h.expiry.QueryRow(r.Context(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, id).Scan(&disposition, &retry)
 			if e != nil || disposition != "EXPIRED" {
 				fail()
 				return

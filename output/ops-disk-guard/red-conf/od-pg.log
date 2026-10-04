@@ -1,0 +1,43 @@
+info: PG 18.6 (Debian 18.6-1.pgdg13+2) archive_timeout=1min archive_command=if test -f /backup/wal/%f; then cmp -s %p /backup/wal/%f; else cp %p /backup/wal/%f.part && sync /backup/wal/%f.part && mv /backup/wal/%f.part /backup/wal/%f; fi
+info: OD1 measuring for 130s (trickle writer + 3 forced switches); started 13:13:07Z
+od1.bootstrap_segments_excluded=2 bytes=33554432 (initdb + schema: real data, not steady state)
+od1.segments=5 gz=0 plain=5 total_bytes=83886080 avg_bytes_per_segment=16777216 window_s=130
+od1.projected_at_1_segment_per_minute_gb_per_day=24.1592 (uncompressed 16 MiB: 24.16)
+od1.projected_at_measured_rate_gb_per_day=55.7520
+PASS OD1 enough post-bootstrap segments archived to measure (>= 5)
+FAIL OD1 every archived WAL segment is compressed (.gz), none plain
+FAIL OD1 average archived bytes per segment < 200 KB (204800)
+PASS OD1 archiver failed_count = 0
+PASS OD1 archive_timeout is still 60s (RPO unchanged)
+FAIL OD1 no archived segment is still in pg_wal to re-archive
+PASS OD1 disk full: archive command fails (non-zero)
+PASS OD1 disk full: no .part and no target left behind
+PASS OD1 ... and the same segment archives once there is room
+info: OD2 base backup #1
+info: base1=20261004T131518Z start_segment=000000010000000000000009
+PASS OD2 the base backup's .backup label was archived as a plain file
+od2.replay_window_segments gz=0 plain=3 (from base start 000000010000000000000009) target_time=2026-10-04 13:15:22.577664+00
+FAIL OD2 the replay window really mixes both forms (>= 1 .gz and >= 1 plain)
+  | 2026-10-04T13:15:25Z pg-ops/restore-pitr base=20261004T131518Z target_time=2026-10-04 13:15:22.577664+00 scratch=/var/lib/postgresql/pitr/pgdata drill=1 promote=0 start
+  | 2026-10-04T13:15:25Z pg-ops/restore-pitr paused at_target=yes last_replayed_xact=2026-10-04 13:15:20.303986+00
+  | verify.result=PASS witness=1,2,3 (stub verify.sql: no application schema in this scratch DB)
+  | 2026-10-04T13:15:26Z pg-ops/restore-pitr base=20261004T131518Z duration_s=1 verify=PASS drill=1 result=ok
+  | pitr_duration_seconds=1
+PASS OD2 restore-pitr.sh --drill exits 0 (replay reached the target; witness rows 1,2,3 present, 4 absent)
+PASS OD2 log shows the paused-at-target verify
+info: OD3 negative control: legacy pg_archivecleanup (no -x .gz) on a synthetic mixed archive
+od3.negative_control_legacy_cleanup_leaves: 000000010000000000000001.gz 000000010000000000000003.00000028.backup 000000010000000000000003.gz 000000010000000000000005.gz 000000010000000000000006 000000010000000000000007.00000028.backup 000000010000000000000007.gz 000000010000000000000008 00000002.history 
+PASS OD3 negative control: the legacy command leaves the old .gz segments behind (unbounded growth)
+od3.new_cleanup_leaves: 000000010000000000000006 000000010000000000000007.00000028.backup 000000010000000000000007.gz 000000010000000000000008 00000002.history 
+PASS OD3 pg_archivecleanup -b -x .gz leaves exactly: >= cutoff (both forms), the newer .backup, .history
+info: OD3 base backups #2 and #3 (real basebackup.sh retention)
+od3.cutoff_segment=00000001000000000000000F bases_kept=2 before: gz_below_cutoff=0 plain_below_cutoff=6 files=12 after: files=8
+PASS OD3 two bases kept (LC_BASE_KEEP=2), the oldest was removed
+FAIL OD3 both forms were present below the cutoff before pruning (>= 1 .gz and >= 1 plain)
+PASS OD3 no segment (gz or plain) older than the oldest kept base's START segment is left
+PASS OD3 nothing at or after the cutoff was touched (every such file present before is present after, same size)
+PASS OD3 the timeline .history file survives
+PASS OD3 the .backup label of the pruned base is gone (< cutoff), the kept bases' labels stay (>= 2)
+PASS OD3 archiver still healthy at the end (failed_count 0)
+ops-disk-guard (pg): FAIL (5 failing checks)
+exit=1

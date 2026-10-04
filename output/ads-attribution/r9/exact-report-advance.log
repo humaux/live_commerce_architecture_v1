@@ -1,0 +1,5 @@
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+--- PASS: TestAdsAttributionAT4AT9ExactReport (23.01s)
+PASS
+ok  	livecommerce/tests/foundation	24.726s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

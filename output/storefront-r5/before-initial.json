@@ -1,0 +1,113 @@
+{
+  "phase": "before",
+  "tier": "MOCK",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "dpr": 2,
+  "path": "/zh-TW/products",
+  "runs": [
+    {
+      "sample": 0,
+      "imageBytes": 64754,
+      "lcpMs": 236,
+      "resources": [
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000129/abad06e7-b3f3-4dc2-8b3f-1926c3a381f6",
+          "bytes": 16599,
+          "status": 200,
+          "sha256": "80bc79e867fbbbccfbdc638c1481f81f5be1b092eed6c1419d629125baa823a2"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000128/ab6c9f60-3209-4b8f-828c-2b3cae10470a",
+          "bytes": 15710,
+          "status": 200,
+          "sha256": "85c1e937dec3ef5bae648757332a40cf6b9f7e6fafbb391115b07ad83573506c"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000127/a0423d35-8147-409a-8e3b-c43b5e2c0006",
+          "bytes": 15955,
+          "status": 200,
+          "sha256": "5855de8fa9f617924f6e17067582a93281c4d786290e1810d15979d68444240e"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000126/ad1f1fbd-d416-42b1-8963-bda23a92e462",
+          "bytes": 16490,
+          "status": 200,
+          "sha256": "c7020bc33550f593133e30b5b6626f404c7178f7dea64b99b34d0ca41a9466fb"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "sample": 1,
+      "imageBytes": 64754,
+      "lcpMs": 124,
+      "resources": [
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000129/abad06e7-b3f3-4dc2-8b3f-1926c3a381f6",
+          "bytes": 16599,
+          "status": 200,
+          "sha256": "80bc79e867fbbbccfbdc638c1481f81f5be1b092eed6c1419d629125baa823a2"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000128/ab6c9f60-3209-4b8f-828c-2b3cae10470a",
+          "bytes": 15710,
+          "status": 200,
+          "sha256": "85c1e937dec3ef5bae648757332a40cf6b9f7e6fafbb391115b07ad83573506c"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000127/a0423d35-8147-409a-8e3b-c43b5e2c0006",
+          "bytes": 15955,
+          "status": 200,
+          "sha256": "5855de8fa9f617924f6e17067582a93281c4d786290e1810d15979d68444240e"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000126/ad1f1fbd-d416-42b1-8963-bda23a92e462",
+          "bytes": 16490,
+          "status": 200,
+          "sha256": "c7020bc33550f593133e30b5b6626f404c7178f7dea64b99b34d0ca41a9466fb"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "sample": 2,
+      "imageBytes": 64754,
+      "lcpMs": 348,
+      "resources": [
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000129/abad06e7-b3f3-4dc2-8b3f-1926c3a381f6",
+          "bytes": 16599,
+          "status": 200,
+          "sha256": "80bc79e867fbbbccfbdc638c1481f81f5be1b092eed6c1419d629125baa823a2"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000128/ab6c9f60-3209-4b8f-828c-2b3cae10470a",
+          "bytes": 15710,
+          "status": 200,
+          "sha256": "85c1e937dec3ef5bae648757332a40cf6b9f7e6fafbb391115b07ad83573506c"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000127/a0423d35-8147-409a-8e3b-c43b5e2c0006",
+          "bytes": 15955,
+          "status": 200,
+          "sha256": "5855de8fa9f617924f6e17067582a93281c4d786290e1810d15979d68444240e"
+        },
+        {
+          "url": "/media/p/00000000-0000-4000-8000-000000000126/ad1f1fbd-d416-42b1-8963-bda23a92e462",
+          "bytes": 16490,
+          "status": 200,
+          "sha256": "c7020bc33550f593133e30b5b6626f404c7178f7dea64b99b34d0ca41a9466fb"
+        }
+      ],
+      "overflow": false
+    }
+  ],
+  "fixtureSHA256": "3634d2aea38ce21150a00946c082e299f76234b576a5a3f0d31c8cff29d2f764",
+  "pagePreflight": {
+    "status": 200,
+    "bytes": 54200
+  }
+}

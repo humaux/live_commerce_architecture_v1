@@ -1,0 +1,73 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.91s)
+=== RUN   TestMerchantOrdersAuthorityAndOnboarding
+--- PASS: TestMerchantOrdersAuthorityAndOnboarding (0.05s)
+=== RUN   TestMerchantOrdersUpgradeDoesNotBackfillOldMembership
+--- PASS: TestMerchantOrdersUpgradeDoesNotBackfillOldMembership (2.41s)
+=== RUN   TestMerchantOrdersSQLProjectionAndIsolation
+--- PASS: TestMerchantOrdersSQLProjectionAndIsolation (0.99s)
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revoked_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/expired_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_orders_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_store_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/membership_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revision_changed
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/principal_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/tenant_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/store_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_detail_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/foreign_detail_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/empty_list_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_revoked_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_missing_orders_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_empty_list_after_revoke
+--- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock (2.31s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revoked_session (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/expired_session (1.24s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_orders_grant (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_store_grant (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/membership_disabled (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revision_changed (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/principal_disabled (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/tenant_disabled (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/store_disabled (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_detail_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/foreign_detail_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/empty_list_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_revoked_session (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_missing_orders_grant (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_empty_list_after_revoke (0.04s)
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/pending
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/authorized
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/captured
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/review
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure
+--- PASS: TestMerchantOrdersActualPaymentAndExpiryStates (3.07s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/pending (0.53s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/authorized (0.76s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/captured (0.55s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/review (0.39s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft (0.43s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure (0.41s)
+=== RUN   TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects
+--- PASS: TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects (0.53s)
+=== RUN   TestMerchantOrdersFrozenHistoryAfterMutableEdits
+--- PASS: TestMerchantOrdersFrozenHistoryAfterMutableEdits (1.54s)
+=== RUN   TestMerchantOrdersV2LegacyDisplayFallback
+--- PASS: TestMerchantOrdersV2LegacyDisplayFallback (0.64s)
+=== RUN   TestMerchantOrdersV2TenThousandScopedSearch
+    merchant_orders_v2_perf_test.go:164: 10k 7654: n=10 p50=146.733667ms max=330.780959ms
+    merchant_orders_v2_perf_test.go:164: 10k SYNTHETIC-TRACK-7654: n=10 p50=98.803375ms max=163.323584ms
+--- PASS: TestMerchantOrdersV2TenThousandScopedSearch (23.46s)
+=== RUN   TestMerchantOrdersV2ReadContract
+--- PASS: TestMerchantOrdersV2ReadContract (0.88s)
+=== RUN   TestMerchantOrdersV2SearchStreamLimit
+--- PASS: TestMerchantOrdersV2SearchStreamLimit (0.00s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (11.86s)
+PASS
+ok  	livecommerce/tests/foundation	52.053s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0

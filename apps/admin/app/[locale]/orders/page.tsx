@@ -13,6 +13,7 @@ import type { Store } from "@/lib/model";
 import { canonicalCursor, canonicalUUID, orderStates, type OrderFilter } from "@/lib/orders-model";
 import type { OrderReadCode } from "@/lib/orders-client";
 import { MerchantOrders } from "@/components/MerchantOrders";
+import { emptyFilters, filterKeys, validOrderFilters, type OrderFilters } from "@/lib/orders-v2";
 
 export default async function OrdersPage({
   params,
@@ -24,14 +25,16 @@ export default async function OrdersPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
-  if (Object.keys(query).some((key) => !["store", "state", "order", "cursor"].includes(key))) notFound();
+  if (Object.keys(query).some((key) => key === "q" || !["store", "state", "order", "cursor", ...filterKeys].includes(key))) notFound();
   const single = (key: string) => {
     const value = query[key];
     if (value !== undefined && (typeof value !== "string" || value === "")) notFound();
     return value ?? "";
   };
   const requested = single("store");
-  const state = single("state") || "all";
+  const state = single("state") || "active";
+  const filters = { ...emptyFilters, ...Object.fromEntries(filterKeys.map((key) => [key, single(key) || emptyFilters[key]])) } as OrderFilters;
+  if (!validOrderFilters(filters)) notFound();
   const order = single("order");
   const cursor = single("cursor");
   if ((requested && !canonicalUUID.test(requested)) ||
@@ -60,7 +63,7 @@ export default async function OrdersPage({
       }
     }
   }
-  return <MerchantOrders locale={locale} stores={stores} store={store}
-    state={state as OrderFilter} order={order} cursor={cursor} initialError={error}
+  return <MerchantOrders locale={locale} store={store}
+    state={state as OrderFilter} filters={filters} order={order} cursor={cursor} initialError={error}
     renderKey={crypto.randomUUID()} />;
 }

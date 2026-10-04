@@ -1,0 +1,27 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (32.71525ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.196167ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.349375ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.078334ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.181083ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.104542ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 99.821125
+WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Studio.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StudioClaims.tsx: >500 lines
+WARN G-UI5 apps/admin/lib/ads-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/auth.ts: >500 lines
+WARN G-UI5 apps/admin/lib/catalog-v2-copy.ts: >500 lines
+WARN G-UI5 apps/storefront/components/CheckoutFlow.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/CvsPickup.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
+WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
+PASS G-UI3/G-UI5
+check-gates: ok (56 modes, all documented; every tracked test file is run)

@@ -1,0 +1,68 @@
+[
+  {
+    "control": "identity sign-in / mobile navigation",
+    "action": "click/assert",
+    "expected": "authenticated marketing navigation visible; mobile drawer closed",
+    "actual": "PASS"
+  },
+  {
+    "control": "ads-attribution-link",
+    "action": "click",
+    "expected": "report page",
+    "actual": "PASS"
+  },
+  {
+    "control": "from/to/apply",
+    "action": "fill/fill/click",
+    "expected": "fixture date window",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience/hourly/privacy facts",
+    "action": "read DOM",
+    "expected": "exact runner values, nulls unknown, no private strings",
+    "actual": "PASS"
+  },
+  {
+    "control": "draft/session",
+    "action": "selectOption/selectOption",
+    "expected": "exact fixture facts",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience-refresh",
+    "action": "click",
+    "expected": "queued",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience-refresh new read",
+    "action": "reload/click",
+    "expected": "queued survives reload, new explicit request gets new key",
+    "actual": "PASS"
+  },
+  {
+    "control": "URL filters",
+    "action": "reload",
+    "expected": "same window and selection",
+    "actual": "PASS"
+  },
+  {
+    "control": "invalid range",
+    "action": "fill/click",
+    "expected": "bounded-range error",
+    "actual": "PASS"
+  },
+  {
+    "control": "report tables",
+    "action": "measure",
+    "expected": "nonempty header text does not overlap; mobile local overflow is keyboard reachable",
+    "actual": "PASS"
+  },
+  {
+    "control": "attribution-back",
+    "action": "click",
+    "expected": "same store ads",
+    "actual": "PASS"
+  }
+]

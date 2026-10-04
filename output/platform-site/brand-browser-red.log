@@ -1,0 +1,36 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (369.538708ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.336166ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (3.986833ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.11475ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.206667ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (247.055375ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.157625ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 513.925292
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Public page title from registry
++ actual - expected
+
++ 'DaWan Live · Reset password'
+- 'Reset password'
+
+    at runShellGate (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/shell-browser.mjs:557:14)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/shell-runner.mjs:184:7 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'DaWan Live · Reset password',
+  expected: 'Reset password',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

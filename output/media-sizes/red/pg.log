@@ -1,0 +1,7 @@
+=== RUN   TestMediaSizesLifecycleAndIsolation
+    media_sizes_test.go:23: upload 500 {"code":"internal","message":"Request could not be completed.","request_id":"737552e66f84c2d9cf31f4999fdffdb9","retryable":false,"details":{}}
+--- FAIL: TestMediaSizesLifecycleAndIsolation (4.69s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.643s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

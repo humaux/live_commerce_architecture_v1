@@ -1,0 +1,65 @@
+✖ G3: same-series cards exclude the current product and never invent absent draft/foreign products (1.860209ms)
+✖ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.449625ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.715833
+
+✖ failing tests:
+
+test at apps/storefront/tests/storefront-r5.test.mjs:5:1
+✖ G3: same-series cards exclude the current product and never invent absent draft/foreign products (1.860209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + undefined
+  - [
+  -   {
+  -     id: 'sibling'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/apps/storefront/tests/storefront-r5.test.mjs:9:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ { id: 'sibling' } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/storefront-r5.test.mjs:13:1
+✖ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.449625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + undefined
+  - [
+  -   {
+  -     product_count: 3,
+  -     slug: 'tea'
+  -   }
+  - ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-r5/apps/storefront/tests/storefront-r5.test.mjs:16:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ { slug: 'tea', product_count: 3 } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

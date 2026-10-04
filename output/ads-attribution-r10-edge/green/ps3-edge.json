@@ -1,0 +1,292 @@
+{
+  "tier": "LOCAL Caddy TLS / MOCK upstream",
+  "cases": [
+    {
+      "url": "/",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/privacy",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/terms",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/data-deletion",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/contact",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/en",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/zh-CN/contact",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/robots.txt",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/sitemap.xml",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/_next/static/test.css",
+      "method": "GET",
+      "result": 200
+    },
+    {
+      "url": "/privacy/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/privacy/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/terms/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/terms/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/data-deletion/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/data-deletion/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/contact/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/contact?from=review&x=%2F"
+    },
+    {
+      "url": "/contact/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/contact?from=review&x=%2F"
+    },
+    {
+      "url": "/en/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/en?from=review&x=%2F"
+    },
+    {
+      "url": "/en/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/en?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-CN?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-CN?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-TW?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-TW?from=review&x=%2F"
+    },
+    {
+      "url": "/en/privacy/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/en/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/en/privacy/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/en/privacy?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/terms/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-CN/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-CN/terms/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-CN/terms?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/data-deletion/?from=review&x=%2F",
+      "method": "GET",
+      "result": 301,
+      "location": "/zh-TW/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/zh-TW/data-deletion/?from=review&x=%2F",
+      "method": "HEAD",
+      "result": 301,
+      "location": "/zh-TW/data-deletion?from=review&x=%2F"
+    },
+    {
+      "url": "/api/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/site/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/en/orders/",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/privacy//",
+      "method": "GET",
+      "result": 404
+    },
+    {
+      "url": "/privacy/",
+      "method": "POST",
+      "result": 404
+    },
+    {
+      "url": "/api",
+      "result": 404
+    },
+    {
+      "url": "/api/auth/login",
+      "result": 404
+    },
+    {
+      "url": "/api/auth/password/signup",
+      "result": 404
+    },
+    {
+      "url": "/api/stores",
+      "result": 404
+    },
+    {
+      "url": "/site/en/home",
+      "result": 404
+    },
+    {
+      "url": "/en/orders",
+      "result": 404
+    },
+    {
+      "url": "/en/../api/auth/login",
+      "result": 404
+    }
+  ],
+  "head": 200,
+  "post": 404,
+  "spoofedForwardedHost": 404,
+  "www": {
+    "status": 301,
+    "headers": {
+      "alt-svc": "h3=\":443\"; ma=2592000",
+      "location": "https://platform.localhost/en/privacy?from=review&x=1",
+      "strict-transport-security": "max-age=31536000",
+      "date": "Sun, 04 Oct 2026 02:57:53 GMT",
+      "content-length": "0"
+    },
+    "text": ""
+  },
+  "admin": 200,
+  "storefront": [
+    {
+      "label": "single",
+      "hostileXFF": "203.0.113.9",
+      "hostileXFH": "admin.localhost",
+      "peer": "172.17.0.1",
+      "status": 200,
+      "upstream": {
+        "host": "shop.localhost",
+        "xff": "172.17.0.1",
+        "xfh": "shop.localhost"
+      }
+    },
+    {
+      "label": "chain",
+      "hostileXFF": "203.0.113.9, 198.51.100.8",
+      "hostileXFH": "admin.localhost",
+      "peer": "172.17.0.1",
+      "status": 200,
+      "upstream": {
+        "host": "shop.localhost",
+        "xff": "172.17.0.1",
+        "xfh": "shop.localhost"
+      }
+    },
+    {
+      "label": "unknown-http-host-known-sni",
+      "hostileXFH": "shop.localhost",
+      "peer": "172.17.0.1",
+      "status": 404,
+      "upstream": {
+        "host": "unknown.localhost",
+        "xff": "172.17.0.1",
+        "xfh": "unknown.localhost"
+      },
+      "boundary": "MOCK allowlist rejection; no real BFF authority claim"
+    },
+    {
+      "label": "unknown-sni",
+      "host": "unknown.localhost",
+      "hostileXFH": "shop.localhost",
+      "result": "TLS_DENIED",
+      "observed": {
+        "code": "EPROTO",
+        "message": "write EPROTO 80BF080402000000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:../deps/openssl/openssl/ssl/record/rec_layer_s3.c:918:SSL alert number 80\n"
+      },
+      "boundary": "shipping on-demand TLS with no local ask service; not a domain-authorization service test"
+    }
+  ]
+}

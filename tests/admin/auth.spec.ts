@@ -82,6 +82,8 @@ const server = createServer(async (request, response) => {
           tenant_id: "22222222-2222-4222-8222-222222222222",
           store_id: storeID,
           warehouse_id: "33333333-3333-4333-8333-333333333333",
+          handle: "mock-store",
+          storefront_origin: "https://mock-store.xgdwm.com",
         }),
       );
       return;
@@ -170,6 +172,7 @@ async function chunkedOverflow() {
 test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation order", async ({
   page,
 }) => {
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const rejected = await page.request.post("/api/auth/login", {
     form: { locale: "zh-TW" },
     maxRedirects: 0,
@@ -180,6 +183,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(await chunkedOverflow()).toBe(422);
   expect(requests).toHaveLength(0);
 
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const started = await page.request.post("/api/auth/login", {
     form: { locale: "zh-TW" },
     headers: { Origin: publicOrigin },
@@ -206,6 +210,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(wrongIssuer.headers()["location"]).toBe("/zh-TW/?auth=failed");
   expect(requests).toHaveLength(beforeWrongIssuer);
 
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const restarted = await page.request.post("/api/auth/login", {
     form: { locale: "zh-TW" },
     headers: { Origin: publicOrigin },
@@ -265,6 +270,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(storesCall.headers["x-commerce-bff-key"]).toBeUndefined();
 
   const beforeBlockedWrite = requests.length;
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const blockedWrite = await page.request.post(
     `/api/stores/${storeID}/inventory/adjustments`,
     {
@@ -281,6 +287,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(requests).toHaveLength(beforeBlockedWrite);
 
   expect(csrf).toMatch(/^[A-Za-z0-9_-]{43}$/);
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const acceptedWrite = await page.request.post(
     `/api/stores/${storeID}/inventory/adjustments`,
     {
@@ -376,6 +383,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
     requests.slice(beforeForeignSetup).map((request) => request.path),
   ).toEqual(["/v1/admin/stores"]);
 
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const onboarding = await page.request.post("/api/onboarding/initial-store", {
     headers: {
       Origin: publicOrigin,
@@ -403,6 +411,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
     "warehouse_name",
   ]);
 
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const failedLogout = await page.request.post("/api/auth/logout", {
     headers: {
       Cookie: authorityCookie,
@@ -415,6 +424,7 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(failedLogout.status()).toBe(503);
   expect(failedLogout.headers()["set-cookie"]).toBeUndefined();
   failLogout = false;
+  // G-UI8 audit [FIXTURE/SETUP]: BFF protocol conformance with forged cookie/Origin/CSRF headers against the PROVIDER_MOCK; not UI acceptance (subject = Set-Cookie/redirect/CSRF headers)
   const logout = await page.request.post("/api/auth/logout", {
     headers: {
       Cookie: authorityCookie,

@@ -1,5 +1,7 @@
 // Causal gate: actual merchant UI -> admin BFF/Go/PG -> configured URL -> buyer
 // production Next. The only host mapping is this disposable TLS/CONNECT edge.
+import { openBuyerSession } from "./shop-helpers.mjs";
+import { createProductInEditor, selectLedgerRow } from "./merchant-product.mjs"; // stop-bleed D01: products are created in the editor
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -10,14 +12,17 @@ import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd(), evidence = process.env.LC_JOINT_EVIDENCE;
 const adminOrigin = process.env.COMMERCE_PUBLIC_ORIGIN, buyerOrigin = "https://buyer.example";
-assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(adminOrigin));
+// http://127.0.0.1 (chromium) or the https TLS front browserFront() builds for WebKit, which refuses `__Host-` cookies on http.
+assert(evidence && /^https?:\/\/127\.0\.0\.1:\d+$/.test(adminOrigin));
 assert(/^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_JOINT_CONTROL));
 const certDir = await mkdtemp(path.join(tmpdir(), "lc-merchant-buyer-edge-"));
 const children = new Set(), sockets = new Set(), logs = [];
+const running = child => child.exitCode === null && child.signalCode === null;
 let browser, edge, proxy, cases = 0;
 const pass = name => { cases++; console.log(`PASS ${name}`); };
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -58,7 +63,7 @@ async function startNext(app, port) {
   });
   children.add(child);
   for (let i = 0; i < 100; i++) {
-    if (child.exitCode !== null) throw new Error(`owned ${app} exited before readiness`);
+    if (!running(child)) throw new Error(`owned ${app} exited before readiness`);
     try {
       const response = await relay(port, {url: app === "admin" ? "/api/stores" : "/api/buyer/session", method: "GET", headers: {host: app === "admin" ? new URL(adminOrigin).host : "buyer.example"}});
       if (response.status === (app === "admin" ? 401 : 200)) return port;
@@ -97,41 +102,37 @@ try {
     }
   });
   const proxyPort = await listen(proxy);
-  browser = await chromium.launch({headless: true, proxy: {server: `http://127.0.0.1:${proxyPort}`, bypass: "127.0.0.1"}});
-  const context = await browser.newContext({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}});
+  browser = await launch({headless: true, proxy: {server: `http://127.0.0.1:${proxyPort}`, bypass: "127.0.0.1"}});
+  const context = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}}));
   const merchant = await context.newPage();
   const uiErrors = [];
-  context.on("page", page => page.on("pageerror", error => uiErrors.push(error.name)));
-  merchant.on("pageerror", error => uiErrors.push(error.name));
+  const uiError = error => { if (!isWebkitCancelledFetch(error)) uiErrors.push(`${error.name}: ${error.message}`.slice(0, 300)); }; // the text, not only the name, so a failure says which request/exception
+  context.on("page", page => page.on("pageerror", uiError));
+  merchant.on("pageerror", uiError);
   let sawIssuer = false;
   merchant.on("request", request => { if (new URL(request.url()).origin === process.env.COMMERCE_OIDC_ISSUER) sawIssuer = true; });
   await merchant.goto(`${adminOrigin}/en`);
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
-  await expect(merchant.getByRole("button", {name: "Add product", exact: true})).toBeVisible();
+  // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard and the product ledger (Add product, SKU rows, purchase entry) moved to /[locale]/inventory.
+  await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
+  await merchant.goto(`${adminOrigin}/en/inventory`);
+  // stop-bleed D01: "Add product" on the inventory page is a link to the full editor now (no inline quick-add panel)
+  await expect(merchant.getByRole("link", {name: "Add product", exact: true})).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Joint browser product ${Date.now()}`, code = `JOINT-${Date.now()}`;
-  await merchant.getByRole("button", {name: "Add product", exact: true}).click();
-  await merchant.getByRole("textbox", {name: "Product name", exact: true}).fill(name);
-  await merchant.getByRole("textbox", {name: "Description", exact: true}).fill("Synthetic merchant-created joint acceptance product");
-  const productResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${process.env.LC_JOINT_STORE}/products`);
-  await merchant.locator(".create-panel").getByRole("button", {name: "Add product", exact: true}).click();
-  const productReply = await productResponse; assert.equal(productReply.status(), 200); const product = await productReply.json();
-  await expect(merchant.getByRole("heading", {name: "Add first SKU", exact: true})).toBeVisible();
-  await merchant.getByRole("textbox", {name: "SKU code", exact: true}).fill(code);
-  await merchant.getByRole("spinbutton", {name: "Price in minor units", exact: true}).fill("12345");
-  const skuResponse = merchant.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${process.env.LC_JOINT_STORE}/skus`);
-  await merchant.locator(".create-panel").getByRole("button", {name: "Add first SKU", exact: true}).click();
-  const skuReply = await skuResponse; assert.equal(skuReply.status(), 200); const sku = await skuReply.json();
-  assert.equal(sku.product_id, product.id); assert.equal(sku.price_minor, 12345);
-  await expect(merchant.locator(".create-panel")).toHaveCount(0);
-  await expect(merchant.locator("tbody tr").filter({has: merchant.getByRole("button", {name, exact: true})}).locator(".available-value")).toHaveText("0");
+  // the product and its first SKU go through the product editor, the only creation UI (price typed in major units: 123.45 = 12345 minor)
+  const {product, sku} = await createProductInEditor(merchant, {adminOrigin, store: process.env.LC_JOINT_STORE, name, description: "Synthetic merchant-created joint acceptance product", code, price: "123.45"});
+  assert.equal(sku.price_minor, 12345);
+  // back on the stock ledger: the new product has zero balance, and its purchase entry is the buyer URL
+  const ledgerRow = await selectLedgerRow(merchant, {adminOrigin, code});
+  await expect(ledgerRow.locator(".available-value")).toHaveText("0");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(`${buyerOrigin}/en/products/${product.id}`);
   pass("signed MOCK IdP and actual merchant product/SKU saves returned real scoped receipts");
   const afterSaves = await control("facts");
   const locales = ["en", "zh-CN", "zh-TW"], urls = {};
   for (const locale of locales) {
     if (locale !== "en") {
-      await merchant.goto(`${adminOrigin}/${locale}`);
+      await merchant.goto(`${adminOrigin}/${locale}/inventory`);
       await merchant.getByRole("button", {name, exact: true}).click();
     }
     const input = merchant.getByTestId("purchase-entry").locator("input");
@@ -141,14 +142,14 @@ try {
     assert.equal(projected.status, 200);
     assert.deepEqual(projected.body, {product_id: product.id, locale, state: "configured", url: urls[locale]});
     // Actual document GET with scripts disabled models a link preview/crawler.
-    const crawler = await browser.newContext({ignoreHTTPSErrors: true, javaScriptEnabled: false});
+    const crawler = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, javaScriptEnabled: false}));
     const preview = await crawler.newPage();
     assert.equal((await preview.goto(urls[locale])).status(), 200);
     await crawler.close();
   }
   assert.deepEqual(await control("facts"), afterSaves);
   pass("all three configured locale URLs serve actual Next documents with zero crawler effects");
-  await merchant.goto(`${adminOrigin}/en`);
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await merchant.getByRole("button", {name, exact: true}).click();
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(urls.en);
   const buyer = await context.newPage();
@@ -158,25 +159,31 @@ try {
       // The real merchant Open control fresh-reads projection and navigates.
       await merchant.getByRole("button", {name: "Open purchase page", exact: true}).click();
       page = merchant;
-      await page.waitForURL(urls.en);
+      // the configured URL carries the product id; the storefront answers a permanent redirect to the slug page (landing on either is the buyer page)
+      await page.waitForURL(url => url.toString() === urls.en || url.toString().startsWith(`${buyerOrigin}/en/products/`));
     } else await page.goto(urls[locale]);
     await expect(page.getByRole("heading", {name, exact: true})).toBeVisible();
-    await expect(page.getByRole("radio", {name: code, exact: true})).toBeChecked();
-    await expect(page.getByRole("radio")).toHaveCount(1);
-    assert.equal(await page.getByRole("radio").inputValue(), sku.id);
-    await expect(page.locator(".unit-price")).toHaveText(new Intl.NumberFormat(locale, {style: "currency", currency: sku.currency}).format(123.45));
+    // Storefront shell: the merchant's single axis-less SKU is the product's one variant (no chips); the buy box names the SKU it would add.
+    await expect(page.getByRole("radio")).toHaveCount(0);
+    assert.equal(await page.getByTestId("product-buy").getAttribute("data-sku"), sku.id);
+    await expect(page.getByTestId("variant-price")).toHaveText(new Intl.NumberFormat(locale, {style: "currency", currency: sku.currency}).format(123.45));
+    await openBuyerSession(page); // the shell opens a buyer session at the first cart write, not on view: open it as the old page did on load
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (buyer session)
     const state = await page.evaluate(async () => (await fetch("/api/buyer/session")).json());
     assert.equal(state.state, "active");
+    // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change) (catalog)
     const catalog = await page.evaluate(async ({product, context}) => { const response = await fetch(`/api/buyer/catalog?product_id=${product}`, {headers: {"X-Buyer-Context": context}}); return {status: response.status, body: await response.json()}; }, {product: product.id, context: state.context});
     assert.equal(catalog.status, 200);
     assert.deepEqual(catalog.body.items.map(item => [item.product_id, item.sku_id, item.sku_code, item.price_minor, item.currency]), [[product.id, sku.id, code, 12345, sku.currency]]);
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     if (locale === "en") await page.screenshot({path: path.join(evidence, "buyer-from-merchant-mobile.png"), fullPage: true});
     pass(`${locale} exact configured URL has persisted product, SKU, price and mobile scope`);
   }
   await buyer.goto(`${buyerOrigin}/en/products/${process.env.LC_JOINT_FOREIGN_PRODUCT}`);
-  await expect(buyer.locator("main[aria-busy=false]")).toBeVisible();
-  await expect(buyer.getByRole("radio")).toHaveCount(0);
+  // a foreign tenant's product is the shell's 404 page (identical to unknown): no buy box, no product heading
+  await expect(buyer.getByTestId("not-found")).toBeVisible();
+  await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
   await expect(buyer.getByRole("heading", {name: "BCAT foreign product", exact: true})).toHaveCount(0);
   const foreign = await buyer.evaluate(async product => {
     const state = await (await fetch("/api/buyer/session")).json();
@@ -184,11 +191,13 @@ try {
     return {status: response.status, body: await response.json()};
   }, process.env.LC_JOINT_FOREIGN_PRODUCT);
   assert.equal(foreign.status, 200);
-  assert.deepEqual(foreign.body, {items: [], next_cursor: ""});
+  // isolation: no foreign item and no cursor. The catalog read also names the buyer's OWN store (store_name, a public field added by the catalog read since this gate was written).
+  assert.deepEqual({items: foreign.body.items, next_cursor: foreign.body.next_cursor}, {items: [], next_cursor: ""});
+  assert.equal(typeof foreign.body.store_name, "string");
   noPurchaseEffects(afterSaves, await control("facts"));
   pass("foreign tenant product is absent and viewing creates no purchase facts");
   await buyer.goto(urls.en);
-  await expect(buyer.getByRole("radio", {name: code, exact: true})).toBeChecked();
+  assert.equal(await buyer.getByTestId("product-buy").getAttribute("data-sku"), sku.id);
   const activeState = await buyer.evaluate(async () => (await fetch("/api/buyer/session")).json());
   assert.equal(activeState.state, "active");
   const beforeRevocation = await control("facts");
@@ -200,9 +209,11 @@ try {
   assert.equal(denied.status, 404, "valid existing buyer must hit publication denial");
   assert.equal(denied.body.code, "not_found");
   await buyer.reload();
-  await expect(buyer.locator("main").getByRole("alert")).toBeVisible();
-  await expect(buyer.getByRole("radio")).toHaveCount(0);
-  await merchant.goto(`${adminOrigin}/en`);
+  // unpublished: the storefront answers its not-found page and no product (buy box) renders
+  await expect(buyer.getByTestId("store-closed")).toBeVisible();
+  await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
+  assert.equal((await buyer.request.get(buyer.url())).status(), 404);
+  await merchant.goto(`${adminOrigin}/en/inventory`);
   await merchant.getByRole("button", {name, exact: true}).click();
   await expect(merchant.getByTestId("purchase-entry").getByRole("status")).toHaveText("No verified, published storefront address is available.");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveCount(0);
@@ -223,8 +234,10 @@ try {
   if (browser) await browser.close();
   for (const socket of sockets) socket.destroy();
   for (const server of [proxy, edge]) if (server) await new Promise(resolve => server.close(resolve));
-  for (const child of children) { if (child.exitCode === null) child.kill("SIGKILL"); }
-  for (const child of children) if (child.exitCode === null) await once(child, "exit");
+  // A child killed by a signal keeps exitCode === null (signalCode is set instead); awaiting "exit" for a
+  // child that already exited hangs until Node aborts with "unsettled top-level await" (exit 13).
+  for (const child of children) { if (running(child)) child.kill("SIGKILL"); }
+  for (const child of children) if (running(child)) await once(child, "exit");
   for (const log of logs) log.end();
   await rm(certDir, {recursive: true, force: true});
 }

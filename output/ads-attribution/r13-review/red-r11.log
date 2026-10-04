@@ -1,0 +1,29 @@
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/consented
+    ads_attribution_core_test.go:463: aggregate removed or single-send pseudonyms retained
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/refused
+    ads_attribution_core_test.go:463: aggregate removed or single-send pseudonyms retained
+--- FAIL: TestAdsAttributionAT2PayloadAndTerminalIP (2.57s)
+    --- FAIL: TestAdsAttributionAT2PayloadAndTerminalIP/consented (1.64s)
+    --- FAIL: TestAdsAttributionAT2PayloadAndTerminalIP/refused (0.93s)
+=== RUN   TestAdsAttributionR3NoOperationPurge
+=== RUN   TestAdsAttributionR3NoOperationPurge/no_consent
+    ads_attribution_core_test.go:525: no-operation cleanup retained single-send signals
+=== RUN   TestAdsAttributionR3NoOperationPurge/disabled
+    ads_attribution_core_test.go:525: no-operation cleanup retained single-send signals
+=== RUN   TestAdsAttributionR3NoOperationPurge/expired
+    ads_attribution_core_test.go:525: no-operation cleanup retained single-send signals
+=== RUN   TestAdsAttributionR3NoOperationPurge/cancelled
+    ads_attribution_core_test.go:525: no-operation cleanup retained single-send signals
+--- FAIL: TestAdsAttributionR3NoOperationPurge (1.83s)
+    --- FAIL: TestAdsAttributionR3NoOperationPurge/no_consent (0.42s)
+    --- FAIL: TestAdsAttributionR3NoOperationPurge/disabled (0.45s)
+    --- FAIL: TestAdsAttributionR3NoOperationPurge/expired (0.46s)
+    --- FAIL: TestAdsAttributionR3NoOperationPurge/cancelled (0.50s)
+=== RUN   TestAdsAttributionEmptyProjection
+    ads_attribution_projection_test.go:25: empty cohort invented data: {"drafts":[{"meta":{"purchases":null,"purchase_value_minor":null},"roas":null,"buyers":{"counties":[],"new_buyers":0,"top_products":[],"returning_buyers":0,"orders_per_minute":[],"average_order_minor":null},"orders":[],"currency":"TWD","draft_id":"e0022417-2c90-48c7-b81d-dbe08bcf19e7","template":"BOOST_POST","breakdowns":[],"source_ref":"7748613595517_513665642644","provisional":false,"spend_minor":0,"meta_account_timezone":null}],"window":{"to":"2026-10-04","from":"2026-10-04"},"sessions":[],"order_timezone":"Asia/Taipei"}
+--- FAIL: TestAdsAttributionEmptyProjection (0.13s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.080s
+FAIL
+test-focused: top-level PASS=0 FAIL=3 SKIP=0 exit=1

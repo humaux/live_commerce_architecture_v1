@@ -1,0 +1,8 @@
+
+> live-commerce-workspace@ typecheck:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui
+> pnpm --filter @live-commerce/admin typecheck
+
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/apps/admin
+> tsc --noEmit
+

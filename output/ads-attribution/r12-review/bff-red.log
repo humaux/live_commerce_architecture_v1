@@ -1,0 +1,27 @@
+✔ disabled and invalid configuration fail closed before private fetch (17.415291ms)
+✔ private authority, cookie lifecycle and strict local denial (10.345333ms)
+✔ bad host, cookie, query and method never reach private API (1.097042ms)
+✔ stalled inbound POST body is canceled at its deadline without a cookie or private call (1.376375ms)
+✖ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (1.265291ms)
+✔ CVS BFF: exact routes, keyed open/store, keyless verify, validated answers, no generic proxy (4.085875ms)
+✔ CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a definite (non-retryable) 429 (1.908375ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 132.127583
+
+✖ failing tests:
+
+test at apps/storefront/tests/buyer-server.test.mjs:347:1
+✖ R10: Begin forwards independently signed signals; browser attribution and forwarded hosts are not authority (1.265291ms)
+  TypeError [ERR_INVALID_ARG_TYPE]: The first argument must be of type string or an instance of Buffer, ArrayBuffer, or Array or an Array-like Object. Received null
+      at Buffer.from (node:buffer:362:9)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/buyer-server.test.mjs:378:44)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'ERR_INVALID_ARG_TYPE'
+  }

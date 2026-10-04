@@ -1,0 +1,68 @@
+=== RUN   TestAdsAttributionR10PaidOnlyMixedCohort
+    ads_attribution_r10_test.go:92: actual audience plan=503
+--- FAIL: TestAdsAttributionR10PaidOnlyMixedCohort (20.39s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:35: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"9b79f00fe70e20393559c2a53115d1d1","retryable":true,"details":{}}
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (0.32s)
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/card
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/cash_on_delivery
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/bank_transfer
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/pay_at_pickup
+--- PASS: TestAdsAttributionR12PaymentSignalMinimization (16.67s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/card (4.11s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/cash_on_delivery (4.22s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/bank_transfer (4.17s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/pay_at_pickup (4.17s)
+=== RUN   TestAdsAttributionR12UnknownReadCooldown
+    ads_attribution_r12_test.go:19: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"6d9599de5b1e56da576095baf9a5efaf","retryable":true,"details":{}}
+--- FAIL: TestAdsAttributionR12UnknownReadCooldown (0.29s)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip()
+--- PASS: TestAdsAttributionR12CheckoutDefinerACL (0.22s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip() (0.00s)
+=== RUN   TestAdsAttributionR12GrantAwareUnread
+=== RUN   TestAdsAttributionR12GrantAwareUnread/missing-read-insights
+=== RUN   TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot
+    ads_attribution_r12_test.go:93: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"f62434f6014f5458b6e207fc4ca7fb66","retryable":true,"details":{}}
+--- FAIL: TestAdsAttributionR12GrantAwareUnread (0.45s)
+    --- PASS: TestAdsAttributionR12GrantAwareUnread/missing-read-insights (0.22s)
+    --- FAIL: TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot (0.22s)
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/READY
+    ads_attribution_r12_test.go:108: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"46a4c52b18f82fbf64577745eb3d2eee","retryable":true,"details":{}}
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING
+    ads_attribution_r12_test.go:108: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"f24ca1e280f3a05722b154ebe8c6635a","retryable":true,"details":{}}
+--- FAIL: TestAdsAttributionR12AudienceLeaseBoundary (0.43s)
+    --- FAIL: TestAdsAttributionR12AudienceLeaseBoundary/READY (0.22s)
+    --- FAIL: TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING (0.21s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:585: actual audience plan=503
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (20.87s)
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+    ads_attribution_signals_test.go:95: actual audience plan=503
+--- FAIL: TestAdsAttributionR10SignalsOnlyExcludedFromReports (20.68s)
+FAIL
+FAIL	livecommerce/tests/foundation	82.379s
+FAIL
+test-focused: top-level PASS=2 FAIL=7 SKIP=0 exit=1

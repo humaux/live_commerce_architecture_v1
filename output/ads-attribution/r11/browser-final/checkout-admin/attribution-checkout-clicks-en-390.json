@@ -1,0 +1,38 @@
+[
+  {
+    "control": "identity sign-in / mobile navigation",
+    "action": "click/open/assert/close",
+    "expected": "authenticated marketing navigation visible; mobile drawer closed",
+    "actual": "PASS"
+  },
+  {
+    "control": "ads-attribution-link",
+    "action": "click",
+    "expected": "same-store report",
+    "actual": "PASS"
+  },
+  {
+    "control": "from/to/apply",
+    "action": "fill/fill/click",
+    "expected": "authoritative checkout date window",
+    "actual": "PASS"
+  },
+  {
+    "control": "attribution-draft",
+    "action": "selectOption/read DOM",
+    "expected": "ad_click orders exactly 6, net_minor exactly 0; separate Meta totals",
+    "actual": "PASS"
+  },
+  {
+    "control": "URL filter recovery",
+    "action": "reload",
+    "expected": "same draft and exact six-order facts",
+    "actual": "PASS"
+  },
+  {
+    "control": "attribution-back",
+    "action": "click",
+    "expected": "same-store ads",
+    "actual": "PASS"
+  }
+]

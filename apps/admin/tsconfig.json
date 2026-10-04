@@ -3,6 +3,7 @@
     "target": "ES2023",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": false,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
@@ -14,7 +15,7 @@
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./*"] }
+    "paths": { "@/*": ["./*"], "@live-commerce/markdown-lite": ["../../packages/markdown-lite/src/index.ts"] }
   },
   "include": [
     "next-env.d.ts",

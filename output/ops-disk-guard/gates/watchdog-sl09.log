@@ -1,0 +1,61 @@
+=== RUN   TestStripeSL09Watchdog
+    stripe_live_watchdog_test.go:188: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_watchdog_test.go:192: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_watchdog_test.go:207: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:208: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:212: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:213: OWNER-POOL: ten SANDBOX QUARANTINED receipts (noise for the LIVE-only W11e)
+    stripe_live_watchdog_test.go:227: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:229: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:229: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:236: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:238: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+=== RUN   TestStripeSL09Watchdog/baseline_is_green_and_ignores_SANDBOX
+=== RUN   TestStripeSL09Watchdog/W11a_unknown_operation_older_than_60_minutes
+    stripe_live_watchdog_test.go:249: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:253: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:256: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:258: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+=== RUN   TestStripeSL09Watchdog/W11b_review_case_on_a_LIVE_attempt_in_the_last_24_hours
+    stripe_live_watchdog_test.go:263: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:268: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.review_cases SET
+=== RUN   TestStripeSL09Watchdog/W11c_work_item_in_REVIEW_REQUIRED
+    stripe_live_watchdog_test.go:275: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:279: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:286: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.review_cases SET
+    stripe_live_watchdog_test.go:288: OWNER-POOL: replica-mode tamper/restore: UPDATE fulfillment.payment_work_items SET
+=== RUN   TestStripeSL09Watchdog/W11d_refund_without_a_terminal_fact_or_refund_review
+    stripe_live_watchdog_test.go:293: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_refunds SET
+    stripe_live_watchdog_test.go:295: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_watchdog_test.go:296: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:302: OWNER-POOL: payments.review_cases REFUND_HISTORY (aged 3 days) and its removal
+    stripe_live_watchdog_test.go:310: OWNER-POOL: replica-mode tamper/restore: DELETE FROM payments.review_cases
+=== RUN   TestStripeSL09Watchdog/W11e_quarantined_or_ignored_LIVE_receipts_in_the_last_hour
+    stripe_live_watchdog_test.go:328: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.stripe_webhook_receipts SET
+=== RUN   TestStripeSL09Watchdog/W11a_a_settled_LIVE_payment_and_refund_are_not_trouble
+    stripe_live_watchdog_test.go:339: OWNER-POOL: payments.stripe_sessions session + payment intent pin
+    stripe_live_watchdog_test.go:339: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:345: OWNER-POOL: payments.stripe_refunds Stripe refund pin
+    stripe_live_watchdog_test.go:346: OWNER-POOL: payments.provider_observations report
+    stripe_live_watchdog_test.go:367: settled operation state=UNKNOWN result_code=stripe_terminal_observed (what the worker leaves behind)
+    stripe_live_watchdog_test.go:368: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:367: settled operation state=UNKNOWN result_code=stripe_refund_terminal (what the worker leaves behind)
+    stripe_live_watchdog_test.go:368: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:371: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+    stripe_live_watchdog_test.go:371: OWNER-POOL: replica-mode tamper/restore: UPDATE integration.operations SET
+=== RUN   TestStripeSL09Watchdog/W11f_LIVE_endpoint_disabled_while_the_method_is_open
+=== RUN   TestStripeSL09Watchdog/threshold_overrides_are_validated_integers
+--- PASS: TestStripeSL09Watchdog (16.09s)
+    --- PASS: TestStripeSL09Watchdog/baseline_is_green_and_ignores_SANDBOX (0.50s)
+    --- PASS: TestStripeSL09Watchdog/W11a_unknown_operation_older_than_60_minutes (1.94s)
+    --- PASS: TestStripeSL09Watchdog/W11b_review_case_on_a_LIVE_attempt_in_the_last_24_hours (1.04s)
+    --- PASS: TestStripeSL09Watchdog/W11c_work_item_in_REVIEW_REQUIRED (0.70s)
+    --- PASS: TestStripeSL09Watchdog/W11d_refund_without_a_terminal_fact_or_refund_review (3.02s)
+    --- PASS: TestStripeSL09Watchdog/W11e_quarantined_or_ignored_LIVE_receipts_in_the_last_hour (1.92s)
+    --- PASS: TestStripeSL09Watchdog/W11a_a_settled_LIVE_payment_and_refund_are_not_trouble (0.66s)
+    --- PASS: TestStripeSL09Watchdog/W11f_LIVE_endpoint_disabled_while_the_method_is_open (0.81s)
+    --- PASS: TestStripeSL09Watchdog/threshold_overrides_are_validated_integers (1.02s)
+PASS
+ok  	livecommerce/tests/foundation	18.466s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+exit=0

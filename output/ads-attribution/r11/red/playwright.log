@@ -1,0 +1,50 @@
+
+Running 6 tests using 1 worker
+
+(node:85036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks en 390 (2.6s)
+  ✘  2 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks en 1586 (1.0s)
+  -  3 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks zh-TW 390
+  -  4 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks zh-TW 1586
+  -  5 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks zh-CN 390
+  -  6 tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks zh-CN 1586
+
+
+  1) tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks en 1586 ──────────────────
+
+    Error: Header text overlaps: Net revenue after refunds / Uncollected orders
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 713.984375
+    Received:    755.4375
+
+      318 |           cells[index - 1].right,
+      319 |           `Header text overlaps: ${cells[index - 1].text} / ${cell.text}`,
+    > 320 |         ).toBeLessThanOrEqual(cell.left);
+          |           ^
+      321 |     }
+      322 |   }
+      323 |   if (width === 390) {
+        at tableLayout (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.spec.ts:320:11)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.spec.ts:518:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261004T011825.574574000/results/attribution-AT7-AT9-actual-report-clicks-en-1586/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ads-attribution-report/20261004T011825.574574000/results/attribution-AT7-AT9-actual-report-clicks-en-1586/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261004T011825.574574000/results/attribution-AT7-AT9-actual-report-clicks-en-1586/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ads-attribution-report/20261004T011825.574574000/results/attribution-AT7-AT9-actual-report-clicks-en-1586/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/attribution.spec.ts:368:5 › AT7/AT9 actual report clicks en 1586 ───────────────────
+  4 did not run
+  1 passed (4.2s)

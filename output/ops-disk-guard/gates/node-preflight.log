@@ -1,0 +1,44 @@
+✔ positive control: a complete, valid configuration raises no META_LOGIN finding (1251.073875ms)
+✔ feature off (COMMERCE_META_LOGIN_CONFIG_ID empty): no rule applies even with the other keys empty (353.7965ms)
+✔ P06: the Page route needs the webhook receiver (244.634083ms)
+✔ P06: sessions come from identity (264.76875ms)
+✔ P06: without the claims profile nobody sends the private replies (a WARN, not a FAIL) (245.694292ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("abc") (229.268959ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("12 34") (284.02925ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("111111111111") (338.364042ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("0x10") (283.779333ms)
+✔ P08: COMMERCE_META_LOGIN_CONFIG_ID must be numeric ("-1") (224.969791ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (wrong host) (215.898958ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (http scheme) (229.085875ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (the ads callback path) (158.413209ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (trailing slash) (169.858917ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (query string) (162.446917ms)
+✔ P08: COMMERCE_META_LOGIN_REDIRECT_URI must be exactly https://<LC_ADMIN_HOST>/api/meta/callback (empty) (163.002666ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("26.0") (170.24875ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26") (167.520584ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v26.0.1") (162.194167ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("latest") (173.1965ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("") (163.26175ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION grammar vNN.N ("v1000.0") (160.321834ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v26.0 (160.956375ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v22.0 (148.274417ms)
+✔ P08: COMMERCE_META_LOGIN_GRAPH_VERSION accepts v99.9 (158.518334ms)
+✔ production without any alert channel is a FAIL (nobody would hear the next outage) (1250.584833ms)
+✔ outside production the same gap is only a WARN (354.483875ms)
+✔ a webhook alone satisfies the rule (253.067792ms)
+✔ an e-mail target with a complete relay (host, username, secret) satisfies the rule (256.003917ms)
+✔ an e-mail target without the relay secret cannot be sent: FAIL in production, WARN elsewhere (486.76725ms)
+✔ the example's CHANGE_ME_SENDER placeholder is not a relay: the e-mail target cannot be sent (277.722625ms)
+✔ LC_ALERT_EMAIL must be one plain address ("not-an-address") (333.399042ms)
+✔ LC_ALERT_EMAIL must be one plain address ("two@fake.invalid,three@fake.invalid") (284.308834ms)
+✔ LC_ALERT_EMAIL must be one plain address ("a b@fake.invalid") (224.395708ms)
+✔ LC_ALERT_EMAIL must be one plain address ("<owner@fake.invalid>") (215.785708ms)
+✔ LC_ALERT_EMAIL must be one plain address ("owner@fake") (229.173208ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6345.361125

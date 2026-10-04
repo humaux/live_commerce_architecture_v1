@@ -242,9 +242,9 @@ func TestBuyerPaymentCaptureACLAndObservationBinding(t *testing.T) {
 	if e := pcApply(q.worker, other.result.AttemptID, hash); e == nil {
 		t.Fatal("cross-attempt observation accepted")
 	}
-	for _, role := range []string{"commerce_runtime", "commerce_checkout_runtime", "commerce_worker"} {
+	for _, role := range []string{"commerce_runtime", "commerce_checkout_runtime", waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		var execute bool
-		if e := q.f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,'payments.apply_capture(uuid,bytea)','EXECUTE')`, role).Scan(&execute); e != nil || execute != (role == "commerce_worker") {
+		if e := q.f.owner.QueryRow(context.Background(), `SELECT has_function_privilege($1,'payments.apply_capture(uuid,bytea)','EXECUTE')`, role).Scan(&execute); e != nil || execute != (role == waPayment || role == waLive) { // T21-02: only the two payment authorities
 			t.Fatalf("execute boundary %s %v %v", role, execute, e)
 		}
 		for _, table := range []string{"payments.facts", "payments.review_cases", "fulfillment.payment_work_items", "inventory.ledger"} {
@@ -461,7 +461,7 @@ func TestBuyerPaymentCaptureBalanceWaitIsAtomic(t *testing.T) {
 	hash := pcRecord(t, q, pcFull(q))
 	ctx := context.Background()
 	name := "pc_wait_" + t04Tag()
-	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, "commerce_worker"), name))
+	pool, e := platform.OpenWorkerPool(ctx, withApplicationName(t, bcRole(t, q.f, waPayment), name), platform.WorkerPayment)
 	if e != nil {
 		t.Fatal(e)
 	}

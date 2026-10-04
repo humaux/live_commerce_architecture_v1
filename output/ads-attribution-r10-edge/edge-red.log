@@ -1,0 +1,21 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: XFF is exactly the connection peer, never the buyer value or appended chain
++ actual - expected
+
++ '203.0.113.9'
+- '172.17.0.1'
+
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r10-ui/tests/deploy/platform-edge.mjs:298:12
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: '203.0.113.9',
+  expected: '172.17.0.1',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

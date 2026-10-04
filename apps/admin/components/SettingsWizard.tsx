@@ -1,5 +1,14 @@
 "use client";
 
+// Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/{provider-accounts,markets/...}
+// -> Go internal/httpapi settings routes. The merchant-arranged (manual) branch also hosts the logistics cards
+// (<LogisticsSettings>: BFF logistics/ecpay, logistics/ecpay/enabled, logistics/cvs-settings -> Go
+// internal/httpapi/cvs.go, taiwan-cvs-logistics-v1 §8/§16.5) in step 2, and its delivery-service editor offers
+// mode "API (ECPay)" for CVS kinds only while the ECPay connection is enabled and checked (§4.1 predicate).
+// <StorefrontSettings> (below the steps) is the storefront publish/unpublish card: BFF storefront, storefront/publication
+// -> Go internal/httpapi/storefront.go (published-storefront-resolver-v1 "Writer (R3)").
+// <MetaConnect> (below it) is the merchant Facebook Page / Instagram connect card: BFF /api/meta/{connect,callback} and
+// /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go (meta-claims-intake-v1 "Merchant connect (R4)").
 import {
   useCallback,
   useEffect,
@@ -9,7 +18,16 @@ import {
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { LogisticsSettings } from "./LogisticsSettings";
+import { BankTransferSettings } from "./BankTransferSettings";
+import { CodSettings } from "./CodSettings";
+import { NotifySettings } from "./NotifySettings";
+import { StorefrontSettings } from "./StorefrontSettings";
+import { MetaConnect } from "./MetaConnect";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
+import { fromMinor, toMinor } from "@/lib/catalog-v2-model";
+import { currencySign } from "@/lib/client";
+import { wholeOnly } from "@/lib/orders-model";
 import {
   csrfCookie,
   integer,
@@ -32,100 +50,20 @@ import {
   type Service,
   type SettingsInitial,
 } from "@/lib/settings-model";
+import { readEcpay } from "@/lib/logistics-client";
+import { ecpayQualified } from "@/lib/logistics-model";
+import { logisticsCopy } from "@/lib/logistics-copy";
 import type { APIError, Page } from "@/lib/model";
+import {
+  emptyDraft,
+  names,
+  unknown,
+  type Branch,
+  type Draft,
+  type MethodBinding,
+  type Observation,
+} from "@/lib/settings-draft";
 import "./settings.css";
-
-type Branch = "payuni" | "manual";
-type Observation = { target: string; version: number; dirty: boolean };
-type MethodBinding = {
-  connectionID: string;
-  bindingVersion: number;
-  environment: "SANDBOX" | "LIVE";
-};
-type Draft = {
-  branch: Branch;
-  accountID: string;
-  accountChoiceTouched: boolean;
-  environment: "SANDBOX" | "LIVE";
-  merchantID: string;
-  rotate: boolean;
-  marketID: string;
-  marketCode: string;
-  marketName: string;
-  country: string;
-  methodCode: MethodCode;
-  nameHans: string;
-  nameHant: string;
-  nameEN: string;
-  visible: boolean;
-  sort: string;
-  min: string;
-  max: string;
-  serviceCode: string;
-  serviceKind: "home" | "cvs_711" | "cvs_familymart";
-  shipping: string;
-  taxMode: "none" | "inclusive" | "exclusive";
-  taxBasis: "goods" | "goods_and_shipping";
-  taxRate: string;
-  ttl: string;
-  policyEnabled: boolean;
-  serviceEnabled: boolean;
-  serviceVisible: boolean;
-  reference: string;
-  methodObservation: Observation | null;
-  methodBinding: MethodBinding | null;
-  policyObservation: Observation | null;
-  serviceObservation: Observation | null;
-};
-const emptyDraft: Draft = {
-  branch: "payuni",
-  accountID: "",
-  accountChoiceTouched: false,
-  environment: "SANDBOX",
-  merchantID: "",
-  rotate: false,
-  marketID: "",
-  marketCode: "",
-  marketName: "",
-  country: "TW",
-  methodCode: "payuni_credit",
-  nameHans: "信用卡",
-  nameHant: "信用卡",
-  nameEN: "Credit card",
-  visible: false,
-  sort: "10",
-  min: "1",
-  max: "1000000000000",
-  serviceCode: "",
-  serviceKind: "home",
-  shipping: "0",
-  taxMode: "none",
-  taxBasis: "goods",
-  taxRate: "0",
-  ttl: "300",
-  policyEnabled: false,
-  serviceEnabled: false,
-  serviceVisible: false,
-  reference: "",
-  methodObservation: null,
-  methodBinding: null,
-  policyObservation: null,
-  serviceObservation: null,
-};
-const names: Record<MethodCode, [string, string, string]> = {
-  payuni_credit: ["信用卡", "信用卡", "Credit card"],
-  payuni_installment: ["信用卡分期", "信用卡分期", "Card installments"],
-  payuni_atm: ["ATM 转账", "ATM 轉帳", "ATM transfer"],
-  payuni_cvs: ["超商代码缴费", "超商代碼繳費", "Convenience store code"],
-  payuni_linepay: ["LINE Pay", "LINE Pay", "LINE Pay"],
-};
-const unknown: APIError = {
-  code: "retry_later",
-  message: "",
-  request_id: "",
-  retryable: true,
-  details: {},
-};
 
 export function SettingsWizard({
   locale,
@@ -135,6 +73,7 @@ export function SettingsWizard({
   initial: SettingsInitial;
 }) {
   const c = settingsCopy[locale],
+    lc = logisticsCopy[locale],
     store = initial.store;
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [draft, setDraft] = useState<Draft>(emptyDraft);
@@ -169,9 +108,17 @@ export function SettingsWizard({
   draftRef.current = draft;
   const accountsRef = useRef(accounts);
   accountsRef.current = accounts;
+  // Currency the money fields of a market are typed in (a market is created in the store currency; hydration runs in async callbacks).
+  const marketsRef = useRef(markets);
+  marketsRef.current = markets;
+  const currencyOf = (marketID: string) =>
+    marketsRef.current.find((item) => item.id === marketID)?.currency ?? store?.currency ?? "TWD";
   const stepRef = useRef(step);
   stepRef.current = step;
   const [methodListTarget, setMethodListTarget] = useState("");
+  // Whether "API (ECPay)" may be chosen for a CVS service: the store's ECPay connection is enabled and checked.
+  // Read-only probe (GET logistics/ecpay, integration:read); a 403/404/failure simply leaves API mode unavailable.
+  const [ecpayReady, setEcpayReady] = useState(false);
   const hashKey = useRef<HTMLInputElement>(null),
     hashIV = useRef<HTMLInputElement>(null);
   const activeAccount =
@@ -191,6 +138,18 @@ export function SettingsWizard({
     validCode(draft.serviceCode)
       ? `${draft.marketID}:${draft.country}:${draft.serviceCode}`
       : "";
+
+  const probeEcpay = store?.id ?? "";
+  const probeStep = ready && draft.branch === "manual" && step === 3;
+  useEffect(() => {
+    if (!probeEcpay || !probeStep) return;
+    const active = new AbortController();
+    readEcpay(probeEcpay, active.signal).then(
+      (value) => setEcpayReady(ecpayQualified(value)),
+      () => !active.signal.aborted && setEcpayReady(false),
+    );
+    return () => active.abort();
+  }, [probeEcpay, probeStep]);
 
   function saveDraft(next: Draft, atStep = stepRef.current) {
     persistDraft(next, atStep);
@@ -242,8 +201,8 @@ export function SettingsWizard({
       nameEN: saved?.name_en ?? labels[2],
       visible: saved?.visible ?? false,
       sort: String(saved?.sort_order ?? 10),
-      min: String(saved?.min_amount_minor ?? 1),
-      max: String(saved?.max_amount_minor ?? 1000000000000),
+      min: saved ? fromMinor(saved.min_amount_minor, currencyOf(current.marketID)) : "1",
+      max: saved ? fromMinor(saved.max_amount_minor, currencyOf(current.marketID)) : "10000000000",
       methodObservation: {
         target: `${current.marketID}:TW:${current.methodCode}`,
         version: saved?.version ?? 0,
@@ -293,6 +252,7 @@ export function SettingsWizard({
       nameHant: saved?.name_hant ?? "",
       nameEN: saved?.name_en ?? "",
       serviceKind: saved?.delivery_kind ?? current.serviceKind,
+      serviceMode: saved?.mode ?? "MANUAL",
       serviceEnabled: saved?.enabled ?? false,
       serviceVisible: saved?.visible ?? false,
       sort: String(saved?.sort_order ?? 10),
@@ -306,7 +266,11 @@ export function SettingsWizard({
   function hydratePolicy(current: Draft, saved: Policy | null): Draft {
     return {
       ...current,
-      shipping: String(saved?.shipping_minor ?? 0),
+      shipping: fromMinor(saved?.shipping_minor ?? 0, currencyOf(current.marketID)),
+      freeShipping:
+        saved?.free_shipping_threshold_minor == null
+          ? ""
+          : fromMinor(saved.free_shipping_threshold_minor, currencyOf(current.marketID)),
       taxMode: saved?.tax_mode ?? "none",
       taxBasis: saved?.tax_basis ?? "goods",
       taxRate: String(saved?.tax_rate_bps ?? 0),
@@ -340,6 +304,7 @@ export function SettingsWizard({
       return c.session;
     if (value.code === "conflict") return c.conflict;
     if (value.code === "forbidden") return c.forbidden;
+    if (value.code === "invalid_money") return c.invalidMoney;
     if (value.code === "invalid_request" || value.code === "invalid_json")
       return c.invalid;
     return c.failed;
@@ -354,13 +319,15 @@ export function SettingsWizard({
   }
   function persistDraft(next: Draft, nextStep: number) {
     if (!draftKey.current) throw new Error("storage");
-    const encoded = JSON.stringify({ version: 1, draft: next, step: nextStep });
+    const encoded = JSON.stringify({ version: 2, draft: next, step: nextStep });
     sessionStorage.setItem(draftKey.current, encoded);
     if (sessionStorage.getItem(draftKey.current) !== encoded)
       throw new Error("storage");
   }
   function update<K extends keyof Draft>(field: K, value: Draft[K]) {
     const next = { ...draft, [field]: value };
+    // API (ECPay) is a CVS-only mode: choosing home delivery puts the service back to manual.
+    if (field === "serviceKind" && value === "home") next.serviceMode = "MANUAL";
     if (
       field === "serviceCode" ||
       field === "marketID" ||
@@ -397,6 +364,7 @@ export function SettingsWizard({
         "nameHant",
         "nameEN",
         "serviceKind",
+        "serviceMode",
         "serviceEnabled",
         "serviceVisible",
         "sort",
@@ -411,6 +379,7 @@ export function SettingsWizard({
     if (
       [
         "shipping",
+        "freeShipping",
         "taxMode",
         "taxBasis",
         "taxRate",
@@ -477,19 +446,24 @@ export function SettingsWizard({
         journalKey.current = `commerce-settings-command:${store.id}:${hash}`;
         const rawDraft = sessionStorage.getItem(draftKey.current);
         const rawPending = localStorage.getItem(journalKey.current);
-        if (rawDraft) {
+        // A version-1 draft holds minor-unit money text ("6000" = NT$60 now): reading it as major units would multiply every amount by 100.
+        const legacyDraft =
+          !!rawDraft && (JSON.parse(rawDraft) as { version?: number }).version === 1;
+        if (legacyDraft) sessionStorage.removeItem(draftKey.current);
+        if (rawDraft && !legacyDraft) {
           const saved = JSON.parse(rawDraft) as {
             version?: number;
             draft?: Draft;
             step?: number;
           };
           if (
-            saved.version !== 1 ||
+            saved.version !== 2 ||
             !saved.draft ||
             ![1, 2, 3, 4].includes(saved.step ?? 0)
           )
             throw new Error("storage");
-          setDraft(saved.draft);
+          // A draft saved before serviceMode existed reads as MANUAL.
+          setDraft({ ...emptyDraft, ...saved.draft });
           setStep(saved.step as 1 | 2 | 3 | 4);
         }
         if (rawPending) {
@@ -1348,7 +1322,7 @@ export function SettingsWizard({
             visible: false,
             sort: "10",
             min: "1",
-            max: "1000000000000",
+            max: "10000000000",
           };
     try {
       saveDraft(next);
@@ -1360,8 +1334,12 @@ export function SettingsWizard({
   function methodSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const sort = integer(draft.sort, 0, 1000),
-      min = integer(draft.min, 1, 1000000000000),
-      max = integer(draft.max, 1, 1000000000000);
+      min = toMinor(draft.min, activeMarket?.currency ?? "TWD"),
+      max = toMinor(draft.max, activeMarket?.currency ?? "TWD");
+    if (activeMarket && wholeOnly(activeMarket.currency) && /[.,]/.test(draft.min + draft.max)) {
+      setError({ ...unknown, code: "invalid_money" }); // D02: NT$ limits are whole dollars; say so instead of "check the values"
+      return;
+    }
     if (
       !activeMarket ||
       !activeAccount ||
@@ -1370,6 +1348,7 @@ export function SettingsWizard({
       sort === null ||
       min === null ||
       max === null ||
+      min < 1 ||
       min > max ||
       !draft.nameHans.trim() ||
       !draft.nameHant.trim() ||
@@ -1438,16 +1417,27 @@ export function SettingsWizard({
   }
   function policySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const shipping = integer(draft.shipping, 0, 1000000000000),
+    const currency = activeMarket?.currency ?? "TWD";
+    const shipping = toMinor(draft.shipping, currency),
+      // Empty = no threshold; anything else is major-unit text turned into minor units here (the Go quote re-validates).
+      free =
+        draft.freeShipping.trim() === ""
+          ? null
+          : toMinor(draft.freeShipping, currency),
       tax = integer(draft.taxRate, 0, 10000),
       ttl = integer(draft.ttl, 60, 1800);
     const ref = draft.reference.trim();
+    if (wholeOnly(currency) && /[.,]/.test(draft.shipping + draft.freeShipping)) {
+      setError({ ...unknown, code: "invalid_money" }); // D02: NT$ fees are whole dollars
+      return;
+    }
     if (
       !activeMarket ||
       !validCountry(draft.country) ||
       !validCode(draft.serviceCode) ||
       (draft.serviceKind !== "home" && draft.country !== "TW") ||
       shipping === null ||
+      (draft.freeShipping.trim() !== "" && free === null) ||
       tax === null ||
       ttl === null ||
       (draft.taxMode === "none" && tax !== 0) ||
@@ -1475,6 +1465,8 @@ export function SettingsWizard({
         currency: activeMarket.currency,
         shipping_mode: "country_flat",
         shipping_minor: shipping,
+        // Absent = no threshold (Go omitempty); every save writes a full new policy version, so omitting clears it.
+        ...(free === null ? {} : { free_shipping_threshold_minor: free }),
         tax_mode: draft.taxMode,
         tax_basis: draft.taxBasis,
         tax_rate_bps: tax,
@@ -1508,6 +1500,8 @@ export function SettingsWizard({
       !validCode(draft.serviceCode) ||
       !validCountry(draft.country) ||
       (draft.serviceKind !== "home" && draft.country !== "TW") ||
+      // API (ECPay) exists only for a CVS kind while the ECPay connection is enabled and checked.
+      (draft.serviceMode === "API" && (draft.serviceKind === "home" || !ecpayReady)) ||
       sort === null ||
       !draft.nameHans.trim() ||
       !draft.nameHant.trim() ||
@@ -1540,7 +1534,7 @@ export function SettingsWizard({
         name_hant: draft.nameHant.trim(),
         name_en: draft.nameEN.trim(),
         delivery_kind: draft.serviceKind,
-        mode: "MANUAL",
+        mode: draft.serviceMode,
         enabled: draft.serviceEnabled,
         visible: draft.serviceVisible,
         sort_order: sort,
@@ -1625,7 +1619,8 @@ export function SettingsWizard({
   const needsPolicySave =
     !policy ||
     draft.reference.trim() !== "" ||
-    policy.shipping_minor !== Number(draft.shipping) ||
+    policy.shipping_minor !== toMinor(draft.shipping, currencyOf(draft.marketID)) ||
+    (policy.free_shipping_threshold_minor ?? "") !== (draft.freeShipping.trim() === "" ? "" : toMinor(draft.freeShipping, currencyOf(draft.marketID))) ||
     policy.tax_mode !== draft.taxMode ||
     policy.tax_basis !== draft.taxBasis ||
     policy.tax_rate_bps !== Number(draft.taxRate) ||
@@ -1773,6 +1768,13 @@ export function SettingsWizard({
                 <>
                   <h2 className="settings-section-title">{c.manual}</h2>
                   <p className="settings-note">{c.manualHint}</p>
+                  <LogisticsSettings store={store.id} locale={locale} />
+                  {/* storefront-v2 §C: bank-transfer details and window (BFF bank-transfer-settings -> Go offline.go). */}
+                  <BankTransferSettings store={store.id} locale={locale} />
+                  {/* home-cod R5: cash-on-delivery switch, cap, surcharge and carrier (BFF cash-on-delivery-settings -> Go cod.go). */}
+                  <CodSettings store={store.id} locale={locale} />
+                  {/* storefront-v2 §E6: new-order email opt-out (BFF notification-settings -> Go notify.go). */}
+                  <NotifySettings store={store.id} locale={locale} />
                   <div className="settings-actions">
                     <button type="button" onClick={() => goStep(1)}>
                       {c.back}
@@ -2123,10 +2125,11 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
-                              {c.minAmount}
+                              {`${c.minAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="1"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.min}
                                 onChange={(event) =>
@@ -2135,10 +2138,11 @@ export function SettingsWizard({
                               />
                             </label>
                             <label>
-                              {c.maxAmount}
+                              {`${c.maxAmount} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="1"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.max}
                                 onChange={(event) =>
@@ -2269,7 +2273,32 @@ export function SettingsWizard({
                               <option value="cvs_familymart">
                                 {c.cvsFamily}
                               </option>
+                              <option value="cvs_hilife">{lc.chains.cvs_hilife}</option>
+                              <option value="cvs_okmart">{lc.chains.cvs_okmart}</option>
                             </select>
+                          </label>
+                          <label>
+                            {lc.modeLabel}
+                            <select
+                              data-testid="settings-service-mode"
+                              value={draft.serviceMode}
+                              disabled={draft.serviceKind === "home"}
+                              onChange={(event) =>
+                                update(
+                                  "serviceMode",
+                                  event.target.value as Draft["serviceMode"],
+                                )
+                              }
+                            >
+                              <option value="MANUAL">{lc.modeManual}</option>
+                              {(ecpayReady || draft.serviceMode === "API") &&
+                                draft.serviceKind !== "home" && (
+                                  <option value="API" disabled={!ecpayReady}>
+                                    {lc.modeApi}
+                                  </option>
+                                )}
+                            </select>
+                            <small>{lc.modeApiHint}</small>
                           </label>
                         </div>
                         <form
@@ -2279,16 +2308,31 @@ export function SettingsWizard({
                         >
                           <div className="settings-field-grid">
                             <label>
-                              {c.shipping}
+                              {`${c.shipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
-                                type="number"
-                                min="0"
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
                                 required
                                 value={draft.shipping}
                                 onChange={(event) =>
                                   update("shipping", event.target.value)
                                 }
                               />
+                            </label>
+                            <label>
+                              {`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
+                                data-testid="settings-free-shipping"
+                                value={draft.freeShipping}
+                                onChange={(event) =>
+                                  update("freeShipping", event.target.value)
+                                }
+                              />
+                              <small>{c.freeShippingHint}</small>
                             </label>
                             <label>
                               {c.taxMode}
@@ -2677,6 +2721,9 @@ export function SettingsWizard({
             </div>
           </aside>
         </div>
+        {store && <StorefrontSettings store={store.id} locale={locale} />}
+        {/* Facebook Page / Instagram connect: BFF /api/meta/*, /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go */}
+        {store && <MetaConnect key={store.id} store={store.id} locale={locale} />}
       </div>
     </WorkspaceFrame>
   );

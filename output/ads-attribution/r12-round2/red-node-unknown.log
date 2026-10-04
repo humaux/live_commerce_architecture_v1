@@ -1,0 +1,98 @@
+✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (1.048042ms)
+✔ R11 durable receipt journal validates phase against exact operation state (0.978ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (3.744792ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.751375ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.443334ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.140375ms)
+✖ actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN (10.978167ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (21.944209ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 4
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 356.315792
+
+✖ failing tests:
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (3.744792ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /data-testid="attribution-audience-refresh" disabled=""/. Input:
+  
+  '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">Refresh audience insights</button><p role="status" data-testid="attribution-audience-unconfirmed">The existing audience read outcome is unknown. Read the report again later; do not start another read.</p></div>'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution-audience.test.ts:204:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">Refresh audience insights</button><p role="status" data-testid="attribution-audience-unconfirmed">The existing audience read outcome is unknown. Read the report again later; do not start another read.</p></div>',
+    expected: /data-testid="attribution-audience-refresh" disabled=""/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.751375ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /data-testid="attribution-audience-refresh" disabled=""/. Input:
+  
+  '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">刷新觀眾洞察</button><p role="status" data-testid="attribution-audience-unconfirmed">既有觀眾讀取結果未知，請稍後重新讀取報表，勿建立另一個讀取。</p></div>'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution-audience.test.ts:204:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">刷新觀眾洞察</button><p role="status" data-testid="attribution-audience-unconfirmed">既有觀眾讀取結果未知，請稍後重新讀取報表，勿建立另一個讀取。</p></div>',
+    expected: /data-testid="attribution-audience-refresh" disabled=""/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.443334ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /data-testid="attribution-audience-refresh" disabled=""/. Input:
+  
+  '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">刷新观众洞察</button><p role="status" data-testid="attribution-audience-unconfirmed">现有观众读取结果未知，请稍后重新读取报表，勿创建另一个读取。</p></div>'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution-audience.test.ts:204:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<div class="attribution-audience-read" data-testid="attribution-audience-read"><button type="button" data-testid="attribution-audience-refresh" disabled="">刷新观众洞察</button><p role="status" data-testid="attribution-audience-unconfirmed">现有观众读取结果未知，请稍后重新读取报表，勿创建另一个读取。</p></div>',
+    expected: /data-testid="attribution-audience-refresh" disabled=""/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:236:1
+✖ actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN (10.978167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution-audience.test.ts:382:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

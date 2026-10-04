@@ -1,0 +1,14 @@
+# Unit store-design — store profile, nav, home sections, info pages; draft/preview/publish/rollback; store media
+
+Role: commerce_worker (ui-heavy). Base `r3/integration`. Worktree `.worktrees/store-design`, branch `unit/store-design`. Migration **0087**.
+Contract: `contracts/storefront-v2.md` §B (FROZEN). No delegation, no new dependency, no lockfile change. Comment standard PROCESS.md §5 mandatory. Scope/tenant from server auth only (AGENTS.md). Three admin locales via existing copy pattern. Static set must exit 0: go build/vet, gofmt, check-pkgdocs, depmap --check, check-gates, admin + storefront typecheck, test-node.sh, check_packet.py. Go unit tests for pure logic + author PG smoke via `bash scripts/dev/test-focused.sh` (serialized; Docker 1.9 GB). Evidence → /Volumes/data/live_commerce_architecture_v1/output/<unit>/. Commit on branch, do not merge.
+
+## Scope
+1. 0087: `design.documents` (draft, CAS), `design.published_versions` (append-only), `design.store_media`; definers + RLS like other store-scoped tables; audit rows for publish/rollback.
+2. Go package `internal/design`: strict JSON schema validation of §B (unknown keys → 422 with a path), restricted-markdown validation (reject raw HTML/`<`, non-https links), preview token (HMAC with an existing server secret pattern — grep how the buyer capability/issuer signs tokens and reuse it; 15 min, store+version bound), buyer read `design/published` and preview read, store-media (reuse catalog-media sniff code, ≤ 60 per store).
+3. Admin UI `apps/admin/app/[locale]/design/page.tsx`: store profile form (logo/favicon upload, accent colour picker = native input type=color, contact/social), header/footer nav editor (pick collection/page from lists — collections list comes from catalog-core; until merged, allow kind=collection with a free slug field), home sections editor (add/remove/reorder/edit the five section types with inline image pickers), pages editor (slug/title/markdown textarea + live escaped preview), Save draft / Preview (opens storefront with token in new tab) / Publish / Versions + Rollback. Unsaved-changes guard. Desktop + 390px usable.
+4. Shared restricted-markdown renderer as a tiny pure TS module in `packages/` (escape first, then the 4 constructs) used by admin preview now and storefront later; node tests incl. XSS payloads.
+## Write paths
+migrations/0087_*.sql, internal/design/** (new), internal/httpapi/** (design routes only), internal/buyerhttp/** (design read routes only), apps/admin/app/[locale]/design/**, apps/admin/components/Design*.tsx (new), WorkspaceFrame.tsx (nav entry only), apps/admin/lib/**, BFF allowlist, packages/markdown-lite/** (new, workspace package without new external deps; pnpm-workspace already globs packages/*), contracts/storefront-v2.md (acceptance append only).
+## Non-goals
+Storefront rendering of the document (unit storefront-shell), custom CSS/JS (never), templates marketplace.

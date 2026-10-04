@@ -1,8 +1,16 @@
 "use client";
+import { validStorefrontReceipt } from "@/lib/storefront-handle";
+// Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
+// BFF routes called: POST /api/auth/login (OIDC) → /v1/identity/login/start, POST /api/auth/logout →
+// /v1/identity/logout, POST /api/onboarding/initial-store → /v1/identity/initial-store
+// (internal/identityhttp). With passwordMode set, the signed-out panel is PasswordAuth.tsx, whose
+// /api/auth/password/* routes are documented there.
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { localeNames, locales, type Locale } from "@live-commerce/i18n";
-import { entryCopy } from "@/lib/entry-copy";
+import { entryCopy, passwordCopy } from "@/lib/entry-copy";
+import { company, brandedTitle } from "@/lib/company";
+import { OperatorFooter } from "./OperatorFooter";
 import {
   ENTRY_TTL_MS,
   emptyEntryDraft,
@@ -13,6 +21,7 @@ import {
 } from "@/lib/entry-state";
 import { Icon } from "./Icon";
 import { signalLogout } from "@/lib/session-events";
+import { PasswordAuth, type PasswordMode } from "./PasswordAuth";
 
 type EntryStatus = "disabled" | "signed-out" | "onboarding" | "unavailable";
 
@@ -45,12 +54,21 @@ export function Entry({
   authResult,
   onboardingEnabled,
   currencies,
+  passwordMode,
+  oidc = true,
+  path = "",
 }: {
   locale: Locale;
   status: EntryStatus;
   authResult: string;
   onboardingEnabled: boolean;
   currencies: string[];
+  // U6: set only when COMMERCE_PASSWORD_LOGIN_ENABLED=1; replaces the OIDC signed-out panel.
+  passwordMode?: PasswordMode;
+  // False when no COMMERCE_OIDC_ISSUER is configured: the OIDC button is not rendered (U4).
+  oidc?: boolean;
+  // Page path below /<locale>/ kept when switching language ("" | "signup" | "reset").
+  path?: string;
 }) {
   const c = entryCopy[locale];
   // Native locale data labels currencies; the selected ISO value never changes.
@@ -65,6 +83,7 @@ export function Entry({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [created, setCreated] = useState<{ handle: string; storefront_origin: string } | null>(null);
   const storageKey = useRef("");
   const busyRef = useRef(false);
 
@@ -223,14 +242,15 @@ export function Entry({
         setError(c.failed);
         return;
       }
+      const receipt = body as Record<string, unknown>;
       if (
         !body ||
         typeof body !== "object" ||
         !["tenant_id", "store_id", "warehouse_id"].every((key) =>
-          /^[0-9a-f-]{36}$/.test(
-            String((body as Record<string, unknown>)[key] ?? ""),
-          ),
-        )
+          /^[0-9a-f-]{36}$/.test(String(receipt[key] ?? "")),
+        ) ||
+        typeof receipt.handle !== "string" || typeof receipt.storefront_origin !== "string" ||
+        !validStorefrontReceipt(receipt.handle, receipt.storefront_origin)
       ) {
         setNotice(c.unknown);
         return;
@@ -238,7 +258,8 @@ export function Entry({
       clearJournal();
       setPending(null);
       setSuccess(true);
-      setNotice(c.success);
+      setCreated({ handle: receipt.handle, storefront_origin: receipt.storefront_origin });
+      setNotice(receipt.storefront_origin ? c.success : c.addressPending);
     } catch {
       setNotice(c.unknown);
     } finally {
@@ -272,7 +293,7 @@ export function Entry({
         return;
       }
     }
-    window.location.assign(`/${next}/`);
+    window.location.assign(`/${next}/${path}`);
   }
 
   async function signOut() {
@@ -323,8 +344,10 @@ export function Entry({
 
   return (
     <div className="entry-root">
+      {/* Signup/reset use registry metadata; the root entry's title must not affect the signed-in dashboard. */}
+      {!path && <title>{brandedTitle(passwordMode === "signin" ? passwordCopy[locale].signinTitle : status === "onboarding" ? c.title : c.signInTitle)}</title>}
       <header className="entry-topbar">
-        <div className="entry-brand">{c.product}</div>
+        <div className="entry-brand" data-testid="platform-brand">{company.productName}</div>
         <div className="entry-manage">
           <Icon name="inventory" size={20} />
           {c.manage}
@@ -363,7 +386,9 @@ export function Entry({
       </header>
 
       <main className="entry-main">
-        {status === "signed-out" ||
+        {status === "signed-out" && passwordMode ? (
+          <PasswordAuth locale={locale} mode={passwordMode} oidc={oidc} notice={message} />
+        ) : status === "signed-out" ||
         status === "disabled" ||
         status === "unavailable" ? (
           <section
@@ -511,6 +536,7 @@ export function Entry({
                     <span>{c.storeName}</span>
                     <input
                       name="store_name"
+                      aria-describedby="entry-number-help"
                       value={draft.store_name}
                       onChange={(event) =>
                         update("store_name", event.target.value)
@@ -521,6 +547,7 @@ export function Entry({
                       required
                     />
                   </label>
+                  <p className="entry-handle" id="entry-number-help">{c.storeNumberHelp}</p>
                   <label>
                     <span>{c.currency}</span>
                     <select
@@ -602,6 +629,21 @@ export function Entry({
                       </div>
                     </dl>
                   </div>
+                  {created && (
+                    <div className="entry-review" aria-label={c.storeAddress} data-testid="entry-address">
+                      <h3>{c.storeAddress}</h3>
+                      {created.storefront_origin ? (
+                        <p>
+                          <a href={created.storefront_origin} target="_blank" rel="noopener noreferrer">
+                            {created.storefront_origin}
+                          </a>
+                        </p>
+                      ) : (
+                        <p><strong>{created.handle}</strong></p>
+                      )}
+                      <p className="entry-final-hint">{c.storeAddressAuto}</p>
+                    </div>
+                  )}
                   <p className="entry-final-hint">{c.finalHint}</p>
                   <div className="entry-actions">
                     <button
@@ -668,6 +710,7 @@ export function Entry({
           </>
         )}
       </main>
+      <OperatorFooter />
     </div>
   );
 }

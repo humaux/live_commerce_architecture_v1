@@ -1,4 +1,5 @@
 import type { Locale } from "@live-commerce/i18n";
+import type { CarrierCode } from "./purchase";
 
 const en = {
   address: "Delivery address",
@@ -12,6 +13,7 @@ const en = {
   country: "Country",
   confirm: "Confirm address",
   create: "Create unpaid order",
+  createNeedsConfirm: "Confirm your delivery address above to create the order.",
   loading: "Loading delivery details…",
   explain:
     "Check your delivery address and the quoted total before creating your order.",
@@ -40,14 +42,62 @@ const en = {
     "A timer ending does not confirm cancellation. Refresh to check the order status.",
   DRAFT: "Not paid",
   AWAITING_PAYMENT: "Payment pending",
+  AWAITING_TRANSFER: "Waiting for bank transfer",
+  AWAITING_COLLECTION: "Waiting for cash on delivery",
   CONFIRMED: "Order confirmed",
   CANCELLED: "Order canceled",
   unavailable:
     "Payment is not open on this page yet. No payment is taken by creating an order.",
   recovery:
     "An order may already exist. Restore access and recover the same request; a new shopping session will not recover it.",
+  // manual-fulfilment-v1 §5.2: the seller's attestation only; never "in transit" or "delivered".
+  shipped: "Shipped by the seller",
+  carrier: "Carrier",
+  tracking: "Tracking number",
+  copyTracking: "Copy tracking number",
+  copied: "Copied",
+  copyFailed: "Copy failed — select the number and copy it manually.",
+  trackLink: "Open the carrier's tracking page",
+  shipNote:
+    "The seller recorded this shipment. Check the carrier for parcel progress.",
 };
 type Copy = { [K in keyof typeof en]: string };
+// Q3 carrier display names (manual-fulfilment-v1 §3.1 codes); a merchant-entered carrier_name overrides.
+export const carrierNames: Record<Locale, Record<CarrierCode, string>> = {
+  en: {
+    seven_eleven_cvs: "7-ELEVEN",
+    familymart_cvs: "FamilyMart",
+    hilife_cvs: "Hi-Life",
+    okmart_cvs: "OK mart",
+    sf_express: "SF Express",
+    black_cat: "Black Cat",
+    hsinchu: "Hsinchu",
+    chunghwa_post: "Chunghwa Post",
+    other: "Other",
+  },
+  "zh-TW": {
+    seven_eleven_cvs: "7-ELEVEN 交貨便",
+    familymart_cvs: "全家 店到店",
+    hilife_cvs: "萊爾富",
+    okmart_cvs: "OK mart",
+    sf_express: "順豐速運",
+    black_cat: "黑貓",
+    hsinchu: "新竹",
+    chunghwa_post: "中華郵政",
+    other: "其他",
+  },
+  "zh-CN": {
+    seven_eleven_cvs: "7-ELEVEN 交货便",
+    familymart_cvs: "全家 店到店",
+    hilife_cvs: "莱尔富",
+    okmart_cvs: "OK mart",
+    sf_express: "顺丰速运",
+    black_cat: "黑猫",
+    hsinchu: "新竹",
+    chunghwa_post: "中华邮政",
+    other: "其他",
+  },
+};
 export const orderCopy: Record<Locale, Copy> = {
   en,
   "zh-CN": {
@@ -62,6 +112,7 @@ export const orderCopy: Record<Locale, Copy> = {
     country: "国家／地区",
     confirm: "确认收货信息",
     create: "创建未付款订单",
+    createNeedsConfirm: "请先确认上方收货信息，才能创建订单。",
     loading: "正在加载收货信息…",
     explain: "请核对收货地址和报价总额，再创建订单。",
     confirmed: "收货信息与总额已确认。修改任一字段后，需要重新确认。",
@@ -81,11 +132,21 @@ export const orderCopy: Record<Locale, Copy> = {
     holdNote: "时间结束不代表订单已取消，请刷新以确认当前状态。",
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待支付结果",
+    AWAITING_TRANSFER: "等待银行转账",
+    AWAITING_COLLECTION: "等待货到付款",
     CONFIRMED: "订单已确认",
     CANCELLED: "订单已取消",
     unavailable: "此页面暂未开放支付。创建订单不会扣款。",
     recovery:
       "此前可能已创建订单。请恢复访问后查询同一笔请求；新建购物会话不能恢复原订单。",
+    shipped: "商家已发货",
+    carrier: "物流公司",
+    tracking: "运单号",
+    copyTracking: "复制运单号",
+    copied: "已复制",
+    copyFailed: "复制失败，请选中运单号手动复制。",
+    trackLink: "打开物流公司查询页面",
+    shipNote: "这是商家记录的发货信息，配送进度请以物流公司为准。",
   },
   "zh-TW": {
     address: "收件地址",
@@ -99,6 +160,7 @@ export const orderCopy: Record<Locale, Copy> = {
     country: "國家／地區",
     confirm: "確認收件資訊",
     create: "建立未付款訂單",
+    createNeedsConfirm: "請先確認上方收件資訊，才能建立訂單。",
     loading: "正在載入收件資訊…",
     explain: "請核對收件地址與報價總額，再建立訂單。",
     confirmed: "收件資訊與總額已確認。修改任一欄位後，需要重新確認。",
@@ -118,10 +180,20 @@ export const orderCopy: Record<Locale, Copy> = {
     holdNote: "時間結束不代表訂單已取消，請重新整理以確認目前狀態。",
     DRAFT: "尚未付款",
     AWAITING_PAYMENT: "等待付款結果",
+    AWAITING_TRANSFER: "等待銀行轉帳",
+    AWAITING_COLLECTION: "等待貨到付款",
     CONFIRMED: "訂單已確認",
     CANCELLED: "訂單已取消",
     unavailable: "此頁面暫未開放付款。建立訂單不會扣款。",
     recovery:
       "先前可能已建立訂單。請恢復存取後查詢同一筆請求；新的購物工作階段無法恢復原訂單。",
+    shipped: "商家已出貨",
+    carrier: "物流業者",
+    tracking: "貨運單號",
+    copyTracking: "複製貨運單號",
+    copied: "已複製",
+    copyFailed: "複製失敗，請選取單號後手動複製。",
+    trackLink: "開啟物流業者查詢頁面",
+    shipNote: "這是商家記錄的出貨資訊，配送進度請以物流業者為準。",
   },
 };

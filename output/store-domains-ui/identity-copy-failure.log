@@ -1,0 +1,45 @@
+
+Running 1 test using 1 worker
+
+(node:83105) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/auth-real.spec.ts:86:1 › REAL_PG signed IdP login, first store, authorization and logout (11.0s)
+
+
+  1) tests/admin/auth-real.spec.ts:86:1 › REAL_PG signed IdP login, first store, authorization and logout
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('status')
+    Expected substring: "內部工作區已建立"
+    Received string:    "後台工作區已建立，但商店網址尚未就緒。請聯絡平台完成網域設定後再發佈，目前沒有可供買家造訪的網址。"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('status') with timeout 10000ms
+      - waiting for getByRole('status')
+        24 × locator resolved to <p role="status" class="entry-message success">後台工作區已建立，但商店網址尚未就緒。請聯絡平台完成網域設定後再發佈，目前沒有可供買家造訪的網址。</p>
+           - unexpected value "後台工作區已建立，但商店網址尚未就緒。請聯絡平台完成網域設定後再發佈，目前沒有可供買家造訪的網址。"
+
+
+      198 |   expect(createdResponse.status()).toBe(200);
+      199 |   const originalReceipt = await createdResponse.json();
+    > 200 |   await expect(page.getByRole("status")).toContainText("內部工作區已建立");
+          |                                          ^
+      201 |   const idempotencyKey =
+      202 |     createdResponse.request().headers()["idempotency-key"] ?? "";
+      203 |   expect(idempotencyKey).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/store-domains-ui/tests/admin/auth-real.spec.ts:200:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/identity-real-20261002T113639.437386000/results/auth-real-REAL-PG-signed-I-cc6a2-re-authorization-and-logout/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/identity-real-20261002T113639.437386000/results/auth-real-REAL-PG-signed-I-cc6a2-re-authorization-and-logout/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/identity-real-20261002T113639.437386000/results/auth-real-REAL-PG-signed-I-cc6a2-re-authorization-and-logout/error-context.md
+
+  1 failed
+    tests/admin/auth-real.spec.ts:86:1 › REAL_PG signed IdP login, first store, authorization and logout

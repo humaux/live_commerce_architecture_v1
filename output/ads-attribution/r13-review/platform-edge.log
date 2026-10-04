@@ -1,0 +1,4 @@
+source=4acbad5353814fc3940812e9e399fdb1253ed40f
+started=2026-10-04T04:43:45Z
+command=env LC_PLATFORM_EDGE_EVIDENCE=/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/output/ads-attribution/r13-review/platform-edge node tests/deploy/platform-edge.mjs 
+PASS PS3: pinned Caddy validate + fmt + adapt; 47 platform edge requests + 4 storefront edge cases, www 301 path/query, actual Host preserved and XFF equals connection peer; MOCK upstream

@@ -1,0 +1,135 @@
+[
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-TW",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "zh-CN",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1366,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 1586,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "new",
+    "locale": "en",
+    "width": 375,
+    "control": "section navigation/name/price/untracked/max/keyword",
+    "action": "click fill check",
+    "expected": "visible draft values and section focus, no page overflow",
+    "actual": "PASS",
+    "persistence": "draft intentionally unsaved"
+  },
+  {
+    "page": "create",
+    "control": "3 file inputs/reorder/publish double click",
+    "action": "setInputFiles click dblclick reload",
+    "expected": "one document,3 uploads,one order; persisted USD60 and untracked cap3 (USD fixture)",
+    "actual": "PASS",
+    "tier": "BROWSER+REAL_PG; buyer HTTP readback"
+  },
+  {
+    "page": "matrix",
+    "control": "axes/bulk only empty/stock/save",
+    "action": "click fill Enter reload",
+    "expected": "12 local rows, preserved first price60, others80; persisted",
+    "actual": "PASS"
+  },
+  {
+    "page": "list",
+    "control": "copy response loss/reload",
+    "action": "click then injected lost response, reload",
+    "expected": "one committed command; recovery fence blocks duplicate",
+    "actual": "PASS",
+    "tier": "FAULT_INJECTED+REAL_PG"
+  },
+  {
+    "page": "list",
+    "control": "copy/select all/unpublish",
+    "action": "click check reload",
+    "expected": "copy persisted;3 results;all3draft",
+    "actual": "PASS"
+  },
+  {
+    "page": "inventory",
+    "control": "product inspector",
+    "action": "click",
+    "expected": "read-only price, no name/price/image editor; link to product editor",
+    "actual": "PASS"
+  },
+  {
+    "page": "edit",
+    "control": "save/inline stock",
+    "expected": "PE14 editing and zero-target persistence",
+    "actual": "BLOCKED backend readback and zero-target defect; no unsafe write"
+  }
+]

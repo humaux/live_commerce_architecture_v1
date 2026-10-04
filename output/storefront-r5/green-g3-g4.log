@@ -1,0 +1,11 @@
+✔ G3: same-series cards exclude the current product and never invent absent draft/foreign products (3.261458ms)
+✔ G5: safety guidance exists in three languages without changing the five merchant policy approval boundaries (2.04825ms)
+✔ G4: category chips omit empty collections; hidden collections absent from the public API stay absent (0.126791ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.993417

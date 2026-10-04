@@ -1,0 +1,138 @@
+browser engine: chromium
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByTestId('photo-manager')
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByTestId('photo-manager') with timeout 5000ms
+  - waiting for getByTestId('photo-manager')
+
+    at captureRawStack (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js:8588:17)
+    at callMatcherAsStep (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13310:57)
+    at Object.toBeVisible (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/matchers/expect.js:13302:23)
+    at scenario (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/storefront/catalog-media-gate.mjs:100:55)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/storefront/catalog-media-gate.mjs:247:61 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByTestId('photo-manager')\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByTestId('photo-manager') with timeout 5000ms\n` +
+      "  - waiting for getByTestId('photo-manager')\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByTestId('photo-manager') with timeout 5000ms`,
+      "  - waiting for getByTestId('photo-manager')"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- link "跳到主要內容":\n' +
+      '  - /url: "#main"\n' +
+      '- complementary:\n' +
+      '  - text: 直播商家工作台\n' +
+      '  - navigation "直播商家工作台":\n' +
+      '    - button "總覽"\n' +
+      '    - button "商品"\n' +
+      '    - button "商品集合"\n' +
+      '    - button "庫存"\n' +
+      '    - button "訂單"\n' +
+      '    - button "直播工作區"\n' +
+      '    - button "客戶"\n' +
+      '    - button "財務"\n' +
+      '    - button "帳單"\n' +
+      '    - button "店鋪裝修"\n' +
+      '    - button "廣告"\n' +
+      '    - button "優惠碼"\n' +
+      '    - button "團隊"\n' +
+      '    - button "設定"\n' +
+      '  - button "登出"\n' +
+      '- banner:\n' +
+      '  - text: fixture-store-a1 語言\n' +
+      '  - combobox "語言":\n' +
+      '    - option "简体中文"\n' +
+      '    - option "繁體中文" [selected]\n' +
+      '    - option "English"\n' +
+      '  - text: M 商家帳號\n' +
+      '- main:\n' +
+      '  - link "← 全部商品":\n' +
+      '    - /url: /zh-TW/products?store=e55f0ee6-15ad-40cd-b9a2-0776233874e3\n' +
+      '  - heading "CM old product f896c888" [level=1]\n' +
+      '  - complementary:\n' +
+      '    - navigation "完成度":\n' +
+      '      - button "商品圖片"\n' +
+      '      - button "基本資訊"\n' +
+      '      - button "價格與庫存"\n' +
+      '      - button "規格"\n' +
+      '      - button "分類"\n' +
+      '      - button "物流"\n' +
+      '      - button "搜尋引擎最佳化"\n' +
+      '    - heading "完成度" [level=2]\n' +
+      '    - heading "必填" [level=3]\n' +
+      '    - button "圖片 必填": 圖片 ○\n' +
+      '    - button "商品名稱 已儲存": 商品名稱 ✓\n' +
+      '    - button "售價 已儲存": 售價 ✓\n' +
+      '    - button "庫存 已儲存": 庫存 ✓\n' +
+      '    - paragraph: "尚缺必填項目: 1"\n' +
+      '    - heading "建議" [level=3]\n' +
+      '    - button "圖片 ○"\n' +
+      '    - button "描述 ✓"\n' +
+      '    - button "分類 ○"\n' +
+      '    - button "直播關鍵字 ○"\n' +
+      '    - button "搜尋引擎最佳化 ○"\n' +
+      '  - alert: 暫時無法編輯：商品 API 尚無法完整保留既有關鍵字、分類和各規格物流欄位，不會送出任何修改。\n' +
+      '  - region "商品圖片":\n' +
+      '    - heading "商品圖片" [level=2]\n' +
+      '    - text: 新增圖片\n' +
+      '    - button "新增圖片" [disabled]\n' +
+      '    - paragraph: 最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。\n' +
+      '  - group:\n' +
+      '    - heading "基本資訊" [level=2]\n' +
+      '    - text: 商品名稱\n' +
+      '    - textbox "商品名稱 23 / 120" [disabled]: CM old product f896c888\n' +
+      '    - text: 23 / 120 描述\n' +
+      '    - textbox "描述" [disabled]: Synthetic catalog-media gate fixture\n' +
+      '    - text: 直播關鍵字\n' +
+      '    - textbox "直播關鍵字 目前商品 API 尚未回傳既有關鍵字。" [disabled]\n' +
+      '    - text: 目前商品 API 尚未回傳既有關鍵字。\n' +
+      '    - heading "價格與庫存" [level=2]\n' +
+      '    - text: 售價 (USD)\n' +
+      '    - textbox "售價 (USD)" [disabled]: "25.00"\n' +
+      '    - text: 原價 (USD)\n' +
+      '    - textbox "原價 (USD)" [disabled]\n' +
+      '    - radio "追蹤數量" [checked] [disabled]\n' +
+      '    - text: 追蹤數量\n' +
+      '    - radio "不追蹤 ∞" [disabled]\n' +
+      '    - text: 不追蹤 ∞ 數量\n' +
+      '    - textbox "數量" [disabled]: "5"\n' +
+      '    - group: + 進階\n' +
+      '    - region "規格":\n' +
+      '      - heading "規格" [level=2]\n' +
+      '      - button "新增規格（顏色、尺寸…）" [disabled]\n' +
+      '    - heading "分類" [level=2]\n' +
+      '    - text: 搜尋分類\n' +
+      '    - searchbox "搜尋分類" [disabled]\n' +
+      '    - paragraph: 尚無分類\n' +
+      '    - link "管理分類":\n' +
+      '      - /url: /zh-TW/collections?store=e55f0ee6-15ad-40cd-b9a2-0776233874e3\n' +
+      '    - group: + 物流\n' +
+      '    - group: + 搜尋引擎最佳化\n' +
+      '  - button "儲存修改" [disabled]\n' +
+      '  - button "上架" [disabled]\n' +
+      '- alert'
+  }
+}
+
+Node.js v24.15.0

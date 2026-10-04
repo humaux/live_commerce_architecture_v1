@@ -1,0 +1,1 @@
+tests/admin/attribution.spec.ts(720,11): error TS7053: Element implicitly has an 'any' type because expression of type '`en/${number}` | `zh-CN/${number}` | `zh-TW/${number}`' can't be used to index type 'Record<"en/1586" | "en/390" | "zh-CN/1586" | "zh-CN/390" | "zh-TW/1586" | "zh-TW/390", string>'.

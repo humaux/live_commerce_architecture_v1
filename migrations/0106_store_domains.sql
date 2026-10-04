@@ -1,0 +1,736 @@
+-- 0106 store domains (R5 unit store-domains; docs/delivery/units/store-domains.md).
+--
+-- Every store gets an address automatically; merchants can bring their own domain. Six Decisions:
+--   D1 store handle: control.stores.handle (lower-case ASCII, UNIQUE platform-wide, reserved list refused), assigned by a
+--      BEFORE INSERT trigger as a random 8-digit number, also backfilled for existing stores.
+--   D2 platform address: ensure_store_platform_domain writes an ACTIVE https://<handle>.<base> row (evidence platform-subdomain);
+--      the platform owns that zone so ownership is implied and the merchant is reachable the moment they publish.
+--   D3 merchant self-service domain: request_merchant_domain (REQUESTED + TXT token + CNAME/A instructions), the DNS/TLS
+--      worker transitions (commerce_storefront_verifier EXECUTE, incl. the ACTIVE merchant TLS renewal), merchant
+--      suspend/detach; one primary origin per store (merchant ACTIVE else platform).
+--   D4 edge TLS ask: resolve_storefront_ask answers only ACTIVE or TLS_PENDING origins (Caddy on_demand_tls ask endpoint).
+--   D5 security: tokens/columns never logged by these definers (no token in audit rows).
+--   D6 forward-only; merchant definers follow the 0081 p_hash + resolve_access + WithScope re-check pattern (integration:manage).
+--
+-- Roles reused: commerce_identity_writer (owns handle helpers/trigger), commerce_storefront_writer (owns domain definers),
+-- commerce_storefront_registrar (EXECUTE the operator bind/suspend/detach + the D2 platform backfill), commerce_runtime
+-- (merchant domain routes), commerce_identity (onboarding login, EXECUTE ensure_store_platform_domain),
+-- commerce_buyer_issuer (301 primary lookup). New: commerce_storefront_verifier (N-P1-1) — the narrow worker authority
+-- of the DNS/TLS verify sweep login (the four transitions + the TLS renewal), no operator authority.
+-- commerce_worker stays retired: nothing here grants to it.
+-- The onboarding login (commerce_identity) calls control.ensure_store_platform_domain only;
+-- it needs USAGE on control to name it, and gains no table privilege from it.
+GRANT USAGE ON SCHEMA control TO commerce_identity;
+
+-- ---------------------------------------------------------------------------------------
+-- D1: the store handle. Nullable so existing rows (and any foreign insert) stay valid until backfilled; the
+-- BEFORE INSERT trigger below fills it. Format = exactly internal/storehandles.Valid: 3..30 lower-case ASCII,
+-- letters/digits with single interior hyphens, no leading/trailing hyphen, no reserved word, no xn-- punycode.
+-- ---------------------------------------------------------------------------------------
+ALTER TABLE control.stores ADD COLUMN handle text
+    CONSTRAINT stores_handle_format CHECK (
+        handle IS NULL OR handle ~ '^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$');
+CREATE UNIQUE INDEX stores_handle_unique ON control.stores(handle) WHERE handle IS NOT NULL;
+COMMENT ON COLUMN control.stores.handle IS
+ '0106 R5: the platform-wide store address handle (https://<handle>.<LC_STORE_BASE_DOMAIN>). Lower-case ASCII, 3..30 chars, single interior hyphens, no reserved word/xn--. Assigned by control.stores_handle_default as a random 8-digit number; UNIQUE while set; changed only while never published (operator-only afterwards, D3).';
+
+-- Reserved words are case-normalised before the comparison. `stores` is the CNAME apex; anything xn-- is punycode.
+CREATE FUNCTION control.store_handle_reserved(p_handle text) RETURNS boolean
+LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
+    SELECT p_handle = ANY (ARRAY['www','admin','api','hooks','shop','mail','static','cdn','assets','app','help','support','status','stores'])
+        OR p_handle LIKE 'xn--%'
+$$;
+ALTER FUNCTION control.store_handle_reserved(text) OWNER TO commerce_identity_writer;
+REVOKE ALL ON FUNCTION control.store_handle_reserved(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_handle_reserved(text) TO commerce_identity_writer;
+COMMENT ON FUNCTION control.store_handle_reserved(text) IS
+ '0106 D1: true when p_handle (already lower-cased) is a reserved platform word or punycode (xn--). Immutable; called by assign/trigger/operator validation.';
+
+CREATE FUNCTION control.store_handle_valid(p_handle text) RETURNS boolean
+LANGUAGE sql IMMUTABLE PARALLEL SAFE SET search_path=pg_catalog AS $$
+    SELECT p_handle ~ '^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$' AND NOT control.store_handle_reserved(p_handle)
+$$;
+ALTER FUNCTION control.store_handle_valid(text) OWNER TO commerce_identity_writer;
+REVOKE ALL ON FUNCTION control.store_handle_valid(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_handle_valid(text) TO commerce_identity_writer;
+COMMENT ON FUNCTION control.store_handle_valid(text) IS
+ '0106 D1: format + reserved check in one predicate (parity with internal/storehandles.Valid).';
+
+-- P1-4: a handle is unavailable to assign_store_handle while any non-DETACHED platform-subdomain origin
+-- (https://<handle>.<base>) still exists for some store — a changed handle detaches its old origin in the same
+-- transaction, and the freed handle must not be re-issued to a new store while the old row still serves.
+CREATE FUNCTION control.store_handle_taken(p_handle text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM control.storefront_domains d
+        WHERE d.evidence_ref = 'platform-subdomain'
+          AND d.state <> 'DETACHED'
+          AND position('https://' || p_handle || '.' in d.origin) = 1
+    )
+$$;
+ALTER FUNCTION control.store_handle_taken(text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.store_handle_taken(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_handle_taken(text) TO commerce_identity_writer;
+COMMENT ON FUNCTION control.store_handle_taken(text) IS
+ '0106 D1 (P1-4): true while a non-DETACHED platform-subdomain origin of the form https://<p_handle>.<base> exists. SECURITY DEFINER commerce_storefront_writer; EXECUTE commerce_identity_writer (called by assign_store_handle and the backfill so a freed-but-still-serving handle is never re-issued).';
+
+-- Owner 2026-10-03: one random numeric allocator for inserts and migration backfill.
+-- The legacy internal signature stays stable; neither display name nor UUID contributes
+-- to the number. IDs are public identifiers, not credentials. No client controls the draw.
+-- Candidate-scoped transaction locks serialize concurrent allocators before returning;
+-- stores_handle_unique still rejects races with explicit operator writes.
+CREATE FUNCTION control.assign_store_handle(p_name text, p_id uuid) RETURNS text
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE cand text; attempt integer;
+BEGIN
+    FOR attempt IN 1..50 LOOP
+        cand := (10000000 + floor(random() * 90000000))::bigint::text;
+        IF NOT control.store_handle_valid(cand) THEN CONTINUE; END IF;
+        PERFORM pg_advisory_xact_lock(hashtextextended('control.store_handle:' || cand, 0));
+        IF NOT EXISTS (SELECT 1 FROM control.stores WHERE handle = cand)
+           AND NOT control.store_handle_taken(cand) THEN
+            RETURN cand;
+        END IF;
+    END LOOP;
+    RAISE EXCEPTION 'handle space exhausted' USING ERRCODE='PT409';
+END $$;
+ALTER FUNCTION control.assign_store_handle(text,uuid) OWNER TO commerce_identity_writer;
+REVOKE ALL ON FUNCTION control.assign_store_handle(text,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.assign_store_handle(text,uuid) TO commerce_identity_writer;
+COMMENT ON FUNCTION control.assign_store_handle(text,uuid) IS
+ '0106 owner ruling 2026-10-03: random 8-digit store ID, 50 bounded draws then PT409. SECURITY DEFINER commerce_identity_writer; insert trigger and backfill only. Ignores legacy name/id arguments, refuses reserved/existing/still-serving origins; candidate xact lock and unique index protect allocation. Not an authentication secret or an operator vanity-handle allocator.';
+
+CREATE FUNCTION control.stores_handle_default() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+    IF NEW.handle IS NULL THEN
+        NEW.handle := control.assign_store_handle(NEW.name, NEW.id);
+    ELSIF NOT control.store_handle_valid(NEW.handle) THEN
+        RAISE EXCEPTION 'invalid store handle' USING ERRCODE='PT400';
+    END IF;
+    RETURN NEW;
+END $$;
+ALTER FUNCTION control.stores_handle_default() OWNER TO commerce_identity_writer;
+REVOKE ALL ON FUNCTION control.stores_handle_default() FROM PUBLIC;
+COMMENT ON FUNCTION control.stores_handle_default() IS
+ '0106 D1: BEFORE INSERT trigger on control.stores; fills a missing handle with a random 8-digit number and refuses an explicit reserved/invalid one. SECURITY DEFINER commerce_identity_writer.';
+
+CREATE TRIGGER stores_handle_before_insert
+    BEFORE INSERT ON control.stores
+    FOR EACH ROW EXECUTE FUNCTION control.stores_handle_default();
+COMMENT ON TRIGGER stores_handle_before_insert ON control.stores IS
+ '0106 D1: assign/validate the handle on every store insert (onboarding via identity.create_initial_store and any direct insert).';
+
+-- Backfill handles for stores that predate 0106. Runs once at migration time (fresh databases have none).
+DO $$
+DECLARE r record;
+BEGIN
+    FOR r IN SELECT id, name FROM control.stores WHERE handle IS NULL ORDER BY id LOOP
+        UPDATE control.stores SET handle = control.assign_store_handle(r.name, r.id) WHERE id = r.id;
+    END LOOP;
+END $$;
+
+-- D1 handle change: an operator (or the identity writer) changes a published store's handle in one UPDATE; this
+-- trigger detaches the old platform origin in the same transaction (P1-4: no silent redirect chains). It matches
+-- evidence_ref='platform-subdomain' and the old handle's origin prefix, so it never touches a merchant-owned row.
+CREATE FUNCTION control.stores_handle_changed() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+    IF NEW.handle IS DISTINCT FROM OLD.handle AND OLD.handle IS NOT NULL THEN
+        UPDATE control.storefront_domains d SET state='DETACHED', version=d.version+1
+         WHERE d.store_id = NEW.id AND d.evidence_ref = 'platform-subdomain' AND d.state <> 'DETACHED'
+           AND position('https://' || OLD.handle || '.' in d.origin) = 1;
+    END IF;
+    RETURN NEW;
+END $$;
+ALTER FUNCTION control.stores_handle_changed() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.stores_handle_changed() FROM PUBLIC;
+COMMENT ON FUNCTION control.stores_handle_changed() IS
+ '0106 D1 (P1-4): AFTER UPDATE OF handle trigger on control.stores; detaches the old ACTIVE platform-subdomain origin in the same transaction. SECURITY DEFINER commerce_storefront_writer.';
+
+CREATE TRIGGER stores_handle_after_update
+    AFTER UPDATE OF handle ON control.stores
+    FOR EACH ROW EXECUTE FUNCTION control.stores_handle_changed();
+COMMENT ON TRIGGER stores_handle_after_update ON control.stores IS
+ '0106 D1: on a handle change, detach the old platform-subdomain origin (no silent redirect chains).';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 merchant self-service domain: extra columns on control.storefront_domains for the REQUESTED lifecycle.
+-- verification_token is the TXT value (_lc-verify.<host>); verify_deadline = requested_at + 72h (backoff bound).
+-- ---------------------------------------------------------------------------------------
+ALTER TABLE control.storefront_domains
+    ADD COLUMN verification_token text CHECK (verification_token IS NULL OR verification_token ~ '^[A-Za-z0-9_-]{43}$'),
+    ADD COLUMN requested_at timestamptz CHECK (isfinite(requested_at)),
+    ADD COLUMN verify_deadline timestamptz CHECK (isfinite(verify_deadline)),
+    ADD COLUMN last_checked_at timestamptz CHECK (isfinite(last_checked_at)),
+    ADD COLUMN dns_failures integer NOT NULL DEFAULT 0 CHECK (dns_failures >= 0),
+    ADD COLUMN tls_nonce uuid;
+COMMENT ON COLUMN control.storefront_domains.verification_token IS
+ '0106 D3: the TXT verification value for a REQUESTED merchant domain (never logged; cleared on the ACTIVE transition).';
+COMMENT ON COLUMN control.storefront_domains.requested_at IS '0106 D3: when the merchant requested this origin (backoff window anchor).';
+COMMENT ON COLUMN control.storefront_domains.verify_deadline IS '0106 D3: requested_at + 72h; DNS verification stops after it (the merchant re-requests for a fresh token).';
+COMMENT ON COLUMN control.storefront_domains.last_checked_at IS '0106 D3: last DNS check attempt (worker backoff).';
+COMMENT ON COLUMN control.storefront_domains.dns_failures IS '0106 D3: consecutive DNS verification failures since the last success.';
+COMMENT ON COLUMN control.storefront_domains.tls_nonce IS
+ '0106 D3: per-row TLS proof nonce (Decision 3): set by the DNS advance into TLS_PENDING, served at /.well-known/lc-domain-check/<nonce> by the edge for that host only, cleared on the ACTIVE transition or a re-request. The worker dials the EDGE addresses with SNI = the host and compares the body to this nonce.';
+
+GRANT INSERT(verification_token,requested_at,verify_deadline,last_checked_at,dns_failures,tls_nonce)
+  ON control.storefront_domains TO commerce_storefront_writer;
+GRANT UPDATE(verification_token,requested_at,verify_deadline,last_checked_at,dns_failures,tls_nonce)
+  ON control.storefront_domains TO commerce_storefront_writer;
+-- The merchant definers and the platform-address ensure both need to see the store handle/name for origin building.
+GRANT SELECT(handle) ON control.stores TO commerce_storefront_writer;
+COMMENT ON POLICY storefront_writer_domains_insert ON control.storefront_domains IS
+ '0081 + 0106: definer owner insert (operator bind ACTIVE, merchant request REQUESTED, platform ensure ACTIVE).';
+COMMENT ON POLICY storefront_writer_domains_update ON control.storefront_domains IS
+ '0081 + 0106: definer owner lifecycle moves (operator bind/suspend/detach, merchant suspend/detach, DNS/TLS worker transitions, merchant re-request refresh); each bumps version.';
+-- Extend the 0081 audit policy (same policy, same count) with the merchant self-service domain actions and the
+-- operator handle change (Decision 1, P1-4).
+ALTER POLICY storefront_writer_audit_insert ON ops.audit_events WITH CHECK (action IN (
+  'merchant.storefront_published','merchant.storefront_unpublished',
+  'operator.domain_bound','operator.domain_bound:rebind_from_detached','operator.domain_suspended','operator.domain_detached',
+  'merchant.domain_requested','merchant.domain_suspended','merchant.domain_detached',
+  'operator.handle_set'));
+COMMENT ON POLICY storefront_writer_audit_insert ON ops.audit_events IS
+ '0081 + 0106: the ten fixed storefront audit actions (six operator/merchant publication + three merchant self-service domain + operator.handle_set).';
+
+-- ---------------------------------------------------------------------------------------
+-- D2: control.ensure_store_platform_domain. Idempotent writer of the ACTIVE platform subdomain row
+-- (https://<handle>.<base>, evidence platform-subdomain). Called by the identity onboarding flow right after
+-- identity.create_initial_store (same tx, commerce_identity) and by backfill_platform_domains (the migration-time backfill).
+-- The platform owns that zone so ownership/TLS are implied; valid_until is a 10-year formality because the
+-- wildcard certificate is Caddy-managed and auto-renews (no SQL renewal path exists). No audit row (not a
+-- merchant-visible write). Returns {handle, origin} (origin NULL when no base domain is configured).
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.ensure_store_platform_domain(p_store uuid, p_base_domain text) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_tenant uuid; v_handle text; v_origin text; v_now timestamptz; v_row record;
+BEGIN
+    IF p_store IS NULL THEN RAISE EXCEPTION 'invalid store request' USING ERRCODE='PT400'; END IF;
+    SELECT tenant_id, handle INTO v_tenant, v_handle FROM control.stores WHERE id = p_store;
+    IF NOT FOUND THEN RAISE EXCEPTION 'store not found' USING ERRCODE='PT404'; END IF;
+    IF v_handle IS NULL THEN RAISE EXCEPTION 'store has no handle' USING ERRCODE='PT409'; END IF;
+    IF p_base_domain IS NULL OR btrim(p_base_domain) = '' THEN
+        RETURN jsonb_build_object('handle', v_handle, 'origin', NULL);
+    END IF;
+    v_origin := 'https://' || v_handle || '.' || lower(p_base_domain);
+    IF octet_length(v_origin) NOT BETWEEN 11 AND 261 OR right(v_origin,10) = '.localhost'
+       OR v_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid base domain' USING ERRCODE='PT400';
+    END IF;
+    -- One writer per origin at a time, then idempotent/re-bind under the lock. P1-4b: an origin still held by another
+    -- store's non-DETACHED row is refused (PT409 domain_owned_elsewhere), never silently reported as this store's
+    -- address; a DETACHED row (this store's, or a foreign store's freed one) is re-bound to this store.
+    PERFORM pg_advisory_xact_lock(hashtextextended('storefront-domain:'||v_origin,0));
+    SELECT d.id,d.store_id,d.state INTO v_row FROM control.storefront_domains d WHERE d.origin = v_origin FOR UPDATE;
+    IF FOUND THEN
+        IF v_row.store_id IS DISTINCT FROM p_store AND v_row.state <> 'DETACHED' THEN
+            RAISE EXCEPTION 'domain_owned_elsewhere' USING ERRCODE='PT409';
+        END IF;
+        IF v_row.state = 'ACTIVE' AND v_row.store_id = p_store THEN
+            RETURN jsonb_build_object('handle', v_handle, 'origin', v_origin);
+        END IF;
+        v_now := clock_timestamp();
+        UPDATE control.storefront_domains SET tenant_id=v_tenant, store_id=p_store, state='ACTIVE',
+            ownership_verified_at=v_now, tls_verified_at=v_now, valid_until=v_now + interval '3650 days',
+            evidence_ref='platform-subdomain', verification_token=NULL, tls_nonce=NULL, version=version+1
+         WHERE id=v_row.id;
+        RETURN jsonb_build_object('handle', v_handle, 'origin', v_origin);
+    END IF;
+    v_now := clock_timestamp();
+    INSERT INTO control.storefront_domains(tenant_id, store_id, origin, state,
+        ownership_verified_at, tls_verified_at, valid_until, evidence_ref)
+    VALUES (v_tenant, p_store, v_origin, 'ACTIVE', v_now, v_now, v_now + interval '3650 days', 'platform-subdomain');
+    RETURN jsonb_build_object('handle', v_handle, 'origin', v_origin);
+END $$;
+ALTER FUNCTION control.ensure_store_platform_domain(uuid,text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.ensure_store_platform_domain(uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.ensure_store_platform_domain(uuid,text) TO commerce_identity;
+GRANT EXECUTE ON FUNCTION control.ensure_store_platform_domain(uuid,text) TO commerce_storefront_registrar;
+COMMENT ON FUNCTION control.ensure_store_platform_domain(uuid,text) IS
+ '0106 D2: idempotent ACTIVE platform subdomain (https://<handle>.<base>, evidence platform-subdomain); re-binds a DETACHED row (own or freed foreign) and refuses a foreign non-DETACHED row (PT409 domain_owned_elsewhere, P1-4b). EXECUTE commerce_identity (onboarding, same tx as identity.create_initial_store) and commerce_storefront_registrar (backfill). Cross-domain call: commerce_identity -> this commerce_storefront_writer definer, so the identity login gains no direct storefront_domains write.';
+
+CREATE FUNCTION control.backfill_platform_domains(p_base_domain text) RETURNS bigint
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE r record; n bigint := 0;
+BEGIN
+    FOR r IN SELECT id FROM control.stores WHERE handle IS NOT NULL ORDER BY id LOOP
+        PERFORM control.ensure_store_platform_domain(r.id, p_base_domain);
+        n := n + 1;
+    END LOOP;
+    RETURN n;
+END $$;
+ALTER FUNCTION control.backfill_platform_domains(text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.backfill_platform_domains(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.backfill_platform_domains(text) TO commerce_storefront_registrar;
+COMMENT ON FUNCTION control.backfill_platform_domains(text) IS
+ '0106 D2: backfill of the platform subdomain for every existing handled store (idempotent; EXECUTE commerce_storefront_registrar). Called by the 0106 migration-time DO block (N-P1-3) so a deploy creates the rows for pre-existing stores, not a separate operator one-shot. Returns the number of stores visited.';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 merchant request / read / suspend / detach. Same p_hash + resolve_access(integration:manage) + WithScope
+-- re-check as 0081 read_storefront/set_storefront_published. The token is generated by Go and passed in; these
+-- definers never emit it into audit or logs.
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.request_merchant_domain(p_hash bytea,p_store uuid,p_hostname text,p_base_domain text,p_token text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; v_origin text; v_host text; v_now timestamptz; v_deadline timestamptz; v_row record; v_id uuid; v_version bigint;
+BEGIN
+    IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_token IS NULL OR p_token !~ '^[A-Za-z0-9_-]{43}$' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'integration:manage');
+    IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+    IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+    IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF current_setting('app.tenant_id',true) IS DISTINCT FROM s.tenant_id::text
+     OR current_setting('app.store_id',true) IS DISTINCT FROM p_store::text
+     OR current_setting('app.principal_id',true) IS DISTINCT FROM s.principal_id::text THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF p_base_domain IS NULL OR btrim(p_base_domain)='' THEN RAISE EXCEPTION 'base domain not configured' USING ERRCODE='PT409'; END IF;
+    v_host := lower(btrim(p_hostname));
+    IF v_host IS NULL OR length(v_host) > 253
+       OR v_host COLLATE "C" !~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid hostname' USING ERRCODE='PT400'; END IF;
+    -- A merchant cannot bring a domain that lives under the platform's own base (the platform subdomain zone).
+    IF v_host = lower(p_base_domain) OR v_host LIKE '%.' || lower(p_base_domain) THEN
+        RAISE EXCEPTION 'reserved hostname' USING ERRCODE='PT409'; END IF;
+    v_origin := 'https://' || v_host;
+    IF octet_length(v_origin) NOT BETWEEN 11 AND 261 OR right(v_origin,10) = '.localhost'
+       OR v_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid hostname' USING ERRCODE='PT400'; END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended('storefront-domain:'||v_origin,0));
+    SELECT d.id,d.tenant_id,d.store_id,d.state,d.version INTO v_row FROM control.storefront_domains d WHERE d.origin=v_origin FOR UPDATE;
+    IF FOUND THEN
+        IF v_row.store_id <> p_store THEN RAISE EXCEPTION 'domain_owned_elsewhere' USING ERRCODE='PT409'; END IF;
+        IF v_row.state = 'ACTIVE' THEN
+            RAISE EXCEPTION 'domain_active' USING ERRCODE='PT409';
+        END IF;
+        -- P2-3/P2-4: a SUSPENDED or DETACHED row of the same store is recoverable with fresh DNS proof (架构 §7.1);
+        -- a pending row re-request just refreshes the token/deadline. Every re-request resets the lifecycle to REQUESTED
+        -- and clears the stale TLS nonce.
+        v_now := clock_timestamp();
+        UPDATE control.storefront_domains SET state='REQUESTED', verification_token=p_token, requested_at=v_now,
+            verify_deadline=v_now + interval '72 hours', last_checked_at=NULL, dns_failures=0, tls_nonce=NULL, version=version+1
+         WHERE id=v_row.id RETURNING id,version INTO v_id,v_version;
+    ELSE
+        v_now := clock_timestamp();
+        INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,verification_token,requested_at,verify_deadline)
+        VALUES (s.tenant_id,p_store,v_origin,'REQUESTED',p_token,v_now,v_now + interval '72 hours') RETURNING id,version INTO v_id,v_version;
+    END IF;
+    INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'merchant.domain_requested');
+    RETURN jsonb_build_object('domain_id',v_id,'version',v_version,'state','REQUESTED','origin',v_origin,
+      'dns',jsonb_build_object(
+        'txt_name','_lc-verify.'||v_host,'txt_value',p_token,
+        'cname_target','stores.'||lower(p_base_domain),
+        'apex',array_length(regexp_split_to_array(v_host,'\.'),1) < 3));
+END $$;
+ALTER FUNCTION control.request_merchant_domain(bytea,uuid,text,text,text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.request_merchant_domain(bytea,uuid,text,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.request_merchant_domain(bytea,uuid,text,text,text) TO commerce_runtime;
+COMMENT ON FUNCTION control.request_merchant_domain(bytea,uuid,text,text,text) IS
+ '0106 D3: internal/storefrontdomains Request; EXECUTE commerce_runtime (admin Settings POST storefront/domains). integration:manage. Enters (or re-enters) a REQUESTED merchant origin with a fresh TXT token + CNAME/A DNS instructions; re-requesting a pending/SUSPENDED/DETACHED row of the same store resets to REQUESTED with fresh proof (P2-3/P2-4). Refuses the platform base zone, a foreign store origin (PT409 domain_owned_elsewhere) and an ACTIVE row (PT409 domain_active). Never logs the token.';
+
+CREATE FUNCTION control.read_store_domains(p_hash bytea,p_store uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; v_domains jsonb;
+BEGIN
+    IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'integration:read');
+    IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+    IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+    IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF current_setting('app.tenant_id',true) IS DISTINCT FROM s.tenant_id::text
+     OR current_setting('app.store_id',true) IS DISTINCT FROM p_store::text
+     OR current_setting('app.principal_id',true) IS DISTINCT FROM s.principal_id::text THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    SELECT coalesce(jsonb_agg(jsonb_build_object('origin',d.origin,'state',d.state,'version',d.version,
+      'kind',CASE WHEN d.evidence_ref='platform-subdomain' THEN 'platform' ELSE 'custom' END,
+      'token',d.verification_token,
+      'verify_deadline',CASE WHEN d.verify_deadline IS NULL THEN NULL ELSE to_char(d.verify_deadline AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS"Z"') END,
+      'serving',coalesce(d.state='ACTIVE' AND d.valid_until>clock_timestamp(),false)) ORDER BY d.origin),'[]'::jsonb) INTO v_domains
+     FROM control.storefront_domains d WHERE d.tenant_id=s.tenant_id AND d.store_id=p_store;
+    RETURN jsonb_build_object('domains',v_domains);
+END $$;
+ALTER FUNCTION control.read_store_domains(bytea,uuid) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.read_store_domains(bytea,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.read_store_domains(bytea,uuid) TO commerce_runtime;
+COMMENT ON FUNCTION control.read_store_domains(bytea,uuid) IS
+ '0106 D3: internal/storefrontdomains Read; EXECUTE commerce_runtime (admin Settings GET storefront/domains). integration:read. Every domain row of the store (origin, state, version, kind — platform for the platform subdomain, custom otherwise, token for pending rows, verify deadline, serving). The token is the merchant''s own; never logged.';
+
+CREATE FUNCTION control.suspend_merchant_domain(p_hash bytea,p_store uuid,p_origin text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; v_row record; v_version bigint;
+BEGIN
+    IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL
+       OR p_origin IS NULL OR octet_length(p_origin) NOT BETWEEN 11 AND 261 OR right(p_origin,10)='.localhost'
+       OR p_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'integration:manage');
+    IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+    IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+    IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF current_setting('app.tenant_id',true) IS DISTINCT FROM s.tenant_id::text
+     OR current_setting('app.store_id',true) IS DISTINCT FROM p_store::text
+     OR current_setting('app.principal_id',true) IS DISTINCT FROM s.principal_id::text THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended('storefront-domain:'||p_origin,0));
+    SELECT d.id,d.store_id,d.state,d.version,d.evidence_ref INTO v_row FROM control.storefront_domains d WHERE d.origin=p_origin FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    IF v_row.store_id <> p_store THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF v_row.evidence_ref = 'platform-subdomain' THEN RAISE EXCEPTION 'platform_domain' USING ERRCODE='PT409'; END IF;
+    IF v_row.state='DETACHED' THEN RAISE EXCEPTION 'domain_detached' USING ERRCODE='PT409'; END IF;
+    IF v_row.state='SUSPENDED' THEN
+        RETURN jsonb_build_object('domain_id',v_row.id,'version',v_row.version,'state','SUSPENDED','changed',false);
+    END IF;
+    UPDATE control.storefront_domains SET state='SUSPENDED',tls_nonce=NULL,version=version+1 WHERE id=v_row.id RETURNING version INTO v_version;
+    INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'merchant.domain_suspended');
+    RETURN jsonb_build_object('domain_id',v_row.id,'version',v_version,'state','SUSPENDED','changed',true);
+END $$;
+ALTER FUNCTION control.suspend_merchant_domain(bytea,uuid,text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.suspend_merchant_domain(bytea,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.suspend_merchant_domain(bytea,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION control.suspend_merchant_domain(bytea,uuid,text) IS
+ '0106 D3: internal/storefrontdomains Suspend; EXECUTE commerce_runtime. integration:manage. Merchant suspends its own non-DETACHED, non-platform origin (resolver denies on the next request). Platform-bound origin = PT409 platform_domain (P2-8); DETACHED = PT409 domain_detached; another store''s origin = PT403.';
+
+CREATE FUNCTION control.detach_merchant_domain(p_hash bytea,p_store uuid,p_origin text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE s record; v_row record; v_version bigint;
+BEGIN
+    IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL
+       OR p_origin IS NULL OR octet_length(p_origin) NOT BETWEEN 11 AND 261 OR right(p_origin,10)='.localhost'
+       OR p_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'integration:manage');
+    IF s.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401'; END IF;
+    IF s.access_status='not_found' THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+    IF s.access_status IS DISTINCT FROM 'ok' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF current_setting('app.tenant_id',true) IS DISTINCT FROM s.tenant_id::text
+     OR current_setting('app.store_id',true) IS DISTINCT FROM p_store::text
+     OR current_setting('app.principal_id',true) IS DISTINCT FROM s.principal_id::text THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended('storefront-domain:'||p_origin,0));
+    SELECT d.id,d.store_id,d.state,d.version,d.evidence_ref INTO v_row FROM control.storefront_domains d WHERE d.origin=p_origin FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    IF v_row.store_id <> p_store THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
+    IF v_row.evidence_ref = 'platform-subdomain' THEN RAISE EXCEPTION 'platform_domain' USING ERRCODE='PT409'; END IF;
+    IF v_row.state='DETACHED' THEN
+        RETURN jsonb_build_object('domain_id',v_row.id,'version',v_row.version,'state','DETACHED','changed',false);
+    END IF;
+    UPDATE control.storefront_domains SET state='DETACHED',tls_nonce=NULL,version=version+1 WHERE id=v_row.id RETURNING version INTO v_version;
+    INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'merchant.domain_detached');
+    RETURN jsonb_build_object('domain_id',v_row.id,'version',v_version,'state','DETACHED','changed',true);
+END $$;
+ALTER FUNCTION control.detach_merchant_domain(bytea,uuid,text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.detach_merchant_domain(bytea,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.detach_merchant_domain(bytea,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION control.detach_merchant_domain(bytea,uuid,text) IS
+ '0106 D3: internal/storefrontdomains Detach; EXECUTE commerce_runtime. integration:manage. Merchant finally detaches its own origin. Platform-bound origin = PT409 platform_domain (P2-8); DETACHED = no-op; another store''s origin = PT403.';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 worker transitions (EXECUTE commerce_storefront_verifier; driven by the River periodic verify job in
+-- claims-worker, internal/storefrontdomains.VerifyPending): DNS advance (REQUESTED -> OWNERSHIP_PENDING ->
+-- TLS_PENDING), TLS completion (-> ACTIVE), and the two pending batch reads. No token leaves these functions.
+-- ---------------------------------------------------------------------------------------
+
+-- N-P1-1 (least privilege): the DNS/TLS verify sweep login lc_store_domain_verify joins this narrow authority, not the
+-- registrar. It holds EXECUTE only on the four worker transition definers below and the TLS-renewal definers that follow,
+-- plus USAGE on control to name them; it cannot reach the operator bind/suspend/detach functions (0081, registrar-only)
+-- or any table. Residual by design: like the registrar before it, it can advance any existing REQUESTED/TLS_PENDING row.
+CREATE ROLE commerce_storefront_verifier NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+GRANT USAGE ON SCHEMA control TO commerce_storefront_verifier;
+COMMENT ON ROLE commerce_storefront_verifier IS
+ '0106 D3 (N-P1-1): narrow worker authority of the DNS/TLS verify sweep login lc_store_domain_verify (deploy/postgres/logins.tsv). EXECUTE only on the four verify transitions (store_domain_dns_advance, store_domain_tls_complete, next_store_domain_dns_check, next_store_domain_tls_probe) and the TLS-renewal definers (store_domain_tls_renew, next_store_domain_tls_renewal); no bind/suspend/detach, no operator authority, no table privilege.';
+
+CREATE FUNCTION control.store_domain_dns_advance(p_domain_id uuid,p_matched boolean)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_row record; v_now timestamptz; v_state text;
+BEGIN
+    IF p_domain_id IS NULL OR p_matched IS NULL THEN RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT d.id,d.state,d.version,d.dns_failures,d.verify_deadline INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    v_now := clock_timestamp();
+    IF p_matched THEN
+        IF v_row.state='REQUESTED' THEN
+            v_state := 'OWNERSHIP_PENDING';
+            UPDATE control.storefront_domains SET state='OWNERSHIP_PENDING',ownership_verified_at=v_now,last_checked_at=v_now,dns_failures=0,version=version+1
+             WHERE id=p_domain_id;
+        ELSIF v_row.state='OWNERSHIP_PENDING' THEN
+            v_state := 'TLS_PENDING';
+            UPDATE control.storefront_domains SET state='TLS_PENDING',tls_nonce=gen_random_uuid(),last_checked_at=v_now,dns_failures=0,version=version+1
+             WHERE id=p_domain_id;
+        ELSE
+            v_state := v_row.state;
+        END IF;
+    ELSE
+        v_state := v_row.state;
+        UPDATE control.storefront_domains SET last_checked_at=v_now,dns_failures=dns_failures+1,version=version+1 WHERE id=p_domain_id;
+    END IF;
+    RETURN jsonb_build_object('domain_id',p_domain_id,'state',v_state,'expired',coalesce(v_row.verify_deadline <= v_now,false),'dns_failures',CASE WHEN p_matched THEN 0 ELSE v_row.dns_failures+1 END);
+END $$;
+ALTER FUNCTION control.store_domain_dns_advance(uuid,boolean) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.store_domain_dns_advance(uuid,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_domain_dns_advance(uuid,boolean) TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.store_domain_dns_advance(uuid,boolean) IS
+ '0106 D3: worker DNS transition (EXECUTE commerce_storefront_verifier). match: REQUESTED -> OWNERSHIP_PENDING, OWNERSHIP_PENDING -> TLS_PENDING (sets a fresh tls_nonce for the edge nonce path); miss: last_checked_at + dns_failures+1. Returns the new state and whether the verify deadline has passed (expired).';
+
+CREATE FUNCTION control.store_domain_tls_complete(p_domain_id uuid,p_valid_until timestamptz)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_row record; v_now timestamptz;
+BEGIN
+    IF p_domain_id IS NULL OR p_valid_until IS NULL OR NOT isfinite(p_valid_until) THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    v_now := clock_timestamp();
+    IF p_valid_until<=v_now OR p_valid_until>v_now+interval '400 days' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT d.id,d.state,d.version INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    IF v_row.state <> 'TLS_PENDING' THEN RAISE EXCEPTION 'domain not pending tls' USING ERRCODE='PT409'; END IF;
+    UPDATE control.storefront_domains SET state='ACTIVE',tls_verified_at=v_now,valid_until=p_valid_until,
+        verification_token=NULL,tls_nonce=NULL,evidence_ref='merchant-tls',version=version+1 WHERE id=p_domain_id;
+    RETURN jsonb_build_object('domain_id',p_domain_id,'state','ACTIVE','version',v_row.version+1);
+END $$;
+ALTER FUNCTION control.store_domain_tls_complete(uuid,timestamptz) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.store_domain_tls_complete(uuid,timestamptz) IS
+ '0106 D3: worker TLS transition (EXECUTE commerce_storefront_verifier): TLS_PENDING -> ACTIVE with the probe''s certificate notAfter as valid_until (bounded 400 days), evidence merchant-tls, token and tls_nonce cleared.';
+
+CREATE FUNCTION control.next_store_domain_dns_check()
+RETURNS TABLE(domain_id uuid, origin text, hostname text, token text, state text, verify_deadline timestamptz, last_checked_at timestamptz, dns_failures integer)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT d.id, d.origin, substring(d.origin from 9), d.verification_token, d.state, d.verify_deadline, d.last_checked_at, d.dns_failures
+      FROM control.storefront_domains d
+     WHERE d.state='REQUESTED' AND d.verify_deadline > clock_timestamp()
+     ORDER BY d.id
+$$;
+ALTER FUNCTION control.next_store_domain_dns_check() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.next_store_domain_dns_check() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_dns_check() TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.next_store_domain_dns_check() IS
+ '0106 D3: worker batch read (EXECUTE commerce_storefront_verifier): REQUESTED rows still inside their 72h window. Returns the hostname (origin without the https:// scheme) and token for the DNS lookup.';
+
+CREATE FUNCTION control.next_store_domain_tls_probe()
+RETURNS TABLE(domain_id uuid, origin text, nonce text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT d.id, d.origin, coalesce(d.tls_nonce::text,'') FROM control.storefront_domains d WHERE d.state='TLS_PENDING' ORDER BY d.id
+$$;
+ALTER FUNCTION control.next_store_domain_tls_probe() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.next_store_domain_tls_probe() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_tls_probe() TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.next_store_domain_tls_probe() IS
+ '0106 D3: worker batch read (EXECUTE commerce_storefront_verifier): TLS_PENDING rows with their per-row tls_nonce (the edge nonce path the probe fetches through the edge, P1-2); the TLS probe completes them.';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 TLS renewal (N-P1-2): a merchant ACTIVE row must not go dark the moment its first certificate notAfter passes.
+-- The sweep re-probes ACTIVE merchant rows in the last third of their current cert window and advances valid_until to
+-- the freshly-observed notAfter through a verifier-scoped definer — renewal only, never a state change (ACTIVE stays
+-- ACTIVE, evidence stays merchant-tls). The platform subdomain's wildcard cert is Caddy-managed and auto-renews, so no
+-- SQL renewal path exists for it (its valid_until is a 10-year formality, D2).
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.store_domain_tls_renew(p_domain_id uuid,p_valid_until timestamptz)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_row record; v_now timestamptz;
+BEGIN
+    IF p_domain_id IS NULL OR p_valid_until IS NULL OR NOT isfinite(p_valid_until) THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    v_now := clock_timestamp();
+    IF p_valid_until<=v_now OR p_valid_until>v_now+interval '400 days' THEN
+        RAISE EXCEPTION 'invalid domain request' USING ERRCODE='PT400'; END IF;
+    SELECT d.id,d.state,d.version,d.evidence_ref INTO v_row FROM control.storefront_domains d WHERE d.id=p_domain_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'domain not found' USING ERRCODE='PT404'; END IF;
+    IF v_row.state <> 'ACTIVE' OR v_row.evidence_ref <> 'merchant-tls' THEN
+        RAISE EXCEPTION 'domain not renewable' USING ERRCODE='PT409'; END IF;
+    UPDATE control.storefront_domains SET tls_verified_at=v_now,valid_until=p_valid_until,version=version+1 WHERE id=p_domain_id;
+    RETURN jsonb_build_object('domain_id',p_domain_id,'state','ACTIVE','version',v_row.version+1);
+END $$;
+ALTER FUNCTION control.store_domain_tls_renew(uuid,timestamptz) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.store_domain_tls_renew(uuid,timestamptz) IS
+ '0106 D3 (N-P1-2): worker TLS renewal (EXECUTE commerce_storefront_verifier): an ACTIVE merchant-tls row advances valid_until to a fresh probe notAfter (bounded 400 days) and tls_verified_at to now; state stays ACTIVE and evidence merchant-tls (renewal only, never a state change).';
+
+CREATE FUNCTION control.next_store_domain_tls_renewal()
+RETURNS TABLE(domain_id uuid, origin text, valid_until timestamptz)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT d.id, d.origin, d.valid_until
+      FROM control.storefront_domains d
+     WHERE d.state='ACTIVE' AND d.evidence_ref='merchant-tls'
+       AND d.tls_verified_at IS NOT NULL AND d.valid_until > clock_timestamp()
+       AND clock_timestamp() > d.tls_verified_at + (d.valid_until - d.tls_verified_at) * 2 / 3
+     ORDER BY d.id
+$$;
+ALTER FUNCTION control.next_store_domain_tls_renewal() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.next_store_domain_tls_renewal() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.next_store_domain_tls_renewal() TO commerce_storefront_verifier;
+COMMENT ON FUNCTION control.next_store_domain_tls_renewal() IS
+ '0106 D3 (N-P1-2): worker batch read (EXECUTE commerce_storefront_verifier): ACTIVE merchant-tls rows now in the last third of their cert window [tls_verified_at, valid_until] — the sweep re-probes them and renews via store_domain_tls_renew before they would go dark at notAfter.';
+
+-- P1-2: the edge serves /.well-known/lc-domain-check/<nonce> for a TLS_PENDING host and that path only. The api
+-- (commerce_runtime) checks host+nonce here; the worker dials the EDGE address with SNI = the host and compares the
+-- response body to this nonce — it never dials the merchant's DNS answer.
+CREATE FUNCTION control.tls_pending_nonce(p_host text, p_nonce text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT p_host IS NOT NULL AND p_nonce IS NOT NULL AND length(p_host) <= 253
+       AND p_host COLLATE "C" ~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'
+       AND EXISTS (SELECT 1 FROM control.storefront_domains d
+                   WHERE d.origin = 'https://' || lower(p_host) AND d.state = 'TLS_PENDING'
+                     AND d.tls_nonce::text = lower(p_nonce))
+$$;
+ALTER FUNCTION control.tls_pending_nonce(text,text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.tls_pending_nonce(text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.tls_pending_nonce(text,text) TO commerce_runtime;
+COMMENT ON FUNCTION control.tls_pending_nonce(text,text) IS
+ '0106 D3 (P1-2): true when p_host is a TLS_PENDING origin whose tls_nonce equals p_nonce; the edge''s /.well-known/lc-domain-check/<nonce> (EXECUTE commerce_runtime) answers with the nonce body only then. Never admits ACTIVE/DETACHED/SUSPENDED/REQUESTED hosts.';
+
+-- ---------------------------------------------------------------------------------------
+-- D4 edge TLS ask: Caddy on_demand_tls { ask http://api:<port>/internal/tls-ask } answers 200 only for a hostname
+-- that maps to an ACTIVE origin or a merchant origin in TLS_PENDING. Fail closed otherwise. EXECUTE commerce_runtime
+-- (the internal-network api login; rate limit + negative cache live in internal/tlsask).
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.resolve_storefront_ask(p_host text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT p_host IS NOT NULL AND length(p_host) <= 253
+       AND p_host COLLATE "C" ~ '^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'
+       AND EXISTS (SELECT 1 FROM control.storefront_domains d
+                   WHERE d.origin = 'https://' || lower(p_host) AND d.state IN ('ACTIVE','TLS_PENDING')
+                     AND (d.state = 'TLS_PENDING' OR d.valid_until > clock_timestamp()))
+$$;
+ALTER FUNCTION control.resolve_storefront_ask(text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.resolve_storefront_ask(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.resolve_storefront_ask(text) TO commerce_runtime;
+COMMENT ON FUNCTION control.resolve_storefront_ask(text) IS
+ '0106 D4: internal/tlsask check (EXECUTE commerce_runtime, internal network only). True only for an ACTIVE in-window platform/merchant origin or a TLS_PENDING merchant origin (an ACTIVE row past valid_until fails closed, P2-1); unknown/DETACHED/SUSPENDED/REQUESTED hosts fail closed.';
+
+-- P1-3: the 30-second in-memory set internal/tlsask serves the ask from (no per-ask DB query, no global bucket).
+-- ACTIVE in-window (platform or merchant) plus TLS_PENDING rows. EXECUTE commerce_runtime (the api pool).
+CREATE FUNCTION control.admitted_storefront_hosts() RETURNS SETOF text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+    SELECT substring(d.origin from 9)
+      FROM control.storefront_domains d
+     WHERE d.state = 'TLS_PENDING'
+        OR (d.state = 'ACTIVE' AND d.valid_until > clock_timestamp())
+$$;
+ALTER FUNCTION control.admitted_storefront_hosts() OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.admitted_storefront_hosts() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.admitted_storefront_hosts() TO commerce_runtime;
+COMMENT ON FUNCTION control.admitted_storefront_hosts() IS
+ '0106 D4 (P1-3): the host set the in-memory ask serves from (ACTIVE in-window platform/merchant + TLS_PENDING), refreshed every 30s by internal/tlsask. EXECUTE commerce_runtime. The nonce path stays on tls_pending_nonce.';
+
+-- ---------------------------------------------------------------------------------------
+-- D3 301-to-primary: the primary ACTIVE origin of the store that p_origin resolves to (a merchant ACTIVE row first,
+-- else the platform subdomain); NULL when p_origin is not ACTIVE or is already the primary (no redirect). Non-primary
+-- ACTIVE origins 301 to it. EXECUTE commerce_buyer_runtime (the buyer runtime pool internal/buyerhttp design reads run on).
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION control.resolve_primary_origin(p_origin text) RETURNS text
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_store uuid; v_primary text;
+BEGIN
+    IF p_origin IS NULL THEN RETURN NULL; END IF;
+    SELECT d.store_id INTO v_store FROM control.storefront_domains d WHERE d.origin=p_origin AND d.state='ACTIVE';
+    IF NOT FOUND THEN RETURN NULL; END IF;
+    SELECT d.origin INTO v_primary FROM control.storefront_domains d
+     WHERE d.store_id=v_store AND d.state='ACTIVE'
+     ORDER BY (d.evidence_ref='platform-subdomain') ASC, d.id ASC LIMIT 1;
+    IF v_primary IS NOT DISTINCT FROM p_origin THEN RETURN NULL; END IF;
+    RETURN v_primary;
+END $$;
+ALTER FUNCTION control.resolve_primary_origin(text) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.resolve_primary_origin(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.resolve_primary_origin(text) TO commerce_buyer_runtime;
+COMMENT ON FUNCTION control.resolve_primary_origin(text) IS
+ '0106 D3: primary ACTIVE origin for the store of p_origin (merchant ACTIVE first, else platform subdomain); NULL when p_origin is not ACTIVE or is already primary (so no redirect). EXECUTE commerce_buyer_runtime (buyer design read pool) for the buyer-facing 301 lookup.';
+
+-- ---------------------------------------------------------------------------------------
+-- N-P1-3: the platform-origin backfill now runs at migration time, not as a separate operator one-shot — existing
+-- stores (e.g. the pilot) get their ACTIVE https://<handle>.<base> row on the same deploy that adds 0106. The base
+-- domain is the session-local GUC lc.store_base_domain (cmd/migrate sets it from LC_STORE_BASE_DOMAIN for the whole
+-- migration tx); when it is unset (e.g. a test fixture without the platform zone) the backfill is a no-op. Fresh
+-- databases have no stores here yet, so this is empty then too. Runs as the migration owner (the postgres superuser
+-- behind dsn_migrate_owner), so EXECUTE on the SECURITY DEFINER backfill_platform_domains is not an issue.
+-- ---------------------------------------------------------------------------------------
+DO $$
+DECLARE base text := current_setting('lc.store_base_domain', true);
+BEGIN
+    IF base IS NOT NULL AND btrim(base) <> '' THEN
+        PERFORM control.backfill_platform_domains(lower(btrim(base)));
+    END IF;
+END $$;
+
+-- ---------------------------------------------------------------------------------------
+-- D1 operator handle change (Decision 1, P1-4): control.operator_set_store_handle is the only way to change a
+-- store's handle after the fact — 0106 assigns it only at onboarding/backfill. SECURITY DEFINER
+-- commerce_storefront_writer (owner like operator_bind_domain), EXECUTE commerce_storefront_registrar only, never
+-- commerce_worker. Validates format/reserved/xn--/uniqueness exactly like assignment; refuses PT409 store_published
+-- when the store was ever published unless the operator passes the --after-publish override (Decision 1). Changes the
+-- handle, and in the SAME transaction the stores_handle_after_update trigger detaches the old platform origin (no
+-- silent redirect chains) while ensure_store_platform_domain writes the new ACTIVE https://<handle>.<base> row. The
+-- base domain comes from the session GUC lc.store_base_domain (cmd/store-admin sets it from LC_STORE_BASE_DOMAIN);
+-- an unset GUC is refused (PT409 base domain not configured). One operator.handle_set audit row (no secrets).
+-- ---------------------------------------------------------------------------------------
+-- The operator definer validates with the same two IMMUTABLE helpers assignment uses; they are owned by
+-- commerce_identity_writer and are NOT SECURITY DEFINER, so the storefront writer needs EXECUTE on them (the
+-- caller's privilege is used at run time).
+GRANT EXECUTE ON FUNCTION control.store_handle_reserved(text) TO commerce_storefront_writer;
+GRANT EXECUTE ON FUNCTION control.store_handle_valid(text) TO commerce_storefront_writer;
+
+-- The handle change needs a column-limited UPDATE on control.stores.handle; control.stores has FORCE ROW LEVEL
+-- SECURITY, so the definer's single update path needs its own policy (the column grant alone would update 0 rows).
+CREATE POLICY storefront_writer_stores_update ON control.stores FOR UPDATE TO commerce_storefront_writer
+  USING (true) WITH CHECK (true);
+GRANT UPDATE(handle) ON control.stores TO commerce_storefront_writer;
+COMMENT ON POLICY storefront_writer_stores_update ON control.stores IS
+ '0106 D1: operator_set_store_handle is the only handle updater (column grant = handle only; forced RLS needs this policy for the UPDATE to reach rows).';
+
+CREATE FUNCTION control.operator_set_store_handle(p_store uuid, p_handle text, p_after_publish boolean)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_tenant uuid; v_principal uuid; v_old text; v_base text; v_origin text; v_published boolean;
+BEGIN
+    IF p_store IS NULL THEN RAISE EXCEPTION 'invalid store request' USING ERRCODE='PT400'; END IF;
+    IF p_handle IS NULL OR NOT control.store_handle_valid(p_handle) THEN
+        RAISE EXCEPTION 'invalid store handle' USING ERRCODE='PT400';
+    END IF;
+    SELECT s.tenant_id, s.handle INTO v_tenant, v_old FROM control.stores s WHERE s.id = p_store FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'store not found' USING ERRCODE='PT404'; END IF;
+    IF v_old IS NULL THEN RAISE EXCEPTION 'store has no handle' USING ERRCODE='PT409'; END IF;
+    IF v_old = p_handle THEN
+        RETURN jsonb_build_object('store_id', p_store, 'handle', p_handle, 'origin', NULL, 'changed', false, 'after_publish', coalesce(p_after_publish, false));
+    END IF;
+    -- Uniqueness exactly like assignment (the partial unique index remains the concurrency backstop); store_handle_taken
+    -- also refuses a still-serving platform origin https://<p_handle>.<base> (P1-4: a freed handle stays unavailable).
+    IF EXISTS (SELECT 1 FROM control.stores WHERE handle = p_handle) OR control.store_handle_taken(p_handle) THEN
+        RAISE EXCEPTION 'handle_taken' USING ERRCODE='PT409';
+    END IF;
+    -- Decision 1: the handle can change freely only while the store has never been published; after that only the
+    -- operator may, and only with the explicit --after-publish override.
+    SELECT coalesce(p.published, false) INTO v_published FROM control.storefront_publications p
+     WHERE p.tenant_id = v_tenant AND p.store_id = p_store;
+    IF v_published AND NOT coalesce(p_after_publish, false) THEN
+        RAISE EXCEPTION 'store_published' USING ERRCODE='PT409';
+    END IF;
+    v_base := current_setting('lc.store_base_domain', true);
+    IF v_base IS NULL OR btrim(v_base) = '' THEN
+        RAISE EXCEPTION 'base domain not configured' USING ERRCODE='PT409';
+    END IF;
+    v_base := lower(btrim(v_base));
+    v_origin := 'https://' || p_handle || '.' || v_base;
+    IF octet_length(v_origin) NOT BETWEEN 11 AND 261 OR right(v_origin,10) = '.localhost'
+       OR v_origin COLLATE "C" !~ '^https://([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$' THEN
+        RAISE EXCEPTION 'invalid base domain' USING ERRCODE='PT400';
+    END IF;
+    -- The handle change fires stores_handle_after_update (SECURITY DEFINER commerce_storefront_writer), which detaches
+    -- the old platform origin in this same transaction (P1-4).
+    UPDATE control.stores SET handle = p_handle WHERE id = p_store;
+    -- The new ACTIVE platform origin is written in the same transaction (idempotent, D2).
+    PERFORM control.ensure_store_platform_domain(p_store, v_base);
+    -- Audit attribution follows the other operator definers: the store's owner principal (identity.initial_stores).
+    SELECT i.principal_id INTO v_principal FROM identity.initial_stores i WHERE i.tenant_id = v_tenant AND i.store_id = p_store;
+    IF NOT FOUND THEN RAISE EXCEPTION 'store has no owner principal' USING ERRCODE='PT409'; END IF;
+    INSERT INTO ops.audit_events(tenant_id, store_id, principal_id, action)
+     VALUES (v_tenant, p_store, v_principal, 'operator.handle_set');
+    RETURN jsonb_build_object('store_id', p_store, 'handle', p_handle, 'origin', v_origin, 'changed', true, 'after_publish', coalesce(p_after_publish, false));
+END $$;
+ALTER FUNCTION control.operator_set_store_handle(uuid,text,boolean) OWNER TO commerce_storefront_writer;
+REVOKE ALL ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) TO commerce_storefront_registrar;
+COMMENT ON FUNCTION control.operator_set_store_handle(uuid,text,boolean) IS
+ '0106 D1 (Decision 1, P1-4): internal/storefrontadmin HandleSet, cmd/store-admin handle-set only; EXECUTE commerce_storefront_registrar. The only way to change a store''s handle after onboarding/backfill. Validates format/reserved/xn--/uniqueness exactly like assign_store_handle; PT409 store_published when the store was ever published without the --after-publish override; PT409 handle_taken on any collision (another store or a still-serving platform origin). Changes the handle and, in the SAME transaction, detaches the old platform origin (stores_handle_after_update) and writes the new ACTIVE https://<handle>.<base> row (ensure_store_platform_domain, base from the lc.store_base_domain GUC set by the CLI; unset = PT409). One operator.handle_set audit row, no secrets. Never commerce_worker.';

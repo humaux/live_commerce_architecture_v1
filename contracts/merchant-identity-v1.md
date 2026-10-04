@@ -25,6 +25,15 @@ Status: implementation contract, not a claim of production IdP or browser-login 
 - One initial-store receipt per principal. Same key + canonical payload returns the original IDs; changed key or payload conflicts. Concurrent requests serialize on the principal. Failed transactions leave no partial tenant/store/grants/warehouse/audit.
 - This is initial-store creation only, not arbitrary extra stores, invitations, ownership transfers or merchant lifecycle management.
 
+## Store-domain handle amendment (owner ruling 2026-10-03)
+
+- Migration 0106 is unpublished and defines the automatic handle as a random eight-digit number matching `^[1-9][0-9]{7}$`, independent of the display name and UUID. It is a public address identifier, not an authentication secret or an authorization boundary.
+- Both the new-store trigger and existing-store backfill call `control.assign_store_handle(text,uuid)`. Its legacy internal arguments remain for compatibility but no longer influence the number. Name-to-slug generation is removed.
+- Allocation tries at most 50 candidates, excluding reserved/invalid handles, existing store handles and handles still claimed by a serving platform domain (`store_handle_taken`). A transaction-scoped candidate lock serializes automatic assignment; the unique handle index remains the concurrent uniqueness backstop. Exhaustion raises `PT409` and rolls back creation.
+- The suggestion SQL function, Go endpoint `/v1/identity/handle-suggest`, BFF endpoint `/api/onboarding/handle-suggest`, and frontend client are removed. Registration displays the localized automatic-assignment explanation, with no address preview. After success it displays the actual `handle` and `storefront_origin` returned by the server. The configured base domain, not client input, determines the address (production: `https://<number>.xgdwm.com`).
+- `store-admin handle-set` remains an optional operator tool with its existing grammar, reservation, occupancy and publication restrictions. Custom domains, Caddy, TLS admission and domain verification are unchanged; replayed receipts may reflect an operator-assigned handle.
+- Acceptance: 50 concurrent creations produce distinct eight-digit numbers; pre-0106 stores receive numeric backfill; occupied handles and still-serving platform domains are skipped; 50 occupied candidates raise `PT409`; the retired Go route returns 404/405 and its BFF file is absent; real-click onboarding displays the allocated address. Migration changes require full G07 in addition to focused and browser gates.
+
 ## Acceptance and stop lines
 
 Required: signed mock IdP positive and negative tests; real PG18 single-use flow and concurrency tests; active/revoked/expired/audience session checks; literal identity mapping (no email merge); idempotent/concurrent onboarding and failure rollback; cross-tenant 401/403/404 and runtime/auth role separation. Root replays tests independently.

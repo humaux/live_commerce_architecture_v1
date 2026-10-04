@@ -1,0 +1,104 @@
+[
+  {
+    "control": "identity sign-in / mobile navigation",
+    "action": "click/assert",
+    "expected": "authenticated marketing navigation visible; mobile drawer closed",
+    "actual": "PASS"
+  },
+  {
+    "control": "ads-attribution-link",
+    "action": "click",
+    "expected": "report page",
+    "actual": "PASS"
+  },
+  {
+    "control": "from/to/apply",
+    "action": "fill/fill/click",
+    "expected": "fixture date window",
+    "actual": "PASS"
+  },
+  {
+    "control": "linked-draft identifiers",
+    "action": "click/compare server ids/keyboard close",
+    "expected": "44px disclosure; full server list retained; collapsed report stays compact",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience/hourly/privacy facts",
+    "action": "read DOM",
+    "expected": "exact runner values, nulls unknown, no private strings",
+    "actual": "PASS"
+  },
+  {
+    "control": "draft/session",
+    "action": "selectOption/selectOption",
+    "expected": "exact fixture facts",
+    "actual": "PASS"
+  },
+  {
+    "control": "unknown draft, capped report, unavailable breakdowns, Facebook reconnect entry",
+    "action": "selectOption/reload/selectOption/click/reload",
+    "expected": "spend and ROAS remain — after reload; omitted metrics stay unknown; cap and unavailable labels remain visible; settings Page-connect entry opens",
+    "actual": "PASS"
+  },
+  {
+    "control": "insufficient/not_authorized sessions + Los Angeles/provisional/promoted-post labels + ROAS",
+    "action": "selectOption/reload/selectOption/reload/selectOption",
+    "expected": "both exact localized states survive reload; unknown metrics stay unknown; primary report facts restored",
+    "actual": "PASS"
+  },
+  {
+    "control": "organic claim cohort",
+    "action": "selectOption/read",
+    "expected": "one real paid unboosted claim order, exact net, no linked drafts",
+    "actual": "PASS"
+  },
+  {
+    "control": "acknowledged UNKNOWN read",
+    "action": "selectOption/click/reload/click/reload",
+    "expected": "new HTTP keys, same UNKNOWN during server cooldown, read action stays available, no reconnect",
+    "actual": "PASS"
+  },
+  {
+    "control": "fresh audience request receipt",
+    "action": "selectOption/click/reload",
+    "expected": "new READY receipt and operation_id; queued receipt survives reload; one operation per fresh session",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience-refresh",
+    "action": "click",
+    "expected": "same existing operation_id and SUCCEEDED; completed replay, no new read",
+    "actual": "PASS"
+  },
+  {
+    "control": "audience-refresh completed replay",
+    "action": "reload/click",
+    "expected": "completed receipt survives reload; new HTTP key reuses same SUCCEEDED operation, no new operation",
+    "actual": "PASS"
+  },
+  {
+    "control": "URL filters",
+    "action": "reload",
+    "expected": "same window and selection",
+    "actual": "PASS"
+  },
+  {
+    "control": "invalid range",
+    "action": "fill/click",
+    "expected": "bounded-range error",
+    "actual": "PASS"
+  },
+  {
+    "control": "report tables",
+    "action": "measure",
+    "expected": "nonempty header text does not overlap; mobile local overflow is keyboard reachable",
+    "actual": "PASS"
+  },
+  {
+    "control": "attribution-back",
+    "action": "click",
+    "expected": "same store ads",
+    "actual": "PASS"
+  }
+]

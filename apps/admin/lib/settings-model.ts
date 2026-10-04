@@ -51,6 +51,8 @@ export type Policy = {
   tax_rate_bps: number;
   quote_ttl_seconds: number;
   enabled: boolean;
+  // storefront-v2 §C: merchandise subtotal at or above which the quote charges shipping 0; absent/null = no threshold.
+  free_shipping_threshold_minor?: number | null;
 };
 export type Service = {
   market_id: string;
@@ -63,7 +65,7 @@ export type Service = {
   name_hans: string;
   name_hant: string;
   name_en: string;
-  delivery_kind: "home" | "cvs_711" | "cvs_familymart";
+  delivery_kind: "home" | "cvs_711" | "cvs_familymart" | "cvs_hilife" | "cvs_okmart";
   mode: "MANUAL" | "API";
   enabled: boolean;
   visible: boolean;

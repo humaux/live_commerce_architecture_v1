@@ -1,0 +1,84 @@
+✔ design: garbage and hostile documents collapse to the safe default shape (0.997584ms)
+✔ design: links, preview token propagation, nav resolution (0.113167ms)
+✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (0.213959ms)
+✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.140458ms)
+✔ catalog-v2 parsers accept the frozen shapes and refuse drift (0.338333ms)
+✔ free-delivery progress words the hint only when a threshold exists (0.06075ms)
+✔ list query: only whitelisted, canonical values survive (0.202958ms)
+✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (7.453625ms)
+✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.148292ms)
+✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (0.817208ms)
+✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (7.187625ms)
+✔ cart problems map to buyer-facing classes without leaking transport detail (0.079083ms)
+✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.148458ms)
+✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.042958ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 100.749417
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 12ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 795ms
+  Running TypeScript ...
+  Finished TypeScript in 220ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 34ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+=== RUN   TestBrowserStorefront
+signal: terminated
+FAIL	livecommerce/tests/foundation	118.340s
+FAIL

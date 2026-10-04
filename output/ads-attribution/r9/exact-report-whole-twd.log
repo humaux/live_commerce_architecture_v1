@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:433: spend_minor=0 want 1730
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (19.38s)
+FAIL
+FAIL	livecommerce/tests/foundation	20.111s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

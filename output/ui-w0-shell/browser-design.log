@@ -1,0 +1,107 @@
+✔ the four constructs render (0.657875ms)
+✔ XSS payloads stay inert text (0.469708ms)
+✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (11.188375ms)
+✔ validator mirrors the Go rules (0.230125ms)
+✔ SDN1 allowlist: exactly the contract routes, per method (1.094042ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.504583ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (15.632792ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.065333ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (0.744333ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.102ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (10.430417ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (0.267542ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (0.77925ms)
+✔ localIssues names each missing mandatory value by server path (1.5055ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.09975ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.704875ms)
+✔ BFF allowlist covers exactly the design resources (0.513833ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (12.112083ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.171042ms)
+✔ parses never-published, published and bound states (1.075167ms)
+✔ rejects anything outside the closed shape (0.36375ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 121.186917
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 151ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1174ms
+  Running TypeScript ...
+  Finished TypeScript in 302ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 53ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+└ ƒ /api/team/[action]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserStorefrontPublish
+    browser_storefront_publish_test.go:271: PASS: merchant Settings card (en/zh-TW, desktop/390px) + store-admin executable + anonymous buyer browser on https://buyer.example, no owner-seeded publication/domain rows; cases=23; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-w0-shell/output/playwright/storefront-publish-2293171797
+--- PASS: TestBrowserStorefrontPublish (10.04s)
+PASS
+ok  	livecommerce/tests/foundation	12.399s
+PASS: R3 storefront-publish: isolated admin + storefront Next, Go, PG with NO owner-seeded publication/domain row; the merchant publishes with the Settings card (en/zh-TW, desktop + 390px), the built cmd/store-admin executable binds/suspends/detaches/re-binds the origin, a fresh anonymous buyer browser sees the product or the not-found page on https://buyer.example; signed MOCK IdP + synthetic TLS/CONNECT edge, ownership/TLS evidence is an unverified reference; not DNS/TLS, Caddy or provider acceptance.

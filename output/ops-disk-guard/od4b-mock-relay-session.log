@@ -1,0 +1,8 @@
+starttls
+auth ok user=sender@fake.invalid
+data from=<sender@fake.invalid> rcpt=<owner@fake.invalid> tls=yes bytes=268
+starttls
+auth FAILED user=sender@fake.invalid
+starttls
+auth ok user=sender@fake.invalid
+data from=<sender@fake.invalid> rcpt=<owner@fake.invalid> tls=yes bytes=268

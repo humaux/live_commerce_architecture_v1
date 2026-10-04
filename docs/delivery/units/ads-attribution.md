@@ -1,0 +1,266 @@
+# Unit ads-attribution — what each ad actually brought in (R5)
+
+Owner, 2026-10-03: "广告需要做数据归因哦，好好设计一下吧".
+Principle (owner, same day): **we do not rebuild what Meta already does.** Meta models and optimises attribution itself, from the signals we send. Our job is to:
+1. send Meta the best signals (CAPI);
+2. link orders to ads only where the link is a fact;
+3. show the merchant both views side by side, never blended.
+
+## What exists (verified 2026-10-03 at r3/integration)
+- **CAPI Purchase** (`internal/attribution`, 0080). Fields: `event_id`, `event_name`, `action_source`, `event_source_url`, `client_user_agent`, `external_id`, `ph`, `value`, `currency`.
+  - Sent once per consented CAPTURED payment attempt.
+  - Consent comes from `customers.consent_allows`; nothing is resent after an UNKNOWN result.
+- **Daily ad spend and status per draft**: `ads.insights_daily`, filled by the insights sweeper.
+- **Boosted post**: `ads.campaign_drafts.source_ref` holds the boosted post's `object_story_id`.
+- **Live session → Meta post**: `live.claim_sources`.
+- **Claims → orders**: claim bundle → order (0103).
+
+## Gaps
+1. The storefront captures nothing from the ad click: no `fbclid`, `_fbc`, `_fbp` or ad parameter.
+2. CAPI therefore has no `fbc`/`fbp`, so Meta's match quality is low and Meta under-credits our merchants' ads.
+3. An order does not record which ad, if any, brought it.
+4. There is no merchant report of spend versus real orders and revenue.
+
+## Decisions
+**D1 — Two views, never mixed.** The ad report shows two separately labelled numbers and never adds them together.
+- **「訂單實績」(ours):** real orders net of refunds, linked by rules D3/D4 only.
+- **「Meta 回報」(Meta's):** purchases and purchase value that Meta attributes, read from the Insights API (`actions`/`action_values` for purchase).
+
+The two numbers differ by design (cross-device, modelled conversions, view-through). The UI explains this in one sentence.
+
+**D2 — Click capture is first-party and has no pixel.**
+- Every ad link we create carries `lc_ad=<draft id>`. We create the ads, so we control `link_url` for PRODUCT_TRAFFIC.
+- Meta appends `fbclid` to the link.
+- On landing, the storefront BFF sets two first-party, httpOnly cookies scoped to the store host:
+  - `lc_fbc = fb.1.<ms>.<fbclid>` (Meta's documented `fbc` format);
+  - `lc_fbp = fb.1.<ms>.<random>`, created once per browser.
+- It also records a touch `{draft_id, clicked_at}`.
+- No Meta Pixel and no third-party script: CAPI already carries the purchase, and a pixel adds third-party JS, ad-blocker loss and a consent surface for no extra fact.
+
+**D3 — Click path: last click wins, 7-day window** (Meta's default click window).
+- At checkout Begin, the latest touch within 7 days is frozen into the order snapshot as `attribution = {path:"ad_click", draft_id, clicked_at}`.
+- Later clicks overwrite earlier ones. Expired touches are ignored.
+- No multi-touch model.
+
+**D4 — Comment path (live selling): post level, labelled as such.**
+- A claim made from a comment on a post that a draft boosted, while that draft was live, freezes `attribution = {path:"boosted_post", draft_id, post_id}` into the order.
+- Live means between the first ACTIVE and the last PAUSE/END, per `ads.insights_daily` and the operation history.
+- The link runs via `live.claim_sources.source_object_id = draft.source_ref`.
+- Meta does not tell us whether a commenter saw the ad or found the post organically. The report therefore labels this column 「受推廣貼文帶來」 (orders from the promoted post), never 「廣告帶來」 (orders from the ad), and never claims more precision than that.
+
+**D5 — CAPI gets better signals; no new consent.** For consented buyers only (the existing gate):
+- send `fbc` and `fbp` from the order's frozen cookies;
+- send `client_ip_address` from the checkout request;
+- send `em` (SHA-256, normalised) when the buyer gave an e-mail.
+
+`event_id` stays as today (deduplication). Non-consented orders still count in our own 「訂單實績」, because nothing leaves our system for them.
+
+**D6 — Refunds reduce our revenue.**
+- The report uses net revenue: captured minus refunded, from the existing refund facts.
+- Cash on delivery counts once it is collected.
+- Orders that are still uncollected are shown separately as 「待收款」.
+
+**D7 — Report.** In the ads area of the admin, per draft and per day range (Taipei day):
+- spend;
+- our orders and net revenue by path;
+- our ROAS = net revenue / spend;
+- Meta-reported purchases and value.
+
+Insights for the last 3 days are marked 「Meta 數據可能仍會更新」 (Meta restates late data). Everything is read-only, with no new writes to Meta.
+
+**D8 — Privacy.**
+- Cookies hold no PII.
+- The order snapshot stores only the draft id, timestamps, and `fbc`/`fbp`, which are pseudonymous Meta identifiers. They are deleted together with the order snapshot under the existing erasure path.
+- The privacy policy and cookie notice gain one line about the ad-measurement cookies.
+
+**D9 — Audience and session post-mortem (owner, 2026-10-03).**
+Merchants buy FB ads mainly to bring viewers into their FB live selling, so the post-mortem needs "who watched, who engaged, who bought". Each source is used for what it truly knows. Meta's aggregated demographics and our order facts sit side by side and are never joined at person level.
+
+- **Ad audience (Meta Insights `breakdowns`, read-only).** Per draft and day, with the same metrics within each breakdown (Meta-attributed):
+  - **Metrics:** spend, reach, impressions, clicks, post engagements / comments, purchases.
+  - **Breakdowns:**
+    - `age` (18-24, 25-34, …) × `gender`;
+    - `region` (Taiwan counties and cities as Meta names them);
+    - `publisher_platform` / `platform_position` (FB feed, IG, Reels, …);
+    - `device_platform`;
+    - `hourly_stats_aggregated_by_advertiser_time_zone`, so ad spend can be laid over the live-session timeline.
+  - Stored as daily snapshots by the insights sweeper (new `ads.insights_breakdowns`: draft, day, dimension, bucket, metrics). Meta's thresholds and restatement apply.
+- **Live audience (Meta Page / live-video insights, read-only).** For a live session bound through `live.claim_sources`:
+  - viewers;
+  - peak concurrent viewers;
+  - total view time;
+  - viewers / view time by `age_bucket_and_gender` and by region, where Meta returns them for that video.
+  - Needs `read_insights` and `pages_read_engagement`. Both join the App Review permission list (contract O3).
+- **Verified 2026-10-03 with read-only probes** (`output/meta-ads-validate/insights-breakdown-probe-20261003.txt`).
+  - **Ads Insights:** these breakdowns are all accepted with `spend,reach,impressions,clicks,actions,action_values` at campaign level: `age,gender`, `region`, `country`, `publisher_platform,platform_position`, `device_platform`, `hourly_stats_aggregated_by_advertiser_time_zone`.
+  - **Live videos:** `/{page}/live_videos` lists them. On `/{video}/video_insights` these metrics are valid and need `read_insights`:
+    - `total_video_views` (34 for the latest 大夢甄選女包 live);
+    - `total_video_view_time_by_age_bucket_and_gender`;
+    - `total_video_view_time_by_region_id`;
+    - `total_video_views_by_distribution_type`.
+  - `live_video_views_by_age_bucket_and_gender` does not exist.
+  - The demographic metrics came back EMPTY for a 34-view live, because of Meta's privacy thresholds. The UI must show 「觀眾數不足，Meta 未提供輪廓」 rather than a blank panel or zeros. Live demographics are view TIME by bucket, not unique viewers, and the label must say so.
+- **Buyers (ours, real orders).** Per session and per draft:
+  - orders and net revenue by the buyer's ship-to county/city (Taiwan 縣市, from the frozen order destination; store pickup uses the store's county);
+  - new versus returning buyers;
+  - average order value;
+  - top products;
+  - the funnel comments → claims → checkout links → paid/collected orders;
+  - orders per minute along the live timeline.
+- **Session post-mortem page (「直播復盤」).** One page per live session, on one timeline:
+  - ad spend by hour;
+  - viewers;
+  - comments, claims and orders;
+  - revenue and ROAS.
+  - Two audience panels, side by side and labelled:
+    - 「觀眾輪廓（Meta 統計）」: age, gender, region;
+    - 「買家分佈（訂單實績）」: county, new/returning.
+  - A draft report page shows the same data per ad.
+- **Privacy.**
+  - We do not collect buyers' age or gender (no birthday field is added).
+  - Meta demographics stay aggregated as Meta returns them and are never attached to an order or a buyer.
+  - Our buyer panels are aggregates of the merchant's own orders.
+
+## Not doing (rejected, with reasons)
+- **Meta Pixel / browser events.** CAPI covers purchases. A pixel would add third-party JS, consent surface and ad-blocker gaps, for no extra fact.
+- **Our own modelled or multi-touch attribution, or view-through.** Meta already does this; duplicating it gives a third, conflicting number.
+- **Our own incrementality/lift tests.** Meta Conversion Lift exists. Revisit once spend justifies it.
+- **Splitting paid from organic comments on a boosted post.** Not observable through the API. Claiming it would be fake precision (same lesson as the Reddit-bio attribution).
+- **Collecting buyer age or gender ourselves, or joining Meta demographics to individual buyers.** It is privacy-invasive, Meta forbids re-identification, and the aggregated Meta panels already answer the post-mortem question.
+- **UTM tracking for non-Meta channels.** Not needed now (YAGNI). The touch table takes another `path` value when a second channel arrives.
+
+## Acceptance gates (red first, then green; MOCK / SANDBOX labelled)
+| ID | Gate |
+|---|---|
+| AT1 | PG/BFF: landing with `lc_ad` + `fbclid` → cart → Begin. The order snapshot has `ad_click` and the right draft. Expiry after 7 days, last-click overwrite, cookie scoped to one store host (no cross-store leak), malformed `lc_ad` ignored. |
+| AT2 | CAPI payload: consented → `fbc`/`fbp`/`client_ip_address` (and `em` when given) present and correctly formatted. Not consented → nothing sent, and the order still counts in our report. `event_id` unchanged. |
+| AT3 | Comment path: claim on a boosted post during the boost window → `boosted_post`. Same post outside the window → none. A non-boosted post → none. A claim from another store's post → none. |
+| AT4 | Report sums equal PG fixture sums exactly: spend, orders, net revenue after a partial refund, ROAS, uncollected COD in 「待收款」. The Meta column comes from MOCK Insights and is never summed into ours. |
+| AT5 | Browser (real clicks): ad URL → storefront → checkout → admin ad report shows the order under that draft. Three locales, 390 and 1586. |
+| AT6 | SANDBOX: S4 (CAPI with `test_event_code`) shows a Purchase with `fbc` in Events Manager. Needs the owner's dataset id and test event code. |
+| AT7 | Full G07 (migration). Click sweep of the new report page. |
+| AT8 | Breakdowns: the MOCK Insights fixture with age×gender, region, placement and hourly rows is stored per draft/day and shown exactly. Re-reading the same day replaces it and never duplicates it. Cross-store isolation holds. |
+| AT9 | 直播復盤 (PG + browser, real clicks): a session with a bound post, two boosted drafts, claims, a partial refund and COD orders produces exact funnel counts, county distribution, new/returning split, an hourly spend overlay, and Meta live-audience panels from MOCK. Three locales, 390 and 1586. SANDBOX/LIVE read of a real live video's insights once `read_insights` is approved. |
+
+## Known limits → upgrade signals
+- **Cross-device journeys and in-app browser cookie loss** make our click path under-count. Meta's column covers them. Signal: a large, persistent gap between our number and Meta's for the same draft.
+- **The comment path is post-level.** Signal: Meta exposes comment-to-ad attribution, or spend justifies a lift test.
+- **Insights restate for about 72h.** Provisional marking as in D7.
+
+## Split (PROCESS §2)
+- **Migration 0113**, reserved (0112 went to ads-tw-regulation, the refusal projection): order snapshot attribution field (inside the existing JSON snapshot if it fits the contract; otherwise a narrow column), touch capture and report definer reads.
+- **Backend and UI together: Codex** (owner allows full-stack for Codex; DeepSeek balance is near its reserve):
+  - capture in the storefront BFF;
+  - freezing at Begin;
+  - CAPI fields;
+  - claim-path link;
+  - report API;
+  - admin report page;
+  - privacy copy;
+  - the D9 breakdown sweeper and the live insights read;
+  - the 直播復盤 page.
+- **Independent review:** a non-author agent, with the security focus on cookies, PII and cross-store isolation.
+
+## Amendment 1 (integrator, 2026-10-04): rulings on the checkpoint's open boundaries
+These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries". They are technical rulings within D1–D9, not new product scope.
+
+- **R1 Migration.** It is **0113**. 0112 is `meta_ads_refusal_text` (ads-tw, already in r3/integration). Before continuing, merge r3/integration (≥ d1d3b5a3; contains b7afdf1d) into `unit/ads-attribution`, and keep the 0112 refusal fields.
+- **R2 Storage, which replaces "inside the snapshot".** `customers.apply_erasure` keeps order snapshots for legal retention, so the pseudonyms must not live inside the immutable snapshot. Use one narrow table per order, `orders.order_attribution`, with these columns:
+  - `order_id` PK/FK, `store_id`;
+  - `path` (`ad_click` | `boosted_post`), `draft_id` (nullable), `post_id` (nullable), `clicked_at` (nullable), `frozen_at`;
+  - `fbc`, `fbp`, `client_ip` (all nullable).
+
+  It is written once, at Begin and in the same transaction; claim-path rows are written when the claim becomes an order. It is RLS-scoped by store. No order means no row.
+- **R3 Erasure and IP retention.** `customers.apply_erasure` sets `fbc`, `fbp` and `client_ip` to NULL for the erased buyer's orders, and keeps `path`, `draft_id`, `post_id` and the timestamps, which are aggregate facts and not personal.
+  - `client_ip` exists only for CAPI. It is set to NULL when that order's CAPI attempt reaches a terminal state (sent, final failure, or not consented / not eligible).
+  - Each rule has one PG test.
+- **R4 Precedence and ambiguity, with no invented precision.**
+  - **Click beats post.** A valid 7-day `ad_click` touch beats `boosted_post`, because it is a fact about this browser.
+  - **Several drafts on the same post.** If several drafts promoting the same post were live at the claim time, write `path=boosted_post`, `post_id` set, `draft_id=NULL`. Per-draft reports exclude it. The 直播復盤 shows it under that post, labelled 「多個推廣同時進行，未分配到單一廣告」. It is never split and never duplicated.
+- **R5 Cookies.**
+  - **`lc_fbp`** is a browser identifier, independent of the touch. It is created only on an ad landing (`lc_ad` or `fbclid` present), so non-ad visitors get no ad cookies. Its lifetime is **90 days rolling** (Meta's `_fbp` default) and is refreshed on each ad landing. The 7-day rule applies only to the touch. This resolves the P2 `red-fbp-lifetime` case, so turn that test green.
+  - **`lc_fbc`** is replaced only when a new `fbclid` arrives, with a 90-day lifetime. Landing with `lc_ad` but no `fbclid` updates the touch and keeps any existing `lc_fbc`. Landing with `fbclid` but no `lc_ad` sets `lc_fbc`/`lc_fbp` and writes no touch: there is no draft to credit, so nothing is invented.
+  - All cookies are httpOnly, Secure and SameSite=Lax, with Host set to the store host only (no Domain attribute). Signed values are fine.
+- **R6 Post identity.** Comment-path attribution joins the specific claim → its intake comment → that comment's post id. It never uses `claims.order_live_sources` session-wide fan-out.
+- **R7 Time axis.**
+  - Read the ad account's `timezone_name` once per sweep and store it with the snapshots.
+  - Hourly buckets are converted to absolute timestamps before they are overlaid on the session timeline.
+  - Daily figures stay on Meta's account days. When the account time zone is not `Asia/Taipei`, the report states it (「Meta 帳戶時區：X」) and does not relabel those days as Taipei days.
+- **R8 Live audience.** Your checkpoint statement is accepted as written: empty means 「觀眾數不足，Meta 未提供輪廓」, not zero; age/gender figures are view time, not people; there is no buyer join.
+- **Gates.** AT1–AT9 are unchanged. AT1 adds the R5 cases: 90-day `fbp` stable across a later click after 7 days, no cookies without ad params, no touch without `lc_ad`. AT2/AT3 add the R3 and R4 cases.
+- **R9 Creation guard for `orders.freeze_attribution`** (2026-10-04, answering checkpoint 4b338a89 BLOCKED PT404). Drop both the xmin guard and the transaction-lock guard. **Reuse the existing 0088 `checkout.set_order_buyer_email` guard verbatim.** That function already does the same job, writing once into an order inside the placing Begin, and is proven on the live checkout path.
+  - Call `buyer.resolve_scope(p_hash,p_store)`.
+  - The order must match `tenant_id`, `store_id`, `owner_id=s.owner_id`, `id`, and `creator_session_id=s.session_id`, with `created_at>=clock_timestamp()-interval '1 minute'`.
+  - Write once with `INSERT … ON CONFLICT (order_id) DO NOTHING`.
+  - Begin always creates the order it passes: Go generates the id, `begin_hold` must echo it, and replays are resolved before this point. So the guard holds for every real Begin, and a historical or foreign order can never match.
+  - **Attribution never fails checkout.** An ineligible order, an expired, foreign or invalid touch, or a missing touch all write no row and raise nothing. PT400 remains only for malformed server-side parameters, the same as buyer email.
+  - **Gates:**
+    - a legitimate Begin writes the row;
+    - an order older than one minute, another session's order, another store's order, and a second freeze all write nothing and still let Begin commit;
+    - a Begin with a garbage, expired or foreign touch commits with no row.
+- **R10 Review round 1 (storefront/admin reviewer, `output/ads-attribution-review/REVIEW-storefront-admin.md`, 2026-10-04).**
+  - **P1 fix: order counts.** 「訂單實績」 counts only real paid orders:
+    - card captured;
+    - bank transfer confirmed;
+    - COD or pay-at-pickup collected.
+
+    Uncollected COD appears only under 「待收款」. DRAFT, expired, cancelled and unpaid orders count nowhere. `orders.attribution_metrics` must not expose a bare `count(*)` under a paid/collected label. Add a PG test and a browser assertion with a mixed cohort (paid, refunded, COD pending, unpaid transfer, expired draft) that checks every count.
+  - **P2-1 ruling: signals independent of the touch.** At Begin, freeze valid same-host `lc_fbc`/`lc_fbp` (and `client_ip`) for every order, whether or not a 7-day `lc_ad` touch exists. Merchants also run ads directly in Ads Manager; those landings carry `fbclid` but no `lc_ad`, and their CAPI match quality is the whole point of D5.
+    - `path` and `draft_id` still come only from a valid touch, or from the comment path.
+    - A row may therefore have `path IS NULL` ("signals only"). The reports exclude it.
+    - R3 erasure and IP clearing apply unchanged.
+  - **P2-2 tests.** Browser and PG fixtures render:
+    - 「觀眾數不足，Meta 未提供輪廓」;
+    - the account time-zone label when the zone is not Asia/Taipei;
+    - the provisional 3-day marker;
+    - the 「受推廣貼文帶來」 column.
+  - **P3 fixes, cheap, included:**
+    - ROAS is shown to 2 decimals.
+    - The same `fbclid` already in `lc_fbc` does not re-stamp it.
+    - Add a regression test that a buyer-supplied `X-Forwarded-For` or `Host` is not trusted for `client_ip` or the cookie host beyond the configured edge.
+  - **P3 deferred:**
+    - the `__Host-` cookie prefix (host-only is already enforced);
+    - cookies on unknown or inactive hosts (that page 404s anyway).
+- **R11 Review round 1, backend/SQL reviewer** (`output/ads-attribution-review/REVIEW-backend.md`, 2026-10-04: no P0/P1 as rated).
+  - **Upgraded to must-fix because they touch P0 invariants:**
+    - **P2-3 / I23.** `plan_meta_audience` gets a bound: at most one in-flight audience read per (store, live video), plus a 10-minute cooldown after it finishes. A repeat inside the window replays the existing operation instead of planning a new one.
+    - **P3-3 / I12.** Missing Meta evidence stays unknown:
+      - a draft with no insights rows shows spend 「—」 and ROAS 「—」, never 0;
+      - breakdown fields Meta omitted are null (unknown), never 0;
+      - tests cover both.
+  - **Must-fix:**
+    - **P2-1.** A breakdown GET failure (4xx/5xx, malformed label, DST-ambiguous hour) never prevents storing the D7 daily row. The failed dimension is recorded as unavailable for that day and retried by the next sweep.
+    - **P2-2.** `ads.attribution_report` returns `truncated:true` when it caps drafts or sessions at 100, and the UI says 「僅顯示前 100 筆」. Add timing evidence on REAL_PG with 100 drafts and 10k orders, kept within the API deadline.
+    - **P3-11.** The `plan_capi_purge` patch asserts its needle is present, like the other patches. A silent no-op would disable the IP purge.
+  - **Privacy, which tightens R3 and R10. `fbc`, `fbp` and `client_ip` exist only to be sent once.**
+    - They are frozen at Begin only when `ads_personalization` consent is present. The touch is still not required (R10).
+    - They are cleared when:
+      - the order's CAPI operation reaches any final state, including UNKNOWN, which is never resent (I06) (P3-2);
+      - consent is withdrawn, following the 0080 `capi_contexts` withdrawal purge (P3-1);
+      - the buyer is erased;
+      - the bounded purge runs.
+    - **P3-6.** Follow the 0080 CD5 precedent: SQL returns only the normalised SHA-256 of the e-mail, and the raw e-mail never reaches the ads worker.
+  - **Correctness:**
+    - **P3-7.** `lc_ad` counts only when the click time falls inside that draft's live window, the same window as R4. A copied URL for a never-launched or ended draft is not credited.
+    - **P3-4.** Session spend is labelled 「所選期間內推廣此直播貼文的廣告花費」, not presented as spend during the session.
+    - **P3-8.**
+      - Add `read_insights` to the self-serve Page-connect scopes.
+      - When the stored grant lacks it, the audience panel shows 「需重新連接 Facebook 以授權觀眾數據」 rather than failing silently.
+      - Until App Review, only app-role users can grant it (owner 2026-10-03).
+    - **P3-9.** The contract's exact grant delta lists every new EXECUTE.
+  - **Accepted as-is, documented:**
+    - **P3-10.** The owner-role `USING(true)` policy follows the 0074/0075 pattern. Isolation rests on the definers' explicit tenant/store predicates, which the reviewer verified.
+    - **P3-12.** Order-level approximations: a mixed comment + manual order is attributed from its comment line, and an order spanning two posts gets no attribution.
+- **R12 Review round 2** (`output/ads-attribution-review/REVIEW-r2-fixes.md`, 2026-10-04, BLOCK on 4acbad53).
+  - **P1 F1 fix, which clarifies R10.** "Signals-only rows are excluded from reports" means they never credit a path or a draft. It does **not** mean the order leaves a cohort.
+    - Delete `AND (a.order_id IS NULL OR a.path IS NOT NULL)` from `orders.attribution_metrics`. The draft cohort already requires `a.draft_id=p_draft`.
+    - A session's orders are its claim orders, whatever their attribution row.
+    - Flip `R10SignalsOnlyExcludedFromReports` so it asserts that a consented buyer's unboosted claim order counts in the session totals and in no path or draft.
+    - The wording error was the integrator's.
+  - **P2 F2.** The audience read is GET-only, so a retry has no side effect. For `meta.live_insights`, in-flight means only READY or DISPATCHING within the job lease. UNKNOWN and every final state only start the 10-minute cooldown, counted from `updated_at`. One UNKNOWN must never lock a store and video forever. Add a test: an UNKNOWN op older than 10 minutes, then a new read is planned.
+  - **P2 F3.** `not_authorized` / 「需重新連接」 appears only when the stored grant lacks `read_insights`. A granted session with no read yet shows a "not read yet" state and a read action. Add a test for it.
+  - **P3 fixed:**
+    - Do not freeze `fbc`/`fbp`/`client_ip` for payment modes that never produce a CAPI Purchase (COD, bank transfer, pay-at-pickup). Keeping them up to 7 days with no send path has no purpose. This is the data-minimisation reading of R11.
+    - Pin the checkout-side attribution definer grants in the ACL test.
+  - **Other P3s** are accepted as documented in the review.
+  - **Not in scope, owner later:** a CAPI Purchase on COD collection. Only card CAPTURED sends today, per D5.

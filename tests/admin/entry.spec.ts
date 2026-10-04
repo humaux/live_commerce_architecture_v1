@@ -15,6 +15,8 @@ const receipt = {
   tenant_id: "22222222-2222-4222-8222-222222222222",
   store_id: storeID,
   warehouse_id: warehouseID,
+  handle: "browser-store",
+  storefront_origin: "https://browser-store.xgdwm.com",
 };
 
 type OnboardCall = { key: string; body: string };
@@ -114,7 +116,7 @@ const server = createServer(async (request, response) => {
     response.end(
       JSON.stringify({
         items: storeCreated
-          ? [{ id: storeID, name: "Wizard store", currency: "TWD" }]
+          ? [{ id: storeID, name: "Wizard store", currency: "TWD", role: null, permissions: ["store:read", "orders:read"] }]
           : [],
       }),
     );
@@ -211,23 +213,24 @@ test("approved wizard step two matches desktop and mobile compositions", async (
   await page.getByLabel("Transaction currency").selectOption("TWD");
   await page.getByLabel("Language", { exact: true }).selectOption("zh-CN");
   await expect(page.getByLabel("店铺名称")).toHaveValue("南岛选物");
-  await mkdir(".impeccable/review", { recursive: true });
+  await mkdir("output/playwright/ledger-review", { recursive: true });
   await page.setViewportSize({ width: 1585, height: 992 });
   await page.screenshot({
-    path: ".impeccable/review/t03-entry-desktop.png",
+    path: "output/playwright/ledger-review/t03-entry-desktop.png",
     animations: "disabled",
   });
   await page.screenshot({
-    path: ".impeccable/review/t03-hero-repro.png",
+    path: "output/playwright/ledger-review/t03-hero-repro.png",
     animations: "disabled",
   });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({
-    path: ".impeccable/review/t03-entry-mobile.png",
+    path: "output/playwright/ledger-review/t03-entry-mobile.png",
     fullPage: true,
     animations: "disabled",
   });
   expect(
+    // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
@@ -258,8 +261,9 @@ test("wizard preserves draft and recovers an unknown result with exact bytes", a
   expect(onboardingCalls).toHaveLength(2);
   expect(onboardingCalls[1]).toEqual(onboardingCalls[0]);
   await page.getByRole("button", { name: "Open workspace" }).click();
+  // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
   await expect(
-    page.getByRole("heading", { name: "Products & inventory" }),
+    page.getByRole("heading", { name: "Dashboard", level: 1 }),
   ).toBeVisible();
 });
 
@@ -280,6 +284,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
       .textContent();
     expect(label).toMatch(/^TWD · .+/);
     expect(
+      // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
@@ -290,13 +295,14 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
         .evaluate((node) => node.scrollWidth <= node.clientWidth),
     ).toBe(true);
     await page.screenshot({
-      path: `.impeccable/review/t03-entry-long-name-${locale}.png`,
+      path: `output/playwright/ledger-review/t03-entry-long-name-${locale}.png`,
       fullPage: true,
       animations: "disabled",
     });
   }
   // Check actual computed foreground/background pairs, including inherited
   // transparent backgrounds, rather than merely asserting selected hex tokens.
+  // G-UI8 audit [READ/MEASURE]: computes rendered foreground/background contrast ratios (read only)
   const ratios = await page.evaluate(() => {
     function luminance(color: string) {
       const rgb = color
@@ -343,7 +349,7 @@ test("three-locale mobile long names and normal text meet the finish gate", asyn
   for (const sample of ratios)
     expect(sample.ratio, sample.selector).toBeGreaterThanOrEqual(4.5);
   await writeFile(
-    ".impeccable/review/t03-entry-contrast.json",
+    "output/playwright/ledger-review/t03-entry-contrast.json",
     JSON.stringify(ratios, null, 2),
   );
   expect(
@@ -379,6 +385,7 @@ test("401 clears the old session-bound draft before reauthentication", async ({
   await login(page);
   await reachLastStep(page);
   expect(
+    // G-UI8 audit [READ/MEASURE]: reads whether the onboarding journal key exists in sessionStorage
     await page.evaluate(() =>
       Object.keys(sessionStorage).some((key) =>
         key.startsWith("commerce-onboarding:"),
@@ -391,6 +398,7 @@ test("401 clears the old session-bound draft before reauthentication", async ({
     "工作階段已過期",
   );
   expect(
+    // G-UI8 audit [READ/MEASURE]: reads whether the onboarding journal key exists in sessionStorage
     await page.evaluate(() =>
       Object.keys(sessionStorage).some((key) =>
         key.startsWith("commerce-onboarding:"),
@@ -408,6 +416,7 @@ test("a stale tab never sends its draft after another account replaces the cooki
 }) => {
   await login(page);
   await reachLastStep(page);
+  // G-UI8 audit [READ/MEASURE]: reads sessionStorage keys
   const oldKeys = await page.evaluate(() => Object.keys(sessionStorage));
   expect(oldKeys.some((key) => key.startsWith("commerce-onboarding:"))).toBe(
     true,
@@ -436,6 +445,7 @@ test("a stale tab never sends its draft after another account replaces the cooki
   await expect(page.getByLabel("商戶名稱")).toHaveValue("");
   expect(onboardingCalls).toHaveLength(0);
   expect(logoutCalls).toBe(0);
+  // G-UI8 audit [READ/MEASURE]: reads the onboarding journal
   const journals = await page.evaluate(() =>
     Object.entries(sessionStorage)
       .filter(([key]) => key.startsWith("commerce-onboarding:"))

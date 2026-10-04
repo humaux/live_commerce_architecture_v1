@@ -1,0 +1,27 @@
+{
+  "cases": 18,
+  "store_id": "8a636405-c45c-4b6a-b8eb-7be3914e848e",
+  "tenant_id": "4964aeec-bdaf-4a54-9809-6fcb192aafa3",
+  "handle": "gate-store-pxxaxf",
+  "origin": "https://gate-store-pxxaxf.lctest.example",
+  "custom_origin": "https://shop-pxxaxf.example.net",
+  "locales": [
+    "en",
+    "zh-TW",
+    "zh-CN"
+  ],
+  "viewports": [
+    "desktop",
+    "390px"
+  ],
+  "audit_expected": [
+    "merchant.store_created",
+    "merchant.storefront_published",
+    "merchant.domain_requested",
+    "merchant.domain_suspended",
+    "merchant.domain_detached",
+    "merchant.storefront_unpublished"
+  ],
+  "contract_failures": [],
+  "boundary": "production Next; signed MOCK IdP; scripted public DNS + certificate probe on the production VerifyPending library; synthetic TLS/CONNECT edge; no deployment DNS/TLS, CA or provider acceptance"
+}

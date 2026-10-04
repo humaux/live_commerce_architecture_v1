@@ -1,5 +1,18 @@
-// Package merchantorders reads the private merchant order projection. Checkout
-// remains the only transaction and payment state owner.
+// Package merchantorders owns the private merchant order projection (identity.read_merchant_orders:
+// payment, refund-amount and shipment fields), the merchant-arranged manual shipment command and history
+// (manual-fulfilment-v1) and the unshipped-orders CSV export. Checkout remains the only transaction and
+// payment state owner. refunds.go (refund-core) shares this package's decoders.
+//
+// Its order projections also carry the taiwan-cvs-logistics-v1 fields (pickup_source, payment_mode,
+// collection_state, PROVIDER_LABEL_CREATED) read-only from identity.read_merchant_orders.
+//
+// offline.go is the merchant side of the bank_transfer payment mode (storefront-v2 §C): the store's bank-transfer settings, one
+// order's transfer detail and the three audited decisions (confirm, reject the buyer's submission, record an offline refund), each one
+// SQL definer of migration 0088 (payments.decide_bank_transfer is the only writer of a confirmation, never automatic).
+//
+// It never writes ledger, stock, reservation, payment-fact or refund state itself (decide_bank_transfer does, in SQL), never creates a provider
+// operation or River job, never calls a carrier or fetches a tracking URL, and never stores or logs an
+// export file or recipient data (ECPay shipments live in internal/fulfillment).
 package merchantorders
 
 import (
@@ -9,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -47,6 +61,27 @@ type Summary struct {
 	PaymentState     string `json:"payment_state"`
 	TestMode         bool   `json:"test_mode"`
 	WorkState        string `json:"work_state"`
+	// RefundedMinor / RefundPendingMinor come from identity.read_merchant_orders (0063, stripe-refund-v1
+	// §7.1): succeeded-and-not-reversed vs held-but-not-succeeded refund amounts of the order's attempt.
+	RefundedMinor      int64 `json:"refunded_minor"`
+	RefundPendingMinor int64 `json:"refund_pending_minor"`
+	// C4 (taiwan-cvs-logistics-v1 §16.1/§16.2): how the pickup store was obtained (ecpay_directory | buyer_entered |
+	// merchant_attested; null for home delivery), how the order is paid, and the pay-at-pickup collection state (null for
+	// card orders). Read-only projections of identity.read_merchant_orders (migrations/0073).
+	PickupSource    *string `json:"pickup_source"`
+	PaymentMode     string  `json:"payment_mode"`
+	CollectionState *string `json:"collection_state"`
+	// CodSurchargeMinor (home-cod R5, migration 0107) is the placement-time cash-on-delivery surcharge in minor units; null unless
+	// payment_mode=cash_on_delivery (the buyer pays it on delivery on top of TotalMinor). Read-only projection of
+	// identity.read_merchant_orders.
+	CodSurchargeMinor *int64 `json:"cod_surcharge_minor"`
+	// CodCollectMinor (home-cod R5, P1-2) is the cash due on delivery = TotalMinor + CodSurchargeMinor; null unless
+	// payment_mode=cash_on_delivery (the SQL CASE nulls it otherwise). Read-only projection of identity.read_merchant_orders.
+	CodCollectMinor *int64 `json:"cod_collect_minor"`
+	// Source is where the order was created: storefront (every buyer-placed order) or merchant_manual (admin Create Order, unit
+	// merchant-tools, migration 0094). It is NOT part of identity.read_merchant_orders: attachSources reads it per page through
+	// identity.read_order_sources, so the older projection definers stay untouched.
+	Source string `json:"source"`
 }
 
 type Item struct {
@@ -96,6 +131,8 @@ type Detail struct {
 	Items       []Item      `json:"items"`
 	Totals      Totals      `json:"totals"`
 	Destination Destination `json:"destination"`
+	// Shipment is the current SHIPPED head (manual-fulfilment-v1 §4.1); null otherwise.
+	Shipment *Shipment `json:"shipment"`
 }
 
 func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in ListRequest) (pagination.Page[Summary], error) {
@@ -131,10 +168,13 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		if err != nil {
 			return empty, err
 		}
-		if in.State != "all" && item.CommercialState != in.State {
+		if !matchesState(in.State, item) {
 			return empty, ErrUnavailable
 		}
 		empty.Items = append(empty.Items, item)
+	}
+	if err = attachSources(ctx, tx, scope, token, empty.Items); err != nil {
+		return pagination.Page[Summary]{Items: []Summary{}}, err
 	}
 	if len(empty.Items) > limit {
 		empty.Items = empty.Items[:limit]
@@ -169,6 +209,11 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, orderID st
 	if err != nil || item.OrderID != orderID {
 		return Detail{}, ErrUnavailable
 	}
+	one := []Summary{item.Summary}
+	if err = attachSources(ctx, tx, scope, token, one); err != nil {
+		return Detail{}, err
+	}
+	item.Summary = one[0]
 	return item, nil
 }
 
@@ -191,10 +236,40 @@ func read(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, or
 	return raw, nil
 }
 
+// attachSources fills Summary.Source for a page (<= 101 rows) from identity.read_order_sources (0094, orders:read re-verified in SQL).
+func attachSources(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, items []Summary) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]string, len(items))
+	for i, item := range items {
+		ids[i] = item.OrderID
+	}
+	hash := sha256.Sum256([]byte(token))
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT identity.read_order_sources($1,$2::uuid,$3::uuid[])`, hash[:], scope.StoreID, ids).Scan(&raw); err != nil {
+		return mapError(err)
+	}
+	var sources map[string]string
+	if json.Unmarshal(raw, &sources) != nil || len(sources) != len(items) {
+		return ErrUnavailable
+	}
+	for i := range items {
+		src, ok := sources[items[i].OrderID]
+		if !ok || (src != "storefront" && src != "merchant_manual") {
+			return ErrUnavailable
+		}
+		items[i].Source = src
+	}
+	return nil
+}
+
 func mapError(err error) error {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		switch pg.Code {
+		case "PT400":
+			return command.ErrInvalid
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":
@@ -216,10 +291,34 @@ func validAuthorityInput(scope platform.Scope, token string) bool {
 
 func validState(state string) bool {
 	switch state {
-	case "", "all", "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED":
+	case "", "all", "DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED", "shipped", "unshipped", "cvs_pending":
 		return true
 	}
 	return false
+}
+
+// matchesState re-checks the SQL filter on every decoded row (a wrong-filter page is a projection
+// failure, not data). "unshipped" is the MD6 subset observable in a summary; the SQL adds the review
+// and refund clauses.
+func matchesState(state string, v Summary) bool {
+	switch state {
+	case "", "all":
+		return true
+	case "shipped":
+		return v.FulfillmentState == "MERCHANT_SHIPPED"
+	case "unshipped":
+		// Card orders carry a READY work item; a pay_at_pickup, bank_transfer or cash_on_delivery order never has a payment attempt (work NONE).
+		return (v.CommercialState == "CONFIRMED" || v.CommercialState == "AWAITING_COLLECTION") && v.FulfillmentState == "MANUAL_UNASSIGNED" &&
+			(v.WorkState == "READY" || ((v.PaymentMode == "pay_at_pickup" || v.PaymentMode == "bank_transfer" || v.PaymentMode == "cash_on_delivery") && v.WorkState == "NONE"))
+	case "cvs_pending":
+		// C4: the forwarder's daily drop list (the SQL adds "current attempt CREATED").
+		return v.FulfillmentState == "PROVIDER_LABEL_CREATED"
+	case "AWAITING_COLLECTION":
+		// home-cod R5 (P2-5): the awaiting-collection list is the COD order still PENDING (commercial_state stays
+		// AWAITING_COLLECTION through ship/collection, so the filter keys on collection_state, not commercial_state).
+		return v.CommercialState == "AWAITING_COLLECTION" && v.CollectionState != nil && *v.CollectionState == "PENDING"
+	}
+	return v.CommercialState == state
 }
 
 func decodeArray(raw []byte, max int) ([]json.RawMessage, error) {
@@ -230,10 +329,13 @@ func decodeArray(raw []byte, max int) ([]json.RawMessage, error) {
 	return objects, nil
 }
 
-var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state"}
+var summaryKeys = []string{"order_id", "created_at", "updated_at", "currency", "total_minor", "commercial_state", "fulfillment_state", "payment_state", "test_mode", "work_state", "refunded_minor", "refund_pending_minor", "pickup_source", "payment_mode", "collection_state", "cod_surcharge_minor", "cod_collect_minor"}
+
+// summaryNullable are the summary keys whose value may be an explicit JSON null (the key itself is still required).
+var summaryNullable = []string{"pickup_source", "collection_state", "cod_surcharge_minor", "cod_collect_minor"}
 
 func decodeSummary(raw json.RawMessage) (Summary, error) {
-	if _, err := exact(raw, summaryKeys...); err != nil {
+	if _, err := exactNullable(raw, summaryNullable, summaryKeys...); err != nil {
 		return Summary{}, err
 	}
 	var out Summary
@@ -250,17 +352,20 @@ func validSummary(v Summary) bool {
 		return false
 	}
 	switch v.CommercialState {
-	case "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "CANCELLED":
+	case "DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "AWAITING_COLLECTION", "CONFIRMED", "CANCELLED":
 	default:
 		return false
 	}
 	switch v.FulfillmentState {
-	case "MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED":
+	case "MANUAL_UNASSIGNED", "CANCELLED", "PAID_ALLOCATION_FAILED", "MERCHANT_SHIPPED", "PROVIDER_LABEL_CREATED":
 	default:
 		return false
 	}
+	if !validPickupSource(v.PickupSource) || !validCollection(v) {
+		return false
+	}
 	switch v.PaymentState {
-	case "NOT_STARTED", "REVIEW_REQUIRED", "CAPTURED", "AUTHORIZED", "PENDING":
+	case "NOT_STARTED", "REVIEW_REQUIRED", "CAPTURED", "AUTHORIZED", "PENDING", "PARTIALLY_REFUNDED", "REFUNDED":
 	default:
 		return false
 	}
@@ -268,6 +373,32 @@ func validSummary(v Summary) bool {
 	case "NONE", "READY", "REVIEW_REQUIRED":
 	default:
 		return false
+	}
+	if !money(v.RefundedMinor) || !money(v.RefundPendingMinor) || v.RefundedMinor+v.RefundPendingMinor > v.TotalMinor {
+		return false
+	}
+	// home-cod R5 (P1-2): cod_collect_minor is present exactly on COD orders (the SQL CASE nulls it otherwise).
+	if (v.PaymentMode == "cash_on_delivery") != (v.CodCollectMinor != nil) {
+		return false
+	}
+	// I05: refund amounts and payment_state come from the same SQL facts, so they must agree.
+	switch v.PaymentState {
+	case "NOT_STARTED", "AUTHORIZED", "PENDING":
+		if v.RefundedMinor != 0 || v.RefundPendingMinor != 0 {
+			return false
+		}
+	case "CAPTURED":
+		if v.RefundedMinor != 0 {
+			return false
+		}
+	case "PARTIALLY_REFUNDED":
+		if v.RefundedMinor == 0 || v.RefundedMinor >= v.TotalMinor {
+			return false
+		}
+	case "REFUNDED":
+		if v.RefundedMinor != v.TotalMinor {
+			return false
+		}
 	}
 	if v.PaymentState == "NOT_STARTED" && (v.TestMode || v.WorkState != "NONE") {
 		return false
@@ -278,20 +409,96 @@ func validSummary(v Summary) bool {
 	if v.FulfillmentState == "PAID_ALLOCATION_FAILED" && (v.PaymentState != "REVIEW_REQUIRED" || v.WorkState != "REVIEW_REQUIRED") {
 		return false
 	}
-	if v.WorkState == "READY" && (v.PaymentState != "CAPTURED" || v.CommercialState != "CONFIRMED" || v.FulfillmentState != "MANUAL_UNASSIGNED") {
+	// stripe-refund-v1 §7.1 / manual-fulfilment-v1 §5.1 invariants.
+	if v.WorkState == "READY" && (v.CommercialState != "CONFIRMED" || !captured(v.PaymentState) ||
+		(v.FulfillmentState != "MANUAL_UNASSIGNED" && v.FulfillmentState != "MERCHANT_SHIPPED" && v.FulfillmentState != "PROVIDER_LABEL_CREATED")) {
+		return false
+	}
+	if v.PaymentMode == "pay_at_pickup" {
+		// §16.2: never a payment attempt, fact, refund or work item; CONFIRMED at placement, CANCELLED after a release.
+		return v.PaymentState == "NOT_STARTED" && v.WorkState == "NONE" && v.RefundedMinor == 0 && v.RefundPendingMinor == 0 &&
+			!v.TestMode && (v.CommercialState == "CONFIRMED" || (v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED")) &&
+			v.FulfillmentState != "PAID_ALLOCATION_FAILED"
+	}
+	if v.PaymentMode == "bank_transfer" {
+		// storefront-v2 §C: never a payment attempt, fact, refund or work item (the offline fact lives in checkout.bank_transfers);
+		// AWAITING_TRANSFER while the merchant has not confirmed (stock still only reserved, nothing shipped), CONFIRMED after, CANCELLED
+		// when the window ended unpaid. A transfer order is never auto-confirmed, so CONFIRMED here is the merchant's act.
+		return v.PaymentState == "NOT_STARTED" && v.WorkState == "NONE" && v.RefundedMinor == 0 && v.RefundPendingMinor == 0 && !v.TestMode &&
+			v.FulfillmentState != "PAID_ALLOCATION_FAILED" &&
+			((v.CommercialState == "AWAITING_TRANSFER" && v.FulfillmentState == "MANUAL_UNASSIGNED") || v.CommercialState == "CONFIRMED" ||
+				(v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))
+	}
+	if v.PaymentMode == "cash_on_delivery" {
+		// home-cod R5: never a payment attempt, fact, refund or work item (the offline fact is the COLLECTED collection state). The order
+		// stays AWAITING_COLLECTION from placement through ship/collection, and only a release-cancel makes it CANCELLED. The surcharge is
+		// non-nil (orders_cod_surcharge CHECK) and never folded into TotalMinor.
+		return v.PaymentState == "NOT_STARTED" && v.WorkState == "NONE" && v.RefundedMinor == 0 && v.RefundPendingMinor == 0 && !v.TestMode &&
+			v.FulfillmentState != "PAID_ALLOCATION_FAILED" &&
+			v.CodSurchargeMinor != nil && *v.CodSurchargeMinor >= 0 && *v.CodSurchargeMinor <= 100000 && *v.CodSurchargeMinor%100 == 0 &&
+			*v.CodCollectMinor == v.TotalMinor+*v.CodSurchargeMinor &&
+			(v.CommercialState == "AWAITING_COLLECTION" || (v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))
+	}
+	if v.CommercialState == "AWAITING_TRANSFER" {
+		return false // only a bank_transfer order can wait for a transfer
+	}
+	if v.CommercialState == "AWAITING_COLLECTION" {
+		return false // only a cash_on_delivery order can wait for collection
+	}
+	if (v.FulfillmentState == "MERCHANT_SHIPPED" || v.FulfillmentState == "PROVIDER_LABEL_CREATED") &&
+		(v.WorkState != "READY" || v.CommercialState != "CONFIRMED") {
 		return false
 	}
 	if v.WorkState == "REVIEW_REQUIRED" && v.PaymentState != "REVIEW_REQUIRED" {
 		return false
 	}
-	return v.CommercialState != "CONFIRMED" ||
-		(v.WorkState != "NONE" && (v.PaymentState == "CAPTURED" || v.PaymentState == "REVIEW_REQUIRED"))
+	return v.CommercialState != "CONFIRMED" || (v.WorkState != "NONE" && captured(v.PaymentState))
+}
+
+// validPickupSource admits the three §16.1 labels or null (home delivery).
+func validPickupSource(s *string) bool {
+	if s == nil {
+		return true
+	}
+	return *s == "ecpay_directory" || *s == "buyer_entered" || *s == "merchant_attested"
+}
+
+// validCollection: payment_mode card or bank_transfer <=> collection_state null (checkout.orders orders_payment_collection CHECK); the
+// pay_at_pickup and cash_on_delivery states are the §16.4/§16.8 set.
+func validCollection(v Summary) bool {
+	switch v.PaymentMode {
+	case "card", "bank_transfer":
+		return v.CollectionState == nil
+	case "pay_at_pickup", "cash_on_delivery":
+		if v.CollectionState == nil {
+			return false
+		}
+		switch *v.CollectionState {
+		case "PENDING", "COLLECTED", "RETURNED", "REFUNDED_OFFLINE", "CANCELLED", "RESTOCKED":
+			return true
+		}
+	}
+	return false
+}
+
+// captured is the payment_state set in which a capture fact exists (or its review supersedes it).
+func captured(state string) bool {
+	switch state {
+	case "CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED":
+		return true
+	}
+	return false
 }
 
 func decodeDetail(raw json.RawMessage) (Detail, error) {
-	fields, err := exact(raw, append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination")...)
+	fields, err := exactNullable(raw, append([]string{"shipment"}, summaryNullable...), append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination", "shipment")...)
 	if err != nil {
 		return Detail{}, err
+	}
+	if !bytes.Equal(bytes.TrimSpace(fields["shipment"]), []byte("null")) {
+		if _, err = exactNullable(fields["shipment"], []string{"carrier_name", "tracking_url"}, shipmentKeys...); err != nil {
+			return Detail{}, err
+		}
 	}
 	if _, err = exact(fields["totals"], "subtotal_minor", "discount_minor", "shipping_minor", "shipping_tax_minor", "tax_minor", "total_minor"); err != nil {
 		return Detail{}, err
@@ -328,7 +535,34 @@ func decodeDetail(raw json.RawMessage) (Detail, error) {
 	return out, nil
 }
 
+// validShipment holds the head-shipment invariants: a shipment is shown exactly for a
+// MERCHANT_SHIPPED order and only while its head is SHIPPED (a voided head is null).
+func validShipment(order Summary, s *Shipment) bool {
+	if s == nil {
+		return order.FulfillmentState != "MERCHANT_SHIPPED"
+	}
+	return order.FulfillmentState == "MERCHANT_SHIPPED" && s.Status == "SHIPPED" && validShipmentFields(*s)
+}
+
+// validPickupVerification admits the three verification kinds of migrations/0072 (§4.1, §16.1).
+func validPickupVerification(kind string) bool {
+	return kind == "MANUAL_ATTESTED" || kind == "PROVIDER_DIRECTORY_VERIFIED" || kind == "BUYER_ENTERED"
+}
+
+// pickupMatchesSource keeps the projection's pickup_source label and the frozen snapshot's verification kind in step.
+func pickupMatchesSource(kind string, source *string) bool {
+	if source == nil {
+		return false
+	}
+	return (kind == "MANUAL_ATTESTED" && *source == "merchant_attested") ||
+		(kind == "PROVIDER_DIRECTORY_VERIFIED" && *source == "ecpay_directory") ||
+		(kind == "BUYER_ENTERED" && *source == "buyer_entered")
+}
+
 func validDetail(v Detail) bool {
+	if !validShipment(v.Summary, v.Shipment) {
+		return false
+	}
 	if !country(v.Country) || !serviceCode.MatchString(v.ServiceCode) || v.Destination.Country != v.Country ||
 		!money(v.Totals.SubtotalMinor) || !money(v.Totals.DiscountMinor) || !money(v.Totals.ShippingMinor) ||
 		!money(v.Totals.ShippingTaxMinor) || !money(v.Totals.TaxMinor) || v.Totals.TotalMinor != v.TotalMinor {
@@ -344,10 +578,11 @@ func validDetail(v Detail) bool {
 		if d.Pickup != nil || d.HomeAddress.City == "" || d.HomeAddress.Line1 == "" {
 			return false
 		}
-	} else if d.Kind == "cvs_711" || d.Kind == "cvs_familymart" {
+	} else if d.Kind == "cvs_711" || d.Kind == "cvs_familymart" || d.Kind == "cvs_hilife" || d.Kind == "cvs_okmart" {
 		if d.Country != "TW" || d.Pickup == nil || d.Pickup.Kind != d.Kind || d.HomeAddress != (HomeAddress{}) ||
 			!pickupNamespace.MatchString(d.Pickup.Namespace) || !pickupCode.MatchString(d.Pickup.Code) ||
-			!textValue(d.Pickup.Name, 120, true) || !textValue(d.Pickup.Address, 400, true) || d.Pickup.VerificationKind != "MANUAL_ATTESTED" {
+			!textValue(d.Pickup.Name, 120, true) || !textValue(d.Pickup.Address, 400, true) ||
+			!validPickupVerification(d.Pickup.VerificationKind) || !pickupMatchesSource(d.Pickup.VerificationKind, v.PickupSource) {
 			return false
 		}
 	} else {
@@ -390,13 +625,19 @@ func validDetail(v Detail) bool {
 }
 
 func exact(raw json.RawMessage, names ...string) (map[string]json.RawMessage, error) {
+	return exactNullable(raw, []string{"pickup"}, names...)
+}
+
+// exactNullable is exact with an explicit set of keys whose value may be JSON null (the key itself
+// must still be present). Every other key must be non-null.
+func exactNullable(raw json.RawMessage, nullable []string, names ...string) (map[string]json.RawMessage, error) {
 	var fields map[string]json.RawMessage
 	if !bytes.HasPrefix(bytes.TrimSpace(raw), []byte("{")) || json.Unmarshal(raw, &fields) != nil || len(fields) != len(names) {
 		return nil, ErrUnavailable
 	}
 	for _, name := range names {
 		value, ok := fields[name]
-		if !ok || len(value) == 0 || (name != "pickup" && bytes.Equal(bytes.TrimSpace(value), []byte("null"))) {
+		if !ok || len(value) == 0 || (!slices.Contains(nullable, name) && bytes.Equal(bytes.TrimSpace(value), []byte("null"))) {
 			return nil, ErrUnavailable
 		}
 	}

@@ -1,0 +1,27 @@
+{
+  "cases": 22,
+  "store_id": "a52b0f76-6987-43fc-9813-54180feec15f",
+  "tenant_id": "04a48096-5259-43eb-9d4e-059247fb69b2",
+  "handle": "41671428",
+  "origin": "https://41671428.lctest.example",
+  "custom_origin": "https://shop-3xdyg4.example.net",
+  "locales": [
+    "en",
+    "zh-TW",
+    "zh-CN"
+  ],
+  "viewports": [
+    "desktop",
+    "390px"
+  ],
+  "audit_expected": [
+    "merchant.store_created",
+    "merchant.storefront_published",
+    "merchant.domain_requested",
+    "merchant.domain_suspended",
+    "merchant.domain_detached",
+    "merchant.storefront_unpublished"
+  ],
+  "contract_failures": [],
+  "boundary": "production Next; signed MOCK IdP; scripted public DNS + certificate probe on the production VerifyPending library; synthetic TLS/CONNECT edge; no deployment DNS/TLS, CA or provider acceptance"
+}

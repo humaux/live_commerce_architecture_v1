@@ -28,7 +28,7 @@ func NewExpiryClient(ctx context.Context, pool *pgxpool.Pool, concurrency int) (
 	if ctx == nil || pool == nil || concurrency < 1 || concurrency > 16 {
 		return nil, errExpiryWorkerConfig
 	}
-	if err := platform.ValidateWorkerPool(ctx, pool); err != nil {
+	if err := platform.ValidateWorkerPool(ctx, pool, platform.WorkerExpiry); err != nil {
 		return nil, errExpiryWorkerDatabase
 	}
 	preflight, cancel := context.WithTimeout(ctx, 5*time.Second)

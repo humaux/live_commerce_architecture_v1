@@ -1,0 +1,2 @@
+apps/admin/lib/platform-domain-probe.ts:2:export const forbiddenPlatformHost = "XGDWM.com";
+check-gates: PS1 hard-coded platform domain in UI/legal source

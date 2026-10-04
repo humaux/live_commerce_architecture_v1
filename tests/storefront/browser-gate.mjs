@@ -12,7 +12,8 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { stripTypeScriptTypes } from "node:module";
-import { chromium, expect } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root = process.cwd(), evidence = process.env.LC_BUYER_EVIDENCE;
 assert(evidence && process.env.COMMERCE_BUYER_API_ORIGIN?.startsWith("http://127.0.0.1:"));
@@ -65,6 +66,10 @@ try {
     try {
       if(req.url==="/") { res.writeHead(200,{"content-type":"text/html","cache-control":"no-store"});res.end('<!doctype html><title>Buyer transport gate</title><p>Test-only runner, not storefront UI.</p><script type="module">import * as buyer from "/__gate_client.js"; window.buyer=buyer;</script>');return; }
       if(req.url==="/__gate_client.js") {res.writeHead(200,{"content-type":"text/javascript","cache-control":"no-store"});res.end(clientJS);return;}
+      // buyer-client.ts imports sibling modules ("./claim-contract.ts"); the browser resolves them against
+      // /__gate_client.js, so serve exactly the storefront lib files it names, type-stripped, never Next.
+      const sibling=/^\/([a-z][a-z-]*)\.ts$/.exec(req.url);
+      if(sibling&&clientJS.includes(`"./${sibling[1]}.ts"`)) {res.writeHead(200,{"content-type":"text/javascript","cache-control":"no-store"});res.end(stripTypeScriptTypes(await readFile(path.join(root,"apps/storefront/lib",sibling[1]+".ts"),"utf8"),{mode:"strip"}));return;}
       const chunks=[];for await(const x of req) chunks.push(x);let body=Buffer.concat(chunks);
       if(req.url==="/api/buyer/session/prepare") prepares++;
       const current=hook&&hook.path===req.url?hook:null;
@@ -88,8 +93,8 @@ try {
     for(const s of [socket,upstream]) {sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
   const proxyPort=await listen(proxy);
-  browser=await chromium.launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
-  const context=()=>browser.newContext({ignoreHTTPSErrors:true});
+  browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
+  const context=()=>browser.newContext(ctxOpts({ignoreHTTPSErrors:true}));
   const page=async c=>{const p=await c.newPage();await p.goto(origin);await p.waitForFunction(()=>Boolean(window.buyer));return p;};
   const init=p=>p.evaluate(()=>window.buyer.initializeBuyerSession());
   const state=p=>p.evaluate(()=>window.buyer.readBuyerSession());
@@ -193,22 +198,28 @@ try {
   // Render the actual approved B route, not the transport-only fixture page.
   // This proves catalog -> preserved cart -> current quote, not hosted payment.
   const productID=cat.body.items.find(item=>item.sku_id===process.env.LC_BUYER_SKU).product_id;
-  const uiContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:390,height:780},deviceScaleFactor:887/390});
+  const uiContext=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:390,height:780},deviceScaleFactor:887/390}));
   const ui=await uiContext.newPage();
-  await ui.goto(`${origin}/zh-TW/products/${productID}`);
+  // The product page is the storefront shell now: variants are chips (one per SKU code, tests/foundation/browser_storefront_fixture_test.go),
+  // quantity is added to the cart there and the delivery/quotation screens live at /{locale}/checkout. Same assertions as before.
+  await ui.goto(`${origin}/zh-TW/products/${productID}`); // an id URL answers a permanent redirect to the slug page
   await expect(ui.getByRole("heading",{name:"帆布收納袋（兩入組）"})).toBeVisible();
   await expect(ui.getByRole("radio").first()).toBeEnabled();
-  await expect(ui.getByText("示意資料 · 測試環境",{exact:true})).toBeVisible();
   assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
-  await mkdir(path.join(root,".impeccable/review"),{recursive:true});
-  await mkdir(path.join(root,".impeccable/review/buyer-inline"),{recursive:true});
-  await ui.screenshot({path:path.join(root,".impeccable/review/buyer-inline/hero-repro.png")});
+  // F7: run output never rewrites the tracked .impeccable/review baselines.
+  await mkdir(path.join(root,"output/playwright/review/buyer-inline"),{recursive:true});
+  await ui.screenshot({path:path.join(root,"output/playwright/review/buyer-inline/hero-repro.png")});
   await ui.screenshot({path:path.join(evidence,"buyer-mobile.png"),fullPage:true});
   await ui.getByRole("button",{name:"增加數量",exact:true}).click();
-  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
-  await ui.getByRole("combobox",{name:"語言",exact:true}).selectOption("en");
-  await ui.waitForURL(`**/en/products/${productID}`);
-  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
+  await expect(ui.getByTestId("qty-input")).toHaveValue("2");
+  await ui.getByTestId("add-to-cart").click();
+  await ui.getByTestId("cart-checkout").click();
+  await ui.waitForURL("**/zh-TW/checkout");
+  await expect(ui.getByText("示意資料 · 測試環境",{exact:true})).toBeVisible();
+  await expect(ui.locator(".sf-line__unit",{hasText:"× 2"})).toBeVisible(); // checkout lines are read-only: quantity shown as "× n"
+  await ui.locator('footer a[hreflang="en"]').click();
+  await ui.waitForURL("**/en/checkout");
+  await expect(ui.locator(".sf-line__unit",{hasText:"× 2"})).toBeVisible();
   await ui.getByRole("button",{name:"Choose delivery",exact:true}).click();
   await expect(ui.getByRole("heading",{name:"Delivery and quotation",exact:true})).toBeVisible();
   await ui.getByRole("button",{name:"Get current total",exact:true}).click();
@@ -227,27 +238,31 @@ try {
   await ui.setViewportSize({width:1440,height:900});
   assert.equal(await ui.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await ui.screenshot({path:path.join(evidence,"buyer-desktop.png"),fullPage:true});
-  await ui.getByRole("combobox",{name:"Language",exact:true}).selectOption("zh-CN");
-  await ui.waitForURL(`**/zh-CN/products/${productID}`);
-  await expect(ui.getByRole("spinbutton")).toHaveValue("2");
+  await ui.locator('footer a[hreflang="zh-CN"]').click();
+  await ui.waitForURL("**/zh-CN/checkout");
+  await expect(ui.locator(".sf-line__unit",{hasText:"× 2"})).toBeVisible();
   await expect(ui.getByRole("heading",{name:"本次报价商品",exact:true})).toBeVisible();
-  // Actual cart commit with every response dropped leaves the original key.
+  // Actual cart commit with every response dropped leaves the original key (the cart is written from the cart page now).
   // A second tab changes the session; recovery must adopt it, not reset it or
   // restore the old act.finally pending flag and deadlock the page.
-  await ui.getByRole("spinbutton").fill("3");
+  await ui.goto(`${origin}/zh-CN/cart`);
+  await expect(ui.getByTestId("cart-line-qty")).toHaveText("2");
   const lostCart={path:"/api/buyer/cart",drop:true,repeat:true,entered:deferred(),release:deferred(),headers:deferred(),result:deferred()};hook=lostCart;
-  await ui.getByRole("button",{name:"选择配送",exact:true}).click();
-  await expect(ui.getByRole("button",{name:"恢复上一笔请求",exact:true})).toBeVisible();
+  await ui.getByRole("button",{name:"增加数量",exact:true}).click();
+  await expect(ui.getByTestId("cart-problem")).toBeVisible();
   hook=null;assert.equal(await lostCart.result.promise,200);
   const otherTab=await page(uiContext), oldUI=await state(otherTab);
   await otherTab.evaluate(ctx=>window.buyer.resetBuyerSession(ctx),oldUI.context);
   const newUI=await init(otherTab);assert.notEqual(newUI.context,oldUI.context);
-  await expect(ui.getByRole("button",{name:"更新购物会话",exact:true})).toBeVisible();
-  await ui.getByRole("button",{name:"更新购物会话",exact:true}).click();
-  await expect(ui.getByRole("radio").first()).toBeEnabled();
-  await expect(ui.getByRole("button",{name:"选择配送",exact:true})).toBeEnabled();
+  await ui.getByTestId("cart-problem").getByRole("button").first().click();
+  await expect(ui.getByTestId("cart-empty")).toBeVisible();
   assert.equal((await state(otherTab)).context,newUI.context);
-  await expect(ui.getByRole("spinbutton")).toHaveValue("1");
+  // No stale pending flag: the adopted session takes a fresh add (quantity 1 in the new, empty cart).
+  await ui.goto(`${origin}/zh-CN/products/${productID}`);
+  await ui.getByTestId("add-to-cart").click();
+  await ui.getByTestId("cart-checkout").waitFor();
+  await ui.goto(`${origin}/zh-CN/cart`);
+  await expect(ui.getByTestId("cart-line-qty")).toHaveText("1");
   pass("actual lost cart response plus second-tab reset recovers new session without revocation or stale pending deadlock");
   await ui.goto(`${origin}/xx/products/${productID}`);assert.equal((await ui.request.get(`${origin}/xx/products/${productID}`)).status(),404);
   await uiContext.close();

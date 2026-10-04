@@ -1,3 +1,4 @@
+// GET /api/auth/callback → POST /v1/identity/login/complete (internal/identityhttp); OIDC only, 404 without COMMERCE_OIDC_ISSUER (U4).
 import {
   authConfig,
   authFailure,
@@ -37,7 +38,7 @@ function callbackQuery(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (!authConfig) return disabledResponse();
+  if (!authConfig?.issuer) return disabledResponse(); // U4: no OIDC issuer => no callback
   const binding = loginBinding(request);
   const locale = binding?.locale ?? "zh-CN";
   const query = callbackQuery(request);
@@ -59,7 +60,9 @@ export async function GET(request: Request) {
   const body = await safeJSON<{ token?: unknown; expires_at?: unknown }>(
     upstream,
   );
-  const response = redirect(`/${locale}/`);
+  // invite-next: a validated invite path from the login cookie wins over the dashboard; inviteNextPath already
+  // re-checked it, so a tampered cookie degrades to the plain dashboard redirect (never off-site).
+  const response = redirect(binding.next ?? `/${locale}/`);
   clearLoginCookie(response.headers);
   if (!setSessionCookies(response.headers, body?.token, body?.expires_at)) {
     const failed = authFailure(locale);
@@ -70,7 +73,7 @@ export async function GET(request: Request) {
 }
 
 const unsupported = () =>
-  authConfig
+  authConfig?.issuer
     ? new Response(null, {
         status: 405,
         headers: { Allow: "GET", "Cache-Control": "no-store" },

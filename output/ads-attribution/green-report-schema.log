@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionStorage
+    ads_attribution_test.go:10: set up isolated foundation database: first migration apply: apply 0113_ads_attribution.sql: ERROR: syntax error at or near "returning" (SQLSTATE 42601)
+--- FAIL: TestAdsAttributionStorage (0.68s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.369s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

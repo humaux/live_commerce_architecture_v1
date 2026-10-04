@@ -1,0 +1,8 @@
+{
+  "prompt": "Use case: ui-mockup. Create a high-fidelity desktop website first-viewport screenshot at 1586 by 992 for DaWan Live, a merchant live-commerce SaaS public corporate website. Input reference is ONLY visual identity: white surfaces, dark slate #1F2937, orange #FF6A00 accent, crisp system sans and small 8px corners. Do not copy its admin side rail, fake dashboard numbers, logos, search, photos, or content. New structure A: horizontal header with DaWan Live wordmark at left, 功能 / 公司 / 聯絡 / 繁體中文 / 登入 navigation at right. Large left-aligned headline '把直播留言，接到你的生意。', paragraph 'Facebook 留言收單、商家網店與訂單管理，在同一個工作流程。' and orange '建立商家帳戶' button. Across the whole middle width show a spacious three-stage precise interface diagram titled '從留言，到一筆有紀錄的訂單': Facebook 留言 -> 商家網店 -> 訂單管理. Treat this as a clearly labeled '流程示意', not live customer data. A dark-slate slim bottom band gives the operator Hong Kong Da Wan Trading Limited and 香港大碗貿易有限公司, with 隱私政策 / 服務條款 / 資料刪除 / 聯絡我們 links. White dominates, generous but deliberate spacing, orange used only for active flow and primary action; sober authentic product explanation, no gradients, no 3D, no unsupported guarantees, no invented usage stats. Produce an actual polished responsive-ready web composition, not a poster.",
+  "source": "built-in image_gen",
+  "approved": true,
+  "approved_by": "owner chat 2026-10-04: A 從留言到訂單; company facts below first viewport; explicit illustration disclaimer",
+  "reference": "01-admin-overview.png",
+  "purpose": "composition proposal; not implementation copy or data"
+}

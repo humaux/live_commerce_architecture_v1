@@ -1,0 +1,15 @@
+=== RUN   TestAdsAttributionR10PaidOnlyMixedCohort
+    ads_attribution_r10_test.go:92: R10 actual COD collection=404 {"code":"not_found","message":"Resource not found.","request_id":"9d3fc0a4f9174be4d828c7e23c0cd2b4","retryable":false,"details":{}}
+--- FAIL: TestAdsAttributionR10PaidOnlyMixedCohort (19.11s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:549: R10 actual COD collection=404 {"code":"not_found","message":"Resource not found.","request_id":"634eef03af2adca0b7463af7bcfe4ed7","retryable":false,"details":{}}
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (18.56s)
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+    ads_attribution_signals_test.go:95: R10 actual COD collection=404 {"code":"not_found","message":"Resource not found.","request_id":"7824115b1c60934ac3041743ae3afd37","retryable":false,"details":{}}
+--- FAIL: TestAdsAttributionR10SignalsOnlyExcludedFromReports (19.46s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.50s)
+FAIL
+FAIL	livecommerce/tests/foundation	58.966s
+FAIL
+test-focused: top-level PASS=1 FAIL=3 SKIP=0 exit=1

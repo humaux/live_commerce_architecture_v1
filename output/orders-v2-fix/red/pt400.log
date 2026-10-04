@@ -1,0 +1,5 @@
+--- FAIL: TestListSQLBindingsAndErrorClasses (0.00s)
+    orders_test.go:215: PT400 => merchant order read unavailable
+FAIL
+FAIL	livecommerce/internal/merchantorders	0.380s
+FAIL

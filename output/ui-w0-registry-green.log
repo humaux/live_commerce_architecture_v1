@@ -1,0 +1,12 @@
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (2.508041ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.0755ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.189375ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.113209ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.907541

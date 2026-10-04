@@ -1,0 +1,38 @@
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (1.299166ms)
+✔ PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels (0.219667ms)
+✔ PS1 legal identity is one untranslated source (0.066666ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.4715ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (1.609125ms)
+✔ PS4 optional Meta verification value never has a fake default (0.11525ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.22325ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (1.436833ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (1.22475ms)
+✖ PS review: admin image installs the manifests for its workspace dependencies before building (1.210625ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.205833
+
+✖ failing tests:
+
+test at tests/admin/platform-site.test.ts:209:1
+✖ PS review: admin image installs the manifests for its workspace dependencies before building (1.210625ms)
+  AssertionError [ERR_ASSERTION]: COPY packages/ui/package.json packages/ui/
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-site/tests/admin/platform-site.test.ts:219:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

@@ -45,7 +45,11 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
     if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
     const context = browser.contexts()[0];
-    const page = context.pages()[0] || await context.newPage();
+    // Chromium publishes DevToolsActivePort before its startup window exists, so the first connect can see no page yet (observed in the R4 final gate:
+    // MOU03's trace shows "Create page"). Creating one here opens a second window that the startup window then overtakes as the last-active one; a
+    // later cover tab lands there, this page is never hidden and the visibility assertions time out. Wait for the startup tab instead.
+    await expect.poll(() => context.pages().length, { timeout: 10_000 }).toBeGreaterThan(0);
+    const page = context.pages()[0];
     await page.bringToFront();
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
     return { page, close };

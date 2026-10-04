@@ -1,0 +1,38 @@
+apps/storefront/components/ShopChrome.tsx: baseline=head 0ff394fe43bb55ce408045aebdc9612239a78add
+tests/ui/click-sweep-lib.mjs: baseline=head a4ebf9593969544d90ca4df4d7239a50e25d4f07
+tests/ui/click-sweep.mjs: baseline=head c6d208e45392c70e58045ae13596a3d317d6edbb
+{
+  "app": "storefront",
+  "page": "/",
+  "viewport": "desktop",
+  "locale": "en",
+  "scope": "chrome",
+  "control": "+886 2 2345 6789",
+  "testid": "",
+  "kind": "a",
+  "action": "click",
+  "expected": "navigation or in-page change",
+  "actual": "no visible change within 3 s",
+  "result": "fail",
+  "failure": "no-effect",
+  "note": "",
+  "classSize": 1,
+  "layer": false,
+  "urlChanged": false,
+  "dialogText": "",
+  "external": "",
+  "ms": 3817,
+  "after": {
+    "url": "http://127.0.0.1:61504/",
+    "mut": 4,
+    "layers": 0,
+    "layerNames": [],
+    "active": "A:",
+    "scrollY": 0,
+    "activeInvalid": false,
+    "invalid": 0,
+    "ariaInvalid": 0,
+    "alerts": ""
+  }
+}
+DIAGNOSTIC REPRODUCED: unchanged baseline monitor reports no-effect for a native tel link in headless Chromium. Full gate remains FAIL; no assertion changed.

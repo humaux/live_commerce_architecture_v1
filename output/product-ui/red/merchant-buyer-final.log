@@ -1,0 +1,14 @@
+browser engine: chromium
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.waitForResponse: Timeout 30000ms exceeded while waiting for event "response"
+    at api (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/storefront/merchant-product.mjs:12:46)
+    at createProductInEditor (/Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/storefront/merchant-product.mjs:17:24)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/product-ui/tests/storefront/merchant-buyer-gate.mjs:124:26 {
+  log: [],
+  name: 'TimeoutError'
+}
+
+Node.js v24.15.0

@@ -54,6 +54,7 @@ async function browserJSON(
     headers?: Record<string, string>;
   } = {},
 ) {
+  // G-UI8 audit [FIXTURE/SETUP]: API-contract helper (BFF CSRF/idempotency/shape): the subject is the HTTP contract, not a UI behaviour; UI flows of these routes are click-driven in entry/settings specs
   return page.evaluate(
     async ({ path, options, csrfName }) => {
       const headers = new Headers(options.headers);
@@ -151,6 +152,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   const csrfCookie = authority.find((cookie) => cookie.name === csrfName);
   if (!sessionCookie?.value || !csrfCookie)
     throw new Error("merchant authority cookies were not issued");
+  // G-UI8 audit [READ/MEASURE]: reads which cookie names are script-readable (HttpOnly check)
   const readableCookieNames = await page.evaluate(() =>
     document.cookie
       .split(";")
@@ -252,12 +254,23 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
           id: created.store_id,
           name: initialBody.store_name,
           currency: "TWD",
+          // staff-team (migration 0089, storefront-v2 §D): each item carries the caller's role and effective permissions; the
+          // initial-store creator is a full owner = the whole store_grants_permission_check catalogue, sorted by the SQL definer;
+          // pinned so a catalogue change is a deliberate edit here.
+          role: "owner",
+          permissions: [
+            "ads:approve", "ads:manage", "ads:read", "audit:read", "audit:write", "billing:manage", "catalog:read",
+            "catalog:write", "customers:privacy", "customers:read", "fulfillment:write", "integration:execute",
+            "integration:manage", "integration:read", "inventory:read", "inventory:reserve", "inventory:write", "live:manage",
+            "live:read", "orders:export", "orders:read", "payments:refund", "pricing:read", "pricing:write", "store:read",
+          ],
         },
       ],
     },
   });
   await page.getByRole("button", { name: "進入工作區" }).click();
-  await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
+  // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
+  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
 
   const warehouses = await browserJSON(
     page,
@@ -444,6 +457,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   // HTTP client does not auto-send them there. Forward these exact issued test
   // cookies, first prove same-origin authority, then vary ONLY Origin.
   const issuedCookies = `${sessionName}=${sessionCookie.value}; ${csrfName}=${csrfCookie.value}`;
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
   const originControl = await context.request.post(accountPath, {
     headers: {
       Cookie: issuedCookies,
@@ -454,6 +468,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     data: accountBody,
   });
   expect(originControl.status()).toBe(200);
+  // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
   const badOrigin = await context.request.post(accountPath, {
     headers: {
       Cookie: issuedCookies,
@@ -464,6 +479,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
     data: accountBody,
   });
   expect(badOrigin.status()).toBe(403);
+  // G-UI8 audit [READ/MEASURE]: scans client storage for secrets/PII (read only)
   const storage = await page.evaluate(() => [
     JSON.stringify(localStorage),
     JSON.stringify(sessionStorage),

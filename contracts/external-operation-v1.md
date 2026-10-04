@@ -27,6 +27,8 @@ The initial producer is a trusted merchant-domain transaction with a server-reso
 
 ## Worker lease and state API
 
+**Amendment T21-02/T21-03 (migration 0096, unit worker-authority-split): the single shared `commerce_worker` is replaced by one NOLOGIN authority per worker process** -- `commerce_payment_worker` (payment-worker SANDBOX/PROVIDER_MOCK), `commerce_payment_live` (payment-worker LIVE), `commerce_expiry_worker`, `commerce_ads_worker`, `commerce_claims_worker` (claims dispatcher; also the default lane). `commerce_worker` remains only as an EMPTY legacy role and no login may join it. `integration.claim_operation`/`complete_operation` refuse (operation-not-found, before any mutation) an operation whose lane (`integration.operation_lane`: payment = provider stripe|payuni or actor BUYER_PAYMENT_QUERY|PAYMENT_REFUND; ads = meta_ads|meta_dataset; media = MEDIA_ATTEMPT/livekit, never claimable; default = all else) is not owned by the connected login's authority (`session_user` membership, never an argument), and RLS limits each authority's reads to its own lane. The Stripe/PAYUNi `require_*` guards derive the allowed execution profile from the same membership: LIVE only for `commerce_payment_live`, SANDBOX/PROVIDER_MOCK only for `commerce_payment_worker`. The text below describes the worker contract; read "`commerce_worker`" as "the calling process's own worker authority".
+
 `commerce_worker` is an ordinary NOLOGIN role, not inherited by merchant, identity or buyer roles. A separately provisioned login passes `platform.OpenWorkerPool`'s exact-one-authority and privilege/object-owner checks. It can read integration projections and operate River's own schema; business state/event changes are EXECUTE-only through fixed `integration.claim_operation` and `integration.complete_operation`. A non-login/non-inherited `commerce_integration_writer` owns these SECURITY DEFINER functions with fixed pg_catalog search_path and no PUBLIC execution. No worker direct UPDATE/INSERT/DELETE on business tables, identity/capability authority, or catalog/inventory mutation. No database-owner connection may run a worker.
 
 Worker functions accept caller-owned short transactions. Database EXECUTE grants verify worker authority. First perform an unlocked locator read of immutable binding ID, then lock binding FOR SHARE → operation FOR UPDATE and revalidate the composite association. Never hold locks across network I/O. Fixed SQL predicates use `clock_timestamp()` AFTER lock acquisition, not application time or transaction-start `now()`.
@@ -78,3 +80,11 @@ This supersedes the earlier dispatcher NOT_RUN status, not the historical probe'
 Still NOT_RUN: production adapters/eligibility/credentials and provider sandbox/live,
 global quotas/durable Retry-After, inbox/webhook ingress, authorized cancellation/requeue
 UI, buyer checkout, full global gates and full T06.
+
+## Amendment by claims-retention-purge-v1 (integrator, 2026-09-30, U08 merge)
+
+Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); that file is the source of the rows.
+
+- Clause 6 (IR-3): a terminal `meta.private_reply` operation's `request.comment_ref` and `semantic_key` may be redacted
+  by U08 only (`commerce_retention_writer`, `semantic_key LIKE 'mpr-%'`); `request_hash` stays the hash of the original
+  request.

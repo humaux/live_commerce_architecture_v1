@@ -1,11 +1,19 @@
 "use client";
 
+// Stock ledger (/[locale]/inventory). BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
+//   GET catalog-ledger (server page), GET products/{id}/purchase-entry, POST inventory/adjustments (journaled command with the
+//   row's own expected_version). Product editing (name, price, photos, archive, creation) lives only on /[locale]/products
+//   (product-editor §c9); this tray keeps stock info, the explicit stock adjustment, a read-only price and a link there.
+//   Never trusts a client tenant/store id.
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
-import { money, sendCommand, type PendingCommand } from "@/lib/client";
+import { money, sendCommand, validJournalCommand, type PendingCommand } from "@/lib/client";
+import { imageURL } from "@/lib/images-client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -104,11 +112,8 @@ export function Ledger({
       : "",
   );
   const selected = initial.rows.items.find((row) => row.sku_id === selectedID);
-  const [createOpen, setCreateOpen] = useState(false),
-    [productID, setProductID] = useState("");
-  const [lastSavedProductID, setLastSavedProductID] = useState("");
   const [entryRefresh, setEntryRefresh] = useState(0);
-  const entryProductID = selected?.product_id || productID || lastSavedProductID;
+  const entryProductID = selected?.product_id ?? "";
   const entryScope = `${initial.storeID}:${locale}:${selectedID}:${entryProductID}`;
   const currentEntryScope = useRef(entryScope);
   currentEntryScope.current = entryScope;
@@ -119,7 +124,8 @@ export function Ledger({
   const [entryError, setEntryError] = useState("");
   const [entryFeedback, setEntryFeedback] = useState("");
   const [query, setQuery] = useState(searchQuery);
-  const [section, setSection] = useState("products");
+  // catalog-core: the home ledger is the Inventory view; Products and Collections are their own pages (WorkspaceFrame).
+  const [section, setSection] = useState("inventory");
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
@@ -134,7 +140,6 @@ export function Ledger({
   const [warehouseLoading, setWarehouseLoading] = useState(false);
   const locked = busy || pending !== null || !journalReady;
   const key = `commerce-pending:${initial.storeID}`;
-  const formRef = useRef<HTMLFormElement>(null);
 
   // A server refresh may replace the search object without changing its query.
   // Preserve text being typed while that refresh completes.
@@ -151,23 +156,14 @@ export function Ledger({
     try {
       const saved = localStorage.getItem(key);
       if (saved) {
-        const cmd = JSON.parse(saved);
-        if (
-          typeof cmd.key !== "string" ||
-          !["adjust", "product", "sku"].includes(cmd.kind) ||
-          !["products", "skus", "inventory/adjustments"].includes(
-            cmd.resource,
-          ) ||
-          typeof cmd.body !== "string"
-        )
-          throw new Error("Invalid journal");
+        const cmd: unknown = JSON.parse(saved);
+        // Known kind/resource pairs only (lib/client.ts). A write journaled by an older build (product, sku, edit, price, archive)
+        // is still replayed with its original key and bytes so an uncertain write can never be duplicated.
+        if (!validJournalCommand(cmd)) throw new Error("Invalid journal");
         setPending(cmd);
       }
-      const unfinished = localStorage.getItem(`${key}:product`);
-      if (unfinished) {
-        setProductID(unfinished);
-        setCreateOpen(true);
-      }
+      // The inline "quick add" that used this key is gone (product-editor §c9): drop the leftover half-created marker.
+      localStorage.removeItem(`${key}:product`);
       if (!navigator.locks) throw new Error("Cross-tab lock unavailable");
       setJournalReady(true);
     } catch {
@@ -305,7 +301,6 @@ export function Ledger({
       else params.delete(name);
     }
     select("");
-    setLastSavedProductID("");
     router.push(`${pathname}?${params}`);
   }
   async function submit(command: PendingCommand) {
@@ -341,26 +336,9 @@ export function Ledger({
           setError(result.body);
           return;
         }
-        if (command.kind === "product") {
-          localStorage.setItem(`${key}:product`, result.body.id);
-          select("");
-          setProductID(result.body.id);
-          setLastSavedProductID(result.body.id);
-          setEntryRefresh((current) => current + 1);
-          setCreateOpen(true);
-          setNotice(c.productSaved);
-        } else if (command.kind === "sku") {
-          localStorage.removeItem(`${key}:product`);
-          setLastSavedProductID(result.body.product_id);
-          setEntryRefresh((current) => current + 1);
-          setProductID("");
-          setCreateOpen(false);
-          setNotice(c.skuSaved);
-        } else {
-          setDelta("0");
-          setReason("");
-          setNotice(c.success);
-        }
+        setDelta("0");
+        setReason("");
+        setNotice(c.success);
         localStorage.removeItem(key);
         setPending(null);
         router.refresh();
@@ -416,22 +394,6 @@ export function Ledger({
       reason: reason.trim(),
     });
   }
-  function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    if (!productID)
-      command("product", "products", {
-        name: data.get("name"),
-        description: data.get("description"),
-      });
-    else
-      command("sku", "skus", {
-        product_id: productID,
-        code: data.get("code"),
-        price_minor: Number(data.get("price")),
-        expected_version: 0,
-      });
-  }
   async function moreWarehouses() {
     setWarehouseLoading(true);
     try {
@@ -456,16 +418,6 @@ export function Ledger({
       setWarehouseLoading(false);
     }
   }
-  const nav = [
-    ["products", "product", c.products],
-    ["inventory", "inventory", c.inventory],
-    ["live", "live", c.live],
-    ["siteChat", "chat", c.siteChat],
-    ["meta", "meta", c.meta],
-    ["support", "support", c.support],
-    ["settings", "settings", c.settings],
-  ];
-
   return (
     <WorkspaceFrame
       locale={locale}
@@ -476,38 +428,25 @@ export function Ledger({
       locked={locked}
       onSection={setSection}
     >
-      {section !== "products" && section !== "inventory" ? (
-        <section className="unavailable">
-          <Icon
-            name={nav.find((n) => n[0] === section)?.[1] ?? "product"}
-            size={32}
-          />
-          <h1>{nav.find((n) => n[0] === section)?.[2]}</h1>
-          <p>{c.unavailable}</p>
-          <p>{c.sectionHint}</p>
-          <button onClick={() => setSection("products")}>{c.products}</button>
-        </section>
-      ) : (
-        <>
+      {/* Only products and inventory live here; the other nav entries are separate pages (WorkspaceFrame). */}
+      <>
           <div className="heading-row">
             <div>
               <h1>{c.heading}</h1>
               <p>{c.subtitle}</p>
             </div>
-            <button
-              className="primary create-button"
-              disabled={!initial.storeID || locked}
-              onClick={() => {
-                setCreateOpen(!createOpen);
-                setTimeout(
-                  () => formRef.current?.querySelector("input")?.focus(),
-                  0,
-                );
-              }}
-            >
-              <Icon name="plus" size={18} />
-              {c.create}
-            </button>
+            {/* One way to create a product: the full editor (product-editor §c9); no inline quick-add on this page. */}
+            {initial.storeID && (
+              <Link
+                className="primary create-button"
+                href={`/${locale}/products/new?store=${initial.storeID}`}
+                aria-disabled={locked}
+                onClick={(event) => locked && event.preventDefault()}
+              >
+                <Icon name="plus" size={18} />
+                {c.create}
+              </Link>
+            )}
           </div>
           <div className="section-bar">
             <span>
@@ -538,52 +477,6 @@ export function Ledger({
               <span>{c.failed}</span>
               <button onClick={() => void submit(pending)}>{c.retry}</button>
             </div>
-          )}
-          {createOpen && (
-            <section className="create-panel" aria-label={c.create}>
-              <h2>{productID ? c.createSKU : c.create}</h2>
-              <p>{productID ? c.productSaved : c.createHint}</p>
-              <form ref={formRef} onSubmit={create}>
-                <fieldset disabled={locked}>
-                  {productID ? (
-                    <>
-                      <label>
-                        {c.skuCode}
-                        <input name="code" required maxLength={64} />
-                      </label>
-                      <label>
-                        {c.priceMinor}
-                        <input
-                          name="price"
-                          type="number"
-                          min="0"
-                          max="1000000000000"
-                          step="1"
-                          required
-                        />
-                      </label>
-                    </>
-                  ) : (
-                    <>
-                      <label>
-                        {c.name}
-                        <input name="name" required maxLength={120} />
-                      </label>
-                      <label>
-                        {c.description}
-                        <input name="description" maxLength={4000} />
-                      </label>
-                    </>
-                  )}
-                  <button className="primary" type="submit">
-                    {busy ? c.pending : productID ? c.createSKU : c.create}
-                  </button>
-                  <button type="button" onClick={() => setCreateOpen(false)}>
-                    {c.cancel}
-                  </button>
-                </fieldset>
-              </form>
-            </section>
           )}
           <section className="ledger-card" aria-label={c.heading}>
             <form
@@ -712,6 +605,11 @@ export function Ledger({
                             code={row.code}
                             name={row.product_name}
                             demo={initial.fixture}
+                            imageSrc={
+                              row.cover_image_id
+                                ? imageURL(initial.storeID, row.product_id, row.cover_image_id)
+                                : undefined
+                            }
                           />
                           <div>
                             <button
@@ -722,7 +620,14 @@ export function Ledger({
                               {row.product_name}
                             </button>
                             <small>{initial.fixture ? c.demo : row.code}</small>
-                            <small className="mobile-sku">{row.code}</small>
+                            <small className="mobile-sku">
+                              {row.code}
+                              {/* status-col is display:none ≤680px; this badge is
+                                  the only mobile-visible active/archived signal */}
+                              <span className={`status mobile-status ${row.status}`}>
+                                {row.status === "active" ? c.active : c.archived}
+                              </span>
+                            </small>
                           </div>
                         </div>
                       </th>
@@ -799,13 +704,25 @@ export function Ledger({
                   name={selected.product_name}
                   demo={initial.fixture}
                   large
+                  imageSrc={
+                    selected.cover_image_id
+                      ? imageURL(initial.storeID, selected.product_id, selected.cover_image_id)
+                      : undefined
+                  }
                 />
                 <div>
                   <h2>{selected.product_name}</h2>
                   <p>SKU: {selected.code}</p>
+                  {/* Display only: the price is edited on the product page, in whole major units (D02). */}
+                  <p data-testid="tray-price">
+                    {c.price}: {money(locale, selected.currency, selected.price_minor)}
+                  </p>
                   <span className={`status ${selected.status}`}>
                     {selected.status === "active" ? c.active : c.archived}
                   </span>
+                  <Link className="tray-edit" href={`/${locale}/products/${selected.product_id}${initial.storeID ? `?store=${initial.storeID}` : ""}`}>
+                    {c.editProduct}
+                  </Link>
                 </div>
               </div>
               <div className="stock-summary">
@@ -925,8 +842,7 @@ export function Ledger({
               </div>
             </section>
           )}
-        </>
-      )}
+      </>
     </WorkspaceFrame>
   );
 }

@@ -3,8 +3,10 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -45,7 +47,7 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	adminOrigin := "http://" + listener.Addr().String()
+	adminOrigin := browserFront(t, listener.Addr().String()) // https TLS front under LC_BROWSER_ENGINE=webkit, else http://addr
 	_, adminPort, _ := net.SplitHostPort(listener.Addr().String())
 	_ = listener.Close()
 	idp := newBrowserIDP(t, adminOrigin+"/api/auth/callback")
@@ -64,8 +66,10 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	mustExec(t, h.f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, principal)
 	mustExec(t, h.f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, h.f.tenantA, principal)
 	mustExec(t, h.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
+	// orders:read is the W0 registry permission of the Overview route (apps/admin/src/features/overview/routes.ts) and the Go dashboard
+	// authority (storefront-v2 G1 MT02): without it the sign-in landing is the shell's 403, not the dashboard this gate asserts.
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
-		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write','inventory:read']) p`, h.f.tenantA, h.f.storeA1, principal)
+		SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','catalog:read','catalog:write','inventory:read','orders:read']) p`, h.f.tenantA, h.f.storeA1, principal)
 	_, foreignProduct := bcatForeignStore(t, h, h.f.tenantB)
 	adminKey := randomToken()
 	private, err := identityhttp.NewHandler(service, adminKey)
@@ -77,6 +81,23 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true}))
 	var productWrites, skuWrites atomic.Int32
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// The new UI creates the product and SKU atomically. Count the submitted SKU entries,
+		// preserving the original exactly-one-product / exactly-one-SKU assertion below.
+		if r.Method == "POST" && r.URL.Path == "/v1/admin/stores/"+h.f.storeA1+"/products/document" {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Error(err)
+			}
+			r.Body = io.NopCloser(bytes.NewReader(body))
+			var document struct {
+				SKUs []json.RawMessage `json:"skus"`
+			}
+			if err := json.Unmarshal(body, &document); err != nil {
+				t.Error(err)
+			}
+			productWrites.Add(1)
+			skuWrites.Add(int32(len(document.SKUs)))
+		}
 		if r.Method == "POST" && r.URL.Path == "/v1/admin/stores/"+h.f.storeA1+"/products" {
 			productWrites.Add(1)
 		}
@@ -97,6 +118,11 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 		return out
 	}
 	before := facts()
+	expectedOperations := []string{"product.save", "catalog.image.upload", "catalog.image.reorder", "catalog.product.bulk_status"}
+	beforeOperations := make(map[string]int, len(expectedOperations))
+	for _, operation := range expectedOperations {
+		beforeOperations[operation] = countRows(t, h.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3`, h.f.tenantA, h.f.storeA1, operation)
+	}
 	controlKey := randomToken()
 	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Gate-Key") != controlKey {
@@ -176,8 +202,15 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 			t.Fatalf("unexpected purchase side effect in %s", table)
 		}
 	}
-	if after["ops.command_results"]-before["ops.command_results"] != 2 {
-		t.Fatal("expected exactly two merchant command receipts")
+	// Product-editor c6/A: one atomic document (including the SKU), one image,
+	// one order, then publish. Verify every stage exactly once, not only the total.
+	if after["ops.command_results"]-before["ops.command_results"] != len(expectedOperations) {
+		t.Fatal("expected exactly four merchant command receipts (document, image, image order, publication)")
+	}
+	for _, operation := range expectedOperations {
+		if n := countRows(t, h.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3`, h.f.tenantA, h.f.storeA1, operation) - beforeOperations[operation]; n != 1 {
+			t.Fatalf("expected one %s receipt, got %d", operation, n)
+		}
 	}
 	if countRows(t, h.f.owner, `SELECT count(*) FROM identity.sessions WHERE principal_id=$1 AND audience='merchant'`, principal) != 1 || countRows(t, h.f.owner, `SELECT count(*) FROM control.storefront_publications WHERE store_id=$1 AND published`, h.f.storeA1) != 0 {
 		t.Fatal("real merchant session or unpublish readback failed")

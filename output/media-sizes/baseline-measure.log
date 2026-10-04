@@ -1,0 +1,6 @@
+=== RUN   TestBrowserStorefront
+    browser_storefront_test.go:397: PASS: real-stack storefront shell; 28 active products, 2 collections; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/media-sizes/output/playwright/storefront/20261002T182400.708197000
+--- PASS: TestBrowserStorefront (95.64s)
+PASS
+ok  	livecommerce/tests/foundation	97.393s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

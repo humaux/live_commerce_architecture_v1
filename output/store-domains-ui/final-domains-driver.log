@@ -1,0 +1,24 @@
+browser engine: chromium
+PASS handle preview: failed query clears old availability; stale response cannot replace the current suggestion
+PASS signed MOCK IdP; onboarding wizard (en, desktop): live handle preview, receipt shows the platform origin, workspace opens
+PASS buyer sees the not-found page at https://gate-store-kgqaae.lctest.example (en, desktop): platform subdomain ACTIVE but the merchant has not published
+PASS anonymous buyer is served at https://gate-store-kgqaae.lctest.example (zh-TW, 390px): published on the platform subdomain
+PASS cycle publish (zh-TW, 390px): not published -> publish -> buyer served at https://<handle>.<base> through the test edge
+PASS storefront/domains: committed result lost, explicit same-key replay after reload, exact response and unchanged PG facts
+PASS custom domain requested (zh-CN, desktop): TXT name/value + CNAME instructions shown once, row REQUESTED
+PASS anonymous buyer is served at https://shop-kgqaae.example.net (zh-CN, desktop): the ACTIVE custom domain serves buyers
+PASS fake DNS resolver turns the domain green: one sweep -> ACTIVE; buyer served on the custom host
+PASS platform subdomain 301s to the primary custom origin
+PASS storefront/domains/suspend: committed result lost, explicit same-key replay after reload, exact response and unchanged PG facts
+PASS buyer sees the not-found page at https://shop-kgqaae.example.net (zh-CN, desktop): merchant suspended the custom domain
+PASS anonymous buyer is served at https://gate-store-kgqaae.lctest.example (zh-CN, desktop): the platform origin is the primary again
+PASS suspend (zh-CN, desktop): custom host 404, platform origin serves again
+PASS storefront/domains/detach: committed result lost, explicit same-key replay after reload, exact response and unchanged PG facts
+PASS buyer sees the not-found page at https://shop-kgqaae.example.net (zh-CN, desktop): merchant detached the custom domain
+PASS detach (zh-CN, desktop): row DETACHED, custom host stays closed
+PASS buyer sees the not-found page at https://gate-store-kgqaae.lctest.example (en, desktop): merchant unpublished
+PASS unpublish (en, desktop): platform origin 404
+PASS MOCK lost result: pending write persists across reload; reads work, domain writes stay paused
+PASS legacy marker-only UNKNOWN stays locked; no guessed key/body replay
+PASS PG facts: handle + platform row from onboarding, publication version 2, custom DETACHED, audit trail equals the driven actions
+PASS MOCK apex DTO: every A/AAAA record copies exactly; three locales desktop/mobile, no overflow, 44px

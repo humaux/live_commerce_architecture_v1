@@ -1,0 +1,11 @@
+$ bash scripts/dev/test-focused.sh '^TestLiveToolsGateCartReadLivePrice$'
+=== RUN   TestLiveToolsGateCartReadLivePrice
+    live_tools_gate_test.go:434: claimant cart live unit price = 0, want 20000
+--- FAIL: TestLiveToolsGateCartReadLivePrice (1.77s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.705s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+
+Red run: GetCart temporarily reverted to skip applyCartLivePrices (the fix), so the buyer cart read
+returns no live_unit_price_minor for a live-claim line. Exit 1, PASS=0 FAIL=1.

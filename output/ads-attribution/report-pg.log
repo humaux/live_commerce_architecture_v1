@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionReport
+    payment_query_test.go:58: checkout database unavailable
+--- FAIL: TestAdsAttributionReport (1.35s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.032s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

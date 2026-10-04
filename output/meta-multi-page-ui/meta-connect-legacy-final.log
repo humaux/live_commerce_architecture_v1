@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:90547) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/meta-connect.spec.ts:96:1 › meta-connect browser gate › not connected: the card offers Connect; a forged return state is refused and nothing is connected (652ms)
+  ✓  2 tests/admin/meta-connect.spec.ts:109:1 › meta-connect browser gate › a missing permission is listed, the pick is disabled and nothing is connected (479ms)
+  ✓  3 tests/admin/meta-connect.spec.ts:124:1 › meta-connect browser gate › connect Page A with Instagram: dialog params, state cookie, 303 without code/state, pick, card facts, no secret in the browser (1.4s)
+  ✓  4 tests/admin/meta-connect.spec.ts:211:1 › meta-connect browser gate › while connected the store keeps its Page: add and reauthorize are available, reload shows the same card (283ms)
+  ✓  5 tests/admin/meta-connect.spec.ts:221:1 › meta-connect browser gate › disconnect asks for confirmation, destroys the connection and the claims-worker unsubscribes the Page at Meta (513ms)
+  ✓  6 tests/admin/meta-connect.spec.ts:239:1 › meta-connect browser gate › reconnect with a Facebook-only Page: Instagram absent, card says none linked (478ms)
+
+  6 passed (4.2s)

@@ -18,11 +18,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/inventory"
+	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/oidclogin"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefront"
@@ -70,7 +72,7 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 		id, _ := newDraft(1)
 		ids["draft"+strconv.Itoa(i)] = id
 	}
-	for _, mode := range []string{"authorized", "captured", "review", "allocation_failed"} {
+	for _, mode := range []string{"authorized", "captured", "review", "allocation_failed", "shipped"} {
 		id, clone := newDraft(2)
 		clone.result, err = clone.start(t04Key("mou-start"))
 		if err != nil {
@@ -117,7 +119,34 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 		if err = pcApply(clone.worker, clone.result.AttemptID, hash); err != nil {
 			t.Fatal(err)
 		}
+		if mode == "shipped" {
+			mustExec(t, q.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'fulfillment:write') ON CONFLICT DO NOTHING`, q.f.tenantA, q.f.storeA1, q.f.principalA)
+			carrier, tracking := "black_cat", "SYNTHETIC-MOU-TRACK"
+			_, e := t04Scoped(ctx, q.f, q.f.tokens["a"], q.f.storeA1, "fulfillment:write", func(tx pgx.Tx, scope platform.Scope) (merchantorders.ShipmentVersion, error) {
+				return merchantorders.RecordShipment(ctx, tx, scope, q.f.tokens["a"], t04Key("mou-v2-shipment"), id, merchantorders.ShipmentInput{Status: "SHIPPED", CarrierCode: &carrier, TrackingNumber: &tracking})
+			})
+			if e != nil {
+				t.Fatal(e)
+			}
+		}
 	}
+	// A real claim redemption and checkout, in this same store, backs the live
+	// source picker. Do not invent attribution by assigning creator_session_id.
+	labels, err := claims.NewLabelKey(randomBytes(32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	liveEnv := &ltgEnv{tcvEnv: &tcvEnv{t: t, p: q.psHarness, svc: q.bcHarness.service}, h: &lcHarness{cqHarness: q.cqHarness, ctx: ctx, actor: q.f.principalA, token: q.f.tokens["a"], labels: labels}, money: q.stock.skus[0].ID}
+	liveEnv.grantCreator("live:read", "live:manage", "pricing:read", "pricing:write", "orders:read", "catalog:read")
+	sessionID, _ := liveEnv.session("MOUV2", 100, 5)
+	_, link := liveEnv.claimLink(sessionID, "synthetic-mou-v2-actor", "MOUV2+1")
+	liveBuyer := liveEnv.redeemed(link)
+	liveQuote, _ := liveEnv.line(liveBuyer, "")
+	liveOrder, err := liveEnv.placeHome(liveBuyer, liveQuote)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids["live_session"], ids["live_order"] = sessionID, liveOrder.OrderID
 	var expiredFixture pqFixture
 	ids["expired"], expiredFixture = newDraft(1)
 	// Expire the actual checkout hold through the ordinary expiry worker.
@@ -252,7 +281,9 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	if err = q.f.owner.QueryRow(ctx, `SELECT md5(o::text) FROM checkout.orders o WHERE id=$1`, q.hold.OrderID).Scan(&originalHash); err != nil {
 		t.Fatal(err)
 	}
-	evidence := filepath.Join("/Volumes/data/output/merchant-orders-c-browser-20260927", time.Now().UTC().Format("20060102T150405.000000000"))
+	// Evidence stays under the gitignored repo output/playwright like the other
+	// browser chains; a workstation-only absolute path fails on Linux/CI hosts.
+	evidence := filepath.Join(root, "output/playwright/merchant-orders-c-browser", time.Now().UTC().Format("20060102T150405.000000000"))
 	if err = os.MkdirAll(evidence, 0700); err != nil {
 		t.Fatal(err)
 	}

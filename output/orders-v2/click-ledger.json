@@ -1,0 +1,122 @@
+[
+  {
+    "control": "default hide drafts",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "queue unpaid",
+    "result": "visible SQL total 3; counts match response"
+  },
+  {
+    "control": "queue transfer_review",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "queue ready_to_ship",
+    "result": "visible SQL total 1; counts match response"
+  },
+  {
+    "control": "queue ready_to_consign",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "queue shipped",
+    "result": "visible SQL total 1; counts match response"
+  },
+  {
+    "control": "queue completed",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "queue cancelled",
+    "result": "visible SQL total 2; counts match response"
+  },
+  {
+    "control": "queue all",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "search order",
+    "result": "visible SQL total 1; counts match response"
+  },
+  {
+    "control": "search tracking",
+    "result": "visible SQL total 1; counts match response"
+  },
+  {
+    "control": "search phone last4",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "search recipient",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "search frozen SKU",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "refresh private search",
+    "result": "query cleared, not persisted in URL or storage"
+  },
+  {
+    "control": "payment cash_on_delivery",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "payment bank_transfer",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "payment pay_at_pickup",
+    "result": "visible SQL total 0; counts match response"
+  },
+  {
+    "control": "payment card",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "delivery home",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "reset filters",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "inspect drafts for recorded live claim",
+    "result": "visible SQL total 20; counts match response"
+  },
+  {
+    "control": "live session",
+    "result": "visible SQL total 1; counts match response"
+  },
+  {
+    "control": "reset live filter",
+    "result": "visible SQL total 20; counts match response"
+  },
+  {
+    "control": "Taipei day",
+    "result": "visible SQL total 20; counts match response"
+  },
+  {
+    "control": "reset before visual acceptance",
+    "result": "visible SQL total 20; counts match response"
+  },
+  {
+    "control": "active ledger",
+    "result": "visible SQL total 7; counts match response"
+  },
+  {
+    "control": "mobile secondary filters zh-TW",
+    "result": "native toggle, select, apply, reopen persisted value, reset; first order above fold"
+  },
+  {
+    "control": "mobile secondary filters zh-CN",
+    "result": "native toggle, select, apply, reopen persisted value, reset; first order above fold"
+  },
+  {
+    "control": "mobile secondary filters en",
+    "result": "native toggle, select, apply, reopen persisted value, reset; first order above fold"
+  }
+]

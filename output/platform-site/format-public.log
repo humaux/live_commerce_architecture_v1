@@ -1,0 +1,4 @@
+apps/admin/app/(public)/site/robots.txt/route.ts 23ms
+apps/admin/app/(public)/site/sitemap.xml/route.ts 4ms
+apps/admin/app/(public)/site/[locale]/layout.tsx 4ms
+apps/admin/app/(public)/site/[locale]/[page]/page.tsx 10ms

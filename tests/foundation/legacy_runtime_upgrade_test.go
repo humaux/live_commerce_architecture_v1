@@ -18,6 +18,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
+	"livecommerce/internal/buyer"
 	integration "livecommerce/internal/integrations/core"
 	"livecommerce/internal/platform"
 	"livecommerce/migrations"
@@ -45,6 +46,16 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version IN ('0032_legacy_river_isolation.sql','post_river/0005_legacy_river_isolation.sql')`) != 0 {
 		t.Fatal("historical fixture crossed 0032 boundary")
 	}
+	// taiwan-cvs-logistics-v1 (post_river/0017): the current checkout Go calls the 10-argument begin_hold, which this old boundary
+	// (8-argument 0013 body, no CVS schema) cannot host. A SECURITY INVOKER shim keeps the card-order path of these historical
+	// fixtures exercising the old body unchanged; the extra arguments carry nothing an old schema could act on and the two result keys are the card-order constants.
+	// post_river/0017 drops this shim (DROP FUNCTION IF EXISTS) before creating the real function, so migrations.Apply upgrades these fixtures.
+	mustExec(t, f.owner, `CREATE FUNCTION checkout.begin_hold(p_hash bytea,p_store uuid,p_key text,p_request_hash bytea,p_order uuid,
+	 p_snapshot jsonb,p_lines jsonb,p_job_id bigint,p_payment_environment text,p_payment_mode text) RETURNS jsonb
+	 LANGUAGE sql AS $$ SELECT checkout.begin_hold(p_hash,p_store,p_key,p_request_hash,p_order,p_snapshot,p_lines,p_job_id)
+	 || jsonb_build_object('payment_mode','card','commercial_state','DRAFT') $$;
+	 REVOKE ALL ON FUNCTION checkout.begin_hold(bytea,uuid,text,bytea,uuid,jsonb,jsonb,bigint,text,text) FROM PUBLIC;
+	 GRANT EXECUTE ON FUNCTION checkout.begin_hold(bytea,uuid,text,bytea,uuid,jsonb,jsonb,bigint,text,text) TO commerce_checkout_runtime`)
 	runtime, err := platform.OpenPool(ctx, bcRole(t, f, "commerce_runtime"))
 	if err != nil {
 		t.Fatal(err)
@@ -52,6 +63,388 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 	t.Cleanup(runtime.Close)
 	f.runtime = runtime
 	return f
+}
+
+// lriShims is the historical-schema fallback for the CURRENT Go code on a pre-0032 fixture. The Go packages name schema
+// objects that later migrations added: internal/pricing SetPolicy/LockCurrent name pricing.policy_versions.
+// free_shipping_threshold_minor (0088, contracts/storefront-v2.md section C); internal/storefront SetCart/applyLivePrices
+// name storefront.cart_lines.claim_* (0092, live tools); internal/checkout Begin calls checkout.set_order_locale (0097).
+// On the old schema the first such statement failed (42703/42883, surfaced as "checkout database unavailable") and no
+// legacy upgrade gate could even seed its checkout. Product code stays unchanged: the fixture receives a minimal SHIM of
+// each object (same name and signature as the real migration, no behaviour beyond what an old order can carry), only
+// when it is absent, exactly like the begin_hold shim in lriPre0032Fixture. Every legacy gate upgrades through
+// lriApply, which drops the shims whose migration is not yet recorded right before Apply (the real ADD COLUMN / CREATE
+// FUNCTION have no IF NOT EXISTS). Column shims only ever hold NULL (no legacy fixture sets a threshold or a claim
+// origin; the 0109 flag shim only ever holds its default true); lriApply refuses to drop one that holds data (held = SQL returning the count of non-default values).
+var lriShims = []struct{ migration, exists, add, held, drop string }{
+	{"0088_checkout_offline.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='pricing' AND table_name='policy_versions' AND column_name='free_shipping_threshold_minor')`,
+		`ALTER TABLE pricing.policy_versions ADD COLUMN free_shipping_threshold_minor bigint;
+		 GRANT SELECT(free_shipping_threshold_minor) ON pricing.policy_versions TO commerce_buyer_runtime`,
+		`SELECT count(*) FROM pricing.policy_versions WHERE free_shipping_threshold_minor IS NOT NULL`,
+		`ALTER TABLE pricing.policy_versions DROP COLUMN free_shipping_threshold_minor`},
+	{"0092_live_tools.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='storefront' AND table_name='cart_lines' AND column_name='claim_bundle_id')`,
+		`ALTER TABLE storefront.cart_lines ADD COLUMN claim_bundle_id uuid, ADD COLUMN claim_offer_id uuid, ADD COLUMN claim_quantity bigint`,
+		`SELECT count(*) FROM storefront.cart_lines WHERE claim_bundle_id IS NOT NULL OR claim_offer_id IS NOT NULL OR claim_quantity IS NOT NULL`,
+		`ALTER TABLE storefront.cart_lines DROP COLUMN claim_bundle_id, DROP COLUMN claim_offer_id, DROP COLUMN claim_quantity`},
+	{"0097_order_locale.sql",
+		`SELECT to_regprocedure('checkout.set_order_locale(bytea,uuid,uuid,text)') IS NOT NULL`,
+		`CREATE FUNCTION checkout.set_order_locale(p_hash bytea,p_store uuid,p_order uuid,p_locale text) RETURNS void LANGUAGE sql AS 'SELECT';
+		 REVOKE ALL ON FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text) FROM PUBLIC;
+		 GRANT EXECUTE ON FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text) TO commerce_checkout_runtime`,
+		``,
+		`DROP FUNCTION checkout.set_order_locale(bytea,uuid,uuid,text)`},
+	// internal/checkout planLocked filters the lock plan by catalog.skus.inventory_tracked (A6, 0109 product-core). The
+	// shim holds only the real default (true = tracked, the pre-0109 behaviour); 0109 adds the column with its CHECK.
+	{"0109_product_core.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='catalog' AND table_name='skus' AND column_name='inventory_tracked')`,
+		`ALTER TABLE catalog.skus ADD COLUMN inventory_tracked boolean NOT NULL DEFAULT true`,
+		`SELECT count(*) FROM catalog.skus WHERE NOT inventory_tracked`,
+		`ALTER TABLE catalog.skus DROP COLUMN inventory_tracked`},
+	// 0113: an old card-only fixture has no imported claim version. Unlike
+	// the real column, this shim rejects every non-NULL version.
+	{"0113_ads_attribution.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='storefront' AND table_name='cart_lines' AND column_name='claim_line_version')`,
+		`ALTER TABLE storefront.cart_lines ADD COLUMN claim_line_version bigint CONSTRAINT lri_claim_version_null CHECK(claim_line_version IS NULL);
+		 COMMENT ON COLUMN storefront.cart_lines.claim_line_version IS 'lri_prehead_0113_test_only';`,
+		`SELECT count(*) FROM storefront.cart_lines WHERE claim_line_version IS NOT NULL`,
+		`ALTER TABLE storefront.cart_lines DROP COLUMN claim_line_version`},
+}
+
+const lriAttributionMarker = "lri_prehead_0113_test_only"
+
+// This is a test fixture adapter, not an attribution implementation. Only the
+// historical schema marker and authenticated ordinary card-order scope pass.
+// There is no money/stock/job/receipt change and no creation-guard replacement.
+const lriAttributionStub = `CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text,p_signals jsonb DEFAULT NULL)
+ RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $shim$
+ DECLARE s record;
+ BEGIN
+  IF p_touch IS NOT NULL OR coalesce(p_ip,'')<>'' OR p_signals IS NOT NULL THEN
+   RAISE EXCEPTION 'historical fixture cannot carry attribution input' USING ERRCODE='23514';
+  END IF;
+  IF (SELECT obj_description(n.oid,'pg_namespace') FROM pg_namespace n WHERE n.nspname='orders') IS DISTINCT FROM 'lri_prehead_0113_test_only'
+   OR to_regclass('orders.order_attribution') IS NOT NULL
+   OR to_regprocedure('claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)') IS NOT NULL
+   OR to_regprocedure('checkout.begin_hold(bytea,uuid,text,bytea,uuid,jsonb,jsonb,bigint)') IS NULL THEN
+   RAISE EXCEPTION 'not a historical attribution fixture' USING ERRCODE='23514';
+  END IF;
+  SELECT * INTO s FROM buyer.resolve_scope(p_hash,p_store);
+  IF NOT FOUND OR s.tenant_id::text IS DISTINCT FROM current_setting('app.tenant_id',true)
+   OR s.store_id::text IS DISTINCT FROM current_setting('app.store_id',true)
+   OR s.owner_id::text IS DISTINCT FROM current_setting('app.buyer_id',true)
+   OR NOT EXISTS(SELECT 1 FROM checkout.orders o WHERE o.id=p_order AND o.tenant_id=s.tenant_id AND o.store_id=s.store_id AND o.owner_id=s.owner_id) THEN
+   RAISE EXCEPTION 'historical fixture order unavailable' USING ERRCODE='PT404';
+  END IF;
+  IF EXISTS(SELECT 1 FROM storefront.cart_lines l WHERE l.tenant_id=s.tenant_id AND l.store_id=s.store_id AND l.owner_id=s.owner_id
+    AND (l.claim_bundle_id IS NOT NULL OR l.claim_offer_id IS NOT NULL OR l.claim_quantity IS NOT NULL OR l.claim_line_version IS NOT NULL)) THEN
+   RAISE EXCEPTION 'historical fixture cannot carry claim origins' USING ERRCODE='23514';
+  END IF;
+ END $shim$;
+ REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) FROM PUBLIC;
+ GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) TO commerce_checkout_runtime;
+ COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'lri_prehead_0113_test_only';`
+
+func lriAddAttributionStub(ctx context.Context, pool *pgxpool.Pool) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	var recorded bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.lc_schema_migrations WHERE version='0113_ads_attribution.sql')`).Scan(&recorded); err != nil {
+		return err
+	}
+	if recorded {
+		return nil
+	} // never alter an actual 0113 schema/function/column
+	var columnMarker *string
+	if err = tx.QueryRow(ctx, `SELECT col_description('storefront.cart_lines'::regclass,a.attnum) FROM pg_attribute a WHERE a.attrelid='storefront.cart_lines'::regclass AND a.attname='claim_line_version' AND NOT a.attisdropped`).Scan(&columnMarker); err != nil {
+		return err
+	}
+	if columnMarker == nil || *columnMarker != lriAttributionMarker {
+		return fmt.Errorf("refusing unowned historical attribution column")
+	}
+	var schemaExists bool
+	var marker *string
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='orders'),(SELECT obj_description(oid,'pg_namespace') FROM pg_namespace WHERE nspname='orders')`).Scan(&schemaExists, &marker); err != nil {
+		return err
+	}
+	if schemaExists && (marker == nil || *marker != lriAttributionMarker) {
+		return fmt.Errorf("refusing existing orders schema")
+	}
+	if !schemaExists {
+		if _, err = tx.Exec(ctx, `CREATE SCHEMA orders; REVOKE ALL ON SCHEMA orders FROM PUBLIC; GRANT USAGE ON SCHEMA orders TO commerce_checkout_runtime; COMMENT ON SCHEMA orders IS 'lri_prehead_0113_test_only'`); err != nil {
+			return err
+		}
+	}
+	var fnExists bool
+	if err = tx.QueryRow(ctx, `SELECT to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') IS NOT NULL`).Scan(&fnExists); err != nil {
+		return err
+	}
+	if fnExists {
+		if err = tx.QueryRow(ctx, `SELECT obj_description(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)'),'pg_proc')`).Scan(&marker); err != nil {
+			return err
+		}
+		if marker == nil || *marker != lriAttributionMarker {
+			return fmt.Errorf("refusing existing attribution function")
+		}
+	} else if _, err = tx.Exec(ctx, lriAttributionStub); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// Cleanup validates ALL 0113-owned shim objects first, then removes them in one
+// transaction. No CASCADE: foreign tables/functions/dependencies are preserved.
+func lriDropAttributionShims(ctx context.Context, pool *pgxpool.Pool) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	var recorded bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.lc_schema_migrations WHERE version='0113_ads_attribution.sql')`).Scan(&recorded); err != nil {
+		return err
+	}
+	if recorded {
+		return nil
+	}
+	var columnExists bool
+	var marker *string
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='storefront.cart_lines'::regclass AND attname='claim_line_version' AND NOT attisdropped),
+ (SELECT col_description(attrelid,attnum) FROM pg_attribute WHERE attrelid='storefront.cart_lines'::regclass AND attname='claim_line_version' AND NOT attisdropped)`).Scan(&columnExists, &marker); err != nil {
+		return err
+	}
+	if columnExists {
+		if marker == nil || *marker != lriAttributionMarker {
+			return fmt.Errorf("refusing unowned historical attribution column")
+		}
+		var held int
+		if err = tx.QueryRow(ctx, `SELECT count(*) FROM storefront.cart_lines WHERE claim_line_version IS NOT NULL OR claim_bundle_id IS NOT NULL OR claim_offer_id IS NOT NULL OR claim_quantity IS NOT NULL`).Scan(&held); err != nil || held != 0 {
+			return fmt.Errorf("historical attribution shim holds %d values (err %v)", held, err)
+		}
+	}
+	var schemaExists bool
+	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='orders'),(SELECT obj_description(oid,'pg_namespace') FROM pg_namespace WHERE nspname='orders')`).Scan(&schemaExists, &marker); err != nil {
+		return err
+	}
+	if schemaExists {
+		if marker == nil || *marker != lriAttributionMarker {
+			return fmt.Errorf("refusing existing orders schema")
+		}
+		var foreign int
+		if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='orders')+
+ (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='orders' AND
+ (p.oid<>coalesce(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)')::oid,0) OR obj_description(p.oid,'pg_proc') IS DISTINCT FROM 'lri_prehead_0113_test_only' OR p.prosecdef))`).Scan(&foreign); err != nil || foreign != 0 {
+			return fmt.Errorf("refusing orders shim schema with %d foreign/data objects (err %v)", foreign, err)
+		}
+		if _, err = tx.Exec(ctx, `DROP FUNCTION IF EXISTS orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb); DROP SCHEMA orders`); err != nil {
+			return err
+		}
+	}
+	if columnExists {
+		if _, err = tx.Exec(ctx, `ALTER TABLE storefront.cart_lines DROP COLUMN claim_line_version`); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
+// lriAddShims adds every missing shim (idempotent). Called by the shared policy writer, so any historical fixture that
+// reaches pricing gets the objects the current Go names.
+func lriAddShims(f *testFixture) error {
+	ctx := context.Background()
+	for _, sh := range lriShims {
+		var has bool
+		if err := f.owner.QueryRow(ctx, sh.exists).Scan(&has); err != nil {
+			return err
+		}
+		if has {
+			continue
+		}
+		if _, err := f.owner.Exec(ctx, sh.add); err != nil {
+			return err
+		}
+	}
+	return lriAddAttributionStub(ctx, f.owner)
+}
+
+// lriApply is migrations.Apply for the legacy upgrade gates: it first drops the shims whose migration is not yet
+// recorded, refusing if a column shim ever held data. Idempotent on a retry.
+func lriApply(ctx context.Context, pool *pgxpool.Pool) error {
+	if err := lriDropAttributionShims(ctx, pool); err != nil {
+		return err
+	}
+	for _, sh := range lriShims {
+		var has, recorded bool
+		if err := pool.QueryRow(ctx, sh.exists).Scan(&has); err != nil {
+			return err
+		}
+		if err := pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.lc_schema_migrations WHERE version=$1)`, sh.migration).Scan(&recorded); err != nil {
+			return err
+		}
+		if !has || recorded {
+			continue
+		}
+		if sh.held != "" {
+			var held int
+			if err := pool.QueryRow(ctx, sh.held).Scan(&held); err != nil || held != 0 {
+				return fmt.Errorf("historical shim of %s holds %d values (err %v); refusing to drop it", sh.migration, held, err)
+			}
+		}
+		if _, err := pool.Exec(ctx, sh.drop); err != nil {
+			return err
+		}
+	}
+	return migrations.Apply(ctx, pool)
+}
+
+// These probes exercise only the historical adapter. None calls, replaces, or
+// relaxes the real 0113 creation guard.
+func TestLegacyRuntimeIsolationAttributionShimsRestricted(t *testing.T) {
+	f := lriPre0032Fixture(t)
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river") // actual old Begin + payment producer
+	ctx := context.Background()
+	hash := sha256.Sum256([]byte(q.cap.Token))
+	call := func(order string, touch any, ip any) error {
+		_, err := cqBuyer(q.pool, q.cap, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) (bool, error) {
+			_, err := tx.Exec(ctx, `SELECT orders.freeze_attribution($1,$2,$3,$4::jsonb,$5::text)`, hash[:], q.cap.Scope.StoreID, order, touch, ip)
+			return err == nil, err
+		})
+		return err
+	}
+	tables := []string{"checkout.orders", "checkout.payment_attempts", "inventory.ledger", "river.river_job"}
+	before := make(map[string]string, len(tables))
+	for _, table := range tables {
+		before[table] = lriRows(t, f, table, "")
+	}
+	if err := call(q.hold.OrderID, nil, ""); err != nil {
+		t.Fatal("authenticated ordinary historical order", err)
+	}
+	if err := call(q.hold.OrderID, nil, nil); err != nil {
+		t.Fatal("NULL historical IP", err)
+	}
+	for _, tc := range []struct {
+		name  string
+		touch any
+		ip    any
+	}{
+		{"empty touch object", `{}`, ""},
+		{"JSON null is not SQL NULL", `null`, ""},
+		{"nonempty touch", `{"draft_id":"synthetic"}`, ""},
+		{"IP", nil, "192.0.2.44"},
+		{"whitespace IP", nil, " "},
+	} {
+		t.Run(tc.name, func(t *testing.T) { requirePGCode(t, call(q.hold.OrderID, tc.touch, tc.ip), "23514", tc.name) })
+	}
+	requirePGCode(t, call(randomUUID(), nil, ""), "PT404", "missing/foreign order")
+	other := mustIssue(t, q.cqHarness.service, q.cap.Scope.StoreID)
+	otherHash := sha256.Sum256([]byte(other.Token))
+	_, err := cqBuyer(q.pool, other, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) (bool, error) {
+		_, err := tx.Exec(ctx, `SELECT orders.freeze_attribution($1,$2,$3,NULL,'')`, otherHash[:], other.Scope.StoreID, q.hold.OrderID)
+		return false, err
+	})
+	requirePGCode(t, err, "PT404", "other buyer's order")
+	_, err = q.pool.Exec(ctx, `SELECT orders.freeze_attribution($1,$2,$3,NULL,'')`, hash[:], q.cap.Scope.StoreID, q.hold.OrderID)
+	requirePGCode(t, err, "PT404", "missing transaction scope")
+	_, err = f.owner.Exec(ctx, `UPDATE storefront.cart_lines SET claim_line_version=1 WHERE owner_id=$1`, q.cap.Scope.OwnerID)
+	requirePGCode(t, err, "23514", "shim version must remain NULL")
+	mustExec(t, f.owner, `UPDATE storefront.cart_lines SET claim_bundle_id=$2 WHERE owner_id=$1`, q.cap.Scope.OwnerID, randomUUID())
+	requirePGCode(t, call(q.hold.OrderID, nil, ""), "23514", "claim origin cannot be ignored")
+	if err := lriDropAttributionShims(ctx, f.owner); err == nil || !strings.Contains(err.Error(), "holds") {
+		t.Fatalf("cleanup must refuse claim provenance: %v", err)
+	}
+	mustExec(t, f.owner, `UPDATE storefront.cart_lines SET claim_bundle_id=NULL WHERE owner_id=$1`, q.cap.Scope.OwnerID)
+	mustExec(t, f.owner, `COMMENT ON SCHEMA orders IS 'not_owned_by_lri'`)
+	requirePGCode(t, call(q.hold.OrderID, nil, ""), "23514", "nonfixture schema")
+	if err := lriAddAttributionStub(ctx, f.owner); err == nil {
+		t.Fatal("installer accepted unowned schema")
+	}
+	if err := lriDropAttributionShims(ctx, f.owner); err == nil {
+		t.Fatal("cleanup accepted unowned schema")
+	}
+	mustExec(t, f.owner, `COMMENT ON SCHEMA orders IS 'lri_prehead_0113_test_only'`)
+	for _, table := range tables {
+		if got := lriRows(t, f, table, ""); got != before[table] {
+			t.Fatalf("historical attribution adapter mutated %s", table)
+		}
+	}
+	if miCount(t, f.owner, `SELECT count(*) FROM pg_proc WHERE oid=to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') AND NOT prosecdef
+	 AND NOT has_function_privilege('commerce_buyer_runtime',oid,'EXECUTE') AND has_function_privilege('commerce_checkout_runtime',oid,'EXECUTE')`) != 1 {
+		t.Fatal("shim must remain invoker with checkout-only execution")
+	}
+}
+
+func TestLegacyRuntimeIsolationAttributionShimsCleanup(t *testing.T) {
+	f := lriPre0032Fixture(t)
+	q := pwOldQuerySetupOn(t, f, pwKeys(t), "river")
+	ctx := context.Background()
+	columnAndFunction := func() bool {
+		return miCount(t, f.owner, `SELECT count(*) FROM pg_attribute WHERE attrelid='storefront.cart_lines'::regclass AND attname='claim_line_version' AND NOT attisdropped
+	 AND to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') IS NOT NULL`) == 1
+	}
+	ledger := lriRows(t, f, "public.lc_schema_migrations", "")
+	// Explicitly defeat only the test-only CHECK to probe held-data cleanup.
+	mustExec(t, f.owner, `ALTER TABLE storefront.cart_lines DROP CONSTRAINT lri_claim_version_null`)
+	mustExec(t, f.owner, `UPDATE storefront.cart_lines SET claim_line_version=1 WHERE owner_id=$1`, q.cap.Scope.OwnerID)
+	if err := lriDropAttributionShims(ctx, f.owner); err == nil || !strings.Contains(err.Error(), "holds") || !columnAndFunction() {
+		t.Fatalf("non-NULL cleanup did not refuse atomically: %v", err)
+	}
+	mustExec(t, f.owner, `UPDATE storefront.cart_lines SET claim_line_version=NULL WHERE owner_id=$1`, q.cap.Scope.OwnerID)
+	mustExec(t, f.owner, `ALTER TABLE storefront.cart_lines ADD CONSTRAINT lri_claim_version_null CHECK(claim_line_version IS NULL)`)
+	mustExec(t, f.owner, `CREATE TABLE orders.lri_foreign_data(value integer); INSERT INTO orders.lri_foreign_data VALUES(7)`)
+	if err := lriDropAttributionShims(ctx, f.owner); err == nil || !columnAndFunction() || miCount(t, f.owner, `SELECT count(*) FROM orders.lri_foreign_data WHERE value=7`) != 1 {
+		t.Fatalf("foreign/data objects were not retained: %v", err)
+	}
+	mustExec(t, f.owner, `DROP TABLE orders.lri_foreign_data`) // only this probe's table, no CASCADE
+	// The exact signature is insufficient proof of ownership; a lost marker
+	// must retain the entire adapter, including its column.
+	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS NULL`)
+	if err := lriDropAttributionShims(ctx, f.owner); err == nil || !columnAndFunction() {
+		t.Fatalf("unowned function cleanup was not rejected atomically: %v", err)
+	}
+	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'lri_prehead_0113_test_only'`)
+	if err := lriDropAttributionShims(ctx, f.owner); err != nil {
+		t.Fatal("clean empty owned adapter", err)
+	}
+	if miCount(t, f.owner, `SELECT count(*) FROM pg_namespace WHERE nspname='orders'`) != 0 ||
+		miCount(t, f.owner, `SELECT count(*) FROM pg_attribute WHERE attrelid='storefront.cart_lines'::regclass AND attname='claim_line_version' AND NOT attisdropped`) != 0 ||
+		lriRows(t, f, "public.lc_schema_migrations", "") != ledger {
+		t.Fatal("cleanup left attribution adapter or changed historical ledger")
+	}
+	if err := lriDropAttributionShims(ctx, f.owner); err != nil {
+		t.Fatal("cleanup retry", err)
+	}
+}
+
+func TestLegacyRuntimeIsolationAttributionShimsHeadUntouched(t *testing.T) {
+	f := pwIsolatedFixture(t) // real current migrations, not the pre-head adapter
+	ctx := context.Background()
+	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0113_ads_attribution.sql'`) != 1 {
+		t.Fatal("current fixture did not install real 0113")
+	}
+	objects := func() string {
+		var out string
+		if err := f.owner.QueryRow(ctx, `SELECT jsonb_build_object('function',pg_get_functiondef(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)')),
+	 'relations',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.oid) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='orders'),
+	 'constraints',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.oid) FROM pg_constraint c WHERE c.conrelid='storefront.cart_lines'::regclass),
+	 'ledger',(SELECT to_jsonb(m) FROM public.lc_schema_migrations m WHERE version='0113_ads_attribution.sql'))::text`).Scan(&out); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	before := objects()
+	if err := lriAddShims(f); err != nil {
+		t.Fatal("head installer must leave real attribution unchanged", err)
+	}
+	if err := lriDropAttributionShims(ctx, f.owner); err != nil {
+		t.Fatal("head cleanup must leave real attribution unchanged", err)
+	}
+	if objects() != before {
+		t.Fatal("historical helper changed real 0113 function/table/constraint/ledger")
+	}
 }
 
 // Historical post-River router gates must replay their original SQL bytes at
@@ -127,7 +520,10 @@ func lriApplyHistoricalPost(f *testFixture, target string) error {
 			return err
 		}
 	}
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	return waResyncLegacy(f) // the replayed old SQL granted its objects to commerce_worker only
 }
 
 func lriRows(t *testing.T, f *testFixture, table, predicate string) string {
@@ -143,6 +539,7 @@ func lriLedger(t *testing.T, f *testFixture, predicate string) string {
 func lriCloseProducerPools(p psHarness) {
 	p.pool.Close()
 	p.worker.Close()
+	p.expiry.Close()
 	p.a.runtime.Close()
 	p.a.issuer.Close()
 	p.a.identity.Close()
@@ -155,7 +552,7 @@ func lriOldProfileQuery(t *testing.T, f *testFixture, profile string) pqFixture 
 	t.Helper()
 	p := psSetupItemsOn(t, f, 1, "river")
 	if profile == "SANDBOX" {
-		mustExec(t, f.owner, `UPDATE payments.account_qualifications SET proof_class='REAL_SANDBOX',evidence_ref='local synthetic qualification; no provider call' WHERE id=$1`, p.proof)
+		qualExec(t, f.owner, `UPDATE payments.account_qualifications SET proof_class='REAL_SANDBOX',evidence_ref='local synthetic qualification; no provider call' WHERE id=$1`, p.proof)
 	} else if profile == "LIVE" {
 		binding, account, proof := randomUUID(), randomUUID(), randomUUID()
 		ctx := context.Background()
@@ -361,6 +758,25 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 		t.Fatal("expected additive media identity", err)
 	}
 	business["integration.operations"] = expectedOperations
+	// Apply also includes 0072 (taiwan-cvs C4): checkout.orders gains payment_mode (default 'card') and collection_state (NULL); every
+	// historical order keeps all old values and acquires exactly those keys. Documented later additive columns (each a nullable
+	// or defaulted ADD COLUMN, so a historical order acquires only its default): 0088 buyer_email NULL (storefront-v2 section C),
+	// 0094 source 'storefront' (section G, merchant-created orders are the only other value), 0097 locale NULL (order-locale unit;
+	// the Begin of a fixture order ran against the lriShims no-op set_order_locale, so no locale was ever stored),
+	// 0107 home-cod: cod_surcharge_minor NULL and cod_carrier NULL (both set only on cash_on_delivery orders) and collected_at NULL.
+	// collected_at is the one 0107 column that is not a plain ADD COLUMN: the migration runs a labelled best-effort backfill
+	// (collected_at=updated_at) for rows already collection_state='COLLECTED'. Every fixture order here is a historical card order
+	// (collection_state NULL), so the backfill matches no row and collected_at stays NULL; a card order that DID gain a non-null
+	// collected_at, or any other changed value, still fails the equality below.
+	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null}`
+	var expectedOrders string
+	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
+	 value || $2::jsonb
+	 ORDER BY (value || $2::jsonb)::text),'[]'::jsonb)::text
+	 FROM jsonb_array_elements($1::jsonb)`, business["checkout.orders"], addedOrderKeys).Scan(&expectedOrders); err != nil {
+		t.Fatal("expected additive CVS order columns", err)
+	}
+	business["checkout.orders"] = expectedOrders
 	// Apply also includes 0041's five nullable recovery event columns. Keep
 	// comparing every historical event value, with only these new keys NULL.
 	var expectedEvents string
@@ -374,7 +790,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	if oldPayment == "[]" || oldExpiry == "[]" || oldExternal == "[]" || oldMeta == "[]" || oldQueues["payment_mock_v1"] == "[]" || oldQueues["checkout_expiry_v1"] == "[]" {
 		t.Fatal("historical populated source was empty")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("populated legacy cutover", err)
 	}
 	lriReady(t, f, true)
@@ -422,7 +838,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	}
 	postJobs := map[string]string{"river_payment.river_job": oldPayment, "river_expiry.river_job": oldExpiry, "river.river_job": oldExternal}
 	postLedger := lriLedger(t, f, "")
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("repeat populated Apply", err)
 	}
 	for table, before := range postJobs {
@@ -444,7 +860,7 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	mustExec(t, f.owner, `UPDATE river_expiry.river_queue SET paused_at=NULL WHERE name='checkout_expiry_v1'`)
 	bcDue(t, expiry[0].bcHarness, expiry[0].hold)
 	mustExec(t, f.owner, `UPDATE river_expiry.river_job SET state='available',scheduled_at=clock_timestamp() WHERE id=$1`, expiry[0].hold.JobID)
-	worker := pwWorkerPool(t, f)
+	worker := waOpen(t, f, waExpiry, platform.WorkerExpiry) // the current family-bound expiry worker (T21-02: its own authority)
 	ewClient(t, worker, 1)
 	ewAwait(t, f.owner, expiry[0].hold.JobID, "completed")
 	ewAssertOrder(t, expiry[0], "CANCELLED", "EXPIRED", 1)
@@ -463,7 +879,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum='tampered' WHERE version='0031_meta_river_isolation.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApply(context.Background(), f.owner); err == nil {
 		t.Fatal("current Apply accepted a changed historical checksum")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0032_legacy_river_isolation.sql'`) != 0 ||
@@ -472,7 +888,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 	}
 	mustExec(t, f.owner, `UPDATE public.lc_schema_migrations SET checksum=$1 WHERE version='0031_meta_river_isolation.sql'`, checksum)
 	mustExec(t, f.owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0031_unknown_local.sql','unknown')`)
-	if err := migrations.Apply(context.Background(), f.owner); err == nil {
+	if err := lriApply(context.Background(), f.owner); err == nil {
 		t.Fatal("current Apply accepted an unknown historical migration")
 	}
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0032_legacy_river_isolation.sql'`) != 0 ||
@@ -480,7 +896,7 @@ func TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger(t *testing.T) {
 		t.Fatal("unknown-version rejection mutated old lane or installed preparation")
 	}
 	mustExec(t, f.owner, `DELETE FROM public.lc_schema_migrations WHERE version='0031_unknown_local.sql'`)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApply(context.Background(), f.owner); err != nil {
 		t.Fatal("corrected ledger retry", err)
 	}
 	lriReady(t, f, true)
@@ -504,7 +920,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 			paymentQueues = lriRows(t, f, "river_payment.river_queue", "")
 			expiryQueues = lriRows(t, f, "river_expiry.river_queue", "")
 		}
-		if err := migrations.Apply(ctx, f.owner); err == nil {
+		if err := lriApply(ctx, f.owner); err == nil {
 			t.Fatalf("%s accepted unsafe cutover", label)
 		}
 		lriNoPost(t, f, sourceJobs, sourceQueues, paymentDest, expiryDest, paymentQueues, expiryQueues)
@@ -555,7 +971,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	defer migrationPool.Close()
 	blocked, stop := context.WithTimeout(ctx, 15*time.Second)
 	result := make(chan error, 1)
-	go func() { result <- migrations.Apply(blocked, migrationPool) }()
+	go func() { result <- lriApply(blocked, migrationPool) }()
 	observed := false
 	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
@@ -578,8 +994,15 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 	if rollbackErr != nil {
 		t.Fatal(rollbackErr)
 	}
+	// Cancellation closed the attempt's hijacked lock connection client-side,
+	// but its backend was still queued on the table lock; it only finishes its
+	// statement, aborts and releases session advisory lock 718020260920
+	// (migrations/migrate.go) when it exits after the rollback above. Observe
+	// that exit instead of retrying Apply, so the no-post check and the retry
+	// both run after the cancelled attempt has fully ended.
+	waitAdvisoryLockReleased(t, f.owner, "cancelled migration attempt still holds the migration advisory lock", 718020260920)
 	lriNoPost(t, f, sourceBeforeLock, queuesBeforeLock, "[]", "[]", paymentQueuesBeforeLock, expiryQueuesBeforeLock)
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("corrected partial-native retry", err)
 	}
 	lriReady(t, f, true)
@@ -591,7 +1014,7 @@ func TestLegacyRuntimeIsolationUpgradeFailClosedRetry(t *testing.T) {
 
 func TestLegacyRuntimeIsolationFamilyCollidingIDs(t *testing.T) {
 	f := lriPre0032Fixture(t)
-	if err := migrations.Apply(context.Background(), f.owner); err != nil {
+	if err := lriApply(context.Background(), f.owner); err != nil {
 		t.Fatal(err)
 	}
 	// Actual new-family producers make an expiry row at the payment sequence's
@@ -637,7 +1060,7 @@ func lriPrunedSequenceFixture(t *testing.T) (*testFixture, pqFixture, psHarness,
 	lriCloseProducerPools(p)
 	ctx := context.Background()
 	mustExec(t, f.owner, `UPDATE river.river_job SET state='running',attempt=1,attempted_at=clock_timestamp() WHERE id=$1`, q.result.JobID)
-	if err := migrations.Apply(ctx, f.owner); err == nil {
+	if err := lriApply(ctx, f.owner); err == nil {
 		t.Fatal("native preparation unexpectedly completed while old job running")
 	}
 	lriReady(t, f, false)
@@ -664,7 +1087,7 @@ func TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs(t *testing.T) {
 	if oldLow >= p.hold.JobID || paymentHigh <= q.result.JobID {
 		t.Fatal("test did not establish independent sequence maxima")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("sequence cutover", err)
 	}
 	lriReady(t, f, true)
@@ -695,7 +1118,7 @@ func TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater(t *testing.T) {
 	if oldLow >= q.result.JobID || expiryHigh <= p.hold.JobID {
 		t.Fatal("mirrored independent maxima absent")
 	}
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("mirrored sequence cutover", err)
 	}
 	lriReady(t, f, true)
@@ -730,7 +1153,7 @@ func TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence(t *testing.T) {
 	}
 	oldPayment := lriRows(t, f, "river.river_job", `WHERE kind='payment_query_v1'`)
 	oldExpiry := lriRows(t, f, "river.river_job", `WHERE kind='checkout_expiry_v1'`)
-	if err := migrations.Apply(ctx, f.owner); err != nil {
+	if err := lriApply(ctx, f.owner); err != nil {
 		t.Fatal("copied-row sequence cutover", err)
 	}
 	if lriRows(t, f, "river_payment.river_job", "") != oldPayment || lriRows(t, f, "river_expiry.river_job", "") != oldExpiry {

@@ -1,0 +1,1 @@
+PASS PS3: pinned Caddy validate + fmt + adapt; 47 platform edge requests + 4 storefront edge cases, www 301 path/query, actual Host preserved and XFF equals connection peer; MOCK upstream

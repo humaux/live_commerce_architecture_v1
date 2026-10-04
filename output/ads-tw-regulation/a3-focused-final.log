@@ -1,0 +1,420 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.95s)
+=== RUN   TestMerchantOrdersV2TenThousandScopedSearch
+    merchant_orders_v2_perf_test.go:160: 10k search 7654 took 1.107228416s (must <1s)
+--- FAIL: TestMerchantOrdersV2TenThousandScopedSearch (23.72s)
+=== RUN   TestMetaAdsMA11ReconcileSecret
+=== RUN   TestMetaAdsMA11ReconcileSecret/reconcile_of_UNKNOWN_create_ad_loads_the_token_through_the_reconcile_claim_and_pins_the_object
+=== RUN   TestMetaAdsMA11ReconcileSecret/reconcile_of_UNKNOWN_pause_loads_the_token_through_the_reconcile_claim_and_confirms_PAUSED
+=== RUN   TestMetaAdsMA11ReconcileSecret/loader_fences:_stale_generation,_expired_lease,_wrong_lease_token,_non-ads_operation;_page-token_loader_gives_no_ads_row
+=== RUN   TestMetaAdsMA11ReconcileSecret/no_loader_path_from_Check:_static_and_runtime
+=== RUN   TestMetaAdsMA11ReconcileSecret/cmd/api_links_no_HPKE_private-key_loader_and_no_CAPI_route_(deps_+_binary_symbols)
+=== RUN   TestMetaAdsMA11ReconcileSecret/UNKNOWN_activate_reconciled_11_minutes_after_its_preflight,_store_RESTRICTED:_the_reconcile_GET_runs_and_pins_SUCCEEDED
+=== RUN   TestMetaAdsMA11ReconcileSecret/UNKNOWN_create_ad_reconciled_after_the_approver_lost_ads:approve:_pinned
+--- PASS: TestMetaAdsMA11ReconcileSecret (33.62s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/reconcile_of_UNKNOWN_create_ad_loads_the_token_through_the_reconcile_claim_and_pins_the_object (4.52s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/reconcile_of_UNKNOWN_pause_loads_the_token_through_the_reconcile_claim_and_confirms_PAUSED (6.62s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/loader_fences:_stale_generation,_expired_lease,_wrong_lease_token,_non-ads_operation;_page-token_loader_gives_no_ads_row (0.55s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/no_loader_path_from_Check:_static_and_runtime (0.36s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/cmd/api_links_no_HPKE_private-key_loader_and_no_CAPI_route_(deps_+_binary_symbols) (4.13s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/UNKNOWN_activate_reconciled_11_minutes_after_its_preflight,_store_RESTRICTED:_the_reconcile_GET_runs_and_pins_SUCCEEDED (9.72s)
+    --- PASS: TestMetaAdsMA11ReconcileSecret/UNKNOWN_create_ad_reconciled_after_the_approver_lost_ads:approve:_pinned (7.72s)
+=== RUN   TestMetaAdsMA11DispatcherAmendment
+=== RUN   TestMetaAdsMA11DispatcherAmendment/Mode_is_dispatch_for_the_first_claim_and_reconcile_for_the_next,_in_Check_and_in_the_callbacks_of_an_existing_route
+=== RUN   TestMetaAdsMA11DispatcherAmendment/a_bare_ErrPolicyDenied_stays_policy_denied_(existing_routes_unchanged)
+=== RUN   TestMetaAdsMA11DispatcherAmendment/DenyPolicy_records_its_own_code;_an_invalid_code_falls_back_to_policy_denied;_wrapping_keeps_the_code
+=== RUN   TestMetaAdsMA11DispatcherAmendment/a_Check_denial_in_reconcile_mode_is_never_BLOCKED_POLICY:_the_op_stays_UNKNOWN_policy_check_failed
+=== RUN   TestMetaAdsMA11DispatcherAmendment/reconcile_with_a_secret:_loader_runs_on_the_reconcile_claim;_the_secret_is_zeroed_after_the_callback
+=== RUN   TestMetaAdsMA11DispatcherAmendment/loader_denial:_dispatch_->_BLOCKED_POLICY_credential_unavailable;_reconcile_->_UNKNOWN_credential_unavailable;_other_error_->_UNKNOWN_secret_load_failed
+=== RUN   TestMetaAdsMA11DispatcherAmendment/route_validation:_exactly_one_of_Reconcile_/_ReconcileWithSecret,_the_secret_variant_only_with_the_loader_pair
+=== RUN   TestMetaAdsMA11DispatcherAmendment/InsertOperationJobOn_validates_queue_and_priority;_the_default_insert_is_unchanged
+--- PASS: TestMetaAdsMA11DispatcherAmendment (7.22s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/Mode_is_dispatch_for_the_first_claim_and_reconcile_for_the_next,_in_Check_and_in_the_callbacks_of_an_existing_route (1.28s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/a_bare_ErrPolicyDenied_stays_policy_denied_(existing_routes_unchanged) (0.16s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/DenyPolicy_records_its_own_code;_an_invalid_code_falls_back_to_policy_denied;_wrapping_keeps_the_code (0.60s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/a_Check_denial_in_reconcile_mode_is_never_BLOCKED_POLICY:_the_op_stays_UNKNOWN_policy_check_failed (1.19s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/reconcile_with_a_secret:_loader_runs_on_the_reconcile_claim;_the_secret_is_zeroed_after_the_callback (1.18s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/loader_denial:_dispatch_->_BLOCKED_POLICY_credential_unavailable;_reconcile_->_UNKNOWN_credential_unavailable;_other_error_->_UNKNOWN_secret_load_failed (2.64s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/route_validation:_exactly_one_of_Reconcile_/_ReconcileWithSecret,_the_secret_variant_only_with_the_loader_pair (0.08s)
+    --- PASS: TestMetaAdsMA11DispatcherAmendment/InsertOperationJobOn_validates_queue_and_priority;_the_default_insert_is_unchanged (0.09s)
+=== RUN   TestMetaAdsMA02Allowance
+=== RUN   TestMetaAdsMA02Allowance/a_draft_that_never_had_an_activate_does_not_count;_an_approved+published_one_waiting_for_preflight_does_not_either
+=== RUN   TestMetaAdsMA02Allowance/an_activated_draft_counts;_a_second_draft_that_does_not_fit_is_refused_at_approve_with_409_over_allowance
+=== RUN   TestMetaAdsMA02Allowance/a_denied_activate_(BLOCKED_POLICY,_no_spend)_does_not_count
+=== RUN   TestMetaAdsMA02Allowance/an_UNKNOWN_activate_still_counts_(the_effect_may_exist)
+=== RUN   TestMetaAdsMA02Allowance/ENDED_with_the_pause_UNKNOWN_still_counts,_until_ends_at_+_1_day_has_passed
+=== RUN   TestMetaAdsMA02Allowance/a_merchant_end_of_an_ACTIVE_draft_plans_a_pause;_once_the_pause_is_confirmed_after_the_activate_the_draft_stops_counting
+=== RUN   TestMetaAdsMA02Allowance/two_ready_drafts,_room_for_one:_exactly_one_activate_is_planned_(approved_at_order),_the_other_never_reaches_Meta
+=== RUN   TestMetaAdsMA02Allowance/second_activate_is_denied_over_allowance_while_the_first_is_DISPATCHING
+=== RUN   TestMetaAdsMA02Allowance/approve_and_the_sweeper's_activate_planning_serialize_on_the_store_row_(pg_blocking_pids_witness):_never_both_counted_over_the_allowance
+    meta_ads_allowance_test.go:347: EVIDENCE order: approve=409, A activate planned=true, B activated=false, ACTIVE=1
+=== RUN   TestMetaAdsMA02Allowance/mixed_currency_and_non-whole_TWD_are_refused_before_any_row_exists
+--- PASS: TestMetaAdsMA02Allowance (30.91s)
+    --- PASS: TestMetaAdsMA02Allowance/a_draft_that_never_had_an_activate_does_not_count;_an_approved+published_one_waiting_for_preflight_does_not_either (0.23s)
+    --- PASS: TestMetaAdsMA02Allowance/an_activated_draft_counts;_a_second_draft_that_does_not_fit_is_refused_at_approve_with_409_over_allowance (1.82s)
+    --- PASS: TestMetaAdsMA02Allowance/a_denied_activate_(BLOCKED_POLICY,_no_spend)_does_not_count (1.81s)
+    --- PASS: TestMetaAdsMA02Allowance/an_UNKNOWN_activate_still_counts_(the_effect_may_exist) (4.49s)
+    --- PASS: TestMetaAdsMA02Allowance/ENDED_with_the_pause_UNKNOWN_still_counts,_until_ends_at_+_1_day_has_passed (5.52s)
+    --- PASS: TestMetaAdsMA02Allowance/a_merchant_end_of_an_ACTIVE_draft_plans_a_pause;_once_the_pause_is_confirmed_after_the_activate_the_draft_stops_counting (2.51s)
+    --- PASS: TestMetaAdsMA02Allowance/two_ready_drafts,_room_for_one:_exactly_one_activate_is_planned_(approved_at_order),_the_other_never_reaches_Meta (5.24s)
+    --- PASS: TestMetaAdsMA02Allowance/second_activate_is_denied_over_allowance_while_the_first_is_DISPATCHING (6.97s)
+    --- PASS: TestMetaAdsMA02Allowance/approve_and_the_sweeper's_activate_planning_serialize_on_the_store_row_(pg_blocking_pids_witness):_never_both_counted_over_the_allowance (2.23s)
+    --- PASS: TestMetaAdsMA02Allowance/mixed_currency_and_non-whole_TWD_are_refused_before_any_row_exists (0.08s)
+=== RUN   TestMetaAdsMA02Billing
+=== RUN   TestMetaAdsMA02Billing/standing_is_read_correctly_AS_commerce_ads_writer:_RESTRICTED_is_not_fail-open_UNBILLED
+=== RUN   TestMetaAdsMA02Billing/RESTRICTED:_approve_and_publish_402_billing_restricted
+=== RUN   TestMetaAdsMA02Billing/RESTRICTED:_create_and_activate_are_BLOCKED_POLICY_billing_restricted_with_zero_HTTP
+=== RUN   TestMetaAdsMA02Billing/RESTRICTED:_activate
+=== RUN   TestMetaAdsMA02Billing/RESTRICTED:_pause_and_insights_reads_are_never_blocked
+--- PASS: TestMetaAdsMA02Billing (5.03s)
+    --- PASS: TestMetaAdsMA02Billing/standing_is_read_correctly_AS_commerce_ads_writer:_RESTRICTED_is_not_fail-open_UNBILLED (0.14s)
+    --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_approve_and_publish_402_billing_restricted (0.13s)
+    --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_create_and_activate_are_BLOCKED_POLICY_billing_restricted_with_zero_HTTP (0.37s)
+    --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_activate (1.90s)
+    --- PASS: TestMetaAdsMA02Billing/RESTRICTED:_pause_and_insights_reads_are_never_blocked (2.49s)
+=== RUN   TestMetaAdsMA03Consent
+=== RUN   TestMetaAdsMA03Consent/no_consent:_no_op,_no_row,_no_event
+=== RUN   TestMetaAdsMA03Consent/granted:_exactly_one_op_per_attempt,_stable_event_id_and_key,_merchant_actor_+_capi_enabled_by,_queue_ads,_one_event
+=== RUN   TestMetaAdsMA03Consent/consent_withdrawn_before_the_sweeper:_no_op_and_the_context_row_is_deleted
+=== RUN   TestMetaAdsMA03Consent/owner_erased:_no_op_and_the_context_row_is_deleted
+=== RUN   TestMetaAdsMA03Consent/withdraw_after_planning:_Check_answers_BLOCKED_POLICY_consent_withdrawn_with_zero_HTTP_(G09)
+=== RUN   TestMetaAdsMA03Consent/fact_environment_must_equal_the_store_environment_and_PROVIDER_MOCK_facts_are_never_sent
+=== RUN   TestMetaAdsMA03Consent/PROVIDER_MOCK_fact_in_a_matching_environment_is_skipped
+=== RUN   TestMetaAdsMA03Consent/capi_enabled_by_lost_ads:manage_->_capi_principal_revoked
+=== RUN   TestMetaAdsMA03Consent/CAPI_switched_off_after_planning_->_capi_disabled
+=== RUN   TestMetaAdsMA03Consent/op_that_sat_READY_for_7_days_(frozen_event_time_aged,_hash_kept_consistent)_->_event_too_old
+=== RUN   TestMetaAdsMA03Consent/dataset_binding_re-pointed_after_planning:_STALE_BINDING,_zero_HTTP
+=== RUN   TestMetaAdsMA03Consent/billing_RESTRICTED_never_blocks_CAPI_(BD5)
+=== RUN   TestMetaAdsMA03Consent/a_fact_older_than_6_days_is_never_planned;_a_context_older_than_7_days_does_not_make_an_owner_eligible;_8-day_contexts_are_purged
+=== RUN   TestMetaAdsMA03Consent/consent_without_a_browser_context_(no_user_agent):_not_eligible
+=== RUN   TestMetaAdsMA03Consent/CAPI_off_or_no_dataset:_nothing_is_planned
+--- PASS: TestMetaAdsMA03Consent (14.98s)
+    --- PASS: TestMetaAdsMA03Consent/no_consent:_no_op,_no_row,_no_event (0.85s)
+    --- PASS: TestMetaAdsMA03Consent/granted:_exactly_one_op_per_attempt,_stable_event_id_and_key,_merchant_actor_+_capi_enabled_by,_queue_ads,_one_event (1.31s)
+    --- PASS: TestMetaAdsMA03Consent/consent_withdrawn_before_the_sweeper:_no_op_and_the_context_row_is_deleted (1.16s)
+    --- PASS: TestMetaAdsMA03Consent/owner_erased:_no_op_and_the_context_row_is_deleted (0.89s)
+    --- PASS: TestMetaAdsMA03Consent/withdraw_after_planning:_Check_answers_BLOCKED_POLICY_consent_withdrawn_with_zero_HTTP_(G09) (0.99s)
+    --- PASS: TestMetaAdsMA03Consent/fact_environment_must_equal_the_store_environment_and_PROVIDER_MOCK_facts_are_never_sent (0.78s)
+    --- PASS: TestMetaAdsMA03Consent/PROVIDER_MOCK_fact_in_a_matching_environment_is_skipped (0.81s)
+    --- PASS: TestMetaAdsMA03Consent/capi_enabled_by_lost_ads:manage_->_capi_principal_revoked (0.98s)
+    --- PASS: TestMetaAdsMA03Consent/CAPI_switched_off_after_planning_->_capi_disabled (0.97s)
+    --- PASS: TestMetaAdsMA03Consent/op_that_sat_READY_for_7_days_(frozen_event_time_aged,_hash_kept_consistent)_->_event_too_old (0.84s)
+    --- PASS: TestMetaAdsMA03Consent/dataset_binding_re-pointed_after_planning:_STALE_BINDING,_zero_HTTP (0.81s)
+    --- PASS: TestMetaAdsMA03Consent/billing_RESTRICTED_never_blocks_CAPI_(BD5) (1.05s)
+    --- PASS: TestMetaAdsMA03Consent/a_fact_older_than_6_days_is_never_planned;_a_context_older_than_7_days_does_not_make_an_owner_eligible;_8-day_contexts_are_purged (1.76s)
+    --- PASS: TestMetaAdsMA03Consent/consent_without_a_browser_context_(no_user_agent):_not_eligible (0.88s)
+    --- PASS: TestMetaAdsMA03Consent/CAPI_off_or_no_dataset:_nothing_is_planned (0.89s)
+=== RUN   TestMetaAdsMA08CAPI
+=== RUN   TestMetaAdsMA08CAPI/wire_body:_exact_keys,_values,_hashing,_SANDBOX_test_event_code,_no_phone_(CD5)
+=== RUN   TestMetaAdsMA08CAPI/user_data_only_through_the_lease-fenced_definer_ads.capi_user_data;_the_worker_authorities_cannot_read_the_source_tables
+=== RUN   TestMetaAdsMA08CAPI/hashed_fields_never_reach_PG_or_logs;_raw_phone_only_where_the_order_snapshot_lives_(sentinel_scan)
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_200_without_events_received
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_timeout_after_the_event_was_received
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_503
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_unparseable_200
+=== RUN   TestMetaAdsMA08CAPI/a_Graph_4xx_error_body_ends_FAILED_FINAL_and_is_not_resent_either
+--- PASS: TestMetaAdsMA08CAPI (25.26s)
+    --- PASS: TestMetaAdsMA08CAPI/wire_body:_exact_keys,_values,_hashing,_SANDBOX_test_event_code,_no_phone_(CD5) (0.90s)
+    --- PASS: TestMetaAdsMA08CAPI/user_data_only_through_the_lease-fenced_definer_ads.capi_user_data;_the_worker_authorities_cannot_read_the_source_tables (1.10s)
+    --- PASS: TestMetaAdsMA08CAPI/hashed_fields_never_reach_PG_or_logs;_raw_phone_only_where_the_order_snapshot_lives_(sentinel_scan) (3.34s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_200_without_events_received (4.35s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_timeout_after_the_event_was_received (5.50s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_503 (4.32s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_unparseable_200 (4.40s)
+    --- PASS: TestMetaAdsMA08CAPI/a_Graph_4xx_error_body_ends_FAILED_FINAL_and_is_not_resent_either (1.33s)
+=== RUN   TestMetaAdsFeed
+--- PASS: TestMetaAdsFeed (0.52s)
+=== RUN   TestMetaAdsMA04Chain
+=== RUN   TestMetaAdsMA04Chain/full_chain:_campaign_PAUSED,_children_ACTIVE,_preflight,_then_the_only_spend_switch
+--- PASS: TestMetaAdsMA04Chain (1.74s)
+    --- PASS: TestMetaAdsMA04Chain/full_chain:_campaign_PAUSED,_children_ACTIVE,_preflight,_then_the_only_spend_switch (1.74s)
+=== RUN   TestMetaAdsMA04Refusals
+=== RUN   TestMetaAdsMA04Refusals/approval_row_gone_(activate_without_approval)
+    meta_ads_flow_test.go:283: EVIDENCE approval row gone (activate without approval) -> BLOCKED_POLICY not_approved
+=== RUN   TestMetaAdsMA04Refusals/stale_hash:_identity_binding_re-pointed_after_approval
+    meta_ads_flow_test.go:283: EVIDENCE stale hash: identity binding re-pointed after approval -> BLOCKED_POLICY approval_stale
+=== RUN   TestMetaAdsMA04Refusals/approver_lost_ads:approve
+    meta_ads_flow_test.go:283: EVIDENCE approver lost ads:approve -> BLOCKED_POLICY approver_revoked
+=== RUN   TestMetaAdsMA04Refusals/over_allowance_(operator_lowered_it_after_approval)
+    meta_ads_flow_test.go:283: EVIDENCE over allowance (operator lowered it after approval) -> BLOCKED_POLICY over_allowance
+=== RUN   TestMetaAdsMA04Refusals/stale_preflight_(older_than_10_min)
+    meta_ads_flow_test.go:283: EVIDENCE stale preflight (older than 10 min) -> BLOCKED_POLICY preflight_stale
+=== RUN   TestMetaAdsMA04Refusals/account_not_ready_(st_!=_1_in_the_fresh_preflight)
+    meta_ads_flow_test.go:283: EVIDENCE account not ready (st != 1 in the fresh preflight) -> BLOCKED_POLICY account_not_ready
+=== RUN   TestMetaAdsMA04Refusals/preflight_currency_differs_from_the_draft_currency
+    meta_ads_flow_test.go:283: EVIDENCE preflight currency differs from the draft currency -> BLOCKED_POLICY account_not_ready
+=== RUN   TestMetaAdsMA04Refusals/SANDBOX_environment_with_a_non-sandbox_ad_account
+    meta_ads_flow_test.go:283: EVIDENCE SANDBOX environment with a non-sandbox ad account -> BLOCKED_POLICY sandbox_account_required
+=== RUN   TestMetaAdsMA04Refusals/stale_preflight:_the_sweeper_plans_preflight_seq+1_and_activate_seq+1,_and_the_spend_switch_then_goes_through
+=== RUN   TestMetaAdsMA04Refusals/a_not-ready_account_(account_status_2)_never_gets_an_activate_planned_by_the_sweeper_and_never_a_status_POST
+=== RUN   TestMetaAdsMA04Refusals/a_not-ready_account_(currency_USD)_never_gets_an_activate_planned_by_the_sweeper_and_never_a_status_POST
+=== RUN   TestMetaAdsMA04Refusals/LIVE_needs_a_funded_account_(fund=1)
+=== RUN   TestMetaAdsMA04Refusals/SANDBOX_does_not_need_funding
+=== RUN   TestMetaAdsMA04Refusals/creates_are_refused_too_in_SANDBOX_with_a_non-sandbox_account:_zero_HTTP
+=== RUN   TestMetaAdsMA04Refusals/LIVE_environment_lets_the_same_draft_through
+=== RUN   TestMetaAdsMA04Refusals/pause_is_allowed_in_SANDBOX_even_when_the_sandbox_rule_would_refuse_a_create
+=== RUN   TestMetaAdsMA04Refusals/publish_of_an_unapproved_draft_plans_nothing_and_calls_nothing
+    meta_ads_flow_test.go:414: EVIDENCE unapproved publish -> 422 invalid_request
+=== RUN   TestMetaAdsMA04Refusals/approval_freezes_the_draft:_PUT_after_approve_is_refused,_revision_and_hash_unchanged;_frozen_columns_cannot_be_edited_under_an_approval
+--- PASS: TestMetaAdsMA04Refusals (53.45s)
+    --- PASS: TestMetaAdsMA04Refusals/approval_row_gone_(activate_without_approval) (1.87s)
+    --- PASS: TestMetaAdsMA04Refusals/stale_hash:_identity_binding_re-pointed_after_approval (1.88s)
+    --- PASS: TestMetaAdsMA04Refusals/approver_lost_ads:approve (1.84s)
+    --- PASS: TestMetaAdsMA04Refusals/over_allowance_(operator_lowered_it_after_approval) (1.87s)
+    --- PASS: TestMetaAdsMA04Refusals/stale_preflight_(older_than_10_min) (2.85s)
+    --- PASS: TestMetaAdsMA04Refusals/account_not_ready_(st_!=_1_in_the_fresh_preflight) (5.84s)
+    --- PASS: TestMetaAdsMA04Refusals/preflight_currency_differs_from_the_draft_currency (5.55s)
+    --- PASS: TestMetaAdsMA04Refusals/SANDBOX_environment_with_a_non-sandbox_ad_account (5.56s)
+    --- PASS: TestMetaAdsMA04Refusals/stale_preflight:_the_sweeper_plans_preflight_seq+1_and_activate_seq+1,_and_the_spend_switch_then_goes_through (7.79s)
+    --- PASS: TestMetaAdsMA04Refusals/a_not-ready_account_(account_status_2)_never_gets_an_activate_planned_by_the_sweeper_and_never_a_status_POST (5.28s)
+    --- PASS: TestMetaAdsMA04Refusals/a_not-ready_account_(currency_USD)_never_gets_an_activate_planned_by_the_sweeper_and_never_a_status_POST (3.57s)
+    --- PASS: TestMetaAdsMA04Refusals/LIVE_needs_a_funded_account_(fund=1) (2.77s)
+    --- PASS: TestMetaAdsMA04Refusals/SANDBOX_does_not_need_funding (1.74s)
+    --- PASS: TestMetaAdsMA04Refusals/creates_are_refused_too_in_SANDBOX_with_a_non-sandbox_account:_zero_HTTP (0.50s)
+    --- PASS: TestMetaAdsMA04Refusals/LIVE_environment_lets_the_same_draft_through (1.78s)
+    --- PASS: TestMetaAdsMA04Refusals/pause_is_allowed_in_SANDBOX_even_when_the_sandbox_rule_would_refuse_a_create (1.93s)
+    --- PASS: TestMetaAdsMA04Refusals/publish_of_an_unapproved_draft_plans_nothing_and_calls_nothing (0.51s)
+    --- PASS: TestMetaAdsMA04Refusals/approval_freezes_the_draft:_PUT_after_approve_is_refused,_revision_and_hash_unchanged;_frozen_columns_cannot_be_edited_under_an_approval (0.34s)
+=== RUN   TestMetaAdsMA04ErrorCodes
+=== RUN   TestMetaAdsMA04ErrorCodes/revision_changed_409
+=== RUN   TestMetaAdsMA04ErrorCodes/draft_approved_409
+=== RUN   TestMetaAdsMA04ErrorCodes/over_allowance_409_at_approve
+=== RUN   TestMetaAdsMA04ErrorCodes/not_whole_unit_422
+=== RUN   TestMetaAdsMA04ErrorCodes/currency_mismatch_422
+=== RUN   TestMetaAdsMA04ErrorCodes/starts_too_soon_422
+=== RUN   TestMetaAdsMA04ErrorCodes/source_not_owned_422
+=== RUN   TestMetaAdsMA04ErrorCodes/product_not_published_422
+=== RUN   TestMetaAdsMA04ErrorCodes/binding_disabled_409_at_approve
+=== RUN   TestMetaAdsMA04ErrorCodes/attempt_changed_409
+=== RUN   TestMetaAdsMA04ErrorCodes/budget_below_minimum_422
+=== RUN   TestMetaAdsMA04ErrorCodes/state_mismatch_409:_another_principal_presents_the_state
+=== RUN   TestMetaAdsMA04ErrorCodes/state_mismatch_409:_unknown_or_malformed_state
+=== RUN   TestMetaAdsMA04ErrorCodes/state_is_single_use
+=== RUN   TestMetaAdsMA04ErrorCodes/state_expired_410
+=== RUN   TestMetaAdsMA04ErrorCodes/meta_connect_failed_502:_Meta_refuses_the_code
+=== RUN   TestMetaAdsMA04ErrorCodes/not_in_pick_list_422
+=== RUN   TestMetaAdsMA04ErrorCodes/client_business_changed_409:_the_same_ad_account_re-connected_under_another_client_business
+=== RUN   TestMetaAdsMA04ErrorCodes/billing_restricted_402_is_the_platform_code
+=== RUN   TestMetaAdsMA04ErrorCodes/forbidden_/_not_found_/_unauthorized
+--- PASS: TestMetaAdsMA04ErrorCodes (0.49s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/revision_changed_409 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/draft_approved_409 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/over_allowance_409_at_approve (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/not_whole_unit_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/currency_mismatch_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/starts_too_soon_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/source_not_owned_422 (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/product_not_published_422 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/binding_disabled_409_at_approve (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/attempt_changed_409 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/budget_below_minimum_422 (0.05s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_mismatch_409:_another_principal_presents_the_state (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_mismatch_409:_unknown_or_malformed_state (0.00s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_is_single_use (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/state_expired_410 (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/meta_connect_failed_502:_Meta_refuses_the_code (0.01s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/not_in_pick_list_422 (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/client_business_changed_409:_the_same_ad_account_re-connected_under_another_client_business (0.02s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/billing_restricted_402_is_the_platform_code (0.15s)
+    --- PASS: TestMetaAdsMA04ErrorCodes/forbidden_/_not_found_/_unauthorized (0.01s)
+=== RUN   TestMetaAdsMA05Unknown
+=== RUN   TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_campaign:_reconcile_by_tag_pins_the_object,_no_second_POST
+=== RUN   TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_adset:_reconcile_by_tag_pins_the_object,_no_second_POST
+=== RUN   TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_creative:_reconcile_by_tag_pins_the_object,_no_second_POST
+=== RUN   TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_ad:_reconcile_by_tag_pins_the_object,_no_second_POST
+=== RUN   TestMetaAdsMA05Unknown/503_after_create:_UNKNOWN_then_reconciled_by_tag
+=== RUN   TestMetaAdsMA05Unknown/unparseable_200_after_create:_UNKNOWN_then_reconciled_by_tag
+=== RUN   TestMetaAdsMA05Unknown/200_without_id_after_create:_UNKNOWN_then_reconciled_by_tag
+=== RUN   TestMetaAdsMA05Unknown/timeout_with_no_remote_effect:_reconcile_finds_nothing,_the_op_stays_UNKNOWN,_nothing_is_recreated
+=== RUN   TestMetaAdsMA05Unknown/more_than_one_remote_object_with_the_tag:_UNKNOWN_duplicate_remote_objects,_never_a_guess
+=== RUN   TestMetaAdsMA05Unknown/reconcile_pages_through_the_parent's_children_(<=10_pages_of_100)_and_stops_there
+=== RUN   TestMetaAdsMA05Unknown/a_match_beyond_page_10_is_not_found:_UNKNOWN,_never_a_re-POST
+=== RUN   TestMetaAdsMA05Unknown/rate-limited_pause:_UNKNOWN_(never_terminal),_reconcile_does_not_prove_it,_seq_2_after_15_minutes_with_an_ops_alert
+=== RUN   TestMetaAdsMA05Unknown/pause_SUCCEEDED_while_activate_is_still_READY:_activate_BLOCKED_POLICY_pause_requested,_no_activate_POST
+=== RUN   TestMetaAdsMA05Unknown/pause_SUCCEEDED_while_the_activate_call_is_in_flight:_draft_keeps_counting,_then_the_sweeper_plans_pause_seq_2_and_the_campaign_ends_PAUSED
+--- PASS: TestMetaAdsMA05Unknown (50.93s)
+    --- PASS: TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_campaign:_reconcile_by_tag_pins_the_object,_no_second_POST (3.49s)
+    --- PASS: TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_adset:_reconcile_by_tag_pins_the_object,_no_second_POST (3.28s)
+    --- PASS: TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_creative:_reconcile_by_tag_pins_the_object,_no_second_POST (3.24s)
+    --- PASS: TestMetaAdsMA05Unknown/timeout_after_the_remote_create_at_ad:_reconcile_by_tag_pins_the_object,_no_second_POST (3.04s)
+    --- PASS: TestMetaAdsMA05Unknown/503_after_create:_UNKNOWN_then_reconciled_by_tag (1.28s)
+    --- PASS: TestMetaAdsMA05Unknown/unparseable_200_after_create:_UNKNOWN_then_reconciled_by_tag (1.39s)
+    --- PASS: TestMetaAdsMA05Unknown/200_without_id_after_create:_UNKNOWN_then_reconciled_by_tag (1.35s)
+    --- PASS: TestMetaAdsMA05Unknown/timeout_with_no_remote_effect:_reconcile_finds_nothing,_the_op_stays_UNKNOWN,_nothing_is_recreated (7.00s)
+    --- PASS: TestMetaAdsMA05Unknown/more_than_one_remote_object_with_the_tag:_UNKNOWN_duplicate_remote_objects,_never_a_guess (6.89s)
+    --- PASS: TestMetaAdsMA05Unknown/reconcile_pages_through_the_parent's_children_(<=10_pages_of_100)_and_stops_there (1.33s)
+    --- PASS: TestMetaAdsMA05Unknown/a_match_beyond_page_10_is_not_found:_UNKNOWN,_never_a_re-POST (2.73s)
+    --- PASS: TestMetaAdsMA05Unknown/rate-limited_pause:_UNKNOWN_(never_terminal),_reconcile_does_not_prove_it,_seq_2_after_15_minutes_with_an_ops_alert (8.01s)
+    --- PASS: TestMetaAdsMA05Unknown/pause_SUCCEEDED_while_activate_is_still_READY:_activate_BLOCKED_POLICY_pause_requested,_no_activate_POST (4.10s)
+    --- PASS: TestMetaAdsMA05Unknown/pause_SUCCEEDED_while_the_activate_call_is_in_flight:_draft_keeps_counting,_then_the_sweeper_plans_pause_seq_2_and_the_campaign_ends_PAUSED (3.81s)
+=== RUN   TestMetaAdsMA06Binding
+=== RUN   TestMetaAdsMA06Binding/re-pointed_binding:_unfinished_READY_op_->_STALE_BINDING,_no_call_on_either_account
+=== RUN   TestMetaAdsMA06Binding/re-pointed_binding:_UNKNOWN_op_is_not_reconciled_against_the_new_state,_no_call
+=== RUN   TestMetaAdsMA06Binding/a_binding_with_a_spending_campaign_cannot_be_disabled;_pause_still_reaches_Meta_(contract_5.3,_round-2_P1)
+=== RUN   TestMetaAdsMA06Binding/concurrent_publish_of_the_same_draft:_exactly_one_attempt,_the_other_answers_409
+=== RUN   TestMetaAdsMA06Binding/same_Idempotency-Key_replays;_Idempotency-Key_is_required
+=== RUN   TestMetaAdsMA06Binding/re-publish_after_FAILED:_a_new_attempt,_the_failed_attempt's_objects_stay_PAUSED_and_are_never_deleted;_at_most_5_attempts
+=== RUN   TestMetaAdsMA06Binding/publish_of_an_ACTIVE_draft_is_refused_while_an_earlier_attempt_is_not_confirmed_non-spending
+=== RUN   TestMetaAdsMA06Binding/publish_of_a_draft_that_was_paused_is_refused_(resume_=_copy_into_a_new_draft)
+--- PASS: TestMetaAdsMA06Binding (19.23s)
+    --- PASS: TestMetaAdsMA06Binding/re-pointed_binding:_unfinished_READY_op_->_STALE_BINDING,_no_call_on_either_account (1.73s)
+    --- PASS: TestMetaAdsMA06Binding/re-pointed_binding:_UNKNOWN_op_is_not_reconciled_against_the_new_state,_no_call (5.53s)
+    --- PASS: TestMetaAdsMA06Binding/a_binding_with_a_spending_campaign_cannot_be_disabled;_pause_still_reaches_Meta_(contract_5.3,_round-2_P1) (2.69s)
+    --- PASS: TestMetaAdsMA06Binding/concurrent_publish_of_the_same_draft:_exactly_one_attempt,_the_other_answers_409 (0.34s)
+    --- PASS: TestMetaAdsMA06Binding/same_Idempotency-Key_replays;_Idempotency-Key_is_required (0.11s)
+    --- PASS: TestMetaAdsMA06Binding/re-publish_after_FAILED:_a_new_attempt,_the_failed_attempt's_objects_stay_PAUSED_and_are_never_deleted;_at_most_5_attempts (3.47s)
+    --- PASS: TestMetaAdsMA06Binding/publish_of_an_ACTIVE_draft_is_refused_while_an_earlier_attempt_is_not_confirmed_non-spending (2.50s)
+    --- PASS: TestMetaAdsMA06Binding/publish_of_a_draft_that_was_paused_is_refused_(resume_=_copy_into_a_new_draft) (2.86s)
+=== RUN   TestMetaAdsMA07Insights
+=== RUN   TestMetaAdsMA07Insights/planning_keys,_lane,_principal;_ingestion_values;_NULL_when_Meta_reports_nothing;_report_blocks
+=== RUN   TestMetaAdsMA07Insights/28-day_finalization:_a_day_older_than_28_days_is_final_and_immutable
+=== RUN   TestMetaAdsMA07Insights/auto-pause_at_100%_of_the_approved_budget_(cumulative),_never_below,_never_a_budget_change_or_re-activation
+=== RUN   TestMetaAdsMA07Insights/WITH_ISSUES_while_spending_below_budget:_auto-pause_fires_(REJECTED_projection_still_delivering)
+=== RUN   TestMetaAdsMA07Insights/ingestion_does_not_depend_on_derived_status:_reads_finished_after_a_pause_are_still_ingested
+=== RUN   TestMetaAdsMA07Insights/insights_candidates:_any_derived_status_with_a_pinned_campaign_inside_ends_at+3_days;_nothing_after
+=== RUN   TestMetaAdsMA07Insights/rate-limited_read:_FAILED_FINAL_graph_80004,_re-planned_in_a_later_hour,_then_ingested
+=== RUN   TestMetaAdsMA07Insights/insights_read_is_a_read_op:_allowed_in_SANDBOX_with_a_non-sandbox_account,_no_spend
+--- PASS: TestMetaAdsMA07Insights (22.81s)
+    --- PASS: TestMetaAdsMA07Insights/planning_keys,_lane,_principal;_ingestion_values;_NULL_when_Meta_reports_nothing;_report_blocks (3.47s)
+    --- PASS: TestMetaAdsMA07Insights/28-day_finalization:_a_day_older_than_28_days_is_final_and_immutable (2.67s)
+    --- PASS: TestMetaAdsMA07Insights/auto-pause_at_100%_of_the_approved_budget_(cumulative),_never_below,_never_a_budget_change_or_re-activation (3.74s)
+    --- PASS: TestMetaAdsMA07Insights/WITH_ISSUES_while_spending_below_budget:_auto-pause_fires_(REJECTED_projection_still_delivering) (2.27s)
+    --- PASS: TestMetaAdsMA07Insights/ingestion_does_not_depend_on_derived_status:_reads_finished_after_a_pause_are_still_ingested (2.67s)
+    --- PASS: TestMetaAdsMA07Insights/insights_candidates:_any_derived_status_with_a_pinned_campaign_inside_ends_at+3_days;_nothing_after (1.90s)
+    --- PASS: TestMetaAdsMA07Insights/rate-limited_read:_FAILED_FINAL_graph_80004,_re-planned_in_a_later_hour,_then_ingested (3.17s)
+    --- PASS: TestMetaAdsMA07Insights/insights_read_is_a_read_op:_allowed_in_SANDBOX_with_a_non-sandbox_account,_no_spend (2.93s)
+=== RUN   TestMetaAdsMA07ReportShape
+--- PASS: TestMetaAdsMA07ReportShape (0.08s)
+=== RUN   TestMetaAdsChildWorker
+--- PASS: TestMetaAdsChildWorker (0.00s)
+=== RUN   TestMetaAdsMA05ChildKill
+--- PASS: TestMetaAdsMA05ChildKill (32.31s)
+=== RUN   TestMetaAdsGrantScript
+--- PASS: TestMetaAdsGrantScript (0.03s)
+=== RUN   TestMetaAdsSandboxS1
+    meta_ads_sandbox_test.go:92: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+--- SKIP: TestMetaAdsSandboxS1 (0.00s)
+=== RUN   TestMetaAdsSandboxS2
+    meta_ads_sandbox_test.go:148: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+--- SKIP: TestMetaAdsSandboxS2 (0.00s)
+=== RUN   TestMetaAdsSandboxS3
+    meta_ads_sandbox_test.go:161: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+--- SKIP: TestMetaAdsSandboxS3 (0.00s)
+=== RUN   TestMetaAdsSandboxS4
+    meta_ads_sandbox_test.go:184: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+--- SKIP: TestMetaAdsSandboxS4 (0.00s)
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:160: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:160: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:160: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:160: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:160: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:160: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:160: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:160: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:160: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:160: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:160: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:160: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:160: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:160: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:160: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:160: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:160: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (0.68s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.06s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.04s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.14s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.12s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.11s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.19s)
+=== RUN   TestMetaAdsOriginalRefusalDraftReason
+--- PASS: TestMetaAdsOriginalRefusalDraftReason (1.70s)
+=== RUN   TestMetaAdsMA01Units
+=== RUN   TestMetaAdsMA01Units/MetaBudget
+=== RUN   TestMetaAdsMA01Units/SpendMinor
+=== RUN   TestMetaAdsMA01Units/ResultGrammarRoundTrip
+=== RUN   TestMetaAdsMA01Units/CanonicalDraftD10
+=== RUN   TestMetaAdsMA01Units/EventIDPhoneExternalID
+--- PASS: TestMetaAdsMA01Units (0.01s)
+    --- PASS: TestMetaAdsMA01Units/MetaBudget (0.00s)
+    --- PASS: TestMetaAdsMA01Units/SpendMinor (0.00s)
+    --- PASS: TestMetaAdsMA01Units/ResultGrammarRoundTrip (0.00s)
+    --- PASS: TestMetaAdsMA01Units/CanonicalDraftD10 (0.00s)
+    --- PASS: TestMetaAdsMA01Units/EventIDPhoneExternalID (0.00s)
+=== RUN   TestMetaAdsMA01Classification
+=== RUN   TestMetaAdsMA01Classification/creates
+=== RUN   TestMetaAdsMA01Classification/name_must_be_the_lc_tag,_otherwise_zero_HTTP
+=== RUN   TestMetaAdsMA01Classification/activate_and_pause_are_never_FAILED_FINAL
+=== RUN   TestMetaAdsMA01Classification/reads
+=== RUN   TestMetaAdsMA01Classification/CAPI_PostEvent_classification
+=== RUN   TestMetaAdsMA01Classification/host_guard
+--- PASS: TestMetaAdsMA01Classification (7.37s)
+    --- PASS: TestMetaAdsMA01Classification/creates (1.82s)
+    --- PASS: TestMetaAdsMA01Classification/name_must_be_the_lc_tag,_otherwise_zero_HTTP (0.00s)
+    --- PASS: TestMetaAdsMA01Classification/activate_and_pause_are_never_FAILED_FINAL (3.65s)
+    --- PASS: TestMetaAdsMA01Classification/reads (0.92s)
+    --- PASS: TestMetaAdsMA01Classification/CAPI_PostEvent_classification (0.91s)
+    --- PASS: TestMetaAdsMA01Classification/host_guard (0.00s)
+=== RUN   TestMetaClaimsMCI10IngestCallers
+--- PASS: TestMetaClaimsMCI10IngestCallers (0.77s)
+=== RUN   TestMetaClaimsMCI10NoNetworkInIntakeCode
+--- PASS: TestMetaClaimsMCI10NoNetworkInIntakeCode (0.63s)
+=== RUN   TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret
+--- PASS: TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret (0.52s)
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_file
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/alias
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_added
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/comment_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes
+--- PASS: TestMetaClaimsMCI10AdsRefusalFinishException (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_file (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/alias (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_added (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/comment_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes (0.00s)
+=== RUN   TestMetaClaimsMCI10ClaimsImports
+--- PASS: TestMetaClaimsMCI10ClaimsImports (0.02s)
+=== RUN   TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath
+--- PASS: TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath (0.49s)
+=== RUN   TestMetaClaimsMCI10SecretEnvOwnership
+--- PASS: TestMetaClaimsMCI10SecretEnvOwnership (0.54s)
+=== RUN   TestMetaClaimsMCI10NoNewThirdPartyModule
+--- PASS: TestMetaClaimsMCI10NoNewThirdPartyModule (0.51s)
+=== RUN   TestMetaClaimsMCI10PackageComments
+--- PASS: TestMetaClaimsMCI10PackageComments (0.01s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (9.72s)
+FAIL
+FAIL	livecommerce/tests/foundation	347.989s
+FAIL
+test-focused: top-level PASS=32 FAIL=1 SKIP=4 exit=1

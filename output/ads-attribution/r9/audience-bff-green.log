@@ -1,0 +1,25 @@
+✔ route grammar: exactly the frozen resources except meta/connect and meta/callback (0.878958ms)
+✔ query rule: only report has a query, from+to exactly once, real dates, at most 92 days (0.228792ms)
+✔ headers: If-Match is a bare revision, Idempotency-Key is the repo grammar (0.107958ms)
+✔ connect cookie: httpOnly, Secure, Lax, Path is the callback only, 10 minutes; cleared with Max-Age=0 (0.1335ms)
+✔ connect body: exactly {store: uuid} (0.101584ms)
+✔ dialog URL: only exactly https://www.facebook.com (0.1035ms)
+✔ callback parameters: bounded charset/length, duplicates rejected, Meta cancel is denied, extras ignored (1.301ms)
+✔ callback redirect: only fixed codes and canonical uuids ever reach the URL (never code/state) (0.125458ms)
+✔ callback Go answers map to the fixed connect_error values (0.082458ms)
+✔ Go transport split: pause/end bodiless, approve keyless, nothing else (0.20975ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (1.859584ms)
+✔ R8: null stays unknown and unauthorised / insufficient remain different states (0.196875ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.645167ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.082209ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.330542ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.247167ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.128875ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.304833

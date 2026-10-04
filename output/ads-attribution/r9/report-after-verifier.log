@@ -1,0 +1,8 @@
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:426: exec test setup: ERROR: new row for relation "store_grants" violates check constraint "store_grants_permission_check" (SQLSTATE 23514)
+    live_claims_test.go:87: exec test setup: ERROR: update or delete on table "claim_sources" violates foreign key constraint "meta_intake_tenant_id_store_id_source_id_fkey" on table "meta_intake" (SQLSTATE 23503)
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (10.32s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.008s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

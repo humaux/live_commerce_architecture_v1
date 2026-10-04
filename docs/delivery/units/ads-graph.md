@@ -1,0 +1,184 @@
+# Unit ads-graph — `internal/integrations/meta_ads` Graph adapter, HPKE token custody, OAuth connect, `cmd/ads-worker`
+
+Role: integration_worker (mid tier). Base SHA `00c1d94`. Worktree `.worktrees/ads-graph`, branch
+`unit/ads-graph`. No delegation. **No network** (fake Graph via `httptest` only; SANDBOX gates MA-S1..S4
+are owner-scheduled, not this unit's). **Wave 1**, parallel with ads-core/ads-ui against the FROZEN
+blocks of `ads-a10.md` and `ads-core.md` (rebase on their F1/F0 merges; do not copy their branches).
+Contract: `contracts/meta-ads-v1.md` (FROZEN). ads-core's Defaults D1–D14 bind here too.
+
+**Goal:** every Meta wire call the contract names, classified exactly per §3, with the BISU token
+reaching code only through the lease-fenced loader (AD11) and only `cmd/ads-worker` able to open it (A-4).
+
+## Read (by section)
+PROCESS.md; contract §0 AD1–AD4, AD9, AD11, §0.1 A-4/A-9/A-10, §1 (F3, F8–F13, F18–F22, U1–U10),
+§2 steps 1–3, §3 (all), §3.1, §4.1 (credential widening, HPKE `info`, loader), §6 header + §6.1, §8,
+§9 MA01/MA04/MA05/MA11, §11. Code by symbol: `internal/integrations/metareply/{routes.go (Config,
+GraphHost, versionPattern, loopbackPattern, Routes, the LoadSecret/DispatchWithSecret wiring),
+keyring*.go}` (copy shape, not code paths that touch page tokens), `internal/integrations/core`
+(`DispatchRoute`, `Secret`, `SecretClaim`, `Outcome`, ads-a10 additions), `cmd/claims-worker/main.go`
+(config redaction, pools, `core.NewDispatcher`, River client), `cmd/api/accounts.go` (insert-only River
+client on `river`), `internal/platform` (`OpenWorkerPool`, `ValidateWorkerPool`). `go doc crypto/hpke`.
+
+## Defaults adopted (in addition to ads-core D1–D14)
+- G1 Package `metaads` in directory `internal/integrations/meta_ads` (contract path); HPKE **open** lives
+  only in subpackage `internal/integrations/meta_ads/tokenopen`, imported only by `cmd/ads-worker`
+  (MA11 static check: `go list -deps ./cmd/api` must not contain it). Seal (public key) in `metaads`.
+- G2 HPKE suite X25519-HKDF-SHA256 / HKDF-SHA256 / AES-256-GCM (`crypto/hpke`, stdlib, no dependency);
+  `enc` 32 bytes stored in `nonce`/`pending_enc`; `info` = JSON array per §4.1.
+- G3 Env (names frozen for deploy): api — `COMMERCE_META_ADS_APP_ID`, `COMMERCE_META_ADS_APP_SECRET_FILE`,
+  `COMMERCE_META_ADS_CONFIG_ID`, `COMMERCE_META_ADS_REDIRECT_URI`, `COMMERCE_META_ADS_GRAPH_VERSION`
+  (required, `v26.0`, A-9), `COMMERCE_META_ADS_TOKEN_HPKE_PUBLIC_KEYS_JSON` + `…_ACTIVE_KEY_ID`;
+  worker — `COMMERCE_ADS_WORKER_DATABASE_URL` (commerce_worker login), `COMMERCE_META_ADS_GRAPH_VERSION`,
+  `COMMERCE_META_ADS_TOKEN_HPKE_PRIVATE_KEYS_FILE`, `COMMERCE_META_ADS_PARTNER_AGENT`. Secrets only from
+  files (O-D); config types redact in every formatter. Any missing/invalid value → process refuses to start
+  with one fixed code; the api constructor returns `nil, nil` when `COMMERCE_META_ADS_APP_ID` is unset (surface off).
+- G4 `optimization_goal`/`billing_event` pairs (U2, closed by MA-S1): ENGAGEMENT → `POST_ENGAGEMENT`/
+  `IMPRESSIONS`; TRAFFIC → `LINK_CLICKS`/`IMPRESSIONS`; `special_ad_categories=[]` (U1, MA-S1). Each a named
+  constant with docs URL + retrieval date + `// UNKNOWN until MA-S1`.
+- G5 Reconcile for `preflight_account`/`read_insights` = repeat the read (§3); for creates, name tag match
+  over ≤10 pages of `limit=100`; `>1` → UNKNOWN `duplicate_remote_objects`.
+- G6 OAuth `Connect` performs, in order: code exchange (with `redirect_uri`, U10), `/me?fields=client_business_id`,
+  `/me/permissions` (granted only), `/me/adaccounts?fields=account_id,name,currency,timezone_name,account_status`
+  (≤5 pages), `/act_{id}/adspixels?fields=id,name` per account (≤20 accounts), then seals and zeroes the
+  plaintext. Any failure → `ads.ErrConnectFailed` (no partial result, no token returned).
+
+## FROZEN Go interface
+```go
+package metaads // internal/integrations/meta_ads
+const GraphHost = "https://graph.facebook.com"
+type Config struct{ GraphBaseURL, GraphVersion, PartnerAgent string; HTTPClient *http.Client } // host = GraphHost or loopback (MOCK)
+var ErrNotWholeUnit, ErrUnsupportedCurrency, ErrBadSpend error
+func MetaBudget(currency string, amountMinor int64) (int64, error)       // §3 I05; TWD /100 only if %100==0
+func SpendMinor(currency, spend string) (int64, error)                   // §3 exact decimal ×100
+type Preflight struct{ Status int; Currency, Timezone string; Funded bool }
+type InsightsDay struct{ EffectiveStatus, Currency, Timezone string; SpendMinor, Impressions, Clicks int64; Purchases, PurchaseValueMinor *int64 }
+func EncodePreflight(p Preflight) (string, error)                        // grammar §3, ≤200 (ads-core D2)
+func ParsePreflight(ref string) (Preflight, error)
+func EncodeInsights(d InsightsDay) (string, error)
+func ParseInsights(ref string) (InsightsDay, error)
+type SealKeys struct{ /* public keys + active id */ }
+func LoadSealKeys(getenv func(string) string) (*SealKeys, error)
+type AppConfig struct{ AppID, RedirectURI string; AppSecret []byte }     // redacted formatters
+type OAuth struct{ /* … */ }
+func NewOAuth(cfg Config, app AppConfig, keys *SealKeys) (*OAuth, error)
+func (o *OAuth) Connect(ctx context.Context, code string, seal ads.SealInfo) (ads.ConnectResult, error) // = ads.ConnectFunc
+type Client struct{ /* … */ }
+func NewClient(cfg Config) (*Client, error)
+func (c *Client) PostEvent(ctx context.Context, token []byte, pixelID string, body []byte) (core.Outcome, error) // §3 CAPI classification; ads-capi calls it
+func Routes(pool *pgxpool.Pool, cfg Config, keys *tokenopen.Keyring, check func(context.Context, core.DispatchRequest) error) ([]core.DispatchRoute, error)
+// 8 routes (meta_ads × create_campaign|create_adset|create_creative|create_ad|preflight_account|activate|pause|read_insights),
+// purpose "marketing"; LoadSecret = integration.load_meta_ads_token + tokenopen; DispatchWithSecret; ReconcileWithSecret.
+
+package tokenopen // internal/integrations/meta_ads/tokenopen — cmd/ads-worker only
+type Keyring struct{ /* private keys */ }
+func LoadKeyring(getenv func(string) string) (*Keyring, error)
+func (k *Keyring) Open(tenantID, storeID, keyID string, enc, ciphertext []byte) ([]byte, error)
+
+package main // cmd/api/merchant_ads.go (new file)
+func newMerchantAds(pool *pgxpool.Pool, getenv func(string) string) (*ads.Service, error) // nil,nil when surface off (G3)
+```
+Classification tables are §3 verbatim (creates; activate/pause never FAILED_FINAL; reads; CAPI). Every
+Graph error code constant (4, 17, 613, 80004, 100) carries the F# URL + retrieval date.
+
+## Build
+1. `metaads`: config/host guard, money, grammar, classification, 8 routes with the frozen request JSON of
+   ads-core D11 (strict decode; unknown key → FAILED_FINAL `bad_request` before any call), reconcile by tag,
+   status GET, redacted formatters, bounded bodies (≤1 MiB), `CallTimeout` context only.
+2. `tokenopen` + `SealKeys` (G1/G2); zero every plaintext slice after use.
+3. `OAuth.Connect` (G6) with an `httptest` fake Graph in unit tests.
+4. `cmd/ads-worker`: config (G3), `platform.OpenWorkerPool` + validator, `core.NewDispatcher(pool,
+   metaads.Routes(…, ads.NewChecker(pool).Check))`, River client Schema `river`, **Queues `{"ads": {MaxWorkers: 4}}` only**,
+   `ads.AddWorkers` + `ads.PeriodicJobs()` + the dispatcher worker; graceful stop; `doc.go`.
+5. `cmd/api/merchant_ads.go`: insert-only River client (`river`), `metaads.NewOAuth`, `ads.NewService`.
+
+## PROCESS §5 comment/dependency rules (binding)
+`// Package metaads owns …` / `// It never …` (plans ops, reads PG outside the loader, stores tokens) /
+external host `graph.facebook.com` + why; `tokenopen` package comment states it must only be imported by
+`cmd/ads-worker`. Each wire constant: docs URL + retrieval date. Each UNKNOWN branch: why never re-POST
+(no idempotency key, F9). `cmd/*` doc.go lists env names (never values). No hand-written dependency lists; run `scripts/dev/depmap.sh`.
+
+## Write paths
+`internal/integrations/meta_ads/**`, `cmd/ads-worker/**`, `cmd/api/{merchant_ads.go,merchant_ads_test.go}`,
+`docs/engineering/dependency-map.md` (generated), `output/ads-graph/**`.
+Forbidden: `cmd/api/main.go`, `internal/ads/**`, `internal/integrations/core/**`, migrations, `tests/**`,
+`deploy/**`, `Caddyfile`, contracts, go.mod/go.sum (stdlib only — a needed module = stop and escalate).
+
+## Gates
+Implementer (unit tests, names not `TestMetaAdsMA*`): money + grammar vectors, classification tables,
+tag reconcile, host guard, redaction, OAuth fake. Independent (ads-tests): MA01, MA04, MA05, MA06, MA11.
+
+## Verify
+```sh
+GOTOOLCHAIN=go1.27.1 go vet ./... && gofmt -l internal cmd
+GOTOOLCHAIN=go1.27.1 go test -race -count=1 ./internal/integrations/meta_ads/... ./cmd/ads-worker ./cmd/api
+GOTOOLCHAIN=go1.27.1 go list -deps ./cmd/api | grep -c meta_ads/tokenopen   # must print 0
+bash scripts/dev/depmap.sh && python3 scripts/check_packet.py
+```
+Logs → `/Volumes/data/live_commerce_architecture_v1/output/ads-graph/`.
+
+## NOT_RUN (expected)
+MA-S1..S4 (owner sandbox account + app 大梦 roles), MA-L1/L2; U1–U10 stay UNKNOWN; PG-backed route runs until F2.
+
+## Integrator hooks (integrator only)
+`cmd/api/main.go`: `ads, err := newMerchantAds(runtimePool, os.Getenv)` → `httpapi.Options{Ads: ads}`;
+`deploy/compose.yml`: `ads-worker` service (image, commerce_worker DSN, secret files, no published port) +
+api env; `deploy/secrets.manifest.tsv` rows for the G3 files; Caddy access-log exclusion for
+`/api/ads/meta/callback` (§2 step 2); later `attribution.Routes` + CAPI periodic job appended in
+`cmd/ads-worker` (ads-capi).
+
+## Order / Return
+Author at dispatch; compile after F0/F1; PG runs after F2 (ads-core merged). Return SHA, model/reasoning,
+base, paths, commands + exits + counts, evidence, G1–G6 handling, UNKNOWNs touched, risks, NOT_RUN.
+
+## Integrator ruling (2026-10-03): Taiwan ad regulation found by SANDBOX MA-S1
+Evidence: owner sandbox ad account `act_1094780649810303`, validate-only probes. Logs are in `output/meta-ads-sandbox/` and contain no tokens.
+- **Campaign create.** Meta requires `is_adset_budget_sharing_enabled` when there is no campaign budget (code 100, subcode 4834011). Fixed in 431a443a by sending `false`.
+- **U1 and U2 are closed.** `special_ad_categories=[]` is accepted. The `POST_ENGAGEMENT`/`IMPRESSIONS` pair with `LOWEST_COST_WITHOUT_CAP` plus a lifetime budget and schedule validates; the HK control passed validate-only.
+- **New fact: any ad set targeting TW must carry `regional_regulated_categories=["TAIWAN_UNIVERSAL"]`.** Without it Meta returns subcode 3858498. With it but without a verified advertiser it returns subcode 3858495, "缺少广告主：请提供经过验证的广告主". The beneficiary and payer come either from the merchant's Ads Manager default (after Meta's Taiwan advertiser verification) or from per-ad-set `regional_regulation_identities` {`taiwan_universal_beneficiary`, `taiwan_universal_payer`}.
+
+**Ruling.**
+1. The adapter adds `regional_regulated_categories: ["TAIWAN_UNIVERSAL"]` to every ad set whose countries include `TW`, and only then. It does not send `regional_regulation_identities` yet: the merchant's verified Ads Manager default is used (YAGNI; add a picker when a merchant needs a non-default beneficiary).
+2. Code 100 with subcode 3858495 maps to `FAILED_FINAL` with code `tw_advertiser_unverified` instead of the generic `graph_100`. The ads API exposes the latest failed operation's reason code for the draft if it does not already.
+3. Merchant UI, three locales:
+   - On that code, show "請先在 Meta 完成台灣廣告主驗證，並在廣告管理員設定預設的受益人與付款人" with a link to Meta's help page https://www.facebook.com/business/help/983527276402621, plus a retry path.
+   - The ads setup checklist gains the same step.
+   - The UI never shows a generic failure for this case.
+4. Tests:
+   - Adapter unit tests: TW adds the category, HK does not; subcode 3858495 maps to `tw_advertiser_unverified`, red first.
+   - Ads PG/flow test: the failed draft exposes the code.
+   - Browser: the message and link are visible after a MOCK refusal, checked with real clicks in three locales.
+   - Sandbox: `META_ADS_SANDBOX_COUNTRY=TW` must end in `tw_advertiser_unverified`, never `graph_100`.
+5. Contract `meta-ads-v1.md` gains F-rows for both facts; U-rows are closed or added accordingly.
+
+### Amendment (2026-10-03, owner: "复用 Meta 的广告法"): country table, not Taiwan-only code
+The owner asked for other countries to be covered by reusing Meta's own regulation mechanism. We do not write our own ad-law engine: Meta reviews ad content, and the API names the declaration each country needs. Probe: sandbox validate-only ad sets for 20 countries, nothing created; evidence in `output/meta-ads-sandbox/regional-categories-probe-20261003.txt`.
+
+**Meta's answers**
+
+| Country | What Meta requires |
+|---|---|
+| TW | `TAIWAN_UNIVERSAL` (subcode 3858498), plus a verified advertiser (3858495) |
+| SG | `SINGAPORE_UNIVERSAL` (3858550) |
+| TH | Age minimum ≥20 (1870249) |
+| DE, FR (EU / DSA) | A beneficiary and a payer (3858081) |
+| HK, MO, MY, VN, PH, ID, JP, KR, AU, NZ, US, CA, GB, BR, IN | Nothing extra for this boost-post ad set |
+
+**Ruling (supersedes items 1–2 above where they conflict)**
+1. **One table.** A single country table in `internal/integrations/meta_ads` (regulation.go) holds only VERIFIED rows: TW → `TAIWAN_UNIVERSAL`, SG → `SINGAPORE_UNIVERSAL`. Each row adds its category to `regional_regulated_categories` when that country is targeted. New rows require a probe as evidence; values are never guessed.
+2. **TH age.** The ads domain (`internal/ads/validate.go`) refuses age_min <20 when TH is targeted, with a new refusal `age_min_for_country`. The UI shows the rule before submit.
+3. **EU / DSA.** Not supported for now: the ads domain refuses EU-27 targets with `country_not_supported` and a clear message. The pilot targets TW, and DSA beneficiary/payer input is a separate feature. ponytail: add `dsa_beneficiary`/`dsa_payor` when a merchant needs the EU.
+4. **Refusals.**
+   - Known subcodes map to stable codes:
+     - 3858495 and the analogous "unverified advertiser" subcode for SG (if the probe shows one) → `regional_advertiser_unverified`, carrying the country.
+     - 3858498 / 3858550 → `regional_category_missing`, which should never happen after item 1.
+   - Any other Graph refusal surfaces Meta's own `error_user_msg` (plain text, ≤300 characters, HTML stripped) to the merchant, beside our code. That message is how Meta's ad law reaches the merchant; we do not paraphrase it.
+5. **Merchant guidance.** The guidance from the first ruling (verify in Meta and set the default beneficiary/payer, plus the help link) applies to every `regional_advertiser_unverified` country.
+
+### Amendment 2 (2026-10-03, owner): no rules of our own — Meta decides, we pass Meta's answer through
+The owner's position: "Anything Meta's API disallows, we cannot allow anyway — so why build a second set?" Accepted. This supersedes items 2–5 of Amendment 1 and items 2–3 of the first ruling.
+
+Keep only what the API itself requires of the caller:
+1. **Declaration field.** `regional_regulated_categories` is a request parameter that Meta requires the caller to declare and does not infer. The table stays with the two verified rows (TW → `TAIWAN_UNIVERSAL`, SG → `SINGAPORE_UNIVERSAL`). It is a parameter mapping like currency, not a rule.
+2. **Pass refusals through.** Every Graph refusal shows Meta's own `error_user_msg` to the merchant: plain text, ≤300 characters, HTML stripped. That message already carries Meta's help link (for example the Taiwan advertiser verification page). The code stays the generic `graph_<code>`.
+
+**Removed:** the TH age pre-check, the EU refusal, the special codes `tw_advertiser_unverified` / `regional_*`, and the custom guidance copy. Meta's message is the guidance.

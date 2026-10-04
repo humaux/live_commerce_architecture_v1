@@ -12,7 +12,7 @@ import (
 )
 
 func TestMerchantOrdersQuery(t *testing.T) {
-	for _, raw := range []string{"", "limit=1&state=DRAFT", "limit=100&cursor=abc&state=all"} {
+	for _, raw := range []string{"", "limit=1&state=DRAFT", "limit=100&cursor=abc&state=all", "limit=1&state=AWAITING_COLLECTION"} {
 		u := &url.URL{RawQuery: raw}
 		if _, err := parseOrdersQuery(u); err != nil {
 			t.Fatalf("valid %q: %v", raw, err)

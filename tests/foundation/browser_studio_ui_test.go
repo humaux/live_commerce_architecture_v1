@@ -5,6 +5,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -17,6 +18,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
@@ -63,6 +66,17 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 		_, _ = h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.session_events WHERE session_id IN (SELECT id FROM identity.sessions WHERE principal_id=$1)`, h.lp.actor)
 	})
 	mustExec(t, h.lp.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read')`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.limited)
+	// the spec leaves Studio through nav-orders; the role-aware nav (0089, apps/admin/lib/team-model.ts) shows it only with orders:read
+	var addedOrdersRead bool // removed again only if this test added it (the live-planning fixture is shared)
+	if err := h.lp.f.owner.QueryRow(ctx, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'orders:read') ON CONFLICT DO NOTHING RETURNING true`,
+		h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor).Scan(&addedOrdersRead); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		t.Fatal(err)
+	}
+	if addedOrdersRead {
+		t.Cleanup(func() {
+			_, _ = h.lp.f.owner.Exec(context.Background(), `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='orders:read'`, h.lp.f.tenantA, h.lp.f.storeA1, h.lp.actor)
+		})
+	}
 	expiredToken := randomToken()
 	tx, err := h.lp.f.owner.Begin(ctx)
 	if err != nil {
@@ -254,7 +268,7 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 		t.Errorf("UTC schedule shifted on title edit: instant=%s err=%v evidence=%s", scheduled.UTC().Format(time.RFC3339), err, evidence)
 	}
 	var issued int
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 4 {
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 5 { // 5: STU04 x2 native + swapped login + the main case, and STU05 (bare Studio route, D02)
 		t.Errorf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
 	}
 	var resource string

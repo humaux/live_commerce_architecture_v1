@@ -1,0 +1,18 @@
+{
+  "as_of": "2026-10-03T02:09:00+08:00",
+  "source_head": "6cec5db2",
+  "environment": "local isolated REAL_PG; browser MOCK IdP/payment",
+  "commands": [
+    {"command": "bash scripts/dev/test-node.sh", "exit": 0, "evidence": "logs/test-node.log"},
+    {"command": "pnpm --filter admin exec tsc --noEmit", "exit": 0, "evidence": "logs/admin-tsc.log"},
+    {"command": "pnpm --filter storefront exec tsc --noEmit", "exit": 0, "evidence": "logs/storefront-tsc.log"},
+    {"command": "bash scripts/dev/check-gates.sh", "exit": 0, "evidence": "logs/check-gates.log"},
+    {"command": "bash scripts/dev/depmap.sh --check", "exit": 0, "evidence": "logs/depmap.log"},
+    {"command": "bash scripts/dev/test-local.sh --browser-merchant-orders-ui", "exit": 0, "cases_passed": 10, "evidence": "logs/playwright-cases.log"},
+    {"command": "bash scripts/dev/test-focused.sh '^(TestMerchantOrders|TestR2IntegrationUpgradeFromReleaseHead|TestT06WorkerAuthorityAndFunctionACL)'", "exit": 0, "passed": 12, "failed": 0, "skipped": 0, "evidence": "logs/focused-pg.log"},
+    {"command": "go test ./internal/httpapi ./internal/merchantorders ./internal/pagination", "exit": 0, "evidence": "logs/go-unit.log"}
+  ],
+  "performance": {"rows": 10000, "runs_each": 10, "limit_ms_each": 1000, "phone_last4_p50_ms": 109.286125, "phone_last4_max_ms": 142.518209, "tracking_p50_ms": 78.651166, "tracking_max_ms": 100.571167},
+  "red_green": {"test": "TestMerchantOrdersV2ReadContract", "red_exit": 1, "green_exit": 0, "red": "red/pg-contract.log", "green": "logs/pg-contract-green.log"},
+  "not_run": ["full-repo release/race suite", "provider SANDBOX and LIVE", "production performance", "M05 bulk operations", "R04 LiveKit binary input test: COMMERCE_R04_LIVEKIT_BINARY unset"]
+}

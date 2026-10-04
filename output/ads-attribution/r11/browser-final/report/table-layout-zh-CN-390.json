@@ -1,0 +1,369 @@
+[
+  [
+    {
+      "text": "来源路径",
+      "left": 41,
+      "right": 85,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 117,
+      "right": 172,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 196,
+      "right": 284,
+      "width": 88,
+      "height": 12
+    },
+    {
+      "text": "待收款订单",
+      "left": 308,
+      "right": 363,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "待收款金额",
+      "left": 387,
+      "right": 442,
+      "width": 55,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "Meta 账户日期",
+      "left": 41,
+      "right": 113.125,
+      "width": 72.125,
+      "height": 12
+    },
+    {
+      "text": "Meta 账户时区",
+      "left": 137.125,
+      "right": 209.25,
+      "width": 72.125,
+      "height": 12
+    },
+    {
+      "text": "分类",
+      "left": 250.25,
+      "right": 272.25,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "群组",
+      "left": 387.015625,
+      "right": 409.015625,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "时间（Asia/Taipei）",
+      "left": 433.015625,
+      "right": 534.28125,
+      "width": 101.265625,
+      "height": 12
+    },
+    {
+      "text": "广告花费",
+      "left": 571.375,
+      "right": 615.375,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "触达",
+      "left": 639.375,
+      "right": 661.375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "曝光",
+      "left": 685.375,
+      "right": 707.375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "点击",
+      "left": 731.375,
+      "right": 753.375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "互动",
+      "left": 777.375,
+      "right": 799.375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "评论",
+      "left": 823.375,
+      "right": 845.375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "购买次数",
+      "left": 869.375,
+      "right": 913.375,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "购买金额",
+      "left": 937.375,
+      "right": 981.375,
+      "width": 44,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "收件县市",
+      "left": 41,
+      "right": 85,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 150.421875,
+      "right": 205.421875,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 261,
+      "right": 349,
+      "width": 88,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "商品",
+      "left": 41,
+      "right": 63,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "数量",
+      "left": 327,
+      "right": 349,
+      "width": 22,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "时间（Asia/Taipei）",
+      "left": 41,
+      "right": 142.265625,
+      "width": 101.265625,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 176.40625,
+      "right": 231.40625,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 261,
+      "right": 349,
+      "width": 88,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "评论",
+      "left": 41,
+      "right": 63,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "喊单",
+      "left": 107.28125,
+      "right": 129.28125,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "结账链接",
+      "left": 168.28125,
+      "right": 212.28125,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "已付款／收款订单",
+      "left": 261,
+      "right": 349,
+      "width": 88,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "时间（Asia/Taipei）",
+      "left": 41,
+      "right": 142.265625,
+      "width": 101.265625,
+      "height": 12
+    },
+    {
+      "text": "广告花费",
+      "left": 179.359375,
+      "right": 223.359375,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "观众",
+      "left": 264.359375,
+      "right": 286.359375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "评论",
+      "left": 310.359375,
+      "right": 332.359375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "喊单",
+      "left": 356.359375,
+      "right": 378.359375,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 402.359375,
+      "right": 457.359375,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 481.359375,
+      "right": 569.359375,
+      "width": 88,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "年龄与性别",
+      "left": 41,
+      "right": 96,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "观看时间（毫秒），非人数",
+      "left": 222.5,
+      "right": 349,
+      "width": 126.5,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "地区",
+      "left": 41,
+      "right": 63,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "观看时间（毫秒），非人数",
+      "left": 222.5,
+      "right": 349,
+      "width": 126.5,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "收件县市",
+      "left": 41,
+      "right": 85,
+      "width": 44,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 150.421875,
+      "right": 205.421875,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 261,
+      "right": 349,
+      "width": 88,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "商品",
+      "left": 41,
+      "right": 63,
+      "width": 22,
+      "height": 12
+    },
+    {
+      "text": "数量",
+      "left": 327,
+      "right": 349,
+      "width": 22,
+      "height": 12
+    }
+  ],
+  [
+    {
+      "text": "时间（Asia/Taipei）",
+      "left": 41,
+      "right": 142.265625,
+      "width": 101.265625,
+      "height": 12
+    },
+    {
+      "text": "已收款订单",
+      "left": 176.40625,
+      "right": 231.40625,
+      "width": 55,
+      "height": 12
+    },
+    {
+      "text": "扣除退款后净营收",
+      "left": 261,
+      "right": 349,
+      "width": 88,
+      "height": 12
+    }
+  ]
+]

@@ -1,0 +1,15 @@
+ℹ fail 9
+ℹ pass 2
+ℹ tests 11
+✔ a webhook alone satisfies the rule (178.718292ms)
+✔ an e-mail target with a complete relay (host, username, secret) satisfies the rule (176.196625ms)
+✖ LC_ALERT_EMAIL must be one plain address ("<owner@fake.invalid>") (173.676292ms)
+✖ LC_ALERT_EMAIL must be one plain address ("a b@fake.invalid") (164.888667ms)
+✖ LC_ALERT_EMAIL must be one plain address ("not-an-address") (171.347375ms)
+✖ LC_ALERT_EMAIL must be one plain address ("owner@fake") (222.219583ms)
+✖ LC_ALERT_EMAIL must be one plain address ("two@fake.invalid,three@fake.invalid") (170.4995ms)
+✖ an e-mail target without the relay secret cannot be sent: FAIL in production, WARN elsewhere (186.25125ms)
+✖ failing tests:
+✖ outside production the same gap is only a WARN (178.178458ms)
+✖ production without any alert channel is a FAIL (nobody would hear the next outage) (232.561792ms)
+✖ the example's CHANGE_ME_SENDER placeholder is not a relay: the e-mail target cannot be sent (198.409333ms)

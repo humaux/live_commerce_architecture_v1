@@ -1,10 +1,45 @@
-import { test, expect } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { test, expect } from "./fixtures/ledger-identity";
+import { mkdir, writeFile } from "node:fs/promises";
+import type { APIRequestContext } from "@playwright/test";
+
+// This spec alone adds a realistic variant code to the disposable Go/PG
+// fixture. The real catalog projection and intrinsic table layout must create
+// the overflow; no DOM, CSS or API read response is overridden. The Go harness
+// removes the whole isolated fixture after the suite, including this product.
+async function createLongSkuFixture(request: APIRequestContext) {
+  const storeID = process.env.COMMERCE_FIXTURE_STORE_ID;
+  expect(storeID).toBeTruthy();
+  // G-UI8 audit [FIXTURE/SETUP]: fixture: creates the long-name product through the merchant BFF API
+  const product = await request.post(`/api/stores/${storeID}/products`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: {
+      name: "Rechargeable behind-the-ear hearing aid with charging case",
+      description: "Isolated browser fixture, not a real merchant product",
+      status: "active",
+    },
+  });
+  // Existing catalog bodyRoute returns 200 for successful commands.
+  expect(product.status()).toBe(200);
+  const { id } = await product.json();
+  const code = "HA-RECHARGEABLE-BTE-BLUETOOTH-CHARGER-BLACK-TW-2026";
+  // G-UI8 audit [FIXTURE/SETUP]: fixture: creates its SKU through the merchant BFF API
+  const sku = await request.post(`/api/stores/${storeID}/skus`, {
+    headers: { Origin: "http://127.0.0.1:3100", "Idempotency-Key": crypto.randomUUID() },
+    data: { product_id: id, code, price_minor: 198000 },
+  });
+  expect(sku.status()).toBe(200);
+  expect(await sku.json()).toMatchObject({ product_id: id, code });
+  return code;
+}
 
 test("ledger selection caret and scroll surface are authored and active", async ({
   page,
+  request,
 }) => {
-  await page.goto("/en");
+  const longSKU = await createLongSkuFixture(request);
+  await mkdir("output/playwright/ledger-review", { recursive: true });
+  await page.goto("/en/inventory");
+  await expect(page.getByRole("radio", { name: `Select ${longSKU}`, exact: true })).toBeVisible();
   const input = page.locator(".search-field input");
   await input.fill("Visible selection");
   await input.selectText();
@@ -29,7 +64,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
     focused: true,
   });
   await input.screenshot({
-    path: ".impeccable/review/selection-active.png",
+    path: "output/playwright/ledger-review/selection-active.png",
     caret: "initial",
   });
   await input.press("ArrowRight");
@@ -40,7 +75,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
   }));
   expect(caret).toEqual({ start: 17, end: 17, focused: true });
   await input.screenshot({
-    path: ".impeccable/review/caret-active.png",
+    path: "output/playwright/ledger-review/caret-active.png",
     caret: "initial",
   });
   await input.fill("");
@@ -48,8 +83,11 @@ test("ledger selection caret and scroll surface are authored and active", async 
   // Use real responsive widths; never inject a fake overflow or scrollbar.
   const table = page.locator(".table-scroll");
   let overflowWidth = 0;
-  for (const width of [1100, 900, 820, 740, 681]) {
+  const viewportMeasurements = [];
+  // Include the W0 fixed-rail boundary; below 1024 the drawer frees table width.
+  for (const width of [1100, 1024, 900, 820, 740, 681]) {
     await page.setViewportSize({ width, height: 992 });
+    viewportMeasurements.push(await table.evaluate((element) => ({ viewport: innerWidth, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth })));
     if (
       await table.evaluate(
         (element) => element.scrollWidth > element.clientWidth,
@@ -59,6 +97,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
       break;
     }
   }
+  await writeFile("output/playwright/ledger-review/scroll-widths.json", JSON.stringify(viewportMeasurements, null, 2) + "\n");
   expect(overflowWidth).toBeGreaterThan(0);
   await table.hover();
   await page.mouse.wheel(120, 0);
@@ -74,9 +113,9 @@ test("ledger selection caret and scroll surface are authored and active", async 
   }));
   expect(scroll.scrollbarColor).toBe("rgb(113, 134, 158) rgb(237, 242, 247)");
   expect(scroll.scrollbarWidth).toBe("thin");
-  await table.screenshot({ path: ".impeccable/review/scrollbar-active.png" });
+  await table.screenshot({ path: "output/playwright/ledger-review/scrollbar-active.png" });
   await writeFile(
-    ".impeccable/review/active-style-evidence.json",
+    "output/playwright/ledger-review/active-style-evidence.json",
     JSON.stringify({ styles, caret, overflowWidth, scroll }, null, 2),
   );
   // Next retains hidden dev-tool DOM; only visible chrome can cover the UI.

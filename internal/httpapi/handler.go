@@ -1,5 +1,7 @@
-// Package httpapi is the composition layer for authenticated admin routes.
-// Domains do not import it; they receive only the transaction and resolved Scope.
+// Package httpapi owns the composition layer for authenticated merchant/admin routes: routing,
+// bearer resolution, request bounds and error mapping. Domains do not import it; they receive only
+// the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its
+// own, and never trusts a tenant or store id from a request body.
 package httpapi
 
 import (
@@ -17,15 +19,24 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/riverqueue/river"
+	"livecommerce/internal/ads"
+	"livecommerce/internal/billing"
 	"livecommerce/internal/catalog"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/live"
 	"livecommerce/internal/merchantorders"
+	"livecommerce/internal/merchanttools"
+	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/storefrontadmin"
+	"livecommerce/internal/storefrontdomains"
 )
 
 // NewHandler keeps transport validation separate from domain invariants. There
@@ -34,8 +45,41 @@ import (
 type Options struct {
 	SessionStoreList bool
 	Accounts         *accounts.Service
-	Live             *live.MediaPlanner
-	BrowserInput     *live.BrowserInputRuntime
+	// Studio mounts the live-session planning routes (studio-v1 GET/POST/GET/PATCH) without any media
+	// subsystem (R1 ruling G2). Live non-nil implies Studio and adds the MOCK rehearsal routes;
+	// BrowserInput additionally adds the input routes.
+	Studio       bool
+	Live         *live.MediaPlanner
+	BrowserInput *live.BrowserInputRuntime
+	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
+	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
+	ClaimLabels *claims.LabelKey
+	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
+	// stripe-refund-v1 §7.1 refund routes unmounted.
+	RefundJobs *river.Client[pgx.Tx]
+	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
+	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
+	Ads *ads.Service
+	// MetaConnect is the merchant Facebook Page / Instagram connect service (cmd/api newMetaConnect; contract meta-claims-intake-v1
+	// "Merchant connect (R4)"). nil leaves the meta-connect routes unmounted.
+	MetaConnect *metaconnect.Service
+	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
+	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
+	Billing *billing.Service
+	// CVS mounts the taiwan-cvs-logistics-v1 merchant routes (§8: ECPay connection, settings, label request, print, abandon,
+	// collection, pay-at-pickup release). nil leaves them unmounted (cmd/api buildCVS).
+	CVS *fulfillment.CVS
+	// PaymentEnvironment is the deployment's payment environment, SANDBOX or LIVE (payments.ProfileEnvironment of
+	// COMMERCE_PAYMENT_PROFILE, chosen by cmd/api). The refund POST refuses an attempt of another environment
+	// (stripe-live-enable-v1 §5.2, S5). Empty means SANDBOX so pre-LIVE callers keep their behavior; any other
+	// value not in {SANDBOX, LIVE} leaves the refund routes unmounted.
+	PaymentEnvironment string
+	// ManualOrders is the merchant-created order pipeline (merchant-tools, contract G3); cmd/api builds it with the buyer surface. nil
+	// (buyer surface off) keeps the route mounted and answering 503 manual_order_unavailable, so the admin page can say why.
+	ManualOrders *merchanttools.ManualOrders
+	// StoreBaseDomain is the platform base zone (LC_STORE_BASE_DOMAIN) the merchant domain request builds CNAME targets from
+	// and refuses hostnames under (R5 unit store-domains). Empty leaves the request route mounted and answering 422.
+	StoreBaseDomain string
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -78,8 +122,23 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/products", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
 		return catalog.CreateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
-	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductInput) (any, error) {
-		return catalog.UpdateProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	// product-editor §f (unit product-core): the idempotent document save command. Create is POST /products/document (not
+	// POST /products, which stays catalog-core's frozen quick-add CreateProduct route — see output/product-core/DEVIATIONS.md);
+	// edit is PUT /products/{id}/document.
+	mux.HandleFunc("POST "+base+"/products/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentInput) (any, error) {
+		return catalog.SaveProductDocument(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	}))
+	mux.HandleFunc("PUT "+base+"/products/{product_id}/document", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductDocumentPatch) (any, error) {
+		return catalog.SaveProductEdit(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	}))
+	mux.HandleFunc("POST "+base+"/products/bulk-status", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.BulkStatusInput) (any, error) {
+		return catalog.BulkSetProductStatus(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	}))
+	mux.HandleFunc("POST "+base+"/products/{product_id}/copy", bodyRouteAs(pool, "catalog:write", catalogClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.CopyInput) (any, error) {
+		return catalog.CopyProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	}))
+	mux.HandleFunc("PATCH "+base+"/products/{product_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ProductPatch) (any, error) {
+		return catalog.PatchProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
 	mux.HandleFunc("POST "+base+"/products/{product_id}/archive", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.ArchiveProduct(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in.ExpectedVersion)
@@ -111,11 +170,33 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
 		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
 	}))
+	registerImageRoutes(mux, pool)
+	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
+	registerCatalogV2Routes(mux, pool)
 	registerSettingsRoutes(mux, pool)
 	registerSettingsDiscoveryRoutes(mux, pool)
+	registerStorefrontRoutes(mux, pool, configured.StoreBaseDomain)
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
-	registerStudioRoutes(mux, pool, configured.Live, configured.BrowserInput)
+	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
+	registerClaimRoutes(mux, pool, configured.ClaimLabels)
+	paymentEnvironment := configured.PaymentEnvironment
+	if paymentEnvironment == "" {
+		paymentEnvironment = "SANDBOX"
+	}
+	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
+	registerShipmentRoutes(mux, pool)
+	registerAdsRoutes(mux, pool, configured.Ads)
+	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
+	registerCustomerRoutes(mux, pool)
+	registerFinanceRoutes(mux, pool)
+	registerBillingRoutes(mux, pool, configured.Billing)
+	registerCVSRoutes(mux, pool, configured.CVS)
+	registerOfflinePaymentRoutes(mux, pool)
+	registerCodPaymentRoutes(mux, pool)                             // unit home-cod: cash-on-delivery settings, cod.go
+	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
+	registerPromotionRoutes(mux, pool)
+	registerNotifySettingsRoutes(mux, pool)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
@@ -218,6 +299,12 @@ func parsePage(raw string) (pagination.Request, error) {
 // bodyRoute rejects unknown fields/trailing values and caps allocation before
 // opening a database transaction. It never logs bodies or bearer credentials.
 func bodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
+	return bodyRouteAs(pool, permission, classify, fn)
+}
+
+// bodyRouteAs is bodyRoute with a route family's own error classifier (the catalog document command needs catalogClassify
+// so its refusal codes — amount_not_whole_twd / keyword_taken / live_window_open — do not read "internal").
+func bodyRouteAs[T any](pool *pgxpool.Pool, permission string, classifier func(error) (int, string), fn func(context.Context, pgx.Tx, platform.Scope, *http.Request, T) (any, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 		if err != nil || media != "application/json" {
@@ -238,13 +325,19 @@ func bodyRoute[T any](pool *pgxpool.Pool, permission string, fn func(context.Con
 			respondError(w, http.StatusBadRequest, "invalid_json")
 			return
 		}
-		scoped(pool, permission, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+		scopedAs(pool, permission, classifier, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 			return fn(ctx, tx, s, r, in)
 		})(w, r)
 	}
 }
 
 func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
+	return scopedAs(pool, permission, classify, fn)
+}
+
+// scopedAs is scoped with a route family's own error classifier (claims.go maps
+// deadlocks and unknown database errors to 503 per its frozen contract).
+func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int, string), fn action) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") || strings.ContainsAny(strings.TrimPrefix(header, "Bearer "), " \t\r\n") {
@@ -263,7 +356,7 @@ func scoped(pool *pgxpool.Pool, permission string, fn action) http.HandlerFunc {
 			if errors.Is(err, errAccountRateLimited) {
 				w.Header().Set("Retry-After", "60")
 			}
-			status, code := classify(err)
+			status, code := classifier(err)
 			respondError(w, status, code)
 			return
 		}
@@ -282,6 +375,15 @@ func classify(err error) (int, string) {
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, merchantorders.ErrUnavailable):
 		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontadmin.ErrUnavailable):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontdomains.ErrUnavailable), errors.Is(err, storefrontdomains.ErrBaseDomainMissing):
+		return http.StatusServiceUnavailable, "unavailable"
+	case errors.Is(err, storefrontdomains.ErrReservedHostname):
+		return http.StatusUnprocessableEntity, "invalid_request"
+	case errors.Is(err, storefrontdomains.ErrDomainActive), errors.Is(err, storefrontdomains.ErrDomainSuspended),
+		errors.Is(err, storefrontdomains.ErrDomainDetached), errors.Is(err, storefrontdomains.ErrDomainOwnedElsewhere):
+		return http.StatusConflict, "conflict"
 	case errors.Is(err, live.ErrStudioProjection):
 		return http.StatusServiceUnavailable, "unavailable"
 	case errors.Is(err, platform.ErrScopeNotFound):
@@ -317,10 +419,25 @@ func classify(err error) (int, string) {
 	return http.StatusInternalServerError, "internal"
 }
 
+// catalogClassify maps the catalog document command's coded refusals (internal/catalog coded.go) to their transport codes
+// before falling back to the shared classifier. Without this, amount_not_whole_twd / keyword_taken / live_window_open would
+// all read "internal" because a *catalog.Error matches none of the sentinel cases above.
+func catalogClassify(err error) (int, string) {
+	var coded *catalog.Error
+	if errors.As(err, &coded) {
+		return coded.Status, coded.Code
+	}
+	return classify(err)
+}
+
 func respondError(w http.ResponseWriter, status int, code string) {
 	httperror.Write(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
+	if raw, ok := value.(rawResponse); ok { // product-photo preview bytes (images.go)
+		writeRaw(w, raw)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)

@@ -1,0 +1,2 @@
+check-gates: ok (63 modes, all documented; every tracked test file is run)
+check-gates (minus 2 UI ratchet lines) exit=0

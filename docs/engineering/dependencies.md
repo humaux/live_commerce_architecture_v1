@@ -1,0 +1,63 @@
+# Third-party dependency register
+
+Every direct third-party dependency, why it was admitted, who imports it, and what was
+rejected instead (PROCESS.md §5). Adding a module or npm package without a row here is a
+review blocker. Transitive dependencies are governed by `go.sum` / `pnpm-lock.yaml`; the
+generated `dependency-map.md` shows which packages import what.
+
+Baseline rule (`AGENTS.md`, 架构 §3): Go stdlib + PostgreSQL first. No second transaction
+engine, no Kafka, no Redis business queue, no service mesh, no vendor SDK where a documented
+HTTP API and ~200 lines do the job (e.g. no `stripe-go`: `internal/integrations/psp/stripe`
+speaks the REST API directly so every parameter is reviewed and golden-tested).
+
+## Go modules (`go.mod`)
+
+| Module | Version | Why | Imported by | Rejected alternatives |
+| --- | --- | --- | --- | --- |
+| `golang.org/x/net` (`html`) | v0.59.0 | Strip markup from Meta's `error_user_msg` with the maintained HTML5 tokenizer before storing at most 300 Unicode characters; UI still renders only text nodes | `internal/integrations/meta_ads` | regex HTML stripping (breaks quoted `>` attributes/malformed markup); custom parser. Official API: https://pkg.go.dev/golang.org/x/net/html |
+| `github.com/jackc/pgx/v5` | v5.11.0 | PostgreSQL driver + pool; native types, `COPY`, per-tx GUCs needed for RLS scope | nearly every `internal/*` package and `cmd/*` (see dependency-map) | `database/sql` + lib/pq (no pool control, maintenance mode); ORMs (hide SQL the contracts freeze) |
+| `golang.org/x/image` | v0.46.0 | S1 B now needs real WebP decoding and maintained Catmull-Rom resampling; stdlib still encodes JPEG. Bounded 20MP decoding, no external process | `internal/catalog` (`image_sizes.go`) | hand-written resampler/WebP decoder; Next optimizer (Host and cache-key isolation failure). Official API: https://pkg.go.dev/golang.org/x/image/draw and https://pkg.go.dev/golang.org/x/image/webp |
+| `github.com/riverqueue/river` (+ `riverdriver/riverpgxv5`, `rivertype`) | v0.40.0 | Durable jobs in the same PG transaction as the business write (outbox without a second system) | `internal/jobqueue`, `internal/payments`, `internal/checkout`, `internal/live`, `internal/integrations/{core,meta}`, `cmd/api` | Kafka/Redis queues (forbidden by ADR baseline); hand-rolled `SKIP LOCKED` table (reinventing retries/leases) |
+| `github.com/coreos/go-oidc/v3` | v3.21.0 | OIDC ID-token verification for merchant login (JWKS, issuer, audience) | `internal/oidclogin` | Hand-written JWT verification (security risk); a hosted auth SDK (vendor lock-in) |
+| `golang.org/x/oauth2` | v0.37.0 | Authorization-code + PKCE exchange for OIDC | `internal/oidclogin` | Hand-written token exchange |
+| `golang.org/x/crypto` (`argon2` only) | v0.57.0 | Argon2id password hashing (`argon2.IDKey`) for merchant password principals (merchant-password-auth-v1 PD1/PD2, ruling R-1); stdlib has no memory-hard KDF | `internal/identity` (auth-core) | stdlib `crypto/pbkdf2` at 600k iterations (not memory-hard, GPU-cheap); bcrypt (72-byte limit); scrypt; hand-written Argon2 |
+| `golang.org/x/sys` (`cpu`, indirect) | v0.48.0 | Pulled in by `golang.org/x/crypto/blake2b` (used by `argon2`) for CPU feature detection on amd64 only; missing from go.sum it broke the linux/amd64 image build while arm64 dev builds passed (2026-10-01) | indirect via `golang.org/x/crypto` | none (transitive requirement of x/crypto) |
+| `golang.org/x/text` (`unicode/norm`) | v0.42.0 (raised from v0.39.0 by x/crypto v0.57.0's requirement, MVS) | NFC-normalize merchant-typed carrier names before storing/comparing (manual-fulfilment-v1 §3.1, ruling 20); was already an indirect dependency | `internal/merchantorders`; `internal/identity` (auth-core: NFC-normalize passwords before Argon2id, merchant-password-auth-v1 PD11, so the same typed password hashes identically across IMEs/OSes) | Refusing non-NFC input (hostile to CJK IMEs); hand-written Unicode tables |
+
+### Historical baseline: product photos (catalog-media, migrations/0082)
+
+At the catalog-media baseline, photo validation used only the Go standard library: `image.DecodeConfig` with the `image/jpeg` and `image/png` decoders
+(registered by blank import in `internal/catalog/images.go`) for width/height, plus magic-byte sniffing for JPEG, PNG and WebP.
+`golang.org/x/image/webp` was **not** in `go.mod` and was rejected then: a decoder dependency was not worth the two numbers it would
+add (original WebP width/height remain NULL). Original bytes are still stored as uploaded, never replaced, and no
+imaging library (resize/thumbnail) was needed then. **S1 B supersedes that dependency decision for actual decoding/resizing**, while keeping original bytes and the merchant metadata shape. No npm package was added: the admin uploader is a native `<input
+type="file">` + `FormData`, the storefront gallery a plain `<img>`.
+
+## npm packages (`package.json`, `apps/*/package.json`)
+
+| Package | Scope | Why | Used by |
+| --- | --- | --- | --- |
+| `next` 16.3.5 | admin, storefront | SSR/BFF for merchant admin and buyer storefront; BFF routes keep bearer tokens server-side | `apps/admin`, `apps/storefront` |
+| `react`, `react-dom` 19.3.0 | admin, storefront | UI runtime required by Next | both apps |
+| `@live-commerce/i18n` (workspace) | admin, storefront | Shared zh-CN / zh-TW / en message catalogs and locale routing | both apps |
+| `@playwright/test` (dev) | root | Real-browser gates (Chromium) for every page | `tests/**`, `apps/*/tests` |
+| `typescript` (dev) | root | `strict` typecheck of both apps | CI |
+| `prettier` (dev) | root | Formatting only | dev tooling |
+| `livekit-client` (dev) | root | Browser-side LiveKit publisher used only by the local R04 input probe | `scripts/dev/r04-local-input.mjs` |
+| `@types/*` (dev) | apps | Type definitions | typecheck |
+
+## External services (runtime, not packages)
+
+| Service | Host | Called from | Contract |
+| --- | --- | --- | --- |
+| Stripe API | `api.stripe.com` | `internal/integrations/psp/stripe` only (SP20 source guard) | `contracts/stripe-psp-v1.md` |
+| PAYUNi | per `contracts/payuni-wire-v1.md` | `internal/integrations/psp/payuni` only | `payuni-wire-v1.md` |
+| Meta Graph API / webhooks | `graph.facebook.com`, inbound `/v1/meta/webhooks/*` | `internal/integrations/meta` | `meta-*-v1.md` |
+| LiveKit (Egress / ingress) | configured per deployment | `internal/integrations/livekit`, `cmd/media-worker` | `livekit-*-v1.md` |
+| OIDC identity provider | owner choice (deploy blocker B2) | `internal/oidclogin` | `merchant-identity-v1.md` |
+
+## W0 shell test/runtime additions
+
+- `typescript-api` aliases TypeScript 6.0.3, dev-only: in-process compiler AST and module resolution for G-UI3/G-UI5 (including aliases, relative imports and re-exports). Build/typecheck remain on TypeScript 7.0.2, whose root export no longer exposes this API. No production bundle import.
+- `axe-core` 4.13.0, dev-only: required G-UI4 deterministic accessibility audit. Injected only by the isolated browser test; not shipped to shoppers/admin bundles. Official npm registry version verified 2026-10-02.
+- Internal `@live-commerce/ui` and `@live-commerce/format`: workspace packages, no new runtime vendor. UI uses the already pinned React 19.3.0 peer; existing helpers move to format. No generic table/forms library was added.

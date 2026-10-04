@@ -1,0 +1,146 @@
+[
+  {
+    "File": "attribution-en-390-insufficient.png",
+    "Sha256": "1bcbebca84863e580b152084cea2e4b3f0197ee74037bfb432bc05a38a109c61",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-not-authorized.png",
+    "Sha256": "a339bd61a81bed06990e0fba686e6b1cda49375a6ec73a2d0c869122b1060e00",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-unknown-draft.png",
+    "Sha256": "49aef0b68ebf2336faf21de459eac1b78dfbdcd3f443f63e1ddda36a265c2828",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390.png",
+    "Sha256": "9b4d334573526d0bdf92ad234a648cd61cdfa6c97e7c194be48829e3cea13fcd",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-1586-insufficient.png",
+    "Sha256": "e46cf8ea95cfb4cc79395d1d4fd0500f53b480fddc34175deadee36da155ec54",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-not-authorized.png",
+    "Sha256": "7ea482f9c8e47881ef7de4ee4ea57f7e3b05b01e50b00dfc0b3cb3661bb8e9a8",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-unknown-draft.png",
+    "Sha256": "e92668d8896ef72417162ba0e1f37661819cfa6be88fbfd77ada630961c68284",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586.png",
+    "Sha256": "09a89582879d2ff76686c1a326f6ea38e4c642913434601a534d6387c3e14a85",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-390-insufficient.png",
+    "Sha256": "0c09111425fe057400c74defc33f704b45ae04e47cf73335e86903b6596ed103",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-not-authorized.png",
+    "Sha256": "0be398280866c0e020a4e76014de1655df01e2b9956dba20e39a1efa642a5d55",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-unknown-draft.png",
+    "Sha256": "3a27dc6fca6210f41ea75e6181ef07efc38bbd6a441ee2b3562f365de4e1b49f",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390.png",
+    "Sha256": "54baacbcbab7527b49ffb74e815c8b03e271c602f7691fa769cee6654a2056e7",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-1586-insufficient.png",
+    "Sha256": "ef528c1f111b733afcc2be9cfafc65ecfd6197ee5ec36754d201fb070489cd03",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-not-authorized.png",
+    "Sha256": "ed25d0e1acc8bd3225d295b39492463469cd3651f7b8766b9ded2b96721c4346",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-unknown-draft.png",
+    "Sha256": "e7ec051bc1cd1e58e3f2ce3c067ad4ab295d743c7fe7e255521d79c7187fde03",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586.png",
+    "Sha256": "dcaeb7f6111a8692c04bd5202192717f03e79a637f1ed06294be76b914de8e65",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-390-insufficient.png",
+    "Sha256": "fc1e645999e5bb378062bdf86845c1d19ca86cbb347eae961586f2009c988ef4",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-not-authorized.png",
+    "Sha256": "8a1d00c43b9cc84b07cbaf567dbc9c557f01e8c8b23e0a44e2aed094da6df9f9",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-unknown-draft.png",
+    "Sha256": "61aa429f36165f09ecc7d705b8e3d1183adb667d2d6c67e39cb3f0ad07c07c98",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390.png",
+    "Sha256": "27a9e994275cc96dd3ae57c64c0a82d858142319ba286d962c30f0d82cd0e35f",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-1586-insufficient.png",
+    "Sha256": "3ee621be6c56050541c8ac101ea7c04c8615c27c910d8bc2af2d0a9e2899a469",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-not-authorized.png",
+    "Sha256": "f89f78feb4837e3763038136079a8940ddff5e594d290bb1acc4b5c7f6633db3",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-unknown-draft.png",
+    "Sha256": "f991066103c09a6f5e98be31ce676881514a098331729d099cd832b19b6fabd5",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586.png",
+    "Sha256": "e69cb4ec13440138f7335af7f26b88a2a3db4a873dfd7dab81c29ed70ba74bad",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  }
+]

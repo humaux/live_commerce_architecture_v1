@@ -1,0 +1,59 @@
+{
+  "source": "6c6c3fb397dd8c6ae8c291f3d751c1eedbc6ac89",
+  "topLevelPass": 2032,
+  "allPassRecords": 6749,
+  "allFailRecords": 0,
+  "skips": [
+    "--- SKIP: TestStripeSP16Sandbox (0.00s)",
+    "--- SKIP: TestCustomersBillingCB10Sandbox (0.00s)",
+    "--- SKIP: TestMailPA12SMTPProbe (0.00s)",
+    "    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)",
+    "--- SKIP: TestMetaAdsSandboxS1 (0.00s)",
+    "--- SKIP: TestMetaAdsSandboxS2 (0.00s)",
+    "--- SKIP: TestMetaAdsSandboxS3 (0.00s)",
+    "--- SKIP: TestMetaAdsSandboxS4 (0.00s)",
+    "--- SKIP: TestMetaClaimsMCI11LiveReadOnlyProbes (0.00s)",
+    "--- SKIP: TestStripeSL08RestrictedKey (0.00s)",
+    "--- SKIP: TestStripeRF10Sandbox (0.00s)",
+    "    --- SKIP: TestStripeRF03Schema/populated_upgrade_from_0061 (0.00s)",
+    "    --- SKIP: TestStripeSP21Registrar/sandbox_probe_against_real_stripe (0.00s)"
+  ],
+  "preflight": [
+    {
+      "at": "2026-10-04T07:27:13Z",
+      "one": 3.30419921875,
+      "five": 4.27294921875,
+      "fifteen": 5.1328125,
+      "cpus": 10
+    },
+    {
+      "at": "2026-10-04T07:27:43Z",
+      "one": 2.73828125,
+      "five": 4.0390625,
+      "fifteen": 5.01708984375,
+      "cpus": 10
+    },
+    {
+      "at": "2026-10-04T07:28:13Z",
+      "one": 2.98828125,
+      "five": 3.99658203125,
+      "fifteen": 4.9677734375,
+      "cpus": 10
+    }
+  ],
+  "logicalCPUs": 10,
+  "sampleCount": 134,
+  "firstSample": "2026-10-04T07:28:13Z",
+  "lastSample": "2026-10-04T08:34:46Z",
+  "oneMinute": {
+    "median": 5.21,
+    "max": 37.61,
+    "atOrAboveLogicalCPUs": 11
+  },
+  "fiveMinute": {
+    "median": 5.785,
+    "max": 13.2,
+    "atOrAboveLogicalCPUs": 10
+  },
+  "continuouslyBelowLogicalCPUs": false
+}

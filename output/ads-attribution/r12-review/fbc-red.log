@@ -1,0 +1,68 @@
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (10.989167ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.215166ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.184459ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (0.948208ms)
+✖ AT1: a later valid click replaces the draft but preserves the browser identifier (0.436833ms)
+✖ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.148625ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (0.497ms)
+✔ AT1: host and key binding reject copied cookies (0.167125ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.146042ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.170458ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 8
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 112.975083
+
+✖ failing tests:
+
+test at apps/storefront/tests/ad-touch.test.mjs:51:1
+✖ AT1: a later valid click replaces the draft but preserves the browser identifier (0.436833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'fb.1.1800000001000.synthetic-click_01'
+  - 'fb.1.1800000000000.synthetic-click_01'
+                   ^
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:58:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'fb.1.1800000001000.synthetic-click_01',
+    expected: 'fb.1.1800000000000.synthetic-click_01',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/ad-touch.test.mjs:61:1
+✖ R10: only a different fbclid replaces fbc and its first-seen timestamp (0.148625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'fb.1.1800000001000.synthetic-click_01'
+  - 'fb.1.1800000000000.synthetic-click_01'
+                   ^
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/storefront/tests/ad-touch.test.mjs:64:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'fb.1.1800000001000.synthetic-click_01',
+    expected: 'fb.1.1800000000000.synthetic-click_01',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -123,12 +123,9 @@ func psSetupItemsOn(t *testing.T, base *testFixture, skuCount int, historical ..
 		t.Fatal(e)
 	}
 	t.Cleanup(pool.Close)
-	worker, e := platform.OpenWorkerPool(ctx, bcRole(t, &f, "commerce_worker"))
-	if e != nil {
-		t.Fatal(e)
-	}
-	t.Cleanup(worker.Close)
-	b := bcHarness{cqHarness: h, pool: pool, worker: worker, service: bcServiceIn(t, pool, expirySchema), delivery: delivery, allocation: allocation, poolURL: poolURL}
+	worker := waOpen(t, &f, waPayment, platform.WorkerPayment)
+	expiry := waOpen(t, &f, waExpiry, platform.WorkerExpiry)
+	b := bcHarness{cqHarness: h, pool: pool, worker: worker, expiry: expiry, service: bcServiceIn(t, pool, expirySchema), delivery: delivery, allocation: allocation, poolURL: poolURL}
 	items := make([]storefront.Item, skuCount)
 	for i := range items {
 		items[i] = storefront.Item{SKUID: h.stock.skus[skuCount-1-i].ID, Quantity: 2}
@@ -326,7 +323,7 @@ func TestBuyerPaymentAdmissionDenials(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := psSetup(t)
 			if tc.sql != "" {
-				mustExec(t, p.f.owner, tc.sql, p.f.tenantA)
+				qualExec(t, p.f.owner, tc.sql, p.f.tenantA) // some rows rewind the qualification (revoke-only trigger, 0077)
 			}
 			switch tc.name {
 			case "rotated_credential":
@@ -427,7 +424,7 @@ func TestBuyerPaymentFinalWaitGate(t *testing.T) {
 				mustExec(t, p.f.owner, `SELECT pg_sleep(GREATEST(0,extract(epoch FROM $1::timestamptz-clock_timestamp()))+0.02)`, expiry)
 				want = buyer.ErrUnauthorized
 			case "qualification":
-				mustExec(t, p.f.owner, `UPDATE payments.account_qualifications SET observed_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, p.proof)
+				qualExec(t, p.f.owner, `UPDATE payments.account_qualifications SET observed_at=clock_timestamp()-interval '2 hours',expires_at=clock_timestamp()-interval '1 hour' WHERE id=$1`, p.proof)
 			case "market":
 				mustExec(t, p.f.owner, `UPDATE pricing.markets SET active=false WHERE id=$1`, p.market.ID)
 			}
@@ -451,7 +448,7 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 	if e := p.f.owner.QueryRow(context.Background(), `SELECT 'checkout.start_payment(bytea,uuid,text,bytea,uuid,text,bigint,text,uuid,bigint)'::regprocedure::oid,'payments.account_qualifications'::regclass::oid,'integration.account_credentials'::regclass::oid`).Scan(&functionOID, &proofOID, &credentialOID); e != nil {
 		t.Fatal(e)
 	}
-	for _, pool := range []*pgxpool.Pool{p.f.runtime, p.a.runtime, p.worker} {
+	for _, pool := range []*pgxpool.Pool{p.f.runtime, p.a.runtime, p.worker, p.expiry} {
 		var allowed bool
 		if e := pool.QueryRow(context.Background(), `SELECT has_function_privilege(current_user,$1::oid,'EXECUTE')`, functionOID).Scan(&allowed); e != nil || allowed {
 			t.Fatalf("wrong SQL authority allowed %v", e)
@@ -489,7 +486,8 @@ func TestBuyerPaymentAuthorityAndDispatcherFence(t *testing.T) {
 	}
 	route.Reconcile = route.Dispatch
 	queue := "ps_fence_" + t04Tag()
-	client := t06StartDispatcher(t, p.worker, queue, []integration.DispatchRoute{route}, t06DispatchOptions())
+	// T21-02: the generic dispatcher host is the claims worker, whose lane excludes payment operations entirely.
+	client := t06StartDispatcher(t, waOpen(t, p.f, waClaims, platform.WorkerClaims), queue, []integration.DispatchRoute{route}, t06DispatchOptions())
 	job, e := client.Insert(context.Background(), t06DuplicateOperationArgs{OperationID: out.OperationID, Version: 1}, &river.InsertOpts{Queue: queue, MaxAttempts: 1})
 	if e != nil {
 		t.Fatal(e)
@@ -544,7 +542,7 @@ func TestBuyerPaymentQualificationExpiresDuringFinalWrite(t *testing.T) {
 		t.Fatal(e)
 	}
 	var expiry time.Time
-	if e = p.f.owner.QueryRow(context.Background(), `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '600 milliseconds' WHERE id=$1 RETURNING expires_at`, p.proof).Scan(&expiry); e != nil {
+	if e = qualUpdateScan(context.Background(), p.f.owner, `UPDATE payments.account_qualifications SET expires_at=clock_timestamp()+interval '600 milliseconds' WHERE id=$1 RETURNING expires_at`, []any{p.proof}, &expiry); e != nil {
 		t.Fatal(e)
 	}
 	done := make(chan error, 1)
@@ -575,7 +573,7 @@ func TestBuyerPaymentFreshSessionAndQualificationAuthority(t *testing.T) {
 	if e = p.f.owner.QueryRow(context.Background(), `SELECT 'payments.account_qualifications'::regclass::oid`).Scan(&proofOID); e != nil {
 		t.Fatal(e)
 	}
-	for _, pool := range []*pgxpool.Pool{p.f.runtime, p.a.runtime, p.worker, p.pool} {
+	for _, pool := range []*pgxpool.Pool{p.f.runtime, p.a.runtime, p.worker, p.expiry, p.pool} {
 		for _, priv := range []string{"INSERT", "UPDATE", "DELETE"} {
 			var allowed bool
 			if e = pool.QueryRow(context.Background(), `SELECT has_table_privilege(current_user,$1::oid,$2)`, proofOID, priv).Scan(&allowed); e != nil || allowed {
@@ -610,7 +608,7 @@ func TestBuyerPaymentExpiredHoldRace(t *testing.T) {
 		<-ready
 		var disposition string
 		var retry *time.Time
-		e := p.worker.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, p.hold.OrderID).Scan(&disposition, &retry)
+		e := p.expiry.QueryRow(context.Background(), `SELECT disposition,retry_at FROM checkout.expire_held($1,1)`, p.hold.OrderID).Scan(&disposition, &retry)
 		if e != nil {
 			expired <- "ERROR"
 		} else {

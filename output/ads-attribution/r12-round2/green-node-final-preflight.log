@@ -1,0 +1,36 @@
+✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (1.543792ms)
+✔ R11 durable receipt journal validates phase against exact operation state (0.591333ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in en (4.22525ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.690167ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.56975ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.242292ms)
+✔ R12 read hook keeps network UNKNOWN on one key and explicitly refreshes acknowledged UNKNOWN (10.950208ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (26.969584ms)
+✔ R11 large linked-draft list is complete but collapsed in en (49.599625ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-TW (3.599459ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-CN (3.497042ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (3.701334ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (1.701459ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (1.680167ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.139ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (12.742458ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (9.732375ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (9.550041ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.196375ms)
+✔ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.201042ms)
+✔ R12 granted but unread audience offers a read, never reconnect in en (1.398167ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-TW (1.383416ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-CN (1.362125ms)
+✔ I12 forged / missing frozen fields never silently become zeros (1.223167ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.054792ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.284833ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.226ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.095625ms)
+ℹ tests 28
+ℹ suites 0
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 425.384375

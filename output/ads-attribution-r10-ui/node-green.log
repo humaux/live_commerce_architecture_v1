@@ -1,0 +1,24 @@
+✔ READY is the only acknowledgement; missing/forged operation/state remains unknown (0.69125ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.212417ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (16.375625ms)
+✔ R10 ROAS has exactly two decimals in en (10.870791ms)
+✔ R10 unknown ROAS is never fabricated as zero in en (0.07275ms)
+✔ R10 ROAS has exactly two decimals in zh-TW (0.149791ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-TW (0.03575ms)
+✔ R10 ROAS has exactly two decimals in zh-CN (0.118583ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-CN (0.029833ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (2.780792ms)
+✔ R8: null stays unknown and unauthorised / insufficient remain different states (0.21625ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.939417ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.111959ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.352666ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.254333ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.130833ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 95.717

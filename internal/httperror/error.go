@@ -58,6 +58,112 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
 		"internal": "Request could not be completed.",
+		// meta-ads-v1 §7 / internal/ads frozenStatus: every frozen ads refusal code must be listed here or the
+		// merchant sees "internal" (found by MA04; internal/ads TestFrozenCodesSurviveHTTPError guards the drift).
+		"state_mismatch":           "This Meta connection attempt does not belong to this session.",
+		"state_expired":            "This Meta connection attempt expired.",
+		"meta_connect_failed":      "Meta could not complete the connection.",
+		"not_in_pick_list":         "That ad account or dataset was not offered by Meta for this login.",
+		"client_business_changed":  "This ad account now belongs to a different Meta business.",
+		"revision_changed":         "The draft changed since it was loaded.",
+		"draft_approved":           "An approved draft cannot be edited.",
+		"over_allowance":           "The budget exceeds the store's ads allowance.",
+		"attempt_changed":          "The publish attempt changed since it was loaded.",
+		"prior_attempt_not_paused": "An earlier attempt is not confirmed paused.",
+		"budget_below_minimum":     "The budget is below the minimum.",
+		"not_whole_unit":           "The budget must be a whole currency unit.",
+		"currency_mismatch":        "The currency does not match the ad account.",
+		"starts_too_soon":          "The start time is too soon.",
+		"binding_disabled":         "The Meta ads connection is not enabled.",
+		"source_not_owned":         "That post does not belong to this store's connection.",
+		"product_not_published":    "The product is not published.",
+		// meta-connect (merchant Facebook Page / Instagram connect, internal/metaconnect frozenStatus): codes not already listed above;
+		// internal/metaconnect TestFrozenCodesSurviveHTTPError guards the drift.
+		"state_used":         "That Meta connection attempt was already completed.",
+		"missing_permission": "A required Facebook permission or Page access is missing.",
+		"cap_exceeded":       "This store has reached the limit of 10 connected Facebook Pages.",
+		"page_taken":         "That Facebook Page is already connected to another store.",
+		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
+		"refundable_changed":    "Refundable amount changed since it was loaded.",
+		"exceeds_refundable":    "Amount exceeds the refundable amount.",
+		"amount_step":           "Amount is not a valid step for this currency.",
+		"not_refundable":        "Order cannot be refunded.",
+		"refund_blocked_review": "Refund is blocked by an open payment review.",
+		"refund_limit":          "Refund limit reached for this payment.",
+		// manual-fulfilment-v1 §5.1.
+		"version_changed":       "This item changed since it was loaded.",
+		"not_shippable":         "Order cannot be shipped in its current state.",
+		"invalid_carrier":       "Carrier is not valid.",
+		"invalid_tracking":      "Tracking number is not valid.",
+		"invalid_url":           "Tracking URL is not valid.",
+		"void_requires_shipped": "Only a shipped record can be voided.",
+		"invalid_void":          "Void request is not valid.",
+		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
+		"ecpay_probe_failed": "ECPay rejected the keys or could not be reached.", "invalid_sender": "Sender name or mobile number is not valid.",
+		"ecpay_environment_not_allowed": "This ECPay environment is not allowed on this deployment.",
+		"not_qualified":                 "The ECPay connection has not passed its check with the current keys.",
+		"another_profile_enabled":       "Another ECPay connection of this store is enabled.", "merchant_id_changed": "The ECPay merchant id cannot change on rotation.",
+		"connection_unavailable": "No usable ECPay connection for this store.", "no_cvs_destination": "The order has no ECPay-verified pickup store.",
+		"cvs_recipient_rejected":   "The recipient name or mobile number does not meet the ECPay rules.",
+		"cvs_environment_mismatch": "The pickup store or connection belongs to another ECPay environment.",
+		"cvs_amount_exceeds":       "The amount is outside the ECPay convenience-store limits.", "cvs_source_mismatch": "This store source cannot be used with this delivery service.",
+		"print_unsupported": "This label cannot be printed here.", "not_created": "No label has been created for this order yet.",
+		"ecpay_shows_movement": "ECPay shows the parcel is not unmoved; it cannot be abandoned.", "ecpay_trade_found": "ECPay has this shipment; it was recorded as created.",
+		"not_lapsed": "The ECPay order has not lapsed yet.", "reconcile_in_progress": "The shipment is still being reconciled with ECPay.",
+		"acknowledgement_required": "Confirm that you checked the ECPay back office.", "attempt_in_flight": "A label request is still in progress.",
+		"cvs_attempt_in_flight": "A label request may already be at ECPay.", "not_abandonable": "This shipment can no longer be abandoned.",
+		"invalid_settings": "The convenience-store settings are not valid.", "not_pay_at_pickup": "The order is not a pay-at-pickup order.",
+		"not_shipped": "The order has not been shipped.", "collection_state_changed": "The collection state changed since it was loaded.",
+		"parcel_not_returned": "The parcel has not been returned yet.", "parcel_not_picked_up": "The parcel has not been picked up yet.", "not_cancellable": "The order can no longer be cancelled.",
+		"idempotency_conflict": "This request key was already used for a different request.",
+		"bad_return_path":      "The return page is not allowed.", "bad_return_origin": "The storefront origin is not allowed.",
+		"service_unavailable": "This delivery service is not available.", "selection_replay_new_key": "Start the store selection again.",
+		"bad_store_code": "The store number is not valid for this chain.", "bad_store_name": "The store name is not valid.",
+		"bad_store_address": "The store address is not valid.", "pay_at_pickup_unavailable": "Pay at pickup is not available for this order.",
+		"pay_at_pickup_amount_exceeds": "The amount is outside the pay-at-pickup limit.", "card_unavailable": "Card payment is not available for this store.", "pay_at_pickup_limit": "Too many pay-at-pickup orders are open.",
+		// storefront-v2 §C (unit checkout-offline): bank_transfer placement, proof, merchant confirm/reject/refund. Coded 422/409 of the 0088 definers.
+		"bank_transfer_unavailable": "Bank transfer is not available for this order.", "not_bank_transfer": "The order is not a bank-transfer order.",
+		"transfer_not_open": "This transfer is no longer open.", "transfer_window_closed": "The transfer window has ended.",
+		"invalid_proof": "The transfer details are not valid.", "invalid_reason": "The rejection reason is not valid.", "transfer_not_submitted": "The buyer has not submitted transfer details.",
+		"already_confirmed": "The transfer was already confirmed.", "already_refunded": "The transfer was already refunded.",
+		"transfer_not_confirmed": "The transfer has not been confirmed.",
+		// 0099 K3-02: the offline-refund restock choice.
+		"already_shipped": "The order was already handed over; its stock cannot be restocked here.", "restock_unavailable": "The reserved stock of this order cannot be released.",
+		// home-cod R5 (migration 0107): cash_on_delivery placement refusals of the begin_hold COD branch.
+		"cash_on_delivery_unavailable": "Cash on delivery is not available for this order.", "cash_on_delivery_amount_exceeds": "The amount is outside the cash-on-delivery limit.",
+		"cash_on_delivery_limit": "Too many cash-on-delivery orders are open.",
+		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
+		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
+		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",
+		"promo_used_up": "This discount code has been fully used.", "promo_buyer_limit": "You have already used this discount code the maximum number of times.",
+		"promo_changed": "The discount code changed; refresh the quote and try again.",
+		"promo_exists":  "A discount code with this text already exists.", "invalid_promotion": "The discount code settings are not valid.",
+		// meta-claims-intake-v1 §2 / claim-source unit: comment source binding (version_changed above is shared).
+		"input_invalid":      "The pasted link or id is not a supported Facebook or Instagram post.",
+		"input_unresolvable": "This link cannot be resolved without Meta; paste the numeric post or media id.",
+		"binding_missing":    "No enabled Meta connection is ready for this post.",
+		"binding_ambiguous":  "Several Meta connections are enabled; the post cannot be assigned to one.",
+		"source_conflict":    "This post already feeds another live session.",
+		"page_token_missing": "Private replies need a registered Page token for this connection.",
+		// customers-billing-v1 §5/§6 (customers-core): consent, export and erasure.
+		// idempotency_conflict: shared, declared with the CVS codes above.
+		"erasure_blocked":  "Erasure is blocked while a hold, payment or refund is in progress.",
+		"erased":           "This data has been erased.",
+		"export_too_large": "The export is too large to generate.",
+		// customers-billing-v1 §5 / billing-core B2, B12: platform billing.
+		"billing_unavailable": "Billing is temporarily unavailable.",
+		"billing_restricted":  "New claim windows are paused until billing is up to date.",
+		"subscription_exists": "This store already has a subscription.",
+		"no_billing_customer": "No billing account exists for this store yet.",
+		// storefront-v2 section G (unit merchant-tools): manual (merchant-created) orders and the product CSV export. Placement refusals reuse the
+		// 0088/CVS codes above (bank_transfer_unavailable, pay_at_pickup_unavailable, insufficient_inventory, idempotency_conflict, export_too_large).
+		"manual_order_unavailable": "Creating orders from the admin is not available on this deployment.",
+		"cvs_entry_unavailable":    "This convenience-store service needs the store to be chosen from the map.",
+		// product-editor §f (unit product-core, internal/catalog coded.go): the A6 document command refusals. Every catalog
+		// code must be listed here or the merchant sees "internal" (catalogClassify checks *catalog.Error first).
+		"amount_not_whole_twd": "For TWD the price must be a whole dollar.",
+		"keyword_taken":        "That keyword is already used by another SKU.",
+		"live_window_open":     "This product cannot be unlisted while its live window is open.",
 	}
 	message, ok := messages[code]
 	if !ok {

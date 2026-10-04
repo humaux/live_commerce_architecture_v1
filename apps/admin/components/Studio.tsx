@@ -13,6 +13,8 @@ import {
 } from "@/lib/studio-client";
 import type { AspectRatio, Draft, StudioDetail, StudioPage } from "@/lib/studio-model";
 import { studioCopy } from "@/lib/studio-copy";
+import { displayTime } from "@/lib/orders-model";
+import { instantToTaipei, taipeiToInstant } from "@/lib/promotions-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 
 type Status = "initial" | "loading" | "ready" | "hidden" | StudioErrorCode;
@@ -67,22 +69,16 @@ function studioURL(locale: Locale, store: string, cursor = "", scene = "") {
 }
 function formOf(draft: Draft): Form {
   return { id: draft.session_id, title: draft.title,
-    scheduled: utcMinute(draft.scheduled_at), aspect: draft.aspect_ratio };
-}
-function utcMinute(value: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 16) : "";
-}
-function time(locale: Locale, value: string) {
-  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(value));
+    scheduled: instantToTaipei(draft.scheduled_at), aspect: draft.aspect_ratio };
 }
 function draftInput(form: Form): DraftInput | null {
   if (form.title.trim() !== form.title || Array.from(form.title).length < 1 ||
     Array.from(form.title).length > 200 || /[\p{Cc}]/u.test(form.title)) return null;
   if (form.scheduled) {
     if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(form.scheduled)) return null;
-    const date = new Date(`${form.scheduled}:00Z`);
-    if (!Number.isFinite(date.getTime()) || date.toISOString().slice(0, 16) !== form.scheduled ||
+    // M06: the merchant types Taipei wall time (promotions-model helpers); the wire stays a UTC instant, as before.
+    const date = new Date(taipeiToInstant(form.scheduled) ?? NaN);
+    if (!Number.isFinite(date.getTime()) || instantToTaipei(date.toISOString()) !== form.scheduled ||
       date.getUTCFullYear() < 2000 || date.getUTCFullYear() > 2199) return null;
     return { title: form.title, scheduled_at: date.toISOString(), aspect_ratio: form.aspect };
   }
@@ -117,6 +113,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const [pageReload, setPageReload] = useState(0);
   const [detailReload, setDetailReload] = useState(0);
   const [pinnedScene, setPinnedScene] = useState({ scope: "", id: "" });
+  // Last media_enabled the API reported (GET detail). Hidden until the API says media is on (R1 ruling G2).
+  const [mediaOn, setMediaOn] = useState(false);
   const pageEpoch = useRef(0);
   const detailEpoch = useRef(0);
   const actionEpoch = useRef(0);
@@ -140,19 +138,25 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const currentDetail = detail.key === detailKey && (!cookie.current || csrfCookie() === cookie.current)
     ? detail : { key: detailKey, status: "initial" as Status, data: null };
   const shown = newMode ? null : currentDetail.data;
+  useEffect(() => { if (currentDetail.data) setMediaOn(currentDetail.data.media_enabled); }, [currentDetail.data]);
   const formDirty = newMode ? (form.title !== "" || form.scheduled !== "" || form.aspect !== blank.aspect) :
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
-      form.scheduled !== utcMinute(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
+      form.scheduled !== instantToTaipei(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
-  const volatile = useRef({ scope, scene, route, selectedID, form, newMode, actionError, formError });
-  volatile.current = { scope, scene, route, selectedID, form, newMode, actionError, formError };
+  const volatile = useRef({ scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError });
+  volatile.current = { scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError };
   const recoveryElsewhere = !!historyRecovery && !sameRecovery(historyRecovery, scope, scene);
   const recoveryGuard = hidden.current || sameRecovery(historyRecovery, scope, scene);
   const recoveryRoute = recoveryElsewhere ? historyRecovery?.route : null;
   useEffect(watchRecoverySession, []);
   useEffect(() => { explicitDeparture.current = false; }, [scope, scene]);
 
+  // D02 (G-UI8): `clear` must keep ONE identity for the life of the page. It used to close over scope and detailKey; detailKey carries the
+  // selected scene id, which comes from the page data, and loadPage resets that data on every run. So page data arriving changed `clear`, which
+  // re-created loadPage, whose effect reset the data again: an endless re-fetch of live-sessions (~370 a second) that never left "Loading scenes...".
+  // It now reads both from the latest render through `volatile`.
   const clear = useCallback((status: Status, block = false) => {
+    const { scope, detailKey } = volatile.current;
     revealEpoch.current++;
     pageEpoch.current++;
     detailEpoch.current++;
@@ -175,7 +179,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       setPinnedScene({ scope: "", id: "" });
       setBusy(false);
     });
-  }, [scope, detailKey]);
+  }, []);
 
   function retainHistory() {
     if (explicitDeparture.current) return;
@@ -569,7 +573,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     if (newMode) void perform("create", input, "");
     else if (shown?.can_manage && shown.draft.state === "DRAFT")
       void perform("edit", { ...input,
-        scheduled_at: form.scheduled === utcMinute(shown.draft.scheduled_at)
+        scheduled_at: form.scheduled === instantToTaipei(shown.draft.scheduled_at)
           ? shown.draft.scheduled_at : input.scheduled_at,
         expected_version: shown.draft.version }, shown.draft.session_id);
   }
@@ -584,6 +588,13 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const canStart = !!shown?.can_manage && shown.draft.state === "DRAFT" && !!prepared && preparedCurrent && !attempt && !formDirty && !actionBlocked;
   const canStop = !!shown?.can_manage && !!attempt && !attempt.stop_requested && !attempt.escalated && attempt.resource_state !== "TERMINAL" && !actionBlocked;
   const canEdit = !recoveryElsewhere && !recoveryGuard && (newMode || (!!shown?.can_manage && shown.draft.state === "DRAFT"));
+  // Planning-only Studio (media_enabled=false) has no rehearsal column; save errors stay visible below the editor.
+  const actionAlert = actionError && <div role="alert" className="studio-action-error">
+    <p>{actionMessage(actionError)}</p>
+    {actionError === "uncertain" && pending.current && <button type="button" disabled={busy}
+      onClick={() => { const value = pending.current; if (value) void perform(value.action, value.body, value.sessionID, value); }}>
+      {c.retrySame}</button>}
+  </div>;
 
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
     <div className="studio-page" data-testid="merchant-studio">
@@ -593,6 +604,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {stores.length > 1 && <label>{c.store}<select value={storeID} onChange={(event) => {
             previous.current = []; navigate(event.target.value, "", "");
           }}>{stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+          {shown && <button type="button" className="studio-refresh" data-testid="studio-open-claims"
+            onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/claims?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(shown.draft.session_id)}`); }}>
+            {c.claims}</button>}
           <button type="button" className="studio-refresh" onClick={refresh}>{c.refresh}</button>
         </div>
       </header>
@@ -604,7 +618,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {locale === "zh-CN" ? "返回待处理场次" : locale === "zh-TW" ? "返回待處理場次" : "Return to session"}
         </button>
       </p>}
-      <div className="studio-surface">
+      <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`}>
         <section className="studio-scenes" aria-label={c.scenes}>
           <button type="button" className="primary studio-new" disabled={recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || currentPage.status === "forbidden" || shown?.can_manage === false}
             onClick={newScene}>＋ {c.newScene}</button>
@@ -616,7 +630,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
                 onClick={() => { navigate(storeID, cursor, item.session_id); }}>
                 <strong>{item.title}</strong><span>{c.state[item.state as keyof typeof c.state] ?? item.state}</span>
-                <small>{item.scheduled_at ? time(locale, item.scheduled_at) + " UTC" : c.schedule}</small>
+                <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
               </button>)}
             </div>
             <div className="studio-pager">
@@ -665,7 +679,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <div className="studio-version">
               <h3>{c.version}</h3>
               {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
-                <span>{c.savedAt}: {time(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
+                <span>{c.savedAt}: {displayTime(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
             </div>
             {!canEdit && shown && !recoveryElsewhere && !recoveryGuard && <p className="studio-note">{shown.can_manage ? c.notDraftEditable : c.readOnly}</p>}
             {formDirty && <p className="studio-dirty">{c.unsaved}</p>}
@@ -675,15 +689,16 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           </> : currentDetail.status === "loading" && currentPage.status === "ready" ?
             <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
             <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
+          {!mediaOn && actionAlert}
         </section>
-        <aside className="studio-status" aria-label={c.rehearsal}>
+        {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
           <div className="studio-status-title"><h2>{c.rehearsal}</h2><span>MOCK</span></div>
           <p className="studio-notice">{c.localOnly}</p>
           {shown ? <>
             <section className="studio-fact">
               <h3>{c.prepared}</h3>
               {prepared ? <>
-                <p className="studio-muted">{preparedCurrent ? `${c.preparedUntil}: ${time(locale, prepared.start_before)}` : c.expiredPrepared}</p>
+                <p className="studio-muted">{preparedCurrent ? `${c.preparedUntil}: ${displayTime(locale, prepared.start_before)}` : c.expiredPrepared}</p>
               </> : !attempt ? <p className="studio-muted">{c.noPrepared}</p> : null}
               {(prepared || attempt) && <><p className="studio-destination-label">{c.destinations}</p>
                 <ul>{(prepared?.destinations ?? attempt!.destinations).map((item) => <li key={item.ordinal}>
@@ -701,7 +716,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? attempt.operation_state}</dd></div>
                 <div><dt>{c.resource}</dt><dd>{c.resourceState[attempt.resource_state]}</dd></div>
                 <div><dt>{c.transport}</dt><dd>{attempt.transport_status || c.noTransport}</dd></div>
-                <div><dt>{c.statusAt}</dt><dd>{time(locale, attempt.updated_at)}</dd></div>
+                <div><dt>{c.statusAt}</dt><dd>{displayTime(locale, attempt.updated_at)}</dd></div>
                 {attempt.cleanup_required && <div><dt>{c.cleanup}</dt><dd>{c.yes}</dd></div>}
                 {attempt.stop_requested && <div><dt>{c.stopRequested}</dt><dd>{c.yes}</dd></div>}
                 {attempt.escalated && <div className="studio-escalated"><dt>{c.escalated}</dt><dd>{c.yes}</dd></div>}
@@ -718,13 +733,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               }}>{busy ? c.working : attempt ? c.stop : c.start}</button>
             {!shown.can_manage && <p className="studio-muted">{c.readOnly}</p>}
           </> : <p className="studio-panel-message">{newMode ? c.noPrepared : c.noAttempt}</p>}
-          {actionError && <div role="alert" className="studio-action-error">
-            <p>{actionMessage(actionError)}</p>
-            {actionError === "uncertain" && pending.current && <button type="button" disabled={busy}
-              onClick={() => { const value = pending.current; if (value) void perform(value.action, value.body, value.sessionID, value); }}>
-              {c.retrySame}</button>}
-          </div>}
-        </aside>
+          {actionAlert}
+        </aside>}
       </div>
     </div>
   </WorkspaceFrame>;

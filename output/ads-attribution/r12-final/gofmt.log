@@ -1,0 +1,3 @@
+source=6c6c3fb397dd8c6ae8c291f3d751c1eedbc6ac89
+started=2026-10-04T07:01:28Z
+command=bash -c git\ ls-files\ -z\ --\ \"\*.go\"\ \|\ xargs\ -0\ gofmt\ -l\;\ test\ -z\ \"\$\(git\ ls-files\ -z\ --\ \"\*.go\"\ \|\ xargs\ -0\ gofmt\ -l\)\" 

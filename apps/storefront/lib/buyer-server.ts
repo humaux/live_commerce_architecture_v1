@@ -1,10 +1,59 @@
+// BFF for /api/buyer/* -> Go /v1/buyer/* (internal/buyer, internal/checkout). Payment routes:
+//   GET orders/{id}/payment; POST .../payment/prepare (keyed, body), .../handoff|refresh|cancel
+//   (keyless, nonretryable; Go HostedPaymentStarter Begin/Take/RefreshPayment/CancelPayment).
+// Every success body is re-validated with lib/payment-contract.ts before it reaches the browser.
+// CVS (taiwan-cvs-logistics-v1 §5.2, §16.1): exactly POST cvs-selections (keyed), GET cvs-selections/{id},
+// POST cvs-selections/{id}/verify (keyless, no body) and POST cvs-stores (keyed) -> Go internal/buyerhttp/cvs.go;
+// bodies and answers are re-validated with lib/cvs-contract.ts. No generic proxying.
+// Guest order lookup (storefront-v2 §E5): exactly POST orders/lookup -> Go internal/buyerhttp/lookup.go. It is the one route that needs no
+// cookie: the BFF mints a fresh token like session/prepare, sends it as the bearer and sets the cookie ONLY on a 200 (lookup() below).
+// Bank transfer (storefront-v2 §C): exactly GET orders/{id}/bank-transfer and PUT orders/{id}/bank-transfer/proof (keyed) ->
+// Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
+import { readAdSignals, readAdTouch } from "./ad-touch.ts";
+import { strictJSON } from "./strict-json.ts";
 import {
   validHostedHandoff,
   validOrderPayment,
   validPaymentPrepared,
+  validPaymentSignal,
+  type PaymentMethodCode,
 } from "./payment-contract.ts";
+// storefront-v2 §F: the closed discount-code refusals (422 of the quote request and of checkout) and the promo_code mirror.
+import { PROMO_CODE_SHAPE, PROMO_ERROR_CODES } from "./promo-contract.ts";
+import {
+  CLAIM_TOKEN,
+  validClaimPreview,
+  validClaimRedeemed,
+} from "./claim-contract.ts";
+// customers-billing-ui hook: buyer privacy routes (customers-billing-v1 §5) and their closed response validators.
+import {
+  privacyBodies,
+  privacyRoutes,
+  validBuyerExport,
+  validBuyerPrivacy,
+  validConsentResult,
+  validErasureSummary,
+} from "./privacy-contract.ts";
+import {
+  TRANSFER_ERROR_CODES,
+  validBuyerEmail,
+  validProofBody,
+  validProofResult,
+  validTransferView,
+} from "./bank-transfer-contract.ts";
+import { validLookupBody, validLookupResult } from "./lookup-contract.ts";
+import { validLinkBody, validLinkResult } from "./order-link-contract.ts";
+import {
+  CVS_ERROR_CODES,
+  DEFINITE_CVS_CODES,
+  isPaymentMode,
+  validBuyerStore,
+  validCvsSelection,
+  validCvsSelectionOpen,
+  validReturnPath,
+} from "./cvs-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
@@ -30,11 +79,38 @@ type Session = {
 type Route = {
   method: string;
   privatePath: string;
-  body?: "empty" | "cart" | "quote" | "destination" | "checkout" | "payment";
+  body?:
+    | "empty"
+    | "cart"
+    | "quote"
+    | "destination"
+    | "checkout"
+    | "payment"
+    | "claim"
+    | "consent"
+    | "erasure"
+    | "cvsSelection"
+    | "cvsStore"
+    | "transferProof"
+    | "lookup"
+    | "link";
   query?: "catalog" | "options" | "orders";
   session?: string;
-  payment?: "view" | "prepare" | "handoff";
+  payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
   orderID?: string;
+  // Claim-link preview/redeem (live-keyword-claims-v1 B1/B2): the only routes that take
+  // and forward the X-Commerce-Claim-Token header.
+  claim?: "preview" | "redeem";
+  // CVS map selection / buyer-entered store routes; keyless = POST with neither key nor body (verify).
+  cvs?: "open" | "get" | "verify" | "store";
+  keyless?: boolean;
+  selectionID?: string;
+  // Bank-transfer order page (storefront-v2 §C): GET view, PUT proof (keyed).
+  transfer?: "view" | "proof";
+  // Guest order lookup: handled by lookup() before any cookie / context check.
+  lookup?: boolean;
+  // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
+  link?: boolean;
 };
 
 const messages: Record<string, string> = {
@@ -50,6 +126,22 @@ const messages: Record<string, string> = {
   insufficient_inventory: "Insufficient available inventory.",
   rate_limited: "Too many requests.",
   unavailable: "Temporarily unavailable.",
+  erased: "This data was erased.",
+  erasure_blocked: "Erasure is blocked while a payment may still be open.",
+  export_too_large: "The export is too large for one file.",
+  idempotency_conflict: "Request conflicts with an earlier one.",
+  // taiwan-cvs-logistics-v1 §5.2/§16 refusals; the UI maps the code to text, these are generic fallbacks.
+  ...Object.fromEntries(
+    CVS_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
+  // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
+  ...Object.fromEntries(
+    TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
+  // storefront-v2 §F discount-code refusals (422 from the quote request / BeginCheckout); the UI maps the code to text.
+  ...Object.fromEntries(
+    PROMO_ERROR_CODES.map((code) => [code, "Request refused."]),
+  ),
 };
 
 function headers(extra?: HeadersInit) {
@@ -68,7 +160,11 @@ function failure(status: number, code: string, nonretryable = false): Response {
       code: safeCode,
       message: messages[safeCode],
       request_id,
-      retryable: !nonretryable && (status === 503 || status === 429),
+      // A definite CVS refusal (e.g. pay_at_pickup_limit, 429) committed nothing: never "retryable".
+      retryable:
+        !nonretryable &&
+        !DEFINITE_CVS_CODES.includes(code) &&
+        (status === 503 || status === 429),
       details: {},
     },
     { status, headers: h },
@@ -297,6 +393,31 @@ function route(
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
     orders: { GET: { privatePath: "orders", query: "orders" } },
+    "orders/lookup": {
+      POST: { privatePath: "orders/lookup", body: "lookup", lookup: true },
+    },
+    "orders/link": {
+      POST: { privatePath: "orders/link", body: "link", link: true },
+    },
+    "cvs-selections": {
+      POST: {
+        privatePath: "cvs-selections",
+        body: "cvsSelection",
+        cvs: "open",
+      },
+    },
+    "cvs-stores": {
+      POST: { privatePath: "cvs-stores", body: "cvsStore", cvs: "store" },
+    },
+    "claim-link": { GET: { privatePath: "claim-link", claim: "preview" } },
+    "claim-link/redeem": {
+      POST: {
+        privatePath: "claim-link/redeem",
+        body: "claim",
+        claim: "redeem",
+      },
+    },
+    ...privacyRoutes,
   };
   if (Object.hasOwn(exact, suffix)) {
     const selected = exact[suffix][method];
@@ -305,9 +426,10 @@ function route(
       route: selected ? { ...selected, method } : undefined,
     };
   }
-  const payment = /^orders\/([^/]+)\/payment(?:\/(prepare|handoff))?$/.exec(
-    suffix,
-  );
+  const payment =
+    /^orders\/([^/]+)\/payment(?:\/(prepare|handoff|refresh|cancel))?$/.exec(
+      suffix,
+    );
   if (payment) {
     if (!UUID.test(payment[1])) return { known: true, invalidID: true };
     const kind = payment[2] ?? "view";
@@ -322,6 +444,44 @@ function route(
               body: kind === "prepare" ? "payment" : undefined,
               payment: kind as Route["payment"],
               orderID: payment[1],
+            }
+          : undefined,
+    };
+  }
+  const transfer = /^orders\/([^/]+)\/bank-transfer(?:\/(proof))?$/.exec(
+    suffix,
+  );
+  if (transfer) {
+    if (!UUID.test(transfer[1])) return { known: true, invalidID: true };
+    const proof = transfer[2] === "proof";
+    return {
+      known: true,
+      route:
+        method === (proof ? "PUT" : "GET")
+          ? {
+              method,
+              privatePath: suffix,
+              body: proof ? "transferProof" : undefined,
+              transfer: proof ? "proof" : "view",
+              orderID: transfer[1],
+            }
+          : undefined,
+    };
+  }
+  const selection = /^cvs-selections\/([^/]+)(?:\/(verify))?$/.exec(suffix);
+  if (selection) {
+    if (!UUID.test(selection[1])) return { known: true, invalidID: true };
+    const verify = selection[2] === "verify";
+    return {
+      known: true,
+      route:
+        method === (verify ? "POST" : "GET")
+          ? {
+              method,
+              privatePath: suffix,
+              cvs: verify ? "verify" : "get",
+              keyless: verify,
+              selectionID: selection[1],
             }
           : undefined,
     };
@@ -430,97 +590,9 @@ async function readBounded(
   return result;
 }
 
-// JSON.parse alone drops duplicate keys. This small scanner rejects them and
-// null at any depth before a commerce command reaches the private transport.
-function strictJSON(text: string, allowNull = false): unknown {
-  let at = 0;
-  const space = () => {
-    while (/\s/.test(text[at] ?? "") && at < text.length) at++;
-  };
-  const string = (): string => {
-    const start = at++;
-    while (at < text.length) {
-      if (text[at] === "\\") {
-        at += 2;
-        continue;
-      }
-      if (text[at++] === '"')
-        return JSON.parse(text.slice(start, at)) as string;
-    }
-    throw new Error("string");
-  };
-  const value = (): void => {
-    space();
-    if (text[at] === "{") {
-      at++;
-      space();
-      const keys = new Set<string>();
-      if (text[at] === "}") {
-        at++;
-        return;
-      }
-      while (true) {
-        if (text[at] !== '"') throw new Error("key");
-        const key = string();
-        if (keys.has(key)) throw new Error("duplicate");
-        keys.add(key);
-        space();
-        if (text[at++] !== ":") throw new Error("colon");
-        value();
-        space();
-        if (text[at] === "}") {
-          at++;
-          return;
-        }
-        if (text[at++] !== ",") throw new Error("comma");
-        space();
-      }
-    }
-    if (text[at] === "[") {
-      at++;
-      space();
-      if (text[at] === "]") {
-        at++;
-        return;
-      }
-      while (true) {
-        value();
-        space();
-        if (text[at] === "]") {
-          at++;
-          return;
-        }
-        if (text[at++] !== ",") throw new Error("comma");
-      }
-    }
-    if (text[at] === '"') {
-      string();
-      return;
-    }
-    for (const literal of ["true", "false"])
-      if (text.startsWith(literal, at)) {
-        at += literal.length;
-        return;
-      }
-    if (text.startsWith("null", at)) {
-      if (!allowNull) throw new Error("null");
-      at += 4;
-      return;
-    }
-    const number = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/.exec(
-      text.slice(at),
-    );
-    if (!number || !Number.isFinite(Number(number[0])))
-      throw new Error("value");
-    at += number[0].length;
-  };
-  value();
-  space();
-  if (at !== text.length) throw new Error("trailing");
-  return JSON.parse(text) as unknown;
-}
-
-type Shape = { [key: string]: "string" | "integer" | Shape | [Shape] };
+type Shape = {
+  [key: string]: "string" | "integer" | "boolean" | Shape | [Shape];
+};
 const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
   empty: {},
   cart: {
@@ -532,6 +604,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     market_id: "string",
     country: "string",
     method: "string",
+    promo_code: "string", // optional (§F); extraShapeOK checks its grammar
   },
   destination: {
     expected_version: "integer",
@@ -555,12 +628,39 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     cart_version: "integer",
     service_version: "integer",
     allocation_version: "integer",
+    payment_mode: "string",
+    expected_cod_surcharge_minor: "integer",
+    buyer_email: "string",
+  },
+  transferProof: {
+    last5: "string",
+    amount_minor: "integer",
+    paid_at: "string",
+  },
+  lookup: { order_ref: "string", contact: "string" },
+  link: { order_id: "string", token: "string", proof: "string" },
+  cvsSelection: {
+    cart_version: "integer",
+    market_id: "string",
+    service_code: "string",
+    return_path: "string",
+  },
+  cvsStore: {
+    cart_version: "integer",
+    market_id: "string",
+    service_code: "string",
+    store_code: "string",
+    store_name: "string",
+    store_address: "string",
   },
   payment: {
     method_code: "string",
     method_version: "integer",
     locale: "string",
   },
+  claim: { expected_bundle_version: "integer" },
+  consent: privacyBodies.consent,
+  erasure: privacyBodies.erasure,
 };
 
 function matchesShape(value: unknown, shape: Shape): boolean {
@@ -571,6 +671,7 @@ function matchesShape(value: unknown, shape: Shape): boolean {
     if (!expected) return false;
     if (expected === "string") return typeof field === "string";
     if (expected === "integer") return Number.isSafeInteger(field);
+    if (expected === "boolean") return typeof field === "boolean";
     if (Array.isArray(expected))
       return (
         Array.isArray(field) &&
@@ -578,6 +679,43 @@ function matchesShape(value: unknown, shape: Shape): boolean {
       );
     return matchesShape(field, expected);
   });
+}
+
+// Checks beyond key/type shape for the CVS bodies (exact key sets, allowlisted return_path) and the checkout
+// payment_mode enum. Go re-validates everything; this keeps malformed input off the private transport.
+const UUID_TEXT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function extraShapeOK(shape: Shape, parsed: unknown): boolean {
+  const v = parsed as Record<string, unknown>;
+  if (shape === shapes.quote)
+    return (
+      v.promo_code === undefined ||
+      (typeof v.promo_code === "string" && PROMO_CODE_SHAPE.test(v.promo_code))
+    );
+  if (shape === shapes.checkout)
+    return (
+      (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
+      (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
+    );
+  if (shape === shapes.lookup) return validLookupBody(parsed);
+  if (shape === shapes.link) return validLinkBody(parsed);
+  if (shape === shapes.transferProof)
+    return (
+      Object.keys(v).length === Object.keys(shape).length && validProofBody(v)
+    );
+  if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
+  if (
+    Object.keys(v).length !== Object.keys(shape).length ||
+    (v.cart_version as number) < 1 ||
+    !UUID_TEXT.test(String(v.market_id)) ||
+    !/^[a-z][a-z0-9_-]{0,39}$/.test(String(v.service_code))
+  )
+    return false;
+  return shape === shapes.cvsSelection
+    ? validReturnPath(v.return_path)
+    : ["store_code", "store_name", "store_address"].every(
+        (k) => typeof v[k] === "string" && (v[k] as string).length <= 512,
+      );
 }
 
 async function bodyJSON(
@@ -608,12 +746,15 @@ async function bodyJSON(
     const parsed = strictJSON(text);
     if (
       !matchesShape(parsed, shape) ||
+      !extraShapeOK(shape, parsed) ||
       (shape === shapes.payment &&
         (!parsed ||
           typeof parsed !== "object" ||
           Array.isArray(parsed) ||
           Object.keys(parsed).length !== 3 ||
-          (parsed as Record<string, unknown>).method_code !== "payuni_credit" ||
+          !["payuni_credit", "stripe_checkout"].includes(
+            (parsed as Record<string, string>).method_code,
+          ) ||
           !Number.isSafeInteger(
             (parsed as Record<string, unknown>).method_version,
           ) ||
@@ -654,6 +795,8 @@ async function upstream(
   method: string,
   body?: string,
   key?: string,
+  claimToken?: string,
+  clientIP?: string,
 ): Promise<Response> {
   const outbound = new Headers({
     Accept: "application/json",
@@ -663,6 +806,45 @@ async function upstream(
   });
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
+  if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
+  // Guest lookup throttles per client IP (Go hashes it into a bucket, never stores it); Caddy always sets X-Forwarded-For.
+  if (clientIP) outbound.set("X-Commerce-Client-IP", clientIP);
+  if (path === "checkout" && method === "POST") {
+    // Only this authenticated server hop derives attribution; browser headers/body are never trusted.
+    const touch = readAdTouch(
+      request.headers.get("cookie") ?? "",
+      origin,
+      config.signing,
+    );
+    if (touch)
+      outbound.set(
+        "X-Commerce-Ad-Touch",
+        Buffer.from(JSON.stringify(touch)).toString("base64url"),
+      );
+    const signals = readAdSignals(
+      request.headers.get("cookie") ?? "",
+      origin,
+      config.signing,
+    );
+    if (signals)
+      outbound.set(
+        "X-Commerce-Ad-Signals",
+        Buffer.from(JSON.stringify(signals)).toString("base64url"),
+      );
+    const checkoutIP = forwardedIP(request);
+    if (checkoutIP) outbound.set("X-Commerce-Client-IP", checkoutIP);
+  }
+  // meta-ads-v1 A-3: Go consentPut records the BROWSER User-Agent for CAPI after an ads_personalization grant
+  // (ads.put_capi_context); without this the API would see this server's fetch agent. Consents PUT only.
+  const agent = request.headers.get("user-agent");
+  if (path === "consents" && method === "PUT" && agent)
+    outbound.set("User-Agent", agent);
+  // B20: ECPay map Device=1 for phone user agents (buyers arrive from FB/IG on phones); Go buyerhttp/cvs.go mobileHint reads it.
+  if (
+    path === "cvs-selections" &&
+    /Mobile|Android|iPhone/i.test(request.headers.get("user-agent") ?? "")
+  )
+    outbound.set("X-Commerce-Device", "mobile");
   try {
     return await fetch(`${config.api}/v1/buyer/${path}`, {
       method,
@@ -719,7 +901,9 @@ async function upstreamError(
   if (
     typeof code !== "string" ||
     !Object.hasOwn(messages, code) ||
-    ![400, 401, 403, 404, 409, 415, 422, 429, 503].includes(response.status)
+    ![400, 401, 403, 404, 409, 410, 415, 422, 429, 503].includes(
+      response.status,
+    )
   )
     return failure(503, "unavailable", nonretryable);
   return failure(response.status, code, nonretryable);
@@ -754,6 +938,115 @@ function prepared(config: Config, origin: string): Response {
   });
 }
 
+// One IP literal exactly (no list, port or zone), as lib/password-request.ts does for the admin; anything else = no header = Go's shared bucket.
+function forwardedIP(request: Request): string | undefined {
+  const value = request.headers.get("x-forwarded-for");
+  return value !== null && isIP(value) !== 0 && !value.includes("%")
+    ? value
+    : undefined;
+}
+
+// POST /api/buyer/orders/lookup. No cookie is needed or read: a fresh capability token is minted exactly like session/prepare, Go registers it
+// for the matched order's owner, and the cookie is set only when Go said 200 (a refusal leaves the visitor's current cookie alone).
+async function lookup(
+  request: Request,
+  cfg: Config,
+  origin: string,
+): Promise<Response> {
+  if (request.headers.has("idempotency-key"))
+    return failure(422, "invalid_request");
+  const result = await bodyJSON(request, shapes.lookup);
+  if (result.error) return result.error;
+  const token = randomBytes(32).toString("base64url");
+  const response = await upstream(
+    request,
+    cfg,
+    origin,
+    token,
+    "orders/lookup",
+    "POST",
+    result.body,
+    undefined,
+    undefined,
+    forwardedIP(request),
+  );
+  if (request.signal.aborted) return failure(503, "unavailable");
+  if (!response.ok) {
+    const refusal = await upstreamError(response);
+    const wait = response.headers.get("retry-after");
+    if (response.status === 429 && wait !== null && /^[0-9]{1,5}$/.test(wait))
+      refusal.headers.set("Retry-After", wait);
+    return refusal;
+  }
+  const data = await upstreamJSON(response);
+  if (response.status !== 200 || !validLookupResult(data))
+    return failure(503, "unavailable");
+  const iat = Math.floor(Date.now() / 1000);
+  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
+  const value = envelopeValue(cfg, envelope);
+  return success(data, {
+    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
+  });
+}
+
+// POST /api/buyer/orders/link. Like lookup(): no cookie is read; the capability token is DERIVED (not random) from the link token and the
+// browser-bound proof, so the SAME browser retrying a lost response re-presents the SAME token and Go re-delivers the SAME capability (K3 F2,
+// checkout.redeem_order_link's 10-minute idempotent window). Go exchanges the single-use link token for a FULL capability of the order's owner
+// registered with that token, and the cookie is set only when Go said 200 AND named the same order the link did. The link token is forwarded
+// once in the JSON body (the proof stays here — it is only the BFF's derivation secret) and never echoed or logged; every refusal is Go's code.
+async function orderLink(
+  request: Request,
+  cfg: Config,
+  origin: string,
+): Promise<Response> {
+  if (request.headers.has("idempotency-key"))
+    return failure(422, "invalid_request");
+  const result = await bodyJSON(request, shapes.link);
+  if (result.error) return result.error;
+  const parsed = JSON.parse(result.body ?? "{}") as {
+    order_id?: string;
+    token?: string;
+    proof?: string;
+  };
+  const named = parsed.order_id ?? "";
+  // A different browser-bound proof yields a different capability token, so a second browser presenting a used link is still refused.
+  const token = mac(
+    cfg,
+    "orderlink-capability-v1",
+    `${parsed.token ?? ""}\0${parsed.proof ?? ""}`,
+  ).toString("base64url");
+  // Go still takes the exact {order_id, token} body of 0094: the proof never leaves the BFF.
+  const response = await upstream(
+    request,
+    cfg,
+    origin,
+    token,
+    "orders/link",
+    "POST",
+    JSON.stringify({ order_id: named, token: parsed.token ?? "" }),
+    undefined,
+    undefined,
+    forwardedIP(request),
+  );
+  if (request.signal.aborted) return failure(503, "unavailable");
+  if (!response.ok) {
+    const refusal = await upstreamError(response);
+    const wait = response.headers.get("retry-after");
+    if (response.status === 429 && wait !== null && /^[0-9]{1,5}$/.test(wait))
+      refusal.headers.set("Retry-After", wait);
+    return refusal;
+  }
+  const data = await upstreamJSON(response);
+  if (response.status !== 200 || !validLinkResult(data, named))
+    return failure(503, "unavailable");
+  const iat = Math.floor(Date.now() / 1000);
+  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
+  const value = envelopeValue(cfg, envelope);
+  return success(data, {
+    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
+  });
+}
+
 function forbiddenHeaders(request: Request): boolean {
   return [
     "authorization",
@@ -762,6 +1055,8 @@ function forbiddenHeaders(request: Request): boolean {
     "x-commerce-buyer-bff-key",
     "x-commerce-storefront-origin",
     "x-commerce-bff-key",
+    "x-commerce-ad-touch",
+    "x-commerce-ad-signals",
   ].some((name) => request.headers.has(name));
 }
 
@@ -769,8 +1064,11 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
   // Classify before config/auth: even an early failure must not invite a second
   // one-shot handoff. See buyer-payment-public-v1, not ordinary keyed writes.
+  // Refresh and cancel share the keyless, nonretryable class (stripe-buyer-ui-v1 §2).
   const handoff =
-    /^\/api\/buyer\/orders\/[^/]+\/payment\/handoff(?:\/.*)?$/.test(pathname);
+    /^\/api\/buyer\/orders\/[^/]+\/payment\/(?:handoff|refresh|cancel)(?:\/.*)?$/.test(
+      pathname,
+    );
   const changingCookie =
     request.method === "POST" &&
     /^\/api\/buyer\/session\/(?:prepare|reset)$/.test(pathname);
@@ -791,11 +1089,19 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (selected.invalidID) return fail(422, "invalid_request");
   if (!selected.route) return fail(405, "method_not_allowed");
   const target = selected.route;
+  // The claim token travels only in its header and only on the two claim routes; it is
+  // never read from a path, query or body and never echoed (live-keyword-claims-v1 §7.2).
+  const claimToken = request.headers.get("x-commerce-claim-token");
+  if (!target.claim && claimToken !== null) return fail(403, "forbidden");
+  if (target.claim && (claimToken === null || !CLAIM_TOKEN.test(claimToken)))
+    return fail(422, "invalid_request");
   const query = validQuery(request.url, target.query);
   if (query === null || url.hash) return fail(422, "invalid_request");
   const isMutation = request.method !== "GET";
   if (isMutation && request.headers.get("origin") !== origin)
     return fail(403, "forbidden");
+  if (target.lookup) return lookup(request, cfg, origin);
+  if (target.link) return orderLink(request, cfg, origin);
   const found = identify(request, cfg, origin);
   if (found.invalid) return fail(401, "unauthorized");
   if (
@@ -806,7 +1112,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return fail(409, "context_changed");
   const isSession = !!target.session;
   const key = request.headers.get("idempotency-key");
-  if (isSession || request.method === "GET" || handoff) {
+  if (isSession || request.method === "GET" || handoff || target.keyless) {
     if (key !== null) return fail(422, "invalid_request");
   } else if (!key || !KEY.test(key)) return fail(422, "invalid_request");
   if (
@@ -841,7 +1147,8 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (target.body) {
     const result = await bodyJSON(request, shapes[target.body], changingCookie);
     if (result.error) return result.error;
-    body = result.body;
+    // Go privacyExport takes no body (internal/buyerhttp noBody → 422); the browser hop's {} stops here.
+    body = target.privatePath === "privacy/export" ? undefined : result.body;
   } else {
     const result = await noBody(request);
     if (result !== "empty")
@@ -938,11 +1245,48 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     request.method,
     body,
     key ?? undefined,
+    claimToken ?? undefined,
   );
   if (request.signal.aborted) return fail(503, "unavailable");
+  // Erasure revokes the capability (customers-billing-v1 §5): the cookie is cleared on the 200 and on the replay 410.
+  const erasure = target.privatePath === "privacy/erasure";
+  const revoked = {
+    "Set-Cookie": `${COOKIE}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`,
+  };
+  if (erasure && response.status === 410) {
+    const gone = failure(410, "erased", true);
+    gone.headers.append("Set-Cookie", revoked["Set-Cookie"]);
+    return gone;
+  }
   if (!response.ok) return upstreamError(response, handoff);
   const data = await upstreamJSON(response, !!target.payment);
   if (request.signal.aborted || data === null || typeof data !== "object")
+    return fail(503, "unavailable");
+  if (
+    target.cvs &&
+    (![200, 201].includes(response.status) ||
+      (target.cvs === "open" && !validCvsSelectionOpen(data)) ||
+      (target.cvs === "store" && !validBuyerStore(data)) ||
+      ((target.cvs === "get" || target.cvs === "verify") &&
+        (!validCvsSelection(data) ||
+          (data as { selection_id: string }).selection_id !==
+            target.selectionID)))
+  )
+    return fail(503, "unavailable");
+  if (
+    target.transfer &&
+    (response.status !== 200 ||
+      (target.transfer === "view" &&
+        !validTransferView(data, target.orderID!)) ||
+      (target.transfer === "proof" && !validProofResult(data, target.orderID!)))
+  )
+    return fail(503, "unavailable");
+  if (
+    target.claim &&
+    (response.status !== 200 ||
+      (target.claim === "preview" && !validClaimPreview(data)) ||
+      (target.claim === "redeem" && !validClaimRedeemed(data)))
+  )
     return fail(503, "unavailable");
   if (
     target.payment &&
@@ -950,10 +1294,36 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
       (target.payment === "view" &&
         !validOrderPayment(data, target.orderID!)) ||
       (target.payment === "prepare" &&
-        !validPaymentPrepared(data, target.orderID!)) ||
+        !validPaymentPrepared(
+          data,
+          target.orderID!,
+          // bodyJSON already proved the body is JSON with a valid method_code.
+          (JSON.parse(body!) as { method_code: PaymentMethodCode }).method_code,
+        )) ||
       (target.payment === "handoff" &&
-        !validHostedHandoff(data, target.orderID!)))
+        !validHostedHandoff(data, target.orderID!)) ||
+      ((target.payment === "refresh" || target.payment === "cancel") &&
+        !validPaymentSignal(data, target.orderID!)))
   )
     return fail(503, "unavailable");
+  // Buyer privacy: only the frozen closed shapes leave the BFF; the export is offered as a download, never cached.
+  const privacyValid =
+    target.privatePath === "privacy"
+      ? validBuyerPrivacy(data)
+      : target.privatePath === "consents"
+        ? validConsentResult(data)
+        : target.privatePath === "privacy/export"
+          ? validBuyerExport(data)
+          : erasure
+            ? // Go /v1/buyer/privacy/erasure answers {erased, orders_retained, summary} (internal/buyerhttp erasureResponse).
+              // The envelope is validated and passed through whole: PrivacyCenter re-validates the same closed shape.
+              validErasureSummary(data)
+            : true;
+  if (!privacyValid) return fail(503, "unavailable");
+  if (erasure) return success(data, revoked);
+  if (target.privatePath === "privacy/export")
+    return success(data, {
+      "Content-Disposition": 'attachment; filename="my-data.json"',
+    });
   return success(data);
 }

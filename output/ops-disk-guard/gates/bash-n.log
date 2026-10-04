@@ -1,0 +1,27 @@
+ok deploy/scripts/build-images.sh
+ok deploy/scripts/check-pins.sh
+ok deploy/scripts/collect-diagnostics.sh
+ok deploy/scripts/deploy.sh
+ok deploy/scripts/host-setup.sh
+ok deploy/scripts/lib.sh
+ok deploy/scripts/ops-admin.sh
+ok deploy/scripts/pg-ops.sh
+ok deploy/scripts/preflight.sh
+ok deploy/scripts/prune-docker.sh
+ok deploy/scripts/secrets-init.sh
+ok deploy/scripts/smoke.sh
+ok deploy/scripts/watchdog.sh
+ok deploy/postgres/archive-wal.sh
+ok deploy/postgres/provision-logins.sh
+ok deploy/postgres/ops/backup.sh
+ok deploy/postgres/ops/basebackup.sh
+ok deploy/postgres/ops/lib.sh
+ok deploy/postgres/ops/pitr-install.sh
+ok deploy/postgres/ops/restore-dump.sh
+ok deploy/postgres/ops/restore-pitr.sh
+ok deploy/postgres/ops/restore-wal.sh
+ok deploy/postgres/ops/rotate-superuser.sh
+ok scripts/dev/test-local.sh
+ok scripts/dev/test-node.sh
+ok tests/deploy/ops-disk-guard.sh
+shellcheck: NOT_RUN (not installed locally; smoke S01 in CI runs it)

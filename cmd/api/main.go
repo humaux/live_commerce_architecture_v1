@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
 )
 
@@ -47,7 +49,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	stripeConfig, err := loadStripeWebhookConfig(os.Getenv, addr)
+	if err != nil {
+		return err
+	}
 	studioConfig, err := loadStudioConfig(os.Getenv, identityConfig.enabled, addr)
+	if err != nil {
+		return err
+	}
+	claimsConfig, err := loadClaimsConfig(os.Getenv, studioConfig.enabled)
 	if err != nil {
 		return err
 	}
@@ -65,16 +75,34 @@ func run() error {
 		return err
 	}
 	defer closeIdentity()
-	buyerHandler, closeBuyer, err := buildBuyerHandler(startup, buyerConfig)
+	buyerHandler, cvs, closeBuyer, err := buildBuyerWithCVS(startup, buyerConfig, pool, os.Getenv)
 	if err != nil {
 		return err
 	}
 	defer closeBuyer()
+	if !buyerConfig.enabled {
+		// Merchant-side CVS (settings, collection, release, MANUAL stores) does not need the buyer surface; ECPay itself needs the
+		// payment profile, so with buyer payment off CVS_ECPAY_ENABLED=1 is a startup error (unit default C9).
+		if cvs, err = buildCVS(startup, os.Getenv, pool, nil, ""); err != nil {
+			return err
+		}
+	}
 	metaHandler, closeMeta, err := buildMetaHandler(startup, pool, metaConfig)
 	if err != nil {
 		return err
 	}
 	defer closeMeta()
+	stripeHandler, closeStripe, err := buildStripeWebhookHandler(startup, pool, stripeConfig)
+	if err != nil {
+		return err
+	}
+	defer closeStripe()
+	// billing-core (customers-billing-v1 T17): nil service + nil webhook while LC_BILLING_ENABLED is unset.
+	billingService, billingWebhook, closeBilling, err := buildPlatformBilling(startup, pool, os.Getenv)
+	if err != nil {
+		return err
+	}
+	defer closeBilling()
 	accountService, err := buildAccountsService(pool, accountConfig)
 	if err != nil {
 		return err
@@ -83,15 +111,57 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Live: studioPlanner})
+	refundJobs, err := newMerchantRefundJobs(pool)
+	if err != nil {
+		return err
+	}
+	// ads-graph: nil when COMMERCE_META_ADS_APP_ID is unset (surface off). Needs ads-core's Options.Ads.
+	adsService, err := newMerchantAds(pool, os.Getenv)
+	if err != nil {
+		return err
+	}
+	// meta-connect: nil when COMMERCE_META_LOGIN_CONFIG_ID is unset (merchant Page/Instagram connect off).
+	metaConnect, err := newMetaConnect(pool, os.Getenv)
+	if err != nil {
+		return err
+	}
+	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
+	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
+	paymentEnvironment := ""
+	if profile := os.Getenv("COMMERCE_PAYMENT_PROFILE"); profile != "" {
+		env, ok := payments.ProfileEnvironment(profile)
+		if !ok {
+			return errors.New("payment profile is not supported")
+		}
+		paymentEnvironment = env
+	}
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
+	tlsAskHandler, err := buildTLSAskHandler(pool)
+	if err != nil {
+		return err
+	}
+	storeDomainNonceHandler := buildStoreDomainNonceHandler(pool)
 	if identityHandler != nil {
 		mux := http.NewServeMux()
 		mux.Handle("/v1/identity/", identityHandler)
 		mux.Handle("/", handler)
 		handler = mux
 	}
+	if cvs.Hooks != nil {
+		// Public ECPay callbacks (map return, status): reachable only through Caddy's two hooks-host routes (deploy/caddy/Caddyfile).
+		mux := http.NewServeMux()
+		mux.Handle("/v1/cvs/ecpay/", cvs.Hooks)
+		mux.Handle("/", handler)
+		handler = mux
+	}
 	handler = mountBuyer(handler, buyerHandler)
 	handler = mountMeta(handler, metaHandler)
+	handler = mountStripe(handler, stripeHandler)
+	handler = mountPlatformBilling(handler, billingWebhook)
+	handler = mountTLSAsk(handler, tlsAskHandler)
+	handler = mountStoreDomainNonce(handler, storeDomainNonceHandler)
 	stopStartup()
 	server := &http.Server{
 		Addr:              addr,

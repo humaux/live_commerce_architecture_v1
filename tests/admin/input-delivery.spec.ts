@@ -63,6 +63,7 @@ test(
 
       // All credentials are attached by Chromium to same-origin fetches. JWTs
       // remain local to the page function; only safe booleans/statuses return.
+      // G-UI8 audit [FIXTURE/SETUP]: token-transport probe: JWTs stay in the page function, only statuses/booleans return (the subject is the BFF/Go token chain, not a UI control)
       const result = await page.evaluate(
         async ({
           base,
@@ -215,23 +216,22 @@ test(
               (_, i) => storage.getItem(storage.key(i) ?? "") ?? "",
             ).every((value) => !token || !value.includes(token)),
           );
-          const wssOpened =
-            typeof grant?.url === "string" &&
+          // R4S-04: this document's connect-src is 'self', so the browser must refuse a WebSocket from it to the SFU origin and report the
+          // violation. A publisher UI that needs the SFU must add that origin to the policy deliberately (then this assertion is updated with it).
+          const sfuURL = typeof grant?.url === "string" ? (grant.url as string) : "";
+          const wssBlockedByCSP =
+            sfuURL !== "" &&
             (await new Promise<boolean>((resolve) => {
-              const socket = new WebSocket(grant.url as string);
-              const timer = setTimeout(() => {
-                socket.close();
-                resolve(false);
-              }, 3000);
-              socket.onopen = () => {
-                clearTimeout(timer);
-                socket.close();
-                resolve(true);
-              };
-              socket.onerror = () => {
-                clearTimeout(timer);
-                resolve(false);
-              };
+              const timer = setTimeout(() => resolve(false), 3000);
+              document.addEventListener(
+                "securitypolicyviolation",
+                (event) => {
+                  clearTimeout(timer);
+                  resolve(event.violatedDirective.startsWith("connect-src"));
+                },
+                { once: true },
+              );
+              new WebSocket(sfuURL).close();
             }));
 
           const csrfDenied = await request(
@@ -276,7 +276,8 @@ test(
             sanitation,
             tokenOK,
             storageClean,
-            wssOpened,
+            sfuURL,
+            wssBlockedByCSP,
             csrfStatus: csrfDenied.status,
             storeStatus: wrongStore.status,
             methodStatus: wrongMethod.status,
@@ -305,7 +306,32 @@ test(
       assert.deepEqual(result.sanitation, [true, true, true, true]);
       assert.equal(result.tokenOK, true);
       assert.equal(result.storageClean, true);
-      assert.equal(result.wssOpened, true);
+      assert.equal(result.wssBlockedByCSP, true);
+      // The SFU transport itself (TLS + WebSocket upgrade in a real Chromium) is proven from a CSP-free document, with the URL the grant returned.
+      assert.match(result.sfuURL, /^wss:\/\/127\.0\.0\.1:\d+\/?$/);
+      const sfuProbe = await context.newPage();
+      const wssOpened = await sfuProbe.evaluate(
+        (url) =>
+          new Promise<boolean>((resolve) => {
+            const socket = new WebSocket(url);
+            const timer = setTimeout(() => {
+              socket.close();
+              resolve(false);
+            }, 3000);
+            socket.onopen = () => {
+              clearTimeout(timer);
+              socket.close();
+              resolve(true);
+            };
+            socket.onerror = () => {
+              clearTimeout(timer);
+              resolve(false);
+            };
+          }),
+        result.sfuURL,
+      );
+      await sfuProbe.close();
+      assert.equal(wssOpened, true);
       assert.equal(result.csrfStatus, 403);
       assert.equal(result.storeStatus, 404);
       assert.equal(result.methodStatus, 405);
@@ -331,17 +357,20 @@ test(
         "X-CSRF-Token": csrfCookie.value,
         "Idempotency-Key": `brw05-origin-${phase}`,
       };
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
       const control = await context.request.post(probe, {
         headers: { ...headers, Origin: origin },
         data: probeBody,
       });
       assert.equal(control.status(), 200);
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (forged Origin)
       const badOrigin = await context.request.post(probe, {
         headers: { ...headers, Origin: "https://attacker.invalid" },
         data: probeBody,
       });
       assert.equal(badOrigin.status(), 403);
 
+      // G-UI8 audit [FIXTURE/SETUP]: negative probe: a forged/hostile request no UI can send; the server, not the UI, must refuse (UI click paths of the same route are covered elsewhere) (closed-session replay
       const closed = await page.evaluate(
         async ({ base, attempt, phase }) => {
           const csrf =

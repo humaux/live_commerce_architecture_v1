@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// React's development build rebuilds call stacks with eval() (Next documents 'unsafe-eval' for `next dev`): without it the dev overlay opens a
+// permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).
+const scriptSrc = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
+
 // Approved B product surface shares the verified buyer BFF. There are no public
 // fixture routes. DNS/TLS/ingress remain independent deployment gates.
 const config: NextConfig = {
@@ -7,6 +11,9 @@ const config: NextConfig = {
   devIndicators: false,
   poweredByHeader: false,
   reactStrictMode: true,
+  // Canonical-host 301 owns the first redirect; keep the buyer's path/query intact.
+  skipTrailingSlashRedirect: true,
+  skipProxyUrlNormalize: true,
   async headers() {
     return [
       {
@@ -26,7 +33,23 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp",
+              // R4S-04: same-origin fetch/img/font/script sources only (no exfiltration path if an encoder ever slips); Next's inline
+              // bootstrap needs 'unsafe-inline' until nonce-based script-src (post-pilot, output/r4-backlog/P2.md).
+              `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://sandbox-api.payuni.com.tw/api/upp https://api.payuni.com.tw/api/upp https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map`,
+          },
+        ],
+      },
+      {
+        // The claim page and the manual-order link page (storefront-v2 G3) hold a bearer link token in memory (live-keyword-claims-v1
+        // §11.1): no Referer at all, and no scripts or connections beyond this origin.
+        // Listed last so it overrides the shopping Referrer-Policy for this path only.
+        source: "/:locale(zh-CN|zh-TW|en)/:page(claim|order-link)",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; connect-src 'self'",
           },
         ],
       },

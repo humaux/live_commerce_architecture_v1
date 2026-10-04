@@ -10,11 +10,13 @@ import {readFile, writeFile, mkdtemp, rm, mkdir, copyFile} from "node:fs/promise
 import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
-import {chromium, expect} from "@playwright/test";
+import { expect } from "@playwright/test";
+import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
+import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
-const origin="https://buyer.example", productPath=`/en/products/${process.env.LC_ORDER_PRODUCT}`;
+const origin="https://buyer.example", checkoutPath="/en/checkout";
 const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
 const secrets=[], pageErrors=[];
@@ -23,8 +25,8 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
 const pass=name=>{observations.push(name);console.log(`PASS ${name}`);};
 const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
-const review=path.join(root,".impeccable/review/buyer-order");
-const historyReview=path.join(root,".impeccable/review/buyer-history");
+const review=path.join(root,"output/playwright/review/buyer-order");
+const historyReview=path.join(root,"output/playwright/review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
 const calls=[];
 async function control(resource,method="GET") {
@@ -56,7 +58,7 @@ function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};
 }
 async function newContext(mobile=false) {
-  const c=await browser.newContext({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}});contexts.push(c);
+  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}}));contexts.push(c);
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -72,14 +74,15 @@ async function newContext(mobile=false) {
     };
   });
   c.on("page",p=>{
-    p.on("pageerror",e=>pageErrors.push(e.name));
+    p.on("pageerror",e=>pageErrors.push({name:e.name,message:e.message}));
     p.on("console",m=>consoleText.push(m.text()));
     p.on("request",r=>requestURLs.push(r.url()));
   });return c;
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
 async function quotePage(c,clock=false,p) {
-  if(!p){p=await c.newPage();if(clock)await p.clock.install();await p.goto(origin+productPath);}
+  if(!p){p=await c.newPage();if(clock)await p.clock.install();}
+  await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
   await p.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const pending=p.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await p.getByRole("button",{name:"Get current total",exact:true}).click();
@@ -106,7 +109,7 @@ async function created(p,quote,ownerOrders=1) {
   const breakdown=p.getByTestId("order-breakdown").locator("div");
   await expect(breakdown).toHaveCount(3);
   for(const [index,key] of ["shipping_minor","tax_minor","discount_minor"].entries()) {
-    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency}).format(quote.amount[key]/100));
+    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency,minimumFractionDigits:quote.amount[key]%100===0?0:2}).format(quote.amount[key]/100)); // storefront money: whole amounts carry no ".00" (lib/money.ts)
   }
   await expect(p.getByTestId("create-order")).toHaveCount(0);
   // This legacy fixture does not enable buyer payment. New payment UI must not
@@ -130,7 +133,6 @@ async function rememberCookie(c) {
 }
 async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
-  if(directory===historyReview)await writeFile(path.join(directory,".gitignore"),"*\n");
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
 }
 try {
@@ -158,24 +160,26 @@ try {
     const upstream=net.connect(edgePort,"127.0.0.1",()=>{socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");if(head.length)upstream.write(head);socket.pipe(upstream).pipe(socket);});
     for(const s of [socket,upstream]){sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
-  browser=await chromium.launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
+  browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
   for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveCount(1);
   await expect(a.locator('input[name="phone"]')).toHaveAttribute("type","tel");
-  await fill(a);await a.evaluate(()=>window.__sameDocument="kept");
+  await fill(a);
   await capture(a,"desktop-address.png");
   await a.getByTestId("address-section").scrollIntoViewIfNeeded();await capture(a,"desktop-address-viewport.png",false);
   for(const locale of ["zh-CN","zh-TW","en"]){
-    await a.locator("header select").selectOption(locale);
-    await expect(a).toHaveURL(`${origin}/${locale}/products/${process.env.LC_ORDER_PRODUCT}`);
-    await expect(a.locator("html")).toHaveAttribute("lang",locale);
-    assert.equal(await a.evaluate(()=>window.__sameDocument),"kept");
-    for(const [name,value] of Object.entries(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveValue(value);
+    // The shell's language link is a full navigation (the old header select swapped the locale in place): the pinned quote survives it
+    // through the journal, the unsaved address form must NOT (no PII in the URL or storage), so the fields come back empty.
+    await switchLocale(a,locale);
+    await expect(a).toHaveURL(`${origin}/${locale}/checkout`);
+    await expect(a.getByTestId("address-section")).toBeVisible();
+    for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveValue("");
   }
+  await fill(a);
   await expect(a.getByTestId("create-order")).toBeDisabled();
-  pass("BO01 native address and three history locales retain unsaved in-memory form");
+  pass("BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch");
   const destinationStart=calls.length,dropDest=arm("destination",{method:"PUT",drop:true,repeat:true});
   await a.getByTestId("confirm-address").click();assert.equal(await dropDest.result.promise,200);
   await expect(a.getByTestId("recover-purchase")).toBeVisible();hook=null;
@@ -201,7 +205,7 @@ try {
   await a.locator('input[name="line2"]').fill(pii.line2);await expect(a.getByTestId("create-order")).toBeDisabled();await confirm(a);
   const sourceDest=(await api(a,"GET","destination")).body.destination;
   const external={expected_version:sourceDest.version,cart_version:sourceDest.cart_version,kind:"home",country:"TW",recipient_name:pii.recipient_name,phone:pii.phone,home_address:{...sourceDest.home_address,line1:"Synthetic Concurrent Address"}};
-  const other=await c1.newPage();await other.goto(origin+productPath);
+  const other=await c1.newPage();await other.goto(origin+checkoutPath);
   assert.equal((await api(other,"PUT","destination",external,crypto.randomUUID())).status,200);
   const beforeConflict=(await control("facts")).length;
   const conflict=a.waitForResponse(r=>requestIs(r,"checkout","POST"));await a.getByTestId("create-order").click();assert.equal((await conflict).status(),409);await expect(a.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,beforeConflict);
@@ -231,7 +235,7 @@ try {
   // BO04: actual UI invalidates the stale second-tab confirmation. Never force
   // a disabled button enabled to manufacture a UI race the product prevents.
   const c3=await newContext(),{p:tab1,quote:q3}=await quotePage(c3);await fill(tab1);await confirm(tab1);
-  const popup=tab1.waitForEvent("popup");await tab1.evaluate(url=>window.open(url,"_blank"),origin+productPath);const tab2=await popup;
+  const popup=tab1.waitForEvent("popup");await tab1.evaluate(url=>window.open(url,"_blank"),origin+checkoutPath);const tab2=await popup;
   await expect(tab2.getByTestId("address-section")).toBeVisible();await confirm(tab2);
   // tab2's confirmation advanced the head; explicitly inspect and reconfirm in
   // tab1 so both tabs start with the same displayed current destination.
@@ -308,7 +312,7 @@ try {
   await control(`expire-quote/${q9.id}`,"POST");await expiredDest.clock.fastForward(61000);
   await expect(expiredDest.getByRole("button",{name:"Reload quotation",exact:true})).toBeDisabled();
   await expect(expiredDest.getByTestId("confirm-address")).toBeEnabled();
-  const noQuoteTab=await c9.newPage();await noQuoteTab.goto(origin+productPath);
+  const noQuoteTab=await c9.newPage();await noQuoteTab.goto(origin+checkoutPath);
   assert.equal(await noQuoteTab.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith("commerce-purchase-quote-v1:")).length),0);
   await expect(noQuoteTab.getByTestId("address-section")).toBeVisible();
   await expect(noQuoteTab.locator('input[name="line1"]')).toHaveValue(pii.line1);
@@ -335,7 +339,7 @@ try {
     initialOrder.entered.resolve();await initialOrder.release.promise;await route.fulfill({response});
   };
   await late.route(`${origin}/api/buyer/orders/${order1}`,lateOrderRoute);
-  await late.goto(origin+productPath);await initialOrder.entered.promise;
+  await late.goto(origin+checkoutPath);await initialOrder.entered.promise;
   await expect(late.getByTestId("order-section")).toHaveCount(0);
   const continuationStart=calls.length,dropCart=arm("cart",{method:"PUT",drop:true,repeat:true});
   await a.getByTestId("continue-shopping").click();assert.equal(await dropCart.result.promise,200);
@@ -343,7 +347,7 @@ try {
   const nextIntent=await stored(a);assert.equal(nextIntent.kind,"next-cart");
   assert.deepEqual(nextIntent.body,{expected_version:originalOrder.cart_version,items:[]});
   await a.reload();await expect(a.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(a),nextIntent);
-  await a.getByTestId("recover-purchase").click();await expect(a.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await a.getByTestId("recover-purchase").click();await expect(a.getByTestId("checkout-empty")).toBeVisible(); // continuation recovered: empty cart, no stuck journal
   assert.equal(await stored(a),null);assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);
   const continuationCalls=calls.slice(continuationStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
   assert(continuationCalls.length>=2);assert.equal(new Set(continuationCalls.map(x=>x.key)).size,1);assert.equal(new Set(continuationCalls.map(x=>x.body)).size,1);
@@ -352,7 +356,7 @@ try {
   pass("BH01 lost next-cart reply reload keeps original key/body and exactly one cart receipt");
   await expect(late.getByTestId("order-section")).toHaveCount(0);
   initialOrder.release.resolve();
-  await expect(late.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await expect(late.getByTestId("checkout-empty")).toBeVisible();
   await expect(late.getByTestId("order-section")).toHaveCount(0);
   assert.equal(await stored(late,"commerce-purchase-order-v1:"),null);
   assert.deepEqual((await api(late,"GET","cart")).body,continuedCart);
@@ -388,7 +392,7 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await a.locator("header select").selectOption(locale);await expect(a.locator("html")).toHaveAttribute("lang",locale);
+    await switchLocale(a,locale);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
     await expect(a.locator(".history-list li")).toHaveCount(2);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
@@ -419,7 +423,7 @@ try {
   const quoteFailureStart=calls.length;await fault.getByTestId("continue-shopping").click();await expect(fault.getByTestId("recover-purchase")).toBeVisible();
   const failedNext=await stored(fault);assert.equal(failedNext.kind,"next-cart");assert(await stored(fault,"commerce-purchase-order-v1:"));
   await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(fault),failedNext);
-  await fault.getByTestId("recover-purchase").click();await expect(fault.getByRole("button",{name:"Choose delivery",exact:true})).toBeEnabled();
+  await fault.getByTestId("recover-purchase").click();await expect(fault.getByTestId("checkout-empty")).toBeVisible();
   const quoteFailureCalls=calls.slice(quoteFailureStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");assert.equal(quoteFailureCalls.length,2);
   assert.equal(quoteFailureCalls[0].key,quoteFailureCalls[1].key);assert.equal(quoteFailureCalls[0].body,quoteFailureCalls[1].body);
   assert.equal(await stored(fault),null);assert.equal(await stored(fault,"commerce-purchase-order-v1:"),null);
@@ -449,9 +453,16 @@ try {
   for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets]){
     assert(!attempted.includes(value),"PII/bearer attempted persistent write");assert(!urls.includes(value)&&!urls.includes(encodeURIComponent(value)),"PII/bearer URL leak");assert(!messages.includes(value),"PII/bearer console leak");
   }
-  assert.equal(pageErrors.length,0,"browser application exception");
+  assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+}catch(error){
+  // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
+  if(browser)for(const context of browser.contexts())for(const [index,page] of context.pages().entries()){
+    await page.screenshot({path:path.join(evidence,`failure-${index}.png`),fullPage:true}).catch(()=>{});
+    await writeFile(path.join(evidence,`failure-${index}.txt`),`${page.url()}\n${await page.locator("body").innerText().catch(()=>"")}`.slice(0,6000)).catch(()=>{});
+  }
+  throw error;
 }finally{
   if(hook?.release)hook.release.resolve();
   if(browser)await browser.close();for(const s of sockets)s.destroy();

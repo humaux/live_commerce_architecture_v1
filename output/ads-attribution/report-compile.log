@@ -1,0 +1,4 @@
+# livecommerce/tests/foundation_test [livecommerce/tests/foundation.test]
+tests/foundation/ads_attribution_report_test.go:20:63: cannot use "" (untyped string constant) as map[string]string value in argument to c.api
+FAIL	livecommerce/tests/foundation [build failed]
+FAIL

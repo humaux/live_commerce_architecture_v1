@@ -155,3 +155,41 @@ Dedicated permission + one safe projection avoids exposing raw checkout rows or
 reusing a buyer token. No new database, role service or cross-module HTTP call.
 Upgrade signals: real order volume/query plans require measured index tuning;
 multi-attempt/refund features must deliberately extend the read-state contract.
+
+## Amendment: cash-on-delivery fields (home-cod R5, migration 0107; amends this contract)
+
+The merchant must see the cash a cash_on_delivery order collects (owner ruling, home-cod P1-2), so the safe projection and the
+`commerce_auth` column list grow by exactly the fields below; nothing else of the COD data model is exposed.
+
+- Summary/detail keys, always present, JSON `null` unless `payment_mode='cash_on_delivery'`: `cod_surcharge_minor` (the placement-time
+  whole-TWD surcharge, 0..100000, multiple of 100, never folded into `total_minor`) and `cod_collect_minor` (= `total_minor` +
+  `cod_surcharge_minor`, the cash due on delivery). The strict Go validator refuses a COD row whose collect amount is not that sum.
+  The summary key set is therefore the earlier list plus these two (`collection_state`, `payment_mode`, `pickup_source` and
+  `refunded_minor`/`refund_pending_minor` were added by 0073/0063; `source` by 0094 on the HTTP row).
+- `commerce_auth` SELECT on `checkout.orders` gains exactly `cod_surcharge_minor` (the two keys above and the finance COD column) and
+  `collected_at` (the Asia/Taipei finance day of collected COD and pay-at-pickup cash in `identity.read_finance_summary`, which this
+  role owns; it is set once by `fulfillment.record_collection` and never read for a merchant DTO key). `cod_carrier` is NOT granted:
+  the merchant DTO carries no carrier key and no `commerce_auth` function reads it. Least privilege: any further column needs a new amendment.
+
+## Amendment: orders-v2 domain read boundary (unpublished 0110, ACL ruling)
+
+The authenticated v2 reader retains its initial and final `orders:read` fences.
+Its live placement provenance and CVS tracking searches use three internal read
+helpers, following `checkout.has_inflight_collection` (CB03), not cross-domain
+table grants or new RLS policies for `commerce_auth`:
+
+- `claims.order_live_sources(tenant, store, order_ids uuid[])`: distinct order/session IDs,
+  owned by `commerce_claims_writer`. No actors, claim lines, bundle owners or quantities.
+- `live.order_session_labels(tenant, store, session_ids uuid[])`: ID, title and creation
+  time (for the existing latest-100 session choices), owned by `commerce_media_writer`.
+- `fulfillment.order_cvs_tracking(tenant, store, order_ids uuid[])`: latest attempt's
+  order ID, state, shipment number and provider tracking ID, owned by `commerce_checkout_writer`.
+
+Each is STABLE, SECURITY DEFINER, `search_path=pg_catalog`, with explicit tenant/store
+and requested-ID predicates; PUBLIC is revoked and only `commerce_auth` receives
+EXECUTE. Runtime and buyer logins cannot call them. Empty/null ID arrays return no rows.
+The authenticated reader supplies server-derived scope and batches IDs per statement.
+Existing pre-0110 customer/CVS metadata grants remain unchanged; no additional direct
+access to the consumption ledger, session table or CVS tracking columns is allowed.
+KC03 explicitly enumerates the new claims helper, including its owner's implicit
+EXECUTE; its frozen table/column ACLs, LPC06 and TCV02 remain unchanged.
