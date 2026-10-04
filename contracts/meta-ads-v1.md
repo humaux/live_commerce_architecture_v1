@@ -347,6 +347,22 @@ context row. Already-sent events are not recalled (no documented CAPI delete; di
 | commerce_buyer_runtime | `ads.put_capi_context(bytea,uuid,text)`, `ads.feed_rows(text)` (0080) | EXECUTE | buyer consent hook; public feed |
 | PUBLIC | every new function/table | none (REVOKE ALL) | default deny |
 
+0113 attribution / D9 exact delta (the pre-existing rows and denials remain in force):
+
+| Role | Exact objects | Privilege | Purpose / boundary |
+|---|---|---|---|
+| commerce_ads_writer | schemas `claims`, `live`, `orders` | USAGE only | Resolve the following domain-owned seams; no source-table grant |
+| commerce_ads_writer | `claims.attribution_funnel(uuid,uuid,uuid,date,date)`, `claims.attribution_sources(uuid,uuid,uuid)`, `live.attribution_sessions(uuid,uuid,date,date)`, `orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)` | EXECUTE | Scoped, aggregate first-party report; source owners enforce tenant/store |
+| commerce_ads_writer | `orders.capi_context(uuid,uuid,uuid)`, `orders.purge_capi_ip()` | EXECUTE | Consented context behind existing CAPI lease gate; bounded expired-IP purge |
+| commerce_ads_worker | `ads.capi_attribution_data(uuid,bigint,bytea)`, `ads.finish_insights_breakdowns(uuid,bigint,bytea,text,jsonb)` | EXECUTE | Exact operation/generation/token-fenced payload read and completion projection |
+| commerce_integration_writer | `ads.auth(bytea,uuid,text[])`, `ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb)` | EXECUTE | Merchant permission check and aggregate snapshot from the existing Page-token, source/session and lease-fenced audience route |
+
+MA02 asserts these 13 privilege facts by exact signature and requires every one
+to exist. Runtime/other-worker, PUBLIC, login-role and source-table denials are
+unchanged. MCI10 confines the D9 completion callbacks to synchronous fenced SQL
+in the exact Finish functions; the shared Page loader has only the two constant
+LoadSecret callsites (private reply and audience), not an arbitrary-query surface.
+
 ## 5. State machine and rules
 
 The existing authenticated draft/list API already returns `ops[].code` from
