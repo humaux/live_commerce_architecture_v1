@@ -411,6 +411,21 @@ async function audienceFacts(page: Page, locale: Locale) {
 async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   const selection = page.getByTestId("attribution-session");
   const panel = page.getByTestId("attribution-live-audience");
+  const assertUnknownSpend = async () => {
+    // These real PG sessions have distinct posts without any associated insight rows.
+    const facts = page.getByTestId("attribution-session-facts");
+    for (const label of [
+      requiredLabels[locale].sessionSpend,
+      attributionCopy[locale].roas,
+    ]) {
+      await expect(
+        facts
+          .locator("div")
+          .filter({ has: page.getByText(label, { exact: true }) })
+          .locator("dd"),
+      ).toHaveText("—");
+    }
+  };
   const assertInsufficient = async () => {
     await expect(selection).toHaveValue(fixture.state_sessions.insufficient);
     await expect(panel.getByTestId("attribution-insufficient")).toHaveText(
@@ -425,6 +440,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
       attributionCopy[locale].unknown,
     ]);
     await expect(panel.getByRole("table")).toHaveCount(0);
+    await assertUnknownSpend();
   };
   await selection.selectOption(fixture.state_sessions.insufficient);
   await expect(page).toHaveURL(
@@ -443,6 +459,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     await expect(panel.getByTestId("attribution-insufficient")).toHaveCount(0);
     await expect(panel.locator("dd")).toHaveCount(0);
     await expect(panel.getByRole("table")).toHaveCount(0);
+    await assertUnknownSpend();
   };
   await selection.selectOption(fixture.state_sessions.not_authorized);
   await expect(page).toHaveURL(
