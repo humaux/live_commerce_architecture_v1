@@ -84,6 +84,20 @@ const en = {
   audienceReading: "Queuing audience read…",
   audienceQueued:
     "Audience read queued. Read this report again later to see any updated insights.",
+  audienceCompleted:
+    "Reusing a completed audience read; no new read was queued. Read the report again to view the saved insights.",
+  audienceInflight:
+    "The existing audience read is in progress. Read the report again later.",
+  audienceUnconfirmed:
+    "The existing audience read outcome is unknown. Check the same request; do not start another read.",
+  audienceCheck: "Check same read request",
+  audienceReadFailed:
+    "The audience read failed. Check the Facebook connection before requesting again.",
+  audienceBlocked:
+    "The audience read was blocked by policy. Check the Facebook authorization.",
+  audienceStale:
+    "The Facebook connection changed. Reconnect it before requesting audience insights.",
+  audienceCancelled: "The audience read was cancelled.",
   audienceUnknown:
     "The read request outcome is unknown. Retry the same request.",
   audienceRetry: "Retry same read request",
@@ -192,6 +206,16 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     audienceRefresh: "刷新觀眾洞察",
     audienceReading: "正在排入觀眾讀取…",
     audienceQueued: "觀眾讀取已排入佇列，請稍後重新讀取報表查看更新。",
+    audienceCompleted:
+      "沿用已完成的觀眾讀取，未新增讀取請求。請重新讀取報表查看已儲存的洞察。",
+    audienceInflight: "既有觀眾讀取正在處理，請稍後重新讀取報表。",
+    audienceUnconfirmed:
+      "既有觀眾讀取結果未知，請確認同一請求，勿建立另一個讀取。",
+    audienceCheck: "確認同一讀取請求",
+    audienceReadFailed: "觀眾讀取失敗，請確認 Facebook 連接後再提出請求。",
+    audienceBlocked: "觀眾讀取因政策被阻擋，請確認 Facebook 授權。",
+    audienceStale: "Facebook 連接已變更，請重新連接後再讀取觀眾洞察。",
+    audienceCancelled: "觀眾讀取已取消。",
     audienceUnknown: "讀取請求結果未知，請重試同一請求。",
     audienceRetry: "重試同一讀取請求",
     audienceForbidden:
@@ -294,6 +318,16 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     audienceRefresh: "刷新观众洞察",
     audienceReading: "正在排入观众读取…",
     audienceQueued: "观众读取已排入队列，请稍后重新读取报表查看更新。",
+    audienceCompleted:
+      "沿用已完成的观众读取，未新增读取请求。请重新读取报表查看已保存的洞察。",
+    audienceInflight: "现有观众读取正在处理，请稍后重新读取报表。",
+    audienceUnconfirmed:
+      "现有观众读取结果未知，请确认同一请求，勿创建另一个读取。",
+    audienceCheck: "确认同一读取请求",
+    audienceReadFailed: "观众读取失败，请确认 Facebook 连接后再提出请求。",
+    audienceBlocked: "观众读取因政策被阻止，请确认 Facebook 授权。",
+    audienceStale: "Facebook 连接已变更，请重新连接后再读取观众洞察。",
+    audienceCancelled: "观众读取已取消。",
     audienceUnknown: "读取请求结果未知，请重试同一请求。",
     audienceRetry: "重试同一读取请求",
     audienceForbidden:

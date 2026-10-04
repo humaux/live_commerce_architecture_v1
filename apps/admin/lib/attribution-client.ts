@@ -29,7 +29,7 @@ export async function readAttribution(
 }
 
 export type AudienceReadResult =
-  | { kind: "queued"; ack: AudienceAck }
+  | { kind: "acknowledged"; ack: AudienceAck }
   | { kind: "unknown" | "forbidden" | "signed-out" | "failed" };
 // This POST writes the local operation intention; its worker only performs guarded Meta GETs. Never auto-repeat UNKNOWN with a fresh key.
 export async function requestAudienceRead(
@@ -79,7 +79,10 @@ export async function requestAudienceRead(
       "application/json"
     )
       return { kind: "unknown" };
-    return { kind: "queued", ack: parseAudienceAck(await response.json()) };
+    return {
+      kind: "acknowledged",
+      ack: parseAudienceAck(await response.json()),
+    };
   } catch {
     return { kind: "unknown" };
   } // The operation may have committed even when its acknowledgement was unusable.

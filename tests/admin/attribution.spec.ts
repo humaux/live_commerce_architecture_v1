@@ -18,6 +18,8 @@ const origin = required("LC_BROWSER_PUBLIC_ORIGIN"),
   store = required("LC_BROWSER_STORE"),
   evidence = required("LC_BROWSER_EVIDENCE");
 type Fixture = {
+  audience_operation_id: string;
+  fresh_audience_sessions: Record<`${Locale}/${390 | 1586}`, string>;
   unknown_draft_id: string;
   truncated: true;
   breakdowns_unavailable: { day: string; dimensions: string[] }[];
@@ -76,6 +78,23 @@ type Fixture = {
 const fixture: Fixture = JSON.parse(required("LC_ATTRIBUTION_FIXTURE"));
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 if (
+  !uuid.test(fixture.audience_operation_id ?? "") ||
+  [
+    "en/390",
+    "en/1586",
+    "zh-TW/390",
+    "zh-TW/1586",
+    "zh-CN/390",
+    "zh-CN/1586",
+  ].some(
+    (key) =>
+      !uuid.test(
+        fixture.fresh_audience_sessions?.[
+          key as keyof Fixture["fresh_audience_sessions"]
+        ] ?? "",
+      ),
+  ) ||
+  new Set(Object.values(fixture.fresh_audience_sessions ?? {})).size !== 6 ||
   !uuid.test(fixture.unknown_draft_id ?? "") ||
   fixture.unknown_draft_id === fixture.draft_id ||
   fixture.truncated !== true ||
@@ -110,6 +129,8 @@ const requiredLabels = {
     provisional: "Meta data may still change",
     boosted: "From promoted post",
     collected: "Collected orders",
+    completed:
+      "Reusing a completed audience read; no new read was queued. Read the report again to view the saved insights.",
   },
   "zh-TW": {
     insufficient: "觀眾數不足，Meta 未提供輪廓",
@@ -121,6 +142,8 @@ const requiredLabels = {
     provisional: "Meta 數據可能仍會更新",
     boosted: "受推廣貼文帶來",
     collected: "已收款訂單",
+    completed:
+      "沿用已完成的觀眾讀取，未新增讀取請求。請重新讀取報表查看已儲存的洞察。",
   },
   "zh-CN": {
     insufficient: "观众数不足，Meta 未提供轮廓",
@@ -132,6 +155,8 @@ const requiredLabels = {
     provisional: "Meta 数据可能仍会更新",
     boosted: "受推广帖文带来",
     collected: "已收款订单",
+    completed:
+      "沿用已完成的观众读取，未新增读取请求。请重新读取报表查看已保存的洞察。",
   },
 } as const;
 test.use({
@@ -601,7 +626,7 @@ async function reportShot(
 }
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const)
-  for (const width of [390, 1586]) {
+  for (const width of [390, 1586] as const) {
     test(`AT7/AT9 actual report clicks ${locale} ${width}`, async ({
       page,
     }) => {
@@ -666,7 +691,6 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           expected: "exact fixture facts",
           actual: "PASS",
         });
-        const audiencePath = `/api/stores/${store}/ads/sessions/${fixture.session_id}/audience-read`;
         await audienceStateClicks(page, locale, width);
         await unknownDraftClicks(page, locale, width);
         ledger.push({
@@ -685,12 +709,54 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             "both exact localized states survive reload; unknown metrics stay unknown; primary report facts restored",
           actual: "PASS",
         });
-        const observeRead = () =>
+        const observeRead = (session: string = fixture.session_id) =>
           page.waitForResponse(
             (r) =>
               r.request().method() === "POST" &&
-              new URL(r.url()).pathname === audiencePath,
+              new URL(r.url()).pathname ===
+                `/api/stores/${store}/ads/sessions/${session}/audience-read`,
           );
+        const freshSession =
+          fixture.fresh_audience_sessions[`${locale}/${width}`];
+        await page
+          .getByTestId("attribution-session")
+          .selectOption(freshSession);
+        await expect(page).toHaveURL(new RegExp(`session=${freshSession}`));
+        const freshRead = observeRead(freshSession);
+        await page.getByTestId("attribution-audience-refresh").click();
+        const freshResponse = await freshRead;
+        expect(freshResponse.ok()).toBe(true);
+        const freshAck = await freshResponse.json();
+        expect(freshAck.state).toBe("READY"); // A genuinely new session must keep the original READY gate.
+        expect(freshAck.operation_id).toMatch(uuid);
+        expect(freshAck.operation_id).not.toBe(fixture.audience_operation_id);
+        await expect(
+          page.getByTestId("attribution-audience-queued"),
+        ).toHaveText(c.audienceQueued);
+        await expect(
+          page.getByTestId("attribution-audience-completed"),
+        ).toHaveCount(0);
+        await page.reload();
+        await expect(page.getByTestId("attribution-session")).toHaveValue(
+          freshSession,
+        );
+        await expect(
+          page.getByTestId("attribution-audience-queued"),
+        ).toHaveText(c.audienceQueued);
+        ledger.push({
+          control: "fresh audience request receipt",
+          action: "selectOption/click/reload",
+          expected:
+            "new READY receipt and operation_id; queued receipt survives reload; one operation per fresh session",
+          actual: "PASS",
+        });
+        await page
+          .getByTestId("attribution-session")
+          .selectOption(fixture.session_id);
+        await expect(page).toHaveURL(
+          new RegExp(`session=${fixture.session_id}`),
+        );
+        await visibleFacts(page, locale);
         const firstRead = observeRead();
         await page.getByTestId("attribution-audience-refresh").click();
         const firstResponse = await firstRead;
@@ -703,15 +769,27 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           ).toHaveText(c.audienceForbidden);
         } else {
           expect(firstResponse.ok()).toBe(true);
-          expect((await firstResponse.json()).state).toBe("READY");
+          expect(await firstResponse.json()).toEqual({
+            operation_id: fixture.audience_operation_id,
+            state: "SUCCEEDED",
+          });
+          await expect(
+            page.getByTestId("attribution-audience-completed"),
+          ).toHaveText(requiredLabels[locale].completed);
           await expect(
             page.getByTestId("attribution-audience-queued"),
-          ).toHaveText(c.audienceQueued);
+          ).toHaveCount(0);
+          await expect(
+            page.getByTestId("attribution-audience-unknown"),
+          ).toHaveCount(0);
         }
         ledger.push({
           control: "audience-refresh",
           action: "click",
-          expected: fixture.audience_read ?? "queued READY, not fetched",
+          expected:
+            fixture.audience_read === "forbidden"
+              ? "forbidden"
+              : "same existing operation_id and SUCCEEDED; completed replay, no new read",
           actual: "PASS",
         });
         await page.reload();
@@ -724,23 +802,27 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         await visibleFacts(page, locale);
         if (fixture.audience_read !== "forbidden") {
           await expect(
-            page.getByTestId("attribution-audience-queued"),
-          ).toHaveText(c.audienceQueued);
+            page.getByTestId("attribution-audience-completed"),
+          ).toHaveText(requiredLabels[locale].completed);
           const nextRead = observeRead();
           await page.getByTestId("attribution-audience-refresh").click();
           const nextResponse = await nextRead;
           expect(nextResponse.ok()).toBe(true);
+          expect(await nextResponse.json()).toEqual({
+            operation_id: fixture.audience_operation_id,
+            state: "SUCCEEDED",
+          });
           expect(nextResponse.request().headers()["idempotency-key"]).not.toBe(
             firstKey,
           );
           await expect(
-            page.getByTestId("attribution-audience-queued"),
-          ).toHaveText(c.audienceQueued);
+            page.getByTestId("attribution-audience-completed"),
+          ).toHaveText(requiredLabels[locale].completed);
           ledger.push({
-            control: "audience-refresh new read",
+            control: "audience-refresh completed replay",
             action: "reload/click",
             expected:
-              "queued survives reload, new explicit request gets new key",
+              "completed receipt survives reload; new HTTP key reuses same SUCCEEDED operation, no new operation",
             actual: "PASS",
           });
         }

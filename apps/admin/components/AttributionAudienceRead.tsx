@@ -1,10 +1,11 @@
 "use client";
 // POST /api/stores/{store}/ads/sessions/{session}/audience-read -> Go same resource under /v1/admin/stores.
-// Queues a guarded read-only Meta GET operation. A READY acknowledgement does not mean insights were fetched.
+// A read receipt may replay an existing operation; only SUCCEEDED proves completion. Uncertainty never creates a fresh-key retry.
 import { useEffect, useRef, useState } from "react";
 import { requestAudienceRead } from "@/lib/attribution-client";
 import {
   audienceStorageKey,
+  audienceAckPhase,
   parseAudienceJournal,
   type AudienceJournal,
 } from "@/lib/attribution-audience";
@@ -57,7 +58,13 @@ export function AttributionAudienceRead({
   }, [storageKey]);
 
   async function queue(retry: boolean) {
-    if (!verified || busy.current || (retry && journal?.phase !== "unknown"))
+    if (
+      !verified ||
+      busy.current ||
+      (retry &&
+        journal?.phase !== "unknown" &&
+        journal?.phase !== "unconfirmed")
+    )
       return;
     busy.current = true;
     setSending(true);
@@ -99,14 +106,15 @@ export function AttributionAudienceRead({
       pending.boundary,
     );
     try {
-      if (result.kind === "queued") {
-        const queued: AudienceJournal = {
+      if (result.kind === "acknowledged") {
+        const acknowledged: AudienceJournal = {
           ...pending,
-          phase: "queued",
+          phase: audienceAckPhase(result.ack),
           operation_id: result.ack.operation_id,
+          state: result.ack.state,
         };
-        sessionStorage.setItem(storageKey, JSON.stringify(queued));
-        if (mounted.current) setJournal(queued);
+        sessionStorage.setItem(storageKey, JSON.stringify(acknowledged));
+        if (mounted.current) setJournal(acknowledged);
       } else if (result.kind !== "unknown") {
         sessionStorage.removeItem(storageKey);
         if (mounted.current) {
@@ -130,7 +138,11 @@ export function AttributionAudienceRead({
       <button
         type="button"
         data-testid="attribution-audience-refresh"
-        disabled={locked || journal?.phase === "unknown"}
+        disabled={
+          locked ||
+          journal?.phase === "unknown" ||
+          journal?.phase === "unconfirmed"
+        }
         onClick={() => void queue(false)}
       >
         {sending ? c.audienceReading : c.audienceRefresh}
@@ -153,6 +165,50 @@ export function AttributionAudienceRead({
       {!sending && journal?.phase === "queued" && (
         <p role="status" data-testid="attribution-audience-queued">
           {c.audienceQueued}
+        </p>
+      )}
+      {!sending && journal?.phase === "inflight" && (
+        <p
+          role="status"
+          data-testid="attribution-audience-inflight"
+          data-state={journal.state}
+        >
+          {c.audienceInflight}
+        </p>
+      )}
+      {!sending && journal?.phase === "completed" && (
+        <p role="status" data-testid="attribution-audience-completed">
+          {c.audienceCompleted}
+        </p>
+      )}
+      {!sending && journal?.phase === "unconfirmed" && (
+        <>
+          <p role="status" data-testid="attribution-audience-unconfirmed">
+            {c.audienceUnconfirmed}
+          </p>
+          <button
+            type="button"
+            data-testid="attribution-audience-retry"
+            disabled={locked}
+            onClick={() => void queue(true)}
+          >
+            {c.audienceCheck}
+          </button>
+        </>
+      )}
+      {!sending && journal?.phase === "failed" && (
+        <p
+          role="alert"
+          data-testid="attribution-audience-failed"
+          data-state={journal.state}
+        >
+          {journal.state === "BLOCKED_POLICY"
+            ? c.audienceBlocked
+            : journal.state === "STALE_BINDING"
+              ? c.audienceStale
+              : journal.state === "CANCELLED"
+                ? c.audienceCancelled
+                : c.audienceReadFailed}
         </p>
       )}
       {problem && (
