@@ -4,7 +4,8 @@
 #   first [<tag>]       preflight -> images present -> postgres healthy -> migrate ->
 #                       provision-logins -> record tag -> up -d (active profiles) -> post checks
 #                       -> log. <tag> defaults to compose.env IMAGE_TAG.
-#   upgrade <tag>       preflight(new tag) -> MANDATORY backup -> stop app+workers (Caddy keeps
+#   upgrade <tag>       preflight(new tag) -> disk guard (backup filesystem needs max(10 %, 2 GiB)
+#                       free, D6) -> MANDATORY backup -> stop app+workers (Caddy keeps
 #                       answering 503 + Retry-After) -> migrate(new tag) -> provision -> record
 #                       tag -> up -d -> post checks -> log. Never auto-rolls back or restores.
 #   app-rollback <tag>  allowed ONLY if the migration ledger count equals the one recorded when
@@ -260,6 +261,12 @@ upgrade)
   export IMAGE_TAG=$arg
   "$LC_SCRIPTS_DIR/preflight.sh"
   images_present
+  # D6: refuse before the backup (and anything else) on a nearly full backup filesystem. Nothing has been touched yet, so no
+  # rollback decision tree: drop the EXIT trap like the app-rollback refusal below.
+  lc_disk_guard "$LC_BACKUP_DIR" || {
+    trap - EXIT
+    exit 1
+  }
   "$LC_SCRIPTS_DIR/pg-ops.sh" backup --tag "pre-upgrade-$IMAGE_TAG" || lc_die "mandatory pre-upgrade backup failed; nothing was changed"
   before=$(lc_ledger_count)
   mapfile -t svcs < <(active_app_services)

@@ -4,7 +4,8 @@
 #   logging that names things but never prints values, a safe KEY=VALUE env-file loader plus a
 #   file-only getter/atomic setter (deploy.sh keeps compose.env IMAGE_TAG = deployed tag),
 #   the lc_compose wrapper (fixed project dir + env file), a superuser psql helper that runs
-#   inside the postgres container over the unix socket, and lc_secret_scan.
+#   inside the postgres container over the unix socket, lc_secret_scan, and lc_disk_guard (free-space budget
+#   before backup writes).
 # Runs as/in: the deploy host (root for real deployments; any user with docker access for
 #   smoke). Requires bash >= 4.4, docker compose >= 2.24, python3 (secret scan).
 # Reads env: LC_CONFIG_DIR (default /etc/live-commerce), LC_COMPOSE_ENV (default
@@ -158,6 +159,26 @@ lc_service_active() { grep -qx -- "$1" < <(lc_active_services); }
 lc_psql() {
   lc_compose exec -T postgres bash -c \
     'PGPASSWORD="$(< /run/secrets/pg_superuser_password)" exec psql -X -q -At -F "|" -v ON_ERROR_STOP=1 -h /var/run/postgresql -U postgres -d live_commerce'
+}
+
+# lc_disk_guard PATH — disk budget guard before a write that can fill the disk (ops-disk-guard D6): returns 1 (message on
+# stderr, nothing touched) when the filesystem holding PATH has less than max(10 % of its size, 2 GiB) free. A full disk
+# must fail loudly BEFORE the database is touched: on 2026-10-03 a full backup disk stopped PostgreSQL and the restart
+# failed for 29.5 h. Callers decide what a refusal means (pg-ops.sh exits, deploy.sh upgrade aborts before its backup).
+lc_disk_guard() {
+  local path=$1 size_kb avail_kb need_kb
+  read -r size_kb avail_kb < <(df -Pk "$path" 2>/dev/null | awk 'NR == 2 { print $2, $4 }') || true
+  if [[ ! "$size_kb" =~ ^[0-9]+$ || ! "$avail_kb" =~ ^[0-9]+$ ]]; then
+    lc_error "disk guard: cannot read the free space of $path; refusing to write backups"
+    return 1
+  fi
+  need_kb=$((size_kb / 10))
+  if ((need_kb < 2097152)); then need_kb=2097152; fi
+  if ((avail_kb < need_kb)); then
+    lc_error "disk guard: $path has $((avail_kb / 1024)) MiB free of $((size_kb / 1024)) MiB; refusing to write (need max(10 %, 2 GiB) = $((need_kb / 1024)) MiB). Nothing was touched. Free space first: docs/runbooks/incident.md (disk full / WAL archive)"
+    return 1
+  fi
+  return 0
 }
 
 # lc_ledger_count — rows in the checksummed migration ledger (migrations/migrate.go).
