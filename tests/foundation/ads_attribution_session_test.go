@@ -251,6 +251,9 @@ func TestAdsAttributionSessionAudiencePipeline(t *testing.T) {
 	}
 	// A new operation replaces the latest snapshot, never adds a duplicate session.
 	x.g.setAvailable()
+	// R11: synthetic task-owned clock advancement only; the real planner must
+	// permit a new read after the completed operation's ten-minute cooldown.
+	atsElapsed(t, x, op)
 	op2 := x.mustPlan()
 	x.run(op2)
 	x.e.awaitOp(t, op2, "SUCCEEDED", 8*time.Second, "completed")
@@ -377,12 +380,21 @@ func TestAdsAttributionSessionAudienceOverlappingReads(t *testing.T) {
 	for _, newFirst := range []bool{false, true} {
 		t.Run(map[bool]string{false: "AthenB", true: "BthenA"}[newFirst], func(t *testing.T) {
 			x := newATSEnv(t, []string{"read_insights", "pages_read_engagement"})
-			a, b := x.mustPlan(), x.mustPlan()
+			a := x.mustPlan()
+			// New planning cannot overlap in R11. Recreate an already-existing
+			// legacy overlap only after one real completed cycle and cooldown;
+			// retain the adversarial out-of-order snapshot projection assertion.
+			t06StartDispatcher(t, x.pool, x.queue, []integration.DispatchRoute{x.route}, mciDispatchOptions())
+			x.run(a)
+			x.e.awaitOp(t, a, "SUCCEEDED", 8*time.Second, "completed")
+			atsElapsed(t, x, a)
+			b := x.mustPlan()
+			mustExec(t, x.e.h.f.owner, `UPDATE integration.operations SET state='READY',lease_token_hash=NULL,lease_mode='',lease_until=NULL WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, a, x.e.h.f.tenantA, x.e.h.f.storeA1)
+			mustExec(t, x.e.h.f.owner, `UPDATE river.river_job SET state='available',finalized_at=NULL,scheduled_at=clock_timestamp(),queue='default' WHERE id=(SELECT job_id FROM integration.operations WHERE id=$1)`, a)
 			first, second := a, b
 			if newFirst {
 				first, second = b, a
 			}
-			t06StartDispatcher(t, x.pool, x.queue, []integration.DispatchRoute{x.route}, mciDispatchOptions())
 			x.run(first)
 			x.e.awaitOp(t, first, "SUCCEEDED", 8*time.Second, "completed")
 			x.run(second)
@@ -394,7 +406,7 @@ func TestAdsAttributionSessionAudienceOverlappingReads(t *testing.T) {
 			if winner != b {
 				t.Fatalf("completion order changed newer-request winner: got=%s want=%s", winner, b)
 			}
-			if x.g.count() != 4 {
+			if x.g.count() != 6 {
 				t.Fatalf("overlapping Graph calls=%d", x.g.count())
 			}
 		})

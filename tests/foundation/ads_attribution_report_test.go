@@ -76,6 +76,7 @@ type atReportEnv struct {
 	r10                          []atR10Order
 	stateSessions                map[string]string
 	expected                     map[string]any
+	r11UnknownDraft              string
 }
 
 // Minimal Page intake assembly on the Stripe fixture's isolated PG cluster.
@@ -238,7 +239,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		}
 		in := checkout.Input{QuoteID: q.ID, DestinationID: dest.ID, CartVersion: cart.Version, ServiceVersion: 1, AllocationVersion: 1}
 		if i == 0 || (i >= 3 && i != 4) {
-			in.AdTouch = atTouch(x.firstDraft, time.Minute)
+			in.AdTouch = atTouch(x.firstDraft, 0)
 		}
 		if i == 2 || i == 4 || i == 7 {
 			in.PaymentMode = "cash_on_delivery"
@@ -280,6 +281,11 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		}
 		e.g.SetInsights(camp, x.day, fakegraph.Insights{Spend: spend, Impressions: "1000", Clicks: "9", PurchaseCount: "9", PurchaseValue: "900.00"})
 		e.g.SetBreakdowns(camp, x.day, "hourly_stats_aggregated_by_advertiser_time_zone", []map[string]any{{"date_start": x.day, "date_stop": x.day, "spend": spend, "hourly_stats_aggregated_by_advertiser_time_zone": "13:00:00 - 13:59:59"}})
+		if i == 0 {
+			// Deliberately malformed optional synthetic Graph dimension: R11
+			// must retain D7 daily data and the successful hourly dimension.
+			e.g.SetBreakdowns(camp, x.day, "age,gender", []map[string]any{{"date_start": x.day, "date_stop": x.day, "age": "<malformed>", "gender": "female", "spend": spend}})
+		}
 	}
 	e.sweep("insights")
 	e.settle()
@@ -346,9 +352,35 @@ func (x *atReportEnv) browserFixture() map[string]any {
 		panic(err)
 	}
 	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "expected": x.expected, "state_sessions": x.stateSessions, "meta_account_timezone": "America/Los_Angeles", "provisional": true,
+		"unknown_draft_id": x.r11UnknownDraft, "truncated": x.r11UnknownDraft != "", "breakdowns_unavailable": []map[string]any{{"day": x.day, "dimensions": []string{"age_gender"}}}, "unknown_breakdown": map[string]any{"dimension": "hourly", "bucket": "13:00:00 - 13:59:59"},
 		"live_audience":     map[string]any{"status": "available", "views": 34, "peak_concurrent": nil, "total_view_time_ms": nil, "age_gender": []map[string]any{{"bucket": "F.25-34", "view_time_ms": 1234}}, "regions": []map[string]any{{"bucket": "Taipei", "view_time_ms": 4321}}},
 		"forbidden_private": []string{atPrivateStreet, atPrivateCity},
-		"hourly":            []map[string]any{{"day": x.day, "timezone_name": "America/Los_Angeles", "dimension": "hourly", "bucket": "13:00:00 - 13:59:59", "hour_start": start.Format(time.RFC3339), "spend_minor": 1230, "reach": 0, "impressions": 0, "clicks": 0, "engagements": 0, "comments": 0, "purchases": nil, "purchase_value_minor": nil}}}
+		"hourly":            []map[string]any{{"day": x.day, "timezone_name": "America/Los_Angeles", "dimension": "hourly", "bucket": "13:00:00 - 13:59:59", "hour_start": start.Format(time.RFC3339), "spend_minor": 1230, "reach": nil, "impressions": nil, "clicks": nil, "engagements": nil, "comments": nil, "purchases": nil, "purchase_value_minor": nil}}}
+}
+
+func (x *atReportEnv) r11BrowserCap(t *testing.T) {
+	t.Helper()
+	// Actual never-published draft + disclosed scoped history copies; no
+	// report interception. Copies sort after both money-bearing drafts.
+	x.r11UnknownDraft = x.newDraft(adsDraftIn{Source: x.m.postID})
+	r11DraftCopies(t, x.adsEnv, x.firstDraft, 100)
+	r := x.api("GET", "/attribution?from="+x.day+"&to="+x.day, x.token, nil, nil)
+	if r.Status != 200 || r.JSON["truncated"] != true {
+		t.Fatalf("browser cap must come from real PG report, status=%d truncated=%v", r.Status, r.JSON["truncated"])
+	}
+	seen := false
+	for _, raw := range r.JSON["drafts"].([]any) {
+		v := raw.(map[string]any)
+		if v["draft_id"] == x.r11UnknownDraft {
+			seen = true
+			if v["spend_minor"] != nil || v["roas"] != nil {
+				t.Fatal("browser no-insights draft metrics fabricated")
+			}
+		}
+	}
+	if !seen || len(r.JSON["drafts"].([]any)) != 100 {
+		t.Fatal("browser selectable unknown draft missing from capped report")
+	}
 }
 
 func atNum(t *testing.T, row map[string]any, key string, want any) {

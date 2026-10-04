@@ -78,6 +78,9 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 	defer cancel()
 	x := atNewReportEnv(t)
 	x.assertReport(t) // strict PG equality before any UI observation
+	x.r11BrowserCap(t)
+	// Synthetic merchant grants are fixture preparation, not a browser action.
+	mustExec(t, x.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'integration:read') ON CONFLICT DO NOTHING`, x.f.tenantA, x.store, x.creator)
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "ads-attribution-report")
 	stack := mabStartAdmin(t, ctx, x.f, x.creator, evidence, httpapi.Options{SessionStoreList: true, Ads: x.svc})
