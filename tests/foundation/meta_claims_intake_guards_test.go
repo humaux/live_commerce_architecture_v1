@@ -207,6 +207,9 @@ func TestMetaClaimsMCI10NoNetworkInIntakeCode(t *testing.T) {
 // Check, Dispatch and Reconcile never see it.
 func TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret(t *testing.T) {
 	srcs := mciSources(t, "internal", "cmd")
+	if !mciPageLoaderReferences(srcs) {
+		t.Error("shared Page loader must have exactly the two contracted constant LoadSecret callsites, without aliases")
+	}
 	mentions := 0
 	for _, s := range srcs {
 		if s.dir == "internal/integrations/core" {
@@ -281,7 +284,13 @@ func mciSecretClaimAllowed(s mciSrc, fn *ast.FuncDecl, loads, loadsAds, cvsSQL b
 	if fn.Name.Name == "FinishRefusal" {
 		return mciAdsRefusalFinish(s, fn)
 	}
-	return (s.dir == "internal/integrations/metareply" && loads) ||
+	if fn.Name.Name == "finishAudience" {
+		return mciFencedProjection(s, fn)
+	}
+	if fn.Name.Name == "pageSecretLoader" {
+		return mciPageLoaderBody(s, fn)
+	}
+	return (s.path == "internal/integrations/metareply/routes.go" && fn.Name.Name == "loadSecretFor" && loads) ||
 		(s.path == "internal/integrations/meta_ads/routes.go" && fn.Name.Name == "LoadSecret" && loadsAds) ||
 		(s.path == "internal/attribution/capiroute/route.go" && fn.Name.Name == "loadSecret" && loadsAds) ||
 		// R2 CVS: only the contracted fenced loader/finisher and their dispatcher
@@ -294,52 +303,7 @@ func mciSecretClaimAllowed(s mciSrc, fn *ast.FuncDecl, loads, loadsAds, cvsSQL b
 // The exception is an actual Exec call in one file/function, not a SQL substring
 // in a comment or unused constant. Ordinary callbacks and aliases remain forbidden.
 func mciAdsRefusalFinish(s mciSrc, fn *ast.FuncDecl) bool {
-	if s.path != "internal/integrations/meta_ads/finish.go" || fn.Name.Name != "FinishRefusal" || fn.Recv != nil || len(fn.Type.Params.List) != 4 {
-		return false
-	}
-	selector := func(expr ast.Expr, object, field string) bool {
-		x, ok := expr.(*ast.SelectorExpr)
-		if !ok || x.Sel.Name != field {
-			return false
-		}
-		id, ok := x.X.(*ast.Ident)
-		return ok && id.Name == object
-	}
-	param := fn.Type.Params.List[2]
-	if len(param.Names) != 1 || param.Names[0].Name != "claim" || !selector(param.Type, "core", "SecretClaim") {
-		return false
-	}
-	execs, claimRefs, valid := 0, 0, true
-	ast.Inspect(fn, func(n ast.Node) bool {
-		if id, ok := n.(*ast.Ident); ok && id.Name == "claim" {
-			claimRefs++
-		}
-		call, ok := n.(*ast.CallExpr)
-		if !ok || selector(call.Fun, "graphCodePattern", "MatchString") {
-			return true
-		}
-		if !selector(call.Fun, "tx", "Exec") || len(call.Args) != 9 {
-			valid = false
-			return true
-		}
-		execs++
-		lit, ok := call.Args[1].(*ast.BasicLit)
-		if !ok || lit.Kind != token.STRING {
-			valid = false
-			return true
-		}
-		sql, err := strconv.Unquote(lit.Value)
-		if err != nil || sql != "SELECT ads.finish_operation_refusal($1::uuid,$2::bigint,$3::bytea,$4::text,$5::text,$6::text,$7::text)" {
-			valid = false
-		}
-		for i, field := range []string{"OperationID", "Generation", "LeaseToken", "Mode"} {
-			if !selector(call.Args[i+2], "claim", field) {
-				valid = false
-			}
-		}
-		return true
-	})
-	return valid && execs == 1 && claimRefs == 5 // parameter + four fenced SQL arguments, no escape
+	return mciFencedProjection(s, fn)
 }
 
 func TestMetaClaimsMCI10AdsRefusalFinishException(t *testing.T) {
