@@ -78,7 +78,7 @@ func (x *atReportEnv) r10FinishOrder(t *testing.T, offline *tcvEnv, cap buyer.Ca
 		t.Fatalf("unknown R10 fixture index=%d", index)
 	}
 	if index == 3 || index == 4 {
-		if err := x.r.base.s.p.f.owner.QueryRow(context.Background(), `SELECT total_minor+cod_surcharge_minor FROM checkout.orders WHERE id=$1`, res.OrderID).Scan(&o.net); err != nil {
+		if err := x.r.base.s.p.f.owner.QueryRow(context.Background(), `SELECT total_minor+coalesce(cod_surcharge_minor,0) FROM checkout.orders WHERE id=$1`, res.OrderID).Scan(&o.net); err != nil {
 			t.Fatal(err)
 		}
 	}
