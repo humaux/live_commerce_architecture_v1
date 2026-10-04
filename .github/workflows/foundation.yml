@@ -52,15 +52,22 @@ jobs:
         # docs/engineering/dependency-map.md is generated from `go list`; a stale map
         # means a package/import changed without regenerating it (PROCESS.md §5).
         run: bash scripts/dev/depmap.sh --check
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24" # package.json engines: >=24 <25 (--experimental-strip-types)
+      - name: Node dependencies (frozen lockfile)
+        # check-gates runs the W0 UI ratchet (tests/admin/shell-architecture.test.mjs, scripts/dev/ui-architecture-gate.mjs),
+        # which parses TypeScript with the pinned root devDependency `typescript-api`. Before 2026-10-04 this step ran before
+        # Node was set up and with no node_modules, so the ratchet could only fail (Cannot find module 'typescript-api').
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --ignore-scripts
       - name: Package docs and gate map are current
         # Every Go package needs a comment with "owns" and "never" (PROCESS.md §5), and every
         # test-local.sh mode/admin spec must be documented and run by a gate (docs/delivery/GATES.md).
         run: |
           bash scripts/dev/check-pkgdocs.sh
           bash scripts/dev/check-gates.sh
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: "24" # package.json engines: >=24 <25 (--experimental-strip-types)
       - name: Node unit suites (storefront, i18n)
         # No Docker/PG needed. tests/media/r04-input-runner.test.mjs needs a pinned LiveKit binary and is
         # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
