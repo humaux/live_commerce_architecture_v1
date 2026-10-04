@@ -532,36 +532,33 @@ func (s *Service) ReadLiveAudience(ctx context.Context, tx pgx.Tx, scope platfor
 		PrincipalID string `json:"principal_id"`
 		SessionID   string `json:"session_id"`
 	}{scope.PrincipalID, sessionID}, &out, func() error {
-		// The SQL planner may replay another key's in-flight/cooldown operation.
-		// Keep a candidate River job in a savepoint so replay leaves no orphan job.
-		planTx, e := tx.Begin(ctx)
-		if e != nil {
-			return e
-		}
-		defer planTx.Rollback(ctx)
-		op, e := newID(ctx, planTx)
-		if e != nil {
-			return e
-		}
-		job, e := core.InsertOperationJob(ctx, s.jobs, planTx, op)
-		if e != nil {
-			return e
-		}
-		if e = planTx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,$4,$5)`, hash, scope.StoreID, sessionID, op, job).Scan(&out); e != nil {
+		// Authenticate and acquire the store/video transaction lock before minting
+		// a job. Replay creates no candidate job and preserves the fresh-xmin guard.
+		if e := tx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,NULL,NULL)`, hash, scope.StoreID, sessionID).Scan(&out); e != nil {
 			return e
 		}
 		var result struct {
-			OperationID string `json:"operation_id"`
+			PlanRequired bool   `json:"plan_required"`
+			OperationID  string `json:"operation_id"`
 		}
-		if e = json.Unmarshal(out, &result); e != nil {
+		if e := json.Unmarshal(out, &result); e != nil {
 			return e
 		}
-		if result.OperationID == op {
-			e = planTx.Commit(ctx)
-		} else {
-			e = planTx.Rollback(ctx)
+		if !result.PlanRequired {
+			if !command.ValidID(result.OperationID) {
+				return refusal("invalid_request")
+			}
+			return command.Audit(ctx, tx, scope, "ads.audience.read_requested")
 		}
+		op, e := newID(ctx, tx)
 		if e != nil {
+			return e
+		}
+		job, e := core.InsertOperationJob(ctx, s.jobs, tx, op)
+		if e != nil {
+			return e
+		}
+		if e = tx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,$4,$5)`, hash, scope.StoreID, sessionID, op, job).Scan(&out); e != nil {
 			return e
 		}
 		return command.Audit(ctx, tx, scope, "ads.audience.read_requested")

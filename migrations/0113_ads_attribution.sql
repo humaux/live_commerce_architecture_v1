@@ -590,7 +590,11 @@ BEGIN
   AND x.action='meta.live_insights' AND x.provider='facebook' AND x.request->>'post_id'=s.source_object_id
   AND (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED') OR x.updated_at>=clock_timestamp()-interval '10 minutes')
   ORDER BY (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')) DESC,x.updated_at DESC,x.id LIMIT 1;
- IF FOUND THEN RETURN jsonb_build_object('operation_id',prior.id,'state',prior.state); END IF;
+ IF FOUND THEN
+  IF p_operation IS NOT NULL OR p_job IS NOT NULL THEN RAISE EXCEPTION 'audience replay requires preflight' USING ERRCODE='40001'; END IF;
+  RETURN jsonb_build_object('operation_id',prior.id,'state',prior.state);
+ END IF;
+ IF p_operation IS NULL AND p_job IS NULL THEN RETURN jsonb_build_object('plan_required',true); END IF;
  SELECT * INTO j FROM river.river_job x WHERE x.id=p_job AND x.kind='external_operation_v1' AND x.queue='default'
   AND x.args=jsonb_build_object('operation_id',p_operation::text,'version',1) AND x.xmin=pg_current_xact_id()::xid;
  IF NOT FOUND THEN RAISE EXCEPTION 'live audience job mismatch' USING ERRCODE='22023'; END IF;
