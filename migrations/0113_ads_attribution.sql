@@ -369,9 +369,9 @@ BEGIN
   AND v_now<d.ends_at+interval '3 days';
  v_hourkey:=to_char(v_now AT TIME ZONE 'UTC','YYYYMMDDHH24');
  FOR x IN SELECT q.day FROM (
-  SELECT g::date day FROM generate_series(greatest((d.starts_at AT TIME ZONE 'Asia/Taipei')::date,v_today-3)::timestamp,v_today::timestamp,interval '1 day') g WHERE v_regular
+  SELECT g::date AS day FROM generate_series(greatest((d.starts_at AT TIME ZONE 'Asia/Taipei')::date,v_today-3)::timestamp,v_today::timestamp,interval '1 day') g WHERE v_regular
   UNION SELECT b.day FROM (SELECT bs.day FROM ads.insights_breakdown_status bs WHERE bs.tenant_id=d.tenant_id AND bs.store_id=d.store_id AND bs.draft_id=d.id
-   AND cardinality(bs.unavailable)>0 AND bs.retry_until>v_now ORDER BY bs.day LIMIT 4) b) q ORDER BY q.day
+   AND cardinality(bs.unavailable)>0 AND bs.retry_until>v_now ORDER BY bs.fetched_at,bs.day LIMIT 4) b) q ORDER BY q.day
  LOOP
   IF NOT EXISTS(SELECT 1 FROM integration.operations o WHERE o.tenant_id=d.tenant_id AND o.store_id=d.store_id
    AND o.semantic_key='ads:ins:'||d.id::text||':'||to_char(x,'YYYY-MM-DD')||':'||v_hourkey) THEN v_days:=v_days||x; END IF;

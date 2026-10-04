@@ -75,7 +75,9 @@ func TestAdsAttributionR11AudienceBoundReplay(t *testing.T) {
 		t.Fatalf("real old-source deactivation: %v", err)
 	}
 	x.e.session = x.e.h.draft(t, x.e.h.f.storeA1)
-	x.e.h.open(t, x.e.session, claims.MatchExact)
+	// A source needs a claim-window row, not an open selling window. Keep the
+	// existing store's one-open-window invariant while replaying audience data.
+	x.e.h.mustWindow(t, x.e.session, 0, claims.WindowClosed, claims.MatchExact)
 	x.e.srcFB = x.e.mustSource(t, "page", x.e.pageAsset, x.e.postID, false)
 	r = x.plan()
 	if r.Status != 200 || r.JSON["operation_id"] != op {
