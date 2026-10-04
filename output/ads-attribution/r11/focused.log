@@ -1,0 +1,310 @@
+=== RUN   TestAdsAttributionAT3ExactComment
+=== RUN   TestAdsAttributionAT3ExactComment/one_boost
+=== RUN   TestAdsAttributionAT3ExactComment/simultaneous_boosts
+=== RUN   TestAdsAttributionAT3ExactComment/outside_window
+=== RUN   TestAdsAttributionAT3ExactComment/other_post_in_same_session
+=== RUN   TestAdsAttributionAT3ExactComment/click_beats_post
+=== RUN   TestAdsAttributionAT3ExactComment/line_updated_after_redeem
+--- PASS: TestAdsAttributionAT3ExactComment (42.93s)
+    --- PASS: TestAdsAttributionAT3ExactComment/one_boost (11.01s)
+    --- PASS: TestAdsAttributionAT3ExactComment/simultaneous_boosts (4.93s)
+    --- PASS: TestAdsAttributionAT3ExactComment/outside_window (10.28s)
+    --- PASS: TestAdsAttributionAT3ExactComment/other_post_in_same_session (3.94s)
+    --- PASS: TestAdsAttributionAT3ExactComment/click_beats_post (3.04s)
+    --- PASS: TestAdsAttributionAT3ExactComment/line_updated_after_redeem (9.73s)
+=== RUN   TestAdsAttributionAT8BreakdownDispatch
+--- PASS: TestAdsAttributionAT8BreakdownDispatch (2.70s)
+=== RUN   TestAdsAttributionAT1BeginFreeze
+=== RUN   TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it
+=== RUN   TestAdsAttributionAT1BeginFreeze/expired
+=== RUN   TestAdsAttributionAT1BeginFreeze/future
+=== RUN   TestAdsAttributionAT1BeginFreeze/foreign_store
+=== RUN   TestAdsAttributionAT1BeginFreeze/malformed
+--- PASS: TestAdsAttributionAT1BeginFreeze (2.19s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it (0.54s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/expired (0.53s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/future (0.33s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/foreign_store (0.43s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/malformed (0.36s)
+=== RUN   TestAdsAttributionAT1AtomicRollback
+--- PASS: TestAdsAttributionAT1AtomicRollback (0.34s)
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/consented
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/refused
+--- PASS: TestAdsAttributionAT2PayloadAndTerminalIP (1.64s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/consented (0.73s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/refused (0.91s)
+=== RUN   TestAdsAttributionR3Erasure
+--- PASS: TestAdsAttributionR3Erasure (0.78s)
+=== RUN   TestAdsAttributionR3NoOperationPurge
+=== RUN   TestAdsAttributionR3NoOperationPurge/no_consent
+=== RUN   TestAdsAttributionR3NoOperationPurge/disabled
+=== RUN   TestAdsAttributionR3NoOperationPurge/expired
+=== RUN   TestAdsAttributionR3NoOperationPurge/cancelled
+--- PASS: TestAdsAttributionR3NoOperationPurge (1.51s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/no_consent (0.38s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/disabled (0.37s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/expired (0.38s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/cancelled (0.38s)
+=== RUN   TestAdsAttributionR3ConsentedBeginKeepsIP
+--- PASS: TestAdsAttributionR3ConsentedBeginKeepsIP (0.42s)
+=== RUN   TestAdsAttributionR3FinalFailureClearsIP
+--- PASS: TestAdsAttributionR3FinalFailureClearsIP (0.73s)
+=== RUN   TestAdsAttributionR2ScopeAndACL
+--- PASS: TestAdsAttributionR2ScopeAndACL (0.42s)
+=== RUN   TestAdsAttributionEmptyProjection
+--- PASS: TestAdsAttributionEmptyProjection (0.10s)
+=== RUN   TestAdsAttributionR9BeginNeverFails
+=== RUN   TestAdsAttributionR9BeginNeverFails/legitimate_click
+=== RUN   TestAdsAttributionR9BeginNeverFails/garbage
+=== RUN   TestAdsAttributionR9BeginNeverFails/expired
+=== RUN   TestAdsAttributionR9BeginNeverFails/foreign
+=== RUN   TestAdsAttributionR9BeginNeverFails/missing
+=== RUN   TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp
+--- PASS: TestAdsAttributionR9BeginNeverFails (2.12s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/legitimate_click (0.34s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/garbage (0.35s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/expired (0.33s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/foreign (0.43s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/missing (0.34s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp (0.33s)
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/other_store
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp
+--- PASS: TestAdsAttributionR9RefusalCommitsUnchanged (1.82s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute (0.34s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session (0.36s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/other_store (0.44s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze (0.34s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp (0.35s)
+=== RUN   TestAdsAttributionR9MalformedServerParameters
+=== RUN   TestAdsAttributionR9MalformedServerParameters/short_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_store
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_order
+--- PASS: TestAdsAttributionR9MalformedServerParameters (0.21s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/short_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_store (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_order (0.00s)
+=== RUN   TestAdsAttributionReport
+--- PASS: TestAdsAttributionReport (0.38s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+--- PASS: TestAdsAttributionAT4AT9ExactReport (19.21s)
+=== RUN   TestAdsAttributionSessionAudiencePipeline
+--- PASS: TestAdsAttributionSessionAudiencePipeline (1.63s)
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/read_insights
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging
+--- PASS: TestAdsAttributionSessionAudiencePermissionDenials (0.87s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement (0.23s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/read_insights (0.21s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging (0.21s)
+=== RUN   TestAdsAttributionSessionAudienceExactLease
+--- PASS: TestAdsAttributionSessionAudienceExactLease (0.22s)
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/AthenB
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/BthenA
+--- PASS: TestAdsAttributionSessionAudienceOverlappingReads (3.14s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/AthenB (1.56s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/BthenA (1.58s)
+=== RUN   TestAdsAttributionStorage
+--- PASS: TestAdsAttributionStorage (0.06s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.47s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/IP
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted (1.52s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/IP (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP (0.00s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsCleanup
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsCleanup (1.52s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsHeadUntouched
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsHeadUntouched (1.77s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (2.95s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.05s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.07s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.00s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.16s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.54s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (1.80s)
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:168: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:168: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:168: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:168: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:168: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:168: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:168: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:168: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:168: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:168: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:168: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:168: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:168: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:168: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:168: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:168: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:168: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (0.42s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.04s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.04s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.09s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.07s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.08s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.09s)
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/contracted
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/arbitrary_query
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/wrong_fence
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/claim_escape
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/tx_rebind
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/tx_shadow
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/ctx_rebind
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/extra_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/async_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/deferred_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/extra_closure
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/claim_marshalled
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/renamed_callback
+--- PASS: TestMetaClaimsMCI10AttributionFinishNegatives (0.01s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/contracted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/arbitrary_query (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/claim_escape (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/tx_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/tx_shadow (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/ctx_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/extra_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/async_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/deferred_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/extra_closure (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/claim_marshalled (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/renamed_callback (0.00s)
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/package_level_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure
+--- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives (0.11s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/package_level_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure (0.01s)
+=== RUN   TestMetaClaimsMCI10IngestCallers
+--- PASS: TestMetaClaimsMCI10IngestCallers (0.57s)
+=== RUN   TestMetaClaimsMCI10NoNetworkInIntakeCode
+--- PASS: TestMetaClaimsMCI10NoNetworkInIntakeCode (0.42s)
+=== RUN   TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret
+--- PASS: TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret (0.57s)
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_file
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/alias
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_added
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/comment_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal
+--- PASS: TestMetaClaimsMCI10AdsRefusalFinishException (0.01s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_file (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/alias (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_added (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/comment_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal (0.00s)
+=== RUN   TestMetaClaimsMCI10ClaimsImports
+--- PASS: TestMetaClaimsMCI10ClaimsImports (0.02s)
+=== RUN   TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath
+--- PASS: TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath (0.42s)
+=== RUN   TestMetaClaimsMCI10SecretEnvOwnership
+--- PASS: TestMetaClaimsMCI10SecretEnvOwnership (0.42s)
+=== RUN   TestMetaClaimsMCI10NoNewThirdPartyModule
+--- PASS: TestMetaClaimsMCI10NoNewThirdPartyModule (0.42s)
+=== RUN   TestMetaClaimsMCI10PackageComments
+--- PASS: TestMetaClaimsMCI10PackageComments (0.01s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (3.89s)
+PASS
+ok  	livecommerce/tests/foundation	101.536s
+test-focused: top-level PASS=39 FAIL=0 SKIP=0 exit=0

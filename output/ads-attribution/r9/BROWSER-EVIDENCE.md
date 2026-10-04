@@ -1,4 +1,6 @@
-# Final-source browser evidence — 492aaa30
+# Historical accepted browser checkpoint — 492aaa30
+
+This earlier pass is retained as history, not the final-source rerun. Final source `28097ecf` was rerun successfully: `browser-attribution-28097ecf.log`, six cases in each matrix, 36 PNGs plus JSON evidence in `browser-final/{report,checkout,checkout-admin}/`. See `../SUMMARY.md` for the final source, exact raw directories and final gate table.
 
 Command: `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-ads-attribution`
 

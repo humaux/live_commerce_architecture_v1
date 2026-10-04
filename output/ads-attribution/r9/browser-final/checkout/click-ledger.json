@@ -1,0 +1,398 @@
+[
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "add to cart"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "open checkout"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "f7c5cc4c-a21b-4483-950e-f4423fa2610c"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "open real own-order URL",
+    "order_id": "f7c5cc4c-a21b-4483-950e-f4423fa2610c"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 390,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "f7c5cc4c-a21b-4483-950e-f4423fa2610c",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "add to cart"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "open checkout"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "326a69a6-62ac-4098-b7d4-871a0f16b457"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "open real own-order URL",
+    "order_id": "326a69a6-62ac-4098-b7d4-871a0f16b457"
+  },
+  {
+    "locale": "zh-TW",
+    "width": 1586,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "326a69a6-62ac-4098-b7d4-871a0f16b457",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "add to cart"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "open checkout"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "dd2a17ed-e72f-40b4-9bf2-972cb01f75a1"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "open real own-order URL",
+    "order_id": "dd2a17ed-e72f-40b4-9bf2-972cb01f75a1"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 390,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "dd2a17ed-e72f-40b4-9bf2-972cb01f75a1",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "add to cart"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "open checkout"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "416ec00a-a29b-4556-ad74-bcb87727916a"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "open real own-order URL",
+    "order_id": "416ec00a-a29b-4556-ad74-bcb87727916a"
+  },
+  {
+    "locale": "zh-CN",
+    "width": 1586,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "416ec00a-a29b-4556-ad74-bcb87727916a",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "add to cart"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "open checkout"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "4da13702-4c42-4651-9def-2fc1030ac0bf"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "open real own-order URL",
+    "order_id": "4da13702-4c42-4651-9def-2fc1030ac0bf"
+  },
+  {
+    "locale": "en",
+    "width": 390,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "4da13702-4c42-4651-9def-2fc1030ac0bf",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "ad landing with first-party host-only Secure HttpOnly Lax cookies"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "add to cart"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "open checkout"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "choose delivery"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "select HOME bank-transfer-capable delivery"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "quote real cart"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "fill synthetic address and choose bank transfer"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "confirm destination"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "submit genuine Begin"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "Begin response matches rendered order",
+    "status": 200,
+    "order_id": "3e21f6be-dedc-4a1f-a43b-be330d6c9cbe"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "open real own-order URL",
+    "order_id": "3e21f6be-dedc-4a1f-a43b-be330d6c9cbe"
+  },
+  {
+    "locale": "en",
+    "width": 1586,
+    "action": "runner verifies committed ad_click attribution",
+    "order_id": "3e21f6be-dedc-4a1f-a43b-be330d6c9cbe",
+    "path": "ad_click",
+    "draft_id": "701213ed-f490-4cd7-b3da-f5fed9f16850"
+  }
+]

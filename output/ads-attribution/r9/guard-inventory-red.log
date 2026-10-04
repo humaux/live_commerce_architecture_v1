@@ -1,0 +1,43 @@
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply
+    meta_claims_attribution_guards_test.go:360: allowed=true for two audience calls replace private reply
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure
+    meta_claims_attribution_guards_test.go:360: allowed=true for nested returning closure
+--- FAIL: TestMetaClaimsMCI10SharedPageLoaderNegatives (0.02s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes (0.00s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call (0.00s)
+    --- FAIL: TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply (0.00s)
+    --- FAIL: TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	0.928s
+FAIL
