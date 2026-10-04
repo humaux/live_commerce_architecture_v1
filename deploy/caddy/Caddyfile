@@ -39,9 +39,11 @@
 	# the internal ask endpoint admits the host (an ACTIVE platform/merchant origin or a TLS_PENDING merchant
 	# origin); every other host gets no certificate (fail closed). The ask's in-memory admitted set in Go
 	# (internal/tlsask) is the only limiter: Caddy 2.11 dropped the on_demand_tls `interval`/`burst` knobs, so
-	# they are absent here. The URL is Caddy's on_demand_tls ask form: {host} is replaced by the hostname.
+	# they are absent here. Caddy itself appends ?domain=<hostname> to the ask URL; the URL must carry NO query and
+	# NO placeholder: Caddy 2.11's ask replacer rejects {host} ("unrecognized placeholder"), so every on-demand
+	# certificate was refused and no store subdomain had TLS (pilot, 2026-10-05). smoke S05 asserts the adapted form.
 	on_demand_tls {
-		ask http://127.0.0.1:8080/internal/tls-ask?domain={host}
+		ask http://127.0.0.1:8080/internal/tls-ask
 	}
 }
 

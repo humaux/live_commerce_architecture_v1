@@ -197,11 +197,16 @@ for v in logs:
             bad.append(f"{field}: filter={f.get('filter')} missing={sorted(need - got)}")
 if '"log_skip":true' not in json.dumps(c, separators=(",", ":")):
     bad.append("no log_skip for /.well-known/lc-domain-check/*")
+# on-demand TLS ask: Caddy appends ?domain=<host> itself and rejects {placeholders} in this URL at handshake time
+# (every store subdomain had no certificate on the pilot, 2026-10-05), so the adapted endpoint must be a bare URL.
+ask = c.get("apps", {}).get("tls", {}).get("automation", {}).get("on_demand", {}).get("permission", {}).get("endpoint", "")
+if not ask.startswith("http://127.0.0.1:") or "{" in ask or "?" in ask:
+    bad.append(f"on_demand ask endpoint must be a bare URL without query/placeholder: {ask!r}")
 print("\n".join(bad) or "log redaction ok")
 sys.exit(1 if bad else 0)
 PY
     then
-      rec S05 PASS "caddy validate + fmt + adapt(on_demand, log redaction) (image ${img%%@*})"
+      rec S05 PASS "caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image ${img%%@*})"
     else
       diff "$LC_DEPLOY_DIR/caddy/Caddyfile" "$EV/logs/S05.fmt" >>"$EV/logs/S05.log" 2>&1 || true
       rec S05 FAIL "caddy validate/fmt/adapt-on_demand/log-redaction (logs/S05.log)"

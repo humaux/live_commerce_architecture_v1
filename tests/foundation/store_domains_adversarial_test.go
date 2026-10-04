@@ -383,7 +383,8 @@ func TestStoreDomainsSDW12CaddyOnDemandEnabled(t *testing.T) {
 	}
 	// The ask wiring stays as Decision 4 describes (this half is green on current code).
 	global := caddyBlock(t, string(raw), "on_demand_tls {")
-	if !strings.Contains(global, "ask http://127.0.0.1:8080/internal/tls-ask?domain={host}") {
+	// Caddy appends ?domain=<host> itself; a query or a placeholder in the ask URL breaks every on-demand certificate.
+	if !strings.Contains(global, "ask http://127.0.0.1:8080/internal/tls-ask\n") || strings.Contains(global, "tls-ask?") {
 		t.Errorf("the on_demand_tls ask must target the internal ask endpoint, got:\n%s", global)
 	}
 }
