@@ -1,0 +1,4 @@
+2026-10-04T13:18:04Z pg-ops/restore-pitr base=20261004T131756Z target_time=2026-10-04 13:18:00.194085+00 scratch=/var/lib/postgresql/pitr/pgdata drill=1 promote=0 start
+pg_ctl: could not start server
+Examine the log output.
+2026-10-04T13:18:04Z pg-ops/restore-pitr FAIL scratch server did not start (see /var/lib/postgresql/pitr/pitr.log inside pg-ops)

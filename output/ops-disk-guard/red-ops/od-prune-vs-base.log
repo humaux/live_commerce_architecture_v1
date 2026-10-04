@@ -1,0 +1,15 @@
+FAIL OD6 dry run: exit 0, names the removals, removes nothing
+  | bash: /private/tmp/claude-501/-Volumes-data-live-commerce-architecture-v1/d13e4b5b-6b4d-4249-8530-ca9ae1ef506c/scratchpad/od/old/deploy/scripts/prune-docker.sh: No such file or directory
+FAIL OD6 prune exits 0
+FAIL OD6 go keeps new(d4) + running(c3) + previous(b2) and the in-use a1; e5 removed
+FAIL OD6 admin keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+FAIL OD6 storefront keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+FAIL OD6 caddy keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+PASS OD6 an image of another prefix is untouched
+PASS OD6 the previous deployed tag (b2) survived for app-rollback
+grep: /private/tmp/claude-501/-Volumes-data-live-commerce-architecture-v1/d13e4b5b-6b4d-4249-8530-ca9ae1ef506c/scratchpad/od/lc-od-pP3Pll/prune/builder.calls: No such file or directory
+FAIL OD6 build cache trimmed to 3GB (docker builder prune -f --keep-storage|--reserved-space 3GB)
+FAIL OD6 without deployments.log: exit 0, nothing removed, no cache prune
+FAIL OD6 build-images.sh runs prune-docker.sh after the build (line  > 103), non-fatal, LC_BUILD_PRUNE=0 skips
+ops-disk-guard (prune): FAIL (9 failing checks)
+exit=1

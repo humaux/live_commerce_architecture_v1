@@ -168,6 +168,13 @@ deploy/scripts/deploy.sh upgrade <tag>
    - **Meta 与外网核验（需授权部署后执行）**：优先按 Meta 要求添加域名验证 TXT；如选 meta 标签法，再设置可选 `LC_META_DOMAIN_VERIFICATION`，仅平台官网首页输出。核对 www → 裸域为 301 且路径／查询串保留；三语首页、privacy、terms、data-deletion、contact 返回 200，公司中英文名称、编号、地址与 CI/BRC 逐字一致；robots/sitemap 可访问，公开 host 的 `/api/*` 返回 404，后台入口仍只在后台 host。再把 App Domains、Website URL、Privacy Policy URL、Terms URL、Data Deletion Instructions URL 更新为实际平台官网地址。保留 CI/BRC 供 Meta 审核；本站不提供虚构的 signed_request 自动删除回调。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
    - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波只新增上面平台官网的 `LC_PLATFORM_HOST`、`LC_COMPANY_CONTACT_EMAIL`（另有可选 `LC_META_DOMAIN_VERIFICATION`）；广告归因不新增密钥，签名 cookie 复用已有 `commerce_buyer_cookie_key`。
+   - **告警邮箱与计划任务（ops-disk-guard，2026-10-03 磁盘写满事故修复，随这次升级一起落地）**：
+     - `compose.env` 新增 `LC_ALERT_EMAIL=ailun@xgdwm.com`（owner 的转发邮箱，一个纯地址）。看门狗不再只靠 cron `MAILTO=root`（本机邮箱没人看，事故里 W1–W4 失败 29.5 小时无人知道），而是通过应用现有的 SMTP 中继发一封邮件：
+       失败检查集合一变就发，集合不变每 6 小时重发一次，全部恢复时发一封「RECOVERED」。中继来自 `compose.env` 的 `LC_SMTP_HOST`、`LC_SMTP_USERNAME`、`LC_MAIL_FROM` 和密钥 `commerce_smtp_password`（465 隐式 TLS，与应用相同；
+       **即使密码登录和买家邮件循环仍关着也要配**，先核对这几项在试点 `compose.env` 里都已设置、密钥文件不是 `__UNSET__`）。预检 P08 检查 `LC_ALERT_EMAIL` 语法和中继是否齐全，生产环境两个告警通道（`LC_ALERT_EMAIL`、`LC_ALERT_WEBHOOK_URL`）都没有时 FAIL；`LC_ALERT_WEBHOOK_URL` 可与邮件并存。
+     - **计划任务改为每日 base backup**：`diff deploy/host/crontab.example /etc/cron.d/live-commerce`，确认只有路径之外的 `23 3 * * 0` → `23 3 * * *` 之差后，按 §1 第 5 步重新安装（`cp deploy/host/crontab.example /etc/cron.d/live-commerce`，路径按主机改）。
+       WAL 窗口因此从最长 14 天降到 ≤ 2 天；看门狗 W3 的 base 阈值同时改成 26 小时。
+     - compose.yml 给 postgres 新增了 `archive-wal.sh` 的只读挂载，所以升级的 `up -d` 会重建 postgres 容器（应用本来已停在维护窗口里，数据库重启约几秒）。之后 WAL 以 `.gz` 压缩归档；已有的明文段继续可用，会被之后每日 base backup 的清理逐步移除。
    - **广告归因的外部前提（不阻塞升级）**：直播观众数据需要 `read_insights`。连接专页走 Facebook Login for Business 的 `config_id`，权限在 Meta 应用后台的该配置里加，代码无法覆盖；未加之前观众面板显示「需重新連接 Facebook」，其余报表照常。App Review 前只有应用角色用户能授权。广告在试点上仍关闭（`ads` profile 未启用），归因报表只读本地订单与已存的 Meta 数据。
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
@@ -180,6 +187,13 @@ deploy/scripts/deploy.sh upgrade <tag>
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
    - `ops-admin.sh store-admin status --store <店铺uuid>` 显示平台地址 `https://<handle>.xgdwm.com`。
    - 店铺、商品、订单数据仍在。
+   - **磁盘/告警修复的核对（ops-disk-guard）**：①`deploy/scripts/watchdog.sh` 全 PASS；②`pg_stat_archiver` 的 `failed_count` 不增长，`ls ${LC_BACKUP_DIR}/wal | tail` 里新段是 `.gz`；
+     ③`deploy/scripts/watchdog.sh --test-mail` 发出一封测试邮件，**由 owner 确认收到**（只发邮件，不跑检查；发不出去会以非零退出并说明原因）；
+     ④下一个 03:23 之后 `deploy/scripts/pg-ops.sh list` 里有新的 base，`du -sh ${LC_BACKUP_DIR}/wal` 明显缩小。
+   - **外部可用性监控（建议，需要 owner 决定）**：监控应该打 `https://api.<域名>/readyz`（数据库不可用时返回 503），**不是** `/healthz`（常量 200：2026-10-03 事故里数据库停了 29.5 小时它一直 200）。
+     已核实：`/readyz` **目前没有经 Caddy 暴露**——API 主机是 default-deny，只开了 `/healthz`（`deploy/caddy/Caddyfile`；用仓库的 Caddyfile 在 caddy:2.11.4 上实测 `/healthz` 被代理、`/readyz` 返回 404，证据 `output/ops-disk-guard/caddy-readyz-check.txt`），
+     代码里 `internal/platform/platform.go` 的 `/readyz` 在连接池 Ping 失败时返回 503。**没有 owner/integrator 的裁决不新开路由**；需要裁决是否在 API 主机只加一条 `handle /readyz`。
+     在那之前，外部监控只能发现主机、Caddy、证书、进程挂了，发现不了「库停了」，库停机由看门狗 W1/W4 的邮件覆盖（前提是主机和 SMTP 还活着）。
 7. **核对自动分配的地址；handle-set 可选**：0106 为存量店铺自动分配随机 8 位数字编号，新建店铺也走同一分配函数；使用 `deploy/scripts/ops-admin.sh store-admin status --store <店铺uuid>` 核对 `https://<数字编号>.xgdwm.com`，不需要 owner 先提供英文 ID。
    运维确需改号时可选用 `deploy/scripts/ops-admin.sh store-admin handle-set <店铺uuid> <handle>`；现有发布后限制、同事务解绑旧平台地址、保留字/占用/格式校验保持不变。执行后必须用 `store-admin status` 核对实际地址。
 8. **之后由 owner 逐项开启，每项单独批准**：发布店面（设置 > 网店 > 发布，买家开始能访问核对过的 `https://<数字编号>.xgdwm.com`）、货到付款（设置 > 配送）、商家自有域名（设置 > 网店 > 域名）、meta-connect（§6.7）。

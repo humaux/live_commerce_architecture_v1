@@ -2,9 +2,14 @@
 # File: deploy/scripts/watchdog.sh
 # Purpose: periodic health checks W1-W10 (deploy-design §16.3). Exit != 0 when any check fails,
 #   so cron mails it / systemd marks it; optionally POSTs ONLY the failing check ids to
-#   LC_ALERT_WEBHOOK_URL and writes one syslog line via `logger`.
+#   LC_ALERT_WEBHOOK_URL, writes one syslog line via `logger`, and (ops-disk-guard D4) sends ONE
+#   e-mail to LC_ALERT_EMAIL through the app's SMTP relay: at once when the SET of failing checks
+#   changes, again at most every 6 h while it stays the same, and one "recovered" mail when all
+#   checks pass again. (Cron MAILTO=root only reaches a local mailbox nobody reads: the 2026-10-03
+#   disk-full outage failed W1-W4 for 29.5 h without a single alert.) Mail failures are logged and
+#   never fatal; the next cron run retries.
 #   W1 services running/healthy + restart counts unchanged   W2 disk > 80 %
-#   W3 newest dump > 26 h / newest base > 8 d                  W4 WAL archiving failing
+#   W3 newest dump > 26 h / newest base > 26 h (daily base backup, D3)   W4 WAL archiving failing
 #   W5 TLS certificate expiry < LC_TLS_MIN_DAYS (14)          W6 River backlog per schema
 #   W7 transactions / idle-in-transaction older than 5 min     W8 readiness gates false
 #   W9 connections > 80 % of max_connections                 W10 image tag drift: a running
@@ -19,15 +24,21 @@
 #   LC_W11_REVIEW_MAX 0, LC_W11_WORK_ITEM_MAX 0, LC_W11_REFUND_HOURS 24, LC_W11_REFUND_MAX 0,
 #   LC_W11_RECEIPT_MINUTES 60, LC_W11_RECEIPT_MAX 5, LC_W11_ENDPOINT_MAX 0.
 # Usage: watchdog.sh        (cron: */5 * * * *, deploy/host/crontab.example)
+#        watchdog.sh --test-mail   (sends one test message to LC_ALERT_EMAIL, runs no check; rollout verification)
 # Runs as/in: deploy host (root); DB checks (W3, W4, W6-W9) only where postgres is an active
 #   service (single host / DB host). SQL runs via lc_psql inside the postgres container over
 #   the unix socket; no query text or row values are printed.
-# Reads env: compose.env (hosts, LC_HTTPS_PORT, LC_BACKUP_DIR, LC_STATE_DIR,
-#   LC_ALERT_WEBHOOK_URL), LC_TLS_MIN_DAYS (default 14), LC_RETRYABLE_MAX (default 50), LC_W11_* (below).
-# Reads secrets: none on the host (the postgres container reads its own password file).
-# State: ${LC_STATE_DIR}/watchdog.state (restart counts, last run time for W6 discarded jobs).
+# Reads env: compose.env (hosts, LC_HTTPS_PORT, LC_BACKUP_DIR, LC_STATE_DIR, LC_ALERT_WEBHOOK_URL,
+#   LC_ALERT_EMAIL + the app relay LC_SMTP_HOST / LC_SMTP_USERNAME / LC_MAIL_FROM, optional
+#   LC_ALERT_SMTP_PORT (default 465 = implicit TLS like cmd/api; any other port = STARTTLS)),
+#   LC_TLS_MIN_DAYS (default 14), LC_RETRYABLE_MAX (default 50), LC_W11_* (below).
+# Reads secrets: ${LC_SECRETS_DIR}/commerce_smtp_password (alert mail only; read into a shell variable and
+#   given to curl through a pipe, so it is in no argv, log, state file or temp file). The postgres
+#   container reads its own password file.
+# State: ${LC_STATE_DIR}/watchdog.state (restart counts, last run time for W6 discarded jobs, and the
+#   alert bookkeeping alert_set = failing check ids last mailed, alert_sent = epoch of that mail).
 # Used by: cron; smoke.sh S35; collect-diagnostics.sh; docs/runbooks/incident.md §分诊.
-# Depends on: lib.sh, docker, openssl (W5), df, curl (webhook), logger (optional).
+# Depends on: lib.sh, docker, openssl (W5), df, curl (webhook, alert mail), logger (optional).
 # Status: DESIGN; verified by smoke S35 (healthy -> 0; stopped worker -> W1 failure) and S43
 #   (W10 PASS on the deployed tag, FAIL against a compose.env naming another tag).
 # Change rules: every new long-running service is covered by W1 automatically; new River
@@ -58,17 +69,80 @@ w11_ref_max=$(w11_int LC_W11_REFUND_MAX 0)
 w11_rc_min=$(w11_int LC_W11_RECEIPT_MINUTES 60)
 w11_rc_max=$(w11_int LC_W11_RECEIPT_MAX 5)
 w11_ep_max=$(w11_int LC_W11_ENDPOINT_MAX 0)
+case "${1:-}" in
+"" | --test-mail) ;;
+*) lc_die "usage: watchdog.sh [--test-mail]" 2 ;;
+esac
+# ---- alert e-mail (ops-disk-guard D4) -------------------------------------------------------------------
+# alert_mail SUBJECT BODY — ONE message to LC_ALERT_EMAIL through the app's SMTP relay (LC_SMTP_HOST / LC_SMTP_USERNAME,
+#   envelope+From = the mailbox itself, as the relay requires). Implicit TLS on 465 (what cmd/api and the expiry-worker
+#   use); another LC_ALERT_SMTP_PORT means STARTTLS (--ssl-reqd). Certificates are always verified.
+#   The password never reaches argv or the disk: it is read into a variable and written as a curl config line by the `printf`
+#   BUILTIN into a pipe that curl reads with `-K /dev/fd/N`. Returns 1 on any failure (logged, value-free), never exits.
+re_addr='^[A-Za-z0-9._%+-]+@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}$'
+alert_mail() {
+  local subject=$1 body=$2 user=${LC_SMTP_USERNAME:-} host=${LC_SMTP_HOST:-} port=${LC_ALERT_SMTP_PORT:-465}
+  local pwfile="${LC_SECRETS_DIR:-}/commerce_smtp_password" pw="" cfgpw="" url="" line="" err="" rc=0 tls=()
+  if [[ ! "$host" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ || ! "$port" =~ ^[0-9]{1,5}$ || ! "$user" =~ $re_addr ]]; then
+    lc_warn "alert mail not sent: LC_SMTP_HOST / LC_SMTP_USERNAME / LC_ALERT_SMTP_PORT missing or malformed"
+    return 1
+  fi
+  if [[ -r "$pwfile" ]]; then pw=$(<"$pwfile"); fi
+  if [[ -z "$pw" || "$pw" == __UNSET__ || "$pw" == *$'\n'* || "$pw" == *$'\r'* ]]; then
+    lc_warn "alert mail not sent: secret commerce_smtp_password missing, unset or malformed"
+    return 1
+  fi
+  if [[ "$port" == 465 ]]; then url="smtps://$host:465"; else url="smtp://$host:$port" tls=(--ssl-reqd); fi
+  cfgpw=${pw//\\/\\\\}
+  cfgpw=${cfgpw//\"/\\\"}
+  # No temp file anywhere (this runs when the disk may be full): the message goes to curl's stdin through a pipe and the
+  # credential through a process-substitution pipe (-K /dev/fd/N), never through argv or the disk.
+  err=$(
+    {
+      printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n' "$user" "$LC_ALERT_EMAIL" "$subject" "$(date -R)"
+      printf 'Message-ID: <lc-watchdog.%s.%s@%s>\r\n' "$(date +%s)" "$$" "$host"
+      printf 'MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n'
+      while IFS= read -r line; do printf '%s\r\n' "$line"; done < <(printf '%s\n' "$body")
+    } | curl -sS --connect-timeout 10 --max-time 30 "${tls[@]}" -K <(printf 'user = "%s:%s"\n' "$user" "$cfgpw") --url "$url" \
+      --mail-from "$user" --mail-rcpt "$LC_ALERT_EMAIL" -T - 2>&1 >/dev/null
+  ) || rc=$?
+  if ((rc)); then
+    err=${err//"$pw"/***} # curl never prints the password; belt and braces for the log
+    lc_warn "alert mail not sent (curl exit $rc): ${err:0:160}"
+    return 1
+  fi
+  return 0
+}
+
+# watchdog.sh --test-mail: send ONE test message through the same path (rollout check of LC_ALERT_EMAIL + the SMTP relay),
+# without running any check. Exit 1 when it cannot be sent (here the operator asked for exactly that).
+if [[ "${1:-}" == --test-mail ]]; then
+  [[ "${LC_ALERT_EMAIL:-}" =~ $re_addr ]] || lc_die "LC_ALERT_EMAIL is not set to one plain address (compose.env)"
+  alert_mail "[live-commerce] TEST: watchdog alert path" "Test message from watchdog.sh --test-mail on $(uname -n) at $(lc_ts). If you can read this, failing checks will reach you here." ||
+    lc_die "test mail not sent (see the warning above)"
+  lc_info "test mail sent to LC_ALERT_EMAIL"
+  exit 0
+fi
+
 failed=()
+fail_text="" # the FAIL lines (check id, status, value-free detail): the body of the alert mail
 report() { # id status detail
   printf '%s %s %s\n' "$1" "$2" "$3"
+  if [[ "$2" == FAIL ]]; then fail_text+="$1 $2 $3"$'\n'; fi
   if [[ "$2" == FAIL && " ${failed[*]} " != *" $1 "* ]]; then failed+=("$1"); fi
   return 0
 }
 declare -A prev=()
-last_run=""
+last_run="" prev_alert_set="" prev_alert_sent=""
 if [[ -r "$state" ]]; then
   while IFS=$'\t' read -r k v; do
-    if [[ "$k" == last_run ]]; then last_run=$v; elif [[ -n "$k" ]]; then prev[$k]=$v; fi
+    case "$k" in
+    last_run) last_run=$v ;;
+    alert_set) prev_alert_set=$v ;;
+    alert_sent) prev_alert_sent=$v ;;
+    '') ;;
+    *) prev[$k]=$v ;;
+    esac
   done <"$state"
 fi
 declare -A now_counts=()
@@ -130,7 +204,8 @@ if ((db)); then
   d=$(newest "$LC_BACKUP_DIR/dumps")
   if [[ -n "$d" ]] && ((now - d <= 26 * 3600)); then report W3 PASS "dump age_h=$(((now - d) / 3600))"; else report W3 FAIL "no dump within 26 h"; fi
   b=$(newest "$LC_BACKUP_DIR/base")
-  if [[ -n "$b" ]] && ((now - b <= 8 * 86400)); then report W3 PASS "base age_d=$(((now - b) / 86400))"; else report W3 FAIL "no base backup within 8 d"; fi
+  # Daily base backup (cron 03:23, D3): older than 26 h means a missed run. Weekly bases kept 14 days of WAL (disk-full incident).
+  if [[ -n "$b" ]] && ((now - b <= 26 * 3600)); then report W3 PASS "base age_h=$(((now - b) / 3600))"; else report W3 FAIL "no base backup within 26 h"; fi
 
   # ---- W4, W6-W9, W11 via one psql session (counts/booleans only) ---------------------------------------------
   since=${last_run:-$now_ts}
@@ -236,10 +311,50 @@ if lc_service_active caddy; then
   done
 fi
 
+# ---- alert e-mail decision (ops-disk-guard D4) ------------------------------------------------------------
+# Decide: send when the failing SET changed, re-send every 6 h while it is unchanged, one "recovered" mail on return to PASS.
+# State (alert_set / alert_sent) only advances after a mail was handed to the relay, so a failed send is retried by the next
+# cron run (every 5 minutes: bounded by the cron cadence and curl's 30 s limit, never a loop).
+alert_now=$(date +%s)
+alert_set="" new_alert_set=$prev_alert_set new_alert_sent=$prev_alert_sent
+if ((${#failed[@]})); then alert_set=$(printf '%s\n' "${failed[@]}" | sort -u | tr '\n' ' '); alert_set=${alert_set% }; fi
+if [[ -n "${LC_ALERT_EMAIL:-}" ]]; then
+  if [[ ! "$LC_ALERT_EMAIL" =~ $re_addr ]]; then
+    lc_warn "alert mail disabled: LC_ALERT_EMAIL is not a plain address"
+  else
+    mail_kind="" mail_sig="$(uname -n) ${LC_API_HOST:+($LC_API_HOST)}"
+    if [[ -n "$alert_set" ]]; then
+      if [[ "$alert_set" != "$prev_alert_set" ]]; then
+        mail_kind=ALERT
+      elif [[ ! "$prev_alert_sent" =~ ^[0-9]+$ ]] || ((alert_now - prev_alert_sent >= 6 * 3600)); then
+        mail_kind="ALERT (still failing)"
+      fi
+    elif [[ -n "$prev_alert_set" ]]; then
+      mail_kind=RECOVERED
+    fi
+    if [[ -n "$mail_kind" ]]; then
+      if [[ "$mail_kind" == RECOVERED ]]; then
+        mail_subject="[live-commerce] RECOVERED: all checks pass again (was: $prev_alert_set)"
+        mail_body="live-commerce watchdog on $mail_sig at $now_ts: all checks PASS again (previously failing: $prev_alert_set)."
+      else
+        mail_subject="[live-commerce] $mail_kind: $alert_set"
+        mail_body="live-commerce watchdog on $mail_sig at $now_ts. Failing checks:"$'\n'"${fail_text%$'\n'}"$'\n\n'"Runbook: docs/runbooks/incident.md (disk full / WAL archive; W2 W3 W4)."$'\n'"This mail repeats at most every 6 hours while the failing set is unchanged; a RECOVERED mail follows when everything passes."
+      fi
+      if alert_mail "$mail_subject" "$mail_body"; then
+        new_alert_set=$alert_set new_alert_sent=$alert_now
+        lc_info "alert mail sent: ${mail_kind%% *} ${alert_set:-all-pass}"
+      else
+        lc_info "alert state not advanced: the next run retries the ${mail_kind%% *} mail"
+      fi
+    fi
+  fi
+fi
+
 # ---- persist state ------------------------------------------------------------------------------------
 if mkdir -p "$state_dir" 2>/dev/null; then
   {
     printf 'last_run\t%s\n' "$now_ts"
+    if [[ -n "$new_alert_set" ]]; then printf 'alert_set\t%s\nalert_sent\t%s\n' "$new_alert_set" "$new_alert_sent"; fi
     for s in "${!now_counts[@]}"; do printf '%s\t%s\n' "$s" "${now_counts[$s]}"; done
   } >"$state.tmp" && mv -f "$state.tmp" "$state"
 fi

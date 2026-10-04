@@ -22,7 +22,8 @@
 # Used by: cron (deploy/host/crontab.example), deploy.sh upgrade (mandatory backup),
 #   smoke.sh S28-S31, S41 (rotate-superuser), S42 (restore-pitr --promote + pitr-cutover),
 #   docs/runbooks/backup-restore.md, docs/runbooks/deploy.md §7.
-# Depends on: deploy/postgres/ops/*.sh, compose services pg-ops/postgres/provision-logins,
+# Depends on: deploy/postgres/ops/*.sh, compose services pg-ops/postgres/provision-logins, lib.sh lc_disk_guard
+#   (backup and basebackup refuse below max(10 %, 2 GiB) free on LC_BACKUP_DIR),
 #   secrets-init.sh (--rederive after rotation), running postgres (except restore-pitr).
 # Status: DESIGN; verified by smoke S28-S31, S41, S42.
 # Change rules: keep restore defaults non-destructive (new DB / scratch cluster); every step that
@@ -162,9 +163,17 @@ pitr_cutover() {
   lc_info "pitr-cutover done. Writers are STOPPED; reopen per backup-restore.md §5 steps 4-7 (deploy/scripts/deploy.sh first brings the stack back with post-checks)"
 }
 
+# D6 (ops-disk-guard): the two writers that grow ${LC_BACKUP_DIR} refuse to start on a nearly full backup filesystem
+# (< max(10 %, 2 GiB) free), before any container or the database is touched.
 case "$cmd" in
-backup) run_ops /ops/backup.sh "$@" ;;
-basebackup) run_ops /ops/basebackup.sh "$@" ;;
+backup)
+  lc_disk_guard "$LC_BACKUP_DIR" || exit 1
+  run_ops /ops/backup.sh "$@"
+  ;;
+basebackup)
+  lc_disk_guard "$LC_BACKUP_DIR" || exit 1
+  run_ops /ops/basebackup.sh "$@"
+  ;;
 restore-dump)
   src=${1:?usage: pg-ops.sh restore-dump <dump dir> [options]}
   shift

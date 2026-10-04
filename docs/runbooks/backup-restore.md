@@ -16,7 +16,7 @@ Change rules: 恢复顺序遵循 架构.md §22.3；修改脚本默认行为（�
 
 | 内容 | 是否备份 | 方式 |
 |---|---|---|
-| 业务库 `live_commerce`（含 River 队列表） | 是 | 每日 `pg_dump -Fc`；每周 base backup；WAL 连续归档 |
+| 业务库 `live_commerce`（含 River 队列表） | 是 | 每日 `pg_dump -Fc`；每日 base backup；WAL 连续归档（gzip 压缩） |
 | 角色与成员关系 | 是（**不含密码**） | `globals.sql`（`pg_dumpall --roles-only --no-role-passwords`） |
 | 密钥 `/etc/live-commerce/secrets` | **否**，需单独做离线加密备份 | 见 §7 |
 | Caddy 证书（caddy-data 卷） | 否，可重新签发 | 丢失后 ACME 会重新签发，注意频率限制 |
@@ -27,9 +27,13 @@ Change rules: 恢复顺序遵循 架构.md §22.3；修改脚本默认行为（�
 ## 2. 计划、保留与诚实的 RPO/RTO
 
 - 逻辑备份每天 02:17，保留 14 天（`LC_DUMP_RETENTION_DAYS`）。
-- base backup 每周日 03:23，保留最近 2 份（`LC_BASE_KEEP`），同时清理最旧 base 之前的 WAL。
-- WAL 连续归档，`archive_timeout=60s`，目标目录为 `${LC_BACKUP_DIR}/wal`。
-- 看门狗 W3（备份过旧）和 W4（归档失败）负责告警。
+- base backup **每天** 03:23，保留最近 2 份（`LC_BASE_KEEP`），同时清理最旧 base 之前的 WAL（压缩段、旧的明文段和过期的 `.backup` 标签一起清理）。WAL 窗口 ≤ 2 天。
+  原来每周一次，窗口最长 14 天（事故里 79GB），违反不变量 I23；见 incident.md「磁盘满 / WAL 归档」。
+- WAL 连续归档，`archive_timeout=60s`（RPO 不变），目标目录为 `${LC_BACKUP_DIR}/wal`。段以 `<段>.gz` 压缩归档
+  （`deploy/postgres/archive-wal.sh`：写 `.part` → 读回比对 → fsync → 原子改名；强制切换的段几乎全是零，压缩后每段几十 KB，原来 16MB）；
+  `.history`、`.backup`、`.partial` 保持明文。PITR 的 `restore_command`（`ops/restore-wal.sh`）优先读 `.gz`，找不到再读旧的明文段，所以升级前后的归档可以混用。
+- 备份盘剩余空间 < max(10 %, 2 GiB) 时，`pg-ops.sh backup|basebackup` 和 `deploy.sh upgrade` 直接拒绝，数据库没有被碰过。
+- 看门狗 W3（dump > 26 小时、base > 26 小时）和 W4（归档失败）负责告警，并发邮件给 `LC_ALERT_EMAIL`。
 - RPO（丢失窗口）：
   - WAL 所在盘独立时，DB 盘损坏的 RPO 约 1 分钟。
   - 没有可用 WAL 时，RPO 为 24 小时。
@@ -96,7 +100,7 @@ cd ${LC_BACKUP_DIR}/dumps/<目录> && sha256sum -c SHA256SUMS
 
 为什么不能再用旧流程：`restore-pitr`（不带参数）在**暂停状态**下快速停止集群，pg_control 状态是 `shut down in recovery`。
 删除 `recovery.signal` 后把它当在线库启动，PostgreSQL 只做普通崩溃恢复：重放 pg_wal 里剩下的全部 WAL（越过目标时间，
-把目标之后的事务带回来），并停留在时间线 1；接着同名段已在 `/backup/wal` 中且内容不同，`archive_command` 的 `cmp` 分支永久拒绝，
+把目标之后的事务带回来），并停留在时间线 1；接着同名段已在 `/backup/wal` 中且内容不同，`archive_command`（`archive-wal.sh`）的内容比对分支永久拒绝，
 W4 一直失败，pg_wal 持续增长直到磁盘写满（评审用固定镜像复现：目标时 200 行，切换后 400 行，timeline_id=1，failed=3）。
 
 1. **在临时集群里恢复并提升**（在线库不受影响，可以提前做）：

@@ -1,0 +1,5 @@
+2026-10-04T13:31:25Z pg-ops/restore-pitr base=20261004T133117Z target_time=2026-10-04 13:31:21.645580+00 scratch=/var/lib/postgresql/pitr/pgdata drill=1 promote=0 start
+2026-10-04T13:31:26Z pg-ops/restore-pitr paused at_target=yes last_replayed_xact=2026-10-04 13:31:19.429822+00
+verify.result=PASS witness=1,2,3 (stub verify.sql: no application schema in this scratch DB)
+pitr_duration_seconds=2
+2026-10-04T13:31:27Z pg-ops/restore-pitr base=20261004T133117Z duration_s=2 verify=PASS drill=1 result=ok

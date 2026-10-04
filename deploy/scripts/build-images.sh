@@ -7,6 +7,7 @@
 #   (.dockerignore filters it); caddy uses deploy/docker as context.
 # Reads env: LC_IMAGE_PREFIX (default lc); HTTP_PROXY/HTTPS_PROXY/NO_PROXY are passed as build
 #   args only when set (Docker predefined args; not persisted in image config).
+#   LC_BUILD_PRUNE=0 skips the post-build prune of old lc-* images and build cache (prune-docker.sh, D5).
 #   LC_BUILD_NETWORK = auto (default) | default | host: network of the RUN steps. BuildKit runs
 #   them in their own network namespace, where a proxy on the build host's LOOPBACK
 #   (http://127.0.0.1:PORT, localhost, [::1]) is unreachable (VERIFIED_LOCAL 2026-09-28:
@@ -17,7 +18,7 @@
 # Reads secrets: none — images never contain secrets or env files.
 # Used by: operators before deploy.sh (printed tag -> deploy.sh first|upgrade <tag>, which records it
 #   in compose.env), smoke.sh S07.
-# Depends on: deploy/docker/*.Dockerfile, git (commit id), docker.
+# Depends on: deploy/docker/*.Dockerfile, git (commit id), docker, prune-docker.sh (post-build prune).
 # Exit: 0 built, 1 build failed, 3 BLOCKED (cmd/migrate missing; kept as a guard, it exists since I1 closed:
 #   the Go image would be undeployable without it, so nothing is faked).
 # Status: DESIGN; all four images build and pass smoke S07/S08 (R1, Linux dind run recorded in
@@ -120,5 +121,11 @@ printf '%s\n' "$report"
 if [[ -n "$evidence" ]]; then
   mkdir -p "$evidence"
   printf '%s\n' "$report" >"$evidence/images.jsonl"
+fi
+# D5 (ops-disk-guard): bound Docker growth after a SUCCESSFUL build. Host builds left BuildKit cache + old lc-* images behind
+# (~6.5 GB per 4 builds on the pilot). prune-docker.sh keeps the new tag, the running tag and the previous deployed tag
+# (app-rollback needs it), trims the build cache to 3 GB, and does nothing on a host that never deployed. Never fatal.
+if [[ "${LC_BUILD_PRUNE:-1}" != 0 ]]; then
+  "$LC_SCRIPTS_DIR/prune-docker.sh" --keep "$tag" || lc_warn "prune-docker.sh failed (non-fatal; run it by hand)"
 fi
 lc_info "IMAGE_TAG=$tag (deploy with: deploy.sh first $tag | deploy.sh upgrade $tag; deploy.sh writes it into compose.env)"

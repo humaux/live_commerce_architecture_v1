@@ -32,7 +32,8 @@
 #   password of the TARGET time, which differs from the secret file after a rotation.
 # Used by: quarterly PITR drill + PITR cut-over (docs/runbooks/backup-restore.md §4, §6),
 #   smoke.sh S31 (--drill), S42 (--promote).
-# Depends on: basebackup.sh output in /backup/base, archived WAL in /backup/wal, ops/verify.sql,
+# Depends on: basebackup.sh output in /backup/base, archived WAL in /backup/wal (compressed <seg>.gz
+#   and legacy plain files, read through ops/restore-wal.sh), ops/verify.sql,
 #   ops/lib.sh ops_alter_superuser_password (--promote).
 # Status: DESIGN; verified by smoke S31 (records the drill duration = RTO sample) and S42.
 # Change rules: keep listen_addresses='' (socket only); never give the scratch server a real
@@ -104,7 +105,7 @@ pg_ctl -D "$data" -l "$OPS_SCRATCH/pitr.log" -w -t 600 -o "\
  $archive_opts -c shared_buffers=128MB -c logging_collector=off \
  -c max_connections=$mc -c max_worker_processes=$mwp -c max_wal_senders=$mws \
  -c max_prepared_transactions=$mpx -c max_locks_per_transaction=$mlx \
- -c restore_command='cp /backup/wal/%f %p' -c recovery_target_time='$target_time' \
+ -c restore_command='bash /ops/restore-wal.sh %f %p' -c recovery_target_time='$target_time' \
  -c recovery_target_action=pause" start >/dev/null ||
   ops_die "scratch server did not start (see $OPS_SCRATCH/pitr.log inside pg-ops)"
 

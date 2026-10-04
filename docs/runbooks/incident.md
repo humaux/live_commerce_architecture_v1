@@ -4,7 +4,7 @@ Purpose: 故障处置运行手册 — 日志位置、分诊流程、按服务诊
 Runs as/in: 文档（命令在部署主机上以 root 执行）。
 Reads env / secrets: 无（本文不含密钥；诊断包会做密钥扫描）。
 Used by: 值班/运维/owner；deploy.sh 失败提示与 watchdog 告警指向此处。
-Depends on: deploy/scripts/{watchdog,collect-diagnostics,preflight,pg-ops}.sh, deploy/compose.yml。
+Depends on: deploy/scripts/{watchdog,collect-diagnostics,preflight,pg-ops,prune-docker}.sh, deploy/compose.yml。
 Status: DESIGN；日志标记与检查项已在本地 scratch 运行中出现过（VERIFIED_LOCAL），生产未执行。
 Change rules: 新增服务或新日志标记时同步 §1 表格。
 -->
@@ -87,13 +87,49 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
   - `new_discarded`：job 被放弃，必须人工查看。支付 job 要走对账流程，见 §4。
 
 ### postgres
-- 磁盘满（W2）：先清理 Docker 镜像和日志。**不要删除 `wal/`**，它由 basebackup 负责清理。
+- 磁盘满（W2）：先看下面的「磁盘满 / WAL 归档」一节。简要：先清理 Docker 镜像/构建缓存（`deploy/scripts/prune-docker.sh`），**不要手工删除 `wal/`**，它由 basebackup 负责清理。
 - 归档失败（W4）：检查 `${LC_BACKUP_DIR}/wal` 的权限（`0700 999:999`）和剩余空间；`dc logs postgres | grep archive`。
   已存在的同名同内容段会被视为成功；**不同内容的同名段**会持续失败，需要人工比对。
   PITR 切换后出现这种情况，说明数据目录不是用 `restore-pitr --promote` + `pitr-cutover` 放进来的（backup-restore.md §6）：
   `SELECT timeline_id FROM pg_control_checkpoint()` 应大于 1。
 - 连接数过高（W9）：执行 `SELECT application_name, state, count(*) FROM pg_stat_activity GROUP BY 1,2`，看是哪个服务的连接池过大。
 - 长事务（W7）：找到对应的 `application_name`。只能在确认影响后，经批准再执行 `pg_terminate_backend`。
+
+### 磁盘满 / WAL 归档（P0；2026-10-03 事故）
+
+**事故经过（试点 35.212.187.34）**：根盘 96G 写满，`${LC_BACKUP_DIR}/wal` 占 79G（5051 个 16MB 段）。2026-10-03 06:40 UTC PostgreSQL 检查点写入报
+`No space left on device` 后关闭，Docker 重启时又无法创建 overlay 挂载，**数据库停了约 29.5 小时**；每日 dump 和每周 base backup 也因为容器起不来而失败。
+api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/readyz` 健康检查是 unhealthy。看门狗 W1–W4 都失败了，但告警只发到 cron `MAILTO=root`，
+`LC_ALERT_WEBHOOK_URL` 又没设，**没有任何人收到**。
+
+**根因（都在本仓库的配置/代码里）**：①`archive_timeout=60s` 每分钟强制切出一个完整 16MB 段，空闲库也约 23GB/天，旧 `archive_command` 不压缩；
+②每周 base backup 保留 2 份，窗口最长 14 天（约 320GB），违反不变量 I23（有界增长）；③没有任何人能看到的告警通道；④Docker 构建缓存和旧镜像无人清理（4 次构建约 6.5G）。
+
+**现在的防线（ops-disk-guard，D1–D6）**
+- WAL 以 `<段>.gz` 压缩归档（`deploy/postgres/archive-wal.sh`，空闲库每段几十 KB；`archive_timeout` 仍是 60s，RPO 不变；`.history`/`.backup` 保持明文）。恢复侧同时读 `.gz` 和旧的明文段。
+- base backup 改为每日 03:23，保留 2 份，WAL 窗口 ≤ 2 天；W3 的 base 阈值是 26 小时。
+- 看门狗用 `LC_ALERT_EMAIL` 发邮件（失败集合一变就发，不变每 6 小时重发，恢复时发一封）；预检 P08 在生产里要求 `LC_ALERT_EMAIL` 或 `LC_ALERT_WEBHOOK_URL`。
+- `pg-ops.sh backup|basebackup` 和 `deploy.sh upgrade` 在备份盘剩余空间 < max(10 %, 2 GiB) 时直接拒绝，数据库没有被碰过。
+- `build-images.sh` 构建成功后自动运行 `deploy/scripts/prune-docker.sh`：保留新 tag、运行中 tag 和 `deployments.log` 里上一个已部署 tag（`app-rollback` 需要它），构建缓存压到 3GB。
+
+**症状**：W2 `used>80%`；W1 `postgres state=exited`/unhealthy；W3/W4 失败；`dc logs postgres` 有 `No space left on device`；`docker start`/`dc up -d postgres` 报无法创建 overlay 挂载。
+**先确认再动手**：`df -h / ${LC_BACKUP_DIR}`、`du -sh ${LC_BACKUP_DIR}/wal`、`ls ${LC_BACKUP_DIR}/wal | wc -l`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测：空闲库每个强制切换的段压缩后约 16.5–31 KB，原来 16 MiB；见 `output/ops-disk-guard/od-all.log`）。
+
+**恢复步骤（事故当时 owner 批准的顺序；涉及生产，先报告影响面再执行）**
+1. 先腾出能让容器启动的空间：`docker builder prune`（事故中释放 4.7G）。更安全的做法是 `deploy/scripts/prune-docker.sh`（只删旧的 `lc-*` 镜像标签和多余的构建缓存，保留运行中/上一个 tag）。
+2. 启动 postgres 容器：`docker start <postgres 容器>`（或 `dc up -d postgres`），等崩溃恢复完成、`dc ps` 显示 healthy。
+3. 立刻做一份新的 base backup：`deploy/scripts/pg-ops.sh basebackup`。
+4. WAL 目录仍然占满时，按**最新 base 的 `.backup` 标签文件名**清理它之前的归档（事故中：`pg_archivecleanup /backup/wal 0000000100000013000000C9.00000028.backup`，磁盘占用降到 14%）。
+   在 pg-ops 容器里执行，并带上 `-b -x .gz`，这样压缩段、旧的明文段和过期的 `.backup` 标签一起清理：
+   ```sh
+   dc --profile ops run --rm --no-deps -T pg-ops -c 'pg_archivecleanup -b -x .gz /backup/wal <最新 base 的标签文件名，形如 0000000100000013000000C9.00000028.backup>'
+   ```
+   最新 base 的标签文件名：`ls ${LC_BACKUP_DIR}/wal/*.backup | tail -n1`（它必须是你刚做的那份 base）。清理之后更早的 base 失去了 WAL 链，不能再用于 PITR，之后的 basebackup 保留策略会把它们移除。
+5. 做一份逻辑备份：`deploy/scripts/pg-ops.sh backup --tag post-incident`（事故中成功）。
+6. 复核：`deploy/scripts/watchdog.sh` 全 PASS；`pg_stat_archiver` 的 `failed_count` 不再增长；`ls ${LC_BACKUP_DIR}/wal | tail` 里的新段是 `.gz`。
+- **不要**手工删除 `wal/` 里的段、`rm -rf wal/*`，也不要在没有新 base 的情况下清理（会破坏 PITR 链）。
+
+**未做（owner 决定，已建议）**：①把 `/var/backups` 放到独立的持久盘（现在与 Docker 根盘是同一块盘，备份写满会拖垮 DB）；②每日 dump 的异地副本（例如 GCS bucket，需加密，见 backup-restore.md §8）。
 
 ### DB 角色（provision-logins 报 DRIFT）
 - DRIFT 会指出登录角色名和问题，例如 `membership=commerce_runtime,commerce_auth` 或 `set_role_allowed`。
@@ -108,7 +144,8 @@ dc() { docker compose --project-directory /opt/live-commerce/deploy --env-file /
 
 ### 备份
 - 备份失败会导致 upgrade 中止，这是预期行为。检查 `${LC_BACKUP_DIR}` 的空间和权限，以及 pg-ops 的输出。
-- W3 告警：检查 cron（`/etc/cron.d/live-commerce`）以及 `/var/log/live-commerce-backup.log`。
+- W3 告警：检查 cron（`/etc/cron.d/live-commerce`）以及 `/var/log/live-commerce-backup.log`。base backup 现在每日执行，阈值 26 小时。
+- 备份被「disk guard」拒绝（备份盘剩余空间 < max(10 %, 2 GiB)）：数据库没有被碰过；按上面「磁盘满 / WAL 归档」处理，再重跑。
 
 ## 4. 支付 UNKNOWN / 外部不确定状态
 

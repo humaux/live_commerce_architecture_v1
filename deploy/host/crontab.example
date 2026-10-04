@@ -13,8 +13,10 @@ MAILTO=root
 
 # Nightly logical backup (retention 14 days, LC_DUMP_RETENTION_DAYS).
 17 2 * * *   root  /opt/live-commerce/deploy/scripts/pg-ops.sh backup --tag nightly >>/var/log/live-commerce-backup.log 2>&1
-# Weekly base backup for PITR + WAL pruning (keeps 2 bases, LC_BASE_KEEP).
-23 3 * * 0   root  /opt/live-commerce/deploy/scripts/pg-ops.sh basebackup >>/var/log/live-commerce-backup.log 2>&1
-# Health checks W1-W9 every 5 minutes; the full report is mailed (MAILTO) only on failure.
+# Daily base backup for PITR + WAL pruning (keeps 2 bases, LC_BASE_KEEP, so the WAL archive holds <= 2 days).
+# Was weekly (`23 3 * * 0`): the weekly window kept up to 14 days of WAL and filled the pilot disk (2026-10-03).
+23 3 * * *   root  /opt/live-commerce/deploy/scripts/pg-ops.sh basebackup >>/var/log/live-commerce-backup.log 2>&1
+# Health checks W1-W11 every 5 minutes. A failing set is e-mailed to LC_ALERT_EMAIL by watchdog.sh itself (compose.env;
+# optional LC_ALERT_WEBHOOK_URL too); cron MAILTO (above) only reaches root's local mailbox, which no human reads.
 */5 * * * *  root  /opt/live-commerce/deploy/scripts/watchdog.sh >/var/log/live-commerce-watchdog.last 2>&1 || cat /var/log/live-commerce-watchdog.last
 # Off-host copy of /var/backups/live-commerce is owner decision O3 (encrypted; new dependency).
