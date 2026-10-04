@@ -26,6 +26,11 @@ const (
 // Permissions the Login for Business configuration must have granted (config "直播SaaS主页连接", 2026-10-01). The Facebook set is
 // required for every connect; the Instagram set only when an Instagram account is linked to the Page. The SQL (0095
 // meta_connect_finish) re-checks the same two lists.
+// R11 read_insights is an optional capability to request through the owner's
+// Login for Business configuration, not a minimum Page-connection permission. listPages
+// preserves every granted scope for the SQL credential snapshot; a declined
+// read_insights grant must leave comment/order intake connectable. The audience
+// read separately checks the stored grant and requests reconnection when absent.
 var (
 	fbPermissions = []string{"pages_show_list", "pages_manage_metadata", "pages_read_engagement", "pages_messaging"}
 	igPermissions = []string{"instagram_basic", "instagram_manage_comments", "instagram_manage_messages"}

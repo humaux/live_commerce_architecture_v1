@@ -20,18 +20,19 @@ type InsightsBreakdowns struct {
 	TimezoneName string                 `json:"timezone_name"`
 	Currency     string                 `json:"currency"`
 	Rows         []InsightsBreakdownRow `json:"rows"`
+	Unavailable  []string               `json:"unavailable"`
 }
 
 type InsightsBreakdownRow struct {
 	Dimension          string     `json:"dimension"`
 	Bucket             string     `json:"bucket"`
 	HourStart          *time.Time `json:"hour_start"`
-	SpendMinor         int64      `json:"spend_minor"`
-	Reach              int64      `json:"reach"`
-	Impressions        int64      `json:"impressions"`
-	Clicks             int64      `json:"clicks"`
-	Engagements        int64      `json:"engagements"`
-	Comments           int64      `json:"comments"`
+	SpendMinor         *int64     `json:"spend_minor"`
+	Reach              *int64     `json:"reach"`
+	Impressions        *int64     `json:"impressions"`
+	Clicks             *int64     `json:"clicks"`
+	Engagements        *int64     `json:"engagements"`
+	Comments           *int64     `json:"comments"`
 	Purchases          *int64     `json:"purchases"`
 	PurchaseValueMinor *int64     `json:"purchase_value_minor"`
 }
@@ -63,56 +64,69 @@ type breakdownWireRow struct {
 	ActionValues      []actionValue `json:"action_values"`
 }
 
-func (c *Client) readBreakdowns(ctx context.Context, campaign, day, currency, timezone string, location *time.Location, token []byte) (*InsightsBreakdowns, core.Outcome) {
-	detail := &InsightsBreakdowns{TimezoneName: timezone, Currency: currency, Rows: make([]InsightsBreakdownRow, 0)}
+func (c *Client) readBreakdowns(ctx context.Context, campaign, day, currency, timezone string, location *time.Location, token []byte) *InsightsBreakdowns {
+	detail := &InsightsBreakdowns{TimezoneName: timezone, Currency: currency, Rows: make([]InsightsBreakdownRow, 0), Unavailable: make([]string, 0)}
 	rng, _ := json.Marshal(map[string]string{"since": day, "until": day})
 	for _, dimension := range breakdownDimensions {
-		q := url.Values{"fields": {"spend,reach,impressions,clicks,actions,action_values"},
-			"time_range": {string(rng)}, "time_increment": {"1"}, "limit": {pageLimit}, "breakdowns": {dimension.wire}}
-		cursors, buckets := map[string]bool{}, map[string]bool{}
-		for page := 0; page < maxPages; page++ {
-			rep, err := c.g.do(ctx, http.MethodGet, campaign+"/insights", q, token, nil)
-			if err != nil || !rep.ok() {
-				// I06: transport uncertainty aborts this snapshot; no immediate retry or partial commit.
-				return nil, failureOutcome(rep, err)
-			}
-			var doc struct {
-				Data   []breakdownWireRow `json:"data"`
-				Paging struct {
-					Next    string `json:"next"`
-					Cursors struct {
-						After string `json:"after"`
-					} `json:"cursors"`
-				} `json:"paging"`
-			}
-			if json.Unmarshal(rep.body, &doc) != nil || doc.Data == nil || len(doc.Data) > 100 {
-				return nil, unconfirmed()
-			}
-			for _, wire := range doc.Data {
-				row, failure := normalizeBreakdown(wire, dimension.dimension, day, currency, location)
-				if failure.State != "" {
-					return nil, failure
-				}
-				if buckets[row.Bucket] {
-					return nil, failedFinal("bad_result")
-				}
-				buckets[row.Bucket] = true
-				detail.Rows = append(detail.Rows, row)
-			}
-			if doc.Paging.Next == "" {
-				break
-			}
-			// I11: paging.next is untrusted and can contain credentials; only use its
-			// presence, then rebuild a pinned path with a validated, non-repeating cursor.
-			after := doc.Paging.Cursors.After
-			if !cursorPattern.MatchString(after) || cursors[after] || page == maxPages-1 {
-				return nil, unconfirmed()
-			}
-			cursors[after] = true
-			q.Set("after", after)
+		rows, failure := c.readBreakdownDimension(ctx, campaign, day, currency, location, token, rng, dimension.dimension, dimension.wire)
+		if failure.State != "" {
+			// R11: optional D9 evidence cannot veto the D7 daily result. Discard
+			// the entire failed dimension; the next scheduled sweep reads it again.
+			detail.Unavailable = append(detail.Unavailable, dimension.dimension)
+			continue
 		}
+		detail.Rows = append(detail.Rows, rows...)
 	}
-	return detail, core.Outcome{}
+	return detail
+}
+
+func (c *Client) readBreakdownDimension(ctx context.Context, campaign, day, currency string, location *time.Location, token, rng []byte, dimension, wireDimension string) ([]InsightsBreakdownRow, core.Outcome) {
+	rows := make([]InsightsBreakdownRow, 0)
+	q := url.Values{"fields": {"spend,reach,impressions,clicks,actions,action_values"},
+		"time_range": {string(rng)}, "time_increment": {"1"}, "limit": {pageLimit}, "breakdowns": {wireDimension}}
+	cursors, buckets := map[string]bool{}, map[string]bool{}
+	for page := 0; page < maxPages; page++ {
+		rep, err := c.g.do(ctx, http.MethodGet, campaign+"/insights", q, token, nil)
+		if err != nil || !rep.ok() {
+			// I06: no immediate retry and no partial dimension on transport uncertainty.
+			return nil, failureOutcome(rep, err)
+		}
+		var doc struct {
+			Data   []breakdownWireRow `json:"data"`
+			Paging struct {
+				Next    string `json:"next"`
+				Cursors struct {
+					After string `json:"after"`
+				} `json:"cursors"`
+			} `json:"paging"`
+		}
+		if json.Unmarshal(rep.body, &doc) != nil || doc.Data == nil || len(doc.Data) > 100 {
+			return nil, unconfirmed()
+		}
+		for _, wire := range doc.Data {
+			row, failure := normalizeBreakdown(wire, dimension, day, currency, location)
+			if failure.State != "" {
+				return nil, failure
+			}
+			if buckets[row.Bucket] {
+				return nil, failedFinal("bad_result")
+			}
+			buckets[row.Bucket] = true
+			rows = append(rows, row)
+		}
+		if doc.Paging.Next == "" {
+			break
+		}
+		// I11: paging.next is untrusted and can contain credentials; only use its
+		// presence, then rebuild a pinned path with a validated, non-repeating cursor.
+		after := doc.Paging.Cursors.After
+		if !cursorPattern.MatchString(after) || cursors[after] || page == maxPages-1 {
+			return nil, unconfirmed()
+		}
+		cursors[after] = true
+		q.Set("after", after)
+	}
+	return rows, core.Outcome{}
 }
 
 func normalizeBreakdown(w breakdownWireRow, dimension, day, currency string, location *time.Location) (InsightsBreakdownRow, core.Outcome) {
@@ -149,22 +163,27 @@ func normalizeBreakdown(w breakdownWireRow, dimension, day, currency string, loc
 	if !plainBucket(r.Bucket) {
 		return r, failedFinal("bad_result")
 	}
-	spend := w.Spend
-	if spend == "" {
-		spend = "0"
-	}
-	var err error
 	// I05: minor units use the existing exact currency conversion, never rounding.
-	if r.SpendMinor, err = SpendMinor(currency, spend); err != nil {
-		return r, spendFailure(err)
+	// I12: preserve omitted metrics as unknown, while explicit zero stays zero.
+	if w.Spend != "" {
+		n, err := SpendMinor(currency, w.Spend)
+		if err != nil {
+			return r, spendFailure(err)
+		}
+		r.SpendMinor = &n
 	}
 	for _, metric := range []struct {
 		wire   string
-		target *int64
+		target **int64
 	}{{w.Reach, &r.Reach}, {w.Impressions, &r.Impressions}, {w.Clicks, &r.Clicks}} {
-		if *metric.target, err = count(metric.wire); err != nil {
+		if metric.wire == "" {
+			continue
+		}
+		n, err := count(metric.wire)
+		if err != nil {
 			return r, failedFinal("bad_result")
 		}
+		*metric.target = &n
 	}
 	seen := map[string]bool{}
 	for _, a := range w.Actions {
@@ -185,9 +204,9 @@ func normalizeBreakdown(w breakdownWireRow, dimension, day, currency string, loc
 		}
 		switch a.Type {
 		case "post_engagement":
-			r.Engagements = n
+			r.Engagements = &n
 		case "comment":
-			r.Comments = n
+			r.Comments = &n
 		case purchaseAction:
 			r.Purchases = &n
 		}

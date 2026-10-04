@@ -560,10 +560,7 @@ func (c *Client) readInsights(ctx context.Context, asset, campaign, day string, 
 	if err != nil {
 		return failedFinal("bad_result")
 	}
-	detail, failure := c.readBreakdowns(ctx, campaign, day, acct.Currency, acct.TimezoneName, location, token)
-	if failure.State != "" {
-		return failure
-	}
+	detail := c.readBreakdowns(ctx, campaign, day, acct.Currency, acct.TimezoneName, location, token)
 	return core.Outcome{State: "SUCCEEDED", Code: "graph_read", ProviderReference: ref, Detail: detail}
 }
 

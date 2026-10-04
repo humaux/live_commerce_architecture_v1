@@ -169,9 +169,12 @@ func TestBreakdownRefusesPartialOrUnboundedRead(t *testing.T) {
 					io.WriteString(w, `{"effective_status":"ACTIVE"}`)
 				}
 			})
-			out := c.readInsights(context.Background(), asset, "555", "2026-10-02", []byte(fakeToken))
-			if out != tc.want || len(f.log()) != tc.calls {
-				t.Fatalf("out=%+v calls=%d want=%+v/%d", out, len(f.log()), tc.want, tc.calls)
+			// R11 keeps these refusals at the dimension boundary. No rows from
+			// any failed or incomplete dimension may reach the daily detail.
+			loc, _ := insightLocation("Asia/Taipei")
+			rows, out := c.readBreakdownDimension(context.Background(), "555", "2026-10-02", "TWD", loc, []byte(fakeToken), []byte(`{"since":"2026-10-02","until":"2026-10-02"}`), "age_gender", "age,gender")
+			if rows != nil || out != tc.want || len(f.log()) != tc.calls-3 {
+				t.Fatalf("rows=%+v out=%+v calls=%d want=%+v/%d", rows, out, len(f.log()), tc.want, tc.calls-3)
 			}
 		})
 	}
@@ -189,8 +192,9 @@ func TestBreakdownRefusesPartialOrUnboundedRead(t *testing.T) {
 			io.WriteString(w, `{"effective_status":"ACTIVE"}`)
 		}
 	})
-	if out := c.readInsights(context.Background(), asset, "555", "2026-10-02", []byte(fakeToken)); out != unconfirmed() || len(f.log()) != 13 {
-		t.Fatalf("unbounded pagination out=%+v calls=%d", out, len(f.log()))
+	loc, _ := insightLocation("Asia/Taipei")
+	if rows, out := c.readBreakdownDimension(context.Background(), "555", "2026-10-02", "TWD", loc, []byte(fakeToken), []byte(`{"since":"2026-10-02","until":"2026-10-02"}`), "age_gender", "age,gender"); rows != nil || out != unconfirmed() || len(f.log()) != 10 {
+		t.Fatalf("unbounded pagination rows=%+v out=%+v calls=%d", rows, out, len(f.log()))
 	}
 }
 
@@ -258,8 +262,8 @@ func TestInsightsTimezoneRefusalAndEmptyPurchases(t *testing.T) {
 	}{
 		{"unknown zone", "Invented/Zone", "2026-10-02", "", 1, false},
 		{"host zone", "Local", "2026-10-02", "", 1, false},
-		{"overlapping hour", "America/New_York", "2026-11-01", "01:00:00 - 01:59:59", 8, false},
-		{"missing hour", "America/New_York", "2026-03-08", "02:00:00 - 02:59:59", 8, false},
+		{"overlapping hour", "America/New_York", "2026-11-01", "01:00:00 - 01:59:59", 8, true},
+		{"missing hour", "America/New_York", "2026-03-08", "02:00:00 - 02:59:59", 8, true},
 		{"empty purchases", "Asia/Taipei", "2026-10-02", "", 8, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -286,6 +290,10 @@ func TestInsightsTimezoneRefusalAndEmptyPurchases(t *testing.T) {
 				parsed, err := ParseInsights(out.ProviderReference)
 				if out.State != "SUCCEEDED" || err != nil || parsed.Purchases != nil || parsed.PurchaseValueMinor != nil {
 					t.Fatalf("empty metrics=%+v/%+v,%v", out, parsed, err)
+				}
+				detail := out.Detail.(*InsightsBreakdowns)
+				if tc.hour != "" && (len(detail.Unavailable) != 1 || detail.Unavailable[0] != "hourly" || len(detail.Rows) != 0) {
+					t.Fatalf("ambiguous/missing hour must remain unavailable: %+v", detail)
 				}
 			} else if out != failedFinal("bad_result") {
 				t.Fatalf("out=%+v", out)
