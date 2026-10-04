@@ -67,7 +67,7 @@ export type SessionAttribution = {
   buyers: Buyers;
   timeline: {
     at: string;
-    spend_minor: number;
+    spend_minor: number | null;
     orders: number;
     net_minor: number;
     comments: number;
@@ -241,7 +241,7 @@ const session = object<SessionAttribution>({
   timeline: array(
     object({
       at: instant,
-      spend_minor: count,
+      spend_minor: nullable(count),
       orders: count,
       net_minor: signed,
       comments: count,

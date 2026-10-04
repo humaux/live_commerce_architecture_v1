@@ -674,7 +674,7 @@ function SessionPanel({
         {s.timeline.map((t, i) => (
           <tr key={i}>
             <th scope="row">{displayTime(locale, t.at)}</th>
-            <td>{money(locale, s.currency, t.spend_minor)}</td>
+            <td>{amount(locale, s.currency, t.spend_minor, c)}</td>
             <td>{number(locale, t.viewers, c)}</td>
             <td>{number(locale, t.comments, c)}</td>
             <td>{number(locale, t.claims, c)}</td>

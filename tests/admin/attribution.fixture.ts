@@ -49,6 +49,15 @@ const session: SessionAttribution = {
       claims: 4,
       viewers: null,
     },
+    {
+      at: "2026-10-03T12:01:00Z",
+      spend_minor: null,
+      orders: 2,
+      net_minor: 2500,
+      comments: 0,
+      claims: 0,
+      viewers: null,
+    },
   ],
   live_audience: {
     status: "available",

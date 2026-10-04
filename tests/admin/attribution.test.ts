@@ -80,6 +80,38 @@ runInNewContext(code, {
 const renderPanel = (name: string, props: object) =>
   renderToStaticMarkup(React.createElement(exports[name], props));
 
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`R11 timeline distinguishes local unknown spend from explicit Meta zero in ${locale}`, () => {
+    const r: any = structuredClone(attributionFixture),
+      c = attributionCopy[locale];
+    r.sessions[0].timeline = [
+      { ...r.sessions[0].timeline[0], spend_minor: null },
+      {
+        ...r.sessions[0].timeline[0],
+        at: "2026-10-03T12:01:00Z",
+        spend_minor: 0,
+      },
+    ];
+    const parsed = parseAttributionReport(r);
+    assert.equal(parsed.sessions[0].timeline[0].spend_minor, null);
+    assert.equal(parsed.sessions[0].timeline[1].spend_minor, 0);
+    const html = renderPanel("SessionPanel", {
+      c,
+      locale,
+      session: parsed.sessions[0],
+      store: "test-store",
+    });
+    const table =
+      html.match(
+        /data-testid="attribution-timeline"[\s\S]*?<tbody>([\s\S]*?)<\/tbody>/,
+      )?.[1] ?? "";
+    const spendCells = [...table.matchAll(/<tr>(.*?)<\/tr>/g)].map(
+      (row) => row[1].match(/<td>(.*?)<\/td>/)?.[1],
+    );
+    assert.deepEqual(spendCells, [c.unknown, money(locale, "TWD", 0)]);
+  });
+}
+
 test("R11 I12 nullable Meta evidence survives without becoming zero", () => {
   const r: any = structuredClone(attributionFixture);
   r.truncated = true;
