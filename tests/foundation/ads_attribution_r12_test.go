@@ -42,23 +42,24 @@ func TestAdsAttributionR12UnknownReadCooldown(t *testing.T) {
 
 func TestAdsAttributionR12CheckoutDefinerACL(t *testing.T) {
 	x := newATSEnv(t, []string{"read_insights", "pages_read_engagement"})
-	for _, fn := range []struct{ sig, owner, grantee string }{
-		{"claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)", "commerce_claims_writer", "commerce_checkout_writer"},
-		{"claims.order_comment_posts(uuid,uuid,uuid)", "commerce_claims_writer", "commerce_checkout_writer"},
-		{"claims.attribution_session_orders(uuid,uuid,uuid)", "commerce_claims_writer", "commerce_checkout_writer"},
-		{"ads.attribution_match(uuid,uuid,uuid,text,timestamptz)", "commerce_ads_writer", "commerce_checkout_writer"},
-		{"ads.capi_ip_needed(uuid,uuid,uuid,uuid)", "commerce_ads_writer", "commerce_checkout_writer"},
-		{"ads.order_signals_allowed(uuid,uuid,uuid)", "commerce_ads_writer", "commerce_checkout_writer"},
-		{"orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)", "commerce_checkout_writer", "commerce_checkout_runtime"},
-		{"orders.erase_ad_context(uuid,uuid,uuid)", "commerce_checkout_writer", "commerce_privacy_writer"},
-		{"orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)", "commerce_checkout_writer", "commerce_ads_writer"},
-		{"orders.capi_context(uuid,uuid,uuid)", "commerce_checkout_writer", "commerce_ads_writer"},
-		{"orders.purge_capi_ip()", "commerce_checkout_writer", "commerce_ads_writer"},
+	// extra: a pinned per-function setting beyond search_path (attribution_metrics: custom plans, the R11 report deadline).
+	for _, fn := range []struct{ sig, owner, grantee, extra string }{
+		{"claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)", "commerce_claims_writer", "commerce_checkout_writer", ""},
+		{"claims.order_comment_posts(uuid,uuid,uuid)", "commerce_claims_writer", "commerce_checkout_writer", ""},
+		{"claims.attribution_session_orders(uuid,uuid,uuid)", "commerce_claims_writer", "commerce_checkout_writer", ""},
+		{"ads.attribution_match(uuid,uuid,uuid,text,timestamptz)", "commerce_ads_writer", "commerce_checkout_writer", ""},
+		{"ads.capi_ip_needed(uuid,uuid,uuid,uuid)", "commerce_ads_writer", "commerce_checkout_writer", ""},
+		{"ads.order_signals_allowed(uuid,uuid,uuid)", "commerce_ads_writer", "commerce_checkout_writer", ""},
+		{"orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)", "commerce_checkout_writer", "commerce_checkout_runtime", ""},
+		{"orders.erase_ad_context(uuid,uuid,uuid)", "commerce_checkout_writer", "commerce_privacy_writer", ""},
+		{"orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)", "commerce_checkout_writer", "commerce_ads_writer", "plan_cache_mode=force_custom_plan"},
+		{"orders.capi_context(uuid,uuid,uuid)", "commerce_checkout_writer", "commerce_ads_writer", ""},
+		{"orders.purge_capi_ip()", "commerce_checkout_writer", "commerce_ads_writer", ""},
 	} {
 		t.Run(fn.sig, func(t *testing.T) {
 			var owner string
 			var secured bool
-			if err := x.e.h.f.owner.QueryRow(context.Background(), `SELECT r.rolname,p.prosecdef AND NOT r.rolcanlogin AND p.proconfig=ARRAY['search_path=pg_catalog'] FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=$1::regprocedure`, fn.sig).Scan(&owner, &secured); err != nil {
+			if err := x.e.h.f.owner.QueryRow(context.Background(), `SELECT r.rolname,p.prosecdef AND NOT r.rolcanlogin AND p.proconfig=array_remove(ARRAY['search_path=pg_catalog',$2],'') FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=$1::regprocedure`, fn.sig, fn.extra).Scan(&owner, &secured); err != nil {
 				t.Fatal(err)
 			}
 			if owner != fn.owner || !secured {

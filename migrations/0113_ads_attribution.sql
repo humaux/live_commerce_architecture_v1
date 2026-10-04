@@ -443,8 +443,12 @@ REVOKE ALL ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) FROM PU
 GRANT EXECUTE ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) TO commerce_checkout_writer;
 COMMENT ON FUNCTION claims.attribution_session_orders(uuid,uuid,uuid) IS 'internal/attribution D9: consumed claim order IDs of exact session, no post fan-out, no actor/line data; checkout aggregate definer only.';
 
+-- plan_cache_mode=force_custom_plan: the cohort is `(p_draft IS NOT NULL AND draft_id=p_draft) OR (p_session IS NOT NULL AND ...)`;
+-- ads.attribution_report calls this once per draft/session (up to 2 x 100), and after five calls PostgreSQL's cached GENERIC
+-- plan cannot prune the dead branch, so every call scanned the whole date range with its per-order payment/refund lookups:
+-- 2.6 s for 100 drafts x 10k orders locally, > 5 s (the API deadline) on the 4-vCPU CI runner. Custom plans: ~0.3 s.
 CREATE FUNCTION orders.attribution_metrics(p_tenant uuid,p_store uuid,p_from date,p_to date,p_draft uuid,p_session uuid) RETURNS jsonb
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog SET plan_cache_mode=force_custom_plan AS $$
  WITH cohort AS MATERIALIZED (
  SELECT o.id,o.owner_id,o.created_at,o.currency,o.snapshot,a.path,a.draft_id,a.post_id,
   CASE WHEN o.payment_mode='card' THEN coalesce(f.captured,0)-coalesce(f.refunded,0)
