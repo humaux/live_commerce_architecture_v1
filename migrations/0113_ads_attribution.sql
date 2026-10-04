@@ -97,7 +97,7 @@ $$;
 ALTER FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) OWNER TO commerce_ads_writer;
 REVOKE ALL ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) TO commerce_checkout_writer;
-COMMENT ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) IS 'internal/attribution: checkout-only same-store draft existence or actual successful boost interval, no inferred paid-comment identity.';
+COMMENT ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) IS 'internal/attribution: checkout-only same-store successfully activated live window for both clicks and comments, no inferred paid-comment identity.';
 -- Consent remains inside the ads-owned eligibility helper below. Checkout
 -- receives only its boolean result, never direct customers-domain authority.
 
@@ -278,18 +278,20 @@ CREATE FUNCTION orders.purge_capi_ip() RETURNS integer
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE r record; n integer:=0;
 BEGIN
- FOR r IN SELECT a.order_id,a.tenant_id,a.store_id,o.owner_id,o.commercial_state,o.expires_at,o.created_at,
-  (SELECT p.id FROM checkout.payment_attempts p WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id
-   ORDER BY p.created_at DESC LIMIT 1) AS attempt_id
+ FOR r IN SELECT a.order_id,a.tenant_id,a.store_id
   FROM orders.order_attribution a JOIN checkout.orders o ON o.id=a.order_id AND o.tenant_id=a.tenant_id AND o.store_id=a.store_id
-  WHERE a.client_ip IS NOT NULL OR a.fbc IS NOT NULL OR a.fbp IS NOT NULL ORDER BY a.frozen_at LIMIT 1000
+  LEFT JOIN LATERAL (SELECT p.id FROM checkout.payment_attempts p WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id
+   ORDER BY p.created_at DESC LIMIT 1) p ON true
+  -- Filter before the batch cap (0080): retained eligible rows must never
+  -- starve later withdrawals or already-terminal orders.
+  WHERE (a.client_ip IS NOT NULL OR a.fbc IS NOT NULL OR a.fbp IS NOT NULL)
+   AND (o.created_at<clock_timestamp()-interval '7 days' OR o.commercial_state='CANCELLED'
+    OR (o.commercial_state IN ('DRAFT','AWAITING_PAYMENT') AND o.expires_at<=clock_timestamp())
+    OR NOT ads.capi_ip_needed(a.tenant_id,a.store_id,o.owner_id,p.id))
+  ORDER BY a.frozen_at,a.order_id LIMIT 1000
  LOOP
-  IF r.created_at<clock_timestamp()-interval '7 days' OR r.commercial_state='CANCELLED'
-    OR (r.commercial_state IN ('DRAFT','AWAITING_PAYMENT') AND r.expires_at<=clock_timestamp())
-    OR NOT ads.capi_ip_needed(r.tenant_id,r.store_id,r.owner_id,r.attempt_id) THEN
    UPDATE orders.order_attribution SET fbc=NULL,fbp=NULL,client_ip=NULL WHERE order_id=r.order_id AND tenant_id=r.tenant_id AND store_id=r.store_id;
    n:=n+1;
-  END IF;
  END LOOP;
  RETURN n;
 END $$;
@@ -333,6 +335,7 @@ CREATE TABLE ads.insights_breakdown_status (
  unavailable text[] NOT NULL CHECK(cardinality(unavailable)<=5 AND array_position(unavailable,NULL) IS NULL
   AND unavailable <@ ARRAY['age_gender','region','placement','device','hourly']::text[]),
  source_operation_id uuid NOT NULL REFERENCES ads.insight_reads(operation_id),fetched_at timestamptz NOT NULL,
+ retry_until timestamptz NOT NULL,
  PRIMARY KEY(tenant_id,store_id,draft_id,day),
  FOREIGN KEY(tenant_id,store_id,draft_id) REFERENCES ads.campaign_drafts(tenant_id,store_id,id));
 ALTER TABLE ads.insights_breakdown_status ENABLE ROW LEVEL SECURITY;
@@ -341,6 +344,51 @@ REVOKE ALL ON ads.insights_breakdown_status FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON ads.insights_breakdown_status TO commerce_ads_writer;
 CREATE POLICY ads_breakdown_status_owner ON ads.insights_breakdown_status TO commerce_ads_writer USING(true) WITH CHECK(true);
 COMMENT ON TABLE ads.insights_breakdown_status IS 'internal/ads optional dimension availability for a draft/account-day. Failure never discards D7 daily facts; the existing bounded hourly sweep retries all dimensions.';
+
+-- Optional retry keeps the existing ads lane and hourly semantic key. Even a
+-- failure on the last normal D7 day gets a next-sweep retry, for at most 24 hours
+-- from that failure (repeated failures do not extend the deadline).
+CREATE OR REPLACE FUNCTION ads.insights_candidates(p_limit integer) RETURNS SETOF uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 500 THEN RAISE EXCEPTION 'invalid ads sweep' USING ERRCODE='22023'; END IF;
+ RETURN QUERY SELECT d.id FROM ads.campaign_drafts d WHERE d.publish_attempt>0 AND ads.draft_campaign(d.id) IS NOT NULL
+  AND (clock_timestamp()<d.ends_at+interval '3 days' OR EXISTS(SELECT 1 FROM ads.insights_breakdown_status b
+   WHERE b.tenant_id=d.tenant_id AND b.store_id=d.store_id AND b.draft_id=d.id AND cardinality(b.unavailable)>0 AND b.retry_until>clock_timestamp()))
+  ORDER BY d.id LIMIT p_limit;
+END $$;
+CREATE OR REPLACE FUNCTION ads.insights_days(p_draft uuid) RETURNS date[]
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE d ads.campaign_drafts; v_now timestamptz:=clock_timestamp(); v_today date; v_regular boolean;
+ v_days date[]:=ARRAY[]::date[];x date;v_hourkey text;
+BEGIN
+ SELECT * INTO d FROM ads.campaign_drafts y WHERE y.id=p_draft;
+ IF NOT FOUND OR ads.draft_campaign(d.id) IS NULL THEN RETURN v_days; END IF;
+ v_today:=(v_now AT TIME ZONE 'Asia/Taipei')::date;
+ v_regular:=(extract(hour from v_now AT TIME ZONE 'Asia/Taipei')::integer=4 OR ads.draft_counts(d.id))
+  AND v_now<d.ends_at+interval '3 days';
+ v_hourkey:=to_char(v_now AT TIME ZONE 'UTC','YYYYMMDDHH24');
+ FOR x IN SELECT q.day FROM (
+  SELECT g::date day FROM generate_series(greatest((d.starts_at AT TIME ZONE 'Asia/Taipei')::date,v_today-3)::timestamp,v_today::timestamp,interval '1 day') g WHERE v_regular
+  UNION SELECT b.day FROM (SELECT bs.day FROM ads.insights_breakdown_status bs WHERE bs.tenant_id=d.tenant_id AND bs.store_id=d.store_id AND bs.draft_id=d.id
+   AND cardinality(bs.unavailable)>0 AND bs.retry_until>v_now ORDER BY bs.day LIMIT 4) b) q ORDER BY q.day
+ LOOP
+  IF NOT EXISTS(SELECT 1 FROM integration.operations o WHERE o.tenant_id=d.tenant_id AND o.store_id=d.store_id
+   AND o.semantic_key='ads:ins:'||d.id::text||':'||to_char(x,'YYYY-MM-DD')||':'||v_hourkey) THEN v_days:=v_days||x; END IF;
+ END LOOP;
+ RETURN v_days;
+END $$;
+-- Preserve already-final D7 facts while completing an optional dimension retry.
+COMMENT ON FUNCTION ads.insights_candidates(integer) IS 'internal/ads hourly planner: existing published campaign candidates plus unavailable optional dimensions inside a non-extending 24-hour retry window, maximum 500 drafts, existing ads lane only.';
+COMMENT ON FUNCTION ads.insights_days(uuid) IS 'internal/ads hourly planner: existing D7 days plus at most four unavailable account-days per draft inside the retry window; same UTC-hour semantic key prevents duplicate reads.';
+DO $patch$
+DECLARE body text; needle text:='WHERE EXCLUDED.fetched_at>=ads.insights_daily.fetched_at;';
+BEGIN
+ SELECT prosrc INTO body FROM pg_proc WHERE oid='ads.put_insights_day(uuid)'::regprocedure;
+ IF strpos(body,needle)=0 THEN RAISE EXCEPTION 'daily immutable guard baseline drift'; END IF;
+ body:=replace(body,needle,'WHERE NOT ads.insights_daily.final AND EXCLUDED.fetched_at>=ads.insights_daily.fetched_at;');
+ EXECUTE 'CREATE OR REPLACE FUNCTION ads.put_insights_day(p_operation uuid) RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
+END $patch$;
 
 CREATE FUNCTION ads.finish_insights_breakdowns(p_operation uuid,p_generation bigint,p_token bytea,p_mode text,p_result jsonb) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -363,8 +411,11 @@ BEGIN
  -- dimensions still retry; a late old read cannot replace newer availability.
  IF EXISTS(SELECT 1 FROM ads.insights_breakdown_status i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day AND i.fetched_at>o.updated_at) THEN RETURN; END IF;
  INSERT INTO ads.insights_breakdown_status VALUES(ir.tenant_id,ir.store_id,ir.draft_id,ir.day,
-  ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(p_result->'unavailable','null'::jsonb),'[]'::jsonb))),o.id,o.updated_at)
- ON CONFLICT(tenant_id,store_id,draft_id,day) DO UPDATE SET unavailable=EXCLUDED.unavailable,source_operation_id=EXCLUDED.source_operation_id,fetched_at=EXCLUDED.fetched_at;
+  ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(p_result->'unavailable','null'::jsonb),'[]'::jsonb))),o.id,o.updated_at,o.updated_at+interval '24 hours')
+ ON CONFLICT(tenant_id,store_id,draft_id,day) DO UPDATE SET unavailable=EXCLUDED.unavailable,source_operation_id=EXCLUDED.source_operation_id,fetched_at=EXCLUDED.fetched_at,
+  retry_until=CASE WHEN cardinality(ads.insights_breakdown_status.unavailable)>0 THEN ads.insights_breakdown_status.retry_until ELSE EXCLUDED.retry_until END
+ WHERE ads.insights_breakdown_status.fetched_at<=EXCLUDED.fetched_at;
+ IF NOT FOUND THEN RETURN; END IF; -- conflict wait rechecks latest row; older completion cannot delete newer dimensions
  DELETE FROM ads.insights_breakdowns i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day;
  FOR r IN SELECT value FROM jsonb_array_elements(p_result->'rows') LOOP
   IF jsonb_typeof(r)<>'object' OR (r->>'dimension'='hourly' AND ((r->>'hour_start')::timestamptz AT TIME ZONE v_tz)::date<>ir.day) THEN
@@ -495,7 +546,7 @@ ALTER FUNCTION live.attribution_sessions(uuid,uuid,date,date) OWNER TO commerce_
 REVOKE ALL ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) TO commerce_ads_writer;
 GRANT USAGE ON SCHEMA claims,live TO commerce_ads_writer;
-COMMENT ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) IS 'internal/ads D9: at most 100 scoped live sessions with bound public post IDs, not stream keys or credentials. Unknown end stays null.';
+COMMENT ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) IS 'internal/ads D9: at most 101 scoped live sessions including the report truncation sentinel; public post IDs only, not stream keys or credentials. Unknown end stays null.';
 
 CREATE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
