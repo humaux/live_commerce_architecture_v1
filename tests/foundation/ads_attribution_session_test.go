@@ -168,6 +168,7 @@ func (x *atsEnv) mustPlan() string {
 	x.t.Helper()
 	r := x.plan()
 	if r.Status != http.StatusOK {
+		x.diagnose(true, "")
 		x.t.Fatalf("audience plan status=%d body=%s", r.Status, r.Raw)
 	}
 	op, ok := r.JSON["operation_id"].(string)

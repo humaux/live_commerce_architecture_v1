@@ -1,6 +1,8 @@
 "use client";
 // POST /api/stores/{store}/ads/sessions/{session}/audience-read -> Go same resource under /v1/admin/stores.
-// A read receipt may replay an existing operation; only SUCCEEDED proves completion. Uncertainty never creates a fresh-key retry.
+// A read receipt may replay an existing operation; only SUCCEEDED proves completion.
+// Transport uncertainty retries the same key. An acknowledged UNKNOWN GET may
+// explicitly request again; the server owns the ten-minute cooldown and bound.
 import { useEffect, useRef, useState } from "react";
 import { requestAudienceRead } from "@/lib/attribution-client";
 import {
@@ -132,11 +134,7 @@ export function AttributionAudienceRead({
       <button
         type="button"
         data-testid="attribution-audience-refresh"
-        disabled={
-          locked ||
-          journal?.phase === "unknown" ||
-          journal?.phase === "unconfirmed"
-        }
+        disabled={locked || journal?.phase === "unknown"}
         onClick={() => void queue(false)}
       >
         {sending ? c.audienceReading : c.audienceRefresh}
@@ -176,7 +174,8 @@ export function AttributionAudienceRead({
         </p>
       )}
       {!sending && journal?.phase === "unconfirmed" && (
-        // An authoritative UNKNOWN receipt is cached by idempotency key; repeating its POST cannot poll progress.
+        // R12: same-key receipt is cached; a new GET intention can ask the server
+        // to replay during cooldown or plan a new read after it expires.
         <p role="status" data-testid="attribution-audience-unconfirmed">
           {c.audienceUnconfirmed}
         </p>

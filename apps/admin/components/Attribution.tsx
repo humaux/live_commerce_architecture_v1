@@ -700,12 +700,14 @@ function SessionPanel({
       <div className="attribution-pair">
         <div data-testid="attribution-live-audience">
           <h3>{c.liveAudience}</h3>
-          <AttributionAudienceRead
-            key={`${store}:${s.session_id}`}
-            store={store}
-            session={s.session_id}
-            c={c}
-          />
+          {audience.status !== "not_authorized" && (
+            <AttributionAudienceRead
+              key={`${store}:${s.session_id}`}
+              store={store}
+              session={s.session_id}
+              c={c}
+            />
+          )}
           {audience.status === "not_authorized" ? (
             <>
               <p data-testid="attribution-not-authorized">{c.notAuthorized}</p>
@@ -716,6 +718,8 @@ function SessionPanel({
                 {c.reconnect}
               </Link>
             </>
+          ) : audience.status === "not_read" ? (
+            <p data-testid="attribution-not-read">{c.notRead}</p>
           ) : (
             <>
               <dl className="attribution-facts">

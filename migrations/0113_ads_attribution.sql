@@ -187,7 +187,9 @@ BEGIN
  END IF;
  -- R10: independently authenticated 90-day IDs are not the seven-day draft touch.
  -- Never rescue stale embedded IDs from p_touch when their independent cookie failed validation.
- IF ads.order_signals_allowed(s.tenant_id,p_store,s.owner_id) THEN
+ -- R12: only card CAPTURED has a CAPI Purchase path. Offline payment
+ -- attribution remains factual, but collecting matching signals has no purpose.
+ IF o.payment_mode='card' AND ads.order_signals_allowed(s.tenant_id,p_store,s.owner_id) THEN
   IF jsonb_typeof(p_signals)='object' THEN
    IF p_signals->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$'
     AND char_length(split_part(p_signals->>'fbc','.',4))<=500 THEN v_fbc:=p_signals->>'fbc'; END IF;
@@ -206,7 +208,7 @@ END $$;
 ALTER FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) TO commerce_checkout_runtime;
-COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'internal/checkout R9/R10: authenticated creating session within one minute, write-once; ineligible attribution is a no-op. Same Begin transaction, click beats exact comment, ambiguous boost draft NULL. Independent consented matching signals may have NULL path and never count in reports. No money or immutable snapshot mutation.';
+COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'internal/checkout R9/R12: authenticated creating session within one minute, write-once; ineligible attribution is a no-op. Same Begin transaction, click beats exact comment, ambiguous boost draft NULL. Independent consented card matching signals may have NULL path: no path/draft credit, but the order stays in its session cohort. No money or immutable snapshot mutation.';
 
 CREATE FUNCTION orders.erase_ad_context(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -477,7 +479,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  WHERE o.tenant_id=p_tenant AND o.store_id=p_store
   -- R10: signals-only rows are not attribution. All performance counts below are
   -- paid-only; pending collection is separate, never an implicit order count.
-  AND (a.order_id IS NULL OR a.path IS NOT NULL)
   AND o.created_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND o.created_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
   AND ((p_draft IS NOT NULL AND a.draft_id=p_draft) OR (p_session IS NOT NULL AND o.id IN
    (SELECT * FROM claims.attribution_session_orders(p_tenant,p_store,p_session))))
@@ -639,8 +640,15 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended(a.out_tenant::text||'/'||p_store::text||'/audience/'||s.source_object_id,0));
  SELECT * INTO prior FROM integration.operations x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store
   AND x.action='meta.live_insights' AND x.provider='facebook' AND x.request->>'post_id'=s.source_object_id
-  AND (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED') OR x.updated_at>=clock_timestamp()-interval '10 minutes')
-  ORDER BY (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')) DESC,x.updated_at DESC,x.id LIMIT 1;
+  AND (
+   -- READY has no dispatch lease yet; only its still-live matching queue job
+   -- reserves the read. A cancelled/discarded/completed job cannot block it.
+   (x.state='READY' AND EXISTS(SELECT 1 FROM river.river_job queued_job WHERE queued_job.id=x.job_id
+    AND queued_job.kind='external_operation_v1' AND queued_job.args=jsonb_build_object('operation_id',x.id::text,'version',1)
+    AND queued_job.state IN ('available','scheduled','retryable','pending','running')))
+   OR (x.state='DISPATCHING' AND x.lease_until>clock_timestamp())
+   OR (x.state NOT IN ('READY','DISPATCHING') AND x.updated_at>=clock_timestamp()-interval '10 minutes'))
+  ORDER BY (x.state IN ('READY','DISPATCHING')) DESC,x.updated_at DESC,x.id LIMIT 1;
  IF FOUND THEN
   IF p_operation IS NOT NULL OR p_job IS NOT NULL THEN RAISE EXCEPTION 'audience replay requires preflight' USING ERRCODE='40001'; END IF;
   RETURN jsonb_build_object('operation_id',prior.id,'state',prior.state);
@@ -758,10 +766,12 @@ COMMENT ON FUNCTION integration.meta_audience_authorized(uuid,uuid,uuid) IS 'int
 -- serve another session bound to that exact Page/video, without a second GET.
 DO $patch$
 DECLARE body text;needle text:='jsonb_build_object(''status'',''not_authorized'',''views'',NULL,''peak_concurrent'',NULL,''total_view_time_ms'',NULL,''age_gender'',''[]''::jsonb,''regions'',''[]''::jsonb)';
+ unread text;
 BEGIN
  SELECT prosrc INTO body FROM pg_proc WHERE oid='ads.attribution_report(bytea,uuid,date,date)'::regprocedure;
  IF strpos(body,needle)=0 THEN RAISE EXCEPTION 'audience report patch shape changed'; END IF;
- body:=replace(body,needle,'CASE WHEN integration.meta_audience_authorized(a.out_tenant,p_store,s.session_id) THEN coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND EXISTS(SELECT 1 FROM claims.attribution_sources(a.out_tenant,p_store,s.session_id) src JOIN claims.attribution_sources(a.out_tenant,p_store,x.session_id) prior ON prior.id=x.source_id AND prior.binding_id=src.binding_id AND prior.source_object_id=src.source_object_id) ORDER BY x.requested_at DESC,x.operation_id LIMIT 1),'||needle||') ELSE '||needle||' END');
+ unread:=replace(needle,'''not_authorized''','''not_read''');
+ body:=replace(body,needle,'CASE WHEN integration.meta_audience_authorized(a.out_tenant,p_store,s.session_id) THEN coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND EXISTS(SELECT 1 FROM claims.attribution_sources(a.out_tenant,p_store,s.session_id) src JOIN claims.attribution_sources(a.out_tenant,p_store,x.session_id) prior ON prior.id=x.source_id AND prior.binding_id=src.binding_id AND prior.source_object_id=src.source_object_id) ORDER BY x.requested_at DESC,x.operation_id LIMIT 1),'||unread||') ELSE '||needle||' END');
  EXECUTE 'CREATE OR REPLACE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
 END $patch$;
 

@@ -75,7 +75,7 @@ export type SessionAttribution = {
     viewers: number | null;
   }[];
   live_audience: {
-    status: "not_authorized" | "insufficient" | "available";
+    status: "not_read" | "not_authorized" | "insufficient" | "available";
     views: number | null;
     peak_concurrent: number | null;
     total_view_time_ms: number | null;
@@ -210,7 +210,7 @@ const draft = object<DraftAttribution>({
   buyers,
 });
 const audience = object<SessionAttribution["live_audience"]>({
-  status: choices(["not_authorized", "insufficient", "available"]),
+  status: choices(["not_read", "not_authorized", "insufficient", "available"]),
   views: nullable(count),
   peak_concurrent: nullable(count),
   total_view_time_ms: nullable(count),

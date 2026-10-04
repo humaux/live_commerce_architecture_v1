@@ -89,7 +89,7 @@ const en = {
   audienceInflight:
     "The existing audience read is in progress. Read the report again later.",
   audienceUnconfirmed:
-    "The existing audience read outcome is unknown. Read the report again later; do not start another read.",
+    "The existing audience read outcome is unknown. You can request again; the server reuses this read until its 10-minute cooldown ends.",
   audienceReadFailed:
     "The audience read failed. Check the Facebook connection before requesting again.",
   audienceBlocked:
@@ -111,6 +111,8 @@ const en = {
   viewTime: "View time (ms), not people",
   insufficient: "Audience too small; Meta did not provide a profile.",
   notAuthorized: "Reconnect Facebook to authorize audience insights",
+  notRead:
+    "Audience insights have not been read yet. Use the read action to request them.",
   ambiguous:
     "Several promotions were live; these orders were not assigned to a single ad",
   post: "Bound posts",
@@ -209,7 +211,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
       "沿用已完成的觀眾讀取，未新增讀取請求。請重新讀取報表查看已儲存的洞察。",
     audienceInflight: "既有觀眾讀取正在處理，請稍後重新讀取報表。",
     audienceUnconfirmed:
-      "既有觀眾讀取結果未知，請稍後重新讀取報表，勿建立另一個讀取。",
+      "既有觀眾讀取結果未知，可再次要求讀取；10 分鐘冷卻期結束前，伺服器會沿用這次讀取。",
     audienceReadFailed: "觀眾讀取失敗，請確認 Facebook 連接後再提出請求。",
     audienceBlocked: "觀眾讀取因政策被阻擋，請確認 Facebook 授權。",
     audienceStale: "Facebook 連接已變更，請重新連接後再讀取觀眾洞察。",
@@ -226,6 +228,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     viewTime: "觀看時間（毫秒），非人數",
     insufficient: "觀眾數不足，Meta 未提供輪廓",
     notAuthorized: "需重新連接 Facebook 以授權觀眾數據",
+    notRead: "尚未讀取觀眾數據，可使用讀取按鈕取得資料。",
     ambiguous: "多個推廣同時進行，未分配到單一廣告",
     post: "綁定貼文",
     draftIds: "關聯草稿",
@@ -320,7 +323,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
       "沿用已完成的观众读取，未新增读取请求。请重新读取报表查看已保存的洞察。",
     audienceInflight: "现有观众读取正在处理，请稍后重新读取报表。",
     audienceUnconfirmed:
-      "现有观众读取结果未知，请稍后重新读取报表，勿创建另一个读取。",
+      "现有观众读取结果未知，可再次请求读取；10 分钟冷却期结束前，服务器会沿用这次读取。",
     audienceReadFailed: "观众读取失败，请确认 Facebook 连接后再提出请求。",
     audienceBlocked: "观众读取因政策被阻止，请确认 Facebook 授权。",
     audienceStale: "Facebook 连接已变更，请重新连接后再读取观众洞察。",
@@ -337,6 +340,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     viewTime: "观看时间（毫秒），非人数",
     insufficient: "观众数不足，Meta 未提供轮廓",
     notAuthorized: "需重新连接 Facebook 以授权观众数据",
+    notRead: "尚未读取观众数据，可使用读取按钮获取数据。",
     ambiguous: "多个推广同时进行，未分配到单一广告",
     post: "绑定帖文",
     draftIds: "关联草稿",

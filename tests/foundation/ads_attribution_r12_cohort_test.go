@@ -181,6 +181,12 @@ func TestAdsAttributionR12PaymentSignalMinimization(t *testing.T) {
 			if err != nil || replay.OrderID != res.OrderID {
 				t.Fatal("same-key Begin lost replay safety")
 			}
+			if n := miCount(t, e.p.f.owner, `SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND path='ad_click' AND draft_id=$2`, res.OrderID, touch.DraftID); n != 1 {
+				t.Fatal("replay lost factual attribution")
+			}
+			if mode != "card" && miCount(t, e.p.f.owner, `SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND (fbc IS NOT NULL OR fbp IS NOT NULL OR client_ip IS NOT NULL)`, res.OrderID) != 0 {
+				t.Fatal("replay restored non-CAPI signals")
+			}
 		})
 	}
 }
