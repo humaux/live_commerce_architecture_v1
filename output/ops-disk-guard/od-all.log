@@ -1,0 +1,128 @@
+info: PG 18.6 (Debian 18.6-1.pgdg13+2) archive_timeout=1min archive_command=bash /etc/postgresql/archive-wal.sh %p %f
+info: OD1 measuring for 300s (trickle writer + 3 forced switches); started 13:26:13Z
+od1.bootstrap_segments_excluded=2 bytes=2686353 (initdb + schema: real data, not steady state)
+od1.segments=6 gz=6 plain=0 total_bytes=189030 avg_bytes_per_segment=31505 window_s=301
+od1.projected_at_1_segment_per_minute_gb_per_day=0.0454 (uncompressed 16 MiB: 24.16)
+od1.projected_at_measured_rate_gb_per_day=0.0543
+PASS OD1 enough post-bootstrap segments archived to measure (>= 5)
+PASS OD1 every archived WAL segment is compressed (.gz), none plain
+PASS OD1 average archived bytes per segment < 200 KB (204800)
+PASS OD1 archiver failed_count = 0
+PASS OD1 archive_timeout is still 60s (RPO unchanged)
+PASS OD1 re-archiving an already archived segment: exit 0
+PASS OD1 ... and nothing changed (no duplicate, no rewrite, no .part)
+PASS OD1 a corrupted existing target is detected (non-zero, named on stderr)
+PASS OD1 a truncated existing target is detected (non-zero)
+PASS OD1 ... and the restored target is accepted again
+PASS OD1 a legacy plain copy of the same segment is idempotent too
+PASS OD1 disk full: archive command fails (non-zero)
+PASS OD1 disk full: no .part and no target left behind
+PASS OD1 ... and the same segment archives once there is room
+info: OD2 base backup #1
+info: base1=20261004T133117Z start_segment=00000001000000000000000A
+PASS OD2 the base backup's .backup label was archived as a plain file
+od2.replay_window_segments gz=1 plain=2 (from base start 00000001000000000000000A) target_time=2026-10-04 13:31:21.645580+00
+PASS OD2 the replay window really mixes both forms (>= 1 .gz and >= 1 plain)
+  | 2026-10-04T13:31:25Z pg-ops/restore-pitr base=20261004T133117Z target_time=2026-10-04 13:31:21.645580+00 scratch=/var/lib/postgresql/pitr/pgdata drill=1 promote=0 start
+  | 2026-10-04T13:31:26Z pg-ops/restore-pitr paused at_target=yes last_replayed_xact=2026-10-04 13:31:19.429822+00
+  | verify.result=PASS witness=1,2,3 (stub verify.sql: no application schema in this scratch DB)
+  | pitr_duration_seconds=2
+  | 2026-10-04T13:31:27Z pg-ops/restore-pitr base=20261004T133117Z duration_s=2 verify=PASS drill=1 result=ok
+PASS OD2 restore-pitr.sh --drill exits 0 (replay reached the target; witness rows 1,2,3 present, 4 absent)
+PASS OD2 log shows the paused-at-target verify
+info: OD3 negative control: legacy pg_archivecleanup (no -x .gz) on a synthetic mixed archive
+od3.negative_control_legacy_cleanup_leaves: 000000010000000000000001.gz 000000010000000000000003.00000028.backup 000000010000000000000003.gz 000000010000000000000005.gz 000000010000000000000006 000000010000000000000007.00000028.backup 000000010000000000000007.gz 000000010000000000000008 00000002.history 
+PASS OD3 negative control: the legacy command leaves the old .gz segments behind (unbounded growth)
+od3.new_cleanup_leaves: 000000010000000000000006 000000010000000000000007.00000028.backup 000000010000000000000007.gz 000000010000000000000008 00000002.history 
+PASS OD3 pg_archivecleanup -b -x .gz leaves exactly: >= cutoff (both forms), the newer .backup, .history
+info: OD3 base backups #2 and #3 (real basebackup.sh retention)
+od3.cutoff_segment=000000010000000000000010 bases_kept=2 before: gz_below_cutoff=4 plain_below_cutoff=2 files=12 after: files=8
+PASS OD3 two bases kept (LC_BASE_KEEP=2), the oldest was removed
+PASS OD3 both forms were present below the cutoff before pruning (>= 1 .gz and >= 1 plain)
+PASS OD3 no segment (gz or plain) older than the oldest kept base's START segment is left
+PASS OD3 nothing at or after the cutoff was touched (every such file present before is present after, same size)
+PASS OD3 the timeline .history file survives
+PASS OD3 the .backup label of the pruned base is gone (< cutoff), the kept bases' labels stay (>= 2)
+PASS OD3 archiver still healthy at the end (failed_count 0)
+PASS OD4 1 first failure: exit 1
+PASS OD4 1 first failure: exactly one mail
+PASS OD4 1 subject names the failing set
+PASS OD4 1 body carries the value-free FAIL line
+PASS OD4 1 recipient and sender
+PASS OD4 1 mailed through smtps on 465, config from a pipe (-K /dev/fd/N), message on stdin (-T -)
+PASS OD4 1 state remembers the set
+PASS OD4 2 unchanged set: still exit 1, no new mail
+PASS OD4 3 changed set: second mail
+PASS OD4 3 subject lists both checks
+PASS OD4 3b unchanged again: no new mail
+PASS OD4 4 after 6 h: third mail
+PASS OD4 4 marked as still failing
+PASS OD4 4b only 5 h later: no mail
+PASS OD4 5 recovery: exit 0
+PASS OD4 5 recovery: one RECOVERED mail
+PASS OD4 5 state cleared
+PASS OD4 5b all-pass stays silent
+PASS OD4 6 SMTP down: watchdog result unchanged (exit 1 from W1), warning logged
+PASS OD4 6 SMTP down: no mail counted, state not advanced
+PASS OD4 6 SMTP back: the retry sends exactly one mail
+PASS OD4 6b RECOVERED mail fails: exit still 0, set kept for the retry
+PASS OD4 6b retry sends the recovered mail
+PASS OD4 7 webhook still posts the failing ids
+PASS OD4 7 and the e-mail went out
+PASS OD4 8 malformed LC_ALERT_EMAIL: warning, no mail attempt, exit 1
+PASS OD4 8 LC_ALERT_EMAIL unset: behaves as before (no mail, exit 1)
+PASS OD4 8b --test-mail sends exactly one TEST mail and exits 0 without running checks
+PASS OD4 8b --test-mail with the relay down exits 1 (the operator asked for exactly this)
+PASS OD4 8b unknown argument: usage error (exit 2)
+PASS OD4 9 the credential did reach curl (via the -K pipe)
+PASS OD4 9 password in NO curl argv
+PASS OD4 9 password in NO watchdog output or log
+PASS OD4 9 password in NO state file
+PASS OD4 9 password in NO mail message
+PASS OD4 9 no argv carries --user/-u
+OD4 summary: watchdog runs=19 mails=8 fails=0
+PASS OD4b real curl + mock relay: STARTTLS, AUTH and DATA accepted (exit 0)
+PASS OD4b the relay saw TLS, a good login, the right envelope
+PASS OD4b the message is well formed: CRLF headers (From/To/Subject/Date/Message-ID/MIME) and the body lines
+PASS OD4b the password is in no argv of the curl that authenticated with it
+PASS OD4b nothing the function printed contains the password
+PASS OD4b an untrusted certificate is refused (exit 1, curl TLS error, no auth attempted)
+PASS OD4b a wrong password is refused by the relay (exit 1) and neither password is printed
+PASS OD4b a password with quote, backslash, dollar and spaces authenticates (curl config escaping)
+PASS OD4b a closed port is a clean failure (exit 1, warning, nothing leaked)
+PASS OD5 100 GiB fs, exactly 10 % free: allowed
+PASS OD5 100 GiB fs, 1 KiB under 10 % refused
+PASS OD5 10 GiB fs, exactly 2 GiB free (floor beats 10 %): allowed
+PASS OD5 10 GiB fs, 1 KiB under the 2 GiB floor refused
+PASS OD5 the incident (96 GiB fs, 0.5 GiB free) refused
+PASS OD5 message names path, free space and the rule
+PASS OD5 pg-ops backup refuses (exit 1, guard message, docker never called)
+PASS OD5 pg-ops basebackup refuses (exit 1, guard message, docker never called)
+PASS OD5 deploy.sh upgrade refuses before the backup (exit 1, guard message, no compose/pg-ops call, no rollback tree)
+PASS OD5 positive control: pg-ops backup with room reaches docker compose (pg-ops)
+PASS OD5 positive control: deploy.sh upgrade with room reaches the backup step (pg-ops)
+PASS OD5 real tmpfs (8 MiB): refused with the real df numbers
+PASS OD5 unreadable path: refused
+OD5 summary: fails=0
+PASS OD6 dry run: exit 0, names the removals, removes nothing
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: keeping tags: d4 c3 b2 c3 
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-go:e5
+  | 2026-10-04T13:31:43Z prune-docker.sh WARN: kept lcod60601t-go:a1 (in use by a container)
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-admin:e5
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-admin:a1
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-storefront:e5
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-storefront:a1
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-caddy:e5
+  | 2026-10-04T13:31:43Z prune-docker.sh INFO: removed lcod60601t-caddy:a1
+  | 2026-10-04T13:31:44Z prune-docker.sh INFO: build cache pruned to <= 3GB
+PASS OD6 prune exits 0
+PASS OD6 go keeps new(d4) + running(c3) + previous(b2) and the in-use a1; e5 removed
+PASS OD6 admin keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+PASS OD6 storefront keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+PASS OD6 caddy keeps new(d4) + running(c3) + previous(b2); a1 and e5 removed
+PASS OD6 an image of another prefix is untouched
+PASS OD6 the previous deployed tag (b2) survived for app-rollback
+PASS OD6 build cache trimmed to 3GB (docker builder prune -f --keep-storage|--reserved-space 3GB)
+PASS OD6 without deployments.log: exit 0, nothing removed, no cache prune
+PASS OD6 build-images.sh runs prune-docker.sh after the build (line 129 > 104), non-fatal, LC_BUILD_PRUNE=0 skips
+ops-disk-guard (all): PASS

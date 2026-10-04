@@ -113,7 +113,7 @@ api 的 `/healthz` 一直返回 200（它不检查数据库），容器的 `/rea
 - `build-images.sh` 构建成功后自动运行 `deploy/scripts/prune-docker.sh`：保留新 tag、运行中 tag 和 `deployments.log` 里上一个已部署 tag（`app-rollback` 需要它），构建缓存压到 3GB。
 
 **症状**：W2 `used>80%`；W1 `postgres state=exited`/unhealthy；W3/W4 失败；`dc logs postgres` 有 `No space left on device`；`docker start`/`dc up -d postgres` 报无法创建 overlay 挂载。
-**先确认再动手**：`df -h / ${LC_BACKUP_DIR}`、`du -sh ${LC_BACKUP_DIR}/wal`、`ls ${LC_BACKUP_DIR}/wal | wc -l`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测数字见 `output/ops-disk-guard/SUMMARY.md`）。
+**先确认再动手**：`df -h / ${LC_BACKUP_DIR}`、`du -sh ${LC_BACKUP_DIR}/wal`、`ls ${LC_BACKUP_DIR}/wal | wc -l`（新配置下最多约 2880 个段文件 = 2 天 × 1440 个/天，压缩后通常远小于 1GB；实测：空闲库每个强制切换的段压缩后约 16.5–31 KB，原来 16 MiB；见 `output/ops-disk-guard/od-all.log`）。
 
 **恢复步骤（事故当时 owner 批准的顺序；涉及生产，先报告影响面再执行）**
 1. 先腾出能让容器启动的空间：`docker builder prune`（事故中释放 4.7G）。更安全的做法是 `deploy/scripts/prune-docker.sh`（只删旧的 `lc-*` 镜像标签和多余的构建缓存，保留运行中/上一个 tag）。

@@ -1,0 +1,4 @@
+2026-10-04T13:31:31Z pg-ops/basebackup run_id=20261004T133131Z start
+2026-10-04T13:31:31Z pg-ops/basebackup run_id=20261004T133131Z dir=/backup/base/20261004T133131Z bytes=4473871 duration_s=0 verify=ok
+2026-10-04T13:31:32Z pg-ops/basebackup wal_pruned_before=00000001000000000000000A oldest_base=20261004T133117Z kept_bases=2 result=ok
+/backup/base/20261004T133131Z

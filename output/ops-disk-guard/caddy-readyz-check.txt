@@ -1,0 +1,9 @@
+D7 /readyz exposure check (REAL Caddy 2.11.4 from the local pinned-by-tag image, the repo's deploy/caddy/Caddyfile unchanged,
+LC_API_HOST=api.localhost, no upstream running; request through https://api.localhost:18443 with --resolve, -k for Caddy's internal CA).
+A proxied path is answered 5xx by Caddy because 127.0.0.1:8080 is down; a path the Caddyfile does not route is the default-deny 404.
+  GET /healthz -> 503   (routed to the api; reachable through the edge)
+  GET /readyz  -> 404   (NOT routed: the API host is default-deny, only /healthz is opened)
+  GET /livez   -> 404   (control)
+Code facts: internal/platform/platform.go:703 GET /readyz answers 503 when pool.Ping fails; GET /healthz is a constant 200 (the
+2026-10-03 outage: api /healthz stayed 200 for 29.5 h while the DB was down). So an external monitor on /healthz cannot see a DB outage,
+and /readyz cannot be monitored from outside until a Caddyfile route is added (needs a ruling; not done here).

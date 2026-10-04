@@ -1,0 +1,16 @@
+FAIL OD5 100 GiB fs, exactly 10 % free: allowed
+PASS OD5 100 GiB fs, 1 KiB under 10 % refused
+FAIL OD5 10 GiB fs, exactly 2 GiB free (floor beats 10 %): allowed
+PASS OD5 10 GiB fs, 1 KiB under the 2 GiB floor refused
+PASS OD5 the incident (96 GiB fs, 0.5 GiB free) refused
+FAIL OD5 message names path, free space and the rule
+FAIL OD5 pg-ops backup refuses (exit 1, guard message, docker never called)
+FAIL OD5 pg-ops basebackup refuses (exit 1, guard message, docker never called)
+FAIL OD5 deploy.sh upgrade refuses before the backup (exit 1, guard message, no compose/pg-ops call, no rollback tree)
+PASS OD5 positive control: pg-ops backup with room reaches docker compose (pg-ops)
+PASS OD5 positive control: deploy.sh upgrade with room reaches the backup step (pg-ops)
+FAIL OD5 real tmpfs (8 MiB): refused with the real df numbers
+PASS OD5 unreadable path: refused
+OD5 summary: fails=7
+ops-disk-guard (disk): FAIL (1 failing checks)
+exit=1
