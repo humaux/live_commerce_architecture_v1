@@ -834,7 +834,7 @@ func TestStoreDomainsApexEdgeInstructions(t *testing.T) {
 
 // TestStoreDomainsDeployPassesBaseDomainToMigrate (K3 final review P1): the migrate one-shot must receive LC_STORE_BASE_DOMAIN,
 // otherwise 0106's platform-origin backfill silently no-ops in a deploy and existing stores (the pilot) get no https://<handle>.<base>;
-// and preflight must FAIL (not skip) when the value is unset outside smoke.
+// and preflight must FAIL (not skip) when the value is unset or invalid, in every environment (offline rule P19).
 func TestStoreDomainsDeployPassesBaseDomainToMigrate(t *testing.T) {
 	read := func(p string) string {
 		b, err := os.ReadFile("../../" + p)
@@ -869,7 +869,7 @@ func TestStoreDomainsDeployPassesBaseDomainToMigrate(t *testing.T) {
 			t.Fatalf("compose %s service does not pass LC_STORE_BASE_DOMAIN", svc)
 		}
 	}
-	if !strings.Contains(read("deploy/scripts/preflight.sh"), `P19 FAIL LC_STORE_BASE_DOMAIN is unset`) {
+	if !strings.Contains(read("deploy/scripts/preflight.sh"), `"LC_STORE_BASE_DOMAIN is unset or not a DNS zone`) {
 		t.Fatal("preflight does not fail an unset LC_STORE_BASE_DOMAIN")
 	}
 }

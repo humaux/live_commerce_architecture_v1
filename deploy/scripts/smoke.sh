@@ -227,6 +227,7 @@ LC_HTTPS_PORT=${LC_SMOKE_HTTPS_PORT:-443}
 LC_ADMIN_HOST=admin.localhost
 LC_PLATFORM_HOST=platform.localhost
 LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
+LC_STORE_BASE_DOMAIN=example.test
 LC_STORE_HOST=shop.localhost
 LC_API_HOST=api.localhost
 LC_HOOKS_HOST=hooks.localhost
@@ -438,6 +439,9 @@ full_cases() {
     printf 'COMMERCE_META_WEBHOOK_ENABLED=1\nCOMMERCE_META_LOGIN_CONFIG_ID=2952863798433821\nCOMMERCE_META_LOGIN_REDIRECT_URI=https://admin.localhost/api/meta/callback\n' >>"$1/env/api.env"
   }
   positive S10q pos_q
+  # R5 store-domains: without a base zone claims-worker restart-loops (CI S37, 2026-10-04); preflight must refuse it offline.
+  neg_r() { sed -i.bak '/^LC_STORE_BASE_DOMAIN=/d' "$1/compose.env" && rm -f "$1/compose.env.bak"; }
+  negative S10r P19 neg_r
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -1053,7 +1057,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S10r", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

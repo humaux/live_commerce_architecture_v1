@@ -43,7 +43,7 @@ function preflight(over = {}) {
     setKey(path.join(dir, "env", "api.env"), "COMMERCE_META_LOGIN_GRAPH_VERSION", o.graph);
     const gid = String(process.getgid?.() ?? 0);
     writeFileSync(path.join(dir, "compose.env"), [
-      "COMPOSE_PROJECT_NAME=lc-mc-pf", `COMPOSE_PROFILES=${o.profiles}`, "IMAGE_TAG=smoke", "LC_IMAGE_PREFIX=lc", "LC_ENVIRONMENT=smoke",
+      "COMPOSE_PROJECT_NAME=lc-mc-pf", `COMPOSE_PROFILES=${o.profiles}`, "IMAGE_TAG=smoke", "LC_IMAGE_PREFIX=lc", "LC_STORE_BASE_DOMAIN=example.test", "LC_ENVIRONMENT=smoke",
       "LC_BIND_ADDR=127.0.0.1", "LC_HTTP_PORT=80", "LC_HTTPS_PORT=443", "LC_ADMIN_HOST=admin.localhost", "LC_STORE_HOST=shop.localhost",
       "LC_API_HOST=api.localhost", "LC_HOOKS_HOST=hooks.localhost", "LC_PUBLIC_IP=", `LC_ENV_DIR=${dir}/env`, `LC_SECRETS_DIR=${dir}/secrets`,
       `LC_SECRETS_GID=${gid}`, `LC_BACKUP_DIR=${dir}/backup`, `LC_STATE_DIR=${dir}/state`, "LC_PG_HOST=postgres", "LC_PG_SSLMODE=disable",

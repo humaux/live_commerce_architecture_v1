@@ -95,6 +95,14 @@ rec("P01", len(set(hosts.values())) == 5 and "www." + E.get("LC_PLATFORM_HOST", 
 email = E.get("LC_COMPANY_CONTACT_EMAIL", "")
 rec("P01", len(email) <= 254 and re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", email) is not None, "LC_COMPANY_CONTACT_EMAIL")
 rec("P01", re.fullmatch(r"[A-Za-z0-9_-]{0,256}", E.get("LC_META_DOMAIN_VERIFICATION", "")) is not None, "LC_META_DOMAIN_VERIFICATION")
+# R5 store-domains: claims-worker (DNS/TLS verify sweep), migrate (0106 backfill) and api onboarding all require the platform base
+# zone, and claims-worker exits on a missing/invalid one (restart loop). So this is a FAIL in EVERY environment and offline too —
+# it used to be checked only online and outside smoke, and smoke's config lacked it: S37 failed with claims-worker restarting
+# (CI, 2026-10-04). Same shape as domains.ValidOrigin: lowercase labels, >= 2 labels, alphabetic TLD, never *.localhost.
+base_zone = E.get("LC_STORE_BASE_DOMAIN", "")
+rec("P19", len(base_zone) <= 253 and not base_zone.endswith(".localhost") and re.fullmatch(
+    r"(?:(?!-)[a-z0-9-]{1,63}(?<!-)\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?", base_zone) is not None,
+    "LC_STORE_BASE_DOMAIN is unset or not a DNS zone (claims-worker, migrate 0106 and onboarding require it)")
 
 # ---- P02 secrets dir/file modes ----------------------------------------------------------------
 sdir = E.get("LC_SECRETS_DIR", "")
@@ -676,12 +684,7 @@ if ((online)); then
   # anycast addresses, none of which are this host's, so "every address is ours" is the same DNS-only proof as
   # P17/P18. A canary label proves the wildcard actually exists (a missing wildcard makes getent fail). Both
   # names must resolve ONLY to this host; a non-resolving or foreign address fails the gate.
-  # Unset is a FAIL, not a skip: migrate (0106) backfills existing stores' platform origins from it, and an unset value
-  # would leave e.g. the pilot store without https://<handle>.<base> while every step exits 0 (K3 final review, P1).
-  if [[ -z "${LC_STORE_BASE_DOMAIN:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
-    echo "P19 FAIL LC_STORE_BASE_DOMAIN is unset: store platform origins cannot be created (migrate 0106 backfill, api onboarding)"
-    fail=1
-  fi
+  # Unset/invalid is the offline P19 rule above (every environment); this block only proves the DNS.
   if [[ -n "${LC_STORE_BASE_DOMAIN:-}" && "${LC_ENVIRONMENT:-}" != smoke ]]; then
     mine=" $(hostname -I 2>/dev/null) ${LC_PUBLIC_IP:-} "
     for name in "stores.${LC_STORE_BASE_DOMAIN}" "preflight-canary.${LC_STORE_BASE_DOMAIN}"; do
