@@ -28,11 +28,12 @@ import (
 )
 
 type atsGraph struct {
-	mu        sync.Mutex
-	srv       *httptest.Server
-	post      string
-	available bool
-	calls     []string
+	mu           sync.Mutex
+	srv          *httptest.Server
+	post         string
+	available    bool
+	missingVideo bool
+	calls        []string
 }
 
 func newATSGraph(t *testing.T, post string) *atsGraph {
@@ -41,6 +42,7 @@ func newATSGraph(t *testing.T, post string) *atsGraph {
 	g.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		g.mu.Lock()
 		available := g.available
+		missingVideo := g.missingVideo
 		g.calls = append(g.calls, r.Method+" "+r.URL.Path)
 		g.mu.Unlock()
 		if r.Method != http.MethodGet || r.URL.Query().Has("access_token") || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
@@ -49,6 +51,10 @@ func newATSGraph(t *testing.T, post string) *atsGraph {
 			return
 		}
 		if strings.HasSuffix(r.URL.Path, "/live_videos") {
+			if missingVideo {
+				io.WriteString(w, `{"data":[]}`)
+				return
+			}
 			json.NewEncoder(w).Encode(map[string]any{"data": []any{map[string]string{"id": "77778888", "post_id": g.post}}})
 			return
 		}

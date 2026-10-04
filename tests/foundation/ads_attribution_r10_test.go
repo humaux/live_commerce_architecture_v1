@@ -153,7 +153,8 @@ func (x *atReportEnv) r10AudienceStates(t *testing.T, freshKeys ...string) *atR1
 	x.stateSessions = map[string]string{}
 	x.freshAudienceSessions = map[string]string{}
 	posts := map[string]string{m.pageAsset: m.postID}
-	for _, state := range append([]string{"insufficient", "not_authorized"}, freshKeys...) {
+	unknownAsset := ""
+	for _, state := range append([]string{"insufficient", "not_authorized", "not_read"}, freshKeys...) {
 		// Actual same-store sessions and registered Page custody; only the
 		// missing-scope variant lacks read_insights. No fake report JSON.
 		v := &mciEnv{t: t, h: m.h, page: m.page, pageKeys: m.pageKeys, stopConsumer: mciNoop, session: m.h.draft(t, f.storeA1), pageAsset: miAsset()}
@@ -169,8 +170,11 @@ func (x *atReportEnv) r10AudienceStates(t *testing.T, freshKeys ...string) *atR1
 		v.postID = v.pageAsset + "_" + mciDigits(10)
 		v.srcFB = v.mustSource(t, "page", v.pageAsset, v.postID, false)
 		m.h.closeWindow(t, v.session)
-		if state == "insufficient" || state == "not_authorized" {
+		if state == "insufficient" || state == "not_authorized" || state == "not_read" {
 			x.stateSessions[state] = v.session
+			if state == "not_read" {
+				unknownAsset = v.pageAsset
+			}
 		} else {
 			// Browser-only no-read source: each locale/width can retain the
 			// exact first READY assertion independently of cooldown replays.
@@ -194,6 +198,10 @@ func (x *atReportEnv) r10AudienceStates(t *testing.T, freshKeys ...string) *atR1
 		}
 		asset := strings.TrimPrefix(strings.TrimSuffix(r.URL.Path, "/live_videos"), "/v26.0/")
 		if post, ok := posts[asset]; ok && strings.HasSuffix(r.URL.Path, "/live_videos") {
+			if asset == unknownAsset {
+				json.NewEncoder(w).Encode(map[string]any{"data": []any{}})
+				return
+			}
 			json.NewEncoder(w).Encode(map[string]any{"data": []any{map[string]string{"id": asset, "post_id": post}}})
 			return
 		}
@@ -249,7 +257,7 @@ func (x *atReportEnv) r10AssertAudienceStates(t *testing.T, report map[string]an
 			}
 		}
 	}
-	if len(found) != 2 {
-		t.Fatal("R10 actual insufficient/not_authorized sessions missing")
+	if len(found) != 3 {
+		t.Fatal("R12 actual insufficient/not_authorized/not_read sessions missing")
 	}
 }

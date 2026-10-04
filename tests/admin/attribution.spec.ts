@@ -25,7 +25,18 @@ type Fixture = {
   breakdowns_unavailable: { day: string; dimensions: string[] }[];
   unknown_breakdown: { dimension: "hourly"; bucket: string };
   // Runner controls name actual PG sessions; they never modify the report API DTO.
-  state_sessions: { insufficient: string; not_authorized: string };
+  state_sessions: {
+    insufficient: string;
+    not_authorized: string;
+    not_read: string;
+  };
+  unknown_audience_operation_id: string;
+  organic: {
+    session_id: string;
+    order_id: string;
+    net_minor: number;
+    orders: 1;
+  };
   provisional: true;
   audience_read?: "queued" | "forbidden";
   live_audience: {
@@ -106,6 +117,11 @@ if (
   fixture.live_audience?.status !== "available" ||
   !uuid.test(fixture.state_sessions?.insufficient ?? "") ||
   !uuid.test(fixture.state_sessions?.not_authorized ?? "") ||
+  !uuid.test(fixture.state_sessions?.not_read ?? "") ||
+  !uuid.test(fixture.unknown_audience_operation_id ?? "") ||
+  !uuid.test(fixture.organic?.session_id ?? "") ||
+  fixture.organic?.orders !== 1 ||
+  !(fixture.organic?.net_minor > 0) ||
   new Set([
     fixture.session_id,
     fixture.state_sessions.insufficient,
@@ -749,12 +765,100 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
               new URL(r.url()).pathname ===
                 `/api/stores/${store}/ads/sessions/${session}/audience-read`,
           );
+        // R12: real unboosted claim + consented card Begin/capture remains in
+        // its session cohort, without crediting any ad/draft.
+        await page
+          .getByTestId("attribution-session")
+          .selectOption(fixture.organic.session_id);
+        const organicPanel = page.getByTestId("attribution-session-panel");
+        const organicFacts = organicPanel.getByTestId(
+          "attribution-session-facts",
+        );
+        for (const [label, value] of [
+          [c.orders, "1"],
+          [c.net, money(locale, "TWD", fixture.organic.net_minor)],
+          [c.pending, "0"],
+        ]) {
+          await expect(
+            organicFacts
+              .locator("div")
+              .filter({ has: page.getByText(label, { exact: true }) })
+              .locator("dd"),
+          ).toHaveText(value);
+        }
+        await expect(
+          organicPanel.getByTestId("attribution-linked-drafts"),
+        ).toHaveCount(0);
+        await reportShot(page, locale, width, "organic-cohort");
+        ledger.push({
+          control: "organic claim cohort",
+          action: "selectOption/read",
+          expected:
+            "one real paid unboosted claim order, exact net, no linked drafts",
+          actual: "PASS",
+        });
+        // Acknowledged UNKNOWN is a read-only receipt. Reload retains it but
+        // does not disable a new intention; the server replays during cooldown.
+        await page
+          .getByTestId("attribution-session")
+          .selectOption(fixture.state_sessions.not_read);
+        await expect(page.getByTestId("attribution-not-read")).toHaveText(
+          c.notRead,
+        );
+        await expect(page.getByTestId("attribution-reconnect")).toHaveCount(0);
+        let unknownKey = "";
+        for (let i = 0; i < 2; i++) {
+          const unknownRead = observeRead(fixture.state_sessions.not_read);
+          await page.getByTestId("attribution-audience-refresh").click();
+          const response = await unknownRead;
+          expect(response.ok()).toBe(true);
+          expect(await response.json()).toEqual({
+            operation_id: fixture.unknown_audience_operation_id,
+            state: "UNKNOWN",
+          });
+          const key = response.request().headers()["idempotency-key"];
+          expect(key).toMatch(/^audience-read-[0-9a-f-]+$/);
+          expect(key).not.toBe(unknownKey);
+          unknownKey = key;
+          await expect(
+            page.getByTestId("attribution-audience-unconfirmed"),
+          ).toHaveText(c.audienceUnconfirmed);
+          await expect(
+            page.getByTestId("attribution-audience-refresh"),
+          ).toBeEnabled();
+          await expect(
+            page.getByTestId("attribution-audience-retry"),
+          ).toHaveCount(0);
+          await page.reload();
+          await expect(
+            page.getByTestId("attribution-audience-unconfirmed"),
+          ).toHaveText(c.audienceUnconfirmed);
+        }
+        await reportShot(page, locale, width, "unknown-read-recovery");
+        ledger.push({
+          control: "acknowledged UNKNOWN read",
+          action: "selectOption/click/reload/click/reload",
+          expected:
+            "new HTTP keys, same UNKNOWN during server cooldown, read action stays available, no reconnect",
+          actual: "PASS",
+        });
         const freshSession =
           fixture.fresh_audience_sessions[`${locale}/${width}`];
         await page
           .getByTestId("attribution-session")
           .selectOption(freshSession);
         await expect(page).toHaveURL(new RegExp(`session=${freshSession}`));
+        await expect(page.getByTestId("attribution-not-read")).toHaveText(
+          c.notRead,
+        );
+        await expect(page.getByTestId("attribution-reconnect")).toHaveCount(0);
+        await expect(page.getByTestId("attribution-insufficient")).toHaveCount(
+          0,
+        );
+        await expect(
+          page.getByTestId("attribution-audience-refresh"),
+        ).toBeEnabled();
+        await reportShot(page, locale, width, "not-read");
         const freshRead = observeRead(freshSession);
         await page.getByTestId("attribution-audience-refresh").click();
         const freshResponse = await freshRead;

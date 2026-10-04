@@ -71,7 +71,12 @@ runInNewContext(code, {
     if (name === "@/lib/attribution-copy") return { attributionCopy };
     if (name === "@/src/routes") return { matchRoute };
     if (name === "./AttributionAudienceRead")
-      return { AttributionAudienceRead: () => null };
+      return {
+        AttributionAudienceRead: () =>
+          React.createElement("div", {
+            "data-testid": "attribution-audience-read",
+          }),
+      };
     if (name === "./WorkspaceFrame")
       return { WorkspaceFrame: ({ children }: any) => children };
     return {};
@@ -285,8 +290,12 @@ test("D1, D6, R7: exact amounts and sources remain independent, account days sta
   assert.equal(r.drafts[0].meta_account_timezone, "America/Los_Angeles");
   assert.equal(r.drafts[0].breakdowns[4].hour_start, "2026-10-03T12:00:00Z");
 });
-test("R8: null stays unknown and unauthorised / insufficient remain different states", () => {
-  for (const status of ["not_authorized", "insufficient"] as const) {
+test("R12: null stays unknown and unread / unauthorised / insufficient remain different states", () => {
+  for (const status of [
+    "not_read",
+    "not_authorized",
+    "insufficient",
+  ] as const) {
     const r = structuredClone(attributionFixture);
     r.drafts[0].meta = { purchases: null, purchase_value_minor: null };
     r.drafts[0].roas = null;
@@ -304,6 +313,30 @@ test("R8: null stays unknown and unauthorised / insufficient remain different st
     assert.equal(parsed.sessions[0].timeline[0].viewers, null);
   }
 });
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`R12 granted but unread audience offers a read, never reconnect in ${locale}`, () => {
+    const r: any = structuredClone(attributionFixture);
+    r.sessions[0].live_audience = {
+      status: "not_read",
+      views: null,
+      peak_concurrent: null,
+      total_view_time_ms: null,
+      age_gender: [],
+      regions: [],
+    };
+    parseAttributionReport(r);
+    const html = renderPanel("SessionPanel", {
+      c: attributionCopy[locale],
+      locale,
+      session: r.sessions[0],
+      store: "11111111-1111-4111-8111-111111111111",
+    });
+    assert.ok(html.includes('data-testid="attribution-not-read"'));
+    assert.ok(!html.includes('data-testid="attribution-reconnect"'));
+    assert.ok(!html.includes('data-testid="attribution-insufficient"'));
+    assert.ok(html.includes('data-testid="attribution-audience-read"'));
+  });
+}
 test("I12 forged / missing frozen fields never silently become zeros", () => {
   const mutations = [
     (r: any) => {

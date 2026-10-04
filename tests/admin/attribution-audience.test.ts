@@ -144,19 +144,21 @@ const receiptLabels = {
     inflight:
       "The existing audience read is in progress. Read the report again later.",
     unconfirmed:
-      "The existing audience read outcome is unknown. Read the report again later; do not start another read.",
+      "The existing audience read outcome is unknown. You can request again; the server reuses this read until its 10-minute cooldown ends.",
   },
   "zh-TW": {
     completed:
       "沿用已完成的觀眾讀取，未新增讀取請求。請重新讀取報表查看已儲存的洞察。",
     inflight: "既有觀眾讀取正在處理，請稍後重新讀取報表。",
-    unconfirmed: "既有觀眾讀取結果未知，請稍後重新讀取報表，勿建立另一個讀取。",
+    unconfirmed:
+      "既有觀眾讀取結果未知，可再次要求讀取；10 分鐘冷卻期結束前，伺服器會沿用這次讀取。",
   },
   "zh-CN": {
     completed:
       "沿用已完成的观众读取，未新增读取请求。请重新读取报表查看已保存的洞察。",
     inflight: "现有观众读取正在处理，请稍后重新读取报表。",
-    unconfirmed: "现有观众读取结果未知，请稍后重新读取报表，勿创建另一个读取。",
+    unconfirmed:
+      "现有观众读取结果未知，可再次请求读取；10 分钟冷却期结束前，服务器会沿用这次读取。",
   },
 };
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
@@ -200,7 +202,8 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
           ),
         );
       if (phase === "unconfirmed") {
-        assert.match(
+        // R12: authoritative UNKNOWN is a GET receipt, not a permanent write fence.
+        assert.doesNotMatch(
           html,
           /data-testid="attribution-audience-refresh" disabled=""/,
         );
@@ -232,7 +235,7 @@ test("unknown journal retains exact key/boundary and is scoped to store+session;
     assert.throws(() => parseAudienceJournal(JSON.stringify(changed)));
 });
 
-test("actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN", async () => {
+test("R12 read hook keeps network UNKNOWN on one key and explicitly refreshes acknowledged UNKNOWN", async () => {
   const stored = new Map<string, string>(),
     requests: string[] = [];
   let generated = 0,
@@ -380,7 +383,7 @@ test("actual read hook retries network UNKNOWN with one key but never re-POSTs a
   assert.equal(unconfirmed.operation_id, operation);
   assert.equal(
     reloaded.control("attribution-audience-refresh").props.disabled,
-    true,
+    false,
   );
   assert.equal(reloaded.control("attribution-audience-retry"), undefined);
   assert.deepEqual(requests.slice(2), [unconfirmed.key]);
@@ -391,7 +394,7 @@ test("actual read hook retries network UNKNOWN with one key but never re-POSTs a
   assert.ok(unconfirmedReload.control("attribution-audience-unconfirmed"));
   assert.equal(
     unconfirmedReload.control("attribution-audience-refresh").props.disabled,
-    true,
+    false,
   );
   assert.equal(
     unconfirmedReload.control("attribution-audience-retry"),
@@ -405,6 +408,13 @@ test("actual read hook retries network UNKNOWN with one key but never re-POSTs a
     "restoring the receipt must not send a POST",
   );
   assert.equal(generated, 2);
+  await unconfirmedReload.click("attribution-audience-refresh");
+  const refreshed = parseAudienceJournal(stored.get(storageKey)!);
+  assert.notEqual(refreshed.key, unconfirmed.key);
+  assert.equal(refreshed.operation_id, operation);
+  assert.equal(refreshed.state, "UNKNOWN"); // Backend cooldown still replays the same operation.
+  assert.equal(requests.length, 4);
+  assert.equal(generated, 3);
   unconfirmedReload.cleanup?.();
 });
 test("actual POST transport uses CSRF and session fence; 403 independent of response text", async (t) => {

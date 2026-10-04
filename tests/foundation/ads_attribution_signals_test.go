@@ -93,34 +93,8 @@ func TestAdsAttributionR10IndependentBeginSignals(t *testing.T) {
 
 func TestAdsAttributionR10SignalsOnlyExcludedFromReports(t *testing.T) {
 	x := atNewReportEnv(t)
-	// Explicit read-projection fixture: the order is genuinely paid/refunded by
-	// the shared real-flow cohort; only its measurement path becomes signals-only.
-	// The independent Begin test above proves actual creation of these NULL paths.
-	mustExec(t, x.f.owner, `UPDATE orders.order_attribution SET path=NULL,draft_id=NULL,post_id=NULL,clicked_at=NULL,fbc=$2,fbp=$3 WHERE order_id=$1`, x.paid.order, atFBC, atFBP)
-	response := x.api("GET", "/attribution?from="+x.day+"&to="+x.day, x.token, nil, nil)
-	if response.Status != 200 {
-		t.Fatalf("signals-only report status=%d", response.Status)
-	}
-	found := false
-	for _, raw := range response.JSON["sessions"].([]any) {
-		session := raw.(map[string]any)
-		if session["session_id"] != x.m.session {
-			continue
-		}
-		found = true
-		atNum(t, session, "orders", 3)
-		atNum(t, session, "pending_orders", 1)
-		atNum(t, session, "net_minor", x.returning.captured+x.r10[0].net+x.r10[1].net)
-		x.r10AssertBuyerCounts(t, session["buyers"].(map[string]any), 3, x.returning.captured+x.r10[0].net+x.r10[1].net, 2, 1, 6)
-	}
-	if !found {
-		t.Fatal("expected live session missing")
-	}
-	for _, raw := range response.JSON["drafts"].([]any) {
-		for _, path := range raw.(map[string]any)["orders"].([]any) {
-			if path.(map[string]any)["path"] == nil {
-				t.Fatal("signals-only path exposed in advertising reports")
-			}
-		}
-	}
+	// R12 clarifies R10: exclude only path/draft CREDIT, never the order cohort.
+	organic := x.r12OrganicClaim(t)
+	x.r12AssertOrganic(t, organic)
+	x.assertReport(t) // Neither existing draft's totals can absorb the organic order.
 }

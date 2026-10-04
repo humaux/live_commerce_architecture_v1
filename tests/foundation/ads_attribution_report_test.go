@@ -81,6 +81,8 @@ type atReportEnv struct {
 	expected                     map[string]any
 	r11UnknownDraft              string
 	audienceOperation            string
+	unknownAudienceOperation     string
+	organic                      map[string]any
 	freshAudienceSessions        map[string]string
 }
 
@@ -347,6 +349,12 @@ func atNewReportEnv(t *testing.T, freshAudienceKeys ...string) *atReportEnv {
 	if read.Status != 403 {
 		t.Fatalf("R10 missing read_insights scope must deny actual audience plan=%d", read.Status)
 	}
+	read = e.api("POST", "/sessions/"+x.stateSessions["not_read"]+"/audience-read", e.token, adsKey(), nil)
+	if read.Status != 200 {
+		t.Fatalf("R12 UNKNOWN fixture plan=%d", read.Status)
+	}
+	x.unknownAudienceOperation = read.JSON["operation_id"].(string)
+	m.awaitOp(t, x.unknownAudienceOperation, "UNKNOWN", 8*time.Second, "cancelled")
 	var pending int64
 	if err := p.f.owner.QueryRow(context.Background(), `SELECT total_minor+cod_surcharge_minor FROM checkout.orders WHERE id=$1`, x.cod.OrderID).Scan(&pending); err != nil {
 		t.Fatal(err)
@@ -370,6 +378,7 @@ func (x *atReportEnv) browserFixture() map[string]any {
 		panic(err)
 	}
 	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "audience_operation_id": x.audienceOperation, "fresh_audience_sessions": x.freshAudienceSessions, "expected": x.expected, "state_sessions": x.stateSessions, "meta_account_timezone": "America/Los_Angeles", "provisional": true,
+		"organic": x.organic, "unknown_audience_operation_id": x.unknownAudienceOperation,
 		"unknown_draft_id": x.r11UnknownDraft, "truncated": x.r11UnknownDraft != "", "breakdowns_unavailable": []map[string]any{{"day": x.day, "dimensions": []string{"age_gender"}}}, "unknown_breakdown": map[string]any{"dimension": "hourly", "bucket": "13:00:00 - 13:59:59"},
 		"live_audience":     map[string]any{"status": "available", "views": 34, "peak_concurrent": nil, "total_view_time_ms": nil, "age_gender": []map[string]any{{"bucket": "F.25-34", "view_time_ms": 1234}}, "regions": []map[string]any{{"bucket": "Taipei", "view_time_ms": 4321}}},
 		"forbidden_private": []string{atPrivateStreet, atPrivateCity},

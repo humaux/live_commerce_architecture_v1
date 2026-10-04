@@ -77,6 +77,8 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
 	x := atNewReportEnv(t, "en/390", "en/1586", "zh-TW/390", "zh-TW/1586", "zh-CN/390", "zh-CN/1586")
+	x.organic = x.r12OrganicClaim(t)
+	x.r12AssertOrganic(t, x.organic)
 	x.assertReport(t) // strict PG equality before any UI observation
 	x.r11BrowserCap(t)
 	// Synthetic merchant grants are fixture preparation, not a browser action.
@@ -97,6 +99,7 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 		t.Fatalf("completed audience replay operation count=%d want 1", n)
 	}
 	x.assertReport(t) // browser reads and refused audience requests cannot alter money/cohort
+	x.r12AssertOrganic(t, x.organic)
 }
 
 func TestBrowserAdsAttributionCheckout(t *testing.T) {
