@@ -251,3 +251,16 @@ These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries"
   - **Accepted as-is, documented:**
     - **P3-10.** The owner-role `USING(true)` policy follows the 0074/0075 pattern. Isolation rests on the definers' explicit tenant/store predicates, which the reviewer verified.
     - **P3-12.** Order-level approximations: a mixed comment + manual order is attributed from its comment line, and an order spanning two posts gets no attribution.
+- **R12 Review round 2** (`output/ads-attribution-review/REVIEW-r2-fixes.md`, 2026-10-04, BLOCK on 4acbad53).
+  - **P1 F1 fix, which clarifies R10.** "Signals-only rows are excluded from reports" means they never credit a path or a draft. It does **not** mean the order leaves a cohort.
+    - Delete `AND (a.order_id IS NULL OR a.path IS NOT NULL)` from `orders.attribution_metrics`. The draft cohort already requires `a.draft_id=p_draft`.
+    - A session's orders are its claim orders, whatever their attribution row.
+    - Flip `R10SignalsOnlyExcludedFromReports` so it asserts that a consented buyer's unboosted claim order counts in the session totals and in no path or draft.
+    - The wording error was the integrator's.
+  - **P2 F2.** The audience read is GET-only, so a retry has no side effect. For `meta.live_insights`, in-flight means only READY or DISPATCHING within the job lease. UNKNOWN and every final state only start the 10-minute cooldown, counted from `updated_at`. One UNKNOWN must never lock a store and video forever. Add a test: an UNKNOWN op older than 10 minutes, then a new read is planned.
+  - **P2 F3.** `not_authorized` / 「需重新連接」 appears only when the stored grant lacks `read_insights`. A granted session with no read yet shows a "not read yet" state and a read action. Add a test for it.
+  - **P3 fixed:**
+    - Do not freeze `fbc`/`fbp`/`client_ip` for payment modes that never produce a CAPI Purchase (COD, bank transfer, pay-at-pickup). Keeping them up to 7 days with no send path has no purpose. This is the data-minimisation reading of R11.
+    - Pin the checkout-side attribution definer grants in the ACL test.
+  - **Other P3s** are accepted as documented in the review.
+  - **Not in scope, owner later:** a CAPI Purchase on COD collection. Only card CAPTURED sends today, per D5.
