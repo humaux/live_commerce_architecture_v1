@@ -3,9 +3,220 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseAttributionReport } from "../../apps/admin/lib/attribution-model.ts";
 import { attributionCopy } from "../../apps/admin/lib/attribution-copy.ts";
-import { adsRoutes, adsBodyless, adsKeyless, validAdsQuery } from "../../apps/admin/lib/ads-request.ts";
+import {
+  adsRoutes,
+  adsBodyless,
+  adsKeyless,
+  validAdsQuery,
+} from "../../apps/admin/lib/ads-request.ts";
 import { canOpen, matchRoute } from "../../apps/admin/src/routes.ts";
 import { attributionFixture } from "./attribution.fixture.ts";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
+import { money, displayTime } from "../../packages/format/src/index.ts";
+import { formatROAS } from "../../apps/admin/lib/attribution-format.ts";
+
+// MOCK SSR: execute the actual panel JSX; only navigation and the separate read control are stubbed.
+// This supplements, never replaces, the real PG click gate in attribution.spec.ts.
+const requireApp = createRequire(
+  new URL("../../apps/admin/package.json", import.meta.url),
+);
+const React = requireApp("react"),
+  { renderToStaticMarkup } = requireApp("react-dom/server");
+const exports: Record<string, any> = {};
+let reportForRender: any = null,
+  stateCalls = 0;
+const code = ts.transpileModule(
+  readFileSync(
+    new URL("../../apps/admin/components/Attribution.tsx", import.meta.url),
+    "utf8",
+  ) + "\nexport { DraftPanel, SessionPanel };",
+  {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+    },
+  },
+).outputText;
+runInNewContext(code, {
+  exports,
+  require: (name: string) => {
+    if (name === "react")
+      return {
+        ...React,
+        useState: (initial: any) => {
+          stateCalls++;
+          return React.useState(
+            stateCalls === 1 && reportForRender
+              ? {
+                  key: "test-store:2026-10-01:2026-10-03",
+                  report: reportForRender,
+                }
+              : initial,
+          );
+        },
+      };
+    if (name === "react/jsx-runtime") return requireApp(name);
+    if (name === "next/navigation") return { useRouter: () => ({}) };
+    if (name === "next/link")
+      return {
+        __esModule: true,
+        default: ({ children, ...props }: any) =>
+          React.createElement("a", props, children),
+      };
+    if (name === "@live-commerce/format") return { money, displayTime };
+    if (name === "@/lib/attribution-format") return { formatROAS };
+    if (name === "@/lib/attribution-copy") return { attributionCopy };
+    if (name === "@/src/routes") return { matchRoute };
+    if (name === "./AttributionAudienceRead")
+      return { AttributionAudienceRead: () => null };
+    if (name === "./WorkspaceFrame")
+      return { WorkspaceFrame: ({ children }: any) => children };
+    return {};
+  },
+});
+const renderPanel = (name: string, props: object) =>
+  renderToStaticMarkup(React.createElement(exports[name], props));
+
+test("R11 I12 nullable Meta evidence survives without becoming zero", () => {
+  const r: any = structuredClone(attributionFixture);
+  r.truncated = true;
+  r.drafts[0].spend_minor = null;
+  r.drafts[0].roas = null;
+  r.sessions[0].spend_minor = null;
+  r.drafts[0].breakdowns_unavailable = [
+    { day: "2026-10-03", dimensions: ["region", "device"] },
+  ];
+  for (const key of [
+    "spend_minor",
+    "reach",
+    "impressions",
+    "clicks",
+    "engagements",
+    "comments",
+    "purchases",
+    "purchase_value_minor",
+  ])
+    r.drafts[0].breakdowns[0][key] = null;
+  const parsed: any = parseAttributionReport(r);
+  assert.equal(parsed.truncated, true);
+  assert.equal(parsed.drafts[0].spend_minor, null);
+  assert.equal(parsed.sessions[0].spend_minor, null);
+  assert.deepEqual(
+    parsed.drafts[0].breakdowns_unavailable,
+    r.drafts[0].breakdowns_unavailable,
+  );
+  for (const key of [
+    "spend_minor",
+    "reach",
+    "impressions",
+    "clicks",
+    "engagements",
+    "comments",
+  ])
+    assert.equal(parsed.drafts[0].breakdowns[0][key], null);
+});
+
+const r11Labels = {
+  en: {
+    reconnect: "Reconnect Facebook to authorize audience insights",
+    sessionSpend:
+      "Ad spend promoting this live post within the selected period",
+    unavailable: "Breakdowns unavailable",
+    cap: "Only the first 100 records are shown",
+  },
+  "zh-TW": {
+    reconnect: "需重新連接 Facebook 以授權觀眾數據",
+    sessionSpend: "所選期間內推廣此直播貼文的廣告花費",
+    unavailable: "無法取得分類資料",
+    cap: "僅顯示前 100 筆",
+  },
+  "zh-CN": {
+    reconnect: "需重新连接 Facebook 以授权观众数据",
+    sessionSpend: "所选期间内推广此直播帖文的广告花费",
+    unavailable: "无法取得分类数据",
+    cap: "仅显示前 100 条",
+  },
+};
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`R11 actual panel rendering preserves unknowns and reconnect route in ${locale}`, () => {
+    const r: any = structuredClone(attributionFixture),
+      c = attributionCopy[locale];
+    r.drafts[0].spend_minor =
+      r.drafts[0].roas =
+      r.sessions[0].spend_minor =
+        null;
+    r.drafts[0].breakdowns_unavailable = [
+      { day: "2026-10-03", dimensions: ["region"] },
+    ];
+    for (const key of [
+      "spend_minor",
+      "reach",
+      "impressions",
+      "clicks",
+      "engagements",
+      "comments",
+      "purchases",
+      "purchase_value_minor",
+    ])
+      r.drafts[0].breakdowns[0][key] = null;
+    r.sessions[0].live_audience.status = "not_authorized";
+    const draft = renderPanel("DraftPanel", { c, locale, draft: r.drafts[0] });
+    assert.match(draft, /<dt>[^<]+<\/dt><dd>—<\/dd>/);
+    assert.ok(draft.includes(r11Labels[locale].unavailable));
+    assert.ok(draft.includes("2026-10-03"));
+    assert.equal((draft.match(/<dd>—<\/dd>/g) ?? []).length, 2);
+    const unknownRow =
+      draft.match(
+        /<tr><td>2026-10-03<\/td>.*?<th scope="row">25-34:female<\/th>(.*?)<\/tr>/,
+      )?.[1] ?? "";
+    assert.equal(
+      (unknownRow.match(new RegExp(`<td>${c.unknown}<\\/td>`, "g")) ?? [])
+        .length,
+      8,
+    );
+    const session = renderPanel("SessionPanel", {
+      c,
+      locale,
+      session: r.sessions[0],
+      store: "11111111-1111-4111-8111-111111111111",
+    });
+    assert.ok(session.includes(r11Labels[locale].sessionSpend));
+    assert.ok(session.includes(r11Labels[locale].reconnect));
+    assert.ok(
+      session.includes(
+        `href="/${locale}${matchRoute("/settings")!.path}?store=11111111-1111-4111-8111-111111111111"`,
+      ),
+    );
+    assert.match(session, /<dd>—<\/dd>/);
+    assert.ok(!session.includes("Infinity") && !session.includes("0.00×"));
+    assert.equal((c as any).truncated, r11Labels[locale].cap);
+    // Inject only the initial server report into the page's React state; JSX remains the real component.
+    reportForRender = r;
+    const pageProps = {
+      locale,
+      store: { id: "test-store", name: "Synthetic", currency: "TWD" },
+      from: "2026-10-01",
+      to: "2026-10-03",
+      draftID: "",
+      sessionID: "",
+      initialError: null,
+    };
+    for (const truncated of [false, true]) {
+      r.truncated = truncated;
+      stateCalls = 0;
+      const page = renderPanel("Attribution", pageProps);
+      assert.equal(
+        page.includes('data-testid="attribution-truncated"'),
+        truncated,
+      );
+      if (truncated) assert.ok(page.includes(r11Labels[locale].cap));
+    }
+    reportForRender = null;
+  });
+}
 
 test("D1, D6, R7: exact amounts and sources remain independent, account days stay labelled", () => {
   const r = parseAttributionReport(attributionFixture);
@@ -36,6 +247,25 @@ test("R8: null stays unknown and unauthorised / insufficient remain different st
 });
 test("I12 forged / missing frozen fields never silently become zeros", () => {
   const mutations = [
+    (r: any) => {
+      delete r.truncated;
+    },
+    (r: any) => {
+      r.truncated = "true";
+    },
+    (r: any) => {
+      delete r.drafts[0].breakdowns_unavailable;
+    },
+    (r: any) => {
+      r.drafts[0].breakdowns_unavailable = [
+        { day: "2026-02-30", dimensions: ["region"] },
+      ];
+    },
+    (r: any) => {
+      r.drafts[0].breakdowns_unavailable = [
+        { day: "2026-10-03", dimensions: [null] },
+      ];
+    },
     (r: any) => {
       delete r.drafts[0].meta.purchases;
     },
@@ -133,7 +363,11 @@ test("audience-read is exactly the new local intention POST and never a data GET
   const path = `ads/sessions/${attributionFixture.sessions[0].session_id}/audience-read`;
   assert.match(path, new RegExp(`^${adsRoutes.POST}$`));
   assert.match(path, adsBodyless, "Go audience-read rejects any body");
-  assert.doesNotMatch(path, adsKeyless, "audience-read still needs its idempotency key");
+  assert.doesNotMatch(
+    path,
+    adsKeyless,
+    "audience-read still needs its idempotency key",
+  );
   assert.doesNotMatch(`${path}/extra`, adsBodyless);
   assert.doesNotMatch(path.replace("audience-read", "unknown"), adsBodyless);
   for (const method of ["GET", "PUT"] as const)

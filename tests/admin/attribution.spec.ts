@@ -18,6 +18,10 @@ const origin = required("LC_BROWSER_PUBLIC_ORIGIN"),
   store = required("LC_BROWSER_STORE"),
   evidence = required("LC_BROWSER_EVIDENCE");
 type Fixture = {
+  unknown_draft_id: string;
+  truncated: true;
+  breakdowns_unavailable: { day: string; dimensions: string[] }[];
+  unknown_breakdown: { dimension: "hourly"; bucket: string };
   // Runner controls name actual PG sessions; they never modify the report API DTO.
   state_sessions: { insufficient: string; not_authorized: string };
   provisional: true;
@@ -38,11 +42,11 @@ type Fixture = {
     bucket: string;
     hour_start: string;
     spend_minor: number;
-    reach: number;
-    impressions: number;
-    clicks: number;
-    engagements: number;
-    comments: number;
+    reach: number | null;
+    impressions: number | null;
+    clicks: number | null;
+    engagements: number | null;
+    comments: number | null;
     purchases: number | null;
     purchase_value_minor: number | null;
   }[];
@@ -72,6 +76,12 @@ type Fixture = {
 const fixture: Fixture = JSON.parse(required("LC_ATTRIBUTION_FIXTURE"));
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 if (
+  !uuid.test(fixture.unknown_draft_id ?? "") ||
+  fixture.unknown_draft_id === fixture.draft_id ||
+  fixture.truncated !== true ||
+  !fixture.breakdowns_unavailable?.length ||
+  fixture.unknown_breakdown?.dimension !== "hourly" ||
+  !fixture.unknown_breakdown.bucket ||
   fixture.provisional !== true ||
   fixture.meta_account_timezone !== "America/Los_Angeles" ||
   fixture.live_audience?.status !== "available" ||
@@ -84,14 +94,18 @@ if (
   ]).size !== 3
 )
   throw new Error(
-    "R10 requires a provisional Los Angeles snapshot and three distinct real PG audience-state sessions",
+    "R11 requires real PG unknown draft, capped report, unavailable dimension, omitted hourly metrics, and three audience states",
   );
 
 // Independent acceptance strings: a changed translation must fail, not change the expected value with the UI.
 const requiredLabels = {
   en: {
     insufficient: "Audience too small; Meta did not provide a profile.",
-    notAuthorized: "Live audience insights are not authorized.",
+    notAuthorized: "Reconnect Facebook to authorize audience insights",
+    sessionSpend:
+      "Ad spend promoting this live post within the selected period",
+    truncated: "Only the first 100 records are shown",
+    unavailable: "Breakdowns unavailable",
     zone: "Meta account time zone: America/Los_Angeles",
     provisional: "Meta data may still change",
     boosted: "From promoted post",
@@ -99,7 +113,10 @@ const requiredLabels = {
   },
   "zh-TW": {
     insufficient: "觀眾數不足，Meta 未提供輪廓",
-    notAuthorized: "尚未授權直播觀眾洞察。",
+    notAuthorized: "需重新連接 Facebook 以授權觀眾數據",
+    sessionSpend: "所選期間內推廣此直播貼文的廣告花費",
+    truncated: "僅顯示前 100 筆",
+    unavailable: "無法取得分類資料",
     zone: "Meta 帳戶時區: America/Los_Angeles",
     provisional: "Meta 數據可能仍會更新",
     boosted: "受推廣貼文帶來",
@@ -107,7 +124,10 @@ const requiredLabels = {
   },
   "zh-CN": {
     insufficient: "观众数不足，Meta 未提供轮廓",
-    notAuthorized: "尚未授权直播观众洞察。",
+    notAuthorized: "需重新连接 Facebook 以授权观众数据",
+    sessionSpend: "所选期间内推广此直播帖文的广告花费",
+    truncated: "仅显示前 100 条",
+    unavailable: "无法取得分类数据",
     zone: "Meta 账户时区: America/Los_Angeles",
     provisional: "Meta 数据可能仍会更新",
     boosted: "受推广帖文带来",
@@ -166,11 +186,14 @@ async function visibleFacts(page: Page, locale: Locale) {
   await fact(c.net, money(locale, "TWD", expected.net_minor));
   await fact(c.pending, num(expected.pending_orders));
   await fact(c.pendingValue, money(locale, "TWD", expected.pending_minor));
-  await fact(c.spend, money(locale, "TWD", expected.spend_minor));
+  await fact(
+    requiredLabels[locale].sessionSpend,
+    money(locale, "TWD", expected.spend_minor),
+  );
   await fact(
     c.roas,
     expected.spend_minor === 0
-      ? c.unknown
+      ? "—"
       : `${new Intl.NumberFormat(locale, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -273,11 +296,16 @@ async function visibleFacts(page: Page, locale: Locale) {
     await expect(row.locator("td").nth(4)).toHaveText(
       money(locale, "TWD", hour.spend_minor),
     );
-    await expect(row.locator("td").nth(5)).toHaveText(String(hour.reach));
-    await expect(row.locator("td").nth(6)).toHaveText(String(hour.impressions));
-    await expect(row.locator("td").nth(7)).toHaveText(String(hour.clicks));
-    await expect(row.locator("td").nth(8)).toHaveText(String(hour.engagements));
-    await expect(row.locator("td").nth(9)).toHaveText(String(hour.comments));
+    for (const [i, value] of [
+      hour.reach,
+      hour.impressions,
+      hour.clicks,
+      hour.engagements,
+      hour.comments,
+    ].entries())
+      await expect(row.locator("td").nth(5 + i)).toHaveText(
+        value === null ? c.unknown : String(value),
+      );
     await expect(row.locator("td").nth(10)).toHaveText(
       hour.purchases === null ? c.unknown : String(hour.purchases),
     );
@@ -287,6 +315,36 @@ async function visibleFacts(page: Page, locale: Locale) {
         : money(locale, "TWD", hour.purchase_value_minor),
     );
   }
+  await expect(page.getByTestId("attribution-truncated")).toHaveText(
+    requiredLabels[locale].truncated,
+  );
+  const dimensions: Record<string, string> = {
+    age_gender: c.ageGender,
+    region: c.region,
+    placement: c.placement,
+    device: c.device,
+    hourly: c.hourly,
+  };
+  await expect(
+    draft.getByTestId("attribution-breakdowns-unavailable"),
+  ).toHaveText(
+    fixture.breakdowns_unavailable.map(
+      (item) =>
+        `${item.day} · ${requiredLabels[locale].unavailable}: ${item.dimensions.map((name) => dimensions[name] ?? name).join(", ")}`,
+    ),
+  );
+  const unknownRow = draft
+    .getByTestId("attribution-breakdowns")
+    .locator("tbody tr")
+    .filter({
+      has: page.getByRole("rowheader", {
+        name: fixture.unknown_breakdown.bucket,
+        exact: true,
+      }),
+    });
+  await expect(unknownRow).toHaveCount(1);
+  for (let i = 5; i <= 9; i++)
+    await expect(unknownRow.locator("td").nth(i)).toHaveText(c.unknown);
 }
 
 async function audienceFacts(page: Page, locale: Locale) {
@@ -395,8 +453,43 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   await assertNotAuthorized();
   await reportShot(page, locale, width, "not-authorized");
 
+  const reportURL = page.url();
+  await panel.getByTestId("attribution-reconnect").click();
+  await expect(page).toHaveURL(
+    new RegExp(`/${locale}/settings\\?store=${store}$`),
+  );
+  await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("metaconnect-card")).toBeVisible();
+  await page.goto(reportURL); // Return to the report after the reconnect entry's actual click + reload.
+  await assertNotAuthorized();
+
   await selection.selectOption(fixture.session_id);
   await expect(page).toHaveURL(new RegExp(`session=${fixture.session_id}`));
+  await visibleFacts(page, locale);
+}
+
+async function unknownDraftClicks(page: Page, locale: Locale, width: number) {
+  const selection = page.getByTestId("attribution-draft");
+  const assertUnknown = async () => {
+    await expect(selection).toHaveValue(fixture.unknown_draft_id);
+    const facts = page
+      .getByTestId("attribution-draft-panel")
+      .locator("dl")
+      .first();
+    await expect(facts.locator("dd")).toHaveText(["—", "—"]);
+    await expect(page.getByTestId("attribution-truncated")).toHaveText(
+      requiredLabels[locale].truncated,
+    );
+  };
+  await selection.selectOption(fixture.unknown_draft_id);
+  await expect(page).toHaveURL(new RegExp(`draft=${fixture.unknown_draft_id}`));
+  await assertUnknown();
+  await page.reload();
+  await assertUnknown();
+  await reportShot(page, locale, width, "unknown-draft");
+  await selection.selectOption(fixture.draft_id);
+  await expect(page).toHaveURL(new RegExp(`draft=${fixture.draft_id}`));
   await visibleFacts(page, locale);
 }
 
@@ -558,6 +651,15 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         const audiencePath = `/api/stores/${store}/ads/sessions/${fixture.session_id}/audience-read`;
         await audienceStateClicks(page, locale, width);
+        await unknownDraftClicks(page, locale, width);
+        ledger.push({
+          control:
+            "unknown draft, capped report, unavailable breakdowns, Facebook reconnect entry",
+          action: "selectOption/reload/selectOption/click/reload",
+          expected:
+            "spend and ROAS remain — after reload; omitted metrics stay unknown; cap and unavailable labels remain visible; settings Page-connect entry opens",
+          actual: "PASS",
+        });
         ledger.push({
           control:
             "insufficient/not_authorized sessions + Los Angeles/provisional/promoted-post labels + ROAS",

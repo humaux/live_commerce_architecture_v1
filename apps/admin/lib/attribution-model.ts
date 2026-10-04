@@ -14,12 +14,12 @@ export type Breakdown = {
   dimension: "age_gender" | "region" | "placement" | "device" | "hourly";
   bucket: string;
   hour_start: string | null;
-  spend_minor: number;
-  reach: number;
-  impressions: number;
-  clicks: number;
-  engagements: number;
-  comments: number;
+  spend_minor: number | null;
+  reach: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  engagements: number | null;
+  comments: number | null;
   purchases: number | null;
   purchase_value_minor: number | null;
 };
@@ -29,7 +29,7 @@ export type DraftAttribution = {
   template: "BOOST_POST" | "PRODUCT_TRAFFIC";
   currency: "TWD" | "HKD" | "USD";
   meta_account_timezone: string | null;
-  spend_minor: number;
+  spend_minor: number | null;
   orders: {
     path: "ad_click" | "boosted_post";
     orders: number;
@@ -41,6 +41,7 @@ export type DraftAttribution = {
   roas: number | null;
   provisional: boolean;
   breakdowns: Breakdown[];
+  breakdowns_unavailable: { day: string; dimensions: string[] }[];
   buyers: Buyers;
 };
 export type SessionAttribution = {
@@ -51,7 +52,7 @@ export type SessionAttribution = {
   post_ids: string[];
   draft_ids: string[];
   currency: string;
-  spend_minor: number;
+  spend_minor: number | null;
   orders: number;
   net_minor: number;
   pending_orders: number;
@@ -85,6 +86,7 @@ export type SessionAttribution = {
 export type AttributionReport = {
   window: { from: string; to: string };
   order_timezone: "Asia/Taipei";
+  truncated: boolean;
   drafts: DraftAttribution[];
   sessions: SessionAttribution[];
 };
@@ -172,12 +174,12 @@ const breakdown = object<Breakdown>({
   dimension: choices(["age_gender", "region", "placement", "device", "hourly"]),
   bucket: string,
   hour_start: nullable(instant),
-  spend_minor: count,
-  reach: count,
-  impressions: count,
-  clicks: count,
-  engagements: count,
-  comments: count,
+  spend_minor: nullable(count),
+  reach: nullable(count),
+  impressions: nullable(count),
+  clicks: nullable(count),
+  engagements: nullable(count),
+  comments: nullable(count),
   purchases: nullable(count),
   purchase_value_minor: nullable(signed),
 });
@@ -187,7 +189,7 @@ const draft = object<DraftAttribution>({
   template: choices(["BOOST_POST", "PRODUCT_TRAFFIC"]),
   currency,
   meta_account_timezone: nullable(zone),
-  spend_minor: count,
+  spend_minor: nullable(count),
   orders: array(
     object({
       path: choices(["ad_click", "boosted_post"]),
@@ -204,6 +206,7 @@ const draft = object<DraftAttribution>({
   roas: nullable(ratio),
   provisional: bool,
   breakdowns: array(breakdown),
+  breakdowns_unavailable: array(object({ day, dimensions: array(string) })),
   buyers,
 });
 const audience = object<SessionAttribution["live_audience"]>({
@@ -222,7 +225,7 @@ const session = object<SessionAttribution>({
   post_ids: array(string),
   draft_ids: array(uuid),
   currency,
-  spend_minor: count,
+  spend_minor: nullable(count),
   orders: count,
   net_minor: signed,
   pending_orders: count,
@@ -251,6 +254,7 @@ const session = object<SessionAttribution>({
 const report = object<AttributionReport>({
   window: object({ from: day, to: day }),
   order_timezone: choices(["Asia/Taipei"]),
+  truncated: bool,
   drafts: array(draft),
   sessions: array(session),
 });

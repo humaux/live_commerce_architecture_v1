@@ -62,6 +62,7 @@ const session: SessionAttribution = {
 export const attributionFixture: AttributionReport = {
   window: { from: "2026-10-01", to: "2026-10-03" },
   order_timezone: "Asia/Taipei",
+  truncated: false,
   drafts: [
     {
       draft_id: draftID,
@@ -82,6 +83,7 @@ export const attributionFixture: AttributionReport = {
       meta: { purchases: 7, purchase_value_minor: 9000 },
       roas: 2.5,
       provisional: true,
+      breakdowns_unavailable: [],
       breakdowns: ["age_gender", "region", "placement", "device", "hourly"].map(
         (dimension, i) => ({
           dimension: dimension as

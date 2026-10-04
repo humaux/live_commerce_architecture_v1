@@ -14,6 +14,7 @@ import {
 } from "@/lib/attribution-client";
 import { attributionCopy, type AttributionCopy } from "@/lib/attribution-copy";
 import { formatROAS } from "@/lib/attribution-format";
+import { matchRoute } from "@/src/routes";
 import type {
   AttributionReport,
   Buyers,
@@ -235,6 +236,11 @@ export function Attribution({
             <p className="attribution-note" data-testid="attribution-window">
               {report.window.from} – {report.window.to} · {c.orderZone}
             </p>
+            {report.truncated && (
+              <p role="status" data-testid="attribution-truncated">
+                {c.truncated}
+              </p>
+            )}
             {!report.drafts.length && !report.sessions.length && (
               <p data-testid="attribution-empty">{c.empty}</p>
             )}
@@ -372,13 +378,15 @@ function DraftPanel({
       <dl className="attribution-facts">
         <div>
           <dt>{c.spend}</dt>
-          <dd>{money(locale, d.currency, d.spend_minor)}</dd>
+          <dd>
+            {d.spend_minor === null
+              ? "—"
+              : money(locale, d.currency, d.spend_minor)}
+          </dd>
         </div>
         <div>
           <dt>{c.roas}</dt>
-          <dd>
-            {formatROAS(locale, d.roas, c.unknown)}
-          </dd>
+          <dd>{formatROAS(locale, d.roas, "—")}</dd>
         </div>
       </dl>
       <div className="attribution-pair">
@@ -422,6 +430,22 @@ function DraftPanel({
       </div>
       <h3>{c.audience}</h3>
       {!d.breakdowns.length && <p>{c.noAudience}</p>}
+      {d.breakdowns_unavailable.map((unavailable, i) => (
+        <p
+          className="attribution-note"
+          data-testid="attribution-breakdowns-unavailable"
+          key={i}
+        >
+          {unavailable.day} · {c.breakdownsUnavailable}:{" "}
+          {unavailable.dimensions
+            .map((name) =>
+              Object.hasOwn(dimension, name)
+                ? dimension[name as keyof typeof dimension]
+                : name,
+            )
+            .join(", ")}
+        </p>
+      ))}
       <Table
         c={c}
         testID="attribution-breakdowns"
@@ -449,7 +473,7 @@ function DraftPanel({
             <td>{dimension[b.dimension]}</td>
             <th scope="row">{b.bucket}</th>
             <td>{b.hour_start ? displayTime(locale, b.hour_start) : "—"}</td>
-            <td>{money(locale, d.currency, b.spend_minor)}</td>
+            <td>{amount(locale, d.currency, b.spend_minor, c)}</td>
             <td>{number(locale, b.reach, c)}</td>
             <td>{number(locale, b.impressions, c)}</td>
             <td>{number(locale, b.clicks, c)}</td>
@@ -575,8 +599,12 @@ function SessionPanel({
       </p>
       <dl className="attribution-facts" data-testid="attribution-session-facts">
         <div>
-          <dt>{c.spend}</dt>
-          <dd>{money(locale, s.currency, s.spend_minor)}</dd>
+          <dt>{c.sessionSpend}</dt>
+          <dd>
+            {s.spend_minor === null
+              ? "—"
+              : money(locale, s.currency, s.spend_minor)}
+          </dd>
         </div>
         <div>
           <dt>{c.orders}</dt>
@@ -599,8 +627,10 @@ function SessionPanel({
           <dd>
             {formatROAS(
               locale,
-              s.spend_minor === 0 ? null : s.net_minor / s.spend_minor,
-              c.unknown,
+              s.spend_minor === null || s.spend_minor === 0
+                ? null
+                : s.net_minor / s.spend_minor,
+              "—",
             )}
           </dd>
         </div>
@@ -663,7 +693,15 @@ function SessionPanel({
             c={c}
           />
           {audience.status === "not_authorized" ? (
-            <p data-testid="attribution-not-authorized">{c.notAuthorized}</p>
+            <>
+              <p data-testid="attribution-not-authorized">{c.notAuthorized}</p>
+              <Link
+                data-testid="attribution-reconnect"
+                href={`/${locale}${matchRoute("/settings")!.path}?store=${encodeURIComponent(store)}`}
+              >
+                {c.reconnect}
+              </Link>
+            </>
           ) : (
             <>
               <dl className="attribution-facts">
