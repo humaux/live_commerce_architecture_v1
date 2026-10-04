@@ -13,6 +13,7 @@ import {
   type AttributionError,
 } from "@/lib/attribution-client";
 import { attributionCopy, type AttributionCopy } from "@/lib/attribution-copy";
+import { formatROAS } from "@/lib/attribution-format";
 import type {
   AttributionReport,
   Buyers,
@@ -376,7 +377,7 @@ function DraftPanel({
         <div>
           <dt>{c.roas}</dt>
           <dd>
-            {d.roas === null ? c.unknown : `${number(locale, d.roas, c)}×`}
+            {formatROAS(locale, d.roas, c.unknown)}
           </dd>
         </div>
       </dl>
@@ -596,9 +597,11 @@ function SessionPanel({
         <div>
           <dt>{c.roas}</dt>
           <dd>
-            {s.spend_minor === 0
-              ? c.unknown
-              : `${number(locale, s.net_minor / s.spend_minor, c)}×`}
+            {formatROAS(
+              locale,
+              s.spend_minor === 0 ? null : s.net_minor / s.spend_minor,
+              c.unknown,
+            )}
           </dd>
         </div>
       </dl>

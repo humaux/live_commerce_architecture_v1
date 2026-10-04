@@ -20,6 +20,8 @@ type CheckoutFixture = {
   draft_id: string;
   orders: number;
   net_minor: number;
+  pending_orders: number;
+  pending_minor: number;
   from: string;
   to?: string;
   path?: "ad_click";
@@ -29,14 +31,16 @@ const fixture: CheckoutFixture = JSON.parse(
 );
 if (
   !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(fixture.draft_id) ||
-  fixture.orders !== 6 ||
+  fixture.orders !== 0 ||
   fixture.net_minor !== 0 ||
+  fixture.pending_orders !== 0 ||
+  fixture.pending_minor !== 0 ||
   !/^\d{4}-\d{2}-\d{2}$/.test(fixture.from) ||
   (fixture.to !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(fixture.to)) ||
   (fixture.path !== undefined && fixture.path !== "ad_click")
 )
   throw new Error(
-    "AT5 requires runner facts for exactly six genuine ad_click orders, net_minor zero, and an explicit date window",
+    "AT5 requires six genuine UNPAID bank-transfer origins verified by PG, with collected orders/net and pending COD orders/amount all zero, and an explicit date window",
   );
 const to = fixture.to ?? fixture.from;
 test.describe.configure({ mode: "serial" }); // One evidence manifest writer, like the existing offline gate.
@@ -60,6 +64,12 @@ async function checkoutDraftFacts(page: Page, locale: Locale) {
   await expect(row.locator("td").nth(0)).toHaveText(String(fixture.orders));
   await expect(row.locator("td").nth(1)).toHaveText(
     money(locale, "TWD", fixture.net_minor),
+  );
+  await expect(row.locator("td").nth(2)).toHaveText(
+    String(fixture.pending_orders),
+  );
+  await expect(row.locator("td").nth(3)).toHaveText(
+    money(locale, "TWD", fixture.pending_minor),
   );
   await expect(ours).not.toContainText(c.metaTitle);
   await expect(
@@ -170,7 +180,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const)
           control: "attribution-draft",
           action: "selectOption/read DOM",
           expected:
-            "ad_click orders exactly 6, net_minor exactly 0; separate Meta totals",
+            "six real UNPAID origins; collected orders/net and pending COD orders/amount all zero; separate Meta totals",
           actual: "PASS",
         });
         await page.reload();
@@ -181,7 +191,8 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const)
         ledger.push({
           control: "URL filter recovery",
           action: "reload",
-          expected: "same draft and exact six-order facts",
+          expected:
+            "same draft; six UNPAID origins never count as collected or pending COD",
           actual: "PASS",
         });
         // READ/MEASURE only; no DOM mutation, request interception, direct API shortcut or session prerequisite.

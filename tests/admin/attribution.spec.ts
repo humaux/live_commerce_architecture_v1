@@ -18,8 +18,11 @@ const origin = required("LC_BROWSER_PUBLIC_ORIGIN"),
   store = required("LC_BROWSER_STORE"),
   evidence = required("LC_BROWSER_EVIDENCE");
 type Fixture = {
+  // Runner controls name actual PG sessions; they never modify the report API DTO.
+  state_sessions: { insufficient: string; not_authorized: string };
+  provisional: true;
   audience_read?: "queued" | "forbidden";
-  live_audience?: {
+  live_audience: {
     status: "available" | "insufficient" | "not_authorized";
     views: number | null;
     peak_concurrent: number | null;
@@ -28,7 +31,7 @@ type Fixture = {
     regions: { bucket: string; view_time_ms: number }[];
   };
   forbidden_private?: string[];
-  meta_account_timezone?: string;
+  meta_account_timezone: "America/Los_Angeles";
   hourly?: {
     day: string;
     timezone_name: string;
@@ -67,6 +70,50 @@ type Fixture = {
   };
 };
 const fixture: Fixture = JSON.parse(required("LC_ATTRIBUTION_FIXTURE"));
+const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+if (
+  fixture.provisional !== true ||
+  fixture.meta_account_timezone !== "America/Los_Angeles" ||
+  fixture.live_audience?.status !== "available" ||
+  !uuid.test(fixture.state_sessions?.insufficient ?? "") ||
+  !uuid.test(fixture.state_sessions?.not_authorized ?? "") ||
+  new Set([
+    fixture.session_id,
+    fixture.state_sessions.insufficient,
+    fixture.state_sessions.not_authorized,
+  ]).size !== 3
+)
+  throw new Error(
+    "R10 requires a provisional Los Angeles snapshot and three distinct real PG audience-state sessions",
+  );
+
+// Independent acceptance strings: a changed translation must fail, not change the expected value with the UI.
+const requiredLabels = {
+  en: {
+    insufficient: "Audience too small; Meta did not provide a profile.",
+    notAuthorized: "Live audience insights are not authorized.",
+    zone: "Meta account time zone: America/Los_Angeles",
+    provisional: "Meta data may still change",
+    boosted: "From promoted post",
+    collected: "Collected orders",
+  },
+  "zh-TW": {
+    insufficient: "觀眾數不足，Meta 未提供輪廓",
+    notAuthorized: "尚未授權直播觀眾洞察。",
+    zone: "Meta 帳戶時區: America/Los_Angeles",
+    provisional: "Meta 數據可能仍會更新",
+    boosted: "受推廣貼文帶來",
+    collected: "已收款訂單",
+  },
+  "zh-CN": {
+    insufficient: "观众数不足，Meta 未提供轮廓",
+    notAuthorized: "尚未授权直播观众洞察。",
+    zone: "Meta 账户时区: America/Los_Angeles",
+    provisional: "Meta 数据可能仍会更新",
+    boosted: "受推广帖文带来",
+    collected: "已收款订单",
+  },
+} as const;
 test.use({
   baseURL: origin,
   trace: "retain-on-failure",
@@ -111,10 +158,31 @@ async function visibleFacts(page: Page, locale: Locale) {
   };
   const num = (n: number) => String(n);
   await fact(c.orders, num(expected.orders));
+  await expect(
+    session
+      .getByTestId("attribution-session-facts")
+      .getByText(requiredLabels[locale].collected, { exact: true }),
+  ).toBeVisible();
   await fact(c.net, money(locale, "TWD", expected.net_minor));
   await fact(c.pending, num(expected.pending_orders));
   await fact(c.pendingValue, money(locale, "TWD", expected.pending_minor));
   await fact(c.spend, money(locale, "TWD", expected.spend_minor));
+  await fact(
+    c.roas,
+    expected.spend_minor === 0
+      ? c.unknown
+      : `${new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(expected.net_minor / expected.spend_minor)}×`,
+  );
+  const draftROAS = draft
+    .locator("dl div")
+    .filter({
+      has: page.getByText(c.roas, { exact: true }),
+    })
+    .locator("dd");
+  await expect(draftROAS).toHaveText(/^[0-9,]+\.[0-9]{2}×$/);
   await expect(
     session.getByTestId("attribution-funnel").locator("tbody td"),
   ).toHaveText(
@@ -178,10 +246,15 @@ async function visibleFacts(page: Page, locale: Locale) {
     expect(privateString.length).toBeGreaterThan(0);
     await expect(page.locator("body")).not.toContainText(privateString);
   }
-  if (fixture.meta_account_timezone)
-    await expect(draft).toContainText(
-      `${c.metaZone}: ${fixture.meta_account_timezone}`,
-    );
+  await expect(draft.getByTestId("attribution-meta-zone")).toHaveText(
+    requiredLabels[locale].zone,
+  );
+  await expect(draft.getByTestId("attribution-provisional")).toHaveText(
+    requiredLabels[locale].provisional,
+  );
+  await expect(
+    draft.getByTestId("attribution-path-boosted_post").getByRole("rowheader"),
+  ).toHaveText(requiredLabels[locale].boosted);
   for (const hour of fixture.hourly ?? []) {
     const row = draft
       .getByTestId("attribution-breakdowns")
@@ -218,7 +291,6 @@ async function visibleFacts(page: Page, locale: Locale) {
 
 async function audienceFacts(page: Page, locale: Locale) {
   const expected = fixture.live_audience;
-  if (!expected) return; // Existing runners may omit this additional expectation; supplied facts are exact.
   const c = attributionCopy[locale];
   const panel = page.getByTestId("attribution-live-audience");
   await expect(panel).toBeVisible();
@@ -276,6 +348,56 @@ async function audienceFacts(page: Page, locale: Locale) {
       );
     }
   }
+}
+
+async function audienceStateClicks(page: Page, locale: Locale, width: number) {
+  const selection = page.getByTestId("attribution-session");
+  const panel = page.getByTestId("attribution-live-audience");
+  const assertInsufficient = async () => {
+    await expect(selection).toHaveValue(fixture.state_sessions.insufficient);
+    await expect(panel.getByTestId("attribution-insufficient")).toHaveText(
+      requiredLabels[locale].insufficient,
+    );
+    await expect(panel.getByTestId("attribution-not-authorized")).toHaveCount(
+      0,
+    );
+    await expect(panel.locator("dl dd")).toHaveText([
+      attributionCopy[locale].unknown,
+      attributionCopy[locale].unknown,
+      attributionCopy[locale].unknown,
+    ]);
+    await expect(panel.getByRole("table")).toHaveCount(0);
+  };
+  await selection.selectOption(fixture.state_sessions.insufficient);
+  await expect(page).toHaveURL(
+    new RegExp(`session=${fixture.state_sessions.insufficient}`),
+  );
+  await assertInsufficient();
+  await page.reload();
+  await assertInsufficient();
+  await reportShot(page, locale, width, "insufficient");
+
+  const assertNotAuthorized = async () => {
+    await expect(selection).toHaveValue(fixture.state_sessions.not_authorized);
+    await expect(panel.getByTestId("attribution-not-authorized")).toHaveText(
+      requiredLabels[locale].notAuthorized,
+    );
+    await expect(panel.getByTestId("attribution-insufficient")).toHaveCount(0);
+    await expect(panel.locator("dd")).toHaveCount(0);
+    await expect(panel.getByRole("table")).toHaveCount(0);
+  };
+  await selection.selectOption(fixture.state_sessions.not_authorized);
+  await expect(page).toHaveURL(
+    new RegExp(`session=${fixture.state_sessions.not_authorized}`),
+  );
+  await assertNotAuthorized();
+  await page.reload();
+  await assertNotAuthorized();
+  await reportShot(page, locale, width, "not-authorized");
+
+  await selection.selectOption(fixture.session_id);
+  await expect(page).toHaveURL(new RegExp(`session=${fixture.session_id}`));
+  await visibleFacts(page, locale);
 }
 
 async function tableLayout(page: Page, locale: Locale, width: number) {
@@ -337,8 +459,13 @@ async function tableLayout(page: Page, locale: Locale, width: number) {
   }
 }
 
-async function reportShot(page: Page, locale: Locale, width: number) {
-  const file = `attribution-${locale}-${width}.png`;
+async function reportShot(
+  page: Page,
+  locale: Locale,
+  width: number,
+  state?: string,
+) {
+  const file = `attribution-${locale}-${width}${state ? `-${state}` : ""}.png`;
   await page.screenshot({ path: path.join(evidence, file), fullPage: true });
   const manifestPath = path.join(evidence, "screenshots.json");
   let manifest: {
@@ -430,6 +557,15 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           actual: "PASS",
         });
         const audiencePath = `/api/stores/${store}/ads/sessions/${fixture.session_id}/audience-read`;
+        await audienceStateClicks(page, locale, width);
+        ledger.push({
+          control:
+            "insufficient/not_authorized sessions + Los Angeles/provisional/promoted-post labels + ROAS",
+          action: "selectOption/reload/selectOption/reload/selectOption",
+          expected:
+            "both exact localized states survive reload; unknown metrics stay unknown; primary report facts restored",
+          actual: "PASS",
+        });
         const observeRead = () =>
           page.waitForResponse(
             (r) =>
