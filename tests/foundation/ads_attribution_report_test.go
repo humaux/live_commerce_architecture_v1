@@ -10,10 +10,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/claimsintake"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/integrations/meta"
 	"livecommerce/internal/integrations/metareply"
@@ -164,6 +167,29 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 			x.secondDraft = d
 		}
 	}
+	// Read while both ads are active. The later real pause deliberately ends
+	// the second attribution window; D9 only polls paused drafts at 04:00 Taipei.
+	// Preserve those collected daily facts in the eventual mixed-order report.
+	for i, d := range []string{x.firstDraft, x.secondDraft} {
+		camp := e.mustOp(d, "campaign", 1).Ref
+		spend := "12.30"
+		if i == 1 {
+			spend = "5.00"
+		}
+		e.g.SetInsights(camp, x.day, fakegraph.Insights{Spend: spend, Impressions: "1000", Clicks: "9", PurchaseCount: "9", PurchaseValue: "900.00"})
+		e.g.SetBreakdowns(camp, x.day, "hourly_stats_aggregated_by_advertiser_time_zone", []map[string]any{{"date_start": x.day, "date_stop": x.day, "spend": spend, "hourly_stats_aggregated_by_advertiser_time_zone": "13:00:00 - 13:59:59"}})
+		if i == 0 {
+			// A failed optional dimension must retain D7 and successful hourly data.
+			e.g.SetBreakdowns(camp, x.day, "age,gender", []map[string]any{{"date_start": x.day, "date_stop": x.day, "age": "<malformed>", "gender": "female", "spend": spend}})
+		}
+	}
+	e.sweep("insights")
+	e.settle()
+	// The real advance worker ingests daily reads after dispatcher completion.
+	e.sweep("advance")
+	if n := miCount(t, p.f.owner, `SELECT count(*) FROM ads.insights_daily WHERE tenant_id=$1 AND store_id=$2 AND day=$3 AND ((draft_id=$4 AND spend_minor=1230) OR (draft_id=$5 AND spend_minor=500))`, p.f.tenantA, p.f.storeA1, x.day, x.firstDraft, x.secondDraft); n != 2 {
+		t.Fatalf("actual advance must ingest both exact daily spend snapshots: %d", n)
+	}
 	// Signed comments -> APPLIED intake -> bound bundles -> real cart origins.
 	// Claim version/offer/session/post are captured only by actual Begin below.
 	caps := []buyer.Capability{mustIssue(t, m.h.service, p.f.storeA1), p.cap, mustIssue(t, m.h.service, p.f.storeA1)}
@@ -171,7 +197,6 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		caps = append(caps, mustIssue(t, m.h.service, p.f.storeA1))
 	}
 	for i, cap := range caps {
-		r.ensureStock(t, r.base)
 		at := atAfterActivationSecond(t, e, x.secondDraft)
 		if i == 4 {
 			if pause := e.pause(x.secondDraft); pause.Status != 200 {
@@ -208,7 +233,17 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		}
 	}
 	m.h.closeWindow(t, m.session)
-	offline := &tcvEnv{t: t, p: p, svc: p.bcHarness.service, merchant: httpapi.NewHandler(p.f.runtime, httpapi.Options{})}
+	// Mount the real collection/release routes, with external logistics disabled.
+	// A nil CVS service intentionally leaves these routes unregistered.
+	jobs, cvsErr := river.NewClient(riverpgxv5.New(p.f.runtime), &river.Config{Schema: "river"})
+	if cvsErr != nil {
+		t.Fatal(cvsErr)
+	}
+	cvs, cvsErr := fulfillment.NewCVS(p.f.runtime, jobs, nil, nil, fulfillment.CVSConfig{})
+	if cvsErr != nil {
+		t.Fatal(cvsErr)
+	}
+	offline := &tcvEnv{t: t, p: p, svc: p.bcHarness.service, merchant: httpapi.NewHandler(p.f.runtime, httpapi.Options{CVS: cvs})}
 	r.grant(t, r.base, "integration:manage", "payments:refund", "orders:read", "fulfillment:write")
 	if st, _ := offline.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
 		t.Fatalf("COD settings=%d", st)
@@ -217,6 +252,9 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		t.Fatalf("transfer settings=%d", st)
 	}
 	for i, cap := range caps {
+		// Claims do not reserve inventory; replenish immediately before each
+		// real Begin, which does. Preserve the actual inventory ledger/API path.
+		r.ensureStock(t, r.base)
 		cart := m.h.cartOf(t, cap)
 		h := p.cqHarness
 		h.cap = cap
@@ -272,29 +310,6 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	}
 	refund := r.mustRefund(t, x.paid, 100, "requested_by_customer")
 	r.awaitRefundFact(t, refund, x.paid.attempt, "SUCCEEDED")
-	// MOCK Insights enter through the real dispatcher and Finish transaction.
-	for i, d := range []string{x.firstDraft, x.secondDraft} {
-		camp := e.mustOp(d, "campaign", 1).Ref
-		spend := "12.30"
-		if i == 1 {
-			spend = "5.00"
-		}
-		e.g.SetInsights(camp, x.day, fakegraph.Insights{Spend: spend, Impressions: "1000", Clicks: "9", PurchaseCount: "9", PurchaseValue: "900.00"})
-		e.g.SetBreakdowns(camp, x.day, "hourly_stats_aggregated_by_advertiser_time_zone", []map[string]any{{"date_start": x.day, "date_stop": x.day, "spend": spend, "hourly_stats_aggregated_by_advertiser_time_zone": "13:00:00 - 13:59:59"}})
-		if i == 0 {
-			// Deliberately malformed optional synthetic Graph dimension: R11
-			// must retain D7 daily data and the successful hourly dimension.
-			e.g.SetBreakdowns(camp, x.day, "age,gender", []map[string]any{{"date_start": x.day, "date_stop": x.day, "age": "<malformed>", "gender": "female", "spend": spend}})
-		}
-	}
-	e.sweep("insights")
-	e.settle()
-	// Dispatch persists breakdowns; the real advance worker ingests completed
-	// daily reads. Idle dispatch alone does not mean daily reports are ready.
-	e.sweep("advance")
-	if n := miCount(t, p.f.owner, `SELECT count(*) FROM ads.insights_daily WHERE tenant_id=$1 AND store_id=$2 AND day=$3 AND ((draft_id=$4 AND spend_minor=1230) OR (draft_id=$5 AND spend_minor=500))`, p.f.tenantA, p.f.storeA1, x.day, x.firstDraft, x.secondDraft); n != 2 {
-		t.Fatalf("actual advance must ingest both exact daily spend snapshots: %d", n)
-	}
 	// Real Page custody -> lease-fenced claims dispatcher -> aggregate snapshot.
 	var err error
 	m.pageKeys, err = metareply.NewPageTokenKeyring("at9_page", map[string][]byte{"at9_page": randomBytes(32)})
@@ -490,14 +505,22 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 		t.Fatal("ambiguous boosted orders must not be fan-out credited")
 	}
 	var hourly, timelineOrders, timelineNet, timelineComments, timelineClaims float64
+	unknownSpend := 0
 	for _, raw := range session["timeline"].([]any) {
 		v := raw.(map[string]any)
-		hourly += v["spend_minor"].(float64)
 		timelineOrders += v["orders"].(float64)
 		timelineNet += v["net_minor"].(float64)
 		timelineComments += v["comments"].(float64)
 		timelineClaims += v["claims"].(float64)
-		if v["spend_minor"].(float64) > 0 {
+		if v["spend_minor"] == nil {
+			// R11: first-party events are not evidence of zero Meta spend.
+			unknownSpend++
+		} else {
+			spend, ok := v["spend_minor"].(float64)
+			if !ok || spend <= 0 {
+				t.Fatal("known fixture spend must come from positive Meta hourly evidence")
+			}
+			hourly += spend
 			at, err := time.Parse(time.RFC3339, v["at"].(string))
 			if err != nil {
 				t.Fatal(err)
@@ -510,6 +533,9 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 	}
 	if hourly != 1730 {
 		t.Fatal("hour overlay must independently sum both actual boost insights")
+	}
+	if unknownSpend == 0 {
+		t.Fatal("first-party-only timeline minutes must retain unknown Meta spend")
 	}
 	if timelineOrders != 4 || fmt.Sprint(timelineNet) != fmt.Sprint(x.expected["net_minor"]) || timelineComments != 9 || timelineClaims != 9 {
 		t.Fatalf("R10 timeline orders/net/comments/claims=%v/%v/%v/%v", timelineOrders, timelineNet, timelineComments, timelineClaims)

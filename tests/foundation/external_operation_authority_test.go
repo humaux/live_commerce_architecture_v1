@@ -276,6 +276,9 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.check_meta_audience(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_meta_audience_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- R11: report definer-only current Page-grant boolean. Exact commerce_ads_writer
+	 -- EXECUTE is pinned by MA02; no runtime/worker/token-custody authority is added.
+	 ('integration.meta_audience_authorized(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,true),
 	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
@@ -294,7 +297,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 69 || !safe {
+	if err != nil || functions != 70 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
