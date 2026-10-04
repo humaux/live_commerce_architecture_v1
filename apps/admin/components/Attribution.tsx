@@ -594,9 +594,23 @@ function SessionPanel({
         {s.ends_at ? displayTime(locale, s.ends_at) : c.unknown}
       </p>
       <p className="attribution-note">
-        {c.post}: {s.post_ids.join(", ") || c.unknown} · {c.draftIds}:{" "}
-        {s.draft_ids.join(", ") || c.unknown}
+        {c.post}: {s.post_ids.join(", ") || c.unknown}
       </p>
+      {s.draft_ids.length > 0 && (
+        <details
+          className="attribution-linked-drafts"
+          data-testid="attribution-linked-drafts"
+        >
+          <summary>
+            {c.draftIds} ({s.draft_ids.length})
+          </summary>
+          <ul>
+            {s.draft_ids.map((id) => (
+              <li key={id}>{id}</li>
+            ))}
+          </ul>
+        </details>
+      )}
       <dl className="attribution-facts" data-testid="attribution-session-facts">
         <div>
           <dt>{c.sessionSpend}</dt>

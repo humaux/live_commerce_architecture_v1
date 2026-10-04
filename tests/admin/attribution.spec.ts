@@ -658,7 +658,18 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         await page.getByTestId("attribution-from").fill(fixture.from);
         await page.getByTestId("attribution-to").fill(fixture.to);
+        const reportRead = page.waitForResponse(
+          (r) =>
+            r.request().method() === "GET" &&
+            new URL(r.url()).pathname ===
+              `/api/stores/${store}/ads/attribution`,
+        );
         await page.getByTestId("attribution-apply").click();
+        const reportData = await (await reportRead).json();
+        const linkedIDs: string[] = reportData.sessions.find(
+          (s: { session_id: string }) => s.session_id === fixture.session_id,
+        ).draft_ids;
+        expect(linkedIDs.length).toBeGreaterThanOrEqual(100);
         await expect(page.getByTestId("attribution-window")).toContainText(
           `${fixture.from} – ${fixture.to}`,
         );
@@ -678,6 +689,28 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         await expect(page).toHaveURL(
           new RegExp(`session=${fixture.session_id}`),
         );
+        const linked = page.getByTestId("attribution-linked-drafts");
+        const disclosure = linked.locator("summary");
+        await expect(linked).not.toHaveAttribute("open", "");
+        await expect(disclosure).toHaveText(
+          `${c.draftIds} (${linkedIDs.length})`,
+        );
+        expect((await disclosure.boundingBox())!.height).toBeGreaterThanOrEqual(
+          44,
+        );
+        await disclosure.click();
+        await expect(linked).toHaveAttribute("open", "");
+        await expect(linked.locator("li")).toHaveText(linkedIDs);
+        await disclosure.focus();
+        await page.keyboard.press("Enter");
+        await expect(linked).not.toHaveAttribute("open", "");
+        ledger.push({
+          control: "linked-draft identifiers",
+          action: "click/compare server ids/keyboard close",
+          expected:
+            "44px disclosure; full server list retained; collapsed report stays compact",
+          actual: "PASS",
+        });
         await visibleFacts(page, locale);
         ledger.push({
           control: "audience/hourly/privacy facts",

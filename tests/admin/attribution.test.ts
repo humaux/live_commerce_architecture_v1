@@ -81,6 +81,33 @@ const renderPanel = (name: string, props: object) =>
   renderToStaticMarkup(React.createElement(exports[name], props));
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`R11 large linked-draft list is complete but collapsed in ${locale}`, () => {
+    const session = structuredClone(attributionFixture.sessions[0]);
+    session.draft_ids = Array.from(
+      { length: 100 },
+      (_, i) => `44444444-4444-4444-8444-${String(i).padStart(12, "0")}`,
+    );
+    const html = renderPanel("SessionPanel", {
+      c: attributionCopy[locale],
+      locale,
+      session,
+      store: "test-store",
+    });
+    const details = html.match(
+      /<details[^>]*data-testid="attribution-linked-drafts"[^>]*>[\s\S]*?<\/details>/,
+    )?.[0];
+    assert.ok(
+      details,
+      "secondary identifiers must not push the report facts below a text wall",
+    );
+    assert.doesNotMatch(details, /<details[^>]*\sopen(?:=|\s|>)/);
+    assert.ok(details.includes(`${attributionCopy[locale].draftIds} (100)`));
+    assert.equal((details.match(/<li>/g) ?? []).length, 100);
+    for (const id of session.draft_ids) assert.ok(details.includes(id));
+  });
+}
+
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
   test(`R11 timeline distinguishes local unknown spend from explicit Meta zero in ${locale}`, () => {
     const r: any = structuredClone(attributionFixture),
       c = attributionCopy[locale];

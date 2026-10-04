@@ -23,7 +23,8 @@
   min-height: 44px;
   color: var(--ink);
 }
-.attribution-page :is(a, button, input, select, [tabindex]):focus-visible {
+.attribution-page
+  :is(a, button, input, select, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
@@ -76,6 +77,17 @@
   color: #5c6e83;
   font-size: 13px;
   margin: 8px 0 12px;
+}
+.attribution-linked-drafts summary {
+  min-height: 44px;
+  padding-block: 12px;
+  cursor: pointer;
+  color: var(--focus);
+}
+.attribution-linked-drafts ul {
+  padding-inline-start: 24px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
 }
 .attribution-pair {
   display: grid;
