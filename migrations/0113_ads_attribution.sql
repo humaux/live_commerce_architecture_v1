@@ -169,7 +169,7 @@ BEGIN
    AND char_length(split_part(p_touch->>'fbc','.',4))<=500)) THEN
   BEGIN click_at:=(p_touch->>'clicked_at')::timestamptz; EXCEPTION WHEN invalid_datetime_format OR datetime_field_overflow THEN click_at:=NULL; END;
   IF click_at BETWEEN clock_timestamp()-interval '7 days' AND clock_timestamp() THEN
-   SELECT m.draft_id INTO d FROM ads.attribution_match(s.tenant_id,p_store,(p_touch->>'draft_id')::uuid,NULL,NULL) m;
+   SELECT m.draft_id INTO d FROM ads.attribution_match(s.tenant_id,p_store,(p_touch->>'draft_id')::uuid,NULL,click_at) m;
    IF d IS NOT NULL THEN
     v_path:='ad_click';
    END IF;
