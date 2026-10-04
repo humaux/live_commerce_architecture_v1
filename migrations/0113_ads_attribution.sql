@@ -533,8 +533,8 @@ BEGIN
    (SELECT at,sum(spend_minor)::bigint spend_minor,sum(orders)::bigint orders,sum(net_minor)::bigint net_minor,sum(comments)::bigint comments,sum(claims)::bigint claims,NULL::bigint viewers
     FROM (SELECT i.hour_start at,i.spend_minor,0::bigint orders,0::bigint net_minor,0::bigint comments,0::bigint claims FROM ads.insights_breakdowns i
       WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=ANY(ids) AND i.currency=v_currency AND i.day BETWEEN p_from AND p_to AND i.dimension='hourly'
-     UNION ALL SELECT x.at,0,x.orders,x.net_minor,0,0 FROM jsonb_to_recordset(metrics#>'{buyers,orders_per_minute}') x(at timestamptz,orders bigint,net_minor bigint)
-     UNION ALL SELECT x.at,0,0,0,x.comments,x.claims FROM jsonb_to_recordset(f->'timeline') x(at timestamptz,comments bigint,claims bigint)) z GROUP BY at) q;
+     UNION ALL SELECT x.at,NULL::bigint,x.orders,x.net_minor,0,0 FROM jsonb_to_recordset(metrics#>'{buyers,orders_per_minute}') x(at timestamptz,orders bigint,net_minor bigint)
+     UNION ALL SELECT x.at,NULL::bigint,0,0,x.comments,x.claims FROM jsonb_to_recordset(f->'timeline') x(at timestamptz,comments bigint,claims bigint)) z GROUP BY at) q;
   sessions:=sessions||jsonb_build_array(jsonb_build_object('session_id',s.session_id,'title',s.title,'starts_at',s.starts_at,'ends_at',s.ends_at,
    'post_ids',to_jsonb(s.post_ids),'draft_ids',to_jsonb(coalesce(ids,'{}'::uuid[])),'currency',v_currency,'spend_minor',mr.spend,
    'orders',metrics->'orders','net_minor',metrics->'net_minor','pending_orders',metrics->'pending_orders','pending_minor',metrics->'pending_minor',

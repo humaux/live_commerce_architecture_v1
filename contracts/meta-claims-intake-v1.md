@@ -854,6 +854,10 @@ Owner correction 2026-10-01: a merchant connects their own Facebook Page / Insta
    `pages_messaging`, plus the Page tasks `MESSAGING` and `MODERATE`; Instagram (only when the Page links an account and the merchant
    keeps it): `instagram_basic`, `instagram_manage_comments`, `instagram_manage_messages`. A missing item is `422 missing_permission` and
    the pick list names what to re-grant; nothing is bound, sealed, routed or subscribed. The SQL re-checks the same lists.
+   R11 audience capability additionally requests optional `read_insights` through the Meta Login for Business **configuration**;
+   `config_id` remains authoritative (no unsupported scope URL override). A declined/missing optional grant keeps normal Page
+   connection and comment intake available, but the audience panel asks to reconnect. Before App Review only app-role users can
+   grant it. Updating the remote configuration is an owner/integrator prerequisite, not a mutation performed by the local unit.
 3. **Pick = two transactions around Graph.** (1) `integration.meta_connect_prepare` validates state, pickability and
    one-store-per-Page (`meta_inbox.connect_owner_ok`, `409 page_taken`, never naming the other store) BEFORE any Meta call;
    (2) network (with the in-memory user token): re-read `/me/accounts` for the Page token and re-verify tasks/IG, then `POST /{page_id}/subscribed_apps?subscribed_fields=feed`
