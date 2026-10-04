@@ -85,14 +85,14 @@ RETURNS TABLE(draft_id uuid) LANGUAGE sql STABLE SECURITY DEFINER SET search_pat
  SELECT d.id FROM ads.campaign_drafts d
  WHERE d.tenant_id=p_tenant AND d.store_id=p_store AND
  ((p_draft IS NOT NULL AND d.id=p_draft) OR
- (p_draft IS NULL AND d.template='BOOST_POST' AND d.source_ref=p_post AND p_at>=d.starts_at AND p_at<d.ends_at
+ (p_draft IS NULL AND d.template='BOOST_POST' AND d.source_ref=p_post)) AND p_at>=d.starts_at AND p_at<d.ends_at
   AND (d.ended_at IS NULL OR p_at<d.ended_at)
   AND EXISTS(SELECT 1 FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id
    WHERE r.tenant_id=p_tenant AND r.store_id=p_store AND r.draft_id=d.id AND r.kind='activate'
     AND o.state='SUCCEEDED' AND o.updated_at<=p_at)
   AND NOT EXISTS(SELECT 1 FROM ads.remote_objects r JOIN integration.operations o ON o.id=r.operation_id
    WHERE r.tenant_id=p_tenant AND r.store_id=p_store AND r.draft_id=d.id AND r.kind='pause'
-    AND o.state='SUCCEEDED' AND o.updated_at<=p_at)))
+    AND o.state='SUCCEEDED' AND o.updated_at<=p_at)
 $$;
 ALTER FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) OWNER TO commerce_ads_writer;
 REVOKE ALL ON FUNCTION ads.attribution_match(uuid,uuid,uuid,text,timestamptz) FROM PUBLIC;
@@ -119,7 +119,7 @@ BEGIN
    AND a.owner_id=p_owner AND a.id=p_attempt) THEN RETURN false; END IF;
   SELECT o.state INTO e FROM ads.capi_events c JOIN integration.operations o ON o.id=c.operation_id
    WHERE c.tenant_id=p_tenant AND c.store_id=p_store AND c.attempt_id=p_attempt;
-  IF FOUND THEN RETURN e.state IN ('READY','DISPATCHING','UNKNOWN','RETRY_WAIT'); END IF;
+  IF FOUND THEN RETURN e.state IN ('READY','DISPATCHING'); END IF;
   IF EXISTS(SELECT 1 FROM payments.facts f WHERE f.tenant_id=p_tenant AND f.store_id=p_store AND f.attempt_id=p_attempt
     AND f.kind='CAPTURED') THEN RETURN ads.plan_capi_eligible(p_attempt); END IF;
  END IF;
@@ -231,8 +231,8 @@ CREATE FUNCTION orders.clear_terminal_capi_ip() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  IF NEW.provider='meta_dataset' AND NEW.action='meta.capi.purchase'
- AND NEW.state IN ('SUCCEEDED','FAILED_FINAL','BLOCKED_POLICY','STALE_BINDING','CANCELLED') THEN
-  UPDATE orders.order_attribution a SET client_ip=NULL FROM checkout.payment_attempts p
+ AND NEW.state IN ('SUCCEEDED','UNKNOWN','FAILED_FINAL','BLOCKED_POLICY','STALE_BINDING','CANCELLED') THEN
+  UPDATE orders.order_attribution a SET fbc=NULL,fbp=NULL,client_ip=NULL FROM checkout.payment_attempts p
   WHERE p.tenant_id=NEW.tenant_id AND p.store_id=NEW.store_id AND p.id::text=NEW.request->>'attempt_id'
    AND a.tenant_id=p.tenant_id AND a.store_id=p.store_id AND a.order_id=p.order_id;
  END IF;
@@ -242,12 +242,13 @@ ALTER FUNCTION orders.clear_terminal_capi_ip() OWNER TO commerce_checkout_writer
 REVOKE ALL ON FUNCTION orders.clear_terminal_capi_ip() FROM PUBLIC;
 CREATE TRIGGER clear_terminal_capi_ip AFTER UPDATE OF state ON integration.operations
  FOR EACH ROW WHEN(OLD.state IS DISTINCT FROM NEW.state) EXECUTE FUNCTION orders.clear_terminal_capi_ip();
-COMMENT ON FUNCTION orders.clear_terminal_capi_ip() IS 'internal/attribution terminal ledger hook: clears only matching order IP in completion transaction; UNKNOWN never resent and not treated as success.';
+COMMENT ON FUNCTION orders.clear_terminal_capi_ip() IS 'internal/attribution terminal ledger hook: clears matching order single-send identifiers/IP in completion transaction; UNKNOWN never resent and not treated as success.';
 
 CREATE FUNCTION orders.capi_context(p_tenant uuid,p_store uuid,p_order uuid)
-RETURNS TABLE(fbc text,fbp text,client_ip text,email text)
+RETURNS TABLE(fbc text,fbp text,client_ip text,email_hash text)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
- SELECT a.fbc,a.fbp,host(a.client_ip),nullif(o.buyer_email,'') FROM checkout.orders o
+ SELECT a.fbc,a.fbp,host(a.client_ip),CASE WHEN nullif(btrim(o.buyer_email),'') IS NOT NULL
+  THEN encode(sha256(convert_to(lower(btrim(o.buyer_email)),'UTF8')),'hex') END FROM checkout.orders o
  LEFT JOIN orders.order_attribution a ON a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.order_id=o.id
  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
 $$;
@@ -256,7 +257,7 @@ REVOKE ALL ON FUNCTION orders.capi_context(uuid,uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION orders.capi_context(uuid,uuid,uuid) TO commerce_ads_writer;
 COMMENT ON FUNCTION orders.capi_context(uuid,uuid,uuid) IS 'internal/attribution private ads definer dependency only; not a runtime read API; consent checked by caller.';
 CREATE FUNCTION ads.capi_attribution_data(p_operation uuid,p_generation bigint,p_lease_token bytea)
-RETURNS TABLE(fbc text,fbp text,client_ip text,email text)
+RETURNS TABLE(fbc text,fbp text,client_ip text,email_hash text)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE o record;
 BEGIN
@@ -271,7 +272,7 @@ END $$;
 ALTER FUNCTION ads.capi_attribution_data(uuid,bigint,bytea) OWNER TO commerce_ads_writer;
 REVOKE ALL ON FUNCTION ads.capi_attribution_data(uuid,bigint,bytea) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ads.capi_attribution_data(uuid,bigint,bytea) TO commerce_ads_worker;
-COMMENT ON FUNCTION ads.capi_attribution_data(uuid,bigint,bytea) IS 'internal/attribution/capiroute: lease+consent fenced ephemeral CAPI match fields; raw buyer email hashed in memory, never persisted in operation.';
+COMMENT ON FUNCTION ads.capi_attribution_data(uuid,bigint,bytea) IS 'internal/attribution/capiroute: lease+consent fenced ephemeral CAPI match fields; only normalized SHA256 email leaves SQL, never raw email or operation persistence.';
 
 CREATE FUNCTION orders.purge_capi_ip() RETURNS integer
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -281,12 +282,12 @@ BEGIN
   (SELECT p.id FROM checkout.payment_attempts p WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id
    ORDER BY p.created_at DESC LIMIT 1) AS attempt_id
   FROM orders.order_attribution a JOIN checkout.orders o ON o.id=a.order_id AND o.tenant_id=a.tenant_id AND o.store_id=a.store_id
-  WHERE a.client_ip IS NOT NULL ORDER BY a.frozen_at LIMIT 1000
+  WHERE a.client_ip IS NOT NULL OR a.fbc IS NOT NULL OR a.fbp IS NOT NULL ORDER BY a.frozen_at LIMIT 1000
  LOOP
   IF r.created_at<clock_timestamp()-interval '7 days' OR r.commercial_state='CANCELLED'
     OR (r.commercial_state IN ('DRAFT','AWAITING_PAYMENT') AND r.expires_at<=clock_timestamp())
     OR NOT ads.capi_ip_needed(r.tenant_id,r.store_id,r.owner_id,r.attempt_id) THEN
-   UPDATE orders.order_attribution SET client_ip=NULL WHERE order_id=r.order_id AND tenant_id=r.tenant_id AND store_id=r.store_id;
+   UPDATE orders.order_attribution SET fbc=NULL,fbp=NULL,client_ip=NULL WHERE order_id=r.order_id AND tenant_id=r.tenant_id AND store_id=r.store_id;
    n:=n+1;
   END IF;
  END LOOP;
@@ -297,10 +298,11 @@ REVOKE ALL ON FUNCTION orders.purge_capi_ip() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION orders.purge_capi_ip() TO commerce_ads_writer;
 COMMENT ON FUNCTION orders.purge_capi_ip() IS 'internal/attribution R3 bounded cleanup via existing CAPI sweep: aborted/expired, ineligible or older than send window. Keeps non-PII attribution; no new job.';
 DO $patch$
-DECLARE body text;
+DECLARE body text; needle text:='RETURN v_n;';
 BEGIN
  SELECT prosrc INTO body FROM pg_proc WHERE oid='ads.plan_capi_purge()'::regprocedure;
- body:=replace(body,'RETURN v_n;','PERFORM orders.purge_capi_ip(); RETURN v_n;');
+ IF strpos(body,needle)=0 THEN RAISE EXCEPTION 'CAPI purge baseline drift'; END IF;
+ body:=replace(body,needle,'PERFORM orders.purge_capi_ip(); '||needle);
  EXECUTE 'CREATE OR REPLACE FUNCTION ads.plan_capi_purge() RETURNS integer LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
 END $patch$;
 
@@ -311,9 +313,9 @@ CREATE TABLE ads.insights_breakdowns (
  timezone_name text NOT NULL,currency text NOT NULL CHECK(currency IN ('TWD','USD','HKD')),
  dimension text NOT NULL CHECK(dimension IN ('age_gender','region','placement','device','hourly')),
  bucket text NOT NULL CHECK(char_length(bucket) BETWEEN 1 AND 160),hour_start timestamptz,
- spend_minor bigint NOT NULL CHECK(spend_minor>=0),reach bigint NOT NULL CHECK(reach>=0),
- impressions bigint NOT NULL CHECK(impressions>=0),clicks bigint NOT NULL CHECK(clicks>=0),
- engagements bigint NOT NULL CHECK(engagements>=0),comments bigint NOT NULL CHECK(comments>=0),
+ spend_minor bigint CHECK(spend_minor>=0),reach bigint CHECK(reach>=0),
+ impressions bigint CHECK(impressions>=0),clicks bigint CHECK(clicks>=0),
+ engagements bigint CHECK(engagements>=0),comments bigint CHECK(comments>=0),
  purchases bigint CHECK(purchases>=0),purchase_value_minor bigint CHECK(purchase_value_minor>=0),
  source_operation_id uuid NOT NULL REFERENCES ads.insight_reads(operation_id),fetched_at timestamptz NOT NULL,
  PRIMARY KEY(tenant_id,store_id,draft_id,day,dimension,bucket),
@@ -325,6 +327,20 @@ REVOKE ALL ON ads.insights_breakdowns FROM PUBLIC;
 GRANT SELECT,INSERT,DELETE ON ads.insights_breakdowns TO commerce_ads_writer;
 CREATE POLICY ads_breakdown_owner ON ads.insights_breakdowns TO commerce_ads_writer USING(true) WITH CHECK(true);
 COMMENT ON TABLE ads.insights_breakdowns IS 'internal/ads D9: aggregate Meta campaign/day dimensions; each dimension is separate, never person-level or added across partitions. Hour starts are absolute, day remains account timezone.';
+
+CREATE TABLE ads.insights_breakdown_status (
+ tenant_id uuid NOT NULL,store_id uuid NOT NULL,draft_id uuid NOT NULL,day date NOT NULL,
+ unavailable text[] NOT NULL CHECK(cardinality(unavailable)<=5 AND array_position(unavailable,NULL) IS NULL
+  AND unavailable <@ ARRAY['age_gender','region','placement','device','hourly']::text[]),
+ source_operation_id uuid NOT NULL REFERENCES ads.insight_reads(operation_id),fetched_at timestamptz NOT NULL,
+ PRIMARY KEY(tenant_id,store_id,draft_id,day),
+ FOREIGN KEY(tenant_id,store_id,draft_id) REFERENCES ads.campaign_drafts(tenant_id,store_id,id));
+ALTER TABLE ads.insights_breakdown_status ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ads.insights_breakdown_status FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON ads.insights_breakdown_status FROM PUBLIC;
+GRANT SELECT,INSERT,UPDATE ON ads.insights_breakdown_status TO commerce_ads_writer;
+CREATE POLICY ads_breakdown_status_owner ON ads.insights_breakdown_status TO commerce_ads_writer USING(true) WITH CHECK(true);
+COMMENT ON TABLE ads.insights_breakdown_status IS 'internal/ads optional dimension availability for a draft/account-day. Failure never discards D7 daily facts; the existing bounded hourly sweep retries all dimensions.';
 
 CREATE FUNCTION ads.finish_insights_breakdowns(p_operation uuid,p_generation bigint,p_token bytea,p_mode text,p_result jsonb) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -343,9 +359,12 @@ BEGIN
  v_tz:=p_result->>'timezone_name';v_cur:=p_result->>'currency';
  IF v_tz IS NULL OR NOT EXISTS(SELECT 1 FROM pg_timezone_names WHERE name=v_tz) OR v_cur NOT IN ('TWD','USD','HKD') THEN
   RAISE EXCEPTION 'invalid insight timezone or currency' USING ERRCODE='22023'; END IF;
- -- A late old read cannot replace newer data. A final account-day is immutable.
- IF EXISTS(SELECT 1 FROM ads.insights_daily i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day AND i.final)
-  OR EXISTS(SELECT 1 FROM ads.insights_breakdowns i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day AND i.fetched_at>o.updated_at) THEN RETURN; END IF;
+ -- D7 final daily facts remain immutable in put_insights_day. Optional failed
+ -- dimensions still retry; a late old read cannot replace newer availability.
+ IF EXISTS(SELECT 1 FROM ads.insights_breakdown_status i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day AND i.fetched_at>o.updated_at) THEN RETURN; END IF;
+ INSERT INTO ads.insights_breakdown_status VALUES(ir.tenant_id,ir.store_id,ir.draft_id,ir.day,
+  ARRAY(SELECT jsonb_array_elements_text(coalesce(nullif(p_result->'unavailable','null'::jsonb),'[]'::jsonb))),o.id,o.updated_at)
+ ON CONFLICT(tenant_id,store_id,draft_id,day) DO UPDATE SET unavailable=EXCLUDED.unavailable,source_operation_id=EXCLUDED.source_operation_id,fetched_at=EXCLUDED.fetched_at;
  DELETE FROM ads.insights_breakdowns i WHERE i.tenant_id=ir.tenant_id AND i.store_id=ir.store_id AND i.draft_id=ir.draft_id AND i.day=ir.day;
  FOR r IN SELECT value FROM jsonb_array_elements(p_result->'rows') LOOP
   IF jsonb_typeof(r)<>'object' OR (r->>'dimension'='hourly' AND ((r->>'hour_start')::timestamptz AT TIME ZONE v_tz)::date<>ir.day) THEN
@@ -470,7 +489,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  FROM live.sessions s WHERE s.tenant_id=p_tenant AND s.store_id=p_store
   AND coalesce(s.scheduled_at,s.created_at)>=p_from::timestamp AT TIME ZONE 'Asia/Taipei'
   AND coalesce(s.scheduled_at,s.created_at)<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
- ORDER BY coalesce(s.scheduled_at,s.created_at) DESC,s.id LIMIT 100
+ ORDER BY coalesce(s.scheduled_at,s.created_at) DESC,s.id LIMIT 101
 $$;
 ALTER FUNCTION live.attribution_sessions(uuid,uuid,date,date) OWNER TO commerce_media_writer;
 REVOKE ALL ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) FROM PUBLIC;
@@ -481,29 +500,34 @@ COMMENT ON FUNCTION live.attribution_sessions(uuid,uuid,date,date) IS 'internal/
 CREATE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record; d record; s record; metrics jsonb; drafts jsonb:='[]'; sessions jsonb:='[]'; bd jsonb; mr record;
- f jsonb; ids uuid[]; timeline jsonb; v_currency text;
+ f jsonb; ids uuid[]; timeline jsonb; v_currency text; unavailable jsonb; truncated boolean:=false;
 BEGIN
  SELECT * INTO a FROM ads.auth(p_hash,p_store,ARRAY['ads:read']);
  IF p_from IS NULL OR p_to IS NULL OR p_to<p_from OR p_to-p_from>91 THEN PERFORM ads.deny('invalid_request'); END IF;
- FOR d IN SELECT * FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store ORDER BY x.created_at DESC,x.id LIMIT 100 LOOP
+ FOR d IN SELECT * FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store ORDER BY x.created_at DESC,x.id LIMIT 101 LOOP
+  IF jsonb_array_length(drafts)=100 THEN truncated:=true; EXIT; END IF;
   metrics:=orders.attribution_metrics(a.out_tenant,p_store,p_from,p_to,d.id,NULL);
-  SELECT coalesce(sum(i.spend_minor),0)::bigint AS spend,sum(i.meta_purchases)::bigint AS purchases,sum(i.meta_purchase_value_minor)::bigint AS value,
+  SELECT sum(i.spend_minor)::bigint AS spend,sum(i.meta_purchases)::bigint AS purchases,sum(i.meta_purchase_value_minor)::bigint AS value,
    CASE WHEN count(DISTINCT i.account_timezone)=1 THEN min(i.account_timezone) WHEN count(*)>0 THEN 'mixed' ELSE NULL END tz,
    coalesce(bool_or(i.day>=(clock_timestamp() AT TIME ZONE i.account_timezone)::date-2),false) provisional
   INTO mr FROM ads.insights_daily i WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=d.id AND i.currency=d.currency AND i.day BETWEEN p_from AND p_to;
   SELECT coalesce(jsonb_agg(to_jsonb(i)-'tenant_id'-'store_id'-'draft_id'-'source_operation_id'-'fetched_at' ORDER BY i.day,i.dimension,i.bucket),'[]'::jsonb)
    INTO bd FROM ads.insights_breakdowns i WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=d.id AND i.day BETWEEN p_from AND p_to;
+  SELECT coalesce(jsonb_agg(jsonb_build_object('day',i.day,'dimensions',i.unavailable) ORDER BY i.day),'[]'::jsonb)
+   INTO unavailable FROM ads.insights_breakdown_status i WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=d.id
+   AND i.day BETWEEN p_from AND p_to AND cardinality(i.unavailable)>0;
   drafts:=drafts||jsonb_build_array(jsonb_build_object('draft_id',d.id,'source_ref',d.source_ref,'template',d.template,'currency',d.currency,
    'meta_account_timezone',mr.tz,'spend_minor',mr.spend,'orders',metrics->'paths','meta',jsonb_build_object('purchases',mr.purchases,'purchase_value_minor',mr.value),
    'roas',CASE WHEN mr.spend>0 THEN round((metrics->>'net_minor')::numeric/mr.spend,4) ELSE NULL END,
-   'provisional',mr.provisional,'breakdowns',bd,'buyers',metrics->'buyers'));
+   'provisional',mr.provisional,'breakdowns',bd,'breakdowns_unavailable',unavailable,'buyers',metrics->'buyers'));
  END LOOP;
  SELECT coalesce((SELECT st.currency FROM control.stores st WHERE st.tenant_id=a.out_tenant AND st.id=p_store),'TWD') INTO v_currency;
  FOR s IN SELECT * FROM live.attribution_sessions(a.out_tenant,p_store,p_from,p_to) LOOP
+  IF jsonb_array_length(sessions)=100 THEN truncated:=true; EXIT; END IF;
   SELECT array_agg(x.id) INTO ids FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.template='BOOST_POST' AND x.source_ref=ANY(s.post_ids);
   metrics:=orders.attribution_metrics(a.out_tenant,p_store,p_from,p_to,NULL,s.session_id);
   f:=claims.attribution_funnel(a.out_tenant,p_store,s.session_id,p_from,p_to);
-  SELECT coalesce(sum(i.spend_minor),0)::bigint spend INTO mr FROM ads.insights_daily i
+  SELECT sum(i.spend_minor)::bigint spend INTO mr FROM ads.insights_daily i
    WHERE i.tenant_id=a.out_tenant AND i.store_id=p_store AND i.draft_id=ANY(ids) AND i.currency=v_currency AND i.day BETWEEN p_from AND p_to;
   SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY at),'[]'::jsonb) INTO timeline FROM
    (SELECT at,sum(spend_minor)::bigint spend_minor,sum(orders)::bigint orders,sum(net_minor)::bigint net_minor,sum(comments)::bigint comments,sum(claims)::bigint claims,NULL::bigint viewers
@@ -518,7 +542,7 @@ BEGIN
    'buyers',metrics->'buyers','timeline',timeline,
    'live_audience',jsonb_build_object('status','not_authorized','views',NULL,'peak_concurrent',NULL,'total_view_time_ms',NULL,'age_gender','[]'::jsonb,'regions','[]'::jsonb)));
  END LOOP;
- RETURN jsonb_build_object('window',jsonb_build_object('from',p_from,'to',p_to),'order_timezone','Asia/Taipei','drafts',drafts,'sessions',sessions);
+ RETURN jsonb_build_object('window',jsonb_build_object('from',p_from,'to',p_to),'order_timezone','Asia/Taipei','truncated',truncated,'drafts',drafts,'sessions',sessions);
 END $$;
 ALTER FUNCTION ads.attribution_report(bytea,uuid,date,date) OWNER TO commerce_ads_writer;
 REVOKE ALL ON FUNCTION ads.attribution_report(bytea,uuid,date,date) FROM PUBLIC;
@@ -546,7 +570,7 @@ CREATE POLICY audience_plan_insert ON integration.operations FOR INSERT TO comme
 
 CREATE FUNCTION integration.plan_meta_audience(p_hash bytea,p_store uuid,p_session uuid,p_operation uuid,p_job bigint) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE a record;s record;b record;j record;n integer;req jsonb;
+DECLARE a record;s record;b record;j record;n integer;req jsonb;prior integration.operations;
 BEGIN
  SELECT * INTO a FROM ads.auth(p_hash,p_store,ARRAY['ads:read','live:read']);
  SELECT count(*) INTO n FROM claims.attribution_sources(a.out_tenant,p_store,p_session);
@@ -559,6 +583,14 @@ BEGIN
   WHERE h.tenant_id=a.out_tenant AND h.store_id=p_store AND h.binding_id=b.id
    AND c.scopes_attested @> ARRAY['read_insights','pages_read_engagement']) THEN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='AD403'; END IF;
+ -- Different HTTP keys still share one Page budget. Serialize by video, not
+ -- session, because the same video can be bound in multiple sessions.
+ PERFORM pg_advisory_xact_lock(hashtextextended(a.out_tenant::text||'/'||p_store::text||'/audience/'||s.source_object_id,0));
+ SELECT * INTO prior FROM integration.operations x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store
+  AND x.action='meta.live_insights' AND x.provider='facebook' AND x.request->>'post_id'=s.source_object_id
+  AND (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED') OR x.updated_at>=clock_timestamp()-interval '10 minutes')
+  ORDER BY (x.state IN ('READY','DISPATCHING','UNKNOWN','ACKNOWLEDGED')) DESC,x.updated_at DESC,x.id LIMIT 1;
+ IF FOUND THEN RETURN jsonb_build_object('operation_id',prior.id,'state',prior.state); END IF;
  SELECT * INTO j FROM river.river_job x WHERE x.id=p_job AND x.kind='external_operation_v1' AND x.queue='default'
   AND x.args=jsonb_build_object('operation_id',p_operation::text,'version',1) AND x.xmin=pg_current_xact_id()::xid;
  IF NOT FOUND THEN RAISE EXCEPTION 'live audience job mismatch' USING ERRCODE='22023'; END IF;
@@ -574,6 +606,8 @@ ALTER FUNCTION integration.plan_meta_audience(bytea,uuid,uuid,uuid,bigint) OWNER
 REVOKE ALL ON FUNCTION integration.plan_meta_audience(bytea,uuid,uuid,uuid,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.plan_meta_audience(bytea,uuid,uuid,uuid,bigint) TO commerce_runtime;
 COMMENT ON FUNCTION integration.plan_meta_audience(bytea,uuid,uuid,uuid,bigint) IS 'internal/ads merchant aggregate-read plan: fresh ads:read/live:read auth, one bound Page source, attested read scopes, default lane same-transaction job. No Meta mutation or buyer fields.';
+CREATE INDEX operations_audience_video ON integration.operations(tenant_id,store_id,(request->>'post_id'),updated_at DESC)
+ WHERE provider='facebook' AND action='meta.live_insights';
 
 CREATE FUNCTION integration.check_meta_audience(p_operation uuid) RETURNS text
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -650,13 +684,29 @@ REVOKE ALL ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid
 GRANT EXECUTE ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) TO commerce_integration_writer;
 COMMENT ON FUNCTION ads.store_live_audience_snapshot(uuid,uuid,uuid,uuid,uuid,timestamptz,jsonb) IS 'internal/integrations lease-fenced private aggregate persistence seam; no runtime table access, stale overlapping read cannot overwrite newer result.';
 
--- Patch only the audience projection, keeping the already checked report shape.
+CREATE FUNCTION integration.meta_audience_authorized(p_tenant uuid,p_store uuid,p_session uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT count(*)=1 AND bool_and(EXISTS(SELECT 1 FROM integration.bindings b
+  JOIN integration.meta_page_heads h ON h.tenant_id=b.tenant_id AND h.store_id=b.store_id AND h.binding_id=b.id
+  JOIN integration.meta_page_credentials c ON c.tenant_id=h.tenant_id AND c.store_id=h.store_id AND c.binding_id=h.binding_id AND c.version=h.current_version
+  WHERE b.tenant_id=p_tenant AND b.store_id=p_store AND b.id=s.binding_id AND b.enabled
+   AND b.provider='facebook' AND b.external_asset_id=s.asset_id
+   AND c.scopes_attested @> ARRAY['read_insights','pages_read_engagement']))
+ FROM claims.attribution_sources(p_tenant,p_store,p_session) s
+$$;
+ALTER FUNCTION integration.meta_audience_authorized(uuid,uuid,uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION integration.meta_audience_authorized(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION integration.meta_audience_authorized(uuid,uuid,uuid) TO commerce_ads_writer;
+COMMENT ON FUNCTION integration.meta_audience_authorized(uuid,uuid,uuid) IS 'internal/ads private report dependency: current Page aggregate grant boolean only, no tokens or scope contents exposed; missing read_insights requires reconnect.';
+
+-- Recheck the current grant even for an old snapshot. A same-video replay can
+-- serve another session bound to that exact Page/video, without a second GET.
 DO $patch$
 DECLARE body text;needle text:='jsonb_build_object(''status'',''not_authorized'',''views'',NULL,''peak_concurrent'',NULL,''total_view_time_ms'',NULL,''age_gender'',''[]''::jsonb,''regions'',''[]''::jsonb)';
 BEGIN
  SELECT prosrc INTO body FROM pg_proc WHERE oid='ads.attribution_report(bytea,uuid,date,date)'::regprocedure;
  IF strpos(body,needle)=0 THEN RAISE EXCEPTION 'audience report patch shape changed'; END IF;
- body:=replace(body,needle,'coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.session_id=s.session_id AND EXISTS(SELECT 1 FROM claims.attribution_sources(a.out_tenant,p_store,s.session_id) src WHERE src.id=x.source_id)),'||needle||')');
+ body:=replace(body,needle,'CASE WHEN integration.meta_audience_authorized(a.out_tenant,p_store,s.session_id) THEN coalesce((SELECT x.snapshot FROM ads.live_audience_snapshots x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND EXISTS(SELECT 1 FROM claims.attribution_sources(a.out_tenant,p_store,s.session_id) src JOIN claims.attribution_sources(a.out_tenant,p_store,x.session_id) prior ON prior.id=x.source_id AND prior.binding_id=src.binding_id AND prior.source_object_id=src.source_object_id) ORDER BY x.requested_at DESC,x.operation_id LIMIT 1),'||needle||') ELSE '||needle||' END');
  EXECUTE 'CREATE OR REPLACE FUNCTION ads.attribution_report(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS '||quote_literal(body);
 END $patch$;
 
@@ -664,7 +714,7 @@ DO $comments$
 DECLARE c record;
 BEGIN
  FOR c IN SELECT table_schema,table_name,column_name FROM information_schema.columns
-  WHERE (table_schema,table_name) IN (('orders','order_attribution'),('claims','order_origins'),('ads','insights_breakdowns'),('ads','live_audience_snapshots')) LOOP
+  WHERE (table_schema,table_name) IN (('orders','order_attribution'),('claims','order_origins'),('ads','insights_breakdowns'),('ads','insights_breakdown_status'),('ads','live_audience_snapshots')) LOOP
   EXECUTE format('COMMENT ON COLUMN %I.%I.%I IS %L',c.table_schema,c.table_name,c.column_name,'internal/attribution: domain-owned scoped measurement; raw identifiers never exported, merchant reads aggregate projections only.');
  END LOOP;
 END $comments$;

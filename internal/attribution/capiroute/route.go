@@ -134,12 +134,12 @@ type tokenRow struct {
 
 // userRow is the one row of ads.capi_user_data.
 type userRow struct {
-	fbc, fbp, clientIP, email  *string
-	phone                      *string
-	owner                      string
-	contents                   []byte
-	valueMinor                 int64
-	currency, sourceURL, agent string
+	fbc, fbp, clientIP, emailHash *string
+	phone                         *string
+	owner                         string
+	contents                      []byte
+	valueMinor                    int64
+	currency, sourceURL, agent    string
 }
 
 // loadSecret is the dispatcher LoadSecret hook (C2). Both loaders run in the dispatcher's lease-fenced transaction with
@@ -171,8 +171,8 @@ func (r *route) loadSecret(ctx context.Context, tx pgx.Tx, claim core.SecretClai
 		return core.Secret{}, errors.New("capiroute: user data load failed")
 	}
 	// ads.capi_attribution_data repeats the lease/consent fence; no pseudonyms enter operation requests or logs.
-	err = tx.QueryRow(ctx, `SELECT fbc,fbp,client_ip,email FROM ads.capi_attribution_data($1::uuid,$2::bigint,$3::bytea)`,
-		claim.OperationID, claim.Generation, claim.LeaseToken).Scan(&ur.fbc, &ur.fbp, &ur.clientIP, &ur.email)
+	err = tx.QueryRow(ctx, `SELECT fbc,fbp,client_ip,email_hash FROM ads.capi_attribution_data($1::uuid,$2::bigint,$3::bytea)`,
+		claim.OperationID, claim.Generation, claim.LeaseToken).Scan(&ur.fbc, &ur.fbp, &ur.clientIP, &ur.emailHash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return core.Secret{}, fmt.Errorf("attribution policy denied: %w", core.ErrPolicyDenied)
 	}
@@ -235,8 +235,17 @@ func (r *route) assemble(tr tokenRow, ur userRow) (core.Secret, error) {
 	if ur.clientIP != nil {
 		p.ClientIP = *ur.clientIP
 	}
-	if ur.email != nil {
-		p.EM = attribution.HashEmail(*ur.email)
+	if ur.emailHash != nil {
+		// SQL owns normalization/hash; raw email must never reach this worker.
+		if len(*ur.emailHash) != 64 {
+			return core.Secret{}, ErrConfig
+		}
+		for _, c := range *ur.emailHash {
+			if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+				return core.Secret{}, ErrConfig
+			}
+		}
+		p.EM = *ur.emailHash
 	}
 	if p.ExternalID == "" {
 		return core.Secret{}, ErrConfig

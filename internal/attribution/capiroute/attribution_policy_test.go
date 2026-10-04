@@ -75,8 +75,8 @@ func TestAdsAttributionAT2FinalConsentBoundary(t *testing.T) {
 func TestAdsAttributionAT2MatchFieldsWire(t *testing.T) {
 	r, f := newFake(t, func(w http.ResponseWriter) { w.Write([]byte(`{"events_received":1,"fbtrace_id":"Synthetic"}`)) })
 	ur := goodUser()
-	fbc, fbp, ip, email := "fb.1.1790000000000.synthetic", "fb.1.1790000000000.456", "192.0.2.8", " Buyer@Example.Test "
-	ur.fbc, ur.fbp, ur.clientIP, ur.email = &fbc, &fbp, &ip, &email
+	fbc, fbp, ip, email := "fb.1.1790000000000.synthetic", "fb.1.1790000000000.456", "192.0.2.8", attribution.HashEmail("buyer@example.test")
+	ur.fbc, ur.fbp, ur.clientIP, ur.emailHash = &fbc, &fbp, &ip, &email
 	sec, err := r.assemble(goodToken(), ur)
 	if err != nil {
 		t.Fatal(err)

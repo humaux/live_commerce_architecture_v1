@@ -231,8 +231,11 @@ func (x *atReportEnv) r10AssertAudienceStates(t *testing.T, report map[string]an
 					t.Fatalf("R10 %s %s must be empty", state, field)
 				}
 			}
-			for _, field := range []string{"orders", "net_minor", "pending_orders", "pending_minor", "ambiguous_orders", "spend_minor"} {
+			for _, field := range []string{"orders", "net_minor", "pending_orders", "pending_minor", "ambiguous_orders"} {
 				atNum(t, s, field, 0)
+			}
+			if s["spend_minor"] != nil {
+				t.Fatal("no Meta evidence must leave session spend unknown")
 			}
 			for _, field := range []string{"comments", "claims", "checkout_links", "paid_orders"} {
 				atNum(t, s["funnel"].(map[string]any), field, 0)
