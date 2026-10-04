@@ -198,3 +198,26 @@ These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries"
     - a legitimate Begin writes the row;
     - an order older than one minute, another session's order, another store's order, and a second freeze all write nothing and still let Begin commit;
     - a Begin with a garbage, expired or foreign touch commits with no row.
+- **R10 Review round 1 (storefront/admin reviewer, `output/ads-attribution-review/REVIEW-storefront-admin.md`, 2026-10-04).**
+  - **P1 fix: order counts.** 「訂單實績」 counts only real paid orders:
+    - card captured;
+    - bank transfer confirmed;
+    - COD or pay-at-pickup collected.
+
+    Uncollected COD appears only under 「待收款」. DRAFT, expired, cancelled and unpaid orders count nowhere. `orders.attribution_metrics` must not expose a bare `count(*)` under a paid/collected label. Add a PG test and a browser assertion with a mixed cohort (paid, refunded, COD pending, unpaid transfer, expired draft) that checks every count.
+  - **P2-1 ruling: signals independent of the touch.** At Begin, freeze valid same-host `lc_fbc`/`lc_fbp` (and `client_ip`) for every order, whether or not a 7-day `lc_ad` touch exists. Merchants also run ads directly in Ads Manager; those landings carry `fbclid` but no `lc_ad`, and their CAPI match quality is the whole point of D5.
+    - `path` and `draft_id` still come only from a valid touch, or from the comment path.
+    - A row may therefore have `path IS NULL` ("signals only"). The reports exclude it.
+    - R3 erasure and IP clearing apply unchanged.
+  - **P2-2 tests.** Browser and PG fixtures render:
+    - 「觀眾數不足，Meta 未提供輪廓」;
+    - the account time-zone label when the zone is not Asia/Taipei;
+    - the provisional 3-day marker;
+    - the 「受推廣貼文帶來」 column.
+  - **P3 fixes, cheap, included:**
+    - ROAS is shown to 2 decimals.
+    - The same `fbclid` already in `lc_fbc` does not re-stamp it.
+    - Add a regression test that a buyer-supplied `X-Forwarded-For` or `Host` is not trusted for `client_ip` or the cookie host beyond the configured edge.
+  - **P3 deferred:**
+    - the `__Host-` cookie prefix (host-only is already enforced);
+    - cookies on unknown or inactive hosts (that page 404s anyway).
