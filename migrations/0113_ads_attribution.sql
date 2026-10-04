@@ -576,7 +576,7 @@ BEGIN
  SELECT coalesce((SELECT st.currency FROM control.stores st WHERE st.tenant_id=a.out_tenant AND st.id=p_store),'TWD') INTO v_currency;
  FOR s IN SELECT * FROM live.attribution_sessions(a.out_tenant,p_store,p_from,p_to) LOOP
   IF jsonb_array_length(sessions)=100 THEN truncated:=true; EXIT; END IF;
-  SELECT array_agg(x.id) INTO ids FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.template='BOOST_POST' AND x.source_ref=ANY(s.post_ids);
+  SELECT array_agg(x.id ORDER BY x.id) INTO ids FROM ads.campaign_drafts x WHERE x.tenant_id=a.out_tenant AND x.store_id=p_store AND x.template='BOOST_POST' AND x.source_ref=ANY(s.post_ids);
   metrics:=orders.attribution_metrics(a.out_tenant,p_store,p_from,p_to,NULL,s.session_id);
   f:=claims.attribution_funnel(a.out_tenant,p_store,s.session_id,p_from,p_to);
   SELECT sum(i.spend_minor)::bigint spend INTO mr FROM ads.insights_daily i
