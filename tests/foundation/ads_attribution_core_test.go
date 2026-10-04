@@ -326,13 +326,13 @@ func TestAdsAttributionAT1BeginFreeze(t *testing.T) {
 			}
 			t.Fatal(err)
 		}
-		var path, draft, fbc, fbp string
-		var ip *string
+		var path, draft string
+		var fbc, fbp, ip *string
 		if err = b.f.owner.QueryRow(context.Background(), `SELECT path,draft_id::text,fbc,fbp,host(client_ip) FROM orders.order_attribution WHERE order_id=$1`, r.OrderID).Scan(&path, &draft, &fbc, &fbp, &ip); err != nil {
 			t.Fatal(err)
 		}
-		if path != "ad_click" || draft != d || fbc != atFBC || fbp != atFBP || ip != nil {
-			t.Fatalf("wrong frozen measurement: %s %s %s %s ip=%v", path, draft, fbc, fbp, ip)
+		if path != "ad_click" || draft != d || fbc != nil || fbp != nil || ip != nil {
+			t.Fatalf("unconsented order must freeze only attribution facts: %s %s fbc=%v fbp=%v ip=%v", path, draft, fbc, fbp, ip)
 		}
 		before := lcStrings(t, b.f.owner, `SELECT row_to_json(a)::text FROM orders.order_attribution a WHERE order_id=$1`, r.OrderID)
 		b.input.AdTouch = atTouch(e.newDraft(adsDraftIn{}), time.Second)

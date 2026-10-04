@@ -79,13 +79,14 @@ type Service struct {
 
 type Input struct {
 	// Private BFF context, deliberately excluded from public JSON and the receipt digest.
-	AdTouch           *AdTouch `json:"-"`
-	ClientIP          string   `json:"-"`
-	QuoteID           string   `json:"quote_id"`
-	DestinationID     string   `json:"destination_id"`
-	CartVersion       int64    `json:"cart_version"`
-	ServiceVersion    int64    `json:"service_version"`
-	AllocationVersion int64    `json:"allocation_version"`
+	AdTouch           *AdTouch   `json:"-"`
+	AdSignals         *AdSignals `json:"-"`
+	ClientIP          string     `json:"-"`
+	QuoteID           string     `json:"quote_id"`
+	DestinationID     string     `json:"destination_id"`
+	CartVersion       int64      `json:"cart_version"`
+	ServiceVersion    int64      `json:"service_version"`
+	AllocationVersion int64      `json:"allocation_version"`
 	// PaymentMode is "card" (or empty, the same thing) or "pay_at_pickup" (§16.2, CVS destinations only; SQL decides).
 	// omitempty keeps the request digest of an old card request unchanged, so pre-upgrade replays still match.
 	// "bank_transfer" (storefront-v2 §C) places the order AWAITING_TRANSFER with the stock reserved for the merchant's window.
@@ -386,15 +387,20 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 			return err
 		}
 		// orders.freeze_attribution (0113): same transaction, no mutation of retained order snapshots.
-		var touch any
+		var touch, signals any
 		if in.AdTouch != nil {
 			// R9: malformed optional measurement is discarded, never a checkout error.
 			if raw, e := json.Marshal(in.AdTouch); e == nil {
 				touch = string(raw)
 			}
 		}
-		if _, err = tx.Exec(callCtx, `SELECT orders.freeze_attribution($1::bytea,$2::uuid,$3::uuid,$4::jsonb,$5::text)`,
-			tokenHash[:], storeID, orderID, touch, ValidClientIP(in.ClientIP)); err != nil {
+		if in.AdSignals != nil {
+			if raw, e := json.Marshal(in.AdSignals); e == nil {
+				signals = string(raw)
+			}
+		}
+		if _, err = tx.Exec(callCtx, `SELECT orders.freeze_attribution($1::bytea,$2::uuid,$3::uuid,$4::jsonb,$5::text,$6::jsonb)`,
+			tokenHash[:], storeID, orderID, touch, ValidClientIP(in.ClientIP), signals); err != nil {
 			return err
 		}
 		if in.BuyerEmail != "" {

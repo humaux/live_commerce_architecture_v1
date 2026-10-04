@@ -117,11 +117,11 @@ const lriAttributionMarker = "lri_prehead_0113_test_only"
 // This is a test fixture adapter, not an attribution implementation. Only the
 // historical schema marker and authenticated ordinary card-order scope pass.
 // There is no money/stock/job/receipt change and no creation-guard replacement.
-const lriAttributionStub = `CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text)
+const lriAttributionStub = `CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text,p_signals jsonb DEFAULT NULL)
  RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path=pg_catalog AS $shim$
  DECLARE s record;
  BEGIN
-  IF p_touch IS NOT NULL OR coalesce(p_ip,'')<>'' THEN
+  IF p_touch IS NOT NULL OR coalesce(p_ip,'')<>'' OR p_signals IS NOT NULL THEN
    RAISE EXCEPTION 'historical fixture cannot carry attribution input' USING ERRCODE='23514';
   END IF;
   IF (SELECT obj_description(n.oid,'pg_namespace') FROM pg_namespace n WHERE n.nspname='orders') IS DISTINCT FROM 'lri_prehead_0113_test_only'
@@ -142,9 +142,9 @@ const lriAttributionStub = `CREATE FUNCTION orders.freeze_attribution(p_hash byt
    RAISE EXCEPTION 'historical fixture cannot carry claim origins' USING ERRCODE='23514';
   END IF;
  END $shim$;
- REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) FROM PUBLIC;
- GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) TO commerce_checkout_runtime;
- COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS 'lri_prehead_0113_test_only';`
+ REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) FROM PUBLIC;
+ GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) TO commerce_checkout_runtime;
+ COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'lri_prehead_0113_test_only';`
 
 func lriAddAttributionStub(ctx context.Context, pool *pgxpool.Pool) error {
 	tx, err := pool.Begin(ctx)
@@ -180,11 +180,11 @@ func lriAddAttributionStub(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 	var fnExists bool
-	if err = tx.QueryRow(ctx, `SELECT to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)') IS NOT NULL`).Scan(&fnExists); err != nil {
+	if err = tx.QueryRow(ctx, `SELECT to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') IS NOT NULL`).Scan(&fnExists); err != nil {
 		return err
 	}
 	if fnExists {
-		if err = tx.QueryRow(ctx, `SELECT obj_description(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)'),'pg_proc')`).Scan(&marker); err != nil {
+		if err = tx.QueryRow(ctx, `SELECT obj_description(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)'),'pg_proc')`).Scan(&marker); err != nil {
 			return err
 		}
 		if marker == nil || *marker != lriAttributionMarker {
@@ -237,10 +237,10 @@ func lriDropAttributionShims(ctx context.Context, pool *pgxpool.Pool) error {
 		var foreign int
 		if err = tx.QueryRow(ctx, `SELECT (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='orders')+
  (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='orders' AND
- (p.oid<>coalesce(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)')::oid,0) OR obj_description(p.oid,'pg_proc') IS DISTINCT FROM 'lri_prehead_0113_test_only' OR p.prosecdef))`).Scan(&foreign); err != nil || foreign != 0 {
+ (p.oid<>coalesce(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)')::oid,0) OR obj_description(p.oid,'pg_proc') IS DISTINCT FROM 'lri_prehead_0113_test_only' OR p.prosecdef))`).Scan(&foreign); err != nil || foreign != 0 {
 			return fmt.Errorf("refusing orders shim schema with %d foreign/data objects (err %v)", foreign, err)
 		}
-		if _, err = tx.Exec(ctx, `DROP FUNCTION IF EXISTS orders.freeze_attribution(bytea,uuid,uuid,jsonb,text); DROP SCHEMA orders`); err != nil {
+		if _, err = tx.Exec(ctx, `DROP FUNCTION IF EXISTS orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb); DROP SCHEMA orders`); err != nil {
 			return err
 		}
 	}
@@ -371,7 +371,7 @@ func TestLegacyRuntimeIsolationAttributionShimsRestricted(t *testing.T) {
 			t.Fatalf("historical attribution adapter mutated %s", table)
 		}
 	}
-	if miCount(t, f.owner, `SELECT count(*) FROM pg_proc WHERE oid=to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)') AND NOT prosecdef
+	if miCount(t, f.owner, `SELECT count(*) FROM pg_proc WHERE oid=to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') AND NOT prosecdef
 	 AND NOT has_function_privilege('commerce_buyer_runtime',oid,'EXECUTE') AND has_function_privilege('commerce_checkout_runtime',oid,'EXECUTE')`) != 1 {
 		t.Fatal("shim must remain invoker with checkout-only execution")
 	}
@@ -383,7 +383,7 @@ func TestLegacyRuntimeIsolationAttributionShimsCleanup(t *testing.T) {
 	ctx := context.Background()
 	columnAndFunction := func() bool {
 		return miCount(t, f.owner, `SELECT count(*) FROM pg_attribute WHERE attrelid='storefront.cart_lines'::regclass AND attname='claim_line_version' AND NOT attisdropped
-	 AND to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)') IS NOT NULL`) == 1
+	 AND to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)') IS NOT NULL`) == 1
 	}
 	ledger := lriRows(t, f, "public.lc_schema_migrations", "")
 	// Explicitly defeat only the test-only CHECK to probe held-data cleanup.
@@ -401,11 +401,11 @@ func TestLegacyRuntimeIsolationAttributionShimsCleanup(t *testing.T) {
 	mustExec(t, f.owner, `DROP TABLE orders.lri_foreign_data`) // only this probe's table, no CASCADE
 	// The exact signature is insufficient proof of ownership; a lost marker
 	// must retain the entire adapter, including its column.
-	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS NULL`)
+	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS NULL`)
 	if err := lriDropAttributionShims(ctx, f.owner); err == nil || !columnAndFunction() {
 		t.Fatalf("unowned function cleanup was not rejected atomically: %v", err)
 	}
-	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS 'lri_prehead_0113_test_only'`)
+	mustExec(t, f.owner, `COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'lri_prehead_0113_test_only'`)
 	if err := lriDropAttributionShims(ctx, f.owner); err != nil {
 		t.Fatal("clean empty owned adapter", err)
 	}
@@ -427,7 +427,7 @@ func TestLegacyRuntimeIsolationAttributionShimsHeadUntouched(t *testing.T) {
 	}
 	objects := func() string {
 		var out string
-		if err := f.owner.QueryRow(ctx, `SELECT jsonb_build_object('function',pg_get_functiondef(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text)')),
+		if err := f.owner.QueryRow(ctx, `SELECT jsonb_build_object('function',pg_get_functiondef(to_regprocedure('orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)')),
 	 'relations',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.oid) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='orders'),
 	 'constraints',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.oid) FROM pg_constraint c WHERE c.conrelid='storefront.cart_lines'::regclass),
 	 'ledger',(SELECT to_jsonb(m) FROM public.lc_schema_migrations m WHERE version='0113_ads_attribution.sql'))::text`).Scan(&out); err != nil {

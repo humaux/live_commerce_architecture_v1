@@ -8,14 +8,15 @@ CREATE UNIQUE INDEX checkout_orders_attribution_scope ON checkout.orders(tenant_
 COMMENT ON INDEX checkout.checkout_orders_attribution_scope IS 'internal/attribution: composite foreign key prevents attaching context to another store order.';
 CREATE TABLE orders.order_attribution (
  order_id uuid PRIMARY KEY, tenant_id uuid NOT NULL, store_id uuid NOT NULL,
- path text NOT NULL CHECK(path IN ('ad_click','boosted_post')), draft_id uuid, post_id text,
+ path text CHECK(path IN ('ad_click','boosted_post')), draft_id uuid, post_id text,
  clicked_at timestamptz, frozen_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  fbc text CHECK(fbc ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$' AND char_length(split_part(fbc,'.',4))<=500),
  fbp text CHECK(fbp ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$'), client_ip inet,
  FOREIGN KEY(tenant_id,store_id,order_id) REFERENCES checkout.orders(tenant_id,store_id,id),
  FOREIGN KEY(tenant_id,store_id,draft_id) REFERENCES ads.campaign_drafts(tenant_id,store_id,id),
- CHECK((path='ad_click' AND draft_id IS NOT NULL AND clicked_at IS NOT NULL) OR
-       (path='boosted_post' AND post_id IS NOT NULL AND clicked_at IS NULL)));
+ CHECK(((path='ad_click' AND draft_id IS NOT NULL AND post_id IS NULL AND clicked_at IS NOT NULL) OR
+        (path='boosted_post' AND post_id IS NOT NULL AND clicked_at IS NULL) OR
+        (path IS NULL AND draft_id IS NULL AND post_id IS NULL AND clicked_at IS NULL)) IS TRUE));
 CREATE INDEX order_attribution_draft ON orders.order_attribution(tenant_id,store_id,draft_id,frozen_at);
 ALTER TABLE orders.order_attribution ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders.order_attribution FORCE ROW LEVEL SECURITY;
@@ -129,7 +130,17 @@ REVOKE ALL ON FUNCTION ads.capi_ip_needed(uuid,uuid,uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ads.capi_ip_needed(uuid,uuid,uuid,uuid) TO commerce_checkout_writer;
 COMMENT ON FUNCTION ads.capi_ip_needed(uuid,uuid,uuid,uuid) IS 'internal/attribution R3 checkout-only eligibility probe; no secrets or facts exposed; terminal/unconsented/disabled contexts need no IP.';
 
-CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text) RETURNS void
+-- Only the privacy domain decides consent. No direct consent-table grant to checkout.
+CREATE FUNCTION ads.order_signals_allowed(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT customers.consent_allows(p_tenant,p_store,p_owner,'ads_personalization','meta_ads')
+$$;
+ALTER FUNCTION ads.order_signals_allowed(uuid,uuid,uuid) OWNER TO commerce_ads_writer;
+REVOKE ALL ON FUNCTION ads.order_signals_allowed(uuid,uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ads.order_signals_allowed(uuid,uuid,uuid) TO commerce_checkout_writer;
+COMMENT ON FUNCTION ads.order_signals_allowed(uuid,uuid,uuid) IS 'internal/attribution: narrow consent predicate for consented first-party matching context, independent of attribution touch or CAPI configuration.';
+
+CREATE FUNCTION orders.freeze_attribution(p_hash bytea,p_store uuid,p_order uuid,p_touch jsonb,p_ip text,p_signals jsonb DEFAULT NULL) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE s record; o record; d uuid; ds uuid[]; posts text[]; click_at timestamptz;
  v_path text; v_post text; v_fbc text; v_fbp text; v_ip inet;
@@ -161,8 +172,6 @@ BEGIN
    SELECT m.draft_id INTO d FROM ads.attribution_match(s.tenant_id,p_store,(p_touch->>'draft_id')::uuid,NULL,NULL) m;
    IF d IS NOT NULL THEN
     v_path:='ad_click';
-    IF p_touch->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$' AND char_length(split_part(p_touch->>'fbc','.',4))<=500 THEN v_fbc:=p_touch->>'fbc'; END IF;
-    IF p_touch->>'fbp' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$' THEN v_fbp:=p_touch->>'fbp'; END IF;
    END IF;
   END IF;
  END IF;
@@ -176,18 +185,28 @@ BEGIN
    IF cardinality(ds)>0 THEN v_path:='boosted_post'; d:=CASE WHEN cardinality(ds)=1 THEN ds[1] ELSE NULL END; click_at:=NULL; END IF;
   END IF;
  END IF;
- IF v_path IS NULL THEN RETURN; END IF;
- IF o.payment_mode='card' AND ads.capi_ip_needed(s.tenant_id,p_store,s.owner_id,NULL) THEN
+ -- R10: independently authenticated 90-day IDs are not the seven-day draft touch.
+ -- Never rescue stale embedded IDs from p_touch when their independent cookie failed validation.
+ IF ads.order_signals_allowed(s.tenant_id,p_store,s.owner_id) THEN
+  IF jsonb_typeof(p_signals)='object' THEN
+   IF p_signals->>'fbc' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]+$'
+    AND char_length(split_part(p_signals->>'fbc','.',4))<=500 THEN v_fbc:=p_signals->>'fbc'; END IF;
+   IF p_signals->>'fbp' ~ '^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$' THEN v_fbp:=p_signals->>'fbp'; END IF;
+  END IF;
   BEGIN v_ip:=nullif(p_ip,'')::inet; EXCEPTION WHEN invalid_text_representation THEN v_ip:=NULL; END;
+ END IF;
+ IF v_path IS NULL THEN
+  d:=NULL; v_post:=NULL; click_at:=NULL;
+  IF v_fbc IS NULL AND v_fbp IS NULL AND v_ip IS NULL THEN RETURN; END IF;
  END IF;
  INSERT INTO orders.order_attribution(order_id,tenant_id,store_id,path,draft_id,post_id,clicked_at,fbc,fbp,client_ip)
  VALUES(p_order,s.tenant_id,p_store,v_path,d,CASE WHEN v_path='boosted_post' THEN v_post ELSE NULL END,click_at,v_fbc,v_fbp,v_ip)
  ON CONFLICT(order_id) DO NOTHING;
 END $$;
-ALTER FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) OWNER TO commerce_checkout_writer;
-REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) TO commerce_checkout_runtime;
-COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text) IS 'internal/checkout R9: authenticated creating session within one minute, write-once; ineligible attribution is a no-op. Same Begin transaction, click beats exact comment, ambiguous boost draft NULL. No money or immutable snapshot mutation.';
+ALTER FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) TO commerce_checkout_runtime;
+COMMENT ON FUNCTION orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) IS 'internal/checkout R9/R10: authenticated creating session within one minute, write-once; ineligible attribution is a no-op. Same Begin transaction, click beats exact comment, ambiguous boost draft NULL. Independent consented matching signals may have NULL path and never count in reports. No money or immutable snapshot mutation.';
 
 CREATE FUNCTION orders.erase_ad_context(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -359,15 +378,25 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   CASE WHEN o.payment_mode='card' THEN coalesce(f.captured,0)-coalesce(f.refunded,0)
    WHEN o.payment_mode IN ('pay_at_pickup','cash_on_delivery') AND o.collection_state='COLLECTED' THEN o.total_minor+coalesce(o.cod_surcharge_minor,0)
    WHEN o.payment_mode='bank_transfer' AND bt.state='CONFIRMED' THEN o.total_minor ELSE 0 END::bigint AS net_minor,
-  (coalesce(f.captured,0)>0 OR o.collected_at IS NOT NULL OR bt.confirmed_at IS NOT NULL) AS paid,
-  (o.collection_state='PENDING' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION')) IS TRUE AS pending,
+  (o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND CASE o.payment_mode WHEN 'card' THEN coalesce(f.captured,0)>0
+   WHEN 'bank_transfer' THEN bt.confirmed_at IS NOT NULL
+   WHEN 'cash_on_delivery' THEN o.collected_at IS NOT NULL
+   WHEN 'pay_at_pickup' THEN o.collected_at IS NOT NULL ELSE false END) IS TRUE AS paid,
+  (o.payment_mode IN ('cash_on_delivery','pay_at_pickup') AND o.collection_state='PENDING'
+   AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION')) IS TRUE AS pending,
   o.total_minor+coalesce(o.cod_surcharge_minor,0) AS due,
   coalesce(
    substring(btrim(o.snapshot#>>'{destination,home_address,region}') FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)$'),
    substring(btrim(o.snapshot#>>'{destination,home_address,city}') FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)$'),
    substring(o.snapshot#>>'{destination,pickup,address}' FROM '^(臺北市|台北市|新北市|桃園市|臺中市|台中市|臺南市|台南市|高雄市|基隆市|新竹市|嘉義市|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|台東縣|澎湖縣|金門縣|連江縣)'), '—') AS county,
   EXISTS(SELECT 1 FROM checkout.orders old WHERE old.tenant_id=o.tenant_id AND old.store_id=o.store_id AND old.owner_id=o.owner_id
-   AND (old.created_at,old.id)<(o.created_at,o.id) AND (old.commercial_state='CONFIRMED' OR old.collected_at IS NOT NULL)) AS is_returning
+   AND (old.created_at,old.id)<(o.created_at,o.id) AND old.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION')
+   AND ((old.payment_mode IN ('pay_at_pickup','cash_on_delivery') AND old.collected_at IS NOT NULL)
+    OR (old.payment_mode='bank_transfer' AND EXISTS(SELECT 1 FROM checkout.bank_transfers prior
+     WHERE prior.tenant_id=old.tenant_id AND prior.store_id=old.store_id AND prior.order_id=old.id AND prior.confirmed_at IS NOT NULL))
+    OR (old.payment_mode='card' AND EXISTS(SELECT 1 FROM checkout.payment_attempts pa JOIN payments.facts pf
+     ON pf.tenant_id=pa.tenant_id AND pf.store_id=pa.store_id AND pf.attempt_id=pa.id AND pf.kind='CAPTURED' AND pf.amount_minor>0
+     WHERE pa.tenant_id=old.tenant_id AND pa.store_id=old.store_id AND pa.order_id=old.id)))) AS is_returning
  FROM checkout.orders o LEFT JOIN orders.order_attribution a ON a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.order_id=o.id
  LEFT JOIN checkout.bank_transfers bt ON bt.tenant_id=o.tenant_id AND bt.store_id=o.store_id AND bt.order_id=o.id
  LEFT JOIN LATERAL (SELECT
@@ -376,25 +405,28 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   (SELECT sum(x.amount_minor) FROM checkout.payment_attempts p JOIN payments.refund_facts x ON x.tenant_id=p.tenant_id AND x.store_id=p.store_id AND x.attempt_id=p.id AND x.kind='SUCCEEDED'
    WHERE p.tenant_id=o.tenant_id AND p.store_id=o.store_id AND p.order_id=o.id) AS refunded) f ON true
  WHERE o.tenant_id=p_tenant AND o.store_id=p_store
+  -- R10: signals-only rows are not attribution. All performance counts below are
+  -- paid-only; pending collection is separate, never an implicit order count.
+  AND (a.order_id IS NULL OR a.path IS NOT NULL)
   AND o.created_at>=p_from::timestamp AT TIME ZONE 'Asia/Taipei' AND o.created_at<(p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei'
   AND ((p_draft IS NOT NULL AND a.draft_id=p_draft) OR (p_session IS NOT NULL AND o.id IN
    (SELECT * FROM claims.attribution_session_orders(p_tenant,p_store,p_session))))
  ), counts AS (
- SELECT count(*)::bigint orders,coalesce(sum(net_minor),0)::bigint net_minor,count(*) FILTER(WHERE pending)::bigint pending_orders,
+ SELECT count(*) FILTER(WHERE paid)::bigint orders,coalesce(sum(net_minor) FILTER(WHERE paid),0)::bigint net_minor,count(*) FILTER(WHERE pending)::bigint pending_orders,
   coalesce(sum(due) FILTER(WHERE pending),0)::bigint pending_minor,count(*) FILTER(WHERE paid)::bigint paid_orders,
-  count(*) FILTER(WHERE path='boosted_post' AND draft_id IS NULL)::bigint ambiguous_orders FROM cohort
+  count(*) FILTER(WHERE paid AND path='boosted_post' AND draft_id IS NULL)::bigint ambiguous_orders FROM cohort
  ), customer_groups AS (SELECT owner_id,bool_or(is_returning) AS is_returning FROM cohort WHERE paid GROUP BY owner_id)
  SELECT to_jsonb(counts)||jsonb_build_object(
- 'paths',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT path,count(*)::bigint orders,sum(net_minor)::bigint net_minor,
+ 'paths',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT path,count(*) FILTER(WHERE paid)::bigint orders,coalesce(sum(net_minor) FILTER(WHERE paid),0)::bigint net_minor,
   count(*) FILTER(WHERE pending)::bigint pending_orders,coalesce(sum(due) FILTER(WHERE pending),0)::bigint pending_minor
   FROM cohort WHERE path IS NOT NULL GROUP BY path ORDER BY path) x),'[]'::jsonb),
  'buyers',jsonb_build_object(
   'counties',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT county AS name,count(*)::bigint orders,sum(net_minor)::bigint net_minor FROM cohort WHERE paid GROUP BY county ORDER BY count(*) DESC,county) x),'[]'::jsonb),
   'new_buyers',(SELECT count(*) FROM customer_groups WHERE NOT is_returning),'returning_buyers',(SELECT count(*) FROM customer_groups WHERE is_returning),
-  'average_order_minor',(SELECT CASE WHEN count(*) FILTER(WHERE paid)>0 THEN round(sum(net_minor)::numeric/(count(*) FILTER(WHERE paid)))::bigint ELSE NULL END FROM cohort),
+  'average_order_minor',(SELECT CASE WHEN count(*) FILTER(WHERE paid)>0 THEN round((sum(net_minor) FILTER(WHERE paid))::numeric/(count(*) FILTER(WHERE paid)))::bigint ELSE NULL END FROM cohort),
   'top_products',coalesce((SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT line->>'product_id' AS product_id,min(line->>'name') AS name,sum((line->>'quantity')::bigint)::bigint quantity
    FROM cohort CROSS JOIN LATERAL jsonb_array_elements(snapshot#>'{quote,lines}') line WHERE paid GROUP BY line->>'product_id' ORDER BY sum((line->>'quantity')::bigint) DESC,line->>'product_id' LIMIT 20) x),'[]'::jsonb),
-  'orders_per_minute',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY at) FROM (SELECT date_trunc('minute',created_at) AS at,count(*)::bigint orders,sum(net_minor)::bigint net_minor FROM cohort GROUP BY date_trunc('minute',created_at)) x),'[]'::jsonb))) FROM counts
+  'orders_per_minute',coalesce((SELECT jsonb_agg(to_jsonb(x) ORDER BY at) FROM (SELECT date_trunc('minute',created_at) AS at,count(*)::bigint orders,sum(net_minor)::bigint net_minor FROM cohort WHERE paid GROUP BY date_trunc('minute',created_at)) x),'[]'::jsonb))) FROM counts
 $$;
 ALTER FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) FROM PUBLIC;

@@ -180,8 +180,11 @@ func TestBrowserAdsAttributionCheckout(t *testing.T) {
 			if len(paths) != 1 {
 				t.Fatal("ad draft must have one ad_click aggregate")
 			}
-			atNum(t, paths[0].(map[string]any), "orders", 6)
+			// Six real origins above are unpaid transfers, not collected performance.
+			atNum(t, paths[0].(map[string]any), "orders", 0)
 			atNum(t, paths[0].(map[string]any), "pending_orders", 0)
+			atNum(t, paths[0].(map[string]any), "net_minor", 0)
+			atNum(t, paths[0].(map[string]any), "pending_minor", 0)
 		}
 	}
 	if !found {
@@ -190,7 +193,7 @@ func TestBrowserAdsAttributionCheckout(t *testing.T) {
 	atBrowserShots(t, evidence)
 	adminEvidence := brfEvidence(t, root, "ads-attribution-checkout-admin")
 	stack := mabStartAdmin(t, ctx, c.f, c.creator, adminEvidence, httpapi.Options{SessionStoreList: true, Ads: c.svc})
-	fixture := map[string]any{"from": taipeiDay(0), "to": taipeiDay(0), "draft_id": d, "orders": 6, "net_minor": 0, "path": "ad_click"}
+	fixture := map[string]any{"from": taipeiDay(0), "to": taipeiDay(0), "draft_id": d, "orders": 0, "net_minor": 0, "pending_orders": 0, "pending_minor": 0, "path": "ad_click"}
 	brfPlaywright(t, ctx, stack, []string{"attribution-checkout.spec.ts"}, map[string]string{"LC_BROWSER_STORE": c.store, "LC_ATTRIBUTION_CHECKOUT_FIXTURE": mustJSON(t, fixture)})
 	atBrowserShots(t, adminEvidence)
 }

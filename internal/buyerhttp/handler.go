@@ -768,8 +768,14 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	case checkoutRoute:
 		var in checkout.Input
 		if err = decodeJSON(r, &in); err == nil {
-			in.AdTouch = checkout.ParseAdTouch(r.Header.Get("X-Commerce-Ad-Touch"), time.Now())
-			in.ClientIP = checkout.ValidClientIP(r.Header.Get("X-Commerce-Client-IP"))
+			// This route is already BFF-authenticated. Duplicate/malformed optional
+			// measurement is discarded, not interpreted as buyer authority.
+			touch, _ := oneHeader(r, "X-Commerce-Ad-Touch")
+			signals, _ := oneHeader(r, "X-Commerce-Ad-Signals")
+			ip, _ := oneHeader(r, "X-Commerce-Client-IP")
+			in.AdTouch = checkout.ParseAdTouch(touch, time.Now())
+			in.AdSignals = checkout.ParseAdSignals(signals)
+			in.ClientIP = checkout.ValidClientIP(ip)
 			var result checkout.Result
 			result, err = h.checkout.Begin(ctx, token, storeID, key, in)
 			if err == nil {

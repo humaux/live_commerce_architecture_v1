@@ -21,6 +21,32 @@ type AdTouch struct {
 	FBP       string    `json:"fbp"`
 }
 
+// AdSignals are separately authenticated by the BFF's host-bound, 90-day cookies.
+// They improve consented CAPI matching, but never establish an attribution path.
+type AdSignals struct {
+	FBC *string `json:"fbc"`
+	FBP *string `json:"fbp"`
+}
+
+// ParseAdSignals discards malformed optional measurement without denying checkout.
+func ParseAdSignals(raw string) *AdSignals {
+	if len(raw) == 0 || len(raw) > 2048 {
+		return nil
+	}
+	b, err := base64.RawURLEncoding.Strict().DecodeString(raw)
+	if err != nil || base64.RawURLEncoding.EncodeToString(b) != raw {
+		return nil
+	}
+	var s AdSignals
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.DisallowUnknownFields()
+	if d.Decode(&s) != nil || d.Decode(new(any)) != io.EOF || (s.FBC == nil && s.FBP == nil) ||
+		(s.FBC != nil && !metaClickID.MatchString(*s.FBC)) || (s.FBP != nil && !metaBrowserID.MatchString(*s.FBP)) {
+		return nil
+	}
+	return &s
+}
+
 var metaClickID = regexp.MustCompile(`^fb\.1\.[1-9][0-9]{0,15}\.[A-Za-z0-9_-]{1,500}$`)
 var metaBrowserID = regexp.MustCompile(`^fb\.1\.[1-9][0-9]{0,15}\.[0-9]{1,20}$`)
 
