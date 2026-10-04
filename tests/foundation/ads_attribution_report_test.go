@@ -80,6 +80,8 @@ type atReportEnv struct {
 	stateSessions                map[string]string
 	expected                     map[string]any
 	r11UnknownDraft              string
+	audienceOperation            string
+	freshAudienceSessions        map[string]string
 }
 
 // Minimal Page intake assembly on the Stripe fixture's isolated PG cluster.
@@ -144,7 +146,7 @@ func atReportClaims(t *testing.T, o rfxOrder) *mciEnv {
 	return m
 }
 
-func atNewReportEnv(t *testing.T) *atReportEnv {
+func atNewReportEnv(t *testing.T, freshAudienceKeys ...string) *atReportEnv {
 	t.Helper()
 	r := srfNew(t) // historical paid order: the returning owner's real previous purchase
 	p := r.base.s.p
@@ -319,7 +321,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	m.pageToken = "SENTINEL-READONLY-PAGE-AT9-" + t04Tag()
 	m.registerToken(t, "facebook", m.pageBinding, m.pageAsset, []string{"read_insights", "pages_read_engagement"}, m.pageToken)
 	mustExec(t, p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read') ON CONFLICT DO NOTHING`, p.f.tenantA, p.f.storeA1, e.creator)
-	graph := x.r10AudienceStates(t)
+	graph := x.r10AudienceStates(t, freshAudienceKeys...)
 	pool := miPool(t, p.f, waClaims)
 	routes, err := metareply.AudienceRoutes(pool, m.pageKeys, nil, metareply.Config{GraphBaseURL: graph.srv.URL, GraphVersion: "v26.0"})
 	if err != nil {
@@ -335,6 +337,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		t.Fatal("actual audience plan operation missing")
 	}
 	m.awaitOp(t, op, "SUCCEEDED", 8*time.Second, "completed")
+	x.audienceOperation = op
 	read = e.api("POST", "/sessions/"+x.stateSessions["insufficient"]+"/audience-read", e.token, adsKey(), nil)
 	if read.Status != 200 {
 		t.Fatalf("R10 insufficient actual audience plan=%d", read.Status)
@@ -366,7 +369,7 @@ func (x *atReportEnv) browserFixture() map[string]any {
 	if err != nil {
 		panic(err)
 	}
-	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "expected": x.expected, "state_sessions": x.stateSessions, "meta_account_timezone": "America/Los_Angeles", "provisional": true,
+	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "audience_operation_id": x.audienceOperation, "fresh_audience_sessions": x.freshAudienceSessions, "expected": x.expected, "state_sessions": x.stateSessions, "meta_account_timezone": "America/Los_Angeles", "provisional": true,
 		"unknown_draft_id": x.r11UnknownDraft, "truncated": x.r11UnknownDraft != "", "breakdowns_unavailable": []map[string]any{{"day": x.day, "dimensions": []string{"age_gender"}}}, "unknown_breakdown": map[string]any{"dimension": "hourly", "bucket": "13:00:00 - 13:59:59"},
 		"live_audience":     map[string]any{"status": "available", "views": 34, "peak_concurrent": nil, "total_view_time_ms": nil, "age_gender": []map[string]any{{"bucket": "F.25-34", "view_time_ms": 1234}}, "regions": []map[string]any{{"bucket": "Taipei", "view_time_ms": 4321}}},
 		"forbidden_private": []string{atPrivateStreet, atPrivateCity},

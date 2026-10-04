@@ -76,7 +76,7 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 	atBrowserRequire(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
-	x := atNewReportEnv(t)
+	x := atNewReportEnv(t, "en/390", "en/1586", "zh-TW/390", "zh-TW/1586", "zh-CN/390", "zh-CN/1586")
 	x.assertReport(t) // strict PG equality before any UI observation
 	x.r11BrowserCap(t)
 	// Synthetic merchant grants are fixture preparation, not a browser action.
@@ -86,6 +86,16 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 	stack := mabStartAdmin(t, ctx, x.f, x.creator, evidence, httpapi.Options{SessionStoreList: true, Ads: x.svc})
 	brfPlaywright(t, ctx, stack, []string{"attribution.spec.ts"}, map[string]string{"LC_BROWSER_STORE": x.store, "LC_ATTRIBUTION_FIXTURE": mustJSON(t, x.browserFixture())})
 	atBrowserShots(t, evidence)
+	// R11: distinct HTTP keys may acknowledge an existing completed read.
+	// Browser clicks must never create a second operation for the same video.
+	for key, session := range x.freshAudienceSessions {
+		if n := x.count(`SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.live_insights' AND request->>'session_id'=$3`, x.tenant, x.store, session); n != 1 {
+			t.Fatalf("fresh audience %s operation count=%d want 1", key, n)
+		}
+	}
+	if n := x.count(`SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.live_insights' AND request->>'session_id'=$3`, x.tenant, x.store, x.m.session); n != 1 {
+		t.Fatalf("completed audience replay operation count=%d want 1", n)
+	}
 	x.assertReport(t) // browser reads and refused audience requests cannot alter money/cohort
 }
 

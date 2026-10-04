@@ -147,12 +147,13 @@ func (x *atReportEnv) r10AssertBuyerCounts(t *testing.T, buyers map[string]any, 
 
 type atR10Graph struct{ srv *httptest.Server }
 
-func (x *atReportEnv) r10AudienceStates(t *testing.T) *atR10Graph {
+func (x *atReportEnv) r10AudienceStates(t *testing.T, freshKeys ...string) *atR10Graph {
 	t.Helper()
 	m, f := x.m, x.m.h.f
 	x.stateSessions = map[string]string{}
+	x.freshAudienceSessions = map[string]string{}
 	posts := map[string]string{m.pageAsset: m.postID}
-	for _, state := range []string{"insufficient", "not_authorized"} {
+	for _, state := range append([]string{"insufficient", "not_authorized"}, freshKeys...) {
 		// Actual same-store sessions and registered Page custody; only the
 		// missing-scope variant lacks read_insights. No fake report JSON.
 		v := &mciEnv{t: t, h: m.h, page: m.page, pageKeys: m.pageKeys, stopConsumer: mciNoop, session: m.h.draft(t, f.storeA1), pageAsset: miAsset()}
@@ -160,7 +161,7 @@ func (x *atReportEnv) r10AudienceStates(t *testing.T) *atR10Graph {
 		miRoute(t, v.page, v.pageAsset, f.tenantA, f.storeA1, v.pageBinding)
 		v.pageToken = "SENTINEL-R10-READONLY-PAGE-" + t04Tag()
 		scopes := []string{"pages_read_engagement"}
-		if state == "insufficient" {
+		if state != "not_authorized" {
 			scopes = append(scopes, "read_insights")
 		}
 		v.registerToken(t, "facebook", v.pageBinding, v.pageAsset, scopes, v.pageToken)
@@ -168,8 +169,14 @@ func (x *atReportEnv) r10AudienceStates(t *testing.T) *atR10Graph {
 		v.postID = v.pageAsset + "_" + mciDigits(10)
 		v.srcFB = v.mustSource(t, "page", v.pageAsset, v.postID, false)
 		m.h.closeWindow(t, v.session)
-		x.stateSessions[state] = v.session
-		if state == "insufficient" {
+		if state == "insufficient" || state == "not_authorized" {
+			x.stateSessions[state] = v.session
+		} else {
+			// Browser-only no-read source: each locale/width can retain the
+			// exact first READY assertion independently of cooldown replays.
+			x.freshAudienceSessions[state] = v.session
+		}
+		if state != "not_authorized" {
 			posts[v.pageAsset] = v.postID
 		}
 		t.Cleanup(func() {
