@@ -2,6 +2,13 @@
 const maxMoney = 1_000_000_000_000;
 export const currencySign = (currency: string) =>
   currency === "TWD" ? "NT$" : currency;
+/** Localized fixed-precision numbers, including non-monetary report ratios. */
+export function decimal(locale: string, value: number, digits: number) {
+  return new Intl.NumberFormat(locale, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
 export function money(locale: string, currency: string, minor: number) {
   const digits = new Intl.NumberFormat(locale, {
     style: "currency",

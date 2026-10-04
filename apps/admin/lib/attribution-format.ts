@@ -1,5 +1,6 @@
 // Display only: the frozen Go/PG report supplies the ratio and amount facts.
 import type { Locale } from "@live-commerce/i18n";
+import { decimal } from "@live-commerce/format";
 
 export function formatROAS(
   locale: Locale,
@@ -7,8 +8,5 @@ export function formatROAS(
   unknown: string,
 ): string {
   if (value === null || !Number.isFinite(value)) return unknown;
-  return `${new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)}×`;
+  return `${decimal(locale, value, 2)}×`;
 }
