@@ -111,6 +111,7 @@
 }
 .attribution-scroll table {
   width: 100%;
+  table-layout: auto;
   border-collapse: collapse;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
@@ -123,7 +124,8 @@
   text-align: right;
   white-space: nowrap;
 }
-.attribution-scroll thead th {
+.attribution-page .attribution-scroll thead th {
+  width: auto;
   background: #f2f5f9;
   color: #4b5f78;
   font-weight: 600;

@@ -278,6 +278,65 @@ async function audienceFacts(page: Page, locale: Locale) {
   }
 }
 
+async function tableLayout(page: Page, locale: Locale, width: number) {
+  const orders = page.getByTestId("attribution-order-paths").first();
+  await expect(orders).toBeVisible();
+  const headers = await page
+    .locator(".attribution-scroll table thead tr")
+    .evaluateAll((rows) =>
+      rows.map((row) =>
+        Array.from(row.children).map((cell) => {
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const rect = range.getBoundingClientRect();
+          return {
+            text: cell.textContent,
+            left: rect.left,
+            right: rect.right,
+            width: rect.width,
+            height: rect.height,
+          };
+        }),
+      ),
+    );
+  await writeFile(
+    path.join(evidence, `table-layout-${locale}-${width}.json`),
+    JSON.stringify(headers, null, 2),
+  );
+  expect(headers.length).toBeGreaterThan(0);
+  for (const cells of headers) {
+    expect(cells.length).toBeGreaterThan(1);
+    for (const [index, cell] of cells.entries()) {
+      expect(cell.text?.trim().length).toBeGreaterThan(0);
+      expect(
+        [cell.left, cell.right, cell.width, cell.height].every(Number.isFinite),
+      ).toBe(true);
+      expect(cell.width).toBeGreaterThan(0);
+      expect(cell.height).toBeGreaterThan(0);
+      if (index > 0)
+        expect(
+          cells[index - 1].right,
+          `Header text overlaps: ${cells[index - 1].text} / ${cell.text}`,
+        ).toBeLessThanOrEqual(cell.left);
+    }
+  }
+  if (width === 390) {
+    const region = orders.locator("..");
+    expect(
+      await region.evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeGreaterThan(0);
+    expect(await region.evaluate((el) => el.scrollLeft)).toBe(0);
+    await region.click({ position: { x: 8, y: 8 } });
+    await expect(region).toBeFocused();
+    await region.press("ArrowRight");
+    await expect
+      .poll(() => region.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(0);
+    await region.press("ArrowLeft");
+    await expect.poll(() => region.evaluate((el) => el.scrollLeft)).toBe(0);
+  }
+}
+
 async function reportShot(page: Page, locale: Locale, width: number) {
   const file = `attribution-${locale}-${width}.png`;
   await page.screenshot({ path: path.join(evidence, file), fullPage: true });
@@ -438,7 +497,9 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         await page.getByTestId("attribution-from").fill("2020-01-01");
         await page.getByTestId("attribution-apply").click();
-        await expect(page.getByTestId("ads-attribution").getByRole("alert")).toHaveText(c.invalid);
+        await expect(
+          page.getByTestId("ads-attribution").getByRole("alert"),
+        ).toHaveText(c.invalid);
         ledger.push({
           control: "invalid range",
           action: "fill/click",
@@ -454,6 +515,15 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             () => document.documentElement.scrollWidth - innerWidth,
           ),
         ).toBeLessThanOrEqual(1);
+        await tableLayout(page, locale, width);
+        ledger.push({
+          control: "report tables",
+          action:
+            width === 390 ? "measure/click/ArrowRight/ArrowLeft" : "measure",
+          expected:
+            "nonempty header text does not overlap; mobile local overflow is keyboard reachable",
+          actual: "PASS",
+        });
         await reportShot(page, locale, width);
         await page.getByTestId("attribution-back").click();
         await expect(page.getByTestId("merchant-ads")).toBeVisible();
