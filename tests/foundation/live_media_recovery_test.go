@@ -1481,6 +1481,16 @@ func TestLiveMediaRecoveryMRR02RealNinetySecondMiss(t *testing.T) {
 	launchedAt.Store(launched)
 	parent := lmwProcess(t, binary, "mrr-real-timeout", env)
 	episode := mrrWaitEpisode(t, h.lp.f.owner, launched)
+	// The 90 s budget runs from the supervisor's own t0 (episode start, after process start), not from `launched`:
+	// under load the startup gap made a last in-budget query look late (calls=12 late=1). capture_elapsed_ms is t0-relative
+	// and sampled before the row exists, so seen-capture is an upper bound of t0: a call after it+90 s is a real violation.
+	seen := time.Now()
+	var captureMS int64
+	if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT capture_elapsed_ms FROM live.media_recovery_episode_scope WHERE episode_id=$1`, episode).Scan(&captureMS); err != nil {
+		t.Fatal(err)
+	}
+	launchedAt.Store(seen.Add(-time.Duration(captureMS) * time.Millisecond))
+	t.Logf("supervisor t0 upper bound is %s after launch", seen.Add(-time.Duration(captureMS)*time.Millisecond).Sub(launched))
 	read := mrrWaitReadback(t, recovery, episode, launched.Add(105*time.Second), func(r mrrReadback) bool { return r.timeoutAt != nil })
 	if time.Since(launched) < 90*time.Second || read.disposition != "timeout" || read.obs != nil || read.operation == nil || *read.operation != h.plan.OperationID {
 		t.Fatalf("false 90s negative: elapsed=%s read=%+v", time.Since(launched), read)
