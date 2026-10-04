@@ -179,11 +179,32 @@ PY
       # so a dropped `tls { on_demand }` (or one on the wrong site) fails here. The global on_demand_tls ask
       # is an object ("on_demand": {...}), so the boolean true matches only the per-site directive.
       docker run "${cargs[@]}" "$img" caddy adapt --config /etc/caddy/Caddyfile --adapter caddyfile --pretty >"$EV/logs/S05.adapt.json" 2>>"$EV/logs/S05.log" &&
-      grep -Eq '"on_demand"[[:space:]]*:[[:space:]]*true' "$EV/logs/S05.adapt.json"; then
-      rec S05 PASS "caddy validate + fmt + adapt(on_demand) (image ${img%%@*})"
+      grep -Eq '"on_demand"[[:space:]]*:[[:space:]]*true' "$EV/logs/S05.adapt.json" &&
+      # Log redaction as Caddy will load it: every filtered access logger keeps the QUERY filter on request>uri (a second
+      # filter on the same field silently replaced it and S40 caught clear verify_token/code/state, 2026-10-04), and the
+      # TLS-proof nonce path is log_skip'ed. Static, so `smoke.sh static` / release-gate G90 catch it before CI.
+      python3 - "$EV/logs/S05.adapt.json" >>"$EV/logs/S05.log" 2>&1 <<'PY'
+import json, sys
+c = json.load(open(sys.argv[1]))
+need = {"hub.verify_token", "hub_verify_token", "code", "state", "token", "access_token", "id_token", "password", "new_password", "email"}
+logs = [v for v in c["logging"]["logs"].values() if v.get("encoder", {}).get("format") == "filter"]
+bad = [] if logs else ["no filtered access logger"]
+for v in logs:
+    for field in ("request>uri", "request>headers>Referer", "resp_headers>Location"):
+        f = v["encoder"]["fields"].get(field, {})
+        got = {a.get("parameter") for a in f.get("actions", []) if a.get("type") == "replace"}
+        if f.get("filter") != "query" or not need <= got:
+            bad.append(f"{field}: filter={f.get('filter')} missing={sorted(need - got)}")
+if '"log_skip":true' not in json.dumps(c, separators=(",", ":")):
+    bad.append("no log_skip for /.well-known/lc-domain-check/*")
+print("\n".join(bad) or "log redaction ok")
+sys.exit(1 if bad else 0)
+PY
+    then
+      rec S05 PASS "caddy validate + fmt + adapt(on_demand, log redaction) (image ${img%%@*})"
     else
       diff "$LC_DEPLOY_DIR/caddy/Caddyfile" "$EV/logs/S05.fmt" >>"$EV/logs/S05.log" 2>&1 || true
-      rec S05 FAIL "caddy validate/fmt/adapt-on_demand (logs/S05.log)"
+      rec S05 FAIL "caddy validate/fmt/adapt-on_demand/log-redaction (logs/S05.log)"
     fi
   else
     rec S05 NOT_RUN "docker not available"

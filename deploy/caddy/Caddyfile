@@ -70,8 +70,11 @@
 	# Verified by smoke S40 (canary values through the hooks and admin hosts; none may reach any
 	# container log). Add a parameter here whenever a route starts taking a secret in its query.
 	# R5 store-domains: the per-row TLS proof nonce is a PATH segment (/.well-known/lc-domain-check/<nonce>,
-	# Decision 3), not a query parameter, so it is rewritten by the regexp filter below — the nonce must
-	# never reach the json-file logs either (collect-diagnostics.sh bundles them).
+	# Decision 3), not a query parameter: those requests are not access-logged at all (log_skip below), so the
+	# nonce never reaches the json-file logs either (collect-diagnostics.sh bundles them). Do NOT add a second
+	# filter on request>uri: `fields` is a map, the last filter for a field wins, and a regexp filter here once
+	# replaced the query filter so verify_token/code/state were logged in clear (CI smoke S40, 2026-10-04).
+	# smoke S05 asserts the adapted config keeps exactly the query filter on request>uri.
 	# Contains client IPs: retention is owner decision O8.
 	log {
 		output stdout
@@ -89,10 +92,6 @@
 					replace password REDACTED
 					replace new_password REDACTED
 					replace email REDACTED
-				}
-				request>uri regexp {
-					pattern /\.well-known/lc-domain-check/[^/?]+
-					replace /.well-known/lc-domain-check/REDACTED
 				}
 				request>headers>Referer query {
 					replace hub.verify_token REDACTED
@@ -121,6 +120,8 @@
 			}
 		}
 	}
+	# The TLS proof nonce is a path segment (see the log comment above): never access-log those requests.
+	log_skip /.well-known/lc-domain-check/*
 	# Upstream down (deploy.sh maintenance window, crash) -> explicit maintenance 503.
 	handle_errors 502 503 504 {
 		header Retry-After "60"
