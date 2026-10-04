@@ -73,6 +73,8 @@ type atReportEnv struct {
 	paid, returning              rfxOrder
 	cod                          checkout.Result
 	codCap                       buyer.Capability
+	r10                          []atR10Order
+	stateSessions                map[string]string
 	expected                     map[string]any
 }
 
@@ -145,6 +147,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	r.ensureStock(t, r.base)
 	m := atReportClaims(t, r.base)
 	e := newAdsEnv(t, adsOpts{fx: p.f})
+	e.g.SetAccount(e.account, func(a *fakegraph.Account) { a.Timezone = "America/Los_Angeles" })
 	x := &atReportEnv{adsEnv: e, r: r, m: m, day: taipeiDay(0)}
 	mustExec(t, p.f.owner, `UPDATE integration.bindings SET external_asset_id=$2 WHERE id=$1`, e.idBinding, m.pageAsset)
 	e.pageAsset = m.pageAsset
@@ -163,8 +166,22 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	// Signed comments -> APPLIED intake -> bound bundles -> real cart origins.
 	// Claim version/offer/session/post are captured only by actual Begin below.
 	caps := []buyer.Capability{mustIssue(t, m.h.service, p.f.storeA1), p.cap, mustIssue(t, m.h.service, p.f.storeA1)}
+	for i := 0; i < 6; i++ {
+		caps = append(caps, mustIssue(t, m.h.service, p.f.storeA1))
+	}
 	for i, cap := range caps {
-		at := mciSoon()
+		r.ensureStock(t, r.base)
+		at := atAfterActivationSecond(t, e, x.secondDraft)
+		if i == 4 {
+			if pause := e.pause(x.secondDraft); pause.Status != 200 {
+				t.Fatalf("R10 actual second boost pause=%d", pause.Status)
+			}
+			e.driveTo(x.secondDraft, "pause", 1)
+			at = x.r10AfterPause(t)
+		}
+		if i > 4 {
+			at = x.r10AfterPause(t)
+		}
 		// 2 x 1250 meets Stripe's minimum and the whole-TWD contract shared
 		// by card and cash-on-delivery orders; never weaken either guard.
 		sent := m.postFBTo(t, m.postID, "", "", "A1+2", &at, nil, true)
@@ -195,6 +212,9 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	if st, _ := offline.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
 		t.Fatalf("COD settings=%d", st)
 	}
+	if st, _ := offline.cofSettings(0, true, false, 72); st != 200 {
+		t.Fatalf("transfer settings=%d", st)
+	}
 	for i, cap := range caps {
 		cart := m.h.cartOf(t, cap)
 		h := p.cqHarness
@@ -217,11 +237,14 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 			t.Fatal(err)
 		}
 		in := checkout.Input{QuoteID: q.ID, DestinationID: dest.ID, CartVersion: cart.Version, ServiceVersion: 1, AllocationVersion: 1}
-		if i == 0 {
+		if i == 0 || (i >= 3 && i != 4) {
 			in.AdTouch = atTouch(x.firstDraft, time.Minute)
 		}
-		if i == 2 {
+		if i == 2 || i == 4 || i == 7 {
 			in.PaymentMode = "cash_on_delivery"
+		}
+		if i == 3 || i == 5 {
+			in.PaymentMode = "bank_transfer"
 		}
 		res, err := p.bcHarness.service.Begin(context.Background(), cap.Token, p.f.storeA1, t04Key("at9-begin"), in)
 		if err != nil {
@@ -229,6 +252,10 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		}
 		if i == 2 {
 			x.cod = res
+			continue
+		}
+		if i >= 3 {
+			x.r10 = append(x.r10, x.r10FinishOrder(t, offline, cap, res, i))
 			continue
 		}
 		s := r.base.s
@@ -271,8 +298,7 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	m.pageToken = "SENTINEL-READONLY-PAGE-AT9-" + t04Tag()
 	m.registerToken(t, "facebook", m.pageBinding, m.pageAsset, []string{"read_insights", "pages_read_engagement"}, m.pageToken)
 	mustExec(t, p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'live:read') ON CONFLICT DO NOTHING`, p.f.tenantA, p.f.storeA1, e.creator)
-	graph := newATSGraph(t, m.postID)
-	graph.setAvailable()
+	graph := x.r10AudienceStates(t)
 	pool := miPool(t, p.f, waClaims)
 	routes, err := metareply.AudienceRoutes(pool, m.pageKeys, nil, metareply.Config{GraphBaseURL: graph.srv.URL, GraphVersion: "v26.0"})
 	if err != nil {
@@ -288,6 +314,15 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 		t.Fatal("actual audience plan operation missing")
 	}
 	m.awaitOp(t, op, "SUCCEEDED", 8*time.Second, "completed")
+	read = e.api("POST", "/sessions/"+x.stateSessions["insufficient"]+"/audience-read", e.token, adsKey(), nil)
+	if read.Status != 200 {
+		t.Fatalf("R10 insufficient actual audience plan=%d", read.Status)
+	}
+	m.awaitOp(t, read.JSON["operation_id"].(string), "SUCCEEDED", 8*time.Second, "completed")
+	read = e.api("POST", "/sessions/"+x.stateSessions["not_authorized"]+"/audience-read", e.token, adsKey(), nil)
+	if read.Status != 403 {
+		t.Fatalf("R10 missing read_insights scope must deny actual audience plan=%d", read.Status)
+	}
 	var pending int64
 	if err := p.f.owner.QueryRow(context.Background(), `SELECT total_minor+cod_surcharge_minor FROM checkout.orders WHERE id=$1`, x.cod.OrderID).Scan(&pending); err != nil {
 		t.Fatal(err)
@@ -296,15 +331,24 @@ func atNewReportEnv(t *testing.T) *atReportEnv {
 	if err := p.f.owner.QueryRow(context.Background(), `SELECT snapshot#>>'{quote,lines,0,name}' FROM checkout.orders WHERE id=$1`, x.paid.order).Scan(&productName); err != nil {
 		t.Fatal(err)
 	}
-	x.expected = map[string]any{"orders": 3, "net_minor": x.paid.captured - 100 + x.returning.captured, "pending_orders": 1, "pending_minor": pending, "spend_minor": 1730, "meta_purchases": 9, "meta_value_minor": 90000, "comments": 3, "claims": 3, "checkout_links": 3, "paid_orders": 2, "ambiguous_orders": 2, "new_buyers": 1, "returning_buyers": 1, "counties": []map[string]any{{"name": "臺北市", "orders": 1, "net_minor": x.paid.captured - 100}, {"name": "—", "orders": 1, "net_minor": x.returning.captured}}, "top_products": []map[string]any{{"name": productName, "quantity": 4}}}
+	clickNet := x.paid.captured - 100 + x.r10[0].net + x.r10[1].net
+	x.expected = map[string]any{"orders": 4, "net_minor": clickNet + x.returning.captured, "pending_orders": 1, "pending_minor": pending, "spend_minor": 1730, "meta_purchases": 9, "meta_value_minor": 90000, "comments": 9, "claims": 9, "checkout_links": 9, "paid_orders": 4, "ambiguous_orders": 1, "new_buyers": 3, "returning_buyers": 1, "counties": []map[string]any{{"name": "臺北市", "orders": 3, "net_minor": clickNet}, {"name": "—", "orders": 1, "net_minor": x.returning.captured}}, "top_products": []map[string]any{{"name": productName, "quantity": 8}}}
 	return x
 }
 
 func (x *atReportEnv) browserFixture() map[string]any {
-	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "expected": x.expected,
+	zone, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		panic(err)
+	}
+	start, err := time.ParseInLocation("2006-01-02T15:04:05", x.day+"T13:00:00", zone)
+	if err != nil {
+		panic(err)
+	}
+	return map[string]any{"from": x.day, "to": x.day, "draft_id": x.firstDraft, "session_id": x.m.session, "audience_read": "queued", "expected": x.expected, "state_sessions": x.stateSessions, "meta_account_timezone": "America/Los_Angeles", "provisional": true,
 		"live_audience":     map[string]any{"status": "available", "views": 34, "peak_concurrent": nil, "total_view_time_ms": nil, "age_gender": []map[string]any{{"bucket": "F.25-34", "view_time_ms": 1234}}, "regions": []map[string]any{{"bucket": "Taipei", "view_time_ms": 4321}}},
 		"forbidden_private": []string{atPrivateStreet, atPrivateCity},
-		"hourly":            []map[string]any{{"day": x.day, "timezone_name": "Asia/Taipei", "dimension": "hourly", "bucket": "13:00:00 - 13:59:59", "hour_start": x.day + "T13:00:00+08:00", "spend_minor": 1230, "reach": 0, "impressions": 0, "clicks": 0, "engagements": 0, "comments": 0, "purchases": nil, "purchase_value_minor": nil}}}
+		"hourly":            []map[string]any{{"day": x.day, "timezone_name": "America/Los_Angeles", "dimension": "hourly", "bucket": "13:00:00 - 13:59:59", "hour_start": start.Format(time.RFC3339), "spend_minor": 1230, "reach": 0, "impressions": 0, "clicks": 0, "engagements": 0, "comments": 0, "purchases": nil, "purchase_value_minor": nil}}}
 }
 
 func atNum(t *testing.T, row map[string]any, key string, want any) {
@@ -340,6 +384,10 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 	if session == nil || first == nil || second == nil {
 		t.Fatal("exact scoped session/drafts missing")
 	}
+	x.r10AssertAudienceStates(t, response.JSON)
+	x.r10AssertBuyerCounts(t, session["buyers"].(map[string]any), 4, x.paid.captured-100+x.returning.captured+x.r10[0].net+x.r10[1].net, 3, 1, 8)
+	x.r10AssertBuyerCounts(t, first["buyers"].(map[string]any), 3, x.paid.captured-100+x.r10[0].net+x.r10[1].net, 3, 0, 6)
+	x.r10AssertBuyerCounts(t, second["buyers"].(map[string]any), 0, 0, 0, 0, 0)
 	audience := session["live_audience"].(map[string]any)
 	atNum(t, audience, "status", "available")
 	atNum(t, audience, "views", 34)
@@ -379,34 +427,51 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 		}
 	}
 	path := first["orders"].([]any)
-	if len(path) != 1 {
-		t.Fatal("click draft must have one factual path")
+	if len(path) != 2 {
+		t.Fatal("first draft must have paid click and collected promoted-post paths")
 	}
-	row := path[0].(map[string]any)
-	atNum(t, row, "orders", 1)
-	atNum(t, row, "net_minor", x.paid.captured-100)
-	atNum(t, row, "path", "ad_click")
+	for _, raw := range path {
+		row := raw.(map[string]any)
+		switch row["path"] {
+		case "ad_click":
+			atNum(t, row, "orders", 2)
+			atNum(t, row, "net_minor", x.paid.captured-100+x.r10[0].net)
+		case "boosted_post":
+			atNum(t, row, "orders", 1)
+			atNum(t, row, "net_minor", x.r10[1].net)
+		default:
+			t.Fatal("unexpected paid report path")
+		}
+		atNum(t, row, "pending_orders", 0)
+		atNum(t, row, "pending_minor", 0)
+	}
+	atNum(t, first, "meta_account_timezone", "America/Los_Angeles")
+	atNum(t, first, "provisional", true)
 	atNum(t, first, "spend_minor", 1230)
 	meta := first["meta"].(map[string]any)
 	atNum(t, meta, "purchases", 9)
 	atNum(t, meta, "purchase_value_minor", 90000)
-	if first["roas"] != math.Round(float64(x.paid.captured-100)/1230*10000)/10000 {
+	if first["roas"] != math.Round(float64(x.paid.captured-100+x.r10[0].net+x.r10[1].net)/1230*10000)/10000 {
 		t.Fatal("ROAS must use ours net, not Meta modeled revenue")
 	}
 	if len(second["orders"].([]any)) != 0 {
 		t.Fatal("ambiguous boosted orders must not be fan-out credited")
 	}
-	var hourly float64
+	var hourly, timelineOrders, timelineNet, timelineComments, timelineClaims float64
 	for _, raw := range session["timeline"].([]any) {
 		v := raw.(map[string]any)
 		hourly += v["spend_minor"].(float64)
+		timelineOrders += v["orders"].(float64)
+		timelineNet += v["net_minor"].(float64)
+		timelineComments += v["comments"].(float64)
+		timelineClaims += v["claims"].(float64)
 		if v["spend_minor"].(float64) > 0 {
 			at, err := time.Parse(time.RFC3339, v["at"].(string))
 			if err != nil {
 				t.Fatal(err)
 			}
-			tz, _ := time.LoadLocation("Asia/Taipei")
-			if at.In(tz).Hour() != 13 {
+			tz, _ := time.LoadLocation("America/Los_Angeles")
+			if at.In(tz).Hour() != 13 || at.In(tz).Format("2006-01-02") != x.day {
 				t.Fatal("hour overlay must be absolute account-zone instant")
 			}
 		}
@@ -414,6 +479,10 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 	if hourly != 1730 {
 		t.Fatal("hour overlay must independently sum both actual boost insights")
 	}
+	if timelineOrders != 4 || fmt.Sprint(timelineNet) != fmt.Sprint(x.expected["net_minor"]) || timelineComments != 9 || timelineClaims != 9 {
+		t.Fatalf("R10 timeline orders/net/comments/claims=%v/%v/%v/%v", timelineOrders, timelineNet, timelineComments, timelineClaims)
+	}
+	atNum(t, session["buyers"].(map[string]any), "average_order_minor", math.Round(float64(x.paid.captured-100+x.returning.captured+x.r10[0].net+x.r10[1].net)/4))
 	for _, needle := range []string{atPrivateStreet, atPrivateCity, x.paid.order, x.returning.order, x.cod.OrderID, x.paid.s.p.cap.Scope.OwnerID, x.returning.s.p.cap.Scope.OwnerID, x.codCap.Scope.OwnerID, "+886900000001"} {
 		if strings.Contains(string(response.Raw), needle) {
 			t.Fatal("report leaked non-aggregate private fixture field")
@@ -422,7 +491,14 @@ func (x *atReportEnv) assertReport(t *testing.T) {
 	if x.count(`SELECT count(*) FROM integration.operations WHERE store_id=$1`, x.store) != before {
 		t.Fatal("GET report must not enqueue provider operations")
 	}
-	for _, order := range []string{x.paid.order, x.returning.order, x.cod.OrderID} {
+	orders := []string{x.paid.order, x.returning.order, x.cod.OrderID}
+	for _, extra := range x.r10 {
+		orders = append(orders, extra.result.OrderID)
+		if strings.Contains(string(response.Raw), extra.result.OrderID) || strings.Contains(string(response.Raw), extra.cap.Scope.OwnerID) {
+			t.Fatal("report leaked R10 order or buyer identity")
+		}
+	}
+	for _, order := range orders {
 		if x.count(`SELECT count(*) FROM claims.order_origins WHERE order_id=$1 AND session_id=$2 AND post_id=$3`, order, x.m.session, x.m.postID) != 1 {
 			t.Fatal("fixture must have real price-neutral immutable claim origin")
 		}
