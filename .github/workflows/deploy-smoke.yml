@@ -76,6 +76,8 @@ jobs:
           sudo awk -F'\t' '$2 == "FAIL" { print $1 }' "$ev/cases.tsv" 2>/dev/null | while read -r id; do
             echo "::group::$id.log (last 60 lines)"; sudo tail -n 60 "$ev/logs/$id.log" 2>/dev/null || true; echo "::endgroup::"
           done || true
+          # S40 (log redaction): which container wrote a canary, with the random canary masked (it is test data, not a secret).
+          sudo grep -h 'lcCanary' "$ev/logs/S40-compose.log" 2>/dev/null | sed -E 's/lcCanary[0-9a-f]+/<CANARY>/g' | cut -c1-600 | head -n 20 || true
           sudo chmod -R a+rX deploy/.evidence || true # root-owned evidence was unreadable for the upload step
           python3 .github/scripts/smoke-verdict.py "$ev/result.json" "$rc" full
       - name: Upload smoke evidence
