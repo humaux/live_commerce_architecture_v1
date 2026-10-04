@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -174,7 +175,7 @@ func TestCreateCreativeShapes(t *testing.T) {
 		t.Fatalf("ig = %v", calls[0].body)
 	}
 	spec, _ := calls[1].body["object_story_spec"].(map[string]any)
-	if spec["page_id"] != "777" || spec["link_data"].(map[string]any)["link"] != "https://shop.example.test/products/abc" {
+	if spec["page_id"] != "777" || spec["link_data"].(map[string]any)["link"] != "https://shop.example.test/products/abc?lc_ad="+draftID {
 		t.Fatalf("link = %v", calls[1].body)
 	}
 }
@@ -474,7 +475,12 @@ func TestReadInsights(t *testing.T) {
 		return func(c call, w http.ResponseWriter) {
 			switch {
 			case strings.HasSuffix(c.path, "/insights"):
-				_, _ = io.WriteString(w, insights)
+				q, _ := url.ParseQuery(c.query)
+				if q.Get("breakdowns") != "" {
+					_, _ = io.WriteString(w, `{"data":[]}`)
+				} else {
+					_, _ = io.WriteString(w, insights)
+				}
 			case c.path == "/v26.0/act_123456789":
 				_, _ = io.WriteString(w, `{"currency":"TWD","timezone_name":"Asia/Taipei","id":"act_123456789"}`)
 			default:
@@ -485,11 +491,17 @@ func TestReadInsights(t *testing.T) {
 	c, f := newFake(t, handler(`{"data":[{"spend":"12.3","impressions":"900","clicks":"14","actions":[{"action_type":"link_click","value":"14"},{"action_type":"omni_purchase","value":"2"}],"action_values":[{"action_type":"omni_purchase","value":"1999.5"}]}]}`))
 	out, err := c.dispatch(context.Background(), dreq(ActionReadInsights, body), secret)
 	want := "v1;es=ACTIVE;sp=12.30;im=900;cl=14;pu=2;pv=1999.50;cur=TWD;tz=Asia/Taipei"
-	if err != nil || out != (core.Outcome{State: "SUCCEEDED", Code: "graph_read", ProviderReference: want}) {
+	detail, ok := out.Detail.(*InsightsBreakdowns)
+	if !ok || detail == nil || detail.TimezoneName != "Asia/Taipei" || detail.Currency != "TWD" || len(detail.Rows) != 0 {
+		t.Fatalf("detail = %+v", out.Detail)
+	}
+	withoutDetail := out
+	withoutDetail.Detail = nil
+	if err != nil || withoutDetail != (core.Outcome{State: "SUCCEEDED", Code: "graph_read", ProviderReference: want}) {
 		t.Fatalf("out = %+v,%v", out, err)
 	}
 	calls := f.log()
-	if len(calls) != 3 {
+	if len(calls) != 8 {
 		t.Fatalf("calls = %d", len(calls))
 	}
 	ins := calls[2]

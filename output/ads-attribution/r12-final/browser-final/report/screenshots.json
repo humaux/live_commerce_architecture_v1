@@ -1,0 +1,254 @@
+[
+  {
+    "File": "attribution-en-390-insufficient.png",
+    "Sha256": "c8cebd01d5919df63e4d28cb2b6cfa40f48cf87129fb32362b3a02fa717be01b",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-not-authorized.png",
+    "Sha256": "cf270aeea17233ff5c6558084e3918c17ef3e03d473cf0f8acc64ff876d7cc8b",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-unknown-draft.png",
+    "Sha256": "272f2f405c2cf1f97c4561deb2dd3d00d8a84da3ba58aeedd27eb9cef940c3ff",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-organic-cohort.png",
+    "Sha256": "eb979744cf9540b8e4d8437309ba3c3d44b3780f9c2a5d80a45b76dbf818d820",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-unknown-read-recovery.png",
+    "Sha256": "456eaf2d2799d71248a269a60ee6b830af8d3645cd68a3956c5cdee0075115f4",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390-not-read.png",
+    "Sha256": "5374d884c7dac6471d11e180dec23fc9dee8c015ccc086b1368c66b8f78a8f3e",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-390.png",
+    "Sha256": "fb61fcc91abc91fd6cfc63341eb2d1fdda9cc7545a1d9227cde388bd32857838",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-en-1586-insufficient.png",
+    "Sha256": "2e4dac905ee1267e0cd0a85ff46e1a3aefe0e87b5b167289c468560451c69e80",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-not-authorized.png",
+    "Sha256": "8ba2c4d95c1ed55b6431df170c8b3c3a1ff8a306ccf826277020e30c0dc159af",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-unknown-draft.png",
+    "Sha256": "49162f1ca7c2f362fc6ffd4b61ea8637503443235f918fc18cd8b32f31e6170f",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-organic-cohort.png",
+    "Sha256": "769e460a90a3c1d3718c70340da2435baaa121692d965b420a0cb32bed9092d9",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-unknown-read-recovery.png",
+    "Sha256": "0aed61a8de1eb0943593694529c7e10d0a243ca036395c63385e9019ba22e9d4",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586-not-read.png",
+    "Sha256": "94d6ba9a47b8c34e70a1f1f7bebbb6b7a94e236b251ce409f128399f8f5e79eb",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-en-1586.png",
+    "Sha256": "6d138c39b4349ec4f5d40dfca4ec8bf98e8204ff2abc3ef2276b66ab0019a432",
+    "Locale": "en",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-390-insufficient.png",
+    "Sha256": "c007e1b8131e699ebb977d247a703627af6a13bba4b711827c7462c4660e27f2",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-not-authorized.png",
+    "Sha256": "28518441e5bb26c1667f8095328d24d114355c160c43906b10adc6c920465bb9",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-unknown-draft.png",
+    "Sha256": "ac95787711cfbc5e4193350af1cca17d6569a225d4889f09f063d2ad165b4c4a",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-organic-cohort.png",
+    "Sha256": "ef4dca59271e0dc93d50797f2ed8e99ad2583421ad39f8f552c98acdfe6e3101",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-unknown-read-recovery.png",
+    "Sha256": "f12208f2a96b04a0b98dbb80ba45e8e894328bde761c0e7c2d9e50913a90fcb4",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390-not-read.png",
+    "Sha256": "aa4dbe1a9f397d25d38588953903aaa453292feb5103559bb7a27a175c1dd6e4",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-390.png",
+    "Sha256": "88506798983cb78a87335ecb9cb68de0ba00db8925d6d0ae8ded9db61f72b4a6",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-TW-1586-insufficient.png",
+    "Sha256": "f0d1ffc69f362bdf1ba46dfdac45c29bc3c0b7250690f88d1882f2227d9dd8ba",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-not-authorized.png",
+    "Sha256": "46f1794cb2b77bffe23752cecf1ca0640e2018f0c2fcea6a43680863c9b8e201",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-unknown-draft.png",
+    "Sha256": "f1db47e04a0a304ee958d01ffc46bf1782514426c1d11c5c70759e43847276e9",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-organic-cohort.png",
+    "Sha256": "21ecfa5c7573cb9c553a14cbe4657404cf031aec9b516b9969ee6df871e1be14",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-unknown-read-recovery.png",
+    "Sha256": "97e07cc33f9251ed3d2efc6505d5a84db61df144a5e86e644a3f2f1d006f6878",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586-not-read.png",
+    "Sha256": "c2d64afd8507fcb35491fe0c0cafcb3efc62a3c4d05cd30fe8185935c4d421fb",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-TW-1586.png",
+    "Sha256": "d95037bbc8a52b5473c1d5cb09c2794016821f87ac755e1e03043c69f3e7260d",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-390-insufficient.png",
+    "Sha256": "36df2b253c9fde601ee4ba615fca1be25c9fe109dd319d47d9a18dbd9c9642d6",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-not-authorized.png",
+    "Sha256": "d0b059cd62a2fac74ed76b3b2928943a643948fda26380a85d8a95a657c47398",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-unknown-draft.png",
+    "Sha256": "dd43c6847e305f72808df16567af5185f24311a90167c0783c1c5f4657e8d741",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-organic-cohort.png",
+    "Sha256": "ef789173cb7a8fc033e8ad2734a32571eba82158b0e79473a7fc6d04cafa8ba0",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-unknown-read-recovery.png",
+    "Sha256": "c96dc6a7d701ac185cd001f00942c6aa1a2ab67b08ddf5059f2c9b61911bf44a",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390-not-read.png",
+    "Sha256": "ed9a2d2511786d2d628c8d43626427e02be81661fb4e25b209ff4edc98693952",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-390.png",
+    "Sha256": "b763857f49b3628aff27b84af9840cb532af0c744d1b019f573eda67b6742da1",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-zh-CN-1586-insufficient.png",
+    "Sha256": "c06457ebc6de8b039c0515f69c1e17fd6a4c92cd8ab23a34e51ecf590e0216fc",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-not-authorized.png",
+    "Sha256": "e9b1408c55012d7b14499709bbc3dcb2c9b1d266bc0536557ba0abde758bbb82",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-unknown-draft.png",
+    "Sha256": "da3a38941a9b1524616bfb9684874649dbf4fed108c6992e3abd79fb5cdb8983",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-organic-cohort.png",
+    "Sha256": "95a6a9969961cefc97a7914eb6b4eac336502dd6b519d154dcbcb9ec3ccffbfb",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-unknown-read-recovery.png",
+    "Sha256": "6a693bfd4c5444808fe2c8aa40465559775729ca5332b4317574edf0d1138d18",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586-not-read.png",
+    "Sha256": "e942b56a9ef35a616ee514c6822ed268f5becefacb3202b3963848f5f064a378",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-zh-CN-1586.png",
+    "Sha256": "505f0321a059482c8d10d9774dc7b94765f7ba8dda24d84c473123236b718d30",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  }
+]

@@ -1,0 +1,4 @@
+release-gate  commit=068874fc62a6  dirty_files=246  modes_in_test-local=62  evidence=output/ads-attribution/r11/g04
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

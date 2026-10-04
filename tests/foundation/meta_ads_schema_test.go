@@ -103,6 +103,16 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			"func:buyer.resolve_scope(p_hash bytea, p_store uuid):EXECUTE",
 			// row (0080): attempt->order->owner columns and published-catalog columns (F17), named by table below
 			"schema:checkout:USAGE", "schema:storefront:USAGE", "schema:inventory:USAGE",
+			// 0113 / §4.4 attribution delta: domain-owner read seams, never source-table grants.
+			"schema:claims:USAGE", "schema:live:USAGE", "schema:orders:USAGE",
+			"func:claims.attribution_funnel(p_tenant uuid, p_store uuid, p_session uuid, p_from date, p_to date):EXECUTE",
+			"func:claims.attribution_sources(p_tenant uuid, p_store uuid, p_session uuid):EXECUTE",
+			"func:live.attribution_sessions(p_tenant uuid, p_store uuid, p_from date, p_to date):EXECUTE",
+			"func:orders.attribution_metrics(p_tenant uuid, p_store uuid, p_from date, p_to date, p_draft uuid, p_session uuid):EXECUTE",
+			"func:orders.capi_context(p_tenant uuid, p_store uuid, p_order uuid):EXECUTE",
+			"func:orders.purge_capi_ip():EXECUTE",
+			// R11: a boolean current-grant check; still no Page credential table access.
+			"func:integration.meta_audience_authorized(p_tenant uuid, p_store uuid, p_session uuid):EXECUTE",
 		)
 		for _, c := range adsCols("control.stores", "SELECT", "tenant_id", "id", "active", "currency", "name") { // §4.4 row 3 (+ feed name, 0080)
 			contract[c] = true
@@ -232,12 +242,27 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 		// worker: check/advance/insights/planner/ingest/loader functions only, none authenticating a merchant hash
 		// Amendment 2 adds exactly one lease-fenced Finish projection, not table access.
 		workerOK := regexp.MustCompile(`^(ads\.(check_[a-z]+|advance_[a-z]+|insights_[a-z]+|pending_insight_reads|put_insights_day|plan_capi[a-z_]*|purge_oauth_states|canonical_draft|capi_user_data|finish_operation_refusal)|integration\.load_meta_ads_token)$`)
+		// Exact signatures: no new wildcard or merchant-hash/row access for workers.
+		workerAttribution := adsSet(
+			"func:ads.capi_attribution_data(p_operation uuid, p_generation bigint, p_lease_token bytea):EXECUTE",
+			"func:ads.finish_insights_breakdowns(p_operation uuid, p_generation bigint, p_token bytea, p_mode text, p_result jsonb):EXECUTE",
+		)
+		workerSeen := adsSet()
 		for _, a := range adsOnly(waAds) {
+			workerSeen[a] = true
+			if workerAttribution[a] {
+				continue
+			}
 			if a == "schema:ads:USAGE" {
 				continue
 			}
 			if !strings.HasPrefix(a, "func:") || !workerOK.MatchString(fnName(a)) || strings.HasPrefix(firstArg(a), "p_hash") {
 				t.Errorf("commerce_ads_worker holds %s (§4.4: Check, sweepers, ingestion, loader only)", a)
+			}
+		}
+		for exact := range workerAttribution {
+			if !workerSeen[exact] {
+				t.Errorf("0113 §4.4 worker grant missing: %s", exact)
 			}
 		}
 		for _, must := range []string{"ads.check_create", "ads.check_activate", "ads.check_read", "ads.check_capi", "ads.advance_next", "ads.advance_plan", "ads.put_insights_day", "ads.plan_capi", "integration.load_meta_ads_token", "ads.capi_user_data", "ads.finish_operation_refusal"} {
@@ -278,13 +303,25 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 		}
 		// integration writer: the two oauth/connection tables (§4.4 row) and the two integration functions
 		iw := adsSet("schema:ads:USAGE", "table:ads.oauth_states:SELECT", "column:ads.oauth_states.used_at:UPDATE", "table:ads.connections:SELECT", "table:ads.connections:INSERT")
+		iwAttribution := adsSet(
+			"func:ads.auth(p_hash bytea, p_store uuid, p_permissions text[]):EXECUTE",
+			"func:ads.store_live_audience_snapshot(p_tenant uuid, p_store uuid, p_session uuid, p_source uuid, p_operation uuid, p_requested_at timestamp with time zone, p_result jsonb):EXECUTE",
+		)
+		iwSeen := adsSet()
 		for _, a := range adsOnly("commerce_integration_writer") {
+			iwSeen[a] = true
 			switch {
 			case iw[a]:
+			case iwAttribution[a]:
 			case strings.HasPrefix(a, "column:ads.connections.") && strings.HasSuffix(a, ":UPDATE"):
 			case strings.HasPrefix(a, "func:integration.register_meta_ads_token") || strings.HasPrefix(a, "func:integration.load_meta_ads_token"): // owner
 			default:
 				t.Errorf("commerce_integration_writer holds %s (§4.4: oauth_states, connections only)", a)
+			}
+		}
+		for exact := range iwAttribution {
+			if !iwSeen[exact] {
+				t.Errorf("0113 §4.4 integration writer grant missing: %s", exact)
 			}
 		}
 		// nobody but the owner reads the sealed ads ciphertext: load_meta_ads_token EXECUTE = worker only (+ its owner)

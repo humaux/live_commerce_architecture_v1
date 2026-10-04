@@ -1,0 +1,17 @@
+✔ AT1 R5: browser identity survives expired touch and rolls for ninety days (9.95075ms)
+✔ AT1 R5: missing ad parameters create no cookies; fbclid alone creates no touch (0.467292ms)
+✔ AT1 R5: lc_ad alone updates attribution and does not replace fbc (0.22775ms)
+✔ AT1: host-only first-party cookies contain no PII and read back exactly (1.144542ms)
+✔ AT1: a later valid click replaces the draft but preserves the browser identifier (0.147708ms)
+✔ AT1: malformed and ambiguous links do not overwrite a valid prior touch (0.538667ms)
+✔ AT1: host and key binding reject copied cookies (0.117583ms)
+✔ AT1: duplicates and tampering invalidate the entire envelope (0.111666ms)
+✔ AT1: exactly seven days is valid, the next millisecond and future clicks are not (0.131167ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.163584

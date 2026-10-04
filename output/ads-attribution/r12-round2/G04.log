@@ -1,0 +1,8 @@
+source=2817f4ce0f33dd1bf85d1a733b6c4f51adb7f04b
+started=2026-10-04T06:46:39Z
+command=env LC_RELEASE_GATE_OUT=/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/output/ads-attribution/r12-round2/g04-final bash scripts/dev/release-gate.sh --strict --only G04 
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+release-gate  commit=2817f4ce0f33  dirty_files=0  modes_in_test-local=62  evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/output/ads-attribution/r12-round2/g04-final
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

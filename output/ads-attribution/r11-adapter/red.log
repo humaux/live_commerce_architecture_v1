@@ -1,0 +1,21 @@
+--- FAIL: TestR11OptionalDimensionFailureKeepsDaily (0.01s)
+    --- FAIL: TestR11OptionalDimensionFailureKeepsDaily/refused (0.00s)
+        r11_breakdowns_test.go:46: daily lost: {State:FAILED_FINAL Code:graph_100 ProviderReference: Detail:<nil>} metaads: result outside the read-result grammar
+    --- FAIL: TestR11OptionalDimensionFailureKeepsDaily/server (0.00s)
+        r11_breakdowns_test.go:46: daily lost: {State:UNKNOWN Code:graph_unconfirmed ProviderReference: Detail:<nil>} metaads: result outside the read-result grammar
+    --- FAIL: TestR11OptionalDimensionFailureKeepsDaily/malformed_label (0.00s)
+        r11_breakdowns_test.go:46: daily lost: {State:FAILED_FINAL Code:bad_result ProviderReference: Detail:<nil>} metaads: result outside the read-result grammar
+    --- FAIL: TestR11OptionalDimensionFailureKeepsDaily/DST_ambiguity (0.00s)
+        r11_breakdowns_test.go:46: daily lost: {State:FAILED_FINAL Code:bad_result ProviderReference: Detail:<nil>} metaads: result outside the read-result grammar
+--- FAIL: TestR11OmittedBreakdownMetricsStayNull (0.00s)
+    --- FAIL: TestR11OmittedBreakdownMetricsStayNull/omitted (0.00s)
+        r11_breakdowns_test.go:66: spend_minor: {"dimension":"region","bucket":"Taipei","hour_start":null,"spend_minor":0,"reach":0,"impressions":0,"clicks":0,"engagements":0,"comments":0,"purchases":null,"purchase_value_minor":null} must preserve missing/explicit zero
+    --- FAIL: TestR11OmittedBreakdownMetricsStayNull/empty_actions (0.00s)
+        r11_breakdowns_test.go:66: spend_minor: {"dimension":"region","bucket":"Taipei","hour_start":null,"spend_minor":0,"reach":0,"impressions":0,"clicks":0,"engagements":0,"comments":0,"purchases":null,"purchase_value_minor":null} must preserve missing/explicit zero
+FAIL
+FAIL	livecommerce/internal/integrations/meta_ads	1.205s
+--- FAIL: TestR11PageConnectRequiresReadInsightsRegrant (0.00s)
+    r11_scope_test.go:12: old grant must request reconnect: {PageID:11 Name: IGID: IGUsername: Missing:[] IGMissing:[]}
+FAIL
+FAIL	livecommerce/internal/metaconnect	0.356s
+FAIL

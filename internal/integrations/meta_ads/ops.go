@@ -238,8 +238,16 @@ func buildCreate(req core.DispatchRequest) (createSpec, bool) {
 			if r.PageID == "" || !validLink(r.LinkURL) {
 				return createSpec{}, false
 			}
+			link, _ := url.Parse(r.LinkURL)
+			query, err := url.ParseQuery(link.RawQuery)
+			if err != nil {
+				return createSpec{}, false
+			}
+			// D1: the frozen draft, never a caller-supplied attribution value, owns this touch.
+			query.Set("lc_ad", r.DraftID)
+			link.RawQuery = query.Encode()
 			payload["object_story_spec"] = map[string]any{"page_id": r.PageID,
-				"link_data": map[string]any{"link": r.LinkURL}}
+				"link_data": map[string]any{"link": link.String()}}
 		default:
 			return createSpec{}, false
 		}
@@ -476,6 +484,10 @@ func (c *Client) readInsights(ctx context.Context, asset, campaign, day string, 
 	if json.Unmarshal(rep.body, &acct) != nil {
 		return unconfirmed()
 	}
+	location, err := insightLocation(acct.TimezoneName)
+	if err != nil {
+		return failedFinal("bad_result")
+	}
 	rep, err = c.g.do(ctx, http.MethodGet, campaign, url.Values{"fields": {"effective_status"}}, token, nil)
 	if err != nil || !rep.ok() {
 		return failureOutcome(rep, err)
@@ -523,7 +535,8 @@ func (c *Client) readInsights(ctx context.Context, asset, campaign, day string, 
 			return failedFinal("bad_result")
 		}
 		for _, a := range row.Actions {
-			if a.Type == purchaseAction {
+			// I12: an empty purchase metric remains unknown in the existing ref grammar.
+			if a.Type == purchaseAction && a.Value != "" {
 				n, err := count(a.Value)
 				if err != nil {
 					return failedFinal("bad_result")
@@ -532,7 +545,7 @@ func (c *Client) readInsights(ctx context.Context, asset, campaign, day string, 
 			}
 		}
 		for _, a := range row.ActionValues {
-			if a.Type == purchaseAction {
+			if a.Type == purchaseAction && a.Value != "" {
 				v, err := SpendMinor(d.Currency, a.Value)
 				if err != nil {
 					return spendFailure(err)
@@ -547,7 +560,8 @@ func (c *Client) readInsights(ctx context.Context, asset, campaign, day string, 
 	if err != nil {
 		return failedFinal("bad_result")
 	}
-	return core.Outcome{State: "SUCCEEDED", Code: "graph_read", ProviderReference: ref}
+	detail := c.readBreakdowns(ctx, campaign, day, acct.Currency, acct.TimezoneName, location, token)
+	return core.Outcome{State: "SUCCEEDED", Code: "graph_read", ProviderReference: ref, Detail: detail}
 }
 
 type actionValue struct {

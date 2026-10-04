@@ -2,6 +2,17 @@
 import type { RouteEntry } from "../../route-types.ts";
 export const marketingRoutes = [
   {
+    id: "ads-attribution",
+    path: "/ads/attribution",
+    group: "marketing",
+    labelKey: "attribution",
+    icon: "meta",
+    permission: "ads:read",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/attribution.spec.ts",
+  },
+  {
     id: "promotions",
     path: "/promotions",
     group: "marketing",

@@ -508,6 +508,65 @@ func (s *Service) pause(ctx context.Context, tx pgx.Tx, scope platform.Scope, to
 
 // Report is GET report (ads:read): ads.report, three separate blocks.
 func (s *Service) Report(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (json.RawMessage, error) {
+	return s.reportQuery(ctx, tx, scope, token, from, to, `SELECT ads.report($1,$2,$3::date,$4::date)`)
+}
+
+// AttributionReport keeps authenticated factual orders separate from Meta snapshots.
+func (s *Service) AttributionReport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (json.RawMessage, error) {
+	return s.reportQuery(ctx, tx, scope, token, from, to, `SELECT ads.attribution_report($1,$2,$3::date,$4::date)`)
+}
+
+// ReadLiveAudience plans a read-only Page Insights operation. It neither reads
+// provider credentials in the API process nor mutates a Meta asset. The command
+// receipt and default-lane job commit together; UNKNOWN is never blindly replayed.
+func (s *Service) ReadLiveAudience(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string) (json.RawMessage, error) {
+	hash, err := tokenHash(token)
+	if err != nil {
+		return nil, err
+	}
+	if !command.ValidID(sessionID) {
+		return nil, refusal("invalid_request")
+	}
+	var out json.RawMessage
+	err = command.Run(ctx, tx, scope, "ads.audience.read", key, struct {
+		PrincipalID string `json:"principal_id"`
+		SessionID   string `json:"session_id"`
+	}{scope.PrincipalID, sessionID}, &out, func() error {
+		// Authenticate and acquire the store/video transaction lock before minting
+		// a job. Replay creates no candidate job and preserves the fresh-xmin guard.
+		if e := tx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,NULL,NULL)`, hash, scope.StoreID, sessionID).Scan(&out); e != nil {
+			return e
+		}
+		var result struct {
+			PlanRequired bool   `json:"plan_required"`
+			OperationID  string `json:"operation_id"`
+		}
+		if e := json.Unmarshal(out, &result); e != nil {
+			return e
+		}
+		if !result.PlanRequired {
+			if !command.ValidID(result.OperationID) {
+				return refusal("invalid_request")
+			}
+			return command.Audit(ctx, tx, scope, "ads.audience.read_requested")
+		}
+		op, e := newID(ctx, tx)
+		if e != nil {
+			return e
+		}
+		job, e := core.InsertOperationJob(ctx, s.jobs, tx, op)
+		if e != nil {
+			return e
+		}
+		if e = tx.QueryRow(ctx, `SELECT integration.plan_meta_audience($1,$2,$3,$4,$5)`, hash, scope.StoreID, sessionID, op, job).Scan(&out); e != nil {
+			return e
+		}
+		return command.Audit(ctx, tx, scope, "ads.audience.read_requested")
+	})
+	return out, mapError(err)
+}
+
+func (s *Service) reportQuery(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, query string) (json.RawMessage, error) {
 	hash, err := tokenHash(token)
 	if err != nil {
 		return nil, err
@@ -520,7 +579,7 @@ func (s *Service) Report(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 	if e1 != nil || e2 != nil || t.Before(f) || t.Sub(f) > 91*24*time.Hour {
 		return nil, refusal("invalid_request")
 	}
-	return queryJSON(ctx, tx, `SELECT ads.report($1,$2,$3::date,$4::date)`, hash, scope.StoreID, from, to)
+	return queryJSON(ctx, tx, query, hash, scope.StoreID, from, to)
 }
 
 // CapiInput is the PUT capi body; dataset_binding_id and test_event_code are optional (absent = none).

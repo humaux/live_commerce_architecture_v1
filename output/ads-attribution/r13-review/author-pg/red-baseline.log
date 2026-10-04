@@ -1,0 +1,39 @@
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=fcf3c4e3-f618-4def-81b9-9f4ecb3eb550
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=30a0b720-7213-4242-be38-d64110225854
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=f250c36c-5209-4954-8d5f-24926fd83fb9
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=03c5b7dc-19eb-4cf1-9cd1-2efaee971ef9
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=3855aa4a-bf58-48f0-bd9c-914bbddc9369
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=45d55514-dc8a-4b6d-b8e9-3e0bcf1fb853
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=315d5990-8d86-4d67-a357-58b4af5869ca
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=6e8f3751-fecd-4614-a858-ff5539edf9ff
+    ads_attribution_r11_test.go:46: one in-flight operation required, got=9
+    ads_attribution_r11_test.go:49: replay must not commit orphan jobs: before=0 after=9
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (1.52s)
+=== RUN   TestAdsAttributionR11ClickLiveWindow
+    ads_attribution_r11_test.go:92: never launched public lc_ad credited=1
+    ads_attribution_r11_test.go:107: click outside starts/ends credited
+    ads_attribution_r11_test.go:118: copied ended lc_ad credited=1
+--- FAIL: TestAdsAttributionR11ClickLiveWindow (1.97s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+    ads_attribution_r11_test.go:154: create draft: 422 {"code":"invalid_request","message":"Request validation failed.","request_id":"82641d366d57a7029df54460bd2851bf","retryable":false,"details":{}}
+--- FAIL: TestAdsAttributionR11UnknownDraft (0.29s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:230: REAL_PG MOCK historical orders=10000 drafts=100 API elapsed=2.58837575s status=200 bytes=42407
+    ads_attribution_r11_test.go:236: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:230: REAL_PG MOCK historical orders=10000 drafts=101 API elapsed=2.622346292s status=200 bytes=42407
+    ads_attribution_r11_test.go:236: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:247: REAL_PG direct runtime SQL elapsed=1.333µs bytes=0 error=unauthorized
+    ads_attribution_r11_test.go:249: runtime SQL deadline: unauthorized
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (14.55s)
+=== RUN   TestAdsAttributionR11SessionCap
+    ads_attribution_r11_test.go:285: session cap n=100 rows=100 truncated=<nil>
+    ads_attribution_r11_test.go:285: session cap n=101 rows=100 truncated=<nil>
+--- FAIL: TestAdsAttributionR11SessionCap (0.44s)
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+    ads_attribution_r11_test.go:291: can't scan into dest[0]: cannot scan NULL into *int64
+--- FAIL: TestAdsAttributionR11OptionalBreakdownAndNull (21.64s)
+FAIL
+FAIL	livecommerce/tests/foundation	41.128s
+FAIL
+test-focused: top-level PASS=0 FAIL=6 SKIP=0 exit=1

@@ -1,0 +1,184 @@
+/* D7/D9 readonly ledger extension. Incumbent W0 shell and table palette; all wide tables scroll within the work area. */
+.attribution-page {
+  max-width: 1200px;
+  margin: 8px auto;
+  padding-bottom: 40px;
+  color: var(--ink);
+}
+.attribution-page header {
+  margin-bottom: 24px;
+}
+.attribution-page h1 {
+  margin-top: 12px;
+}
+.attribution-page header p {
+  max-width: 75ch;
+  margin-top: 8px;
+}
+.attribution-page a {
+  color: var(--focus);
+  text-underline-offset: 3px;
+}
+.attribution-page :is(button, input, select) {
+  min-height: 44px;
+  color: var(--ink);
+}
+.attribution-page
+  :is(a, button, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.attribution-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0;
+}
+.attribution-filters label {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  min-width: 0;
+  max-width: 100%;
+}
+.attribution-filters input {
+  width: 180px;
+  max-width: 100%;
+}
+.attribution-filters select {
+  max-width: 380px;
+  width: 100%;
+}
+.attribution-section {
+  padding: 20px;
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  min-width: 0;
+}
+.attribution-section h2 {
+  font-size: 19px;
+  margin: 0 0 12px;
+}
+.attribution-section h3 {
+  font-size: 16px;
+  margin: 24px 0 12px;
+}
+.attribution-section h4 {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+.attribution-section p {
+  overflow-wrap: anywhere;
+}
+.attribution-note {
+  color: #5c6e83;
+  font-size: 13px;
+  margin: 8px 0 12px;
+}
+.attribution-linked-drafts summary {
+  min-height: 44px;
+  padding-block: 12px;
+  cursor: pointer;
+  color: var(--focus);
+}
+.attribution-linked-drafts ul {
+  padding-inline-start: 24px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.attribution-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.attribution-pair > div {
+  min-width: 0;
+}
+.attribution-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 16px 0;
+  font-variant-numeric: tabular-nums;
+}
+.attribution-facts div {
+  min-width: 100px;
+}
+.attribution-facts dt {
+  color: #5c6e83;
+  font-size: 13px;
+}
+.attribution-facts dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+.attribution-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-color: #71869e #edf2f7;
+  scrollbar-width: thin;
+}
+.attribution-scroll table {
+  width: 100%;
+  table-layout: auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.attribution-scroll th,
+.attribution-scroll td {
+  padding: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+.attribution-page .attribution-scroll thead th {
+  width: auto;
+  background: #f2f5f9;
+  color: #4b5f78;
+  font-weight: 600;
+}
+.attribution-scroll th:first-child,
+.attribution-scroll td:first-child {
+  text-align: left;
+}
+.attribution-page button:hover:not(:disabled) {
+  background: #f2f5f9;
+}
+.attribution-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.attribution-audience-read {
+  margin: 12px 0;
+}
+.attribution-audience-read p {
+  margin: 8px 0;
+  font-size: 13px;
+}
+@media (max-width: 1000px) {
+  .attribution-pair {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+@media (max-width: 600px) {
+  .attribution-section {
+    padding: 16px 12px;
+  }
+  .attribution-filters label {
+    flex: 1 1 140px;
+  }
+  .attribution-filters input,
+  .attribution-filters select {
+    width: 100%;
+    max-width: 100%;
+  }
+  .attribution-page h1 {
+    font-size: 24px;
+  }
+}

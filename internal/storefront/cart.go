@@ -47,9 +47,10 @@ type CartInput struct {
 // ClaimOrigin records which claim line a cart line came from. It is evidence only: Quote asks
 // claims.live_prices whether the origin still earns a live price (binding, link expiry, offer state).
 type ClaimOrigin struct {
-	BundleID string
-	OfferID  string
-	Quantity int64 // the claimed quantity; a live price survives only while the line quantity <= this
+	BundleID    string
+	OfferID     string
+	Quantity    int64 // the claimed quantity; a live price survives only while the line quantity <= this
+	LineVersion int64 // server-captured accepted claim version; zero for pre-attribution carts
 }
 
 func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
@@ -132,9 +133,9 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 		}
 		for _, item := range in.Items {
 			o := origins[item.SKUID] // zero value = no claim origin (NULL columns)
-			if _, err = tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,claim_bundle_id,claim_offer_id,claim_quantity)
-				VALUES($1,$2,$3,$4,$5,$6,nullif($7,'')::uuid,nullif($8,'')::uuid,nullif($9::bigint,0))`,
-				s.TenantID, s.StoreID, s.OwnerID, current.ID, item.SKUID, item.Quantity, o.BundleID, o.OfferID, o.Quantity); err != nil {
+			if _, err = tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity,claim_bundle_id,claim_offer_id,claim_quantity,claim_line_version)
+				VALUES($1,$2,$3,$4,$5,$6,nullif($7,'')::uuid,nullif($8,'')::uuid,nullif($9::bigint,0),nullif($10::bigint,0))`,
+				s.TenantID, s.StoreID, s.OwnerID, current.ID, item.SKUID, item.Quantity, o.BundleID, o.OfferID, o.Quantity, o.LineVersion); err != nil {
 				return err
 			}
 		}
@@ -170,7 +171,7 @@ func LockCartOwner(ctx context.Context, tx pgx.Tx, s buyer.Scope) error {
 
 // readOrigins returns the claim origin of every cart line that has one (SKU -> origin).
 func readOrigins(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID string) (map[string]ClaimOrigin, error) {
-	rows, err := tx.Query(ctx, `SELECT sku_id::text,claim_bundle_id::text,claim_offer_id::text,claim_quantity FROM storefront.cart_lines
+	rows, err := tx.Query(ctx, `SELECT sku_id::text,claim_bundle_id::text,claim_offer_id::text,claim_quantity,coalesce(claim_line_version,0) FROM storefront.cart_lines
 		WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND cart_id=$4 AND claim_bundle_id IS NOT NULL`, s.TenantID, s.StoreID, s.OwnerID, cartID)
 	if err != nil {
 		return nil, err
@@ -180,7 +181,7 @@ func readOrigins(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID string) (
 	for rows.Next() {
 		var sku string
 		var o ClaimOrigin
-		if err = rows.Scan(&sku, &o.BundleID, &o.OfferID, &o.Quantity); err != nil {
+		if err = rows.Scan(&sku, &o.BundleID, &o.OfferID, &o.Quantity, &o.LineVersion); err != nil {
 			return nil, err
 		}
 		out[sku] = o

@@ -1,0 +1,15 @@
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/READY
+    ads_attribution_r12_test.go:130: expired job/lease prevented fresh GET
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING
+    ads_attribution_r12_test.go:128: plan shape={"state":"DISPATCHING","operation_id":"aafb6b34-70a4-48ac-a434-7199ea8baad9"}
+--- FAIL: TestAdsAttributionR12AudienceLeaseBoundary (1.64s)
+    --- FAIL: TestAdsAttributionR12AudienceLeaseBoundary/READY (1.39s)
+    --- FAIL: TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING (0.25s)
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+    ads_attribution_signals_test.go:97: no claims.meta_intake row for page comment
+--- FAIL: TestAdsAttributionR10SignalsOnlyExcludedFromReports (22.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	25.041s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

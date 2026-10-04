@@ -2,7 +2,9 @@
 // (meta-claims-intake-v1 §6.3, §7): the dispatcher routes (facebook|instagram, meta.private_reply,
 // service), the per-store Page-token custody (AES-256-GCM seal/open and the registrar call), the
 // operator route registration (RegisterRoute/DisableRoute: store binding + webhook route, R1 ruling F2)
-// and the fixed reply text.
+// and the fixed reply text. The separate facebook/meta.live_insights service
+// route reads an exactly bound live video's aggregated audience through the same
+// Page custody, requiring read_insights/pages_read_engagement, never messaging scopes.
 //
 // It never plans operations or issues links (internal/claimsintake and the SQL definers do), never
 // sends more than one POST per operation (every non-2xx or doubt is UNKNOWN; Reconcile is
@@ -13,4 +15,6 @@
 // operation (loopback httptest only in MOCK); docs
 // https://developers.facebook.com/docs/messenger-platform/discovery/private-replies/ and
 // https://developers.facebook.com/docs/instagram-platform/private-replies/ (retrieved 2026-09-28).
+// Audience external reads: GET /{page}/live_videos and /{video}/video_insights.
+// Empty demographic aggregates mean privacy-threshold unavailable, not zero people.
 package metareply

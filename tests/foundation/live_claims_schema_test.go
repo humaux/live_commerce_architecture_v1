@@ -184,8 +184,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
 		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 8 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses", n)
+		// 0113 adds the price-neutral immutable order_origins ledger.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 9 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins", n)
 		}
 	})
 
@@ -229,9 +230,14 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(rt, "claims.events", "SELECT", cols("claims.events")...)
 		add(rt, "claims.events", "INSERT", cols("claims.events")...)
 		add(rt, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "generation", "issued_at", "expires_at")
-		add(wr, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "expires_at")
+		// 0113 D9: the domain-owned aggregate counts links by issued_at; no runtime token access changes.
+		add(wr, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "expires_at", "issued_at")
 		add(wr, "claims.links", "INSERT", "tenant_id", "store_id", "bundle_id", "token_hash", "generation", "issued_at", "expires_at", "principal_id")
 		add(wr, "claims.links", "UPDATE", "token_hash", "generation", "issued_at", "expires_at", "principal_id")
+		// 0113 R6: immutable anonymous origin ledger, writer-only; runtime
+		// callers receive domain projections instead of these rows.
+		add(wr, "claims.order_origins", "SELECT", "tenant_id", "store_id", "order_id", "bundle_id", "offer_id", "line_version", "session_id", "post_id", "occurred_at")
+		add(wr, "claims.order_origins", "INSERT", "tenant_id", "store_id", "order_id", "bundle_id", "offer_id", "line_version", "session_id", "post_id", "occurred_at")
 		add(wr, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "owner_id", "bound_at", "version")
 		add(wr, "claims.bundles", "UPDATE", "owner_id", "bound_at")
 		add(wr, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "sku_id", "quantity", "version", "applied_version")
@@ -261,6 +267,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "claims.events", "INSERT", cols("claims.events")...)
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
 		add(wr, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_kind", "source_event_id", "outcome", "bundle_id")
+		// 0113 R6: prove the exact imported accepted claim version without
+		// granting actor identity, raw payload or comment text.
+		add(wr, "claims.events", "SELECT", "offer_id", "line_version", "quantity", "occurred_at")
 		add(wr, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "generation")
 		// customers-billing-v1 §3.1 (0078): the customer projection reads counts/platform/time of bound bundles and the
 		// privacy writer relabels manual labels; neither ever reads actor_key or link hashes.
@@ -304,7 +313,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			wr + " claims.meta_intake SELECT", wr + " claims.meta_intake INSERT", wr + " live.claim_sources SELECT",
 			wr + " live.claim_window_intervals SELECT", wr + " live.claim_window_intervals INSERT",
 			// claims-retention-purge-v1 §4 (§6 clause 1): the only DELETE on the six tables
-			rw + " claims.links DELETE"}
+			rw + " claims.links DELETE",
+			// 0113 R6: origins are immutable to all runtime roles.
+			wr + " claims.order_origins SELECT", wr + " claims.order_origins INSERT"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
@@ -321,7 +332,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.consume_live_prices",
 				// 0110 ACL ruling: domain-owned order provenance projection; only
 				// commerce_auth gets EXECUTE, never consumption-table privileges.
-				"claims.order_live_sources"})
+				"claims.order_live_sources",
+				// 0113 R6: exact comment-to-post provenance, checkout definer only.
+				"claims.order_comment_posts", "claims.capture_order_origins", "claims.attribution_session_orders", "claims.attribution_funnel", "claims.attribution_sources"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -332,7 +345,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// claims-retention-purge-v1 §4 schema USAGE rows
 				"commerce_retention_writer USAGE", "commerce_retention_job USAGE", "commerce_retention_operator USAGE",
 				// 0103 (D1): checkout.Begin's RevalidateQuote resolves claims.live_prices on the checkout pool
-				"commerce_checkout_runtime USAGE"})
+				"commerce_checkout_runtime USAGE",
+				// 0113 R6: the checkout definer freezes anonymous claim provenance.
+				"commerce_checkout_writer USAGE",
+				// 0113 D9: ads reads domain-owned aggregate/source definers only.
+				"commerce_ads_writer USAGE", "commerce_media_writer USAGE"})
 		var usage []bool
 		if err := f.owner.QueryRow(ctx, `SELECT ARRAY[has_schema_privilege('commerce_claims_writer','live','USAGE'),has_schema_privilege('commerce_claims_writer','identity','USAGE'),
 			has_schema_privilege('commerce_claims_writer','claims','USAGE')]`).Scan(&usage); err != nil || !usage[0] || !usage[1] || !usage[2] {
@@ -385,6 +402,17 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			// 0113 frozen domain seams: exact signatures and ACLs, never wildcard caller exclusions.
+			"capture_order_origins": {args: "p_tenant uuid, p_store uuid, p_owner uuid, p_order uuid, p_origins jsonb", result: "void", volatility: "v",
+				acl: "commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "internal/checkout same creation transaction only: scoped server cart origins proved against exact accepted claim event, no runtime caller or client fields; price-neutral."},
+			"order_comment_posts": {args: "p_tenant uuid, p_store uuid, p_order uuid", result: "TABLE(post_id text, occurred_at timestamp with time zone, session_id uuid)", volatility: "s",
+				acl: "commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "internal/attribution R6: checkout definer only, exact accepted claim version to intake comment to post; never session fan-out or actor data."},
+			"attribution_session_orders": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "SETOF uuid", volatility: "s",
+				acl: "commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "internal/attribution D9: consumed claim order IDs of exact session, no post fan-out, no actor/line data; checkout aggregate definer only."},
+			"attribution_funnel": {args: "p_tenant uuid, p_store uuid, p_session uuid, p_from date, p_to date", result: "jsonb", volatility: "s",
+				acl: "commerce_ads_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "internal/ads D9 session-only aggregate of received comment intake, accepted claim events and current issued checkout links; no actor identifiers or message text."},
+			"attribution_sources": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "TABLE(id uuid, session_id uuid, binding_id uuid, asset_id text, source_object_id text)", volatility: "s",
+				acl: "commerce_ads_writer:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE,commerce_media_writer:EXECUTE", comment: "internal/ads D9 narrow source projection for aggregate reads only; domain owner retains table rights; exact tenant/store/session and active Page sources."},
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
@@ -425,7 +453,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			}
 			seen++
 			if !definer || r.owner != "commerce_claims_writer" || r.config != "search_path=pg_catalog" || r.args != w.args || r.result != w.result ||
-				r.volatility != w.volatility || r.acl != w.acl || !strings.Contains(r.comment, "internal/claims") || !strings.Contains(r.comment, w.caller) {
+				r.volatility != w.volatility || r.acl != w.acl || (w.comment != "" && r.comment != w.comment) ||
+				(w.comment == "" && (!strings.Contains(r.comment, "internal/claims") || !strings.Contains(r.comment, w.caller))) {
 				t.Fatalf("claims.%s definer shape %+v (definer=%t), want %+v", r.name, r, definer, w)
 			}
 		}
@@ -440,8 +469,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// Four T10 definers + six meta-claims-intake-v1 claims definers + live.put_claim_source and the
 		// live.claim_windows interval trigger function (§2, §4).
 		// 0110 adds exactly order_live_sources, owned by the domain rather than auth.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 16 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its sixteen functions (previous fifteen + 0110 order_live_sources)", n)
+		// 0113 adds exactly five domain-owned attribution functions.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 21 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-one functions (previous sixteen + five 0113 domain seams)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -453,6 +483,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
 			       -- 0110 ACL ruling: authenticated merchant projection only; not runtime-callable.
 			       OR (r.rolname='commerce_auth' AND p.proname='order_live_sources')
+			       -- 0113: exact internal checkout/ads/media/integration capabilities, no raw table rights.
+			       OR (r.rolname='commerce_checkout_writer' AND p.proname IN ('capture_order_origins','order_comment_posts','attribution_session_orders'))
+			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
+			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')

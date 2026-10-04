@@ -1,0 +1,33 @@
+✖ actual read hook retains one key across network UNKNOWN, reload, and provider UNKNOWN (24.29ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 402.564958
+
+✖ failing tests:
+
+test at tests/admin/attribution-audience.test.ts:232:1
+✖ actual read hook retains one key across network UNKNOWN, reload, and provider UNKNOWN (24.29ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'audience-read-44444444-4444-4444-8444-000000000001',
+  +   'audience-read-44444444-4444-4444-8444-000000000002'
+  -   'audience-read-44444444-4444-4444-8444-000000000001'
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:363:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'audience-read-44444444-4444-4444-8444-000000000001', 'audience-read-44444444-4444-4444-8444-000000000002' ],
+    expected: [ 'audience-read-44444444-4444-4444-8444-000000000001', 'audience-read-44444444-4444-4444-8444-000000000001' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

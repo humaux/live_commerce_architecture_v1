@@ -5,9 +5,10 @@ import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { request } from "node:https";
+import { isIP } from "node:net";
 import path from "node:path";
 
-const out = "output/platform-site",
+const out = process.env.LC_PLATFORM_EDGE_EVIDENCE ?? "output/platform-site",
   name = `lc-platform-ps3-${process.pid}`;
 await mkdir(out, { recursive: true });
 const dir = await mkdtemp(path.join(tmpdir(), "lc-platform-edge-"));
@@ -88,7 +89,10 @@ try {
   await writeFile(
     runtime,
     config +
-      '\nhttp://:3100 {\n\tbind 127.0.0.1\n\trespond "PS3 MOCK upstream host={http.request.host}" 200\n}\n',
+      '\nhttp://:3100 {\n\tbind 127.0.0.1\n\trespond "PS3 MOCK upstream host={http.request.host}" 200\n}\n' +
+      // MOCK observes actual upstream headers only. Its allowlist is a fixture,
+      // not proof that the production BFF authenticates an edge independently.
+      `\nhttp://:3200 {\n\tbind 127.0.0.1\n\t@known host ${vars.LC_STORE_HOST}\n\thandle @known {\n\t\trespond \`{"host":"{http.request.host}","xff":"{http.request.header.X-Forwarded-For}","xfh":"{http.request.header.X-Forwarded-Host}"}\` 200\n\t}\n\thandle {\n\t\trespond \`{"host":"{http.request.host}","xff":"{http.request.header.X-Forwarded-For}","xfh":"{http.request.header.X-Forwarded-Host}"}\` 404\n\t}\n}\n`,
   );
   docker(
     "run",
@@ -244,6 +248,129 @@ try {
     200,
     "admin BFF routing preserved",
   );
+  const storefront = [];
+  // Access logs measure the actual edge connection peer, independently of the
+  // echoed forwarded header. Docker's peer is not assumed to be loopback.
+  const connectionPeer = async (uri) => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const records = docker("logs", name)
+        .split("\n")
+        .flatMap((line) => {
+          try {
+            return [JSON.parse(line)];
+          } catch {
+            return [];
+          }
+        });
+      const record = records.find((entry) => entry.request?.uri === uri);
+      if (record) {
+        assert.ok(
+          isIP(record.request.remote_ip),
+          "access log has a literal connection peer",
+        );
+        return record.request.remote_ip;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    throw new Error(`missing Caddy connection-peer access log: ${uri}`);
+  };
+  for (const [label, hostileXFF] of [
+    ["single", "203.0.113.9"],
+    ["chain", "203.0.113.9, 198.51.100.8"],
+  ]) {
+    const uri = `/r10-edge/${label}`;
+    const response = await edge(vars.LC_STORE_HOST, uri, "GET", {
+      "X-Forwarded-For": hostileXFF,
+      "X-Forwarded-Host": vars.LC_ADMIN_HOST,
+    });
+    assert.equal(response.status, 200, `storefront ${label} request`);
+    const upstream = JSON.parse(response.text);
+    const peer = await connectionPeer(uri);
+    assert.equal(
+      upstream.host,
+      vars.LC_STORE_HOST,
+      "actual store Host survives hostile XFH",
+    );
+    assert.equal(upstream.xfh, vars.LC_STORE_HOST, "edge replaces hostile XFH");
+    assert.equal(
+      upstream.xff,
+      peer,
+      "XFF is exactly the connection peer, never the buyer value or appended chain",
+    );
+    assert.notEqual(upstream.xff, hostileXFF);
+    storefront.push({
+      label,
+      hostileXFF,
+      hostileXFH: vars.LC_ADMIN_HOST,
+      peer,
+      status: response.status,
+      upstream,
+    });
+  }
+  // Keep known SNI so this request reaches the shipping catch-all with an
+  // unknown actual HTTP Host. Its MOCK upstream must see that Host and reject
+  // it even when the buyer supplies the real store in X-Forwarded-Host.
+  const unknownHost = "unknown.localhost";
+  const unknownURI = "/r10-edge/unknown-http-host";
+  const unknown = await edge(vars.LC_STORE_HOST, unknownURI, "GET", {
+    host: unknownHost,
+    "X-Forwarded-Host": vars.LC_STORE_HOST,
+    "X-Forwarded-For": "203.0.113.9, 198.51.100.8",
+  });
+  assert.equal(
+    unknown.status,
+    404,
+    "unknown actual Host rejected by MOCK allowlist through shipping catch-all",
+  );
+  const unknownUpstream = JSON.parse(unknown.text);
+  const unknownPeer = await connectionPeer(unknownURI);
+  assert.equal(
+    unknownUpstream.host,
+    unknownHost,
+    "XFH cannot turn unknown actual Host into the store",
+  );
+  assert.equal(unknownUpstream.xfh, unknownHost);
+  assert.equal(
+    unknownUpstream.xff,
+    unknownPeer,
+    "catch-all also replaces buyer XFF with connection peer",
+  );
+  storefront.push({
+    label: "unknown-http-host-known-sni",
+    hostileXFH: vars.LC_STORE_HOST,
+    peer: unknownPeer,
+    status: unknown.status,
+    upstream: unknownUpstream,
+    boundary: "MOCK allowlist rejection; no real BFF authority claim",
+  });
+  let tlsDenial;
+  await assert.rejects(
+    edge(unknownHost, "/r10-edge/unknown-sni", "GET", {
+      "X-Forwarded-Host": vars.LC_STORE_HOST,
+    }),
+    (error) => {
+      assert.equal(
+        error.code,
+        "EPROTO",
+        "unknown SNI fails during TLS, not an unrelated timeout",
+      );
+      assert.match(
+        error.message,
+        /(?:tlsv1 alert internal error|sslv3 alert handshake failure)/i,
+      );
+      tlsDenial = { code: error.code, message: error.message };
+      return true;
+    },
+  );
+  storefront.push({
+    label: "unknown-sni",
+    host: unknownHost,
+    hostileXFH: vars.LC_STORE_HOST,
+    result: "TLS_DENIED",
+    observed: tlsDenial,
+    boundary:
+      "shipping on-demand TLS with no local ask service; not a domain-authorization service test",
+  });
   await writeFile(
     `${out}/ps3-edge.json`,
     JSON.stringify(
@@ -255,13 +382,14 @@ try {
         spoofedForwardedHost: 404,
         www: redirect,
         admin: 200,
+        storefront,
       },
       null,
       2,
     ),
   );
   console.log(
-    `PASS PS3: pinned Caddy validate + fmt + adapt; ${evidence.length + 5} edge requests, www 301 path/query, actual Host preserved; MOCK upstream`,
+    `PASS PS3: pinned Caddy validate + fmt + adapt; ${evidence.length + 5} platform edge requests + ${storefront.length} storefront edge cases, www 301 path/query, actual Host preserved and XFF equals connection peer; MOCK upstream`,
   );
 } finally {
   if (started) {

@@ -1,0 +1,113 @@
+✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (1.269375ms)
+✔ R11 durable receipt journal validates phase against exact operation state (0.335084ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (8.523292ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.634209ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.466ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.135375ms)
+✖ actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN (10.763417ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (18.524ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 4
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 317.64025
+
+✖ failing tests:
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (8.523292ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:197:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.634209ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:197:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:163:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.466ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:197:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:235:1
+✖ actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN (10.763417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + {
+  +   '$$typeof': Symbol(react.transitional.element),
+  +   _owner: null,
+  +   _store: {},
+  +   key: null,
+  +   props: {
+  +     'data-testid': 'attribution-audience-retry',
+  +     children: 'Check same read request',
+  +     disabled: false,
+  +     onClick: [Function: onClick],
+  +     type: 'button'
+  +   },
+  +   type: 'button'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:385:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [Object],
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,116 @@
+✖ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (0.689375ms)
+✖ R11 durable receipt journal validates phase against exact operation state (0.648541ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (1.378334ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.142583ms)
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.112042ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.231375ms)
+✖ actual POST transport uses CSRF and session fence; 403 independent of response text (12.987792ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 1
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 261.067209
+
+✖ failing tests:
+
+test at tests/admin/attribution-audience.test.ts:20:1
+✖ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (0.689375ms)
+  Error: audience_ack_shape
+      at parseAudienceAck (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/apps/admin/lib/attribution-audience.ts:16:11)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:30:22)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at tests/admin/attribution-audience.test.ts:42:1
+✖ R11 durable receipt journal validates phase against exact operation state (0.648541ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      boundary: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      key: 'audience-read-44444444-4444-4444-8444-444444444444',
+      operation_id: '44444444-4444-4444-8444-444444444444',
+      phase: 'queued',
+  -   state: 'READY'
+    }
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:46:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { key: 'audience-read-44444444-4444-4444-8444-444444444444', boundary: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', phase: 'queued', operation_id: '44444444-4444-4444-8444-444444444444' },
+    expected: { key: 'audience-read-44444444-4444-4444-8444-444444444444', boundary: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', phase: 'queued', operation_id: '44444444-4444-4444-8444-444444444444', state: 'READY' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/attribution-audience.test.ts:71:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in en (1.378334ms)
+  TypeError: (0 , attribution_audience_1.audienceStorageKey) is not a function
+      at AttributionAudienceRead (evalmachine.<anonymous>:13:70)
+      at Object.react_stack_bottom_frame (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10371:18)
+      at renderWithHooks (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5361:19)
+      at renderElement (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5796:23)
+      at retryNode (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6772:31)
+      at performWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7919:19)
+      at startWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8807:7)
+      at renderToStringImpl (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8933:7)
+      at process.env.NODE_ENV.exports.renderToStaticMarkup (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10426:14)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:76:20)
+
+test at tests/admin/attribution-audience.test.ts:71:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.142583ms)
+  TypeError: (0 , attribution_audience_1.audienceStorageKey) is not a function
+      at AttributionAudienceRead (evalmachine.<anonymous>:13:70)
+      at Object.react_stack_bottom_frame (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10371:18)
+      at renderWithHooks (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5361:19)
+      at renderElement (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5796:23)
+      at retryNode (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6772:31)
+      at performWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7919:19)
+      at startWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8807:7)
+      at renderToStringImpl (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8933:7)
+      at process.env.NODE_ENV.exports.renderToStaticMarkup (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10426:14)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:76:20)
+
+test at tests/admin/attribution-audience.test.ts:71:3
+✖ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.112042ms)
+  TypeError: (0 , attribution_audience_1.audienceStorageKey) is not a function
+      at AttributionAudienceRead (evalmachine.<anonymous>:13:70)
+      at Object.react_stack_bottom_frame (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10371:18)
+      at renderWithHooks (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5361:19)
+      at renderElement (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5796:23)
+      at retryNode (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6772:31)
+      at performWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7919:19)
+      at startWork (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8807:7)
+      at renderToStringImpl (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8933:7)
+      at process.env.NODE_ENV.exports.renderToStaticMarkup (/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10426:14)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:76:20)
+
+test at tests/admin/attribution-audience.test.ts:106:1
+✖ actual POST transport uses CSRF and session fence; 403 independent of response text (12.987792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'queued'
+  - 'acknowledged'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution-r11-ui/tests/admin/attribution-audience.test.ts:146:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'queued',
+    expected: 'acknowledged',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

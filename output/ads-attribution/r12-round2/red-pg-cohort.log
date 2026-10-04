@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+    ads_attribution_signals_test.go:98: orders=0 want 1
+--- FAIL: TestAdsAttributionR10SignalsOnlyExcludedFromReports (24.27s)
+FAIL
+FAIL	livecommerce/tests/foundation	25.682s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

@@ -1,0 +1,14 @@
+2026-10-04T02:02:40Z
+10:02  up 4 days, 17:19, 1 user, load averages: 10.97 6.69 4.82
+64402     1 111.0 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 6910  5748  29.0 /Users/luolimo/humaux-target-boot/debug/deps/health_snapshot-a8869c99fe18a3c0
+89181 89152   7.0 /Applications/WeChat.app/Contents/MacOS/WeChatAppEx.app/Contents/Frameworks/WeChatAppEx Framework.framework/Versions/C/Helpers/WeChatAppEx Helper (Renderer).app/Contents/MacOS/WeChatAppEx Helper (Renderer)
+  622     1   7.0 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+20612 20557   5.9 /Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/154.0.8037.93/Helpers/Codex (Service).app/Contents/MacOS/Codex (Service)
+ 1153     1   5.2 /System/Library/ExtensionKit/Extensions/WallpaperAerialsExtension.appex/Contents/MacOS/WallpaperAerialsExtension
+20686 20557   4.5 /Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex
+64363 64361   4.2 /Applications/Docker.app/Contents/MacOS/com.docker.backend
+20679 20557   4.0 /Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/154.0.8037.93/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)
+89948     1   2.2 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService
+77967 77966   2.1 /Users/luolimo/Library/Application Support/Claude/claude-code/2.1.286/f2326db61802/claude.app/Contents/MacOS/claude
+21310 20686   1.8 /Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex-code-mode-host

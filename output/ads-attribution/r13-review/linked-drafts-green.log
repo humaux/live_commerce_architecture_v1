@@ -1,0 +1,25 @@
+✔ R11 large linked-draft list is complete but collapsed in en (55.282083ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-TW (3.648792ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-CN (4.334625ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (6.060125ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (1.861709ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (1.763291ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.194083ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (16.274209ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (15.113417ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (10.486041ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.2115ms)
+✔ R8: null stays unknown and unauthorised / insufficient remain different states (0.188333ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.836666ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.0695ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.590833ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.268167ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.120875ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 466.820416

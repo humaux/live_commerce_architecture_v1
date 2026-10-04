@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionStorage
+    ads_attribution_test.go:16: R2 requires orders.order_attribution outside immutable snapshots
+--- FAIL: TestAdsAttributionStorage (1.14s)
+FAIL
+FAIL	livecommerce/tests/foundation	1.817s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

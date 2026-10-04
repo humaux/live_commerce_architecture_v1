@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ productID: string }> },
 ): Promise<Response> {
   const { productID } = await params;
@@ -18,6 +18,7 @@ export async function GET(
   // Relative Location: the redirect never depends on a caller-supplied Host header.
   return new Response(null, {
     status: 308,
-    headers: { Location: `/zh-TW/products/${productID}`, "Cache-Control": "no-store" },
+    // AT1: retain lc_ad/fbclid through the locale hop; query values never choose the destination.
+    headers: { Location: `/zh-TW/products/${productID}${new URL(request.url).search}`, "Cache-Control": "no-store" },
   });
 }

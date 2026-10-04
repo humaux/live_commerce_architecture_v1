@@ -1,0 +1,38 @@
+[
+  {
+    "File": "attribution-checkout-zh-TW-390.png",
+    "Sha256": "f7360bc2c9286eb6f34a858a0c3b186be9a8ac071092bc40646e29b8bb35eeee",
+    "Locale": "zh-TW",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-zh-TW-1586.png",
+    "Sha256": "2a27ec7dcc3265cff8308a68eb5a09e3df2b2f2c7f39486ab68a775d5d9c0d64",
+    "Locale": "zh-TW",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-checkout-zh-CN-390.png",
+    "Sha256": "4fd34afb3b6032d39330f7263f92ab1a5833926752d18702b7136a3238beed2a",
+    "Locale": "zh-CN",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-zh-CN-1586.png",
+    "Sha256": "0b613031f564dd03f0b27754b294dcb5121552c5ff541f3f568d359036047382",
+    "Locale": "zh-CN",
+    "Viewport": "1586"
+  },
+  {
+    "File": "attribution-checkout-en-390.png",
+    "Sha256": "d0d0c49b6f50849004f05d08eed807b76ddda793cdaaae442a9f2ad41281d441",
+    "Locale": "en",
+    "Viewport": "390"
+  },
+  {
+    "File": "attribution-checkout-en-1586.png",
+    "Sha256": "0b1223a45610e6b098af79a6141433a1396d7ab9e406986d6f8650a5904a58de",
+    "Locale": "en",
+    "Viewport": "1586"
+  }
+]

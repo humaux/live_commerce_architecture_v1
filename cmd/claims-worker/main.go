@@ -207,6 +207,12 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// D9: read-only Page audience route reuses this process's private token custody.
+	audienceRoutes, err := metareply.AudienceRoutes(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
+	routes = append(routes, audienceRoutes...)
 	if c.ecpayCfg.Enabled {
 		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
 		if err != nil {

@@ -1,0 +1,59 @@
+=== RUN   TestAdsAttributionR10PaidOnlyMixedCohort
+--- PASS: TestAdsAttributionR10PaidOnlyMixedCohort (22.32s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+--- PASS: TestAdsAttributionR11AudienceBoundReplay (0.52s)
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/card
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/cash_on_delivery
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/bank_transfer
+=== RUN   TestAdsAttributionR12PaymentSignalMinimization/pay_at_pickup
+--- PASS: TestAdsAttributionR12PaymentSignalMinimization (16.72s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/card (4.17s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/cash_on_delivery (4.19s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/bank_transfer (4.14s)
+    --- PASS: TestAdsAttributionR12PaymentSignalMinimization/pay_at_pickup (4.20s)
+=== RUN   TestAdsAttributionR12UnknownReadCooldown
+--- PASS: TestAdsAttributionR12UnknownReadCooldown (2.62s)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip()
+--- PASS: TestAdsAttributionR12CheckoutDefinerACL (0.27s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip() (0.00s)
+=== RUN   TestAdsAttributionR12GrantAwareUnread
+=== RUN   TestAdsAttributionR12GrantAwareUnread/missing-read-insights
+=== RUN   TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot
+--- PASS: TestAdsAttributionR12GrantAwareUnread (0.52s)
+    --- PASS: TestAdsAttributionR12GrantAwareUnread/missing-read-insights (0.23s)
+    --- PASS: TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot (0.29s)
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/READY
+=== RUN   TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING
+--- PASS: TestAdsAttributionR12AudienceLeaseBoundary (0.47s)
+    --- PASS: TestAdsAttributionR12AudienceLeaseBoundary/READY (0.24s)
+    --- PASS: TestAdsAttributionR12AudienceLeaseBoundary/DISPATCHING (0.23s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+--- PASS: TestAdsAttributionAT4AT9ExactReport (21.54s)
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+--- PASS: TestAdsAttributionR10SignalsOnlyExcludedFromReports (24.32s)
+PASS
+ok  	livecommerce/tests/foundation	91.344s
+test-focused: top-level PASS=9 FAIL=0 SKIP=0 exit=0

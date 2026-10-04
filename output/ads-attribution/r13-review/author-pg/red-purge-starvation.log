@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR11PurgeNoStarvation
+    ads_attribution_r11_test.go:446: withdrawn row starved behind 1000 still-eligible signals
+--- FAIL: TestAdsAttributionR11PurgeNoStarvation (2.37s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.438s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

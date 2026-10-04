@@ -140,6 +140,7 @@ type Server struct {
 	objects    map[string]*Object
 	order      []string // creation order of object ids
 	insights   map[string]Insights
+	breakdowns map[string][]map[string]any
 	faults     []*Fault
 	violations []string
 	appID      string
@@ -154,7 +155,7 @@ var routeRe = regexp.MustCompile(`^/(v[0-9]{1,3}\.[0-9]{1,2})/(.*)$`)
 func New() *Server {
 	s := &Server{nextID: 120000000000000, accounts: map[string]*Account{}, tokens: map[string]*tokenInfo{},
 		codes: map[string]string{}, usedCodes: map[string]bool{}, objects: map[string]*Object{},
-		insights: map[string]Insights{}, pageSize: 100}
+		insights: map[string]Insights{}, breakdowns: map[string][]map[string]any{}, pageSize: 100}
 	s.srv = httptest.NewServer(http.HandlerFunc(s.serve))
 	return s
 }
@@ -218,6 +219,17 @@ func (s *Server) ClearFaults() { s.mu.Lock(); s.faults = nil; s.mu.Unlock() }
 func (s *Server) SetInsights(campaign, day string, in Insights) {
 	s.mu.Lock()
 	s.insights[campaign+"|"+day] = in
+	s.mu.Unlock()
+}
+
+// SetBreakdowns supplies a separate MOCK partition; ordinary daily rows never
+// double as demographics. Clone through JSON so fixture callers cannot race reads.
+func (s *Server) SetBreakdowns(campaign, day, wire string, rows []map[string]any) {
+	raw, _ := json.Marshal(rows)
+	var copyRows []map[string]any
+	_ = json.Unmarshal(raw, &copyRows)
+	s.mu.Lock()
+	s.breakdowns[campaign+"|"+day+"|"+wire] = copyRows
 	s.mu.Unlock()
 }
 
@@ -671,6 +683,16 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request, route, rest stri
 		}
 		var tr struct{ Since, Until string }
 		_ = json.Unmarshal([]byte(q.Get("time_range")), &tr)
+		if wire := q.Get("breakdowns"); wire != "" {
+			s.mu.Lock()
+			rows := s.breakdowns[parts[0]+"|"+tr.Since+"|"+wire]
+			s.mu.Unlock()
+			if rows == nil {
+				rows = []map[string]any{}
+			}
+			writeJSON(w, map[string]any{"data": rows})
+			return 200, parts[0]
+		}
 		s.mu.Lock()
 		row, ok := s.insights[parts[0]+"|"+tr.Since]
 		s.mu.Unlock()

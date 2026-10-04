@@ -1,0 +1,14 @@
+✔ R10 ROAS has exactly two decimals in en (33.587125ms)
+✔ R10 unknown ROAS is never fabricated as zero in en (0.062791ms)
+✔ R10 ROAS has exactly two decimals in zh-TW (1.051458ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-TW (0.03725ms)
+✔ R10 ROAS has exactly two decimals in zh-CN (0.111834ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-CN (0.027458ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110.873917

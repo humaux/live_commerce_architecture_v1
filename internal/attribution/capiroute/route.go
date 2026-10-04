@@ -134,11 +134,12 @@ type tokenRow struct {
 
 // userRow is the one row of ads.capi_user_data.
 type userRow struct {
-	phone                      *string
-	owner                      string
-	contents                   []byte
-	valueMinor                 int64
-	currency, sourceURL, agent string
+	fbc, fbp, clientIP, emailHash *string
+	phone                         *string
+	owner                         string
+	contents                      []byte
+	valueMinor                    int64
+	currency, sourceURL, agent    string
 }
 
 // loadSecret is the dispatcher LoadSecret hook (C2). Both loaders run in the dispatcher's lease-fenced transaction with
@@ -169,11 +170,24 @@ func (r *route) loadSecret(ctx context.Context, tx pgx.Tx, claim core.SecretClai
 	if err != nil {
 		return core.Secret{}, errors.New("capiroute: user data load failed")
 	}
+	// ads.capi_attribution_data repeats the lease/consent fence; no pseudonyms enter operation requests or logs.
+	err = tx.QueryRow(ctx, `SELECT fbc,fbp,client_ip,email_hash FROM ads.capi_attribution_data($1::uuid,$2::bigint,$3::bytea)`,
+		claim.OperationID, claim.Generation, claim.LeaseToken).Scan(&ur.fbc, &ur.fbp, &ur.clientIP, &ur.emailHash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return core.Secret{}, fmt.Errorf("attribution policy denied: %w", core.ErrPolicyDenied)
+	}
+	if err != nil {
+		return core.Secret{}, errors.New("capiroute: attribution context unavailable")
+	}
 	return r.assemble(tr, ur)
 }
 
 // packed is the core.Secret payload: what DispatchWithSecret needs and nothing raw.
 type packed struct {
+	FBC        string    `json:"fbc,omitempty"`
+	FBP        string    `json:"fbp,omitempty"`
+	ClientIP   string    `json:"client_ip,omitempty"`
+	EM         string    `json:"em,omitempty"`
 	Token      []byte    `json:"token"`
 	PH         string    `json:"ph,omitempty"`
 	ExternalID string    `json:"external_id"`
@@ -212,6 +226,27 @@ func (r *route) assemble(tr tokenRow, ur userRow) (core.Secret, error) {
 	}
 	p := packed{ExternalID: attribution.ExternalID(r.externalIDKey, tr.tenant, tr.store, ur.owner), Agent: ur.agent,
 		Contents: contents, Value: value, Currency: ur.currency, SourceURL: ur.sourceURL}
+	if ur.fbc != nil {
+		p.FBC = *ur.fbc
+	}
+	if ur.fbp != nil {
+		p.FBP = *ur.fbp
+	}
+	if ur.clientIP != nil {
+		p.ClientIP = *ur.clientIP
+	}
+	if ur.emailHash != nil {
+		// SQL owns normalization/hash; raw email must never reach this worker.
+		if len(*ur.emailHash) != 64 {
+			return core.Secret{}, ErrConfig
+		}
+		for _, c := range *ur.emailHash {
+			if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+				return core.Secret{}, ErrConfig
+			}
+		}
+		p.EM = *ur.emailHash
+	}
 	if p.ExternalID == "" {
 		return core.Secret{}, ErrConfig
 	}
@@ -279,6 +314,10 @@ type serverEvent struct {
 }
 
 type userData struct {
+	FBC        string   `json:"fbc,omitempty"`
+	FBP        string   `json:"fbp,omitempty"`
+	ClientIP   string   `json:"client_ip_address,omitempty"`
+	EM         []string `json:"em,omitempty"`
 	ExternalID []string `json:"external_id"`
 	PH         []string `json:"ph,omitempty"`
 	UserAgent  string   `json:"client_user_agent"`
@@ -300,6 +339,10 @@ type eventBody struct {
 // "website" (C4); value is the exact decimal of amount_minor/100 as a JSON number (I05), never a float.
 func buildBody(cr captureRequest, p packed) ([]byte, error) {
 	ud := userData{ExternalID: []string{p.ExternalID}, UserAgent: p.Agent}
+	ud.FBC, ud.FBP, ud.ClientIP = p.FBC, p.FBP, p.ClientIP
+	if p.EM != "" {
+		ud.EM = []string{p.EM}
+	}
 	if p.PH != "" {
 		ud.PH = []string{p.PH}
 	}

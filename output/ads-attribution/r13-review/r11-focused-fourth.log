@@ -1,0 +1,28 @@
+=== RUN   TestAdsAttributionR11UnknownClearsAllSignals
+--- PASS: TestAdsAttributionR11UnknownClearsAllSignals (5.08s)
+=== RUN   TestAdsAttributionR11SQLHashesEmail
+--- PASS: TestAdsAttributionR11SQLHashesEmail (0.40s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:77: put_claim_source page: ERROR: insert or update on table "claim_sources" violates foreign key constraint "claim_sources_tenant_id_store_id_session_id_fkey" (SQLSTATE 23503)
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (0.35s)
+=== RUN   TestAdsAttributionR11ClickLiveWindow
+--- PASS: TestAdsAttributionR11ClickLiveWindow (1.97s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+--- PASS: TestAdsAttributionR11UnknownDraft (0.30s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:266: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=3.1078555s status=200 bytes=74925
+    ads_attribution_r11_test.go:266: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=3.235028417s status=200 bytes=74630
+    ads_attribution_r11_test.go:316: REAL_PG direct runtime SQL elapsed=3.285134167s bytes=81016 error=<nil>
+--- PASS: TestAdsAttributionR11ReportCapAndDeadline (18.72s)
+=== RUN   TestAdsAttributionR11SessionCap
+--- PASS: TestAdsAttributionR11SessionCap (0.33s)
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+--- PASS: TestAdsAttributionR11OptionalBreakdownAndNull (2.12s)
+=== RUN   TestAdsAttributionR11PurgeNoStarvation
+--- PASS: TestAdsAttributionR11PurgeNoStarvation (1.29s)
+=== RUN   TestAdsAttributionR11AgedRetryAndFinalDaily
+--- PASS: TestAdsAttributionR11AgedRetryAndFinalDaily (2.66s)
+FAIL
+FAIL	livecommerce/tests/foundation	34.177s
+FAIL
+test-focused: top-level PASS=9 FAIL=1 SKIP=0 exit=1

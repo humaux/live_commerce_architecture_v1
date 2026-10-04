@@ -1,0 +1,97 @@
+=== RUN   TestAdsAttributionAT3ExactComment
+=== RUN   TestAdsAttributionAT3ExactComment/one_boost
+=== RUN   TestAdsAttributionAT3ExactComment/simultaneous_boosts
+=== RUN   TestAdsAttributionAT3ExactComment/outside_window
+=== RUN   TestAdsAttributionAT3ExactComment/other_post_in_same_session
+=== RUN   TestAdsAttributionAT3ExactComment/click_beats_post
+=== RUN   TestAdsAttributionAT3ExactComment/line_updated_after_redeem
+--- PASS: TestAdsAttributionAT3ExactComment (48.96s)
+    --- PASS: TestAdsAttributionAT3ExactComment/one_boost (12.23s)
+    --- PASS: TestAdsAttributionAT3ExactComment/simultaneous_boosts (5.22s)
+    --- PASS: TestAdsAttributionAT3ExactComment/outside_window (10.12s)
+    --- PASS: TestAdsAttributionAT3ExactComment/other_post_in_same_session (4.75s)
+    --- PASS: TestAdsAttributionAT3ExactComment/click_beats_post (3.90s)
+    --- PASS: TestAdsAttributionAT3ExactComment/line_updated_after_redeem (12.75s)
+=== RUN   TestAdsAttributionAT8BreakdownDispatch
+--- PASS: TestAdsAttributionAT8BreakdownDispatch (4.94s)
+=== RUN   TestAdsAttributionAT1BeginFreeze
+=== RUN   TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it
+=== RUN   TestAdsAttributionAT1BeginFreeze/expired
+=== RUN   TestAdsAttributionAT1BeginFreeze/future
+=== RUN   TestAdsAttributionAT1BeginFreeze/foreign_store
+=== RUN   TestAdsAttributionAT1BeginFreeze/malformed
+--- PASS: TestAdsAttributionAT1BeginFreeze (2.47s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it (0.67s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/expired (0.46s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/future (0.44s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/foreign_store (0.47s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/malformed (0.43s)
+=== RUN   TestAdsAttributionAT1AtomicRollback
+--- PASS: TestAdsAttributionAT1AtomicRollback (0.41s)
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/consented
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/refused
+--- PASS: TestAdsAttributionAT2PayloadAndTerminalIP (1.79s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/consented (0.81s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/refused (0.97s)
+=== RUN   TestAdsAttributionR3Erasure
+--- PASS: TestAdsAttributionR3Erasure (0.85s)
+=== RUN   TestAdsAttributionR3NoOperationPurge
+=== RUN   TestAdsAttributionR3NoOperationPurge/no_consent
+=== RUN   TestAdsAttributionR3NoOperationPurge/disabled
+=== RUN   TestAdsAttributionR3NoOperationPurge/expired
+=== RUN   TestAdsAttributionR3NoOperationPurge/cancelled
+--- PASS: TestAdsAttributionR3NoOperationPurge (3.37s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/no_consent (0.71s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/disabled (1.09s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/expired (0.80s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/cancelled (0.76s)
+=== RUN   TestAdsAttributionR3ConsentedBeginKeepsIP
+--- PASS: TestAdsAttributionR3ConsentedBeginKeepsIP (0.84s)
+=== RUN   TestAdsAttributionR3FinalFailureClearsIP
+--- PASS: TestAdsAttributionR3FinalFailureClearsIP (0.82s)
+=== RUN   TestAdsAttributionR2ScopeAndACL
+--- PASS: TestAdsAttributionR2ScopeAndACL (0.49s)
+=== RUN   TestAdsAttributionEmptyProjection
+--- PASS: TestAdsAttributionEmptyProjection (0.16s)
+=== RUN   TestAdsAttributionR9BeginNeverFails
+=== RUN   TestAdsAttributionR9BeginNeverFails/legitimate_click
+=== RUN   TestAdsAttributionR9BeginNeverFails/garbage
+=== RUN   TestAdsAttributionR9BeginNeverFails/expired
+=== RUN   TestAdsAttributionR9BeginNeverFails/foreign
+=== RUN   TestAdsAttributionR9BeginNeverFails/missing
+=== RUN   TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp
+--- PASS: TestAdsAttributionR9BeginNeverFails (2.80s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/legitimate_click (0.37s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/garbage (0.55s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/expired (0.46s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/foreign (0.55s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/missing (0.46s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp (0.40s)
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/other_store
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp
+--- PASS: TestAdsAttributionR9RefusalCommitsUnchanged (2.87s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute (0.38s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session (0.38s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/other_store (0.62s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze (0.62s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp (0.88s)
+=== RUN   TestAdsAttributionR9MalformedServerParameters
+=== RUN   TestAdsAttributionR9MalformedServerParameters/short_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_store
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_order
+--- PASS: TestAdsAttributionR9MalformedServerParameters (0.22s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/short_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_store (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_order (0.00s)
+=== RUN   TestAdsAttributionReport
+--- PASS: TestAdsAttributionReport (0.51s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+Terminated: 15
+test-focused: top-level PASS=15 FAIL=0 SKIP=0 exit=0

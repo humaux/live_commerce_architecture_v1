@@ -1,0 +1,369 @@
+[
+  [
+    {
+      "text": "Source path",
+      "left": 336,
+      "right": 405.359375,
+      "width": 69.359375,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 491.34375,
+      "right": 586.046875,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 610.046875,
+      "right": 755.4375,
+      "width": 145.390625,
+      "height": 14
+    },
+    {
+      "text": "Uncollected orders",
+      "left": 713.984375,
+      "right": 822.6875,
+      "width": 108.703125,
+      "height": 14
+    },
+    {
+      "text": "Uncollected amount",
+      "left": 817.921875,
+      "right": 932.609375,
+      "width": 114.6875,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Meta account day",
+      "left": 336,
+      "right": 436.703125,
+      "width": 100.703125,
+      "height": 14
+    },
+    {
+      "text": "Meta account time zone",
+      "left": 512.453125,
+      "right": 647.8125,
+      "width": 135.359375,
+      "height": 14
+    },
+    {
+      "text": "Breakdown",
+      "left": 710.5,
+      "right": 775.1875,
+      "width": 64.6875,
+      "height": 14
+    },
+    {
+      "text": "Bucket",
+      "left": 862.546875,
+      "right": 902.5625,
+      "width": 40.015625,
+      "height": 14
+    },
+    {
+      "text": "Time (Asia/Taipei)",
+      "left": 926.5625,
+      "right": 1028.15625,
+      "width": 101.59375,
+      "height": 14
+    },
+    {
+      "text": "Ad spend",
+      "left": 1056.328125,
+      "right": 1111,
+      "width": 54.671875,
+      "height": 14
+    },
+    {
+      "text": "Reach",
+      "left": 1179.1875,
+      "right": 1215.21875,
+      "width": 36.03125,
+      "height": 14
+    },
+    {
+      "text": "Impressions",
+      "left": 1271.890625,
+      "right": 1342.59375,
+      "width": 70.703125,
+      "height": 14
+    },
+    {
+      "text": "Clicks",
+      "left": 1434.609375,
+      "right": 1469.96875,
+      "width": 35.359375,
+      "height": 14
+    },
+    {
+      "text": "Engagements",
+      "left": 1493.96875,
+      "right": 1572.65625,
+      "width": 78.6875,
+      "height": 14
+    },
+    {
+      "text": "Comments",
+      "left": 1493.96875,
+      "right": 1555.984375,
+      "width": 62.015625,
+      "height": 14
+    },
+    {
+      "text": "Purchases",
+      "left": 1493.96875,
+      "right": 1554.671875,
+      "width": 60.703125,
+      "height": 14
+    },
+    {
+      "text": "Purchase value",
+      "left": 1493.96875,
+      "right": 1582.03125,
+      "width": 88.0625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Ship-to county / city",
+      "left": 336,
+      "right": 450.671875,
+      "width": 114.671875,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 1056.84375,
+      "right": 1151.546875,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 1324.609375,
+      "right": 1470,
+      "width": 145.390625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Product",
+      "left": 336,
+      "right": 381.34375,
+      "width": 45.34375,
+      "height": 14
+    },
+    {
+      "text": "Quantity",
+      "left": 1421.328125,
+      "right": 1470,
+      "width": 48.671875,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Time (Asia/Taipei)",
+      "left": 336,
+      "right": 437.59375,
+      "width": 101.59375,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 1056.84375,
+      "right": 1151.546875,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 1324.609375,
+      "right": 1470,
+      "width": 145.390625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Comments",
+      "left": 336,
+      "right": 398.015625,
+      "width": 62.015625,
+      "height": 14
+    },
+    {
+      "text": "Claims",
+      "left": 931.09375,
+      "right": 970.453125,
+      "width": 39.359375,
+      "height": 14
+    },
+    {
+      "text": "Checkout links",
+      "left": 1134.84375,
+      "right": 1220.203125,
+      "width": 85.359375,
+      "height": 14
+    },
+    {
+      "text": "Paid / collected orders",
+      "left": 1341.953125,
+      "right": 1470,
+      "width": 128.046875,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Time (Asia/Taipei)",
+      "left": 336,
+      "right": 437.59375,
+      "width": 101.59375,
+      "height": 14
+    },
+    {
+      "text": "Ad spend",
+      "left": 687.859375,
+      "right": 742.53125,
+      "width": 54.671875,
+      "height": 14
+    },
+    {
+      "text": "Viewers",
+      "left": 860.671875,
+      "right": 905.828125,
+      "width": 45.15625,
+      "height": 14
+    },
+    {
+      "text": "Comments",
+      "left": 1007.109375,
+      "right": 1069.125,
+      "width": 62.015625,
+      "height": 14
+    },
+    {
+      "text": "Claims",
+      "left": 1163.375,
+      "right": 1202.734375,
+      "width": 39.359375,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 1241.640625,
+      "right": 1336.34375,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 1360.34375,
+      "right": 1505.734375,
+      "width": 145.390625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Age & gender",
+      "left": 336,
+      "right": 414.015625,
+      "width": 78.015625,
+      "height": 14
+    },
+    {
+      "text": "View time (ms), not people",
+      "left": 727.859375,
+      "right": 879,
+      "width": 151.140625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Region",
+      "left": 336,
+      "right": 376.671875,
+      "width": 40.671875,
+      "height": 14
+    },
+    {
+      "text": "View time (ms), not people",
+      "left": 727.859375,
+      "right": 879,
+      "width": 151.140625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Ship-to county / city",
+      "left": 927,
+      "right": 1041.671875,
+      "width": 114.671875,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 1219.359375,
+      "right": 1314.0625,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 1338.0625,
+      "right": 1483.453125,
+      "width": 145.390625,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Product",
+      "left": 927,
+      "right": 972.34375,
+      "width": 45.34375,
+      "height": 14
+    },
+    {
+      "text": "Quantity",
+      "left": 1421.328125,
+      "right": 1470,
+      "width": 48.671875,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Time (Asia/Taipei)",
+      "left": 927,
+      "right": 1028.59375,
+      "width": 101.59375,
+      "height": 14
+    },
+    {
+      "text": "Collected orders",
+      "left": 1219.359375,
+      "right": 1314.0625,
+      "width": 94.703125,
+      "height": 14
+    },
+    {
+      "text": "Net revenue after refunds",
+      "left": 1338.0625,
+      "right": 1483.453125,
+      "width": 145.390625,
+      "height": 14
+    }
+  ]
+]

@@ -29,6 +29,7 @@ import { adsCopy, errorText, type AdsCopy } from "@/lib/ads-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { Icon } from "./Icon";
 import "./ads.css";
+import { attributionCopy } from "@/lib/attribution-copy";
 
 export type AdsInitialError = "signed-out" | "forbidden" | "unavailable";
 type Status = "loading" | "ready" | AdsInitialError;
@@ -271,6 +272,7 @@ export function Ads({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="ads">
       <div className="ads-page" data-testid="merchant-ads">
         <header className="ads-heading">
+          <a data-testid="ads-attribution-link" href={`/${locale}/ads/attribution${store ? `?store=${store.id}` : ""}`}>{attributionCopy[locale].title}</a>
           <h1>{c.title}</h1>
           <p>{c.subtitle}</p>
         </header>

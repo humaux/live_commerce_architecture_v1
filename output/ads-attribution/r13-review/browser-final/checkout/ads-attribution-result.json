@@ -1,0 +1,47 @@
+{
+  "label": "REAL_BROWSER",
+  "results": [
+    {
+      "locale": "zh-TW",
+      "width": 390,
+      "order_id": "e36271ba-5bbc-4711-88e5-edefb431b0b9",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    },
+    {
+      "locale": "zh-TW",
+      "width": 1586,
+      "order_id": "c9b252ba-bddf-428a-90ef-d4cbfa5be685",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 390,
+      "order_id": "4fef3826-7592-41ad-90e6-a4ac0c7104ec",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    },
+    {
+      "locale": "zh-CN",
+      "width": 1586,
+      "order_id": "c057e39e-9f71-4409-a4df-471fad5facce",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    },
+    {
+      "locale": "en",
+      "width": 390,
+      "order_id": "cbf69f4b-9e70-4d94-9259-cf161d8fb7c5",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    },
+    {
+      "locale": "en",
+      "width": 1586,
+      "order_id": "da1015e6-6213-4f6c-bdcd-642fa1be6446",
+      "path": "ad_click",
+      "draft_id": "55b92450-9b1d-425b-af38-70dce885ec29"
+    }
+  ]
+}

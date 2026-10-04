@@ -1,0 +1,86 @@
+✔ R11 large linked-draft list is complete but collapsed in en (50.373916ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-TW (3.688ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-CN (3.789375ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (4.589916ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (1.84575ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (1.763625ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.162542ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (13.723167ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (9.72725ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (9.744375ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.198833ms)
+✖ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.188ms)
+✖ R12 granted but unread audience offers a read, never reconnect in en (0.095ms)
+✖ R12 granted but unread audience offers a read, never reconnect in zh-TW (0.063916ms)
+✖ R12 granted but unread audience offers a read, never reconnect in zh-CN (0.056209ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.717333ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.063125ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.287834ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.232625ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.291917ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 16
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 464.489042
+
+✖ failing tests:
+
+test at tests/admin/attribution.test.ts:288:1
+✖ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.188ms)
+  Error: attribution_shape
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:96:9)
+      at Object.status (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:118:67)
+      at Object.live_audience (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at Array.map (<anonymous>)
+      at Object.sessions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:114:48)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at parseAttributionReport (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:262:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.test.ts:301:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+
+test at tests/admin/attribution.test.ts:308:3
+✖ R12 granted but unread audience offers a read, never reconnect in en (0.095ms)
+  Error: attribution_shape
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:96:9)
+      at Object.status (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:118:67)
+      at Object.live_audience (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at Array.map (<anonymous>)
+      at Object.sessions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:114:48)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at parseAttributionReport (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:262:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.test.ts:314:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+
+test at tests/admin/attribution.test.ts:308:3
+✖ R12 granted but unread audience offers a read, never reconnect in zh-TW (0.063916ms)
+  Error: attribution_shape
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:96:9)
+      at Object.status (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:118:67)
+      at Object.live_audience (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at Array.map (<anonymous>)
+      at Object.sessions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:114:48)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at parseAttributionReport (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:262:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.test.ts:314:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+
+test at tests/admin/attribution.test.ts:308:3
+✖ R12 granted but unread audience offers a read, never reconnect in zh-CN (0.056209ms)
+  Error: attribution_shape
+      at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:96:9)
+      at Object.status (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:118:67)
+      at Object.live_audience (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at Array.map (<anonymous>)
+      at Object.sessions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:114:48)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:126:43
+      at parseAttributionReport (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/apps/admin/lib/attribution-model.ts:262:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.test.ts:314:5)
+      at Test.runInAsyncScope (node:async_hooks:227:14)

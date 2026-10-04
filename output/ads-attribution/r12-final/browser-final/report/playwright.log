@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:2718) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 390 (5.7s)
+  ✓  2 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 1586 (4.4s)
+  ✓  3 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 390 (5.1s)
+  ✓  4 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 1586 (4.2s)
+  ✓  5 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 390 (5.0s)
+  ✓  6 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 1586 (4.2s)
+
+  6 passed (29.2s)

@@ -47,6 +47,17 @@ func HashPhone(e164 string) (string, bool) {
 	return hex.EncodeToString(sum[:]), true
 }
 
+// HashEmail normalizes the buyer-supplied email for CAPI; never hashes an invented recipient identity.
+// https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters (D5).
+func HashEmail(email string) string {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if email == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(email))
+	return hex.EncodeToString(sum[:])
+}
+
 // ExternalID is C3: hex(SHA-256(hex(HMAC-SHA256(key, "capi-external-id/v1|<tenant>|<store>|<owner>")))). The key is the
 // worker-only COMMERCE_CAPI_EXTERNAL_ID_KEY_FILE secret (O-D), so Meta cannot link the id to the internal owner uuid
 // and two stores never share an id for one owner. An empty key returns "" (the route refuses to start without one).

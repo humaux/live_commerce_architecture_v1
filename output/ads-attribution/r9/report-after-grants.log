@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:427: start Stripe payment: conflicting request or version
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (17.89s)
+FAIL
+FAIL	livecommerce/tests/foundation	18.599s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

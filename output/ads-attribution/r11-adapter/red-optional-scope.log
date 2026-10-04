@@ -1,0 +1,5 @@
+--- FAIL: TestR11PageConnectAllowsDeclinedReadInsights (0.00s)
+    r11_scope_test.go:12: declined optional insights must retain Page eligibility: {PageID:11 Name: IGID: IGUsername: Missing:[read_insights] IGMissing:[]}
+FAIL
+FAIL	livecommerce/internal/metaconnect	0.376s
+FAIL

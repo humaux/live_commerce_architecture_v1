@@ -50,7 +50,7 @@ func registerAdsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *ads.Service)
 	const base = "/v1/admin/stores/{store_id}/ads"
 	fallbacks := []string{"/meta/connect", "/meta/callback", "/meta/states/{state_id}", "/meta/bindings", "/settings", "/drafts",
 		"/drafts/{draft_id}", "/drafts/{draft_id}/approve", "/drafts/{draft_id}/publish", "/drafts/{draft_id}/pause",
-		"/drafts/{draft_id}/end", "/report", "/capi"}
+		"/drafts/{draft_id}/end", "/report", "/attribution", "/sessions/{session_id}/audience-read", "/capi"}
 
 	mux.HandleFunc("POST "+base+"/meta/connect", adsRoute(http.MethodPost, true, false, func(w http.ResponseWriter, r *http.Request) {
 		if !adsNoBody(w, r) {
@@ -160,6 +160,24 @@ func registerAdsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *ads.Service)
 		}
 		adsScope(w, r, pool, "ads:read", http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
 			return svc.Report(ctx, tx, s, bearerToken(r), from, to)
+		})
+	}))
+	mux.HandleFunc("GET "+base+"/attribution", adsRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
+		from, to, ok := adsReportWindow(r.URL.Query(), r.URL.RawQuery)
+		if !ok {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		adsScope(w, r, pool, "ads:read", http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return svc.AttributionReport(ctx, tx, s, bearerToken(r), from, to)
+		})
+	}))
+	mux.HandleFunc("POST "+base+"/sessions/{session_id}/audience-read", adsRoute(http.MethodPost, true, false, func(w http.ResponseWriter, r *http.Request) {
+		if !adsNoBody(w, r) {
+			return
+		}
+		adsScope(w, r, pool, "ads:read", http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return svc.ReadLiveAudience(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("session_id"))
 		})
 	}))
 	mux.HandleFunc("PUT "+base+"/capi", adsRoute(http.MethodPut, true, false, func(w http.ResponseWriter, r *http.Request) {

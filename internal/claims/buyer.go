@@ -220,7 +220,7 @@ func RedeemLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, token
 		// (CartInput.Origins is json:"-"); claims.live_prices re-proves them at every Quote.
 		origins := make(map[string]storefront.ClaimOrigin, len(apply))
 		for _, line := range apply {
-			origins[line.skuID] = storefront.ClaimOrigin{BundleID: line.bundleID, OfferID: line.offerID, Quantity: line.quantity}
+			origins[line.skuID] = storefront.ClaimOrigin{BundleID: line.bundleID, OfferID: line.offerID, Quantity: line.quantity, LineVersion: line.version}
 		}
 		out.Cart, err = storefront.SetCart(ctx, tx, s, redeemKeyPrefix+hex.EncodeToString(derived[:])[:48],
 			storefront.CartInput{ExpectedVersion: cart.Version, Items: mergeCart(cart.Items, apply), Origins: origins})

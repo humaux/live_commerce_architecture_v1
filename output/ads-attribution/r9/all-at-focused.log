@@ -1,0 +1,121 @@
+=== RUN   TestAdsAttributionAT3ExactComment
+=== RUN   TestAdsAttributionAT3ExactComment/one_boost
+=== RUN   TestAdsAttributionAT3ExactComment/simultaneous_boosts
+=== RUN   TestAdsAttributionAT3ExactComment/outside_window
+=== RUN   TestAdsAttributionAT3ExactComment/other_post_in_same_session
+=== RUN   TestAdsAttributionAT3ExactComment/click_beats_post
+=== RUN   TestAdsAttributionAT3ExactComment/line_updated_after_redeem
+--- PASS: TestAdsAttributionAT3ExactComment (34.24s)
+    --- PASS: TestAdsAttributionAT3ExactComment/one_boost (11.46s)
+    --- PASS: TestAdsAttributionAT3ExactComment/simultaneous_boosts (3.68s)
+    --- PASS: TestAdsAttributionAT3ExactComment/outside_window (2.90s)
+    --- PASS: TestAdsAttributionAT3ExactComment/other_post_in_same_session (10.11s)
+    --- PASS: TestAdsAttributionAT3ExactComment/click_beats_post (2.82s)
+    --- PASS: TestAdsAttributionAT3ExactComment/line_updated_after_redeem (3.27s)
+=== RUN   TestAdsAttributionAT8BreakdownDispatch
+--- PASS: TestAdsAttributionAT8BreakdownDispatch (2.60s)
+=== RUN   TestAdsAttributionAT1BeginFreeze
+=== RUN   TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it
+=== RUN   TestAdsAttributionAT1BeginFreeze/expired
+=== RUN   TestAdsAttributionAT1BeginFreeze/future
+=== RUN   TestAdsAttributionAT1BeginFreeze/foreign_store
+=== RUN   TestAdsAttributionAT1BeginFreeze/malformed
+--- PASS: TestAdsAttributionAT1BeginFreeze (1.81s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/valid_click_frozen_once_and_replay_cannot_change_it (0.38s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/expired (0.33s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/future (0.34s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/foreign_store (0.43s)
+    --- PASS: TestAdsAttributionAT1BeginFreeze/malformed (0.33s)
+=== RUN   TestAdsAttributionAT1AtomicRollback
+--- PASS: TestAdsAttributionAT1AtomicRollback (0.36s)
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/consented
+=== RUN   TestAdsAttributionAT2PayloadAndTerminalIP/refused
+--- PASS: TestAdsAttributionAT2PayloadAndTerminalIP (1.70s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/consented (0.73s)
+    --- PASS: TestAdsAttributionAT2PayloadAndTerminalIP/refused (0.97s)
+=== RUN   TestAdsAttributionR3Erasure
+--- PASS: TestAdsAttributionR3Erasure (0.86s)
+=== RUN   TestAdsAttributionR3NoOperationPurge
+=== RUN   TestAdsAttributionR3NoOperationPurge/no_consent
+=== RUN   TestAdsAttributionR3NoOperationPurge/disabled
+=== RUN   TestAdsAttributionR3NoOperationPurge/expired
+=== RUN   TestAdsAttributionR3NoOperationPurge/cancelled
+--- PASS: TestAdsAttributionR3NoOperationPurge (1.90s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/no_consent (0.46s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/disabled (0.49s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/expired (0.48s)
+    --- PASS: TestAdsAttributionR3NoOperationPurge/cancelled (0.46s)
+=== RUN   TestAdsAttributionR3ConsentedBeginKeepsIP
+--- PASS: TestAdsAttributionR3ConsentedBeginKeepsIP (0.48s)
+=== RUN   TestAdsAttributionR3FinalFailureClearsIP
+--- PASS: TestAdsAttributionR3FinalFailureClearsIP (0.71s)
+=== RUN   TestAdsAttributionR2ScopeAndACL
+--- PASS: TestAdsAttributionR2ScopeAndACL (0.49s)
+=== RUN   TestAdsAttributionEmptyProjection
+--- PASS: TestAdsAttributionEmptyProjection (0.13s)
+=== RUN   TestAdsAttributionR9BeginNeverFails
+=== RUN   TestAdsAttributionR9BeginNeverFails/legitimate_click
+=== RUN   TestAdsAttributionR9BeginNeverFails/garbage
+=== RUN   TestAdsAttributionR9BeginNeverFails/expired
+=== RUN   TestAdsAttributionR9BeginNeverFails/foreign
+=== RUN   TestAdsAttributionR9BeginNeverFails/missing
+=== RUN   TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp
+--- PASS: TestAdsAttributionR9BeginNeverFails (2.33s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/legitimate_click (0.39s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/garbage (0.37s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/expired (0.38s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/foreign (0.47s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/missing (0.36s)
+    --- PASS: TestAdsAttributionR9BeginNeverFails/unmarshalable_timestamp (0.35s)
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/other_store
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze
+=== RUN   TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp
+--- PASS: TestAdsAttributionR9RefusalCommitsUnchanged (1.99s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/older_than_one_minute (0.36s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/same_buyer_other_session (0.37s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/other_store (0.46s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/second_freeze (0.41s)
+    --- PASS: TestAdsAttributionR9RefusalCommitsUnchanged/garbage_timestamp (0.39s)
+=== RUN   TestAdsAttributionR9MalformedServerParameters
+=== RUN   TestAdsAttributionR9MalformedServerParameters/short_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_hash
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_store
+=== RUN   TestAdsAttributionR9MalformedServerParameters/NULL_order
+--- PASS: TestAdsAttributionR9MalformedServerParameters (0.23s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/short_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_hash (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_store (0.00s)
+    --- PASS: TestAdsAttributionR9MalformedServerParameters/NULL_order (0.00s)
+=== RUN   TestAdsAttributionReport
+--- PASS: TestAdsAttributionReport (0.41s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+    ads_attribution_report_test.go:437: cvs refused: cash_on_delivery_amount_exceeds
+--- FAIL: TestAdsAttributionAT4AT9ExactReport (16.90s)
+=== RUN   TestAdsAttributionSessionAudiencePipeline
+--- PASS: TestAdsAttributionSessionAudiencePipeline (1.64s)
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/read_insights
+=== RUN   TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging
+--- PASS: TestAdsAttributionSessionAudiencePermissionDenials (0.89s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_read_engagement (0.22s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/read_insights (0.21s)
+    --- PASS: TestAdsAttributionSessionAudiencePermissionDenials/pages_messaging (0.23s)
+=== RUN   TestAdsAttributionSessionAudienceExactLease
+--- PASS: TestAdsAttributionSessionAudienceExactLease (0.24s)
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/AthenB
+=== RUN   TestAdsAttributionSessionAudienceOverlappingReads/BthenA
+--- PASS: TestAdsAttributionSessionAudienceOverlappingReads (3.15s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/AthenB (1.58s)
+    --- PASS: TestAdsAttributionSessionAudienceOverlappingReads/BthenA (1.57s)
+=== RUN   TestAdsAttributionStorage
+--- PASS: TestAdsAttributionStorage (0.06s)
+FAIL
+FAIL	livecommerce/tests/foundation	73.838s
+FAIL
+test-focused: top-level PASS=20 FAIL=1 SKIP=0 exit=1

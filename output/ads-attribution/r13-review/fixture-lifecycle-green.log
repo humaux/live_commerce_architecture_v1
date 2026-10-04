@@ -1,0 +1,22 @@
+=== RUN   TestAdsAttributionR10PaidOnlyMixedCohort
+--- FAIL: TestAdsAttributionR10PaidOnlyMixedCohort (21.14s)
+panic: interface conversion: interface {} is nil, not float64 [recovered, repanicked]
+
+goroutine 49 [running]:
+testing.tRunner.func1.2({0x105d2e250, 0xc000a9cf00})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/src/testing/testing.go:2123 +0x2b8
+testing.tRunner.func1()
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/src/testing/testing.go:2126 +0x438
+panic({0x105d2e250?, 0xc000a9cf00?})
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/src/runtime/panic.go:859 +0x120
+livecommerce/tests/foundation_test.(*atReportEnv).assertReport(0xc000761508, 0xc0000f7208)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/foundation/ads_attribution_report_test.go:510 +0x312c
+livecommerce/tests/foundation_test.TestAdsAttributionR10PaidOnlyMixedCohort(0xc0000f7208)
+	/Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/foundation/ads_attribution_r10_test.go:112 +0xdb8
+testing.tRunner(0xc0000f7208, 0x105fc7530)
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/src/testing/testing.go:2193 +0x168
+created by testing.(*T).Run in goroutine 1
+	/Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/src/testing/testing.go:2258 +0x7c0
+FAIL	livecommerce/tests/foundation	21.926s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

@@ -16,3 +16,10 @@ test("/products/{uuid} redirects permanently to the zh-TW product page", async (
 test("non-uuid ids are 404, never redirected", async () => {
   for (const bad of ["abc", id.toUpperCase(), `${id}/x`, "../etc", `${id}?x=1`]) assert.equal((await call(bad)).status, 404, bad);
 });
+
+test("AT1: the locale redirect preserves the ad-click query without allowing a redirect target", async () => {
+  const query = `?lc_ad=${id}&fbclid=synthetic-click_01&next=https%3A%2F%2Felsewhere.example`;
+  const response = await GET(new Request(`https://shop.example/products/${id}${query}`), { params: Promise.resolve({ productID: id }) });
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), `/zh-TW/products/${id}${query}`);
+});
