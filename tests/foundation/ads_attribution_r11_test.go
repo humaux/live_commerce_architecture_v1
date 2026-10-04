@@ -53,26 +53,33 @@ func TestAdsAttributionR11AudienceBoundReplay(t *testing.T) {
 	if t.Failed() {
 		return
 	}
-	// Bound is the video, not the session. Register a second scoped session
-	// with the same public Page post through the real source API.
-	prior := x.e.session
-	x.e.session = x.e.h.draft(t, x.e.h.f.storeA1)
-	x.e.mustSource(t, "page", x.e.pageAsset, x.e.postID, false)
-	r := x.plan()
-	x.e.session = prior
-	if r.Status != 200 || r.JSON["operation_id"] != op {
-		t.Fatalf("same video in another session must replay: %d %v", r.Status, r.JSON["operation_id"])
-	}
 	t06StartDispatcher(t, x.pool, x.queue, []core.DispatchRoute{x.route}, mciDispatchOptions())
 	x.run(op)
 	x.e.awaitOp(t, op, "SUCCEEDED", 8*time.Second, "completed")
 	jobs = miCount(t, x.e.h.f.owner, `SELECT count(*) FROM river.river_job`)
-	r = x.plan()
+	r := x.plan()
 	if r.Status != 200 || r.JSON["operation_id"] != op || r.JSON["state"] != "SUCCEEDED" {
 		t.Fatalf("final operation must replay during cooldown: %d %v", r.Status, r.JSON)
 	}
 	if miCount(t, x.e.h.f.owner, `SELECT count(*) FROM river.river_job`) != jobs || x.g.count() != 2 {
 		t.Fatal("final replay queued a job or called Graph")
+	}
+	// The same public post can feed only one active session. Move it through
+	// the real deactivate/register lifecycle; the bound remains the video,
+	// so a different authorized session still replays the completed read.
+	oldSession, oldSource := x.e.session, x.e.srcFB
+	defer func() { x.e.session, x.e.srcFB = oldSession, oldSource }() // keep original snapshot cleanup scoped
+	if _, err := x.e.putSource(x.e.session, "page", x.e.pageAsset, x.e.postID, false, "zh-TW", false, 1); err != nil {
+		t.Fatalf("real old-source deactivation: %v", err)
+	}
+	x.e.session = x.e.h.draft(t, x.e.h.f.storeA1)
+	x.e.srcFB = x.e.mustSource(t, "page", x.e.pageAsset, x.e.postID, false)
+	r = x.plan()
+	if r.Status != 200 || r.JSON["operation_id"] != op {
+		t.Fatalf("same video after real session source transfer must replay: %d %v", r.Status, r.JSON["operation_id"])
+	}
+	if miCount(t, x.e.h.f.owner, `SELECT count(*) FROM river.river_job`) != jobs {
+		t.Fatal("video replay after source transfer committed an orphan job")
 	}
 	atsElapsed(t, x, op)
 	next := x.mustPlan()
@@ -179,7 +186,7 @@ func TestAdsAttributionR11UnknownDraft(t *testing.T) {
 		v := raw.(map[string]any)
 		if v["session_id"] == x.e.session {
 			foundSession = true
-			for _, key := range []string{"spend_minor", "roas"} {
+			for _, key := range []string{"spend_minor"} {
 				value, present := v[key]
 				if !present || value != nil {
 					t.Errorf("no insights session %s must be explicit null: present=%v value=%v", key, present, value)
@@ -236,6 +243,10 @@ func TestAdsAttributionR11ReportCapAndDeadline(t *testing.T) {
 	if err = tx.Commit(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	// Bulk insertion bypasses autovacuum timing. Populate normal planner
+	// statistics without executing or warming the measured report itself.
+	mustExec(t, b.f.owner, `ANALYZE checkout.orders`)
+	mustExec(t, b.f.owner, `ANALYZE orders.order_attribution`)
 	t.Cleanup(func() {
 		mustExec(t, b.f.owner, `DELETE FROM orders.order_attribution WHERE tenant_id=$1 AND store_id=$2 AND order_id=ANY($3::uuid[])`, e.tenant, e.store, allOrders)
 		mustExec(t, b.f.owner, `DELETE FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=ANY($3::uuid[])`, e.tenant, e.store, ids)

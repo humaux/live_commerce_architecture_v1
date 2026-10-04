@@ -95,7 +95,7 @@ func TestBrowserAdsAttributionCheckout(t *testing.T) {
 	defer cancel()
 	const origin = "https://buyer.example"
 	c := newCapiEnv(t, adsOpts{origin: origin})
-	d := c.newDraft(adsDraftIn{})
+	d := atLiveClick(t, c.adsEnv).DraftID
 	// Browser places six distinct real orders (three locales x two sizes).
 	// Configuration uses actual merchant settings, and all writes occur before
 	// the read-only control server exists. No endpoint fabricates an order.
