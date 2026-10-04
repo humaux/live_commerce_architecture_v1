@@ -465,7 +465,7 @@ func TestAdsAttributionR11AgedRetryAndFinalDaily(t *testing.T) {
 	// Scoped historical clock fixture: a final D7 row remains immutable, but
 	// its optional failure still has a 24-hour retry window outside the normal
 	// three-day D7 lookback. No live day generator is patched.
-	mustExec(t, e.f.owner, `UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '10 days',ends_at=clock_timestamp()+interval '1 hour' WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, d, e.tenant, e.store)
+	e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '10 days',ends_at=clock_timestamp()+interval '1 hour' WHERE id=$1 AND tenant_id=$2 AND store_id=$3`, d, e.tenant, e.store)
 	mustExec(t, e.f.owner, `INSERT INTO ads.insights_daily SELECT (jsonb_populate_record(NULL::ads.insights_daily,to_jsonb(i)||jsonb_build_object('day',$2::date,'final',true))).* FROM ads.insights_daily i WHERE i.draft_id=$1 AND i.day=$3::date`, d, old, today)
 	for offset := 4; offset <= 9; offset++ {
 		mustExec(t, e.f.owner, `INSERT INTO ads.insights_breakdown_status(tenant_id,store_id,draft_id,day,unavailable,source_operation_id,fetched_at,retry_until) VALUES($1,$2,$3,$4::date,ARRAY['age_gender'],$5,clock_timestamp(),clock_timestamp()+interval '24 hours')`, e.tenant, e.store, d, taipeiDay(-offset), op)
