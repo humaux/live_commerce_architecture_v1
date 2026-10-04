@@ -1,124 +1,152 @@
-# ads-attribution — R10 + R11 review fix delivery
+# ads-attribution — R12 round 2 review fixes
 
-## Current verdict: LOCAL REVIEW FIXES VERIFIED — external prerequisites NOT_RUN
+## Verdict: R12 local fixes verified — external prerequisites remain NOT_RUN
 
-Final verified source: **`4acbad5353814fc3940812e9e399fdb1253ed40f`**.
-The report browser at checkpoint `40128fe5` found a real READY-only UI parser
-rejecting R11's completed SUCCEEDED replay. This candidate fixes strict receipt
-states and persisted feedback; new READY and same-id SUCCEEDED are tested
-separately. Independent follow-up also fixed the cached-UNKNOWN misleading
-retry and the 100-UUID mobile text wall, without discarding any identifiers.
-Final static, browser, focused PG, sweep and edge checks pass. Full G07 compiled
-from this commit also **PASS, exit 0: 6,725 tests/subtests, 0 failures**. Its 13
-accepted prerequisite skips are listed separately below. This is a scoped local
-review-fix handoff, not an entire release verdict or live provider acceptance.
-Branch `unit/ads-attribution`; authorized `373462d4` merge is `8f419664`.
+Frozen source: **`6c6c3fb397dd8c6ae8c291f3d751c1eedbc6ac89`**.
+Branch `unit/ads-attribution`; authorized R12 `664db345` merge is `506e5f53`.
 Migration **0113** only; 0112 refusal fields retained. No push, deployment,
-external Meta mutation, production credentials or actual buyer data.
+Meta mutation, production credentials or actual buyer data.
 
-Old `068874fc` G07 is **not** evidence for this source. Its records and every
-intermediate RED run remain in [historical checkpoints](r13-review/HISTORICAL-CHECKPOINTS.md)
-and the previous `r9/`–`r12-review/` evidence directories.
+Previous `4acbad53` and intermediate `2817f4ce` PASS results are historical,
+not final-source acceptance. All final logs below are source-stamped and kept
+under [r12-final](r12-final/). Every RED log remains in
+[r12-round2](r12-round2/); older R10/R11 delivery is retained in
+[the historical summary](r12-final/HISTORICAL-R10-R11-SUMMARY.md).
 
-## Review findings
+## Review closure and logical commits
 
-| Requirement | Source / verification |
+| Finding | Change and evidence |
 |---|---|
-| R10 paid-only order counts | Paid card, confirmed transfer and collected COD count; unpaid/draft/expired/cancelled do not. Pending COD remains separate. Actual mixed-cohort and exact report targeted PG PASS. |
-| R10 independent signals + R11 consent | Begin may capture valid fbc/fbp/IP without a touch, only with ads_personalization consent. Signals-only NULL-path rows excluded from reports. |
-| R11 I23 | Fresh scope/source/grant check; one in-flight read per store/video, 10-minute replay cooldown; no extra River job on replay. |
-| R11 I12 | Missing Meta metrics, spend, ROAS and local-only timeline spend are NULL/—. No fabricated zero. |
-| R11 optional breakdown failure | Failed dimension unavailable; other dimensions and D7 persist. Existing hourly lane retries bounded account-days with a non-extending 24-hour deadline; final daily facts immutable. |
-| R11 privacy / email | All three identifiers cleared at final CAPI states including UNKNOWN, withdrawal, erasure and bounded purge. No purge starvation. Worker receives SQL-normalized SHA-256 email only. |
-| R11 live-window credit | lc_ad only in successfully activated draft window. Comment fallback retains no-fan-out ambiguity handling. |
-| R11 report bound | 100 rows plus 101st sentinel / truncated notice. REAL_PG 100-draft, 10k-order cold HTTP within unchanged 5-second deadline. |
-| UI R10/R11 | Three-language audience/timezone/provisional/promoted-post markers, selected-period session spend, two-decimal ROAS, reconnect, cap and unknown states. |
-| Integrity / trust | Patch needle asserted; exact private EXECUTE inventory; stable same-fbclid timestamp; host-only secure cookies and pinned-edge XFF/Host regression. |
-| Page scopes | Optional granted read_insights preserved; missing grant offers reconnect. Remote config_id update is an external prerequisite, not a scope URL override or weakened base eligibility. |
+| **F1 P1: signals-only cohort** | Order remains in session totals; NULL path/draft never credits an ad. Real unboosted comment → claim → consented card Begin → signed capture yields exactly one paid order, correct net, no path/draft. The misleading R10 test is corrected per R12, not weakened. |
+| **F2 P2: bounded GET recovery** | READY requires a matching live River job; DISPATCHING requires a valid lease. UNKNOWN and finals only replay for 10 minutes from updated_at. Test drives actual UNKNOWN, verifies same operation during cooldown, ages it, then plans and completes a fresh GET. |
+| **F3 P2: grant-aware UI** | Missing stored read_insights: reconnect. Granted but unread: not_read and read action. Three locales, reload and acknowledged UNKNOWN recovery tested through real clicks. |
+| **P3: offline minimization / ACL** | COD, transfer and pay-at-pickup never freeze fbc/fbp/IP; card positive control does. Same-key replay preserves factual attribution and NULL offline identifiers. Exact owner/search_path/EXECUTE inventory covers 11 checkout-side definers; extra runtime EXECUTE negative control fails. |
+| **Browser-discovered ordering** | Unordered array_agg returned different linked-ID order across reads. One-line ORDER BY UUID fixes it; the strict array-equality browser assertion is unchanged. |
+| **Retained R10/R11 controls** | Paid-only counts, pending COD separation, unknown Meta metrics, consent/final/erasure/purge cleanup, SQL email hash, live-window credit, bounded reports, timezone labels, two-decimal ROAS and trust-boundary tests remain. |
 
-Implementation, logical commit mapping, independent provenance, allowed paths,
-model provenance and rejected experiments: [IMPLEMENTATION.md](r13-review/IMPLEMENTATION.md).
+Logical commits:
+- `a33bf127d3519ebeb10be55fb7f1a1943003f3fc`: R12 regression tests and actual-click fixtures.
+- `2817f4ce0f33dd1bf85d1a733b6c4f51adb7f04b`: cohort, lease/cooldown, UI and minimization fixes.
+- `6c6c3fb397dd8c6ae8c291f3d751c1eedbc6ac89`: deterministic linked draft order.
 
-## Commands and actual exit codes
+[CHANGES.md](r12-round2/CHANGES.md) records genuine RED → GREEN provenance,
+diagnostic fixture failures, exact allowed paths, roles/models and independent
+review scope. READY has no operation lease before dispatch under the existing
+queue contract, so its actual queued job is checked rather than inventing a TTL.
+Acknowledged UNKNOWN permits an explicit fresh-key GET intention; transport
+uncertainty still preserves its original-key receipt fence.
 
-All commands run here with `LC_TEST_LOCK_WAIT=14400`. Source-stamped logs are in
-`r13-review/`; `results.tsv` and `boundary-results.tsv` record exits.
-No failed assertion was removed or relaxed.
-An extra `git diff --cached --check` over raw artifacts returned **2** for
-captured trailing spaces/terminal CRs in command and RED-test logs; those original
-logs are deliberately preserved. Source-only staged and unstaged whitespace
-checks returned **0**. This auxiliary artifact check is not a required gate PASS.
+## Final-source commands and exit codes
 
-| Command | Exit / counts | Evidence |
+All commands run in this worktree with `LC_TEST_LOCK_WAIT=14400`.
+Exact commands, source SHAs and exits: [results.tsv](r12-final/results.tsv),
+[runner](r12-final/run-final.sh). No frozen assertion or threshold was loosened.
+
+| Command | Actual result | Evidence in r12-final/ |
 |---|---|---|
-| `go build ./...` | 0 | `go-build.log` |
-| `go vet ./...` | 0 | `go-vet.log` |
-| tracked `gofmt -l` + assert empty | 0 | `gofmt.log` |
-| `bash scripts/dev/check-gates.sh` | 0 | `check-gates.log` |
-| `bash scripts/dev/depmap.sh --check` | 0 | `depmap.log` |
-| `bash scripts/dev/test-node.sh` | 0 / 384 PASS, 0 FAIL (4acbad53) | `test-node.log` |
-| admin `tsc --noEmit` | 0 | `admin-tsc.log` |
-| storefront `tsc --noEmit` | 0 | `storefront-tsc.log` |
-| `release-gate.sh --strict --only G04` | 0 | `G04.log`, `g04-final/` |
-| Same G04 after staging final evidence | 0 | `g04-post-evidence/` |
-| `go test -race ./internal/attribution/capiroute ./internal/integrations/meta_ads ./internal/metaconnect` | 0 / 3 packages | `adapter-race.log` |
-| Targeted mixed-cohort/report/signals-only/ACL PG | CHECKPOINT 40128fe5: 0 / 4 PASS, 0 FAIL, 0 SKIP | `fixture-contract-green.log` |
-| Broad focused PG: attribution/Ads/MetaAds/MetaConnect/MCI10/KC03/upgrade/T06 | 0 / 92 PASS, 0 FAIL, 4 prerequisite SANDBOX SKIP; 544.664s | `focused.log` |
-| Focused customer consent/erasure/schema PG | 0 / 5 PASS, 0 FAIL, 0 SKIP | `focused-customer-boundaries.log` |
-| `test-local.sh --browser-ads-attribution` | 0 / report 6/6, checkout PASS; Go 2 PASS / 85.145s | `browser-attribution.log` |
-| `test-local.sh --browser-click-sweep` | 0 / 123 pages, 0 load failures; controls 1004 PASS / 0 FAIL / 22 SKIP; journeys 18/18 | `click-sweep.log` |
-| `node tests/deploy/platform-edge.mjs` (pinned Caddy / mock upstream) | 0 / 47 platform requests + 4 storefront edge cases | `platform-edge.log` |
-| `release-gate.sh --strict --only G07` | 0 / 6,725 tests/subtests PASS, 0 FAIL; 2,027 top-level PASS; 13 accepted prerequisite SKIP | `G07-console.log`, `g07-final/`, `g07-machine-load.log` |
+| `go build ./...` | exit 0 | go-build.log |
+| `go vet ./...` | exit 0 | go-vet.log |
+| tracked `gofmt -l` + assert empty | exit 0 | gofmt.log |
+| `bash scripts/dev/check-gates.sh` | exit 0 | check-gates.log |
+| `bash scripts/dev/depmap.sh --check` | exit 0 | depmap.log |
+| `bash scripts/dev/test-node.sh` | exit 0; 387 PASS, 0 FAIL | test-node.log |
+| `pnpm --filter admin exec tsc --noEmit` | exit 0 | admin-tsc.log |
+| `pnpm --filter storefront exec tsc --noEmit` | exit 0 | storefront-tsc.log |
+| `bash scripts/dev/release-gate.sh --strict --only G04` | exit 0 | G04.log, g04-final/ |
+| Same G04 after staging all final evidence | exit 0; no key-shaped literal | g04-post-evidence/ |
+| Broad focused PG (exact regex below) | exit 0; 102 top-level PASS, 0 FAIL, 4 external prerequisite SKIP; 601.804s | focused.log |
+| `bash scripts/dev/test-local.sh --browser-ads-attribution` | exit 0; report 6/6, buyer checkout PASS; Go 2 PASS, 81.346s | browser-attribution.log |
+| `bash scripts/dev/test-local.sh --browser-click-sweep` | exit 0; 123 page cases, 0 load failures; 981 controls PASS / 0 FAIL / 22 SKIP; 18/18 journey steps | click-sweep.log, click-sweep/ledger.json |
+| `bash scripts/dev/release-gate.sh --strict --only G07` | exit 0; 6,749 test/subtest PASS (2,032 top-level), 0 FAIL; 13 accepted prerequisite SKIP | G07-console.log, g07-final/, G07-STATS.json |
 
-Exact focused regexes and runnable command wrappers: `run-final.sh` and
-`run-boundaries.sh`. Do not edit an evidence script while it is running.
-`start-quiet-g07.sh` requires three samples 30 seconds apart with both 1-minute
-and 5-minute load below the machine's logical CPU count. It checks the final SHA
-and source cleanliness before launching G07; the gate also samples load throughout.
-G07 ran **04:44:52–05:50:00 UTC** (foundation package 3,670.196s). The source
-remained unchanged. Preflight passed; the run was **not continuously idle**:
-131 samples, 1-minute load median 5.53 / peak 20.87, six samples at or above 10;
-5-minute load stayed below 10 (peak 8.51). See [G07-LOAD.md](r13-review/G07-LOAD.md).
-[RUNNER-NOTE.md](r13-review/RUNNER-NOTE.md) records an earlier wrapper error;
-it never disguises a failed gate as green.
+Focused command:
+```sh
+bash scripts/dev/test-focused.sh '^(TestAdsAttribution|TestAds|TestMetaAds|TestMetaConnect|TestMetaClaimsMCI10|TestLiveClaimsKC03Schema|TestCustomersBillingCB02|TestCustomersBillingCB04|TestCustomersBillingCB05|TestR2IntegrationUpgradeFromReleaseHead|TestT06WorkerAuthorityAndFunctionACL)'
+```
 
-## AT1–AT9 / evidence scope
+Full G07 compiled from the final source above, after focused/browser/sweep,
+not from an earlier checkpoint. It ran 07:28:13–08:35:12 UTC on 2026-10-04,
+including `go test -race ./...` and `go vet`; the isolated PG fixture was removed
+by the runner on exit. [Source freeze evidence](r12-final/SOURCE-LOCK.md)
+explains the six output-only dirty files in its header. [Quiet preflight](r12-final/start-quiet-g07.sh)
+checks the source SHA and three 30-second-spaced samples with 1m/5m load below
+logical CPU count; the runner also records load throughout. No shared lock is
+removed and no other agent's process is stopped.
+Quiet preflight passed at 07:27–07:28 UTC, but the run was **not continuously
+quiet**: around 07:42 UTC the sampled 1-minute load reached 37.61 and 5-minute
+load 13.20 on a 10-logical-CPU machine, then declined; a later spike also occurred.
+Across 134 samples, 1m median/peak was 5.21/37.61 (11 samples ≥10), and 5m
+median/peak was 5.785/13.20 (10 samples ≥10). The original run finished PASS
+without changing assertions/timeouts or stopping another task. **Only the start
+was confirmed quiet; continuous quiet-machine acceptance is not claimed.**
+Raw load samples and [G07 statistics](r12-final/G07-STATS.json) preserve this
+qualification for integrator review. `--only G07` is a subset, not a whole-release verdict.
 
-AT1–AT5 and AT7–AT9 final focused/browser checks, plus final full G07, have passed.
-AT6 SANDBOX and AT9 LIVE remain explicitly NOT_RUN.
-REAL_PG timing is cold (ANALYZE after synthetic bulk seed, no report warmup).
-On final `4acbad53`, 100 drafts / 10,000 synthetic collected COD orders returned
-HTTP 200 in **2.561327167 seconds** (101 drafts: **2.514677458s**; direct runtime
-SQL: **2.813659166s**). `TestAdsAttributionR11ReportCapAndDeadline` in `focused.log`
-records exact data sizes, truncation and timing; the 5-second deadline was not increased.
-The independent full G07 rerun also returned HTTP 200 in **3.008085583s** for
-100 drafts / 10k orders and **3.1868625s** for 101 drafts.
-Real-click matrix: **390×844 / 1586×992 × zh-TW / zh-CN / en**.
-Final report screenshots and six click manifests:
-`output/playwright/ads-attribution-report/20261004T042014.931920000/`.
-Portable evidence copies: [report](r13-review/browser-final/report/),
-[buyer checkout](r13-review/browser-final/checkout/). Checkout original:
-`output/playwright/ads-attribution-checkout/20261004T042100.787874000/`.
-Independent visual rescore resolved the ID-wall P1, no new blocking regression;
-the reviewer did not rerun the browser. Root also inspected TW mobile / EN desktop.
-Only provider edges use MOCK; PG, transaction guards, workers and Next UI are real.
+## Real-click and screenshot evidence
 
-## NOT_RUN / external prerequisites
+Matrix: **390 / 1586 widths × zh-TW / zh-CN / en**. Report viewport height is
+992, with full-page captures; this run is not described as 390×844.
+Portable copies: [report](r12-final/browser-final/report/) (42 screenshots,
+6 click ledgers), [buyer checkout](r12-final/browser-final/checkout/) (24
+screenshots). All 66 screenshot SHA-256 values were checked against manifests.
+The supplementary verifier also checks all six ledgers (102 PASS actions) and
+PNG widths: exit 0, `r12-final/browser-evidence-verification.log`. Its first
+attempt incorrectly assumed all screenshots were 1× pixels (exit 1, retained).
+The checkout driver actually uses Pixel 7 at DPR 2.625: 390 CSS pixels produce
+a 1024-pixel PNG. The corrected verifier accounts for that explicit profile;
+no product code, frozen assertion or screenshot was altered.
+Root inspected TW390 not_read, CN390 UNKNOWN recovery and EN1586 organic cohort.
+Original report: `output/playwright/ads-attribution-report/20261004T070213.204533000/`.
+Original checkout: `output/playwright/ads-attribution-checkout/20261004T070253.474693000/`.
+Provider edges are MOCK; PG, transaction guards, worker and Next UI are real.
+Independent non-author read-only source and evidence reviews found no new
+blocker; they verified the original strict ID assertion was retained and the
+replay privacy / ACL-negative-control gaps closed. These reviewers did not
+personally rerun the full gate suite.
+After G07 completed, the non-author reviewer independently recomputed its
+PASS/SKIP counts and all 134 load samples, checked final command exits and the
+browser/sweep ledgers, and found no concrete SUMMARY inconsistency. Read-only
+audit task: `c40e93f9-2b5f-4d4b-9c2c-fb4e479aa641`; Humaux title:
+`R12 6c6c3fb3 final SUMMARY G07 handoff consistency audit`.
 
-- **AT6 SANDBOX**: owner's dataset/test-event prerequisites; not authorized/run here.
-- **AT9 LIVE**: suitable live video and actual read_insights grant/App Review prerequisite.
-- Owner/integrator must add optional read_insights to the remote Meta Login for
-  Business configuration selected by config_id, then reconnect and verify it.
-  The frozen contract forbids URL-scope override; this unit makes no Meta mutation.
-- Optional R04 Node binary suite: `COMMERCE_R04_LIVEKIT_BINARY` unset.
-- G07+ recorded 13 accepted SANDBOX/LIVE/migrator prerequisites, not PASS:
-  exact names in `r13-review/g07-final/G07.skipped`, inherited acceptance reasons
-  in `G07-console.log` / `g07-final/results.tsv`. No historical owner LIVE result
-  printed by that ledger is claimed as a live test performed in this unit.
-- Accepted P3-10 owner-role RLS and P3-12 order-level approximation remain
-  documented. No buyer age/gender collection; no Pixel installed.
+## AT1–AT9 / acceptance limits
 
-Frontend-architect preserved strict API models/shared formatting; Playwright
-kept acceptance as actual clicks and persisted readbacks rather than DOM mocks.
-Impeccable's bounded hardening pass addressed the large-ID mobile case while
-retaining every identifier; its mechanical detector returned no findings.
+AT1–AT4, AT8 and AT9 local PG checks PASS on the frozen final source.
+AT5 and AT9 actual-click browser PASS. AT7 final sweep and full G07 PASS.
+Report timing uses 100 drafts / 10,000 synthetic orders, cold HTTP and unchanged
+5-second deadline. Final-source HTTP 200: **2.96114525s** for 100 drafts,
+**2.766498917s** for 101 drafts; direct runtime SQL **2.770404208s**.
+The full race-enabled G07 repeated these cases: 100-draft cold HTTP
+**2.832202625s**, 101-draft HTTP **2.751367083s**, direct SQL **2.769253292s**.
+
+- **AT6 SANDBOX: NOT_RUN** — owner's dataset and test-event prerequisites.
+- **AT9 LIVE: NOT_RUN** — actual live video/read_insights grant/App Review.
+- Optional read_insights still needs owner/integrator configuration in Meta
+  Login for Business selected by config_id, then reconnect; no URL scope override
+  and no Meta mutation was performed by this unit.
+- Optional R04 Node suite NOT_RUN: `COMMERCE_R04_LIVEKIT_BINARY` unset.
+- G07 accepted 13 prerequisite skips, not counted as PASS: Stripe SP16,
+  customers CB10, mail PA12, MF02 populated upgrade after 0062; Meta Ads sandbox
+  S1–S4; Meta claims MCI11 live probes; Stripe SL08, RF10, RF03 populated upgrade
+  from 0061, and SP21 real sandbox probe. Exact names and raw reasons are in
+  [G07-STATS.json](r12-final/G07-STATS.json) and
+  [G07.skipped](r12-final/g07-final/G07.skipped). Historical prerequisite
+  justifications printed by the release runner are not live calls performed
+  during this task. The focused run skips only Meta Ads S1–S4.
+- Accepted P3-10 owner-role RLS and P3-12 order-level approximation remain.
+  No buyer age/gender collection; no Pixel.
+
+Frontend-architect preserved strict API models and explicit state boundaries.
+Playwright kept acceptance as actual actions and persisted readbacks, not DOM
+mutation or simulated success. No entire-release or live-provider claim is made.
+
+## Evidence-only handoff
+
+The delivery commit after `6c6c3fb3` contains output evidence only. It also
+refreshes the three generated `output/ui-click-sweep` ledgers to this final run;
+their portable copies are kept under this unit. The two generated platform-site
+server logs were preserved in the portable evidence and restored to their
+pre-run content, so this unit does not churn unrelated platform evidence.
+The final G07 runner confirmed fixture removal at exit; a post-run process
+inventory found no remaining task-owned gate runner or sampler. No shared
+process, lock file, cache or other task's fixture was deleted.

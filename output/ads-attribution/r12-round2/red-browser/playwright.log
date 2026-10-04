@@ -1,0 +1,68 @@
+
+Running 6 tests using 1 worker
+
+(node:437) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 390 (5.7s)
+  ✓  2 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks en 1586 (4.3s)
+  ✘  3 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 390 (11.4s)
+  -  4 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 1586
+  -  5 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 390
+  -  6 tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-CN 1586
+
+
+  1) tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 390 ────────────────
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: getByTestId('attribution-linked-drafts').locator('li')
+    Timeout: 10000ms
+    - Expected  - 2
+    + Received  + 2
+
+    @@ -1,9 +1,9 @@
+      Array [
+    -   "3c2ca8fd-8656-420d-abaf-9b071b716294",
+    -   "90372a4e-b32d-46a0-a044-1613d9464349",
+        "5f6c84ee-8407-421f-8e16-05f5482bc9e2",
+    +   "90372a4e-b32d-46a0-a044-1613d9464349",
+    +   "3c2ca8fd-8656-420d-abaf-9b071b716294",
+        "92232c3a-e9d8-41a9-9e7a-59ea75ff61ed",
+        "34ecc085-6e32-4ea6-a809-12fd513cd28c",
+        "9350b730-fff0-4af2-9a82-30ad7273fc24",
+        "4532c929-19e7-46bc-aeba-300d40c7233e",
+        "4053644e-d63e-49c2-8c1b-7c20b8ed4544",
+
+    Call log:
+      - Expect "toHaveText" getByTestId('attribution-linked-drafts').locator('li') with timeout 10000ms
+      - waiting for getByTestId('attribution-linked-drafts').locator('li')
+        24 × locator resolved to 103 elements
+
+
+      717 |         await disclosure.click();
+      718 |         await expect(linked).toHaveAttribute("open", "");
+    > 719 |         await expect(linked.locator("li")).toHaveText(linkedIDs);
+          |                                            ^
+      720 |         await disclosure.focus();
+      721 |         await page.keyboard.press("Enter");
+      722 |         await expect(linked).not.toHaveAttribute("open", "");
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/ads-attribution/tests/admin/attribution.spec.ts:719:44
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261004T065725.296754000/results/attribution-AT7-AT9-actual-report-clicks-zh-TW-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ads-attribution-report/20261004T065725.296754000/results/attribution-AT7-AT9-actual-report-clicks-zh-TW-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ads-attribution-report/20261004T065725.296754000/results/attribution-AT7-AT9-actual-report-clicks-zh-TW-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ads-attribution-report/20261004T065725.296754000/results/attribution-AT7-AT9-actual-report-clicks-zh-TW-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/attribution.spec.ts:646:5 › AT7/AT9 actual report clicks zh-TW 390 ─────────────────
+  3 did not run
+  2 passed (22.2s)

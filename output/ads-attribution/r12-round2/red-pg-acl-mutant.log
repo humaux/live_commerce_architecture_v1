@@ -1,0 +1,31 @@
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid)
+    ads_attribution_r12_test.go:68: exact attribution EXECUTE mismatch
+        missing: []
+        extra:   [commerce_runtime]
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid)
+=== RUN   TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip()
+--- FAIL: TestAdsAttributionR12CheckoutDefinerACL (1.28s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.capture_order_origins(uuid,uuid,uuid,uuid,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.order_comment_posts(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/claims.attribution_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.attribution_match(uuid,uuid,uuid,text,timestamptz) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/ads.capi_ip_needed(uuid,uuid,uuid,uuid) (0.00s)
+    --- FAIL: TestAdsAttributionR12CheckoutDefinerACL/ads.order_signals_allowed(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.freeze_attribution(bytea,uuid,uuid,jsonb,text,jsonb) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.erase_ad_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.capi_context(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestAdsAttributionR12CheckoutDefinerACL/orders.purge_capi_ip() (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.305s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

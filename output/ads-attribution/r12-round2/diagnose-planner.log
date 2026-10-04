@@ -1,0 +1,8 @@
+=== RUN   TestAdsAttributionR12UnknownReadCooldown
+    ads_attribution_r12_test.go:19: runtime diagnostic SQLSTATE=55000 message=record "j" is not assigned yet
+    ads_attribution_r12_test.go:19: audience plan status=503 body={"code":"unavailable","message":"Temporarily unavailable.","request_id":"5b952d5e2b8cf6868fd226954a6aacee","retryable":true,"details":{}}
+--- FAIL: TestAdsAttributionR12UnknownReadCooldown (1.29s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.278s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

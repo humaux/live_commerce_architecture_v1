@@ -1,0 +1,14 @@
+=== RUN   TestAdsAttributionR12UnknownReadCooldown
+    ads_attribution_r12_test.go:34: plan shape={"state":"UNKNOWN","operation_id":"b418fb36-45f8-429c-ba94-c360e39ed9ed"}
+--- FAIL: TestAdsAttributionR12UnknownReadCooldown (2.32s)
+=== RUN   TestAdsAttributionR12GrantAwareUnread
+=== RUN   TestAdsAttributionR12GrantAwareUnread/missing-read-insights
+=== RUN   TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot
+    ads_attribution_r12_test.go:54: audience status=not_authorized want=not_read
+--- FAIL: TestAdsAttributionR12GrantAwareUnread (0.54s)
+    --- PASS: TestAdsAttributionR12GrantAwareUnread/missing-read-insights (0.28s)
+    --- FAIL: TestAdsAttributionR12GrantAwareUnread/granted-no-snapshot (0.26s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.563s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1
