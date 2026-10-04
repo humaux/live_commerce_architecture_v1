@@ -58,13 +58,7 @@ export function AttributionAudienceRead({
   }, [storageKey]);
 
   async function queue(retry: boolean) {
-    if (
-      !verified ||
-      busy.current ||
-      (retry &&
-        journal?.phase !== "unknown" &&
-        journal?.phase !== "unconfirmed")
-    )
+    if (!verified || busy.current || (retry && journal?.phase !== "unknown"))
       return;
     busy.current = true;
     setSending(true);
@@ -182,19 +176,10 @@ export function AttributionAudienceRead({
         </p>
       )}
       {!sending && journal?.phase === "unconfirmed" && (
-        <>
-          <p role="status" data-testid="attribution-audience-unconfirmed">
-            {c.audienceUnconfirmed}
-          </p>
-          <button
-            type="button"
-            data-testid="attribution-audience-retry"
-            disabled={locked}
-            onClick={() => void queue(true)}
-          >
-            {c.audienceCheck}
-          </button>
-        </>
+        // An authoritative UNKNOWN receipt is cached by idempotency key; repeating its POST cannot poll progress.
+        <p role="status" data-testid="attribution-audience-unconfirmed">
+          {c.audienceUnconfirmed}
+        </p>
       )}
       {!sending && journal?.phase === "failed" && (
         <p

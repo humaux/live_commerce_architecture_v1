@@ -144,19 +144,19 @@ const receiptLabels = {
     inflight:
       "The existing audience read is in progress. Read the report again later.",
     unconfirmed:
-      "The existing audience read outcome is unknown. Check the same request; do not start another read.",
+      "The existing audience read outcome is unknown. Read the report again later; do not start another read.",
   },
   "zh-TW": {
     completed:
       "沿用已完成的觀眾讀取，未新增讀取請求。請重新讀取報表查看已儲存的洞察。",
     inflight: "既有觀眾讀取正在處理，請稍後重新讀取報表。",
-    unconfirmed: "既有觀眾讀取結果未知，請確認同一請求，勿建立另一個讀取。",
+    unconfirmed: "既有觀眾讀取結果未知，請稍後重新讀取報表，勿建立另一個讀取。",
   },
   "zh-CN": {
     completed:
       "沿用已完成的观众读取，未新增读取请求。请重新读取报表查看已保存的洞察。",
     inflight: "现有观众读取正在处理，请稍后重新读取报表。",
-    unconfirmed: "现有观众读取结果未知，请确认同一请求，勿创建另一个读取。",
+    unconfirmed: "现有观众读取结果未知，请稍后重新读取报表，勿创建另一个读取。",
   },
 };
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
@@ -199,11 +199,14 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
             receiptLabels[locale][phase as keyof typeof receiptLabels.en],
           ),
         );
-      if (phase === "unconfirmed")
+      if (phase === "unconfirmed") {
         assert.match(
           html,
           /data-testid="attribution-audience-refresh" disabled=""/,
         );
+        assert.ok(!html.includes('data-testid="attribution-audience-retry"'));
+        assert.equal(Object.hasOwn(c, "audienceCheck"), false);
+      }
     }
   });
 }
@@ -229,7 +232,7 @@ test("unknown journal retains exact key/boundary and is scoped to store+session;
     assert.throws(() => parseAudienceJournal(JSON.stringify(changed)));
 });
 
-test("actual read hook retains one key across network UNKNOWN, reload, and provider UNKNOWN", async () => {
+test("actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN", async () => {
   const stored = new Map<string, string>(),
     requests: string[] = [];
   let generated = 0,
@@ -379,25 +382,30 @@ test("actual read hook retains one key across network UNKNOWN, reload, and provi
     reloaded.control("attribution-audience-refresh").props.disabled,
     true,
   );
-  result = {
-    kind: "acknowledged",
-    ack: { operation_id: operation, state: "SUCCEEDED" },
-  };
-  await reloaded.click("attribution-audience-retry");
-  assert.deepEqual(requests.slice(2), [unconfirmed.key, unconfirmed.key]);
+  assert.equal(reloaded.control("attribution-audience-retry"), undefined);
+  assert.deepEqual(requests.slice(2), [unconfirmed.key]);
   assert.equal(generated, 2);
-  assert.equal(
-    parseAudienceJournal(stored.get(storageKey)!).phase,
-    "completed",
-  );
+  const savedReceipt = stored.get(storageKey)!;
   reloaded.cleanup?.();
-  const completedReload = await harness();
-  assert.ok(completedReload.control("attribution-audience-completed"));
+  const unconfirmedReload = await harness();
+  assert.ok(unconfirmedReload.control("attribution-audience-unconfirmed"));
   assert.equal(
-    completedReload.control("attribution-audience-queued"),
+    unconfirmedReload.control("attribution-audience-refresh").props.disabled,
+    true,
+  );
+  assert.equal(
+    unconfirmedReload.control("attribution-audience-retry"),
     undefined,
   );
-  completedReload.cleanup?.();
+  assert.equal(stored.get(storageKey), savedReceipt);
+  assert.deepEqual(parseAudienceJournal(stored.get(storageKey)!), unconfirmed);
+  assert.equal(
+    requests.length,
+    3,
+    "restoring the receipt must not send a POST",
+  );
+  assert.equal(generated, 2);
+  unconfirmedReload.cleanup?.();
 });
 test("actual POST transport uses CSRF and session fence; 403 independent of response text", async (t) => {
   const originalDocument = Object.getOwnPropertyDescriptor(
