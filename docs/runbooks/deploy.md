@@ -157,7 +157,7 @@ deploy/scripts/deploy.sh upgrade <tag>
 
 ### 4.2 升级 R4 351089f → R5（第一波 + 第二波，试点主机，保留真实 owner 数据，只能前向）
 
-范围：迁移 0106（店铺 handle、平台子域、商家自有域名、证书按需签发、`store-admin handle-set`）、0107 + post_river 0020（宅配货到付款、`collected_at` 财务日期锚点）、0108（一个店铺最多 10 个 Facebook 专页）；第二波：0109 + post_river 0021（商品 A6 不追踪库存与单次上限、图片上限 12、一页式商品编辑的合并补丁保存）、0110（订单列表 v2：任务队列、私密搜索，只读；跨域读取经各领域的窄定义者函数）、0111（商品图片 360/720/1080 渲染图）；后台 W0 新外壳（注册表导航）、止血包（金额按元、台北时间）、前台 R5（配送付款说明、同系列、分类条、防诈骗页、图库放大）。
+范围：迁移 0106（店铺 handle、平台子域、商家自有域名、证书按需签发、`store-admin handle-set`）、0107 + post_river 0020（宅配货到付款、`collected_at` 财务日期锚点）、0108（一个店铺最多 10 个 Facebook 专页）；第二波：0109 + post_river 0021（商品 A6 不追踪库存与单次上限、图片上限 12、一页式商品编辑的合并补丁保存）、0110（订单列表 v2：任务队列、私密搜索，只读；跨域读取经各领域的窄定义者函数）、0111（商品图片 360/720/1080 渲染图）；0112（Meta 广告：台湾/新加坡广告主声明参数，Meta 拒绝原因原文透传）、0113（广告归因：订单归因表、广告报表与直播復盤、受众细分快照，均只读 Meta）；平台官网（`LC_PLATFORM_HOST` 裸域，运营公司资料与法律页）；后台 W0 新外壳（注册表导航）、止血包（金额按元、台北时间）、前台 R5（配送付款说明、同系列、分类条、防诈骗页、图库放大）。
 没有 owner 在聊天里的明确批准，不得执行（AGENTS.md）。
 
 1. **取代码**：同 §4.1 第 1 步，用 git bundle 带发布 SHA 到 `/opt/live-commerce`，`git status` 必须干净。
@@ -167,13 +167,14 @@ deploy/scripts/deploy.sh upgrade <tag>
    - **platform-site 上线前附加检查**：设置 `LC_PLATFORM_HOST` 为平台官网裸域，必须不同于 `LC_ADMIN_HOST` 等服务 host；`LC_STORE_BASE_DOMAIN` 是独立配置，允许与平台裸域相同（店铺使用其数字子域）。运营公司资料统一来自 `apps/admin/lib/company.ts`。法律文本须 owner／律師審閱。公网 DNS 裸域及 `www` 指向 edge（DNS-only），不要改现有店铺路由。构建前将这三个公开变量（平台域名、后台域名、联系邮箱）导出给 `build-images.sh`；构建缺值直接失败。compose 给 admin/Caddy 注入运行时值，不使用 `NEXT_PUBLIC_*` 固化域名。
    - **Meta 与外网核验（需授权部署后执行）**：优先按 Meta 要求添加域名验证 TXT；如选 meta 标签法，再设置可选 `LC_META_DOMAIN_VERIFICATION`，仅平台官网首页输出。核对 www → 裸域为 301 且路径／查询串保留；三语首页、privacy、terms、data-deletion、contact 返回 200，公司中英文名称、编号、地址与 CI/BRC 逐字一致；robots/sitemap 可访问，公开 host 的 `/api/*` 返回 404，后台入口仍只在后台 host。再把 App Domains、Website URL、Privacy Policy URL、Terms URL、Data Deletion Instructions URL 更新为实际平台官网地址。保留 CI/BRC 供 Meta 审核；本站不提供虚构的 signed_request 自动删除回调。
    - DNS（2026-10-02 已完成，只核对）：`*.xgdwm.com` 与 `stores.xgdwm.com` 均为 A 记录指向本机、DNS-only、TTL 300。
-   - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波不新增环境变量或密钥。
+   - 其余 `*.env` 不改也能升级；货到付款默认关（商家在设置里开），meta-connect 维持原状。第二波只新增上面平台官网的 `LC_PLATFORM_HOST`、`LC_COMPANY_CONTACT_EMAIL`（另有可选 `LC_META_DOMAIN_VERIFICATION`）；广告归因不新增密钥，签名 cookie 复用已有 `commerce_buyer_cookie_key`。
+   - **广告归因的外部前提（不阻塞升级）**：直播观众数据需要 `read_insights`。连接专页走 Facebook Login for Business 的 `config_id`，权限在 Meta 应用后台的该配置里加，代码无法覆盖；未加之前观众面板显示「需重新連接 Facebook」，其余报表照常。App Review 前只有应用角色用户能授权。广告在试点上仍关闭（`ads` profile 未启用），归因报表只读本地订单与已存的 Meta 数据。
    - 旧商品图片不会自动生成渲染图（没有后台扫描）：前台继续用原图，与升级前相同。新上传的图片在上传时生成。逐张补生成目前只有接口 `POST …/products/{id}/images/{image}/renditions`（catalog:write、幂等、记审计），后台按钮尚未提供（待办）。
 3. **新密钥（幂等，只补缺失）**：`sudo deploy/scripts/secrets-init.sh`，相对 351089f 新增 `pw_lc_store_domain_verify`、`dsn_lc_store_domain_verify`（claims-worker 的域名验证登录，只有 `commerce_storefront_verifier` 的 6 个验证函数）。
 4. **离线预检**：`deploy/scripts/preflight.sh` 不能有 FAIL；新增 P19（`stores.<base>` 与通配必须只解析到本机）。
-5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0111 + post_river 0020、0021，0106 会给已有店铺补随机 8 位数字编号和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
+5. **构建 + 升级**：`deploy/scripts/build-images.sh` → `deploy/scripts/deploy.sh upgrade <sha12>`。脚本顺序同 §4.1：preflight → 强制备份 `pre-upgrade-<tag>` → 停服务 → migrate（0106–0113 + post_river 0020、0021，0106 会给已有店铺补随机 8 位数字编号和平台子域；0109 把已有 SKU 设为追踪库存，行为不变）→ provision-logins（新增 `lc_store_domain_verify`）→ `up -d` → 部署后检查。Caddy 随 `up -d` 加载新 Caddyfile（按需证书只发给白名单中的主机）。
 6. **升级后必查**：
-   - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+8>`（0106–0111、post_river 0020、0021）。
+   - `deploy.sh` 退出码 0；`ledger_count before=<N> after=<N+10>`（0106–0113、post_river 0020、0021）。
    - 后台商品列表与订单列表（v2 队列计数）能打开；已有商品的 SKU 都显示「追踪库存」。
    - provision-logins 有 `login=lc_store_domain_verify ... membership=ok`，`registrars execute=ok`（店铺注册员 EXECUTE 数为 5），无 `DRIFT`。
    - claims-worker 日志有就绪行且无 `claims_worker_invalid_config`。
