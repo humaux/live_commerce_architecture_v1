@@ -611,7 +611,9 @@ func TestAdsAttributionR11SQLHashesEmail(t *testing.T) {
 	c := newCapiEnv(t, adsOpts{})
 	d := c.newDraft(adsDraftIn{})
 	atSeedContext(t, c, d)
-	mustExec(t, c.f.owner, `UPDATE checkout.orders SET buyer_email='  Buyer@Example.Test  ' WHERE id=$1`, c.p.result.OrderID)
+	// Stored emails satisfy the checkout constraint (no surrounding whitespace);
+	// mixed case still exercises SQL normalization before the worker boundary.
+	mustExec(t, c.f.owner, `UPDATE checkout.orders SET buyer_email='Buyer@Example.Test' WHERE id=$1`, c.p.result.OrderID)
 	var hashed string
 	if err := c.f.owner.QueryRow(c.ctx, `SELECT email_hash FROM orders.capi_context($1,$2,$3)`, c.tenant, c.store, c.p.result.OrderID).Scan(&hashed); err != nil {
 		t.Fatal(err)

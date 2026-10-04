@@ -8,11 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/claims"
 	"livecommerce/internal/integrations/core"
 	"livecommerce/internal/platform"
 	"livecommerce/tests/ads/fakegraph"
@@ -73,6 +75,7 @@ func TestAdsAttributionR11AudienceBoundReplay(t *testing.T) {
 		t.Fatalf("real old-source deactivation: %v", err)
 	}
 	x.e.session = x.e.h.draft(t, x.e.h.f.storeA1)
+	x.e.h.open(t, x.e.session, claims.MatchExact)
 	x.e.srcFB = x.e.mustSource(t, "page", x.e.pageAsset, x.e.postID, false)
 	r = x.plan()
 	if r.Status != 200 || r.JSON["operation_id"] != op {
@@ -285,6 +288,26 @@ func TestAdsAttributionR11ReportCapAndDeadline(t *testing.T) {
 		}
 	}
 	// Runtime authentication and definer, with the same request deadline.
+	if t.Failed() {
+		// Diagnose only AFTER the cold HTTP assertions; never warm the report
+		// or alter its deadline. Synthetic fixture values contain no buyer PII.
+		var body string
+		if err := b.f.owner.QueryRow(context.Background(), `SELECT prosrc FROM pg_proc WHERE oid='orders.attribution_metrics(uuid,uuid,date,date,uuid,uuid)'::regprocedure`).Scan(&body); err == nil {
+			body = strings.NewReplacer("p_tenant", "$1::uuid", "p_store", "$2::uuid", "p_from", "$3::date", "p_to", "$3::date", "p_draft", "$4::uuid", "p_session", "NULL::uuid").Replace(body)
+			plans, err := b.f.owner.Query(context.Background(), "EXPLAIN (ANALYZE,BUFFERS) "+body, e.tenant, e.store, taipeiDay(0), d)
+			if err != nil {
+				t.Logf("post-failure query-plan diagnostic: %v", err)
+			} else {
+				for plans.Next() {
+					var line string
+					if err := plans.Scan(&line); err == nil {
+						t.Log(line)
+					}
+				}
+				plans.Close()
+			}
+		}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var raw json.RawMessage
