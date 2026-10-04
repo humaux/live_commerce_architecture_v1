@@ -21,7 +21,7 @@ func TestAdsAttributionEmptyProjection(t *testing.T) {
 		t.Fatalf("draft projection: %s", r.Raw)
 	}
 	d := drafts[0].(map[string]any)
-	if len(d["orders"].([]any)) != 0 || d["meta"].(map[string]any)["purchases"] != nil || d["roas"] != nil {
+	if len(d["orders"].([]any)) != 0 || d["meta"].(map[string]any)["purchases"] != nil || d["roas"] != nil || d["spend_minor"] != nil {
 		t.Fatalf("empty cohort invented data: %s", r.Raw)
 	}
 }

@@ -30,6 +30,18 @@ func atTouch(d string, age time.Duration) *checkout.AdTouch {
 	return &checkout.AdTouch{DraftID: d, ClickedAt: time.Now().Add(-age), FBC: &fbc, FBP: atFBP}
 }
 
+// R11 clicks use a genuinely activated draft and a real timestamp after the
+// activation, never a copied URL for a never-launched draft.
+func atLiveClick(t *testing.T, e *adsEnv) *checkout.AdTouch {
+	t.Helper()
+	d := e.newDraft(adsDraftIn{})
+	e.mustApprove(d)
+	e.mustPublish(d)
+	e.driveTo(d, "activate", 1)
+	e.ownerReplica(`UPDATE ads.campaign_drafts SET starts_at=clock_timestamp()-interval '1 hour',ends_at=clock_timestamp()+interval '1 hour' WHERE id=$1`, d)
+	return atTouch(d, 0)
+}
+
 // Meta comment fixtures serialize Unix seconds. Wait for the actual next whole
 // second after successful activation; never backdate the operation or invent a
 // future comment to satisfy the attribution interval.
@@ -146,7 +158,7 @@ func TestAdsAttributionAT3ExactComment(t *testing.T) {
 			t.Cleanup(pool.Close)
 			input := checkout.Input{QuoteID: quote.ID, DestinationID: dest.ID, CartVersion: cart.Version, ServiceVersion: 1, AllocationVersion: 1}
 			if which == "click beats post" {
-				input.AdTouch = atTouch(e.newDraft(adsDraftIn{}), time.Minute)
+				input.AdTouch = atLiveClick(t, e)
 			}
 			pgLog := lcServerLog(t, h.f)
 			result, err := bcService(t, pool).Begin(context.Background(), cap.Token, h.f.storeA1, t04Key("at-comment-begin"), input)
@@ -313,8 +325,8 @@ func TestAdsAttributionAT1BeginFreeze(t *testing.T) {
 		b := bcSetup(t)
 		pgLog := lcServerLog(t, b.f)
 		e := newAdsEnv(t, adsOpts{fx: b.f})
-		d := e.newDraft(adsDraftIn{})
-		b.input.AdTouch = atTouch(d, time.Minute)
+		b.input.AdTouch = atLiveClick(t, e)
+		d := b.input.AdTouch.DraftID
 		b.input.ClientIP = "192.0.2.8"
 		key := t04Key("at-begin")
 		r, err := b.begin(key)
@@ -377,7 +389,7 @@ func TestAdsAttributionAT1BeginFreeze(t *testing.T) {
 func TestAdsAttributionAT1AtomicRollback(t *testing.T) {
 	b := bcSetup(t)
 	e := newAdsEnv(t, adsOpts{fx: b.f})
-	b.input.AdTouch = atTouch(e.newDraft(adsDraftIn{}), time.Minute)
+	b.input.AdTouch = atLiveClick(t, e)
 	before := b.facts(t)
 	measurementsBefore := lcStrings(t, b.f.owner, `SELECT to_jsonb(a)::text FROM orders.order_attribution a WHERE tenant_id=$1 AND store_id=$2`, b.f.tenantA, b.f.storeA1)
 	name := "at_fault_" + t04Tag()
@@ -458,8 +470,9 @@ func TestAdsAttributionAT2PayloadAndTerminalIP(t *testing.T) {
 			if err := c.f.owner.QueryRow(c.ctx, `SELECT host(client_ip) FROM orders.order_attribution WHERE order_id=$1`, c.p.result.OrderID).Scan(&ip); err != nil || ip != nil {
 				t.Fatalf("terminal/ineligible IP retained: %v %v", ip, err)
 			}
-			if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND path='ad_click' AND draft_id=$2 AND fbc=$3 AND fbp=$4`, c.p.result.OrderID, d, atFBC, atFBP); n != 1 {
-				t.Fatal("aggregate/pseudonym context unexpectedly removed")
+			// R11 tightens retention: aggregates remain, single-send match fields do not.
+			if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND path='ad_click' AND draft_id=$2 AND fbc IS NULL AND fbp IS NULL`, c.p.result.OrderID, d); n != 1 {
+				t.Fatal("aggregate removed or single-send pseudonyms retained")
 			}
 		})
 	}
@@ -520,8 +533,8 @@ func TestAdsAttributionR3NoOperationPurge(t *testing.T) {
 			if _, err := c.workerPool.Exec(c.ctx, `SELECT ads.plan_capi_purge()`); err != nil {
 				t.Fatal(err)
 			}
-			if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND client_ip IS NULL AND draft_id=$2 AND fbc=$3 AND fbp=$4`, c.p.result.OrderID, d, atFBC, atFBP); n != 1 {
-				t.Fatal("no-operation cleanup did not clear only IP")
+			if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND client_ip IS NULL AND draft_id=$2 AND fbc IS NULL AND fbp IS NULL`, c.p.result.OrderID, d); n != 1 {
+				t.Fatal("no-operation cleanup retained single-send signals")
 			}
 		})
 	}
@@ -570,8 +583,48 @@ func TestAdsAttributionR3FinalFailureClearsIP(t *testing.T) {
 	if err := c.f.owner.QueryRow(c.ctx, `SELECT host(client_ip) FROM orders.order_attribution WHERE order_id=$1`, c.p.result.OrderID).Scan(&ip); err != nil || ip != nil {
 		t.Fatalf("final failure retained IP: %v %v", ip, err)
 	}
-	if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND draft_id=$2 AND fbc=$3 AND fbp=$4`, c.p.result.OrderID, d, atFBC, atFBP); n != 1 {
-		t.Fatal("terminal cleanup changed other facts")
+	if n := c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND draft_id=$2 AND fbc IS NULL AND fbp IS NULL`, c.p.result.OrderID, d); n != 1 {
+		t.Fatal("terminal cleanup retained single-send signals")
+	}
+}
+
+func TestAdsAttributionR11UnknownClearsAllSignals(t *testing.T) {
+	c := newCapiEnv(t, adsOpts{maxGen: 4})
+	d := c.newDraft(adsDraftIn{})
+	atSeedContext(t, c, d)
+	c.prime("SANDBOX", "SANDBOX")
+	c.g.Inject(fakegraph.Fault{Route: fakegraph.RouteEvents, Kind: fakegraph.Fault5xx, Times: 30})
+	for i := 0; i < 3; i++ {
+		c.sweep("capi")
+		c.settle()
+	}
+	ops := c.capiOps()
+	if len(ops) != 1 || ops[0].State != "UNKNOWN" || len(c.events()) != 1 {
+		t.Fatalf("UNKNOWN replay violated: ops=%+v HTTP=%d", ops, len(c.events()))
+	}
+	if c.count(`SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND draft_id=$2 AND fbc IS NULL AND fbp IS NULL AND client_ip IS NULL`, c.p.result.OrderID, d) != 1 {
+		t.Fatal("UNKNOWN retained single-send match data")
+	}
+}
+
+func TestAdsAttributionR11SQLHashesEmail(t *testing.T) {
+	c := newCapiEnv(t, adsOpts{})
+	d := c.newDraft(adsDraftIn{})
+	atSeedContext(t, c, d)
+	mustExec(t, c.f.owner, `UPDATE checkout.orders SET buyer_email='  Buyer@Example.Test  ' WHERE id=$1`, c.p.result.OrderID)
+	var hashed string
+	if err := c.f.owner.QueryRow(c.ctx, `SELECT email_hash FROM orders.capi_context($1,$2,$3)`, c.tenant, c.store, c.p.result.OrderID).Scan(&hashed); err != nil {
+		t.Fatal(err)
+	}
+	if hashed != attribution.HashEmail("buyer@example.test") {
+		t.Fatal("SQL did not normalize and hash email")
+	}
+	var signature string
+	if err := c.f.owner.QueryRow(c.ctx, `SELECT pg_get_function_result('ads.capi_attribution_data(uuid,bigint,bytea)'::regprocedure)`).Scan(&signature); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(signature, "email text") || !strings.Contains(signature, "email_hash text") {
+		t.Fatal("worker contract exposes raw email")
 	}
 }
 

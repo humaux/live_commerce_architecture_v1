@@ -111,6 +111,8 @@ func TestMetaAdsMA02Schema(t *testing.T) {
 			"func:orders.attribution_metrics(p_tenant uuid, p_store uuid, p_from date, p_to date, p_draft uuid, p_session uuid):EXECUTE",
 			"func:orders.capi_context(p_tenant uuid, p_store uuid, p_order uuid):EXECUTE",
 			"func:orders.purge_capi_ip():EXECUTE",
+			// R11: a boolean current-grant check; still no Page credential table access.
+			"func:integration.meta_audience_authorized(p_tenant uuid, p_store uuid, p_session uuid):EXECUTE",
 		)
 		for _, c := range adsCols("control.stores", "SELECT", "tenant_id", "id", "active", "currency", "name") { // §4.4 row 3 (+ feed name, 0080)
 			contract[c] = true

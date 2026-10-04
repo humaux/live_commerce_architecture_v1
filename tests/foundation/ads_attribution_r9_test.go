@@ -35,8 +35,8 @@ func TestAdsAttributionR9BeginNeverFails(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			b := bcSetup(t)
 			e := newAdsEnv(t, adsOpts{fx: b.f})
-			d := e.newDraft(adsDraftIn{})
-			b.input.AdTouch = atTouch(d, time.Minute)
+			b.input.AdTouch = atLiveClick(t, e)
+			d := b.input.AdTouch.DraftID
 			switch name {
 			case "garbage":
 				b.input.AdTouch.DraftID = "garbage-draft"
@@ -65,7 +65,7 @@ func TestAdsAttributionR9BeginNeverFails(t *testing.T) {
 			want := int64(0)
 			if name == "legitimate click" {
 				want = 1
-				if miCount(t, b.f.owner, `SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND path='ad_click' AND draft_id=$2 AND fbc=$3 AND fbp=$4`, r.OrderID, d, atFBC, atFBP) != 1 {
+				if miCount(t, b.f.owner, `SELECT count(*) FROM orders.order_attribution WHERE order_id=$1 AND path='ad_click' AND draft_id=$2 AND fbc IS NULL AND fbp IS NULL`, r.OrderID, d) != 1 {
 					t.Fatal("legitimate Begin did not freeze exact click")
 				}
 			}
@@ -83,7 +83,8 @@ func TestAdsAttributionR9RefusalCommitsUnchanged(t *testing.T) {
 			e := newAdsEnv(t, adsOpts{fx: b.f})
 			d := e.newDraft(adsDraftIn{})
 			if name == "second freeze" {
-				b.input.AdTouch = atTouch(d, time.Minute)
+				b.input.AdTouch = atLiveClick(t, e)
+				d = b.input.AdTouch.DraftID
 			}
 			r, err := b.begin(t04Key("r9-original"))
 			if err != nil {
