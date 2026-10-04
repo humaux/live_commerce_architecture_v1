@@ -86,13 +86,14 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | `env/*.env.example` | `compose.env` (cross-service values, incl. `LC_STRIPE_ENABLED`) + per-service knob templates (`claims-worker.env` added in R1) |
 | `scripts/lib.sh` | Shared helpers (`lc_compose`, `lc_psql`, `lc_secret_scan`, env loader) |
 | `scripts/host-setup.sh`, `secrets-init.sh`, `preflight.sh` | Host prep, secret generation, config validation |
-| `scripts/build-images.sh`, `check-pins.sh` | Image build (sha12 tags, OCI labels); digest-pin guard |
+| `scripts/build-images.sh`, `check-pins.sh`, `prune-docker.sh` | Image build (sha12 tags, OCI labels); digest-pin guard; post-build prune of old `lc-*` tags (keeps new + running + previous deployed tag) and build cache (3 GB) |
 | `scripts/ops-admin.sh` | Operator CLIs (`stripe-admin`, `meta-admin`, `store-admin`) as one-shot `ops` containers; prompts inputs without echo; refuses live keys and `--profile LIVE`; audit line without values |
 | `scripts/deploy.sh`, `pg-ops.sh` | first / upgrade / app-rollback (keeps compose.env `IMAGE_TAG` = deployed tag); DB operations wrapper incl. `rotate-superuser`, `pitr-cutover` |
-| `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10; incident bundle (secret-scanned) |
+| `scripts/watchdog.sh`, `collect-diagnostics.sh` | Cron health checks W1–W10 (+ alert e-mail to `LC_ALERT_EMAIL`); incident bundle (secret-scanned) |
 | `scripts/smoke.sh`, `smoke-browser.mjs` | Acceptance `static` (S01–S06; S03 also checks login/secret/network wiring against `logins.tsv`) / `full` (S07–S44, S10a–q, S13n) with evidence |
 | `../scripts/dev/release-gate.sh` | R1 acceptance table over every tier (packet, build/vet, TS typecheck, secret grep, depmap, unit, foundation, every browser mode, smoke static/full); NOT_RUN when prerequisites are missing |
-| `host/crontab.example` | Backup + watchdog schedule |
+| `host/crontab.example` | Backup (nightly dump, daily base) + watchdog schedule |
+| `postgres/archive-wal.sh`, `postgres/ops/restore-wal.sh` | WAL archive_command (gzip + verify + atomic rename) / restore_command (reads `.gz` and legacy plain files) |
 
 ## Status matrix (2026-09-29; earlier rows 2026-09-28)
 
@@ -136,8 +137,11 @@ No new Go modules and no new npm packages. `lcentry` uses only the Go standard l
    meta gates stay mandatory in provision-logins, verify.sql and watchdog W8. The migration fix is REQUIRES_INTEGRATOR.
 2. PITR scratch server reads `max_connections` etc. from the backup's `pg_control`. Hot standby aborts below
    the primary's values.
-3. `archive_command` succeeds on an identical, already-archived segment (`cmp`). This keeps the archiver
-   from wedging after a crash.
+3. `archive_command` (`postgres/archive-wal.sh`) archives WAL segments gzip-compressed as `<segment>.gz` (ops-disk-guard D1: a
+   60 s forced-switch segment is mostly zeros, 16 MiB became tens of KiB; uncompressed it filled the pilot disk on 2026-10-03),
+   keeps `.history`/`.backup` plain, and succeeds on an identical, already-archived segment (compare after decompressing). This
+   keeps the archiver from wedging after a crash. `restore_command` (`postgres/ops/restore-wal.sh`) reads `.gz` first, then the
+   legacy plain file. `basebackup.sh` runs daily and prunes with `pg_archivecleanup -b -x .gz` (both forms).
 4. `pitr-scratch` is mounted at `/var/lib/postgresql` **inside pg-ops only**. It inherits UID 999 ownership
    from the image. pg-ops never mounts pgdata.
 5. Preflight rejects `LC_ACME_CA=` (empty). Caddy applies `{$VAR:default}` only when the variable is unset.
