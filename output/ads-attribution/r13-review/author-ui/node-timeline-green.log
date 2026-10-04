@@ -1,0 +1,31 @@
+✔ READY is the only acknowledgement; missing/forged operation/state remains unknown (0.697083ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.408208ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (34.501958ms)
+✔ R10 ROAS has exactly two decimals in en (11.982958ms)
+✔ R10 unknown ROAS is never fabricated as zero in en (0.081542ms)
+✔ R10 ROAS has exactly two decimals in zh-TW (0.166542ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-TW (0.035167ms)
+✔ R10 ROAS has exactly two decimals in zh-CN (0.127875ms)
+✔ R10 unknown ROAS is never fabricated as zero in zh-CN (0.030375ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (22.360083ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (2.975833ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (2.496625ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.175167ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (13.772875ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (12.715125ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (9.395459ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.180291ms)
+✔ R8: null stays unknown and unauthorised / insufficient remain different states (0.179458ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.869083ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.084666ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.308833ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.248542ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.092125ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 361.067292

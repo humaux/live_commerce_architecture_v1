@@ -1,0 +1,11 @@
+=== RUN   TestAdsAttributionR10PaidOnlyMixedCohort
+--- PASS: TestAdsAttributionR10PaidOnlyMixedCohort (22.95s)
+=== RUN   TestAdsAttributionAT4AT9ExactReport
+--- PASS: TestAdsAttributionAT4AT9ExactReport (21.34s)
+=== RUN   TestAdsAttributionR10SignalsOnlyExcludedFromReports
+--- PASS: TestAdsAttributionR10SignalsOnlyExcludedFromReports (19.52s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.56s)
+PASS
+ok  	livecommerce/tests/foundation	66.181s
+test-focused: top-level PASS=4 FAIL=0 SKIP=0 exit=0

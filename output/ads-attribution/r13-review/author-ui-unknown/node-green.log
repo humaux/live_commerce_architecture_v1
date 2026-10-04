@@ -1,0 +1,16 @@
+✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (0.8015ms)
+✔ R11 durable receipt journal validates phase against exact operation state (0.342167ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in en (3.829125ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (1.025959ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.516208ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.171375ms)
+✔ actual read hook retries network UNKNOWN with one key but never re-POSTs authoritative UNKNOWN (11.702458ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (12.058791ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 310.802916

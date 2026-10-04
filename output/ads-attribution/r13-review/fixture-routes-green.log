@@ -1,0 +1,6 @@
+# livecommerce/tests/foundation_test [livecommerce/tests/foundation.test]
+tests/foundation/ads_attribution_report_test.go:314:6: err redeclared in this block
+	tests/foundation/ads_attribution_report_test.go:215:8: other declaration of err
+FAIL	livecommerce/tests/foundation [build failed]
+FAIL
+test-focused: top-level PASS=0 FAIL=0 SKIP=0 exit=1

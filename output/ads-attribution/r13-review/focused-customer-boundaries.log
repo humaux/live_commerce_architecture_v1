@@ -1,0 +1,88 @@
+source=4acbad5353814fc3940812e9e399fdb1253ed40f
+started=2026-10-04T04:30:47Z
+command=bash scripts/dev/test-focused.sh \^\(TestCustomersBillingCB02\|TestCustomersBillingCB04\|TestCustomersBillingCB05\) 
+=== RUN   TestCustomersBillingCB04BuyerHTTPConcurrency
+--- PASS: TestCustomersBillingCB04BuyerHTTPConcurrency (1.39s)
+=== RUN   TestCustomersBillingCB04Consent
+=== RUN   TestCustomersBillingCB04Consent/buyer_grant,_replay,_withdraw,_re-grant;_source_and_policy_are_server-set
+=== RUN   TestCustomersBillingCB04Consent/K/K2_stale_retry:_an_unchanged-state_write_still_records_its_key_and_a_retry_can_never_re-grant
+=== RUN   TestCustomersBillingCB04Consent/PT409:_same_key_with_a_different_purpose,_granted,_source_or_policy
+=== RUN   TestCustomersBillingCB04Consent/an_EXPORT_key_reused_for_ERASURE_(and_the_reverse)_is_PT409
+=== RUN   TestCustomersBillingCB04Consent/merchant_withdraw:_recorded,_audited,_permission-gated,_store-scoped
+=== RUN   TestCustomersBillingCB04Consent/a_merchant_can_never_grant
+=== RUN   TestCustomersBillingCB04Consent/consent_allows_exactly_per_the_frozen_comment
+=== RUN   TestCustomersBillingCB04Consent/erasure_withdraws_every_pair;_nothing_is_granted_afterwards
+=== RUN   TestCustomersBillingCB04Consent/owner_lock:_a_held_owner_row_blocks_the_three_writers_(pg_blocking_pids_witness)
+=== RUN   TestCustomersBillingCB04Consent/concurrency:_one_key_makes_one_row;_alternating_writers_never_fail
+=== RUN   TestCustomersBillingCB04Consent/request_body_policy_version_/_source_are_rejected_as_unknown_fields_(D12)
+--- PASS: TestCustomersBillingCB04Consent (0.62s)
+    --- PASS: TestCustomersBillingCB04Consent/buyer_grant,_replay,_withdraw,_re-grant;_source_and_policy_are_server-set (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/K/K2_stale_retry:_an_unchanged-state_write_still_records_its_key_and_a_retry_can_never_re-grant (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/PT409:_same_key_with_a_different_purpose,_granted,_source_or_policy (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/an_EXPORT_key_reused_for_ERASURE_(and_the_reverse)_is_PT409 (0.15s)
+    --- PASS: TestCustomersBillingCB04Consent/merchant_withdraw:_recorded,_audited,_permission-gated,_store-scoped (0.02s)
+    --- PASS: TestCustomersBillingCB04Consent/a_merchant_can_never_grant (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/consent_allows_exactly_per_the_frozen_comment (0.02s)
+    --- PASS: TestCustomersBillingCB04Consent/erasure_withdraws_every_pair;_nothing_is_granted_afterwards (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/owner_lock:_a_held_owner_row_blocks_the_three_writers_(pg_blocking_pids_witness) (0.08s)
+    --- PASS: TestCustomersBillingCB04Consent/concurrency:_one_key_makes_one_row;_alternating_writers_never_fail (0.05s)
+    --- PASS: TestCustomersBillingCB04Consent/request_body_policy_version_/_source_are_rejected_as_unknown_fields_(D12) (0.02s)
+=== RUN   TestCustomersBillingCB05Erasure
+=== RUN   TestCustomersBillingCB05Erasure/refused:_an_unexpired_DRAFT/AWAITING_PAYMENT_order_(merchant_and_buyer)
+=== RUN   TestCustomersBillingCB05Erasure/refused:_any_payments.stripe_sessions_row_with_expires_at_>_now,_even_for_a_paid_order
+=== RUN   TestCustomersBillingCB05Erasure/refused:_a_Stripe_refund_without_a_terminal_fact
+=== RUN   TestCustomersBillingCB05Erasure/success:_sessions_revoked,_owner_inactive,_consents_withdrawn,_summary_counts_(D10)
+=== RUN   TestCustomersBillingCB05Erasure/redacts_only_unreferenced_snapshots;_referenced_ones_stay_byte-identical
+=== RUN   TestCustomersBillingCB05Erasure/relabels_manual_bound_bundles_to_erased-+32_hex,_also_next_to_a_colliding_merchant_label
+=== RUN   TestCustomersBillingCB05Erasure/actor-level_data_and_other_owners_are_untouched_(CD7)
+=== RUN   TestCustomersBillingCB05Erasure/replay_is_idempotent;_the_tombstone_is_the_ERASURE_row
+=== RUN   TestCustomersBillingCB05Erasure/buyer_erasure_(via_buyer)_and_the_retry_after_it_is_410_erased
+=== RUN   TestCustomersBillingCB05Erasure/RESTORE_MODEL_(MODEL_ONLY_until_T20):_replay_erasures_without_ids_stays_red,_with_the_external_ids_goes_green
+--- PASS: TestCustomersBillingCB05Erasure (13.10s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_an_unexpired_DRAFT/AWAITING_PAYMENT_order_(merchant_and_buyer) (0.15s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_any_payments.stripe_sessions_row_with_expires_at_>_now,_even_for_a_paid_order (0.07s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_a_Stripe_refund_without_a_terminal_fact (0.53s)
+    --- PASS: TestCustomersBillingCB05Erasure/success:_sessions_revoked,_owner_inactive,_consents_withdrawn,_summary_counts_(D10) (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/redacts_only_unreferenced_snapshots;_referenced_ones_stay_byte-identical (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/relabels_manual_bound_bundles_to_erased-+32_hex,_also_next_to_a_colliding_merchant_label (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/actor-level_data_and_other_owners_are_untouched_(CD7) (0.03s)
+    --- PASS: TestCustomersBillingCB05Erasure/replay_is_idempotent;_the_tombstone_is_the_ERASURE_row (0.03s)
+    --- PASS: TestCustomersBillingCB05Erasure/buyer_erasure_(via_buyer)_and_the_retry_after_it_is_410_erased (0.01s)
+    --- PASS: TestCustomersBillingCB05Erasure/RESTORE_MODEL_(MODEL_ONLY_until_T20):_replay_erasures_without_ids_stays_red,_with_the_external_ids_goes_green (1.07s)
+=== RUN   TestCustomersBillingCB02Schema
+=== RUN   TestCustomersBillingCB02Schema/roles_and_schemas
+=== RUN   TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read
+=== RUN   TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers
+=== RUN   TestCustomersBillingCB02Schema/policies
+=== RUN   TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility
+=== RUN   TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5)
+=== RUN   TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one
+=== RUN   TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7)
+=== RUN   TestCustomersBillingCB02Schema/consent_events_rules
+=== RUN   TestCustomersBillingCB02Schema/privacy_actions_rules
+=== RUN   TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8)
+=== RUN   TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2)
+=== RUN   TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5)
+=== RUN   TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array
+--- PASS: TestCustomersBillingCB02Schema (4.06s)
+    --- PASS: TestCustomersBillingCB02Schema/roles_and_schemas (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read (0.12s)
+    --- PASS: TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers (0.05s)
+    --- PASS: TestCustomersBillingCB02Schema/policies (0.10s)
+    --- PASS: TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility (0.02s)
+    --- PASS: TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5) (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7) (1.13s)
+    --- PASS: TestCustomersBillingCB02Schema/consent_events_rules (0.03s)
+    --- PASS: TestCustomersBillingCB02Schema/privacy_actions_rules (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5) (0.04s)
+    --- PASS: TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array (0.65s)
+=== RUN   TestCustomersBillingCB02Comments
+=== RUN   TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package
+--- PASS: TestCustomersBillingCB02Comments (2.04s)
+    --- PASS: TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	22.947s
+test-focused: top-level PASS=5 FAIL=0 SKIP=0 exit=0

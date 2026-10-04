@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR11AgedRetryAndFinalDaily
+    ads_attribution_r11_test.go:471: exec test setup: ERROR: relation "ads.insights_breakdown_status" does not exist (SQLSTATE 42P01)
+--- FAIL: TestAdsAttributionR11AgedRetryAndFinalDaily (3.04s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.595s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

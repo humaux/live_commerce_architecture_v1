@@ -1,0 +1,46 @@
+=== RUN   TestAdsAttributionR11UnknownClearsAllSignals
+    ads_attribution_core_test.go:606: UNKNOWN retained single-send match data
+--- FAIL: TestAdsAttributionR11UnknownClearsAllSignals (5.22s)
+=== RUN   TestAdsAttributionR11SQLHashesEmail
+    ads_attribution_core_test.go:614: exec test setup: ERROR: new row for relation "orders" violates check constraint "orders_buyer_email_check" (SQLSTATE 23514)
+--- FAIL: TestAdsAttributionR11SQLHashesEmail (0.47s)
+=== RUN   TestAdsAttributionR11AudienceBoundReplay
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=110a18a8-9a61-4def-aa3a-8d8b7c844484
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=3f7256cb-ce35-4332-8f32-210bff76b492
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=0d0299ca-93e4-42d2-bb38-55bbe3bd1bc8
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=d3b74e5f-d8a3-4bf1-8634-f7c2c50ef276
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=e2967482-3c94-4972-8069-f5bb5d4dcae1
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=62e59ef3-98a6-4959-a7d4-a139bd6c497c
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=60f041b0-7540-4c4b-a14f-fe27c498d422
+    ads_attribution_r11_test.go:42: fresh idempotency keys must replay in-flight op: status=200 op=898e45ed-4b26-4207-9806-cbf9eefe84b0
+    ads_attribution_r11_test.go:46: one in-flight operation required, got=9
+    ads_attribution_r11_test.go:49: replay must not commit orphan jobs: before=4 after=13
+--- FAIL: TestAdsAttributionR11AudienceBoundReplay (0.27s)
+=== RUN   TestAdsAttributionR11ClickLiveWindow
+    ads_attribution_r11_test.go:92: never launched public lc_ad credited=1
+    ads_attribution_r11_test.go:107: click outside starts/ends credited
+    ads_attribution_r11_test.go:118: copied ended lc_ad credited=1
+--- FAIL: TestAdsAttributionR11ClickLiveWindow (2.47s)
+=== RUN   TestAdsAttributionR11UnknownDraft
+    ads_attribution_r11_test.go:161: uncapped report must explicitly return truncated:false
+    ads_attribution_r11_test.go:171: no insights draft spend_minor must be explicit null: present=true value=0
+    ads_attribution_r11_test.go:183: no insights session spend_minor must be explicit null: present=true value=0
+    ads_attribution_r11_test.go:183: no insights session roas must be explicit null: present=false value=<nil>
+--- FAIL: TestAdsAttributionR11UnknownDraft (0.32s)
+=== RUN   TestAdsAttributionR11ReportCapAndDeadline
+    ads_attribution_r11_test.go:255: REAL_PG MOCK synthetic collected COD orders=10000 drafts=100 API elapsed=3.745657125s status=200 bytes=71513
+    ads_attribution_r11_test.go:261: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:270: timing must exercise all 10000 paid aggregate rows, got=9900
+    ads_attribution_r11_test.go:255: REAL_PG MOCK synthetic collected COD orders=10000 drafts=101 API elapsed=3.495189792s status=200 bytes=71219
+    ads_attribution_r11_test.go:261: cap/flag drafts=100 truncated=<nil>
+    ads_attribution_r11_test.go:270: timing must exercise all 10000 paid aggregate rows, got=9800
+    ads_attribution_r11_test.go:281: REAL_PG direct runtime SQL elapsed=3.432060083s bytes=77379 error=<nil>
+--- FAIL: TestAdsAttributionR11ReportCapAndDeadline (19.41s)
+=== RUN   TestAdsAttributionR11SessionCap
+    ads_attribution_r11_test.go:319: session cap n=100 rows=100 truncated=<nil>
+    ads_attribution_r11_test.go:319: session cap n=101 rows=100 truncated=<nil>
+--- FAIL: TestAdsAttributionR11SessionCap (0.33s)
+FAIL
+FAIL	livecommerce/tests/foundation	29.440s
+FAIL
+test-focused: top-level PASS=0 FAIL=7 SKIP=0 exit=1

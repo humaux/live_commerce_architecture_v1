@@ -1,0 +1,369 @@
+[
+  [
+    {
+      "text": "來源路徑",
+      "left": 336,
+      "right": 384,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 483.6875,
+      "right": 543.6875,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 587.390625,
+      "right": 683.390625,
+      "width": 96,
+      "height": 14
+    },
+    {
+      "text": "待收款訂單",
+      "left": 721.1875,
+      "right": 781.1875,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "待收款金額",
+      "left": 819,
+      "right": 879,
+      "width": 60,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "Meta 帳戶日期",
+      "left": 336,
+      "right": 414.6875,
+      "width": 78.6875,
+      "height": 14
+    },
+    {
+      "text": "Meta 帳戶時區",
+      "left": 493.296875,
+      "right": 571.984375,
+      "width": 78.6875,
+      "height": 14
+    },
+    {
+      "text": "分類",
+      "left": 612.6875,
+      "right": 636.6875,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "群組",
+      "left": 753.140625,
+      "right": 777.140625,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "時間（Asia/Taipei）",
+      "left": 804.765625,
+      "right": 915.234375,
+      "width": 110.46875,
+      "height": 14
+    },
+    {
+      "text": "廣告花費",
+      "left": 950.515625,
+      "right": 998.515625,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "觸及",
+      "left": 1039.21875,
+      "right": 1063.21875,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "曝光",
+      "left": 1103.921875,
+      "right": 1127.921875,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "點擊",
+      "left": 1168.625,
+      "right": 1192.625,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "互動",
+      "left": 1233.328125,
+      "right": 1257.328125,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "留言",
+      "left": 1298.03125,
+      "right": 1322.03125,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "購買次數",
+      "left": 1347.96875,
+      "right": 1395.96875,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "購買金額",
+      "left": 1422,
+      "right": 1470,
+      "width": 48,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "收件縣市",
+      "left": 336,
+      "right": 384,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 906.5,
+      "right": 966.5,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "商品",
+      "left": 336,
+      "right": 360,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "數量",
+      "left": 1446,
+      "right": 1470,
+      "width": 24,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "時間（Asia/Taipei）",
+      "left": 336,
+      "right": 446.46875,
+      "width": 110.46875,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 999.421875,
+      "right": 1059.421875,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "留言",
+      "left": 336,
+      "right": 360,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "喊單",
+      "left": 674,
+      "right": 698,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "結帳連結",
+      "left": 939.5,
+      "right": 987.5,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "已付款／收款訂單",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "時間（Asia/Taipei）",
+      "left": 336,
+      "right": 446.46875,
+      "width": 110.46875,
+      "height": 14
+    },
+    {
+      "text": "廣告花費",
+      "left": 695.4375,
+      "right": 743.4375,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "觀眾",
+      "left": 845.53125,
+      "right": 869.53125,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "留言",
+      "left": 941.59375,
+      "right": 965.59375,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "喊單",
+      "left": 1037.65625,
+      "right": 1061.65625,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 1169.78125,
+      "right": 1229.78125,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "年齡與性別",
+      "left": 336,
+      "right": 396,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "觀看時間（毫秒），非人數",
+      "left": 741,
+      "right": 879,
+      "width": 138,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "地區",
+      "left": 336,
+      "right": 360,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "觀看時間（毫秒），非人數",
+      "left": 741,
+      "right": 879,
+      "width": 138,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "收件縣市",
+      "left": 927,
+      "right": 975,
+      "width": 48,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 1163.46875,
+      "right": 1223.46875,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "商品",
+      "left": 927,
+      "right": 951,
+      "width": 24,
+      "height": 14
+    },
+    {
+      "text": "數量",
+      "left": 1446,
+      "right": 1470,
+      "width": 24,
+      "height": 14
+    }
+  ],
+  [
+    {
+      "text": "時間（Asia/Taipei）",
+      "left": 927,
+      "right": 1037.46875,
+      "width": 110.46875,
+      "height": 14
+    },
+    {
+      "text": "已收款訂單",
+      "left": 1208.953125,
+      "right": 1268.953125,
+      "width": 60,
+      "height": 14
+    },
+    {
+      "text": "扣除退款後淨營收",
+      "left": 1374,
+      "right": 1470,
+      "width": 96,
+      "height": 14
+    }
+  ]
+]

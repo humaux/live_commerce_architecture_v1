@@ -1,0 +1,7 @@
+=== RUN   TestAdsAttributionR11OptionalBreakdownAndNull
+    ads_attribution_r11_test.go:325: insufficient available inventory
+--- FAIL: TestAdsAttributionR11OptionalBreakdownAndNull (20.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	21.030s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
