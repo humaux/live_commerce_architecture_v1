@@ -494,6 +494,19 @@ if password_login or buyer_mail:
         "LC_MAIL_FROM carries exactly LC_SMTP_USERNAME")
     cap = E.get("LC_MAIL_DAILY_CAP", "200")
     rec("P08", cap.isdigit() and 20 <= int(cap) <= 100000, "LC_MAIL_DAILY_CAP")
+# ops-disk-guard D4: alerts must reach a human. cron MAILTO=root is a local mailbox nobody reads (the 2026-10-03 disk-full outage
+# failed W1-W4 for 29.5 h unseen), so production needs LC_ALERT_EMAIL (watchdog mails it through the app's SMTP relay) or
+# LC_ALERT_WEBHOOK_URL; elsewhere it is a WARN. An e-mail target also needs the relay it is sent through.
+alert_email, alert_hook = E.get("LC_ALERT_EMAIL", ""), E.get("LC_ALERT_WEBHOOK_URL", "")
+rec("P08", alert_email == "" or re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?\.[A-Za-z]{2,}", alert_email) is not None,
+    "LC_ALERT_EMAIL (one plain address)")
+rec("P08", bool(alert_email or alert_hook), "LC_ALERT_EMAIL or LC_ALERT_WEBHOOK_URL (without one, watchdog failures reach nobody)", warn=not prod)
+if alert_email:
+    rec("P08", re.fullmatch(r"[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?", E.get("LC_SMTP_HOST", "")) is not None
+        and re.fullmatch(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", E.get("LC_SMTP_USERNAME", "")) is not None
+        and "CHANGE_ME" not in E.get("LC_SMTP_USERNAME", "")
+        and values.get("commerce_smtp_password", "__UNSET__") != "__UNSET__",
+        "LC_ALERT_EMAIL needs LC_SMTP_HOST, LC_SMTP_USERNAME and secret commerce_smtp_password (the app's SMTP relay)", warn=not prod)
 if payment or accounts:
     rec("P08", profile_name in ("SANDBOX", "LIVE"), "COMMERCE_PAYMENT_PROFILE")
 for k in ("LC_HTTP_PORT", "LC_HTTPS_PORT"):
