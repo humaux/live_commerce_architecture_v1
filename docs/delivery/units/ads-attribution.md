@@ -221,3 +221,33 @@ These answer `output/ads-attribution/SUMMARY.md` (2ca36a7c), "Design boundaries"
   - **P3 deferred:**
     - the `__Host-` cookie prefix (host-only is already enforced);
     - cookies on unknown or inactive hosts (that page 404s anyway).
+- **R11 Review round 1, backend/SQL reviewer** (`output/ads-attribution-review/REVIEW-backend.md`, 2026-10-04: no P0/P1 as rated).
+  - **Upgraded to must-fix because they touch P0 invariants:**
+    - **P2-3 / I23.** `plan_meta_audience` gets a bound: at most one in-flight audience read per (store, live video), plus a 10-minute cooldown after it finishes. A repeat inside the window replays the existing operation instead of planning a new one.
+    - **P3-3 / I12.** Missing Meta evidence stays unknown:
+      - a draft with no insights rows shows spend 「—」 and ROAS 「—」, never 0;
+      - breakdown fields Meta omitted are null (unknown), never 0;
+      - tests cover both.
+  - **Must-fix:**
+    - **P2-1.** A breakdown GET failure (4xx/5xx, malformed label, DST-ambiguous hour) never prevents storing the D7 daily row. The failed dimension is recorded as unavailable for that day and retried by the next sweep.
+    - **P2-2.** `ads.attribution_report` returns `truncated:true` when it caps drafts or sessions at 100, and the UI says 「僅顯示前 100 筆」. Add timing evidence on REAL_PG with 100 drafts and 10k orders, kept within the API deadline.
+    - **P3-11.** The `plan_capi_purge` patch asserts its needle is present, like the other patches. A silent no-op would disable the IP purge.
+  - **Privacy, which tightens R3 and R10. `fbc`, `fbp` and `client_ip` exist only to be sent once.**
+    - They are frozen at Begin only when `ads_personalization` consent is present. The touch is still not required (R10).
+    - They are cleared when:
+      - the order's CAPI operation reaches any final state, including UNKNOWN, which is never resent (I06) (P3-2);
+      - consent is withdrawn, following the 0080 `capi_contexts` withdrawal purge (P3-1);
+      - the buyer is erased;
+      - the bounded purge runs.
+    - **P3-6.** Follow the 0080 CD5 precedent: SQL returns only the normalised SHA-256 of the e-mail, and the raw e-mail never reaches the ads worker.
+  - **Correctness:**
+    - **P3-7.** `lc_ad` counts only when the click time falls inside that draft's live window, the same window as R4. A copied URL for a never-launched or ended draft is not credited.
+    - **P3-4.** Session spend is labelled 「所選期間內推廣此直播貼文的廣告花費」, not presented as spend during the session.
+    - **P3-8.**
+      - Add `read_insights` to the self-serve Page-connect scopes.
+      - When the stored grant lacks it, the audience panel shows 「需重新連接 Facebook 以授權觀眾數據」 rather than failing silently.
+      - Until App Review, only app-role users can grant it (owner 2026-10-03).
+    - **P3-9.** The contract's exact grant delta lists every new EXECUTE.
+  - **Accepted as-is, documented:**
+    - **P3-10.** The owner-role `USING(true)` policy follows the 0074/0075 pattern. Isolation rests on the definers' explicit tenant/store predicates, which the reviewer verified.
+    - **P3-12.** Order-level approximations: a mixed comment + manual order is attributed from its comment line, and an order spanning two posts gets no attribution.
