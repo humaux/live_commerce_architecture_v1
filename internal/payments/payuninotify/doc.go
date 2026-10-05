@@ -1,3 +1,8 @@
+// Purpose: package doc of the PAYUNi NotifyURL admission package (verify, record receipt, wake the existing query job).
+// Depends on: none at runtime (documentation only).
+// Used by: handler.go and inbox.go of this package; cmd/api/payuni_notify.go.
+// Invariants: a notification never writes a payment/stock fact (payment-capture-v1); never LIVE.
+
 // Package payuninotify owns admission of signed PAYUNi NotifyURL callbacks for one registered
 // endpoint token. A notification is only a trigger to query: the handler verifies the callback
 // signature with the connection's decrypted HashKey/HashIV, then one definer transaction records

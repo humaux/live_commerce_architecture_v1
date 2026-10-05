@@ -144,6 +144,15 @@ func TestPayuniNotifySchemaACLPin(t *testing.T) {
 			AND has_column_privilege('commerce_integration_writer',a.attrelid,a.attnum,'UPDATE'))=2`).Scan(&twoCols); err != nil || !twoCols {
 		t.Fatalf("receipts UPDATE column grant is not exactly (redelivery_count,last_redelivered_at) (err=%v)", err)
 	}
+	// The wake writes exactly one new river column: the integration writer may UPDATE only (queue — the pre-existing
+	// 0005 queue router — and scheduled_at) on the payment queue, and never INSERT/DELETE there.
+	var wakeOnly bool
+	if err := f.owner.QueryRow(ctx, `SELECT (SELECT array_agg(a.attname::text ORDER BY a.attname) FROM pg_attribute a
+			WHERE a.attrelid='river_payment.river_job'::regclass AND a.attnum>0 AND NOT a.attisdropped
+			AND has_column_privilege('commerce_integration_writer',a.attrelid,a.attnum,'UPDATE'))=ARRAY['queue','scheduled_at']
+		AND NOT has_table_privilege('commerce_integration_writer','river_payment.river_job','INSERT,DELETE')`).Scan(&wakeOnly); err != nil || !wakeOnly {
+		t.Fatalf("integration writer river_payment.river_job UPDATE is not exactly (queue,scheduled_at) or can INSERT/DELETE (err=%v)", err)
+	}
 	for _, table := range []string{"payments.payuni_notify_endpoints", "payments.payuni_notify_receipts"} {
 		var forced bool
 		if err := f.owner.QueryRow(ctx, `SELECT c.relrowsecurity AND c.relforcerowsecurity

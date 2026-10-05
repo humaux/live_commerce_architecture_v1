@@ -1,3 +1,9 @@
+// Purpose: PG side of PAYUNi notify admission: resolve the endpoint's credential envelopes and record one receipt + wake.
+// Depends on: SQL payments.payuni_resolve_endpoint and payments.payuni_record_notify (migration 0136, SECURITY DEFINER);
+//   internal/integrations/psp/payuni (NotificationAuth); river_payment.river_job is touched only inside the definer.
+// Used by: handler.go (Store implementation), cmd/api/payuni_notify.go.
+// Invariants: store only sees authenticated notifications; one transaction = receipt + wake; no money fact, no job insert.
+
 // inbox.go: the PG side of PAYUNi notify admission. The store never sees an unverified callback:
 // record takes only a payuni.NotificationAuth that the handler already authenticated with the
 // connection's own HashKey/HashIV, and it writes no money fact — it records a receipt and wakes the

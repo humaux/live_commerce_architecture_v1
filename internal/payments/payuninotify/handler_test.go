@@ -391,5 +391,5 @@ func TestStalledBodiesDoNotExhaustAdmission(t *testing.T) {
 	}
 }
 
-func int64p(v int64) *int64  { return &v }
+func int64p(v int64) *int64    { return &v }
 func stringp(v string) *string { return &v }

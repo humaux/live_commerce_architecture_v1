@@ -1,3 +1,8 @@
+// Purpose: exported PAYUNi notify-credential custody helpers (SealPayuni / OpenPayuniNotify) bound to the credential AAD.
+// Depends on: this package's credentialAAD/seal primitives (AES-GCM); no network, no DB.
+// Used by: internal/payments/payuninotify (inbox), tests/foundation payuni notify fixtures, the registrar seal path.
+// Invariants: AAD binds tenant/store/connection/environment/account/version so a sealed envelope opens in one scope only.
+
 package accounts
 
 // PAYUNi credentials are one HashKey/HashIV per connection: the hosted, query and notify

@@ -19,7 +19,7 @@ func payuniNotifyTestEnv() map[string]string {
 	key := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{4}, 32))
 	replay := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{5}, 32))
 	return map[string]string{
-		"COMMERCE_PAYUNI_NOTIFY_ENABLED":      "1",
+		"COMMERCE_PAYUNI_NOTIFY_ENABLED":       "1",
 		"COMMERCE_PAYUNI_INGRESS_DATABASE_URL": "postgres://synthetic-secret@synthetic.invalid/payuni",
 		"COMMERCE_PAYMENT_PROFILE":             "SANDBOX",
 		"COMMERCE_ACCOUNT_ACTIVE_KEY_ID":       "acct-1",

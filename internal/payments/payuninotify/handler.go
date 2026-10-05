@@ -1,3 +1,10 @@
+// Purpose: HTTP handler for POST /v1/hooks/payuni/notify/{endpoint_token}: hash token, authenticate the callback, record + wake, ACK.
+// Depends on: internal/integrations/psp/payuni (NewNotify, AuthenticateNotification), internal/integrations/accounts
+//   (OpenPayuniNotify); the Store interface implemented by inbox.go; no env vars.
+// Used by: cmd/api/payuni_notify.go (mounted in cmd/api/main.go), handler_test.go.
+// Invariants: token is routing only (sha256, never tenant authority); no ACK before COMMIT; bad signature writes zero rows.
+// Status: MOCK/SANDBOX (ACK semantics NOT_VERIFIED against PAYUNi docs).
+
 // handler.go: POST /v1/hooks/payuni/notify/{endpoint_token}. The endpoint_token is a per-connection
 // secret that only selects the connection; it is hashed (sha256) before any DB call and is never
 // tenant authority. A notification is only a trigger to query: the handler verifies the callback

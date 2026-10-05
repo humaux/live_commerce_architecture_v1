@@ -47,9 +47,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0120 (kwc-v2), 0121 (msg templates) and 0122 (live lifecycle) add seven more files: 49 -> 56.
 	// 0123 (LC-B2 live-console comments), 0124 (LC-B1 readonly-archived), 0125 (meta connection health) and 0126 (tracking
 	// import) add four more: 56 -> 60. 0127 (LC-R1 retention of the four send actions) adds one more: 60 -> 61.
-	// 0130 (W3-02B pick list) adds one: 61 -> 62.
-	if len(r2) != 62 {
-		t.Fatalf("R2 migration set = %d files %v, want 62", len(r2), r2)
+	// 0130 (W3-02B pick list) adds one: 61 -> 62. 0136 (W4-01B PAYUNi notify receiver) adds one: 62 -> 63.
+	if len(r2) != 63 {
+		t.Fatalf("R2 migration set = %d files %v, want 63", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

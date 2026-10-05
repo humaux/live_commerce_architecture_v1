@@ -1,3 +1,8 @@
+// Purpose: PAYUNi notify ingress DB-role admission (open + validate the commerce_payuni_ingress pool).
+// Depends on: pgxpool; the shared payment-authority probe in this package (stripe_runtime.go); SQL roles/ACL from migration 0136.
+// Used by: cmd/api/payuni_notify.go; internal/platform tests and tests/foundation payuni_notify_authority_test.go.
+// Invariants: only EXECUTE on the two 0136 notify definers, no table/queue privilege; merchant/worker pools are never a fallback.
+
 // payuni_runtime.go owns PAYUNi notify database-role admission, reusing the shared gate.
 // It never reads payment credentials, verifies callbacks or moves payment state.
 

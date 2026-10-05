@@ -1,3 +1,9 @@
+// Purpose: API-process wiring of POST /v1/hooks/payuni/notify/{endpoint_token} (payuni-wire-v1 Amendment W4-01B).
+// Depends on: internal/payments/payuninotify, internal/platform (OpenPayuniIngressPool), internal/integrations/accounts;
+//   env COMMERCE_PAYUNI_INGRESS_DATABASE_URL; SQL payments.payuni_resolve_endpoint / payuni_record_notify (via the inbox).
+// Used by: cmd/api/main.go (route mount), cmd/api/payuni_notify_test.go.
+// Invariants: never LIVE; no pool unless the flag is on; PROVIDER_MOCK/SANDBOX only. Status: SANDBOX/MOCK.
+
 // payuni_notify.go owns the API process wiring of POST /v1/hooks/payuni/notify/{endpoint_token}
 // (contracts/payuni-wire-v1.md Amendment W4-01B). It never reads LIVE keys or the hosted signing
 // callbacks, never opens a pool unless the flag is on, and never admits a LIVE profile.

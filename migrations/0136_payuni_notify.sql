@@ -1,3 +1,9 @@
+-- Purpose: PAYUNi NotifyURL receiver schema: ingress role, endpoint + receipt tables, resolve/record/set-endpoint definers, guard trigger.
+-- Depends on: roles commerce_integration_writer, commerce_payment_registry_writer, commerce_payment_registrar; payments.payment_attempts,
+--   payments.review_cases; river_payment.river_job (UPDATE(scheduled_at) granted post-tx in migrations/migrate.go).
+-- Used by: internal/payments/payuninotify (inbox.go), internal/platform/payuni_runtime.go, cmd/api, operator registrar CLI.
+-- Invariants: notify never writes a money fact or inserts a job; SANDBOX only; token stored as sha256 only.
+
 -- PAYUNi NotifyURL receiver (w4-01b-payuni-notify). A notification is only a trigger to query:
 -- it NEVER writes a money fact. The ingress verifies the callback signature in Go, then the two
 -- definers below record an idempotent receipt and wake the attempt's existing payment_query_v1 job.
