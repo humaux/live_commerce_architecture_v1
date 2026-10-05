@@ -18,6 +18,7 @@ import ts from "typescript-api";
 import { money, displayTime } from "../../packages/format/src/index.ts";
 import { formatROAS } from "../../apps/admin/lib/attribution-format.ts";
 import { pageTitle } from "../../apps/admin/src/page-title.ts";
+import { presentationCopy } from "../../apps/admin/lib/presentation-copy.ts";
 
 // MOCK SSR: execute the actual panel JSX; only navigation and the separate read control are stubbed.
 // This supplements, never replaces, the real PG click gate in attribution.spec.ts.
@@ -94,6 +95,7 @@ runInNewContext(code, {
     if (name === "./AdminPageHeader") return header;
     if (name === "@/lib/attribution-format") return { formatROAS };
     if (name === "@/lib/attribution-copy") return { attributionCopy };
+    if (name === "@/lib/presentation-copy") return { presentationCopy };
     if (name === "@/src/routes") return { matchRoute };
     if (name === "./AttributionAudienceRead")
       return {

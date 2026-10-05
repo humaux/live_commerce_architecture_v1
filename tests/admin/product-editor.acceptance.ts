@@ -104,6 +104,7 @@ export function registerProductEditorAcceptance() {
         for (const [width, height] of [
           [1366, 768],
           [1586, 992],
+          [390, 844],
           [375, 812],
         ]) {
           await page.setViewportSize({ width, height });
@@ -144,7 +145,7 @@ export function registerProductEditorAcceptance() {
           await page.getByTestId("product-keyword").fill("P12");
           await assertProductEditorReservedLayout(
             page,
-            locale === "en" && (width === 1586 || width === 375)
+            (width === 1586 || width === 390)
               ? (section) => shot(`editor-${locale}-${width}-${section}`)
               : undefined,
           );
