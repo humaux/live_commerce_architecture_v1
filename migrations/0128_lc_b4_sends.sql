@@ -1079,12 +1079,6 @@ CREATE TRIGGER operations_wipe_send_secret AFTER UPDATE OF state ON integration.
         AND NEW.action IN ('meta.dm_send','meta.private_reply','meta.public_reply','meta.offer_recommend'))
     EXECUTE FUNCTION inbox.wipe_send_secret();
 
--- Defect of 0125 (W1-01B) found by the LC-B4 harness: integration.meta_health_on_connection (owner commerce_integration_writer) DELETEs the probed
--- capability rows when a connection is created or reconnected, but the owner holds only SELECT/INSERT/UPDATE(cols) on the table, so EVERY insert into
--- integration.meta_connections failed with 42501 (merchant connect included). The policy binding_capabilities_writer already allows FOR ALL; only the
--- table grant was missing. Integrator: this line may move into 0125 itself.
-GRANT DELETE ON integration.binding_capabilities TO commerce_integration_writer;
-
 -- §3.5 "the store's own origin" is part of the public-reply content rule. Origins are public data; the definer only needs the GUC scope.
 CREATE POLICY domain_send_read ON control.storefront_domains FOR SELECT TO commerce_integration_writer
     USING (inbox.lcn_in_scope(tenant_id, store_id));
@@ -1099,34 +1093,3 @@ END $$;
 ALTER FUNCTION inbox.store_origins() OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION inbox.store_origins() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION inbox.store_origins() TO commerce_runtime;
-
--- Defect of 0125 (W1-01B) found while running the metahealth regression: claim_meta_health_probes called pgcrypto's gen_random_bytes(32), which no
--- migration installs (PG 18.6 image: 42883), so every probe sweep failed. Same function, same grants; the 32-byte lease token now comes from two
--- gen_random_uuid() (CSPRNG) hashed with sha256. Integrator: may move into 0125 itself.
-CREATE OR REPLACE FUNCTION integration.claim_meta_health_probes(p_limit integer)
-RETURNS TABLE(o_tenant uuid, o_store uuid, o_page text, o_generation bigint, o_lease bytea, o_fb uuid, o_ig uuid,
-              o_ig_id text, o_scopes text[], o_version bigint, o_key_id text, o_nonce bytea, o_ciphertext bytea)
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE r record; v_until timestamptz; v_gen bigint; v_token bytea;
-BEGIN
-    IF p_limit IS NULL OR p_limit<1 OR p_limit>50 THEN RAISE EXCEPTION 'invalid probe limit' USING ERRCODE='22023'; END IF;
-    IF current_setting('transaction_isolation',true) IS DISTINCT FROM 'read committed' THEN
-        RAISE EXCEPTION 'read committed required' USING ERRCODE='25001'; END IF;
-    FOR r IN SELECT x.tenant_id,x.store_id,x.page_id FROM integration.meta_health_probes x
-             WHERE x.next_due_at<=clock_timestamp() ORDER BY x.next_due_at,x.page_id LIMIT p_limit FOR UPDATE SKIP LOCKED LOOP
-        v_until:=clock_timestamp()+interval '60 seconds';
-        UPDATE integration.meta_health_probes x
-           SET generation=x.generation+1, lease_token=sha256(convert_to(gen_random_uuid()::text||gen_random_uuid()::text,'UTF8')), lease_until=v_until, next_due_at=v_until
-         WHERE x.tenant_id=r.tenant_id AND x.store_id=r.store_id AND x.page_id=r.page_id
-         RETURNING x.generation,x.lease_token INTO v_gen,v_token;
-        RETURN QUERY
-            SELECT c.tenant_id,c.store_id,c.page_id,v_gen,v_token,c.fb_binding,c.ig_binding,c.ig_id,c.scopes,
-                   k.version,k.key_id,k.nonce,k.ciphertext
-            FROM integration.meta_connections c
-            LEFT JOIN integration.meta_page_heads h ON h.tenant_id=c.tenant_id AND h.store_id=c.store_id AND h.binding_id=c.fb_binding
-            LEFT JOIN integration.meta_page_credentials k ON k.tenant_id=h.tenant_id AND k.store_id=h.store_id
-                 AND k.binding_id=h.binding_id AND k.version=h.current_version AND k.provider='facebook'
-            WHERE c.tenant_id=r.tenant_id AND c.store_id=r.store_id AND c.page_id=r.page_id;
-    END LOOP;
-END $$;
-
