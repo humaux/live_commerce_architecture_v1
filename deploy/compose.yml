@@ -234,6 +234,10 @@ services:
       COMMERCE_CVS_HOOKS_ORIGIN: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}
       CVS_ECPAY_ENABLED: ${LC_CVS_ECPAY_ENABLED:-0}
       ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
+      # live-console-v1 LC-B2: comment read-through bridge client (A2/A3). Base URL = the claims-worker's
+      # internal bridge listener on the backend network; the 32-byte bearer is shared with claims-worker.
+      COMMERCE_CLAIMS_CONSOLE_BASE_URL: http://claims-worker:8081
+      COMMERCE_CLAIMS_BRIDGE_TOKEN_FILE: /run/secrets/commerce_claims_bridge_token
     secrets:
       - ecpay_logistics_keyring
       - dsn_lc_api_runtime
@@ -266,6 +270,7 @@ services:
       - commerce_meta_ads_app_secret
       - commerce_meta_ads_hpke_public_keys_json
       - commerce_meta_ads_hpke_active_key_id
+      - commerce_claims_bridge_token
     healthcheck:
       # /readyz pings the runtime pool (platform.go:543-555); lcentry is the only HTTP client in distroless.
       test: ["CMD", "/app/bin/lcentry", "probe", "http://127.0.0.1:8080/readyz"]
@@ -498,8 +503,15 @@ services:
       COMMERCE_CVS_HOOKS_ORIGIN: https://${LC_HOOKS_HOST:?set LC_HOOKS_HOST}
       COMMERCE_PAYMENT_PROFILE: SANDBOX
       ECPAY_LOGISTICS_KEYRING_FILE: /run/secrets/ecpay_logistics_keyring
+      # live-console-v1 LC-B2: the internal bridge listener (A2/A3) + comment poller (W2-02B). The bridge is
+      # stateful (per-source poll leases live in PG and an in-memory ring buffer), so claims-worker MUST stay a
+      # single replica (I23); the 32-byte bearer is shared with the api, the 32-byte cursor key is the worker's
+      # older_cursor HMAC key (never mounted anywhere else).
+      COMMERCE_CLAIMS_CONSOLE_ADDR: ":8081"
+      COMMERCE_CLAIMS_BRIDGE_TOKEN_FILE: /run/secrets/commerce_claims_bridge_token
+      COMMERCE_CLAIMS_CURSOR_KEY_FILE: /run/secrets/commerce_claims_cursor_key
       GOMEMLIMIT: 200MiB
-    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, dsn_lc_store_domain_verify, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, commerce_meta_page_hpke_private_keys_json, ecpay_logistics_keyring]
+    secrets: [dsn_lc_claims_intake, dsn_lc_claims_worker, dsn_lc_retention_job, dsn_lc_store_domain_verify, commerce_claims_reply_link_key, commerce_meta_page_token_keys_json, commerce_meta_page_token_active_key_id, commerce_meta_page_hpke_private_keys_json, ecpay_logistics_keyring, commerce_claims_bridge_token, commerce_claims_cursor_key]
     cpus: 0.5
     mem_limit: 256m
 
@@ -809,6 +821,8 @@ secrets:
   ecpay_logistics_keyring: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/ecpay_logistics_keyring" }
   commerce_claims_actor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_actor_key" }
   commerce_claims_reply_link_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_reply_link_key" }
+  commerce_claims_bridge_token: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_bridge_token" }
+  commerce_claims_cursor_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_cursor_key" }
   dsn_lc_ads_worker: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_ads_worker" }
   commerce_meta_ads_app_secret: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_ads_app_secret" }
   commerce_meta_ads_hpke_public_keys_json: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_meta_ads_hpke_public_keys_json" }

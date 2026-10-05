@@ -5,8 +5,11 @@
 // and the inbox resubscribe jobs (metareply.Resubscriber, migration 0119: one best-effort POST /{page-id}/subscribed_apps
 // subscribed_fields=feed,messages per already-connected Page, the live-console inbox read side's subscription).
 //
-// It never serves HTTP, never reads the Meta payload keyring, the claims actor key K_actor (owned by
-// cmd/meta-worker) or any Stripe variable, never sends anything but the first private reply of a new claim bundle, that unsubscribe and that resubscribe, and never
+// It serves exactly one internal HTTP listener when COMMERCE_CLAIMS_CONSOLE_ADDR is set (live-console-v1
+// §2.3, unit LC-B2): the API↔worker comment bridge (POST /internal/v1/comment-page and /comment-facts,
+// shared 32-byte bearer, backend Docker network only) plus the comment poller. It never reads the Meta
+// payload keyring, the claims actor key K_actor (owned by cmd/meta-worker) or any Stripe variable, never
+// sends anything but the first private reply of a new claim bundle, that unsubscribe and that resubscribe, and never
 // prints a key, token, DSN or driver error (one fixed error string per failure class).
 //
 // External: graph.facebook.com only (private replies via internal/integrations/metareply; never in tests).
@@ -19,6 +22,9 @@
 // sealed to the public ring; only this process holds it), COMMERCE_META_GRAPH_VERSION
 // (required, no default: probe U5), optional COMMERCE_META_GRAPH_BASE_URL (default https://graph.facebook.com;
 // loopback http://127.0.0.1:<port> for MOCK) and COMMERCE_META_GRAPH_AUTH_HEADER (""/0 token in JSON body, 1 Bearer).
+// Live-console comment bridge (LC-B2): optional COMMERCE_CLAIMS_CONSOLE_ADDR (a TCP listen address like
+// ":8081"; empty = bridge off), and, when set, COMMERCE_CLAIMS_BRIDGE_TOKEN (std base64, 32 bytes, shared with
+// cmd/api's BridgeClient) and COMMERCE_CLAIMS_CURSOR_KEY (std base64, 32 bytes, the worker's older_cursor HMAC key).
 // ECPay CVS route (taiwan-cvs-logistics-v1 §12, registered only when CVS_ECPAY_ENABLED=1): CVS_ECPAY_ENABLED,
 // CVS_ECPAY_LIVE_CREATE, COMMERCE_CVS_HOOKS_ORIGIN, and, only when enabled, COMMERCE_PAYMENT_PROFILE (one ECPay
 // environment per deployment) and ECPAY_LOGISTICS_KEYRING. The worker calls logistics(-stage).ecpay.com.tw through

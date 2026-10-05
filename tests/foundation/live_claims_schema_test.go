@@ -287,6 +287,16 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "live.claim_window_intervals", "INSERT", cols("live.claim_window_intervals")...)
 		add(wr, "live.claim_window_intervals", "UPDATE", "closed_at")
 		add(wr, "integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request")
+		// LC-B2 (0123, live-console-v1 §2/§2.5/§7.4): live.console_marks reads claim reason and the mpr:/reply
+		// operation facts; live.comment_poll_sources reads the lease demand; live.comment_print upserts the print fact.
+		// None reads comment text, author, actor_key or request bodies beyond the fields listed.
+		add(wr, "claims.events", "SELECT", "reason")
+		add(wr, "integration.operations", "SELECT", "semantic_key", "result_code", "created_at")
+		add(wr, "live.comment_poll_leases", "SELECT", "tenant_id", "store_id", "source_id", "demand_until")
+		for _, priv := range []string{"SELECT", "INSERT", "UPDATE"} {
+			add(wr, "live.comment_prints", priv, "tenant_id", "store_id", "session_id", "comment_ref", "print_count",
+				"first_printed_at", "last_printed_at", "last_principal_id")
+		}
 		add(wr, "meta_inbox.routes", "SELECT", "tenant_id", "store_id", "object", "asset_id", "binding_id", "enabled")
 		add(wr, "integration.bindings", "SELECT", "id", "tenant_id", "store_id", "provider", "external_asset_id", "semantic_version", "enabled")
 		add(wr, "integration.meta_page_heads", "SELECT", "tenant_id", "store_id", "binding_id", "current_version")
@@ -315,7 +325,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// claims-retention-purge-v1 §4 (§6 clause 1): the only DELETE on the six tables
 			rw + " claims.links DELETE",
 			// 0113 R6: origins are immutable to all runtime roles.
-			wr + " claims.order_origins SELECT", wr + " claims.order_origins INSERT"}
+			wr + " claims.order_origins SELECT", wr + " claims.order_origins INSERT",
+			// 0123 (LC-B2): live.comment_print upserts the print fact (no comment text/name column exists).
+			wr + " live.comment_prints SELECT", wr + " live.comment_prints INSERT", wr + " live.comment_prints UPDATE"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
@@ -336,7 +348,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0113 R6: exact comment-to-post provenance, checkout definer only.
 				"claims.order_comment_posts", "claims.capture_order_origins", "claims.attribution_session_orders", "claims.attribution_funnel", "claims.attribution_sources",
 				// 0118 (A5): the session-results attribution seams it owns (EXECUTE: commerce_auth only).
-				"claims.session_orders", "claims.order_session_counts"})
+				"claims.session_orders", "claims.order_session_counts",
+				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
+				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -478,8 +492,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0110 adds exactly order_live_sources, owned by the domain rather than auth.
 		// 0113 adds exactly five domain-owned attribution functions.
 		// 0118 adds exactly two attribution functions (session_orders, order_session_counts).
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 23 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-three functions (previous twenty-one + two 0118 attribution seams)", n)
+		// 0123 (LC-B2) adds exactly four: comment_poll_sources, console_source, console_marks, comment_print.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 27 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-seven functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')

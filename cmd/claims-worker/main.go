@@ -10,8 +10,11 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -53,6 +56,12 @@ type workerConfig struct {
 	pageKeys              *metareply.PageTokenKeyring
 	pageOpen              *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
 	graph                 metareply.Config
+	// Live-console comment bridge (live-console-v1 §2, unit LC-B2): served only when consoleAddr is set.
+	// bridgeToken is shared with cmd/api's BridgeClient; cursorKey is the worker's older_cursor HMAC key.
+	consoleAddr   string
+	consoleHolder string
+	bridgeToken   []byte
+	cursorKey     []byte
 	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
 	ecpayCfg    ecpay.Config
 	ecpayKeys   *ecpay.Keyring
@@ -75,6 +84,17 @@ func main() {
 }
 
 func validDSN(s string) bool { return len(s) >= 1 && len(s) <= 8192 && strings.TrimSpace(s) != "" }
+
+// validConsoleAddr accepts a TCP listen address for the internal comment bridge (":8081" or
+// "0.0.0.0:8081"); it never accepts a URL (the bridge base URL lives on the API side).
+func validConsoleAddr(s string) bool {
+	_, port, err := net.SplitHostPort(s)
+	if err != nil {
+		return false
+	}
+	n, err := strconv.Atoi(port)
+	return err == nil && n >= 1 && n <= 65535
+}
 
 // loadConfig reads only the variables listed in doc.go: never K_actor, the Meta payload keyring or a
 // Stripe variable (the env sentinel test records every name asked for; MCI10 greps this package for them).
@@ -133,6 +153,24 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	}
 	if c.graph.Validate() != nil {
 		return workerConfig{}, errWorkerConfig
+	}
+	// Live-console comment bridge (LC-B2): off unless the listen address is set; when set, the shared
+	// 32-byte bridge token and the 32-byte cursor key are required (base64, like the reply link key).
+	c.consoleAddr = strings.TrimSpace(getenv("COMMERCE_CLAIMS_CONSOLE_ADDR"))
+	if c.consoleAddr != "" {
+		if !validConsoleAddr(c.consoleAddr) {
+			return workerConfig{}, errWorkerConfig
+		}
+		c.consoleHolder = getenv("HOSTNAME")
+		if c.consoleHolder == "" {
+			c.consoleHolder = "claims-worker"
+		}
+		if c.bridgeToken, err = base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_BRIDGE_TOKEN")); err != nil || len(c.bridgeToken) != 32 {
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.cursorKey, err = base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_CURSOR_KEY")); err != nil || len(c.cursorKey) != 32 {
+			return workerConfig{}, errWorkerConfig
+		}
 	}
 	if c.ecpayCfg, err = ecpay.LoadConfig(getenv); err != nil {
 		return workerConfig{}, errWorkerConfig
@@ -285,6 +323,33 @@ func run(ctx context.Context, getenv func(string) string) error {
 		defer close(unsubscribed)
 		unsubscriber.Run(pollCtx)
 	}()
+	// Live-console comment bridge (LC-B2): the internal bridge listener (backend Docker network, shared
+	// 32-byte bearer) and the comment poller. Both stop with the process; the server shuts down cleanly.
+	if c.consoleAddr != "" {
+		console, err := metareply.NewConsole(workerPool, c.pageKeys, c.pageOpen, metareply.ConsoleConfig{
+			Graph: c.graph, HolderID: c.consoleHolder, BridgeToken: c.bridgeToken, CursorKey: c.cursorKey,
+		})
+		if err != nil {
+			stopPoll()
+			return errWorkerRoutes
+		}
+		consoleServer := &http.Server{
+			Addr:              c.consoleAddr,
+			Handler:           console.Handler(),
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      15 * time.Second,
+			IdleTimeout:       60 * time.Second,
+			MaxHeaderBytes:    16 << 10,
+		}
+		go func() { _ = console.Run(pollCtx) }()
+		go func() { _ = consoleServer.ListenAndServe() }()
+		defer func() {
+			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = consoleServer.Shutdown(shutdown)
+		}()
+	}
 	resubscribed := make(chan struct{})
 	go func() {
 		defer close(resubscribed)

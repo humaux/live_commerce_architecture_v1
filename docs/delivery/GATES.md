@@ -123,6 +123,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--live-media-recovery` | isolated MRR observer SQL/process gates only; no Cloud, human alert delivery, LIVE intake or G06 acceptance | T2 subset | `bash scripts/dev/test-local.sh --live-media-recovery` |
 | `--live-media-runtime` | isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance | T2 subset | `bash scripts/dev/test-local.sh --live-media-runtime` |
 | `--studio-backend` | isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance | T2 subset | `bash scripts/dev/test-local.sh --studio-backend` |
+| `--live-console` | live-console comment read-through LCN01/02/04/05 (contracts/live-console-v1.md §2 poller/leases/caps/bridge incl. comment-facts, cursors, deletion eviction, §2.5 marks, §7.4 prints, Amendment 1 A1.2 IG comment-facts: platform-branched Graph read, social.read_comment_facts webhook fallback decrypted API-side, facts_unavailable): REAL_PG through the real SECURITY DEFINER lease/token/credential functions, MOCK loopback Graph | T2 subset | `bash scripts/dev/test-local.sh --live-console` |
 
 ## Independent unit gates in the foundation suite (T1/T2, `bash scripts/dev/test-focused.sh '<regex>'`)
 

@@ -1,0 +1,28 @@
+=== RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (2.67s)
+=== RUN   TestLiveConsoleLCN02IGFactsFallbackAndUnavailable
+--- PASS: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (1.06s)
+=== RUN   TestLiveConsoleLCN01LeaseAndTokenFence
+--- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.21s)
+=== RUN   TestLiveConsoleLCN01CapsAndNoPoll
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.37s)
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next
+--- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (5.08s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.43s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out (0.26s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.76s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (0.63s)
+=== RUN   TestLiveConsoleLCN02BridgeStatusesAndFacts
+--- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (0.62s)
+=== RUN   TestLiveConsoleLCN04NoCommentTextPersisted
+--- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (1.63s)
+=== RUN   TestLiveConsoleLCN05PrintAndMarks
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.59s)
+PASS
+ok  	livecommerce/tests/foundation	13.918s
+test-focused: top-level PASS=8 FAIL=0 SKIP=0 exit=0
+exit=0
