@@ -19,6 +19,7 @@ import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy";
 import { copy } from "../../apps/admin/lib/copy";
 import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 import { registerProductReviewAcceptance } from "./product-review.acceptance";
+import { registerProductVisualAcceptance } from "./product-visual.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -94,6 +95,7 @@ const variants = [
 if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") {
   registerProductEditorAcceptance();
   registerProductReviewAcceptance();
+  if (process.env.PRODUCT_VISUAL_PHASE) registerProductVisualAcceptance();
 }
 
 for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {

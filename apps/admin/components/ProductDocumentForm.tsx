@@ -29,6 +29,7 @@ import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
+import { ProductReadiness } from "./ProductReadiness";
 function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
   return draftFromDetail(detail);
@@ -78,10 +79,11 @@ export function ProductDocumentForm({
       (!!detail && targetStatus !== (write.savedDetail ?? detail).status) ||
       photos.some((p) => !!p.file) ||
       write.pending);
+  const singleVariant = draft.rows.length <= 1 && !draft.axes.length;
   const sections = [
     "media",
     "basics",
-    "pricing",
+    ...(singleVariant ? ["pricing" as const] : []),
     "variants",
     "collections",
     "shipping",
@@ -166,6 +168,21 @@ export function ProductDocumentForm({
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
+        // Navigation focuses its actual section. A short section may intersect
+        // together with the next one; keep the focused destination highlighted
+        // while it is visible rather than letting observer delivery order win.
+        const focused =
+          document.activeElement?.closest<HTMLElement>(".product-section");
+        const bounds = focused?.getBoundingClientRect();
+        if (
+          focused &&
+          bounds &&
+          bounds.bottom > 85 &&
+          bounds.top < innerHeight - 85
+        ) {
+          setSection(focused.id);
+          return;
+        }
         const seen = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
@@ -178,7 +195,7 @@ export function ProductDocumentForm({
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
-  }, []);
+  }, [singleVariant]);
   function change(patch: Partial<ProductDraft>) {
     setDraft((now) => ({ ...now, ...patch }));
     write.setMessage("");
@@ -213,14 +230,14 @@ export function ProductDocumentForm({
     { key: "media", label: c.images, ok: photos.length > 0 },
     { key: "basics", label: c.name, ok: !!draft.name.trim() },
     {
-      key: "pricing",
+      key: singleVariant ? "pricing" : "variants",
       label: c.price,
       ok:
         draft.rows.length > 0 &&
         draft.rows.every((r) => toMinor(r.price, store.currency) !== null),
     },
     {
-      key: "pricing",
+      key: singleVariant ? "pricing" : "variants",
       label: c.stock,
       ok:
         draft.rows.length > 0 &&
@@ -230,8 +247,7 @@ export function ProductDocumentForm({
     },
   ];
   function focus(id: string) {
-    const target =
-      document.getElementById(id) ?? document.getElementById("variants");
+    const target = document.getElementById(id);
     if (target instanceof HTMLDetailsElement) target.open = true;
     target?.scrollIntoView({ block: "start" });
     target
@@ -294,6 +310,7 @@ export function ProductDocumentForm({
               type="button"
               aria-current={section === id ? "location" : undefined}
               key={id}
+              aria-controls={id}
               onClick={() => focus(id)}
             >
               {c[id]}
@@ -303,48 +320,29 @@ export function ProductDocumentForm({
         <section>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
-          {requirements.map((r, i) => (
-            <button
-              className="pe-readiness"
-              key={i}
-              type="button"
-              onClick={() => focus(r.key)}
-            >
-              <span>{r.label}</span>
-              <span aria-label={r.ok ? c.success : c.required}>
-                {r.ok ? "✓" : "○"}
-              </span>
-            </button>
-          ))}
+          <ProductReadiness c={c} items={requirements} focus={focus} />
           <p>
             {c.missing}: {requirements.filter((r) => !r.ok).length}
           </p>
           <h3>{c.recommended}</h3>
-          {[
-            { key: "media", label: c.images, ok: photos.length >= 3 },
-            { key: "basics", label: c.description, ok: !!draft.description },
-            {
-              key: "collections",
-              label: c.collections,
-              ok: !!draft.collections.length,
-            },
-            {
-              key: "basics",
-              label: c.keyword,
-              ok: draft.rows.some((r) => !!r.keyword),
-            },
-            { key: "seo", label: c.seo, ok: !!draft.seo_title },
-          ].map((r) => (
-            <button
-              type="button"
-              className="pe-readiness"
-              key={r.label}
-              onClick={() => focus(r.key)}
-            >
-              <span>{r.label}</span>
-              <span>{r.ok ? "✓" : "○"}</span>
-            </button>
-          ))}
+          <ProductReadiness
+            c={c}
+            focus={focus}
+            items={[
+              { key: "basics", label: c.description, ok: !!draft.description },
+              {
+                key: "collections",
+                label: c.collections,
+                ok: !!draft.collections.length,
+              },
+              {
+                key: singleVariant ? "basics" : "variants",
+                label: c.keyword,
+                ok: draft.rows.some((r) => !!r.keyword),
+              },
+              { key: "seo", label: c.seo, ok: !!draft.seo_title },
+            ]}
+          />
         </section>
       </aside>
       <div className="pe-fields">
@@ -391,7 +389,11 @@ export function ProductDocumentForm({
                     </option>
                   )}
                 </select>
-                <span id="product-status-help" data-testid="product-status-help" className="hint">
+                <span
+                  id="product-status-help"
+                  data-testid="product-status-help"
+                  className="hint"
+                >
                   {catalogCopy[locale].statusHelp[targetStatus]}
                 </span>
               </label>
@@ -523,6 +525,7 @@ export function ProductDocumentForm({
             setRows={(rows) => change({ rows })}
             disabled={disabled}
             inventoryDisabled={!!detail && !detail.warehouse_id}
+            onInvalidValues={() => setAxisError(c.matrixLimit)}
           />
           {axisError && <p role="alert">{axisError}</p>}
           {rowArchive.current.filter((r) => r.id).length > 0 && (

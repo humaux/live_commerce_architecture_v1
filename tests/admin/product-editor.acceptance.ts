@@ -309,14 +309,14 @@ export function registerProductEditorAcceptance() {
         12,
       );
       expect(writes.length).toBe(networkBefore);
-      await page.getByTestId("bulk-price").click();
+      await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").fill("80");
       await page.getByTestId("bulk-value").press("Enter");
       for (let i = 0; i < 12; i++)
         await expect(page.getByTestId(`new-price-${i}`)).toHaveValue("80");
       await page.getByTestId("new-price-0").fill("60");
       await page.getByTestId("new-price-1").fill("");
-      await page.getByTestId("bulk-price").click();
+      await page.getByTestId("bulk-open").click();
       await page
         .getByRole("region", { name: "Bulk fill Price" })
         .getByRole("combobox", { name: "Bulk fill", exact: true })
@@ -326,10 +326,11 @@ export function registerProductEditorAcceptance() {
       await expect(page.getByTestId("new-price-0")).toHaveValue("60");
       await expect(page.getByTestId("new-price-1")).toHaveValue("80");
       await expect(page.getByTestId("new-price-11")).toHaveValue("80");
-      await page.getByTestId("bulk-price").click();
+      await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").press("Escape");
-      await expect(page.getByTestId("bulk-price")).toBeFocused();
-      await page.getByTestId("bulk-quantity").click();
+      await expect(page.getByTestId("bulk-open")).toBeFocused();
+      await page.getByTestId("bulk-open").click();
+      await page.getByTestId("bulk-field").selectOption("quantity");
       await page.getByTestId("bulk-value").fill("5");
       await page.getByTestId("bulk-apply").click();
       await page.getByText("Shipping", { exact: true }).last().click();

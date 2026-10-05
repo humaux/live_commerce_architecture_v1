@@ -1,0 +1,61 @@
+
+Running 12 tests using 1 worker
+
+(node:72963) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger (11.9s)
+  ✓   2 tests/admin/product-review.acceptance.ts:45:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists (1.5s)
+  ✓   3 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then client preserves receipt fence after reload (868ms)
+  ✓   4 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then 401 preserves receipt fence after reload (876ms)
+  ✓   5 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then 403 preserves receipt fence after reload (898ms)
+  ✓   6 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then client preserves receipt fence after reload (1.4s)
+  ✓   7 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload (1.3s)
+  ✓   8 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload (1.2s)
+  ✓   9 tests/admin/product-review.acceptance.ts:121:5 › review: order UNKNOWN then 403 preserves receipt fence after reload (871ms)
+  ✓  10 tests/admin/product-review.acceptance.ts:121:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload (902ms)
+  ✘  11 tests/admin/product-visual.acceptance.ts:9:5 › product visual: compact bulk, selected rows, tags and persistence (2.0s)
+  -  12 tests/admin/product-visual.acceptance.ts:137:3 › product visual: full-page new/existing empty/three-variant matrix
+
+
+  1) tests/admin/product-visual.acceptance.ts:9:5 › product visual: compact bulk, selected rows, tags and persistence 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: getByRole('alert')
+    Expected: "Use up to 3 options and 100 combinations. Each option needs a name and values."
+    Error: strict mode violation: getByRole('alert') resolved to 2 elements:
+        1) <p role="alert">Use up to 3 options and 100 combinations. Each op…</p> aka getByText('Use up to 3 options and 100')
+        2) <div role="alert" aria-live="assertive" id="__next-route-announcer__"></div> aka locator('[id="__next-route-announcer__"]')
+
+    Call log:
+      - Expect "toHaveText" getByRole('alert') with timeout 10000ms
+      - waiting for getByRole('alert')
+
+
+      101 |       await page.getByTestId("axis-values-1").fill(tooMany);
+      102 |       await page.getByTestId("axis-values-1").press("Enter");
+    > 103 |       await expect(page.getByRole("alert")).toHaveText(
+          |                                             ^
+      104 |         productEditorCopy.en.matrixLimit,
+      105 |       );
+      106 |       await expect(page.getByTestId("axis-values-1")).toHaveValue(tooMany);
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/product-editor-visual/tests/admin/product-visual.acceptance.ts:103:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261005T045146.417720000/results/catalog-core-product-visua-14bb0-d-rows-tags-and-persistence/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261005T045146.417720000/results/catalog-core-product-visua-14bb0-d-rows-tags-and-persistence/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261005T045146.417720000/results/catalog-core-product-visua-14bb0-d-rows-tags-and-persistence/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261005T045146.417720000/results/catalog-core-product-visua-14bb0-d-rows-tags-and-persistence/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-visual.acceptance.ts:9:5 › product visual: compact bulk, selected rows, tags and persistence 
+  1 did not run
+  10 passed (24.5s)

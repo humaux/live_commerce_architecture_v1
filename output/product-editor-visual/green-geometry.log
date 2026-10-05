@@ -1,0 +1,5 @@
+PASS: 24 final states; no document overflow; name <=640; helper >=12; 12 variant states have 44px controls and 65px rows.
+{"width":1586,"beforeRowRange":[109,109],"afterRowRange":[65,65]}
+{"width":390,"beforeRowRange":[507,525],"afterRowRange":[65,65]}
+
+EXIT_CODE=0
