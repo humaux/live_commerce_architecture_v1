@@ -568,12 +568,120 @@
   min-width: 44px;
   min-height: 44px;
 }
-.pe-catalog .product-table th:first-child,
-.pe-catalog .product-table td:first-child {
+.pe-catalog .product-table {
+  table-layout: fixed;
+  min-width: 1050px;
+}
+/* The selection hit area is the entire 44px column; inherited table padding
+   otherwise makes its contents wider than the column. Product gets the remainder. */
+.pe-catalog .pe-col-select {
   width: 44px;
 }
-.pe-catalog .product-table td {
+.pe-catalog .pe-col-status {
+  width: 112px;
+}
+.pe-catalog .pe-col-price {
+  width: 176px;
+}
+.pe-catalog .pe-col-stock {
+  width: 160px;
+}
+.pe-catalog .pe-col-updated {
+  width: 176px;
+}
+.pe-catalog .pe-col-actions {
+  width: 144px;
+}
+.pe-catalog .product-table > thead > tr > th,
+.pe-catalog .product-table > tbody > tr > td {
+  padding: 12px;
   vertical-align: middle;
+  border-right: 0;
+}
+.pe-catalog .product-table > thead > tr > th:first-child,
+.pe-catalog .product-table > tbody > tr > td:first-child {
+  width: auto;
+  padding: 0;
+}
+.pe-catalog .product-cell {
+  min-width: 0;
+  gap: 12px;
+}
+.pe-catalog .pe-product-identity {
+  min-width: 0;
+}
+.pe-catalog .pe-product-identity strong,
+.pe-catalog .pe-product-identity small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.pe-catalog .pe-status-cell .product-status {
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.pe-catalog .product-table > thead > tr > th:nth-child(4),
+.pe-catalog .product-table > thead > tr > th:nth-child(5),
+.pe-catalog .pe-price-cell,
+.pe-catalog .pe-stock-cell {
+  text-align: right;
+}
+.pe-catalog .pe-number-edit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.pe-catalog .pe-number-edit > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-edit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--focus);
+}
+.pe-catalog .pe-edit-icon:hover:not(:disabled) {
+  background: var(--pe-fill);
+}
+.pe-catalog .pe-edit-icon:disabled {
+  opacity: 0.45;
+}
+.pe-catalog .pe-updated-cell {
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-quick-inline {
+  box-sizing: border-box;
+  text-align: left;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-quick-inline header,
+.pe-catalog .pe-quick-inline footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pe-catalog .pe-quick-inline h2,
+.pe-catalog .pe-quick-inline fieldset,
+.pe-catalog .pe-quick-inline legend {
+  min-width: 0;
+  max-width: 100%;
+}
+.pe-catalog .pe-quick-inline fieldset {
+  padding: 8px;
+}
+.pe-catalog .pe-quick-inline input {
+  box-sizing: border-box;
 }
 .pe-catalog button {
   min-height: 44px;
@@ -581,8 +689,8 @@
 }
 .pe-catalog .pe-row-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 .pe-catalog .pe-row-actions a {
   display: inline-flex;
@@ -699,14 +807,64 @@
   .pe-photos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .pe-catalog .product-table td {
+  .pe-catalog .product-table {
+    min-width: 0;
+  }
+  .pe-catalog .product-table colgroup {
+    display: none;
+  }
+  .pe-catalog .product-table > tbody > tr {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 12px;
+    gap: 4px 8px;
+  }
+  .pe-catalog .product-table > tbody > tr > td {
+    grid-column: 1 / -1;
     width: auto;
+    padding: 0;
+    min-height: 0;
+    height: auto;
+    font-size: 13px;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-selection-cell {
+    grid-column: 1;
+    align-self: start;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-product-cell {
+    grid-column: 2;
+    display: block;
+  }
+  .pe-catalog .pe-product-cell::before {
+    display: none;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-price-cell,
+  .pe-catalog .product-table > tbody > tr > .pe-stock-cell {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .pe-catalog .pe-price-cell > .pe-number-edit,
+  .pe-catalog .pe-stock-cell > .pe-number-edit {
+    flex: 1;
+  }
+  .pe-catalog .pe-price-cell > .pe-quick-inline,
+  .pe-catalog .pe-stock-cell > .pe-quick-inline {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .pe-catalog .pe-updated-cell::before {
+    max-width: 50%;
+  }
+  .pe-catalog .pe-actions-cell {
+    justify-content: flex-end;
+  }
+  .pe-catalog .pe-actions-cell::before {
+    display: none;
   }
   .pe-catalog .pe-select {
-    justify-content: flex-start;
-  }
-  .pe-catalog .product-table td:first-child {
-    width: auto;
+    justify-content: center;
   }
   /* The shared card-table clips its heading on mobile. Keep the actionable
      select-all header visible while leaving the descriptive headings hidden. */

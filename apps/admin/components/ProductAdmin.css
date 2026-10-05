@@ -13,7 +13,6 @@
 .product-search { flex: 1 1 280px; max-width: 420px; }
 .product-search input { height: 45px; box-sizing: border-box; color: var(--ink); font-size: 14px; }
 .product-table > thead > tr > th:nth-child(n), .product-table > tbody > tr > td:nth-child(n) { width: auto; }
-.product-table > thead > tr > th:first-child, .product-table > tbody > tr > td:first-child { width: 46%; }
 .product-cell { display: flex; align-items: center; gap: 14px; min-height: 56px; color: var(--ink); text-decoration: none; }
 .product-cell:hover strong, .product-cell:focus-visible strong { color: var(--focus); text-decoration: underline; }
 .product-cell .product-photo { flex: none; width: 52px; height: 52px; }
