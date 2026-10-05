@@ -100,7 +100,7 @@ export function registerProductVisualAcceptance() {
       const tooMany = Array.from({ length: 34 }, (_, i) => `P${i}`).join(",");
       await page.getByTestId("axis-values-1").fill(tooMany);
       await page.getByTestId("axis-values-1").press("Enter");
-      await expect(page.getByRole("alert")).toHaveText(
+      await expect(page.locator(".pe-document").getByRole("alert")).toHaveText(
         productEditorCopy.en.matrixLimit,
       );
       await expect(page.getByTestId("axis-values-1")).toHaveValue(tooMany);
