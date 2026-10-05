@@ -23,6 +23,9 @@ type attachmentView struct {
 type messageView struct {
 	Text        string           `json:"text"`
 	Attachments []attachmentView `json:"attachments"`
+	// senderID is the page-scoped sender id (PSID); it never leaves the API process except inside the sealed dispatch copy
+	// (live-console-v1 §3.4), so it is not part of any JSON view.
+	senderID string
 }
 
 var errUnreadable = errors.New("inbox: message unreadable")
@@ -50,7 +53,7 @@ func replayMessage(plaintext []byte, assetID string) (messageView, error) {
 		!messageID(mid) || (echoPresent && echo != false) {
 		return messageView{}, errUnreadable
 	}
-	view := messageView{Text: stringField(message, "text")}
+	view := messageView{Text: stringField(message, "text"), senderID: senderID}
 	if raw, ok := message["attachments"].([]any); ok {
 		view.Attachments = make([]attachmentView, 0, len(raw))
 		for _, item := range raw {
@@ -77,4 +80,23 @@ func messageID(s string) bool {
 		}
 	}
 	return true
+}
+
+// senderName extracts the sender's display name (name, else username) from a stored message unit; nil when absent. Best effort: the
+// Messenger/IG message units normally carry only ids, in which case the UI shows no name (never a guess).
+func senderName(plaintext []byte) *string {
+	m, err := meta.ParseStrict(plaintext)
+	if err != nil {
+		return nil
+	}
+	sender, ok := m["sender"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	for _, key := range []string{"name", "username"} {
+		if v := stringField(sender, key); v != "" && len(v) <= 200 {
+			return &v
+		}
+	}
+	return nil
 }

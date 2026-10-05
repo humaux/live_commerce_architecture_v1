@@ -67,8 +67,15 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 			if err != nil {
 				return nil, err
 			}
-			if len(out.Items) == req.Limit && len(out.Items) > 0 {
-				last := out.Items[len(out.Items)-1]
+			// Bundle-only items (Amendment 1 P2-2) follow the conversations and never carry the keyset cursor.
+			conversations := 0
+			for _, it := range out.Items {
+				if !it.BundleOnly {
+					conversations++
+				}
+			}
+			if conversations == req.Limit && conversations > 0 {
+				last := out.Items[conversations-1]
 				out.NextCursor = encodeInboxCursor(last.LastAt, last.ConversationID)
 			}
 			return out, nil
@@ -130,19 +137,17 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 		})(w, r)
 	}))
 
-	// A13 buyer panel (conversation-scoped fields). bundle_id resolution needs inbox.bundle_peers (0123, LC-B4) and
-	// answers 404 in 0119.
+	// A13 buyer panel: conversation-scoped fields, or the bundle-scoped panel (platform + link_pending_manual, LC-B4).
 	mux.HandleFunc("GET "+panelBase, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		conversationID, bundleID, err := parseInboxBuyerPanel(r.URL)
 		if err != nil {
 			respondError(w, http.StatusBadRequest, "invalid_request")
 			return
 		}
-		if bundleID != "" {
-			respondError(w, http.StatusNotFound, "not_found")
-			return
-		}
 		inboxScoped(pool, "inbox:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			if bundleID != "" {
+				return svc.BuyerPanelByBundle(ctx, tx, bundleID)
+			}
 			return svc.BuyerPanel(ctx, tx, conversationID)
 		})(w, r)
 	}))

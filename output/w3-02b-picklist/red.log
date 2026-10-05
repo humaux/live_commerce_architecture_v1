@@ -1,0 +1,33 @@
+=== RUN   TestPickList
+=== RUN   TestPickList/PL01_totals_merge_and_per-order_lines
+=== RUN   TestPickList/PL02_shipped/cancelled/foreign_skipped_codes
+=== RUN   TestPickList/PL03_501_ids_->_422_too_many
+=== RUN   TestPickList/PL05_permission_split
+--- PASS: TestPickList (9.31s)
+    --- PASS: TestPickList/PL01_totals_merge_and_per-order_lines (0.02s)
+    --- PASS: TestPickList/PL02_shipped/cancelled/foreign_skipped_codes (2.06s)
+    --- PASS: TestPickList/PL03_501_ids_->_422_too_many (0.01s)
+    --- PASS: TestPickList/PL05_permission_split (0.01s)
+=== RUN   TestPickList500
+    pick_list_test.go:265: exec test setup: ERROR: insert or update on table "orders" violates foreign key constraint "order_reservation_fk" (SQLSTATE 23503)
+--- FAIL: TestPickList500 (3.66s)
+=== RUN   TestCarrierExport
+=== RUN   TestCarrierExport/black_cat
+=== RUN   TestCarrierExport/hsinchu
+=== RUN   TestCarrierExport/chunghwa_post
+=== RUN   TestCarrierExport/generic
+--- PASS: TestCarrierExport (3.59s)
+    --- PASS: TestCarrierExport/black_cat (0.02s)
+    --- PASS: TestCarrierExport/hsinchu (0.01s)
+    --- PASS: TestCarrierExport/chunghwa_post (0.01s)
+    --- PASS: TestCarrierExport/generic (0.01s)
+=== RUN   TestCVSBatch
+    pick_list_test.go:404: cvs order 76e8685a-1f0c-4296-9bd1-d363dfc598e7 outcome map[code:invalid_order order_id:76e8685a-1f0c-4296-9bd1-d363dfc598e7 outcome:failed]
+--- FAIL: TestCVSBatch (4.66s)
+=== RUN   TestCVSBatchUnknown
+    pick_list_test.go:453: batch results=[map[code:invalid_order order_id:90b9ccc2-a72e-4020-8273-e4807d1aebce outcome:failed]]
+--- FAIL: TestCVSBatchUnknown (3.39s)
+FAIL
+FAIL	livecommerce/tests/foundation	25.409s
+FAIL
+test-focused: top-level PASS=2 FAIL=3 SKIP=0 exit=1

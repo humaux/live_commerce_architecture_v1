@@ -14,6 +14,8 @@ package inbox
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -208,3 +210,75 @@ func (k *Keyring) open(c eventContext, keyID string, nonce, ciphertext []byte) (
 
 // ErrDatabase is the fixed wrap for any definer/database failure; it never carries a driver message.
 var ErrDatabase = errors.New("inbox: database unavailable")
+
+// outboundAAD is the frozen AAD of a display copy (class "outbound", live-console-v1 §3.4).
+func outboundAAD(tenant, store, id, kind, keyID string) []byte {
+	b, _ := json.Marshal([]string{"livecommerce/meta-outbound/v1", tenant, store, id, kind, keyID})
+	return b
+}
+
+// sealOutbound seals one display copy (the text the merchant sent, links already replaced by the caller) with the ACTIVE payload key
+// and a random nonce. Used by the send planners; opened again only by openOutbound for the A9 thread.
+func (k *Keyring) sealOutbound(tenant, store, id, kind, text string) (keyID string, nonce, ciphertext []byte, err error) {
+	if k == nil || !command.ValidID(tenant) || !command.ValidID(store) || !command.ValidID(id) || text == "" {
+		return "", nil, nil, ErrPayload
+	}
+	key, ok := k.keys[k.activeID]
+	if !ok {
+		return "", nil, nil, ErrPayload
+	}
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return "", nil, nil, ErrPayload
+	}
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", nil, nil, ErrPayload
+	}
+	nonce = make([]byte, aead.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return "", nil, nil, ErrPayload
+	}
+	return k.activeID, nonce, aead.Seal(nil, nonce, []byte(text), outboundAAD(tenant, store, id, kind, k.activeID)), nil
+}
+
+// openOutbound opens one display copy; any mismatch (key id, AAD, tamper) is ErrPayload.
+func (k *Keyring) openOutbound(tenant, store, id, kind, keyID string, nonce, ciphertext []byte) (string, error) {
+	if k == nil || !validKeyID(keyID) || len(nonce) != payloadNonce || len(ciphertext) < payloadTag+1 {
+		return "", ErrPayload
+	}
+	key, ok := k.keys[keyID]
+	if !ok {
+		return "", ErrPayload
+	}
+	block, err := aes.NewCipher(key[:])
+	if err != nil {
+		return "", ErrPayload
+	}
+	aead, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", ErrPayload
+	}
+	plain, err := aead.Open(nil, nonce, ciphertext, outboundAAD(tenant, store, id, kind, keyID))
+	if err != nil {
+		return "", ErrPayload
+	}
+	return string(plain), nil
+}
+
+// bodyHMAC is HMAC-SHA256(key derived from the ACTIVE payload key with info "livecommerce/meta-outbound-hmac/v1" || tenant, text):
+// a keyed, tenant-separated digest, never an unsalted hash (a low-entropy 「謝謝」 would be a dictionary oracle).
+func (k *Keyring) bodyHMAC(tenant, text string) ([]byte, error) {
+	if k == nil || !command.ValidID(tenant) {
+		return nil, ErrPayload
+	}
+	key, ok := k.keys[k.activeID]
+	if !ok {
+		return nil, ErrPayload
+	}
+	derive := hmac.New(sha256.New, key[:])
+	derive.Write([]byte("livecommerce/meta-outbound-hmac/v1" + tenant))
+	mac := hmac.New(sha256.New, derive.Sum(nil))
+	mac.Write([]byte(text))
+	return mac.Sum(nil), nil
+}

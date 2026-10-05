@@ -1,0 +1,93 @@
+=== RUN   TestLiveConsoleSendRecommendCapabilityBeforeContent
+--- PASS: TestLiveConsoleSendRecommendCapabilityBeforeContent (9.27s)
+=== RUN   TestLiveConsoleSendLCN07Quota
+--- PASS: TestLiveConsoleSendLCN07Quota (1.38s)
+=== RUN   TestLiveConsoleSendLCN07ConfirmGateAndLinkPending
+--- PASS: TestLiveConsoleSendLCN07ConfirmGateAndLinkPending (1.76s)
+=== RUN   TestLiveConsoleSendLCN07ConcurrentManual
+--- PASS: TestLiveConsoleSendLCN07ConcurrentManual (0.51s)
+=== RUN   TestLiveConsoleSendLCN07AutoManualRace
+    live_console_send_quota_test.go:369: race outcomes over 100 iterations: manual won 20, auto won 80, manual refused 80
+--- PASS: TestLiveConsoleSendLCN07AutoManualRace (32.73s)
+=== RUN   TestLiveConsoleSendLCN08PublicReply
+--- PASS: TestLiveConsoleSendLCN08PublicReply (2.94s)
+=== RUN   TestLiveConsoleSendLCN10Takeover
+--- PASS: TestLiveConsoleSendLCN10Takeover (12.93s)
+=== RUN   TestLiveConsoleSendLCN11Unknown
+=== RUN   TestLiveConsoleSendLCN11Unknown/5xx
+=== RUN   TestLiveConsoleSendLCN11Unknown/garbled
+=== RUN   TestLiveConsoleSendLCN11Unknown/hang
+--- PASS: TestLiveConsoleSendLCN11Unknown (8.25s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.30s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (2.00s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.26s)
+=== RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (10.64s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.03s)
+=== RUN   TestLiveConsoleSendLCN06DM
+--- PASS: TestLiveConsoleSendLCN06DM (3.97s)
+=== RUN   TestLiveConsoleSendLCN06GraphInvalidRequest
+--- PASS: TestLiveConsoleSendLCN06GraphInvalidRequest (1.68s)
+=== RUN   TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow
+--- PASS: TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow (7.56s)
+PASS
+ok  	livecommerce/tests/foundation	95.359s
+=== RUN   TestCheckTextLimitsPerPlatform
+--- PASS: TestCheckTextLimitsPerPlatform (0.00s)
+=== RUN   TestPublicReplyForbiddenContent
+--- PASS: TestPublicReplyForbiddenContent (0.00s)
+=== RUN   TestScrubLinks
+--- PASS: TestScrubLinks (0.00s)
+=== RUN   TestOutboundSealOpenRoundTripAndBinding
+--- PASS: TestOutboundSealOpenRoundTripAndBinding (0.00s)
+=== RUN   TestBodyHMACIsKeyedAndTenantSeparated
+--- PASS: TestBodyHMACIsKeyedAndTenantSeparated (0.00s)
+PASS
+ok  	livecommerce/internal/inbox	1.376s
+=== RUN   TestInboxSendRoutesMountOnlyWhenEnabled
+--- PASS: TestInboxSendRoutesMountOnlyWhenEnabled (0.01s)
+=== RUN   TestInboxSendClassify
+--- PASS: TestInboxSendClassify (0.00s)
+=== RUN   TestSendCodesSurviveHTTPError
+--- PASS: TestSendCodesSurviveHTTPError (0.00s)
+=== RUN   TestSendErrorDetailsReachTheEnvelope
+--- PASS: TestSendErrorDetailsReachTheEnvelope (0.00s)
+=== RUN   TestPrivateReplyFactsMapping
+--- PASS: TestPrivateReplyFactsMapping (0.00s)
+PASS
+ok  	livecommerce/internal/httpapi	1.741s
+=== RUN   TestSendRequestShapes
+--- PASS: TestSendRequestShapes (0.00s)
+=== RUN   TestSendOutcomeMapping
+=== RUN   TestSendOutcomeMapping/invalid_request_100
+=== RUN   TestSendOutcomeMapping/invalid_request_2018278
+=== RUN   TestSendOutcomeMapping/100_but_body_carries_id
+=== RUN   TestSendOutcomeMapping/other_4xx_before_LC-U9
+=== RUN   TestSendOutcomeMapping/400_other_code
+=== RUN   TestSendOutcomeMapping/5xx
+=== RUN   TestSendOutcomeMapping/429
+=== RUN   TestSendOutcomeMapping/2xx_garbled
+=== RUN   TestSendOutcomeMapping/2xx_without_id
+--- PASS: TestSendOutcomeMapping (0.01s)
+    --- PASS: TestSendOutcomeMapping/invalid_request_100 (0.00s)
+    --- PASS: TestSendOutcomeMapping/invalid_request_2018278 (0.00s)
+    --- PASS: TestSendOutcomeMapping/100_but_body_carries_id (0.00s)
+    --- PASS: TestSendOutcomeMapping/other_4xx_before_LC-U9 (0.00s)
+    --- PASS: TestSendOutcomeMapping/400_other_code (0.00s)
+    --- PASS: TestSendOutcomeMapping/5xx (0.00s)
+    --- PASS: TestSendOutcomeMapping/429 (0.00s)
+    --- PASS: TestSendOutcomeMapping/2xx_garbled (0.00s)
+    --- PASS: TestSendOutcomeMapping/2xx_without_id (0.00s)
+=== RUN   TestSendReconcileIsQueryOnlyAndRedactedSafe
+--- PASS: TestSendReconcileIsQueryOnlyAndRedactedSafe (0.00s)
+=== RUN   TestSendCheckMapping
+--- PASS: TestSendCheckMapping (0.00s)
+=== RUN   TestParseSendRejectsMismatches
+--- PASS: TestParseSendRejectsMismatches (0.00s)
+=== RUN   TestSendRoutesCoverTheActions
+--- PASS: TestSendRoutesCoverTheActions (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/metareply	1.699s
+PASS: isolated live-console sends + takeover (LCN06/07/08/10/11, display-copy half of LCN13) only; MOCK Graph, retention halves of LCN13 and LIVE sends (LCN16) not claimed.
+exit=0

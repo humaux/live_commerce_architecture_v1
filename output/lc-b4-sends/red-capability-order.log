@@ -1,0 +1,7 @@
+=== RUN   TestLiveConsoleSendRecommendCapabilityBeforeContent
+    live_console_send_order_test.go:43: severed, forbidden product name: public_reply_forbidden_content (want capability)
+--- FAIL: TestLiveConsoleSendRecommendCapabilityBeforeContent (8.06s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.453s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
