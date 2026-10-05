@@ -1334,7 +1334,44 @@ code {
   text-align: center;
 }
 
+@media (max-width: 900px) {
+  /* Ledger retains every column in its existing, cued horizontal scrollport. */
+  .table-scroll > table {
+    min-width: 760px;
+  }
+  .table-scroll .sku-col,
+  .table-scroll .stock-col,
+  .table-scroll .status-col,
+  .table-scroll .action-col {
+    display: table-cell;
+  }
+  .table-scroll .product-cell .mobile-sku {
+    display: none;
+  }
+}
+
 @media (max-width: 680px) {
+  /* Real click surfaces measured by the frozen mobile R5 audit. */
+  .ads-form label.ads-check,
+  [data-testid="customer-orders"] td > a[href],
+  .dashboard-page .mt-table td > a[href],
+  .dashboard-page .mt-note > a[href],
+  .storefront-domain-origin > a[href] {
+    box-sizing: border-box;
+    min-height: var(--ui-target);
+    min-width: var(--ui-target);
+  }
+  [data-testid="customer-orders"] td > a[href],
+  .dashboard-page .mt-table td > a[href],
+  .dashboard-page .mt-note > a[href],
+  .storefront-domain-origin > a[href] {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+  }
+  .storefront-domain-origin > a[href] {
+    display: flex;
+  }
   .entry-topbar {
     min-height: 58px;
   }
