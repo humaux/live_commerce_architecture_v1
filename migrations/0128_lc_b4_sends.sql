@@ -373,7 +373,7 @@ BEGIN
     PERFORM pg_advisory_xact_lock(hashtextextended('lcn-mpr|' || v_key, 0));
     SELECT o.state INTO ex FROM integration.operations o WHERE o.tenant_id = v_t AND o.store_id = v_s AND o.semantic_key = v_key;
     IF FOUND THEN
-        IF ex.state IN ('BLOCKED_POLICY', 'STALE_BINDING', 'CANCELLED') THEN
+        IF ex.state IN ('BLOCKED_POLICY', 'STALE_BINDING') THEN  -- live-console-v1 §4.2 b3 names only these two (K3 F1: CANCELLED is not provably unsent)
             -- provably unsent (zero HTTP calls): one manual reply may use the second key class, at most once per comment.
             v_key := v_key || ':m1';
             IF EXISTS (SELECT 1 FROM integration.operations o WHERE o.tenant_id = v_t AND o.store_id = v_s AND o.semantic_key = v_key) THEN
