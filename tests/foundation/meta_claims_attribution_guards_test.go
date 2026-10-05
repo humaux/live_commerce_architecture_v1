@@ -315,8 +315,10 @@ func TestMetaClaimsMCI10AttributionFinishNegatives(t *testing.T) {
 func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	const routes = "internal/integrations/metareply/routes.go"
 	const audience = "internal/integrations/metareply/audience.go"
+	// 0118 (A5-3): the live-videos route is the third contracted constant callsite, so it joins the parsed source set.
+	const liveVideos = "internal/integrations/metareply/live_videos.go"
 	texts := map[string]string{}
-	for _, path := range []string{routes, audience} {
+	for _, path := range []string{routes, audience, liveVideos} {
 		raw, err := os.ReadFile(filepath.Join("../..", path))
 		if err != nil {
 			t.Fatal(err)
@@ -338,6 +340,8 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 		{"extra call", routes, "// pageSecretLoader shares", "func bad() { pageSecretLoader(nil,nil,`facebook`,nil,`SELECT 1`) }\n// pageSecretLoader shares"},
 		{"package level call", routes, "// pageSecretLoader shares", "var bad = pageSecretLoader(nil,nil,`facebook`,nil,`SELECT 1`)\n// pageSecretLoader shares"},
 		{"wrong audience SQL", audience, "FROM integration.load_meta_audience_token(", "FROM integration.load_meta_page_token("},
+		{"wrong live-videos SQL", liveVideos, "FROM integration.load_meta_live_videos_token(", "FROM integration.load_meta_page_token("},
+		{"wrong live-videos scopes", liveVideos, `[]string{"pages_read_engagement"}`, `[]string{"pages_messaging"}`},
 		{"wrong route field", audience, "LoadSecret: pageSecretLoader", "Dispatch: pageSecretLoader"},
 		{"wrong scopes", audience, `[]string{"read_insights", "pages_read_engagement"}`, `[]string{"pages_messaging"}`},
 		{"unused audience call", audience, "return core.DispatchRoute{\n\t\tProvider", "_ = pageSecretLoader; return core.DispatchRoute{\n\t\tProvider"},
@@ -346,7 +350,7 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var srcs []mciSrc
-			for _, path := range []string{routes, audience} {
+			for _, path := range []string{routes, audience, liveVideos} {
 				text := texts[path]
 				if path == tc.path && tc.from != "" {
 					text = mciReplace(t, text, tc.from, tc.to)
