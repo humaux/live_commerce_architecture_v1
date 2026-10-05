@@ -221,7 +221,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(rt, "live.claim_windows", "INSERT", cols("live.claim_windows")...)
 		add(rt, "live.claim_windows", "UPDATE", "state", "match_mode", "generation", "opened_at", "closed_at", "version", "principal_id", "updated_at")
 		// claims-retention-purge-v1 §4 (§6 clause 1): purged_at is readable by commerce_retention_writer only.
-		add(rt, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at")...)
+		add(rt, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at", "link_pending_manual")...) // link_pending_manual: LC-B4 definers only
 		add(rt, "claims.bundles", "INSERT", "tenant_id", "store_id", "session_id", "platform", "actor_key", "label")
 		add(rt, "claims.bundles", "UPDATE", "line_count", "version", "updated_at")
 		add(rt, "claims.lines", "SELECT", cols("claims.lines")...)
@@ -257,7 +257,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "live.offers", "UPDATE", "updated_at")
 		add(ci, "live.claim_windows", "SELECT", cols("live.claim_windows")...)
 		add(ci, "live.claim_windows", "UPDATE", "updated_at")
-		add(ci, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at")...)
+		add(ci, "claims.bundles", "SELECT", cols("claims.bundles", "owner_id", "purged_at", "link_pending_manual")...)
 		add(ci, "claims.bundles", "INSERT", "tenant_id", "store_id", "session_id", "platform", "actor_key", "label")
 		add(ci, "claims.bundles", "UPDATE", "line_count", "version", "updated_at")
 		add(ci, "claims.lines", "SELECT", cols("claims.lines")...)
@@ -266,6 +266,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "claims.events", "SELECT", cols("claims.events")...)
 		add(ci, "claims.events", "INSERT", cols("claims.events")...)
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
+		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
+		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
+		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at")
+		add(iw, "claims.bundles", "UPDATE", "link_pending_manual")
+		add(iw, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "sku_id", "active", "version")
+		add(iw, "live.offers", "UPDATE", "updated_at")
+		add(iw, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state")
 		add(wr, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_kind", "source_event_id", "outcome", "bundle_id")
 		// 0113 R6: prove the exact imported accepted claim version without
 		// granting actor identity, raw payload or comment text.
@@ -342,6 +349,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.live_prices", "claims.preview_live_prices",
 				// 0105 (R4S-01): the consumption definer it owns.
 				"claims.consume_live_prices",
+				// LC-B4 (0128): claims.check_meta_reply resolves the actor's thread through the bundle peers (human_takeover / takeover_changed).
+				"inbox.dm_window_for_bundle",
 				// 0110 ACL ruling: domain-owned order provenance projection; only
 				// commerce_auth gets EXECUTE, never consumption-table privileges.
 				"claims.order_live_sources",
@@ -378,7 +387,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake','commerce_retention_writer') -- retention_writer: §4 rows asserted above
-			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text='claims.events') -- §4.3 column SELECT, asserted above
+			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) column grants, asserted above
 			  AND NOT (r.rolname IN ('commerce_auth','commerce_privacy_writer') AND c.oid::regclass::text='claims.bundles') -- 0078 column grants, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
@@ -799,6 +808,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
+					// LC-B4 (0128): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
+					// (rows stay GUC- or intake-scoped by policy; every write statement stays 42501 except the pinned flag/updated_at columns,
+					// which the `SET tenant_id=tenant_id` probe does not touch).
+					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows") && strings.HasPrefix(q, "SELECT") {
+						continue
+					}
 					// customers-billing-v1 §3.1 (0078): commerce_auth holds column SELECT on claims.bundles (customer list
 					// claims_count/platforms), so `SELECT 1 FROM claims.bundles` succeeds; its write statements stay 42501 and
 					// the matrix above pins the exact columns (no actor_key, label or link hash).
@@ -836,7 +851,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.live_prices(uuid[],uuid[],uuid[],bigint[])", "claims.preview_live_prices(bytea)",
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
-				"claims.order_live_sources(uuid,uuid,uuid[])"})
+				"claims.order_live_sources(uuid,uuid,uuid[])",
+				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
+				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),

@@ -117,3 +117,23 @@ func (k *Keyring) Open(s pagetoken.Scope, keyID string, enc, ciphertext []byte) 
 	}
 	return plain, nil
 }
+
+// OpenSend opens one stored send dispatch copy (inbox.send_secrets). The row carries no key id (live-console-v1 §3.4), so each key of
+// the ring is tried; the info binds tenant/store/operation, so only the sealing key and the right operation succeed. The caller must
+// clear the returned slice after use. Any failure is ErrOpen with no detail.
+func (k *Keyring) OpenSend(tenant, store, operation string, enc, ciphertext []byte) ([]byte, error) {
+	if k == nil || len(enc) != pagetoken.EncSize || len(ciphertext) < 17 || len(ciphertext) > 16384 {
+		return nil, ErrOpen
+	}
+	info, err := pagetoken.SendInfo(tenant, store, operation)
+	if err != nil {
+		return nil, ErrOpen
+	}
+	joined := append(append(make([]byte, 0, len(enc)+len(ciphertext)), enc...), ciphertext...)
+	for _, priv := range k.keys {
+		if plain, err := hpke.Open(priv, hpke.HKDFSHA256(), hpke.AES256GCM(), info, joined); err == nil {
+			return plain, nil
+		}
+	}
+	return nil, ErrOpen
+}
