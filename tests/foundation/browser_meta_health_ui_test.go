@@ -35,6 +35,10 @@ func TestBrowserMetaHealthUI(t *testing.T) {
 	defer cancel()
 	m := mhSetup(t)
 	p := m.connectPage(t, "Health check", true, mhScopes, true)
+	// Reconnect creates inbox routes; remove only this fixture's bindings' routes before mhEnv deletes those bindings.
+	t.Cleanup(func() {
+		mustExec(t, m.f.owner, `DELETE FROM meta_inbox.routes WHERE tenant_id=$1 AND store_id=$2 AND binding_id IN ($3,$4)`, m.tenant, m.store, p.fbBinding, p.igBinding)
+	})
 	m.sweep(t)
 	principal, fixtureToken := lcPrincipal(t, m.f, m.f.tenantA, []string{m.store, m.f.storeA2}, "store:read", "integration:read", "integration:manage", "orders:read", "catalog:read", "live:read", "live:manage", "integration:execute", "inventory:read")
 	var draft live.Draft
