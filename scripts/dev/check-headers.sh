@@ -23,6 +23,7 @@ if [[ -z "$base" ]]; then
     base=$(git rev-parse -q --verify HEAD~1 || git rev-parse HEAD)
   fi
 fi
+added=$(git diff --name-only --diff-filter=A "$base" --; git ls-files --others --exclude-standard)
 missing=0
 while IFS= read -r f; do
   [[ -f "$f" ]] || continue
@@ -32,6 +33,12 @@ while IFS= read -r f; do
     *) continue ;;
   esac
   head=$(head -n 25 "$f")
+  # ponytail: two tiers until the doc-headers backlog unit lands (then set LC_HEADERS_STRICT=1 as the default):
+  # ADDED files need all three labels; MODIFIED pre-existing files need at least a leading doc comment.
+  if [[ "${LC_HEADERS_STRICT:-0}" != 1 ]] && ! grep -qxF "$f" <<<"$added"; then
+    grep -qE "^[[:space:]]*(//|#|--)[[:space:]]*[[:alnum:]]" <<<"$(head -n 8 "$f")" && continue
+    echo "check-headers: $f has no leading doc comment" >&2; missing=$((missing + 1)); continue
+  fi
   for label in "Purpose:" "Depends on:" "Used by:"; do
     if ! grep -qE "^[[:space:]]*(//|#|--|\*)[[:space:]]*${label}" <<<"$head"; then
       echo "check-headers: $f lacks a '${label}' header line (see docs/delivery/AGENT-PREAMBLE.md §3)" >&2
