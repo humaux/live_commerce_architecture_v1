@@ -230,7 +230,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await buyer.waitForURL((url) => url.pathname === `/${L}/checkout`);
   await expect(buyer.getByTestId("claim-checkout-notice")).toHaveText(claim.checkoutNotice);
   await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`)).toBeVisible();
-  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`).getByTestId("cart-line-qty")).toHaveText("2");
+  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`).locator(".sf-line__unit")).toContainText("× 2");
   await act("check", { name: "cart" });
   await buyerShots(buyer, "buyer-claim-added");
   pass("the buyer opens the private-reply link (zh-TW): prefilled claim A1 x 2, fragment dropped, token not stored; one explicit checkout click puts A1 x 2 in the server cart and opens checkout");

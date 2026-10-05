@@ -219,7 +219,7 @@ for (const cell of cells) {
       await buyer.waitForURL((url) => url.pathname === `/${locale}/checkout`);
       await expect(buyer.getByTestId("claim-checkout-notice")).toHaveText(claim.checkoutNotice);
       await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`)).toBeVisible();
-      await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`).getByTestId("cart-line-qty")).toHaveText("2");
+      await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`).locator(".sf-line__unit")).toContainText("× 2");
       await act("check", { name: "cart", scene, sku_id: run.sku_id });
       // The cart drawer and the cart page both show the claimed line at the LIVE price (catalog struck through),
       // and the line/subtotal totals use it (2 x 200 = 400, not the 600 the catalog would give).
