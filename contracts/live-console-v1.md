@@ -691,3 +691,10 @@ Order respects 2 writing units / 4 agents; upstream interfaces frozen before dow
 Every writing unit uses its own worktree/branch, the AGENT-PREAMBLE lifecycle (red → green, header ratchet), and
 writes `output/<unit>/DELIVERY.md`. Migration numbers, OpenAPI, shared JSON schema, `go.mod/go.sum`, pnpm lockfiles,
 compose and the secrets manifest are integrator-merged only.
+
+## Integrator money-path ruling on OPEN-13 (Claude Opus, 2026-10-05)
+Accepted with two added conditions: (1) the attested bundle's buyer must equal the conversation's buyer — the server derives
+both from its own records (the bundle's social peer key and the thread's peer key) and refuses `409 bundle_buyer_mismatch`
+otherwise; the merchant never chooses whose live price applies. (2) Every grant writes an audit event
+(`claims.merchant_origin_granted`: principal, bundle, buyer, order, lines, live-price minor per line). The 0105 consumption
+ledger cap stays the only ceiling; LPC01–06 stay green. Fallback text unchanged.
