@@ -53,13 +53,13 @@ DRAFT	zh-TW	privacy	訂單資料：訂單的商品、數量、價格與幣別，
 DRAFT	zh-TW	privacy	您在結帳時填寫的收件資料：收件人姓名、電話，以及收件地址或超商取貨門市。
 DRAFT	zh-TW	privacy	若您在我們於 Facebook 或 Instagram 的直播貼文留言，Meta 會將您的留言與應用程式範圍識別碼提供給我們，以便以私訊寄送購物車連結。我們不會取得您的 Meta 密碼。
 DRAFT	zh-TW	privacy	信用卡資料由您在 Stripe 的付款頁面輸入。我們不會收到或儲存完整卡號，只保留 Stripe 的付款編號與狀態。
-DRAFT	zh-TW	privacy	瀏覽器會保存一個購物工作階段識別碼，讓您能回到購物車與訂單。它屬必要功能；目前我們不設定廣告 Cookie。
+DRAFT	zh-TW	privacy	瀏覽器會保存一個購物連線識別碼，讓您能回到購物車與訂單。它屬必要功能；目前我們不設定廣告 Cookie。
 DRAFT	zh-TW	privacy	用於收款、處理與寄出訂單、顯示訂單狀態、處理退款與客服需求，以及偵測詐欺或濫用。
 PENDING	zh-TW	privacy	是否將聯絡資料用於行銷，以及取得同意的文字
 PENDING	zh-TW	privacy	訂單、付款與收件資料的保存期間
 DRAFT	zh-TW	privacy	Stripe（付款處理）、物流業者（收件人姓名、電話與地址），以及 Meta（於其平台上的私訊）。
 PENDING	zh-TW	privacy	需列明的其他處理者或主機所在地
-DRAFT	zh-TW	privacy	您可以要求刪除未與訂單綁定的個人檔案、聯絡與收件資料，並撤回行銷同意。說明請見 /zh-TW/data-deletion。已取得購物工作階段的買家也可使用 /zh-TW/privacy 的自助頁面。
+DRAFT	zh-TW	privacy	您可以要求刪除與訂單無關的個人檔案、聯絡與收件資料，並撤回行銷同意。說明請見 /zh-TW/data-deletion。已取得購物連線的買家也可使用 /zh-TW/privacy 的自助頁面。
 DRAFT	zh-TW	privacy	訂單、付款、退款與出貨紀錄基於法律與財務保存要求而保留，不會因刪除要求而移除。
 PENDING	zh-TW	privacy	隱私事務的準據法與申訴管道
 PENDING	zh-TW	terms	條款生效日期
@@ -100,13 +100,13 @@ DRAFT	zh-CN	privacy	订单信息：订单的商品、数量、价格与币种，
 DRAFT	zh-CN	privacy	您在结账时填写的收件信息：收件人姓名、电话，以及收件地址或便利店取货门店。
 DRAFT	zh-CN	privacy	如果您在我们于 Facebook 或 Instagram 的直播帖子下留言，Meta 会把您的留言与应用范围标识符提供给我们，以便通过私信发送购物车链接。我们不会获取您的 Meta 密码。
 DRAFT	zh-CN	privacy	银行卡信息由您在 Stripe 的支付页面输入。我们不会接收或存储完整卡号，只保留 Stripe 的支付编号与状态。
-DRAFT	zh-CN	privacy	浏览器会保存一个购物会话标识符，使您可以回到购物车与订单。它属于必要功能；目前我们不设置广告 Cookie。
+DRAFT	zh-CN	privacy	浏览器会保存一个购物连接标识符，使您可以回到购物车与订单。它属于必要功能；目前我们不设置广告 Cookie。
 DRAFT	zh-CN	privacy	用于收款、处理并寄出订单、显示订单状态、处理退款与客服请求，以及识别欺诈或滥用。
 PENDING	zh-CN	privacy	是否将联系信息用于营销，以及获取同意的文字
 PENDING	zh-CN	privacy	订单、付款与收件信息的保存期限
 DRAFT	zh-CN	privacy	Stripe（支付处理）、物流承运商（收件人姓名、电话与地址），以及 Meta（其平台上的私信）。
 PENDING	zh-CN	privacy	需列明的其他处理方或服务器所在地
-DRAFT	zh-CN	privacy	您可以要求删除未与订单绑定的个人档案、联系与收件信息，并撤回营销同意。说明见 /zh-CN/data-deletion。已获得购物会话的买家也可使用 /zh-CN/privacy 的自助页面。
+DRAFT	zh-CN	privacy	您可以要求删除与订单无关的个人档案、联系与收件信息，并撤回营销同意。说明见 /zh-CN/data-deletion。已获得购物连接的买家也可使用 /zh-CN/privacy 的自助页面。
 DRAFT	zh-CN	privacy	订单、付款、退款与发货记录基于法律与财务保存要求而保留，不会因删除请求而移除。
 PENDING	zh-CN	privacy	隐私事务的适用法律与投诉渠道
 PENDING	zh-CN	terms	条款生效日期
