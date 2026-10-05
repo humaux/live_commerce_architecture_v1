@@ -402,7 +402,7 @@ func TestRedeemPlanning(t *testing.T) {
 		{offerID: "o4", skuID: "sku-d", quantity: 2, version: 1, pending: true, offerActive: true},
 		{offerID: "o5", skuID: "sku-e", quantity: 9, version: 4, pending: false, offerActive: true},
 	}
-	available := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true}, "sku-d": {available: false}, "sku-e": {available: true}}
+	available := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true, tracked: true, quantity: 0}, "sku-d": {available: false, tracked: true, quantity: 0}, "sku-e": {available: true}}
 	apply, skipped, err := splitPending(lines, available)
 	if err != nil {
 		t.Fatal(err)

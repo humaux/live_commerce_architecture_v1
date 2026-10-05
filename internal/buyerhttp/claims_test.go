@@ -147,3 +147,16 @@ func TestClaimProjectionsAreExact(t *testing.T) {
 		t.Fatalf("empty lists must stay arrays: %s", empty)
 	}
 }
+
+// TestClaimSoldOutProjectionTrue checks the positive inventory hint and closed skipped reason.
+func TestClaimSoldOutProjectionTrue(t *testing.T) {
+	line := claims.PreviewLine{Keyword: "A1", SKUID: "s1", Quantity: 2, Available: true, SoldOut: true}
+	pv := projectClaimPreview(claims.Preview{Lines: []claims.PreviewLine{line}})
+	if len(pv.Lines) != 1 || !pv.Lines[0].SoldOut || !pv.Lines[0].Available {
+		t.Fatalf("positive sold-out projection: %+v", pv)
+	}
+	out := projectClaimRedeem(claims.Redeemed{Skipped: []claims.Skipped{{SKUID: "s1", Reason: "sold_out"}}})
+	if len(out.Skipped) != 1 || out.Skipped[0].Reason != "sold_out" {
+		t.Fatalf("sold_out skipped reason: %+v", out)
+	}
+}
