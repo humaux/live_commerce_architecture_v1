@@ -1,5 +1,8 @@
 "use client";
 
+// Purpose: scoped merchant order list, existing inline details and fulfillment action entry points.
+// Depends on: orders BFF/read models, WorkspaceFrame and TrackingImport's independent CSV workflow.
+// Used by: /[locale]/orders; existing controls keep their placement and permission semantics.
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
 // OrderShipment (their BFF routes are listed there); the export button is a plain GET download of
@@ -38,6 +41,7 @@ import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { amount, badge, detailPanel, type Sections } from "./OrderDetailPanel";
 import { Icon } from "./Icon";
+import { TrackingImport } from "./TrackingImport";
 import "./orders.css";
 import "./order-actions.css";
 import "./orders-v2.css";
@@ -565,6 +569,7 @@ export function MerchantOrders({
               <p className="orders-export-hint">{c.exportHint}</p>
             </>
           )}
+          {store && actions?.fulfillment_write && <TrackingImport key={`${store.id}:${locale}`} locale={locale} store={store} onComplete={retry} />}
         </div>
         </OrderListFilters>}
         {current.status === "loading" && (

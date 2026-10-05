@@ -1,3 +1,6 @@
+<!-- Purpose: authoritative registered gate commands and evidence boundaries.
+Depends on: test-local/test-node runners and unit specifications.
+Used by: developers, integrator and check-gates.sh. -->
 # Gates: what runs, what it proves, how to run it
 
 Status: hand-kept, mechanically checked by `bash scripts/dev/check-gates.sh` (CI). The script fails when a
@@ -312,3 +315,5 @@ Not covered by the independent gate (NOT_RUN): real SMTP / a real mailbox, a buy
 | `TestPromoGateIsolation` | same code text in two tenants and two stores; list/create/update refused across tenant and store and never leaked; a buyer only meets his own store's codes (indistinguishable from unknown) |
 `TestPromoGateStripeRefundCap` sets `pgStripeRevoke` (payment_runtime_test.go) to work around BASE defect B1 (two trigger functions keep PUBLIC EXECUTE and every
 Stripe login fails its privilege validation); see `output/promotions/tests/DEFECTS.md`.
+
+| `--browser-tracking-backfill` | `TestBrowserTrackingBackfill` | BROWSER MOCK + REAL_PG | Three locales, desktop/390px; actual upload/paste, preview, confirmation, failure CSV, stale and unknown-result recovery. `tests/admin/tracking-backfill.spec.ts`, `tests/foundation/browser_tracking_backfill_test.go`; pure properties `tests/admin/tracking-backfill-model.test.ts` via `test-node.sh`. No LIVE shipment/mail acceptance. |
