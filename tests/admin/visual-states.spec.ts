@@ -111,7 +111,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
     scrollbarColor: getComputedStyle(element).scrollbarColor,
     scrollbarWidth: getComputedStyle(element).scrollbarWidth,
   }));
-  expect(scroll.scrollbarColor).toBe("rgb(113, 134, 158) rgb(237, 242, 247)");
+  expect(scroll.scrollbarColor).toBe("rgb(86, 97, 113) rgb(245, 246, 248)");
   expect(scroll.scrollbarWidth).toBe("thin");
   await table.screenshot({ path: "output/playwright/ledger-review/scrollbar-active.png" });
   await writeFile(

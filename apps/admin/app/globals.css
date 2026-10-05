@@ -499,7 +499,7 @@ code {
   position: relative;
   min-height: 180px;
   margin-top: 9px;
-  padding: 24px 44px 24px 16px; /* the right 44px keep the close button clear of the blocks */
+  padding: 24px calc(var(--ui-target) + 16px) 24px 16px; /* reserve the close target, its inset and a content gap */
   background: white;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -912,7 +912,7 @@ code {
     font-size: var(--ui-text-helper);
   }
   .inspector {
-    padding: 21px 44px 21px 13px;
+    padding: 21px calc(var(--ui-target) + 16px) 21px 13px;
     gap: 18px;
   }
   .selected-product {
