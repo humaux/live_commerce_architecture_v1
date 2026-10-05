@@ -93,3 +93,10 @@ Second deviation (idempotency, P0): the per-order idempotency key is **derived d
 ## Environment designation
 
 DESIGN + SANDBOX. The foundation tests run against a throwaway Docker PostgreSQL (real PG/River, no external provider call — the ECPay fake returns configured mock responses). No LIVE production action, no real refund, no label purchase, no replay marketing.
+
+## Round 2 (Claude Sonnet fallback)
+
+- **TestPickList500**: root cause = fixture, not predicate. `order_money_shippable` (0073/0088/0107) needs a card attempt + READY work item + CAPTURED fact, or a pay_at_pickup/COD/bank-transfer branch; the 500 clones of a paid card order carried none of those rows, so all 500 were correctly `not_pickable`. Fix: clones are now genuine `cash_on_delivery` / `AWAITING_COLLECTION` / `collection_state=PENDING` orders (COD branch, no payment row needed). Assertion unchanged; PL08 = 224 ms.
+- **TestPickListSession**: root cause = `e.f.tenantA` is not the tenant of the order (`base.s.p.f.tenantA` is); FK order_origins -> orders failed. Setup now uses the order's own tenant.
+- **R2 pin** (`tests/foundation/r2_integration_upgrade_test.go`): merged r3/integration (35b27b33, pin 61 incl. 0127), added 0130 -> 62.
+- Gates: focused regex (+ TestR2IntegrationUpgradeFromReleaseHead) 44 PASS / 0 FAIL (green-r2.log); `go test ./internal/httpapi ./internal/fulfillment ./internal/merchantorders` exit 0; `check-gates.sh` exit 0.
