@@ -308,6 +308,7 @@ func TestCustomerTags(t *testing.T) {
 		if _, err := c.newTag(c.adminTok, a2, "one-too-many", "gray"); !errors.Is(err, customers.ErrLimitReached) {
 			t.Fatalf("101st tag: %v", err)
 		}
+		mustExec(t, f.owner, `DELETE FROM customers.tags WHERE tenant_id=$1 AND store_id=$2 AND name LIKE 'bulk-%'`, f.tenantA, a2) // keep store A2 usable for later subtests
 		// 21 tags on one customer (store A1 has far fewer than 100 tags)
 		var ids []string
 		for i := 0; i < 21; i++ {

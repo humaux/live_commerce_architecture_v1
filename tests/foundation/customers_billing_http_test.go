@@ -172,7 +172,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 	owner := m.p.cap.Scope.OwnerID // has one order (the psSetup hold): a customer
 
 	getStatus := func(token string) cbhResp { return c.do(c.on, "GET", base+"/customers?limit=50", token, nil, nil) }
-	const listItemKeys = "active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor"
+	const listItemKeys = "active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags"
 
 	t.Run("GET customers: permissions, grammar, shape, paging, method", func(t *testing.T) {
 		c.want("no token", getStatus(""), 401, "")
@@ -234,7 +234,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		r := c.do(c.on, "GET", base+"/customers/"+owner, full, nil, nil)
 		c.want("detail", r, 200, "")
 		c.noStore("detail", r)
-		wantKeys := strings.Split(listItemKeys+",claims,consent_history,orders,privacy_actions", ",")
+		wantKeys := strings.Split(listItemKeys+",claims,consent_history,notes,orders,privacy_actions,tags_revision", ",")
 		sort.Strings(wantKeys)
 		want := strings.Join(wantKeys, ",")
 		if got := cbhKeys(r.json); got != want {
@@ -620,7 +620,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		if x.status != 200 || json.Unmarshal(x.body, &doc) != nil {
 			t.Fatalf("buyer export: %d %s", x.status, x.body)
 		}
-		if got := cbhKeys(doc); got != "claims,consents,format,generated_at,orders,privacy_actions,store" || doc["format"] != customers.ExportFormat {
+		if got := cbhKeys(doc); got != "claims,consents,format,generated_at,notes,orders,privacy_actions,store,tags" || doc["format"] != customers.ExportFormat {
 			t.Errorf("buyer export keys %s (same envelope as the merchant's, no customer_id or principal ids)", got)
 		}
 		if !strings.HasPrefix(x.header.Get("Content-Type"), "application/json") || !strings.HasPrefix(x.header.Get("Content-Disposition"), "attachment;") || !strings.Contains(x.header.Get("Cache-Control"), "no-store") {
