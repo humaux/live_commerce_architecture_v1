@@ -1,8 +1,8 @@
-// Purpose: the inbox read side's durable resubscribe jobs (migration 0122, integration.meta_resubscribe_jobs): the
+// Purpose: the inbox read side's durable resubscribe jobs (migration 0119, integration.meta_resubscribe_jobs): the
 // claims-worker end that leases one job, POSTs /{page-id}/subscribed_apps?subscribed_fields=feed,messages with the head
 // Page token the API sealed to the PUBLIC ring, and finishes it. Only a definite not-applied answer (429/503) is retried
 // (bounded by the SQL); everything ambiguous is UNKNOWN and never repeated.
-// Depends on: integration.claim_meta_resubscribe / integration.finish_meta_resubscribe (0122), internal/integrations/
+// Depends on: integration.claim_meta_resubscribe / integration.finish_meta_resubscribe (0119), internal/integrations/
 // meta/pagetoken/pageopen (v2 private ring), internal/integrations/meta/oauth (Graph), livecommerce/internal/platform.
 // Used by: cmd/claims-worker (run loop, the only process holding the private ring).
 
@@ -25,7 +25,7 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// Resubscriber runs the inbox read-side's durable subscription jobs (migration 0122, integration.meta_resubscribe_jobs):
+// Resubscriber runs the inbox read-side's durable subscription jobs (migration 0119, integration.meta_resubscribe_jobs):
 // POST /{page-id}/subscribed_apps?subscribed_fields=feed,messages with the head Page token the API sealed to the PUBLIC
 // ring and can never open again. It lives in the claims-worker, the only process holding the private ring. The migration
 // backfill enqueues one job per active connection; the read-back of the result into integration.binding_capabilities and the

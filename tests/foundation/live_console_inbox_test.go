@@ -1,7 +1,7 @@
 package foundation_test
 
 // Real-PG gate for the LC-B3 merchant inbox read side (contracts/live-console-v1.md §3.2/§3.6/§3.7,
-// §11 A8-A11/A13/A14). Exercises migration 0122 exactly once (the shared fixture already applies it
+// §11 A8-A11/A13/A14). Exercises migration 0119 exactly once (the shared fixture already applies it
 // twice), the frozen definer/owner/EXECUTE-grant ACL, the inbox:read vs inbox:reply permission split
 // (A8/A9/A10), A11 takeover CAS with lazy 6-hour expiry, A14 customer-link CAS + audit, and cross-store
 // RLS isolation. No send path (LC-B4), no LIVE Meta traffic, no real buyer PII: fixtures are synthetic
@@ -97,11 +97,11 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 	ctx := context.Background()
 
 	var migrationCount int
-	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0122_live_console_inbox.sql'`).Scan(&migrationCount); err != nil {
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0119_live_console_inbox.sql'`).Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
 	if migrationCount != 1 {
-		t.Fatalf("0122 migration row count=%d, want exactly 1", migrationCount)
+		t.Fatalf("0119 migration row count=%d, want exactly 1", migrationCount)
 	}
 
 	var login, super, bypass, createRole, createDB, replication bool
@@ -235,7 +235,7 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 			}
 			if owner != fn.owner || result != fn.result || !definer || !noLogin || !noBypass || !fixedPath || volatility != wantVolatility ||
 				!slices.Equal(principals, fn.grantees) {
-				t.Fatalf("0122 boundary: owner=%s result=%s definer=%v noLogin=%v noBypass=%v path=%v volatility=%s ACL=%v", owner, result, definer, noLogin, noBypass, fixedPath, volatility, principals)
+				t.Fatalf("0119 boundary: owner=%s result=%s definer=%v noLogin=%v noBypass=%v path=%v volatility=%s ACL=%v", owner, result, definer, noLogin, noBypass, fixedPath, volatility, principals)
 			}
 			var others int
 			if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_%'

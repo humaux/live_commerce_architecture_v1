@@ -2,7 +2,7 @@
 // value is returned otherwise), A11 Takeover/Release (CAS on expected_generation) and A14 CustomerLink (CAS on
 // expected_version; a nil customer unlinks).
 // Depends on: the SECURITY DEFINER functions inbox.mark_read / inbox.takeover / inbox.release / inbox.customer_link
-// (migration 0122), internal/inbox/read.go (databaseError).
+// (migration 0119), internal/inbox/read.go (databaseError).
 // Used by: internal/httpapi/inbox.go (A10/A11/A14 handlers), internal/inbox tests.
 
 package inbox

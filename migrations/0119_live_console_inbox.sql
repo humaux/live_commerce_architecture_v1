@@ -1,4 +1,4 @@
--- 0122 live-console inbox (contracts/live-console-v1.md §3.1/§3.2/§3.6/§3.7, §11 A8-A11/A13/A14, §14.8; FROZEN 2026-10-02).
+-- 0119 live-console inbox (contracts/live-console-v1.md §3.1/§3.2/§3.6/§3.7, §11 A8-A11/A13/A14, §14.8; FROZEN 2026-10-02).
 --
 -- Purpose: the inbound read authority (social.read_thread / social.list_conversations / social.conversation_meta /
 -- social.unread_conversation_count), the conversation-state table inbox.conversation_state plus its AFTER INSERT
@@ -34,11 +34,11 @@ BEGIN
   OR to_regclass('meta_inbox.events') IS NULL OR to_regclass('integration.meta_connections') IS NULL
   OR to_regclass('integration.meta_page_heads') IS NULL OR to_regclass('integration.meta_page_credentials') IS NULL
   OR to_regclass('identity.store_staff') IS NULL OR to_regclass('buyer.owners') IS NULL THEN
-  RAISE EXCEPTION '0122 requires 0006, 0028, 0029, 0089, 0095 (social/meta/connections/staff/owners tables)';
+  RAISE EXCEPTION '0119 requires 0006, 0028, 0029, 0089, 0095 (social/meta/connections/staff/owners tables)';
  END IF;
  FOREACH v_perm IN ARRAY ARRAY['commerce_meta_writer','commerce_auth','commerce_runtime','commerce_claims_worker',
   'commerce_staff_writer','commerce_integration_writer'] LOOP
-  IF to_regrole(v_perm) IS NULL THEN RAISE EXCEPTION '0122 requires role %',v_perm; END IF;
+  IF to_regrole(v_perm) IS NULL THEN RAISE EXCEPTION '0119 requires role %',v_perm; END IF;
  END LOOP;
  SELECT pg_get_constraintdef(c.oid) INTO STRICT v_def FROM pg_constraint c
   WHERE c.conrelid='identity.store_grants'::regclass AND c.conname='store_grants_permission_check';
@@ -46,7 +46,7 @@ BEGIN
   FROM regexp_matches(v_def,'''([a-z_]+:[a-z_]+)''::text','g') WITH ORDINALITY AS t(m,ord);
  IF v_list IS NULL OR NOT ('billing:manage'=ANY(v_list) AND 'ads:approve'=ANY(v_list)
    AND 'customers:privacy'=ANY(v_list) AND 'customers:read'=ANY(v_list)) THEN
-  RAISE EXCEPTION '0122 applied out of order: store_grants_permission_check lacks 0078/0079/0089 permissions: %',v_def;
+  RAISE EXCEPTION '0119 applied out of order: store_grants_permission_check lacks 0078/0079/0089 permissions: %',v_def;
  END IF;
  FOREACH v_perm IN ARRAY ARRAY['inbox:read','inbox:reply','inventory:live_adjust'] LOOP
   IF NOT v_perm=ANY(v_list) THEN v_list:=v_list||v_perm; END IF;
@@ -89,7 +89,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------------------
 CREATE ROLE commerce_inbox_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 COMMENT ON ROLE commerce_inbox_writer IS
- '0122 NOLOGIN definer owner of the merchant inbox writes (mark_read/takeover/release/customer_link/thread_opened). Never a login; reads/writes inbox.conversation_state and the thread-open marks only through its fixed functions.';
+ '0119 NOLOGIN definer owner of the merchant inbox writes (mark_read/takeover/release/customer_link/thread_opened). Never a login; reads/writes inbox.conversation_state and the thread-open marks only through its fixed functions.';
 
 CREATE SCHEMA inbox;
 REVOKE ALL ON SCHEMA inbox FROM PUBLIC;
@@ -595,7 +595,7 @@ CREATE POLICY meta_resubscribe_audit ON ops.audit_events FOR INSERT TO commerce_
   AND EXISTS(SELECT 1 FROM integration.meta_resubscribe_jobs j WHERE j.tenant_id=ops.audit_events.tenant_id AND j.store_id=ops.audit_events.store_id
    AND j.principal_id=ops.audit_events.principal_id AND j.state IN ('SUCCEEDED','FAILED','UNKNOWN') AND j.updated_at>=clock_timestamp()-interval '1 minute'));
 COMMENT ON TABLE integration.meta_resubscribe_jobs IS
- '0122 (§3.1): durable best-effort "POST /{page}/subscribed_apps subscribed_fields=feed,messages" of an already-connected Page. Holds a COPY of the head sealed Page token only while PENDING/LEASED; every terminal state wipes it. Written by the 0122 backfill and integration.claim_meta_resubscribe/finish_meta_resubscribe only; opened only by the claims-worker (private ring).';
+ '0119 (§3.1): durable best-effort "POST /{page}/subscribed_apps subscribed_fields=feed,messages" of an already-connected Page. Holds a COPY of the head sealed Page token only while PENDING/LEASED; every terminal state wipes it. Written by the 0119 backfill and integration.claim_meta_resubscribe/finish_meta_resubscribe only; opened only by the claims-worker (private ring).';
 
 CREATE FUNCTION integration.finish_meta_resubscribe(p_id uuid, p_outcome text, p_code text) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$

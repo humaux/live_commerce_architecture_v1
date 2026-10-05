@@ -2,7 +2,7 @@
 // claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River
 // worker whose only routes are the Meta private replies (internal/integrations/metareply), the merchant-disconnect unsubscribe
 // jobs (metareply.Unsubscriber, migration 0100: one best-effort DELETE /{page-id}/subscribed_apps per disconnected Page),
-// and the inbox resubscribe jobs (metareply.Resubscriber, migration 0122: one best-effort POST /{page-id}/subscribed_apps
+// and the inbox resubscribe jobs (metareply.Resubscriber, migration 0119: one best-effort POST /{page-id}/subscribed_apps
 // subscribed_fields=feed,messages per already-connected Page, the live-console inbox read side's subscription).
 //
 // It never serves HTTP, never reads the Meta payload keyring, the claims actor key K_actor (owned by

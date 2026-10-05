@@ -4,7 +4,7 @@
 // SECURITY DEFINER functions do), never returns a driver message, never logs a body, and keeps the private
 // no-store response boundary. Plaintext message bodies exist only in the A9 response.
 // Depends on: livecommerce/internal/inbox, livecommerce/internal/platform (WithScope), livecommerce/internal/command
-// (ValidID), and the SECURITY DEFINER functions of migration 0122.
+// (ValidID), and the SECURITY DEFINER functions of migration 0119.
 // Used by: internal/httpapi/handler.go (registerInboxRoutes, gated on Options.Inbox); cmd/api builds the service.
 
 package httpapi
@@ -50,7 +50,7 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 	const base = "/v1/admin/stores/{store_id}/inbox/conversations"
 	const panelBase = "/v1/admin/stores/{store_id}/inbox/buyer-panel"
 
-	// A8 conversation list. session_id is accepted (valid uuid) but matches nothing in 0122: comment read-through
+	// A8 conversation list. session_id is accepted (valid uuid) but matches nothing in 0119: comment read-through
 	// (LC-B2) has not projected any comment conversations yet, so the live_comment filter returns empty.
 	mux.HandleFunc("GET "+base, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		req, err := parseInboxListRequest(r.URL)
@@ -131,7 +131,7 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 	}))
 
 	// A13 buyer panel (conversation-scoped fields). bundle_id resolution needs inbox.bundle_peers (0123, LC-B4) and
-	// answers 404 in 0122.
+	// answers 404 in 0119.
 	mux.HandleFunc("GET "+panelBase, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		conversationID, bundleID, err := parseInboxBuyerPanel(r.URL)
 		if err != nil {
@@ -226,7 +226,7 @@ func parseInboxListRequest(u *url.URL) (inbox.ListRequest, error) {
 			if !command.ValidID(list[0]) {
 				return req, command.ErrInvalid
 			}
-			// LC-B2 boundary: no comment conversations exist in 0122, so a session scope matches nothing.
+			// LC-B2 boundary: no comment conversations exist in 0119, so a session scope matches nothing.
 		case "cursor":
 			if len(list[0]) > 1024 {
 				return req, command.ErrInvalid
