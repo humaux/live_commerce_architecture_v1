@@ -1,3 +1,6 @@
+// Purpose: kwc-v1 restricted contains grammar (ParseContains) and the mode-independent ingest parse entry (ParseForIngest: kw-v1 first, kwc-v1 fallback).
+// Depends on: pure Go (no I/O); grammar.go width map and §2.2 head rules; frozen negation/question word lists in this file.
+// Used by: internal/claims (ingest.go, manual.go), internal/integrations/meta/claim_intake.go (qualifyClaim); tests/claims/kwc-v1-vectors.json.
 // contains.go owns kwc-v1 (VersionContains), the one restricted contains grammar (§2.5):
 // ParseContains finds a single maximal [A-Z0-9+] fragment of a comment and applies the
 // §2.2 head rules to it; ParseForIngest is the mode-independent parse entry used by

@@ -416,7 +416,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// meta-claims-intake-v1 §4.3 / §5 / §6.3: the six new claims-schema definers (all owned by commerce_claims_writer).
 			"intake_scope": {args: "", result: "TABLE(tenant_id uuid, store_id uuid, session_id uuid)", volatility: "s",
 				acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_claims_intake"},
-			"insert_meta_intake": {args: "p_tenant uuid, p_store uuid, p_event uuid, p_received timestamp with time zone, p_app text, p_object text, p_asset text, p_object_id text, p_comment_ref text, p_actor_key text, p_occurred timestamp with time zone, p_kind text, p_keyword text, p_quantity integer, p_explicit boolean, p_live_media boolean",
+			"insert_meta_intake": {args: "p_tenant uuid, p_store uuid, p_event uuid, p_received timestamp with time zone, p_app text, p_object text, p_asset text, p_object_id text, p_comment_ref text, p_actor_key text, p_occurred timestamp with time zone, p_kind text, p_keyword text, p_quantity integer, p_explicit boolean, p_live_media boolean, p_version text", /* live-a7-contains 0115: + p_version (integrator ruling #5) */
 				result: "uuid", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_meta_writer:EXECUTE", caller: "commerce_meta_writer"},
 			"lease_meta_intake": {args: "", result: "SETOF claims.meta_intake", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
 			"fail_meta_intake":  {args: "p_intake uuid, p_code text, p_final boolean", result: "void", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},

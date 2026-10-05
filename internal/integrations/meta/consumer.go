@@ -1,3 +1,6 @@
+// Purpose: Meta webhook consumer: turns verified inbound Page/IG events into staged claim intake and social facts (meta-consumer-v1, meta-claims-intake-v1).
+// Depends on: SQL meta_inbox.stage_claim_intake (12 args incl. p_version since 0115), claim_intake.go (qualifyClaim → grammar.ParseForIngest), internal/integrations/core, pgx.
+// Used by: cmd/meta-worker (River consumer); tests/foundation TestMetaClaimsMCI*.
 package meta
 
 import (

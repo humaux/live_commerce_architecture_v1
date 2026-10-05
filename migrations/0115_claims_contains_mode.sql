@@ -1,3 +1,6 @@
+-- Purpose: Add the KEYWORD_QTY_CONTAINS claim-window mode (kwc-v1 grammar version) with interval-scoped match_mode, widened CHECKs and the p_version argument on intake definers (R5 A7).
+-- Depends on: claims.windows/claim_window_intervals/events/meta_intake, claims.insert_meta_intake, meta_inbox.stage_claim_intake; roles commerce_claims_writer, commerce_meta_writer, commerce_meta_consumer.
+-- Used by: cmd/migrate; internal/claims, internal/integrations/meta; tests/foundation KC03, MCI02, TestLiveA7ContainsMode.
 -- 0115 claims KEYWORD_QTY_CONTAINS match mode (R5 A7 "contains KW+N" restricted match;
 -- contracts/live-keyword-claims-v1.md §3.5, docs/delivery/units/live-a7-contains-match.md integrator rulings).
 --
