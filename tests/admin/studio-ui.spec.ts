@@ -329,8 +329,31 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("This scene is unavailable", { exact: false })).toBeVisible();
   await page.goto(`/en/studio?store=${unlistedStore}`);
   await expect(page.getByTestId("merchant-studio")).toHaveCount(0);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  // G-UI8 audit [EXTERNAL-MOCK]: hold the real authorized list response to
+  // reproduce fast input before the Studio session boundary is established.
+  const listPath = `**/api/stores/${store}/live-sessions?*`;
+  let listHeld = false;
+  let releaseList!: () => void;
+  const listGate = new Promise<void>((resolve) => { releaseList = resolve; });
+  const holdList = async (route: import("@playwright/test").Route) => {
+    listHeld = true;
+    await listGate;
+    await route.continue();
+  };
+  const createsBeforeLoading = createRequests.length;
+  await page.route(listPath, holdList);
+  try {
+    await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+    await expect.poll(() => listHeld).toBe(true);
+    await expect(page.getByText("Loading scenes…", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
+    expect(createRequests).toHaveLength(createsBeforeLoading);
+  } finally {
+    releaseList();
+    await page.unroute(listPath, holdList);
+  }
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  await expect(page.getByRole("button", { name: /New scene/ })).toBeEnabled();
   // A second, independently signed OIDC login for the same merchant is not
   // the initiating login. An unresolved write must not carry its key/form
   // into that different session even though principal and store are equal.
