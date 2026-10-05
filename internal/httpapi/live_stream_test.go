@@ -14,14 +14,14 @@ import (
 	"testing"
 
 	"livecommerce/internal/inbox"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/live"
 	"livecommerce/internal/msgtemplates"
 )
 
 func testCommentStream(t *testing.T) *live.CommentStream {
 	t.Helper()
-	bridge, err := metareply.NewBridgeClient("http://127.0.0.1:1", make([]byte, 32))
+	bridge, err := metabridge.NewBridgeClient("http://127.0.0.1:1", make([]byte, 32))
 	if err != nil {
 		t.Fatal(err)
 	}

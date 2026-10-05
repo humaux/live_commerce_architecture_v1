@@ -1,0 +1,183 @@
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/contracted
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/arbitrary_query
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/wrong_fence
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/claim_escape
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/tx_rebind
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/tx_shadow
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/ctx_rebind
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/extra_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/async_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/deferred_SQL
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/extra_closure
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/claim_marshalled
+=== RUN   TestMetaClaimsMCI10AttributionFinishNegatives/renamed_callback
+--- PASS: TestMetaClaimsMCI10AttributionFinishNegatives (0.01s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/contracted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/arbitrary_query (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/claim_escape (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/tx_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/tx_shadow (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/ctx_rebind (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/extra_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/async_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/deferred_SQL (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/extra_closure (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/claim_marshalled (0.00s)
+    --- PASS: TestMetaClaimsMCI10AttributionFinishNegatives/renamed_callback (0.00s)
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/package_level_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_live-videos_SQL
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_live-videos_scopes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply
+=== RUN   TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure
+--- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives (0.17s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/contracted (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/arbitrary_query (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/query_rebind (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_rebind (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/tx_shadow (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/claim_escapes (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_fence (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/async_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_closure (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/aliased_loader (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/extra_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/package_level_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_audience_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_live-videos_SQL (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_live-videos_scopes (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_route_field (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/wrong_scopes (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/unused_audience_call (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/two_audience_calls_replace_private_reply (0.01s)
+    --- PASS: TestMetaClaimsMCI10SharedPageLoaderNegatives/nested_returning_closure (0.01s)
+=== RUN   TestMetaClaimsMCI10IngestCallers
+--- PASS: TestMetaClaimsMCI10IngestCallers (0.55s)
+=== RUN   TestMetaClaimsMCI10NoNetworkInIntakeCode
+--- PASS: TestMetaClaimsMCI10NoNetworkInIntakeCode (0.46s)
+=== RUN   TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret
+--- PASS: TestMetaClaimsMCI10SecretClaimOnlyInLoadSecret (0.66s)
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_file
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/alias
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/loader_added
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/comment_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal
+=== RUN   TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal
+--- PASS: TestMetaClaimsMCI10AdsRefusalFinishException (0.01s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/contracted_Finish (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_file (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_function (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Check_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Dispatch_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/Reconcile_callback (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/alias (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_substituted (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/loader_added (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/comment_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/unused_literal_only (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/wrong_fence (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/claim_escapes (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/renamed_callback_with_unused_loader_literal (0.00s)
+    --- PASS: TestMetaClaimsMCI10AdsRefusalFinishException/moved_callback_with_unused_loader_literal (0.00s)
+=== RUN   TestMetaClaimsMCI10ClaimsImports
+--- PASS: TestMetaClaimsMCI10ClaimsImports (0.02s)
+=== RUN   TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath
+--- PASS: TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath (0.46s)
+=== RUN   TestMetaClaimsMCI10SecretEnvOwnership
+--- PASS: TestMetaClaimsMCI10SecretEnvOwnership (0.45s)
+=== RUN   TestMetaClaimsMCI10NoNewThirdPartyModule
+--- PASS: TestMetaClaimsMCI10NoNewThirdPartyModule (0.46s)
+=== RUN   TestMetaClaimsMCI10PackageComments
+--- PASS: TestMetaClaimsMCI10PackageComments (0.02s)
+=== RUN   TestMetaConnectGateAPICannotOpen
+=== RUN   TestMetaConnectGateAPICannotOpen/cmd/api_dependency_closure_contains_no_opener
+=== RUN   TestMetaConnectGateAPICannotOpen/cmd/api_sources_never_name_a_private_ring,_the_v1_AES_keyring_or_an_opener
+=== RUN   TestMetaConnectGateAPICannotOpen/compose:_api_mounts_the_public_ring_only;_claims-worker_alone_mounts_the_private_ring
+=== RUN   TestMetaConnectGateAPICannotOpen/env_examples:_the_api_env_file_carries_no_private-ring_name
+=== RUN   TestMetaConnectGateAPICannotOpen/secrets_manifest:_api_is_never_a_consumer_of_the_private_ring
+=== RUN   TestMetaConnectGateAPICannotOpen/the_seal-side_package_exposes_no_open_capability
+--- PASS: TestMetaConnectGateAPICannotOpen (0.40s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/cmd/api_dependency_closure_contains_no_opener (0.34s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/cmd/api_sources_never_name_a_private_ring,_the_v1_AES_keyring_or_an_opener (0.05s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/compose:_api_mounts_the_public_ring_only;_claims-worker_alone_mounts_the_private_ring (0.01s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/env_examples:_the_api_env_file_carries_no_private-ring_name (0.00s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/secrets_manifest:_api_is_never_a_consumer_of_the_private_ring (0.00s)
+    --- PASS: TestMetaConnectGateAPICannotOpen/the_seal-side_package_exposes_no_open_capability (0.00s)
+=== RUN   TestMetaConnectAPIHoldsNoPagePrivateKey
+--- PASS: TestMetaConnectAPIHoldsNoPagePrivateKey (0.14s)
+=== RUN   TestMetaHealthProbeDerivesAndRecords
+    meta_health_test.go:441: d675de0c-1cb6-4d44-9596-bdccc7f0e1ee/dm_session: state=ok reason=ok_app_level_assumed, want ok/ok
+--- FAIL: TestMetaHealthProbeDerivesAndRecords (1.19s)
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/revoked
+    meta_health_test.go:476: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/expired
+    meta_health_test.go:476: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/page_gone
+    meta_health_test.go:476: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+--- FAIL: TestMetaHealthTokenInvalidFlipsConnection (0.13s)
+    --- FAIL: TestMetaHealthTokenInvalidFlipsConnection/revoked (0.04s)
+    --- FAIL: TestMetaHealthTokenInvalidFlipsConnection/expired (0.04s)
+    --- FAIL: TestMetaHealthTokenInvalidFlipsConnection/page_gone (0.04s)
+=== RUN   TestMetaHealthPermissionAndSubscription
+=== RUN   TestMetaHealthPermissionAndSubscription/permission_revoked
+    meta_health_test.go:524: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+=== RUN   TestMetaHealthPermissionAndSubscription/p2_permission_error_snapshot
+=== RUN   TestMetaHealthPermissionAndSubscription/messages_not_subscribed
+=== RUN   TestMetaHealthPermissionAndSubscription/app_absent
+    meta_health_test.go:565: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+--- FAIL: TestMetaHealthPermissionAndSubscription (0.06s)
+    --- FAIL: TestMetaHealthPermissionAndSubscription/permission_revoked (0.01s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/p2_permission_error_snapshot (0.01s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/messages_not_subscribed (0.00s)
+    --- FAIL: TestMetaHealthPermissionAndSubscription/app_absent (0.00s)
+=== RUN   TestMetaHealthRateLimitAndProbeFailing
+--- PASS: TestMetaHealthRateLimitAndProbeFailing (0.06s)
+=== RUN   TestMetaHealthMissingCredentialRecordsUnknown
+    meta_health_test.go:629: fallback mismatch: snap=4 tab=4 equal=false
+--- FAIL: TestMetaHealthMissingCredentialRecordsUnknown (0.04s)
+=== RUN   TestMetaHealthTokenNeverLeaks
+    meta_health_test.go:657: count metadata ERROR: missing FROM-clause entry for table "integration" (SQLSTATE 42P01)
+--- FAIL: TestMetaHealthTokenNeverLeaks (0.04s)
+=== RUN   TestMetaHealthBannerRoutes
+    meta_health_test.go:717: B2 after sweep 503 map[code:unavailable details:map[] message:Temporarily unavailable. request_id:2653daf3a8017bd8ba24a6466da33ef5 retryable:true], want 429
+--- FAIL: TestMetaHealthBannerRoutes (0.06s)
+=== RUN   TestMetaHealthReaderSwap
+    meta_health_test.go:743: empty table: snap != table (snap=4 tab=4 equal=false)
+--- FAIL: TestMetaHealthReaderSwap (0.04s)
+=== RUN   TestMetaHealthReauthReconnectResets
+    meta_health_test.go:782: probe sweep: ERROR: permission denied for schema notify (SQLSTATE 42501)
+--- FAIL: TestMetaHealthReauthReconnectResets (0.04s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.459s
+FAIL
+test-focused: top-level PASS=14 FAIL=8 SKIP=0 exit=1

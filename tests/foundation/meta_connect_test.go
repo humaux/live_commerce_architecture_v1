@@ -109,6 +109,11 @@ func newMcnEnv(t *testing.T) *mcnEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The connect tests leave their last Page connected; the meta-health tests (and any other test that lists store A1's Pages)
+	// run later in the same database and must start from "not connected". Connections cascade their probe/capability rows.
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `DELETE FROM integration.meta_connections WHERE tenant_id=$1 AND store_id=$2`, f.tenantA, f.storeA1)
+	})
 	return &mcnEnv{t: t, e: e, f: f, fake: fake, open: open, cfg: cfg, handler: httpapi.NewHandler(f.runtime, httpapi.Options{MetaConnect: svc}), store: f.storeA1, token: e.h.token}
 }
 
