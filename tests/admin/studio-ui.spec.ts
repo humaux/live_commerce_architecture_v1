@@ -349,6 +349,7 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
     await expect.poll(() => listHeld).toBe(true);
     await expect(page.getByRole("region", { name: "Scenes", exact: true }).getByText("Loading scenes…", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /New scene/ })).toHaveAttribute("aria-describedby", "studio-list-status");
     expect(createRequests).toHaveLength(createsBeforeLoading);
   } finally {
     releaseList();

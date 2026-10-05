@@ -140,6 +140,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const previous = useRef<string[]>([]);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
+  // A visible shell is not an authenticated Studio read. Creation must wait
+  // for loadPage to establish this store's session boundary before taking input.
+  const creationReady = currentPage.status === "ready" && !!boundary.current;
   const selectedID = scene || (concealed.current?.scope === scope ? concealed.current.selectedID : "") ||
     (pinnedScene.scope === scope ? pinnedScene.id : "") || currentPage.data?.items[0]?.session_id || "";
   const detailKey = `${storeID}|${selectedID}`;
@@ -483,7 +486,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     return true;
   }
   function newScene() {
-    if (recoveryElsewhere || recoveryGuard || !mayLeave()) return;
+    if (!creationReady || recoveryElsewhere || recoveryGuard || !mayLeave()) return;
     explicitDeparture.current = false;
     dirty.current = false;
     setNewMode(true);
@@ -570,7 +573,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     } finally { if (epoch === actionEpoch.current) setBusy(false); }
   }
   function save() {
-    if (recoveryElsewhere || recoveryGuard) return;
+    if ((newMode && !creationReady) || recoveryElsewhere || recoveryGuard) return;
     const input = draftInput(form);
     if (!input) {
       setFormError(form.title.trim() !== form.title || Array.from(form.title).length < 1 ||
@@ -595,7 +598,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const actionBlocked = recoveryElsewhere || recoveryGuard || actionError === "uncertain" || actionError === "conflict";
   const canStart = !!shown?.can_manage && shown.draft.state === "DRAFT" && !!prepared && preparedCurrent && !attempt && !formDirty && !actionBlocked;
   const canStop = !!shown?.can_manage && !!attempt && !attempt.stop_requested && !attempt.escalated && attempt.resource_state !== "TERMINAL" && !actionBlocked;
-  const canEdit = !recoveryElsewhere && !recoveryGuard && (newMode || (!!shown?.can_manage && shown.draft.state === "DRAFT"));
+  const canEdit = !recoveryElsewhere && !recoveryGuard && ((newMode && creationReady) || (!!shown?.can_manage && shown.draft.state === "DRAFT"));
   // Planning-only Studio (media_enabled=false) has no rehearsal column; save errors stay visible below the editor.
   const actionAlert = actionError && <div role="alert" className="studio-action-error">
     <p>{actionMessage(actionError)}</p>
@@ -625,7 +628,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       </p>}
       <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`}>
         <section className="studio-scenes" aria-label={c.scenes}>
-          <button type="button" className="primary studio-new" disabled={recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || currentPage.status === "forbidden" || shown?.can_manage === false}
+          <button type="button" className="primary studio-new" disabled={!creationReady || recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || shown?.can_manage === false}
+            aria-describedby={currentPage.status !== "ready" ? "studio-list-status" : undefined}
             onClick={newScene}>＋ {c.newScene}</button>
           <h2 className="sr-only">{c.scenes}</h2>
           {currentPage.status === "ready" ? currentPage.data?.items.length ? <>
@@ -648,7 +652,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               }}>{c.next}</button>
             </div>
           </> : <p className="studio-list-message">{c.empty}</p> :
-            <div className="studio-list-message" role={currentPage.status === "loading" ? "status" : "alert"}>
+            <div id="studio-list-status" className="studio-list-message" role={currentPage.status === "loading" ? "status" : "alert"}>
               {currentPage.status === "loading" ? c.loading : statusText(currentPage.status)}
             </div>}
         </section>
