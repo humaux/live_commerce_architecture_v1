@@ -48,7 +48,17 @@ func WriteNonRetryable(w http.ResponseWriter, status int, code string) {
 	write(w, status, code, false)
 }
 
+// WriteDetails is Write with a bounded details object (e.g. {"max":1000} for invalid_text); callers pass fixed keys and numbers or
+// fixed reason codes only, never a request value.
+func WriteDetails(w http.ResponseWriter, status int, code string, details map[string]any) {
+	writeDetails(w, status, code, status == http.StatusServiceUnavailable || status == http.StatusTooManyRequests, details)
+}
+
 func write(w http.ResponseWriter, status int, code string, retryable bool) {
+	writeDetails(w, status, code, retryable, map[string]any{})
+}
+
+func writeDetails(w http.ResponseWriter, status int, code string, retryable bool, details map[string]any) {
 	messages := map[string]string{
 		"unauthorized": "Sign-in required.", "forbidden": "Operation not permitted.",
 		"not_found": "Resource not found.", "method_not_allowed": "Method not allowed.",
@@ -172,6 +182,32 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"amount_not_whole_twd": "For TWD the price must be a whole dollar.",
 		"keyword_taken":        "That keyword is already used by another SKU.",
 		"live_window_open":     "This product cannot be unlisted while its live window is open.",
+		// live-console-v1 §3.3-3.6 / §11 (units LC-B3/LC-B4): inbox, takeover and manual sends. Every code must be listed or the merchant
+		// sees "internal" (ruling 15); internal/httpapi inbox_send_test.go guards the drift.
+		"takeover_changed":               "Another staff member took over this conversation; reload before sending.",
+		"version_conflict":               "This item changed since it was loaded.",
+		"no_source":                      "This live session has no comment source.",
+		"window_closed":                  "The 24-hour messaging window with this buyer is closed.",
+		"capability":                     "This connection cannot send this kind of message right now.",
+		"conversation_gone":              "This conversation is no longer available.",
+		"duplicate_recent":               "The same message was just sent.",
+		"invalid_text":                   "The message text is not valid.",
+		"used":                           "This comment's one private reply was already used.",
+		"auto_pending":                   "The automatic reply to this comment is still pending.",
+		"auto_pending_confirm":           "The automatic reply may be about to send; confirm to send a manual one instead.",
+		"expired_7d":                     "The private-reply window for this comment has passed.",
+		"ig_live_ended":                  "The Instagram live private-reply window has ended.",
+		"page_comment":                   "This comment was written by the Page itself.",
+		"reply_comment_unsupported":      "Replies to replies cannot receive a private reply.",
+		"comment_unknown":                "This comment was not found for this live session.",
+		"comment_facts_unavailable":      "The time and author of this comment cannot be confirmed.",
+		"public_reply_forbidden_content": "Public replies cannot contain links, contact details or payment links.",
+		"ig_live_unsupported":            "This action is not available for Instagram live.",
+		"offer_unavailable":              "This offer is not available.",
+		"stream_unavailable":             "The comment stream is temporarily unavailable.",
+		"invalid_cursor":                 "The page cursor is not valid.",
+		"invalid_ref":                    "The comment reference is not valid.",
+		"invalid_filter":                 "The filter is not valid.",
 	}
 	message, ok := messages[code]
 	if !ok {
@@ -181,7 +217,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(Envelope{Code: code, Message: message,
 		RequestID: w.Header().Get("X-Request-ID"), Retryable: retryable,
-		Details: map[string]any{}})
+		Details: details})
 }
 
 // ServeMux generates plain-text 404/405 responses. Translate only non-JSON

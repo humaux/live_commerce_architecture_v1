@@ -49,7 +49,8 @@ var (
 	loopbackPattern = regexp.MustCompile(`^http://127\.0\.0\.1:[0-9]{1,5}$`)
 
 	// checkDenyCodes are the §6.3 fixed deny codes of claims.check_meta_reply.
-	checkDenyCodes = map[string]bool{"deadline": true, "source_off": true, "principal_revoked": true, "link_invalid": true, "live_closed": true}
+	checkDenyCodes = map[string]bool{"deadline": true, "source_off": true, "principal_revoked": true, "link_invalid": true, "live_closed": true,
+		"human_takeover": true, "takeover_changed": true} // the last two: live-console-v1 §3.6 / meta-claims-intake-v1 §14.1 clause 3
 
 	// requiredScopes are the attested Page-token scopes per provider (§7; U2 open for Instagram).
 	requiredScopes = map[string][]string{
@@ -109,7 +110,13 @@ func RoutesV2(checkPool *pgxpool.Pool, linkKey claims.ReplyLinkKey, pageKeys *Pa
 	reauth := func(ctx context.Context, operationID string) {
 		_, _ = checkPool.Exec(ctx, `SELECT integration.meta_connect_mark_reauth($1::uuid)`, operationID)
 	}
-	return newRoutesWith(check, reauth, linkKey, pageKeys, v2, cfg)
+	// The manual private reply (message_type manual_private_reply, live-console-v1 §4) shares this route: its Check / loader / dispatch /
+	// Finish come from the send adapter (send_dm.go, manual_reply.go).
+	send, err := newSendAdapterFor(checkPool, pageKeys, v2, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return newRoutesWithSend(check, reauth, linkKey, pageKeys, v2, cfg, send)
 }
 
 func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, cfg Config) ([]core.DispatchRoute, error) {
@@ -117,6 +124,11 @@ func newRoutes(check checkFunc, linkKey claims.ReplyLinkKey, pageKeys *PageToken
 }
 
 func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config) ([]core.DispatchRoute, error) {
+	return newRoutesWithSend(check, reauth, linkKey, pageKeys, v2, cfg, nil)
+}
+
+// newRoutesWithSend is newRoutesWith plus the optional send adapter that serves manual private replies on the same route.
+func newRoutesWithSend(check checkFunc, reauth func(context.Context, string), linkKey claims.ReplyLinkKey, pageKeys *PageTokenKeyring, v2 *pageopen.Keyring, cfg Config, send *sendAdapter) ([]core.DispatchRoute, error) {
 	if check == nil || linkKey.ID() == "" || pageKeys == nil || cfg.Validate() != nil {
 		return nil, ErrConfig
 	}
@@ -126,16 +138,20 @@ func newRoutesWith(check checkFunc, reauth func(context.Context, string), linkKe
 		client = &copied
 	}
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
-	a := &adapter{check: check, reauth: reauth, linkKey: linkKey, keys: pageKeys, v2: v2, cfg: cfg, client: client}
+	a := &adapter{check: check, reauth: reauth, linkKey: linkKey, keys: pageKeys, v2: v2, cfg: cfg, client: client, send: send}
 	routes := make([]core.DispatchRoute, 0, 2)
 	for _, provider := range []string{"facebook", "instagram"} {
-		routes = append(routes, core.DispatchRoute{
+		route := core.DispatchRoute{
 			Provider: provider, Action: "meta.private_reply", Purpose: "service",
 			Check:              a.checkRoute,
 			LoadSecret:         a.loadSecretFor(provider),
 			DispatchWithSecret: a.dispatch,
 			Reconcile:          a.reconcile,
-		})
+		}
+		if send != nil {
+			route.Finish = send.finish // wipes the dispatch copy and records the bundle↔peer link (live-console-v1 §3.7/§4.3)
+		}
+		routes = append(routes, route)
 	}
 	return routes, nil
 }
@@ -148,6 +164,7 @@ type adapter struct {
 	v2      *pageopen.Keyring // nil: v2 (HPKE) credentials are denied
 	cfg     Config
 	client  *http.Client
+	send    *sendAdapter // nil: manual private replies are refused (unit tests of the automatic reply only)
 }
 
 // replyRequest is the part of the frozen operation request (§6.2, no token/text/name) the adapter reads.
@@ -182,6 +199,12 @@ func (a *adapter) linkToken(req core.DispatchRequest, r replyRequest) (claims.Li
 // calls, BLOCKED_POLICY); any infrastructure error is a plain error, which the dispatcher records
 // as UNKNOWN policy_check_failed (the reply is not sent; documented limit, §14).
 func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) error {
+	if isManualReply(req.Request) {
+		if a.send == nil {
+			return core.DenyPolicy(codeInvalidRequest)
+		}
+		return a.send.checkRoute(ctx, req)
+	}
 	r, err := parseRequest(req)
 	if err != nil {
 		return err
@@ -212,8 +235,13 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 // inside the dispatcher's transaction. Zero rows or a missing attested scope is a pre-dispatch
 // denial (capability evidence, arch §10.2/I07).
 func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {
-	return pageSecretLoader(a.keys, a.v2, provider, requiredScopes[provider], `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
+	page := pageSecretLoader(a.keys, a.v2, provider, requiredScopes[provider], `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
 			FROM integration.load_meta_page_token($1::uuid,$2::bigint,$3::bytea)`)
+	if a.send == nil {
+		return page
+	}
+	// A manual private reply carries a sealed dispatch copy beside the token; the automatic claim-link reply has none (raw token).
+	return a.send.withDispatchCopy(page)
 }
 
 // pageSecretLoader shares custody/opening, while each route supplies its own
@@ -296,6 +324,12 @@ type graphBody struct {
 // until probe U3 documents the permanent error codes. A pre-send failure returns an error, which
 // the dispatcher also records as UNKNOWN with zero calls.
 func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret core.Secret) (core.Outcome, error) {
+	if isManualReply(req.Request) {
+		if a.send == nil {
+			return core.Outcome{}, errBadRequest
+		}
+		return a.send.dispatch(ctx, req, secret)
+	}
 	r, err := parseRequest(req)
 	if err != nil {
 		return core.Outcome{}, err
@@ -348,12 +382,17 @@ func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret
 		return unconfirmed, nil
 	}
 	var ok struct {
-		MessageID string `json:"message_id"`
+		MessageID   string `json:"message_id"`
+		RecipientID string `json:"recipient_id"`
 	}
 	if json.Unmarshal(raw, &ok) != nil || !validMessageID(ok.MessageID) {
 		return unconfirmed, nil
 	}
-	return core.Outcome{State: "SUCCEEDED", Code: codeSent, ProviderReference: ok.MessageID}, nil
+	out := core.Outcome{State: "SUCCEEDED", Code: codeSent, ProviderReference: ok.MessageID}
+	if psidPattern.MatchString(ok.RecipientID) { // the Send API's recipient_id links the buyer's thread to the bundle (§3.7, LC-U6)
+		out.Detail = sendDetail{recipient: ok.RecipientID}
+	}
+	return out, nil
 }
 
 // graphErrorCode reads error.code of a Graph error envelope (0 when the body is not one).

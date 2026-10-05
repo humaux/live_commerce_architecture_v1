@@ -48,10 +48,89 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 	if err := rows.Err(); err != nil {
 		return out, databaseError(err)
 	}
+	rows.Close()
+	if err := s.fillDisplayNames(ctx, tx, out.Items); err != nil {
+		return out, err
+	}
+	// Amendment 1 P2-2: bundles whose claim link could not be sent appear as bundle-only items on the first page (copy-link only).
+	if req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram" {
+		bundles, err := s.linkPendingItems(ctx, tx, 10)
+		if err != nil {
+			return out, err
+		}
+		out.Items = append(out.Items, bundles...)
+	}
 	if err := tx.QueryRow(ctx, `SELECT social.unread_conversation_count()`).Scan(&out.UnreadTotal); err != nil {
 		return out, databaseError(err)
 	}
 	return out, nil
+}
+
+// fillDisplayNames sets display_name from the newest inbound envelope of each listed conversation (Amendment 1 P2-1); null when the
+// sender carries no name or the envelope is unreadable. Calls social.conversation_heads (migration 0128), <= 50 ids.
+func (s *Service) fillDisplayNames(ctx context.Context, tx pgx.Tx, items []ConversationItem) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]string, len(items))
+	index := make(map[string]int, len(items))
+	for i, it := range items {
+		ids[i] = it.ConversationID
+		index[it.ConversationID] = i
+	}
+	rows, err := tx.Query(ctx, `SELECT conversation_id::text, event_id::text, key_id, nonce, ciphertext, app_id, object, asset_id, event_key, payload_hash,
+			tenant_id::text, store_id::text, route_id::text, route_epoch, server_seq, occurred_at
+		FROM social.conversation_heads($1::uuid[])`, ids)
+	if err != nil {
+		return databaseError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var conv string
+		var r threadRow
+		if err := rows.Scan(&conv, &r.eventID, &r.keyID, &r.nonce, &r.ciphertext, &r.appID, &r.object, &r.assetID,
+			&r.eventKey, &r.payloadHash, &r.tenantID, &r.storeID, &r.routeID, &r.routeEpoch, &r.serverSeq, &r.occurredAt); err != nil {
+			return databaseError(err)
+		}
+		plain, err := s.keys.open(eventContext{EventID: r.eventID, AppID: r.appID, Object: r.object, EventKey: r.eventKey, PayloadHash: r.payloadHash,
+			TenantID: r.tenantID, StoreID: r.storeID, RouteID: r.routeID, RouteEpoch: r.routeEpoch}, r.keyID, r.nonce, r.ciphertext)
+		if err != nil {
+			continue
+		}
+		if name := senderName(plain); name != nil {
+			if i, ok := index[conv]; ok {
+				items[i].DisplayName = name
+			}
+		}
+	}
+	return databaseErrorOrNil(rows.Err())
+}
+
+// linkPendingItems lists the bundle-only A8 items (inbox.link_pending_bundles, migration 0128).
+func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, limit int) ([]ConversationItem, error) {
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, created_at FROM inbox.link_pending_bundles($1::integer)`, limit)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	defer rows.Close()
+	var out []ConversationItem
+	for rows.Next() {
+		var bundle, session string
+		var at time.Time
+		if err := rows.Scan(&bundle, &session, &at); err != nil {
+			return nil, databaseError(err)
+		}
+		b, sid := bundle, session
+		out = append(out, ConversationItem{BundleOnly: true, BundleID: &b, SessionID: &sid, Platform: "messenger", LastAt: at, Unreplied: true, LinkPendingManual: true})
+	}
+	return out, databaseErrorOrNil(rows.Err())
+}
+
+func databaseErrorOrNil(err error) error {
+	if err == nil {
+		return nil
+	}
+	return databaseError(err)
 }
 
 // threadRow is one social.read_thread output: the envelope plus the immutable AAD context of the source event.
@@ -100,6 +179,18 @@ func (s *Service) ReadThread(ctx context.Context, tx pgx.Tx, conversationID stri
 	}
 	if err := rows.Err(); err != nil {
 		return out, databaseError(err)
+	}
+	rows.Close()
+	if beforeSeq == nil {
+		// Outbound rows (the merchant's own sends) are merged by time on the first page only.
+		// ponytail: older pages show inbound rows only; the UI pages outbound through the first page's window. Upgrade path: a
+		// (conversation, created_at) keyset on inbox.read_outbound when threads outgrow one inbound page.
+		outbound, err := s.outboundItems(ctx, tx, conversationID, limit, out.Items)
+		if err != nil {
+			return out, err
+		}
+		out.Items = append(out.Items, outbound...)
+		sortThread(out.Items)
 	}
 	return out, nil
 }
@@ -167,6 +258,22 @@ func (s *Service) BuyerPanel(ctx context.Context, tx pgx.Tx, conversationID stri
 	out.Platform = meta.platform
 	out.LinkedCustomerID = meta.linkedCustomerID
 	out.WindowOpenUntil = &meta.windowOpenUntil
+	// Calls inbox.link_pending_for (migration 0128): the flag of the bundles linked to this conversation's peer.
+	if err := tx.QueryRow(ctx, `SELECT link_pending_manual FROM inbox.link_pending_for($1::uuid, NULL)`, conversationID).Scan(&out.LinkPendingManual); err != nil {
+		return out, databaseError(err)
+	}
+	return out, nil
+}
+
+// BuyerPanelByBundle is A13 with ?bundle_id= (Amendment 1 A1.1/P2-2): the bundle-scoped panel. It carries the platform and the
+// link_pending_manual flag; claims/orders stay empty here (their read model is a later unit) and a bundle outside the caller's
+// scope is a 404.
+func (s *Service) BuyerPanelByBundle(ctx context.Context, tx pgx.Tx, bundleID string) (BuyerPanel, error) {
+	out := BuyerPanel{Claims: []ClaimRef{}, Orders: []OrderRef{}}
+	err := tx.QueryRow(ctx, `SELECT platform, link_pending_manual FROM inbox.link_pending_for(NULL, $1::uuid)`, bundleID).Scan(&out.Platform, &out.LinkPendingManual)
+	if err != nil {
+		return out, databaseError(err)
+	}
 	return out, nil
 }
 
@@ -176,7 +283,7 @@ func databaseError(err error) error {
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
 		switch pg.Code {
-		case "PT400", "PT403", "PT404", "PT409", "PT422":
+		case "PT400", "PT403", "PT404", "PT409", "PT422", "PT429":
 			return err
 		}
 	}

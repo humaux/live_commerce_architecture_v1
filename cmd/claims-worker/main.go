@@ -279,6 +279,12 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerRoutes
 	}
 	routes = append(routes, liveVideoRoutes...)
+	// live-console-v1 §4.3 (LC-B4): DM / public reply / offer recommend routes; the manual private reply shares the meta.private_reply route above.
+	sendRoutes, err := metareply.SendRoutes(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
+	routes = append(routes, sendRoutes...)
 	if c.ecpayCfg.Enabled {
 		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
 		if err != nil {
