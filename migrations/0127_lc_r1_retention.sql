@@ -10,7 +10,10 @@
 -- complete_operation locks the row FOR UPDATE so the two never interleave. Privileges: commerce_retention_writer SELECT
 -- on integration.operations gains lease_until; the operation_retention_read/update policies widen to the four actions and
 -- to "terminal five OR (UNKNOWN AND lease expired)"; the WITH CHECK becomes NOT (request ?| the three ids) AND
--- semantic_key ~ '^(mpr|mdm|mpub|mrec)-purged:'. The replay flag path (lc.retention_replay) is unchanged.
+-- semantic_key ~ '^(mpr|mdm|mpub|mrec)-purged:'. The replay flag path (lc.retention_replay) is unchanged. erase_actor's
+-- RD5 hold widens from "a non-terminal meta.private_reply" to also hold on a non-terminal meta.dm_send
+-- (peer_key = ANY(p_peer_keys)) or meta.public_reply (comment_ref among the actor's intake refs), so an erasure never
+-- leaves an id behind that could still dispatch to the erased actor.
 --
 -- Depends on: 0071 (the roles, the definers being replaced, the policies being widened).
 --
@@ -20,7 +23,8 @@
 DO $$
 BEGIN
  IF to_regprocedure('claims.run_retention(integer)') IS NULL
-  OR to_regprocedure('claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[])') IS NULL THEN
+  OR to_regprocedure('claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[])') IS NULL
+  OR to_regprocedure('claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[])') IS NULL THEN
   RAISE EXCEPTION '0127 requires 0071 (claims retention definers)' USING ERRCODE='55000';
  END IF;
 END $$;
@@ -325,3 +329,145 @@ COMMENT ON FUNCTION claims.run_retention(integer) IS
  'internal/retention (Worker.Work on commerce_retention_job, RunOnce on commerce_retention_operator). One batch of the hourly purge, C1-C6 of the contract, <= p_limit rows per class, SKIP LOCKED, advisory key hashtextextended(''claims-retention'',0) (busy => {"busy":1}). C4 (0127 LC-R1) redacts comment_ref/conversation_id/peer_key and renames semantic_key to <prefix>-purged:<id> for the four send actions (meta.private_reply/dm_send/public_reply/offer_recommend) that are terminal, or UNKNOWN with an expired/no lease; request_hash is kept. Report-only unless claims.retention_policy.enforced (report-only never returns more=1). Returns and logs numeric counts only. Non-goals: erasing one actor, choosing rows by caller input.';
 COMMENT ON FUNCTION claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[]) IS
  'internal/retention internal helper of erase_actor and replay_actor_erasures; no EXECUTE grant. Idempotent RD1 de-identification plus deletion of the actor''s links, intake, comment events, and (0127 LC-R1) redaction of the four send-action operations bound to the actor (private_reply via its bundle, dm_send via peer_key, public_reply via the actor''s comment refs; offer_recommend carries no person id), plus (peer keys) conversations. Never applies the RD5 hold; in replay mode (lc.retention_replay=on, set only by replay_actor_erasures) it also deletes PENDING intake rows and redacts non-terminal send operations.';
+
+-- ---------------------------------------------------------------------------------------
+-- claims.erase_actor (operator): synchronous erasure of one actor / one manual bundle (RD4), one tx, RD5 hold.
+-- 0127 LC-R1: the RD5 hold also covers a non-terminal meta.dm_send (peer_key = ANY(p_peer_keys)) and a non-terminal
+-- meta.public_reply (comment_ref among the actor's intake refs), mirroring the private_reply hold: apply_actor_erasure
+-- redacts only terminal rows outside replay, so a non-terminal row left behind could still dispatch to the erased actor.
+-- ---------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION claims.erase_actor(p_request uuid, p_object text, p_asset text, p_actor_key text, p_comment_ref text,
+ p_tenant uuid, p_store uuid, p_bundle uuid, p_peer_keys text[]) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET lock_timeout='2s' AS $$
+DECLARE v_a boolean:=p_actor_key IS NOT NULL; v_b boolean:=p_comment_ref IS NOT NULL; v_c boolean:=p_bundle IS NOT NULL;
+ v_canon text; v_digest bytea; v_old record; r record; v_platform text; v_key text; v_single boolean:=false;
+ v_tenant uuid; v_store uuid; v_bundle uuid; v_now timestamptz:=clock_timestamp(); v_hold boolean:=false;
+ v_retry timestamptz; v_last timestamptz; v_pending boolean; v_recent boolean; v_counts jsonb; v_sum bigint;
+BEGIN
+ -- Exactly one selector (a) sender key, (b) comment ref, (c) bundle; each with only its own arguments.
+ IF p_request IS NULL OR (v_a::int+v_b::int+v_c::int)<>1
+  OR (NOT v_c AND (p_object IS NULL OR p_object NOT IN ('page','instagram') OR p_asset IS NULL OR p_asset !~ '^[0-9]{1,40}$'
+   OR p_tenant IS NOT NULL OR p_store IS NOT NULL))
+  OR (v_a AND (p_actor_key !~ '^[0-9a-f]{64}$' OR (p_peer_keys IS NOT NULL AND (array_ndims(p_peer_keys)<>1
+   OR cardinality(p_peer_keys)>8 OR EXISTS(SELECT 1 FROM unnest(p_peer_keys) x WHERE x IS NULL OR x !~ '^[0-9a-f]{64}$')))))
+  OR (v_b AND (p_comment_ref !~ '^[0-9_]{1,80}$' OR p_peer_keys IS NOT NULL))
+  OR (v_c AND (p_tenant IS NULL OR p_store IS NULL OR p_object IS NOT NULL OR p_asset IS NOT NULL OR p_peer_keys IS NOT NULL)) THEN
+  RAISE EXCEPTION 'invalid actor erasure' USING ERRCODE='22023';
+ END IF;
+ -- The replay flag is transaction-local and settable by any session: erase always runs with the RD5 hold semantics.
+ PERFORM set_config('lc.retention_replay','off',true);
+ -- busy: the advisory wait is bounded by lock_timeout (55P03); the operator re-runs (a repeat is idempotent by request id).
+ PERFORM pg_advisory_xact_lock(hashtextextended('claims-retention',0));
+ v_canon:=CASE WHEN v_a THEN 'a|'||p_object||'|'||p_asset||'|'||encode(sha256(convert_to(p_actor_key,'UTF8')),'hex')
+  WHEN v_b THEN 'b|'||p_object||'|'||p_asset||'|'||encode(sha256(convert_to(p_comment_ref,'UTF8')),'hex')
+  ELSE 'c|'||p_bundle::text END;
+ v_digest:=sha256(convert_to(v_canon,'UTF8'));
+ SELECT g.selector_digest,g.counts INTO v_old FROM claims.retention_log g WHERE g.kind='actor_erased' AND g.request_id=p_request;
+ IF FOUND THEN
+  IF v_old.selector_digest=v_digest THEN RETURN v_old.counts || '{"replayed":1}'::jsonb; END IF;
+  RAISE EXCEPTION 'erasure request conflict' USING ERRCODE='PT409';
+ END IF;
+
+ -- Resolve the selector to one actor key (any tenant/store: the key embeds object and asset) or one manual bundle.
+ IF v_a THEN
+  v_platform:=CASE p_object WHEN 'page' THEN 'facebook' ELSE 'instagram' END; v_key:=p_actor_key;
+ ELSIF v_b THEN
+  -- platform is not in the writer's column grant on meta_intake (contract §4); it is a function of object.
+  SELECT i.actor_key,CASE i.object WHEN 'page' THEN 'facebook' ELSE 'instagram' END AS platform INTO r FROM claims.meta_intake i
+   WHERE i.object=p_object AND i.asset_id=p_asset AND i.comment_ref=p_comment_ref;
+  IF NOT FOUND THEN RAISE EXCEPTION 'erasure target not found' USING ERRCODE='PT404'; END IF;
+  v_platform:=r.platform; v_key:=r.actor_key;
+ ELSE
+  SELECT b.platform,b.actor_key INTO r FROM claims.bundles b
+   WHERE b.tenant_id=p_tenant AND b.store_id=p_store AND b.id=p_bundle AND b.purged_at IS NULL;
+  IF NOT FOUND THEN RAISE EXCEPTION 'erasure target not found' USING ERRCODE='PT404'; END IF;
+  IF r.platform='manual' THEN
+   v_single:=true; v_tenant:=p_tenant; v_store:=p_store; v_bundle:=p_bundle;
+  ELSE
+   v_platform:=r.platform; v_key:=r.actor_key;
+  END IF;
+ END IF;
+
+ -- Locks first (windows FOR SHARE, bundles FOR NO KEY UPDATE), then the hold is evaluated under them (RD5).
+ PERFORM 1 FROM live.claim_windows w WHERE (w.tenant_id,w.store_id,w.session_id) IN (
+   SELECT b.tenant_id,b.store_id,b.session_id FROM claims.bundles b WHERE b.purged_at IS NULL AND
+    CASE WHEN v_single THEN b.tenant_id=v_tenant AND b.store_id=v_store AND b.id=v_bundle
+     ELSE b.platform=v_platform AND b.actor_key=v_key END)
+  ORDER BY w.tenant_id,w.store_id,w.session_id FOR SHARE;
+ PERFORM 1 FROM claims.bundles b WHERE b.purged_at IS NULL AND
+   CASE WHEN v_single THEN b.tenant_id=v_tenant AND b.store_id=v_store AND b.id=v_bundle
+    ELSE b.platform=v_platform AND b.actor_key=v_key END
+  ORDER BY b.tenant_id,b.store_id,b.id FOR NO KEY UPDATE;
+
+ IF EXISTS(SELECT 1 FROM claims.bundles b JOIN live.claim_windows w ON w.tenant_id=b.tenant_id AND w.store_id=b.store_id
+   AND w.session_id=b.session_id WHERE w.state='OPEN' AND b.purged_at IS NULL AND
+   CASE WHEN v_single THEN b.tenant_id=v_tenant AND b.store_id=v_store AND b.id=v_bundle
+    ELSE b.platform=v_platform AND b.actor_key=v_key END) THEN
+  v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+ END IF;
+ IF NOT v_single THEN
+  SELECT max(x.received_at), bool_or(x.state='PENDING'), bool_or(x.received_at > v_now-interval '8 days')
+   INTO v_last, v_pending, v_recent FROM claims.meta_intake x WHERE x.actor_key=v_key;
+  IF coalesce(v_pending,false) THEN v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour'); END IF;
+  -- IR-6: 8 days = Meta's 7-day private-reply window + 1 day of webhook redelivery; deleting intake earlier would
+  -- let a re-delivered comment re-claim and re-reply.
+  IF coalesce(v_recent,false) THEN v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_last+interval '8 days'); END IF;
+  IF EXISTS(SELECT 1 FROM integration.operations o JOIN claims.bundles b ON o.tenant_id=b.tenant_id AND o.store_id=b.store_id
+    AND o.request->>'bundle_id'=b.id::text WHERE o.action='meta.private_reply'
+    AND o.state NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+    AND b.purged_at IS NULL AND b.platform=v_platform AND b.actor_key=v_key) THEN
+   v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+  END IF;
+  -- A1.4 (0127): the same hold for a non-terminal DM send of one of the supplied peer keys, and for a non-terminal
+  -- public reply naming one of the actor's comment refs (apply_actor_erasure redacts only terminal rows outside replay).
+  IF EXISTS(SELECT 1 FROM integration.operations o WHERE o.action='meta.dm_send'
+    AND o.state NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+    AND o.request ? 'peer_key' AND o.request->>'peer_key'=ANY(p_peer_keys)) THEN
+   v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+  END IF;
+  IF EXISTS(SELECT 1 FROM integration.operations o WHERE o.action='meta.public_reply'
+    AND o.state NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+    AND o.request ? 'comment_ref' AND o.request->>'comment_ref' IN (
+     SELECT m.comment_ref FROM claims.meta_intake m WHERE m.actor_key=v_key)) THEN
+   v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+  END IF;
+  -- A social row whose inbox job is not terminal would make its consumer retry hit social_terminal XX000 (F5).
+  FOR r IN SELECT ce.event_id FROM social.comment_events ce WHERE (ce.tenant_id,ce.store_id,ce.comment_key) IN (
+    SELECT e.tenant_id,e.store_id,e.comment_key FROM social.comment_events e WHERE e.event_id IN (
+     SELECT i.inbox_event_id FROM claims.meta_intake i WHERE i.actor_key=v_key)) LOOP
+   IF NOT meta_inbox.lock_purgeable(r.event_id) THEN
+    v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+   END IF;
+  END LOOP;
+  IF p_peer_keys IS NOT NULL AND cardinality(p_peer_keys)>0 THEN
+   FOR r IN SELECT m.event_id FROM social.messages m JOIN social.conversations c ON c.id=m.conversation_id
+     WHERE c.peer_key=ANY(p_peer_keys) LOOP
+    IF NOT meta_inbox.lock_purgeable(r.event_id) THEN
+     v_hold:=true; v_retry:=greatest(coalesce(v_retry,v_now),v_now+interval '1 hour');
+    END IF;
+   END LOOP;
+  END IF;
+ END IF;
+ IF v_hold THEN
+  -- held: nothing is written (no log row); the operator retries after retry_after.
+  RETURN jsonb_build_object('held',1,'retry_after',floor(extract(epoch FROM v_retry))::bigint);
+ END IF;
+
+ -- claims.apply_actor_erasure: RD1 de-identify + deletions, same tx as the hold check and the log row.
+ v_counts:=claims.apply_actor_erasure(v_platform,v_key,v_tenant,v_store,v_bundle,p_peer_keys);
+ SELECT sum(e.value::bigint) INTO v_sum FROM jsonb_each_text(v_counts) e;
+ IF coalesce(v_sum,0)=0 THEN
+  RAISE EXCEPTION 'erasure target not found' USING ERRCODE='PT404';
+ END IF;
+ v_counts:=v_counts - 'social_deferred';
+ INSERT INTO claims.retention_log(kind,request_id,selector_digest,actor_digest,bundle_tenant,bundle_store,bundle_ref,counts)
+  VALUES('actor_erased',p_request,v_digest,CASE WHEN NOT v_single THEN sha256(convert_to(v_key,'UTF8')) END,
+   v_tenant,v_store,v_bundle,v_counts);
+ RETURN v_counts;
+END $$;
+ALTER FUNCTION claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[]) OWNER TO commerce_retention_writer;
+REVOKE ALL ON FUNCTION claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[]) TO commerce_retention_operator;
+
+COMMENT ON FUNCTION claims.erase_actor(uuid,text,text,text,text,uuid,uuid,uuid,text[]) IS
+ 'internal/retention Erase (commerce_retention_operator via cmd/retention-admin erase). One synchronous tx: exactly one selector (sender key / comment ref / bundle), request-id idempotency (PT409 on another selector, PT404 unknown), RD5 8-day hold returning {"held":1,"retry_after"} with nothing written, then apply_actor_erasure and an actor_erased log row (digest only). 0127 LC-R1: the hold also covers a non-terminal meta.dm_send (peer_key = ANY(p_peer_keys)) and meta.public_reply (comment_ref among the actor''s intake refs). Non-goals: a request queue, Meta callbacks.';
