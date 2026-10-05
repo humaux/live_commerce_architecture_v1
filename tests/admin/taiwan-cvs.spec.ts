@@ -100,7 +100,7 @@ async function trapEcpay(context: BrowserContext, seen: Array<{ url: string; met
 async function printShot(page: Page, directory: string, state: "merchant-created" | "opening-pre-response", locale: string, viewport: { width: number; height: number }) {
   await mkdir(directory, { recursive: true });
   const file = `${state}-${locale}-${viewport.width}x${viewport.height}.png`;
-  const pixels = await page.screenshot({ path: path.join(directory, file), fullPage: true });
+  const pixels = await page.screenshot({ path: path.join(directory, file), fullPage: true, scale: "css" });
   expect(pixels.readUInt32BE(16)).toBe(viewport.width);
   // G-UI8 audit [READ/MEASURE]: overflow read only; no DOM/CSS mutation.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
