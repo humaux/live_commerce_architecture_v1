@@ -58,7 +58,14 @@ const code = ts.transpileModule(
 ).outputText;
 runInNewContext(code, {
   exports,
-  require: (name: string) => {
+  require: function resolveRenderImport(name: string) {
+    if (name === "./AttributionPanels") {
+      const panels: Record<string, any> = {};
+      runInNewContext(ts.transpileModule(readFileSync(new URL("../../apps/admin/components/AttributionPanels.tsx", import.meta.url), "utf8"), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+      }).outputText, { exports: panels, require: resolveRenderImport });
+      return panels;
+    }
     if (name === "react")
       return {
         ...React,
