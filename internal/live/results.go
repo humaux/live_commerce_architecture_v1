@@ -1,5 +1,5 @@
-// Purpose: A5-1 session-results read model (M14): per-session order count and money over the unified attribution union (live_price_uses⋈bundles ∪ claims.order_origins, integrator ruling 2), served by identity.read_live_session_results (migrations/0114). One database call, then a strict decode + re-verification of the projection (finance.read pattern), so a schema drift fails closed.
-// Depends on: draft.go (authorize/mapError/readPermission), platform.RequirePermission, command, identity.read_live_session_results (0114), live.order_session_labels (0110 ownership fence).
+// Purpose: A5-1 session-results read model (M14): per-session order count and money over the unified attribution union (live_price_uses⋈bundles ∪ claims.order_origins, integrator ruling 2), served by identity.read_live_session_results (migrations/0118). One database call, then a strict decode + re-verification of the projection (finance.read pattern), so a schema drift fails closed.
+// Depends on: draft.go (authorize/mapError/readPermission), platform.RequirePermission, command, identity.read_live_session_results (0118), live.order_session_labels (0110 ownership fence).
 // Used by: internal/httpapi/live_flow.go GET /live-sessions/results.
 package live
 

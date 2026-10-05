@@ -1,5 +1,5 @@
 // Purpose: A5-3 Page "live videos" picker read (MOCK) — one read-only Graph GET /{page}/live_videos with pages_read_engagement only, normalized into a bounded (≤25, LIVE-first) snapshot. No Meta mutation, no viewer/buyer data; the Page token stays in the worker process (the API plan never loads it).
-// Depends on: core.DispatchRoute/Outcome/Secret, metaoauth.Graph, pageSecretLoader (AES/HPKE custody), integration.check/load/finish_meta_live_videos (0114), routes.go (codeUnconfirmed/codeUnproven).
+// Depends on: core.DispatchRoute/Outcome/Secret, metaoauth.Graph, pageSecretLoader (AES/HPKE custody), integration.check/load/finish_meta_live_videos (0118), routes.go (codeUnconfirmed/codeUnproven).
 // Used by: cmd/claims-worker (LiveVideoRoutes); internal/integrations/metareply/live_videos_test.go.
 package metareply
 

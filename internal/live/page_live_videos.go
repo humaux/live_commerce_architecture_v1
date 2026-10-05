@@ -1,5 +1,5 @@
-// Purpose: A5-3 Page "live videos" picker (MOCK): the merchant-side plan that mints one meta.live_videos operation + default-lane River job in the caller's transaction (integration.plan_meta_live_videos, migrations/0114), and the snapshot read (live.read_page_live_videos). The API process never loads a Page token; the Graph GET happens in cmd/claims-worker.
-// Depends on: draft.go (authorize/mapError/readPermission/managePermission), results.go mapReadError, command.Run/Audit, core.InsertOperationJob, integration.plan_meta_live_videos / live.read_page_live_videos (0114), river.river_job (0018).
+// Purpose: A5-3 Page "live videos" picker (MOCK): the merchant-side plan that mints one meta.live_videos operation + default-lane River job in the caller's transaction (integration.plan_meta_live_videos, migrations/0118), and the snapshot read (live.read_page_live_videos). The API process never loads a Page token; the Graph GET happens in cmd/claims-worker.
+// Depends on: draft.go (authorize/mapError/readPermission/managePermission), results.go mapReadError, command.Run/Audit, core.InsertOperationJob, integration.plan_meta_live_videos / live.read_page_live_videos (0118), river.river_job (0018).
 // Used by: internal/httpapi/live_flow.go POST .../page-live-videos/read and GET .../page-live-videos.
 package live
 

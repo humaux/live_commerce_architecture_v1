@@ -1,4 +1,4 @@
-// A5 live-session flow author smoke (REAL_PG, MOCK picker): proves migrations/0114_live_session_flow.sql
+// A5 live-session flow author smoke (REAL_PG, MOCK picker): proves migrations/0118_live_session_flow.sql
 // applies and that the A5-1 results read model and A5-2 one-click copy hold their contract. It is NOT the
 // independent gate (test_worker writes those from the contract). Isolation: lcSetup's own principal with
 // lcPurgeSessions cleanup; the picker's worker normalization has a DB-free unit test in internal/integrations/metareply.

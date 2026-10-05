@@ -70,7 +70,7 @@ func buildStudioPlanner(ctx context.Context, pool *pgxpool.Pool, config studioCo
 }
 
 // buildLiveFlowJobs returns the insert-only main-schema River client the A5 live-session flow routes
-// use to enqueue read-only external operations (meta.live_videos, migrations/0114). The claims-worker
+// use to enqueue read-only external operations (meta.live_videos, migrations/0118). The claims-worker
 // owns the dispatch lifecycle; the API never starts a worker or queue on this client. nil when Studio
 // is off (the A5 routes are unmounted anyway). Unlike buildStudioPlanner this is the default "river"
 // schema, matching the ads/meta-connect/accounts builders — not river_media.

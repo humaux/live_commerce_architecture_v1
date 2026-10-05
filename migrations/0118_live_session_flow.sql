@@ -70,7 +70,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  WHERE x.order_id=ANY(p_orders)
 $$;
 COMMENT ON FUNCTION claims.order_live_sources(uuid,uuid,uuid[]) IS
- 'internal/claims: commerce_auth-only scoped order provenance (0110 ACL ruling). 0114: union with claims.order_origins so orders-v2 session filtering counts price-neutral claimed orders too and agrees with read_live_session_results.';
+ 'internal/claims: commerce_auth-only scoped order provenance (0110 ACL ruling). 0118: union with claims.order_origins so orders-v2 session filtering counts price-neutral claimed orders too and agrees with read_live_session_results.';
 
 -- ---------------------------------------------------------------------------------------
 -- A5-1 read model. owner commerce_auth; runtime EXECUTE only; no new table/column grants.
@@ -217,7 +217,7 @@ REVOKE ALL ON live.page_live_video_snapshots FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON live.page_live_video_snapshots TO commerce_integration_writer;
 CREATE POLICY lv_snapshot_owner ON live.page_live_video_snapshots TO commerce_integration_writer USING(true) WITH CHECK(true);
 COMMENT ON TABLE live.page_live_video_snapshots IS
- 'internal/integrations/metareply (0114, A5-3): latest bounded (<=25) live-video list for a bound Page, written only by integration.finish_meta_live_videos on SUCCEEDED/FAILED_FINAL; read only by live.read_page_live_videos. FORCE RLS; no runtime role holds a table grant. Items carry video_id/post_id/title/status/started_at only, never a token or buyer data.';
+ 'internal/integrations/metareply (0118, A5-3): latest bounded (<=25) live-video list for a bound Page, written only by integration.finish_meta_live_videos on SUCCEEDED/FAILED_FINAL; read only by live.read_page_live_videos. FORCE RLS; no runtime role holds a table grant. Items carry video_id/post_id/title/status/started_at only, never a token or buyer data.';
 COMMENT ON COLUMN live.page_live_video_snapshots.operation_id IS 'The operation whose completion wrote this snapshot (audit trail, never a job handle).';
 COMMENT ON COLUMN live.page_live_video_snapshots.requested_at IS 'The operation.created_at of the completed read; a stale overlapping read cannot overwrite a newer result.';
 COMMENT ON COLUMN live.page_live_video_snapshots.state IS 'Terminal result: succeeded (items may be empty) or failed (code carries the denial).';
