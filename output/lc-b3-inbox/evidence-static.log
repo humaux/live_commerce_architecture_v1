@@ -1,0 +1,19 @@
+== LC-B3 static evidence (re-run 2026-10-05) ==
+
+go build ./...
+  -> exit 0, no output (all packages compile)
+
+go vet ./internal/inbox/... ./internal/httpapi/... ./internal/integrations/metareply/... ./internal/metaconnect/...
+  -> exit 0, no output (no vet findings)
+
+gofmt -l internal/inbox internal/httpapi/inbox.go internal/httpapi/inbox_test.go internal/integrations/metareply/resubscribe.go internal/metaconnect/graph.go
+  -> exit 0, empty list (all gofmt-clean)
+
+python3 scripts/check_packet.py
+  -> status PASS_PACKET_STRUCTURE_ONLY
+     (requirements 22, invariants 24, gates 15, tasks 23, risks 32, sources 50, roles 7,
+      openapi_draft_operations 8, chapters 30)
+
+Note: check_packet.py regenerates experiments/results/packet-check.json as a side effect
+(checked_at_utc + model_source_sha256 advance). That file is not part of this unit's write paths;
+the integrator may keep or discard the regeneration.

@@ -277,8 +277,9 @@ func (e *sgEnv) universe() []string {
 }
 
 // sgBundle is §D transcribed: owner all; admin all but staff management and billing (billing:manage is the only billing
-// permission; staff management is not a grantable permission); live_operator live:*, catalog:read, orders:read, inventory:read;
-// fulfilment orders:read, fulfillment:write, orders:export, inventory:*; viewer every :read. store:read rides along in all
+// permission; staff management is not a grantable permission); live_operator live:*, catalog:read, orders:read, inventory:read,
+// inbox:read, inbox:reply, inventory:live_adjust; fulfilment orders:read, fulfillment:write, orders:export, inventory:*;
+// viewer every :read except inbox:read (DM text is buyer PII, live-console-v1 §14.8 OPEN-7/17). store:read rides along in all
 // (the platform requires it to resolve any scope).
 func sgBundle(role string, universe []string) map[string]bool {
 	out := map[string]bool{"store:read": true}
@@ -292,11 +293,12 @@ func sgBundle(role string, universe []string) map[string]bool {
 		case "admin":
 			out[p] = p != "billing:manage"
 		case "live_operator":
-			out[p] = strings.HasPrefix(p, "live:") || p == "catalog:read" || p == "orders:read" || p == "inventory:read"
+			out[p] = strings.HasPrefix(p, "live:") || p == "catalog:read" || p == "orders:read" || p == "inventory:read" ||
+				p == "inbox:read" || p == "inbox:reply" || p == "inventory:live_adjust"
 		case "fulfilment":
 			out[p] = p == "orders:read" || p == "fulfillment:write" || p == "orders:export" || strings.HasPrefix(p, "inventory:")
 		case "viewer":
-			out[p] = strings.HasSuffix(p, ":read")
+			out[p] = strings.HasSuffix(p, ":read") && p != "inbox:read"
 		}
 	}
 	return out

@@ -1,6 +1,7 @@
 -- Purpose: live-console-v1 §2 / §2.5 / §7.4 (unit LC-B2 comment read-through, backend DeepSeek): the poller
 --   lease table and print-record table plus their definers. Comment text/names are never stored; the only new
 --   persistence keyed on a comment is the plain Meta comment id in live.comment_prints and in reply operations.
+--   Also social.read_comment_facts (Amendment 1 A1.2 1b): the IG webhook-copy fallback of the comment-facts lookup.
 -- Depends on: live.claim_sources (0064), live.claim_windows (0060), live.claim_window_intervals (0064),
 --   live.sessions (0033), live.offers (0060), claims.meta_intake / claims.events (0060/0064),
 --   integration.bindings/operations/meta_page_heads/meta_page_credentials (0008/0064), social.comment_events
@@ -10,7 +11,7 @@
 --   internal/httpapi/live_stream.go (routes A2/A3).
 -- Invariants: I11 (no comment text/name persisted), I01 (tenant/store scope server-side), I23 (bounded pollers).
 -- Status: DESIGN + MOCK (Graph-facing paths are loopback httptest only until live-console-v1 §13.3 passes).
--- Placeholder migration number 0121: the integrator renumbers it at merge (LC-B2 unit table).
+-- Migration number 0123 (renumbered by the integrator from the 0121 placeholder; 0122 is reserved by LC-B1).
 
 -- The poller role must be able to resolve the live.* definer names below. 0096 gave it USAGE on
 -- integration + claims only; it never reads the live.* tables directly (the definers do).
@@ -288,12 +289,63 @@ GRANT EXECUTE ON FUNCTION social.read_comment_events(uuid,bigint,int) TO commerc
 COMMENT ON FUNCTION social.read_comment_events(uuid,bigint,int) IS
  'social owner; only caller internal/live (commerce_runtime, merchant transaction). IG-live fallback read of the encrypted webhook copy for one session''s active IG source since its first window opened_at; live:read via principal_holds. Envelope + AAD only, never plaintext.';
 
+-- ---------------------------------------------------------------------------------------
+-- social.read_comment_facts (live-console-v1 Amendment 1 A1.2 1b): the IG webhook-copy fallback of the
+-- comment-facts lookup. Returns the NEWEST social.comment_events envelope + AAD columns of ONE comment
+-- (p_comment_ref) of the session's active IG source, zero rows when there is none. The API decrypts with
+-- the payload keyring it already holds and derives is_page / is_reply / created_at; the claims-worker
+-- never sees this (it holds no payload keyring). comment_key is the unkeyed consumer identity
+-- sha256(json["meta-social-comment/v1",app_id,object,asset_id,comment_id]) (tupleHash in
+-- internal/integrations/meta/projection.go), recomputed here so the comment id is never stored in clear.
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION social.read_comment_facts(p_session uuid,p_comment_ref text)
+RETURNS TABLE(event_id uuid,kind text,occurred_at timestamptz,received_at timestamptz,
+ key_id text,nonce bytea,ciphertext bytea,app_id text,object text,asset_id text,event_key text,
+ payload_hash text,route_id uuid,route_epoch bigint)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_tenant uuid; v_store uuid; v_principal uuid;
+BEGIN
+ IF current_setting('transaction_isolation')<>'read committed'
+  OR coalesce(current_setting('app.tenant_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR coalesce(current_setting('app.store_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR coalesce(current_setting('app.principal_id',true),'') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+  OR nullif(current_setting('app.buyer_id',true),'') IS NOT NULL
+  OR p_session IS NULL OR p_comment_ref IS NULL OR p_comment_ref !~ '^[0-9_]{1,80}$' THEN
+  RAISE EXCEPTION 'invalid comment facts read' USING ERRCODE='22023';
+ END IF;
+ v_tenant:=current_setting('app.tenant_id')::uuid;
+ v_store:=current_setting('app.store_id')::uuid;
+ v_principal:=current_setting('app.principal_id')::uuid;
+ IF NOT identity.principal_holds(v_tenant,v_store,v_principal,ARRAY['live:read']) THEN
+  RAISE EXCEPTION 'comment facts access unavailable' USING ERRCODE='PT403';
+ END IF;
+ RETURN QUERY
+ SELECT c.event_id,c.kind,c.occurred_at,c.received_at,c.key_id,c.nonce,c.ciphertext,
+  e.app_id,e.object,e.asset_id,e.event_key,e.payload_hash,e.route_id,e.route_epoch
+ FROM social.comment_events c JOIN meta_inbox.events e ON e.id=c.event_id AND e.tenant_id=c.tenant_id AND e.store_id=c.store_id
+ WHERE c.tenant_id=v_tenant AND c.store_id=v_store
+  AND c.kind IN ('instagram_live_comment','instagram_comment')
+  AND e.object='instagram'
+  AND EXISTS(SELECT 1 FROM live.claim_sources x
+   WHERE x.tenant_id=v_tenant AND x.store_id=v_store AND x.session_id=p_session
+    AND x.object='instagram' AND x.active AND x.asset_id=e.asset_id)
+  AND c.comment_key=encode(sha256(convert_to(array_to_json(
+   ARRAY['meta-social-comment/v1',e.app_id,e.object,e.asset_id,p_comment_ref])::text,'UTF8')),'hex')
+ ORDER BY c.received_at DESC, c.event_id DESC
+ LIMIT 1;
+END $$;
+ALTER FUNCTION social.read_comment_facts(uuid,text) OWNER TO commerce_meta_writer;
+REVOKE ALL ON FUNCTION social.read_comment_facts(uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION social.read_comment_facts(uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION social.read_comment_facts(uuid,text) IS
+ 'social owner; only caller internal/live (commerce_runtime, merchant transaction). IG fallback of the comment-facts lookup (Amendment 1 A1.2 1b): newest encrypted webhook copy of one comment of the session''s active IG source; live:read via principal_holds. Envelope + AAD only, never plaintext; zero rows when none.';
+
 -- Additive cross-domain reads for social.read_comment_events (commerce_meta_writer has none today).
 GRANT SELECT(tenant_id,store_id,id) ON live.sessions TO commerce_meta_writer;
 CREATE POLICY session_meta_read ON live.sessions FOR SELECT TO commerce_meta_writer USING
  (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
-GRANT SELECT(tenant_id,store_id,session_id,object,active) ON live.claim_sources TO commerce_meta_writer;
+GRANT SELECT(tenant_id,store_id,session_id,object,asset_id,active) ON live.claim_sources TO commerce_meta_writer;
 CREATE POLICY claim_source_meta_read ON live.claim_sources FOR SELECT TO commerce_meta_writer USING
  (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
@@ -301,6 +353,7 @@ GRANT SELECT(tenant_id,store_id,session_id,opened_at) ON live.claim_window_inter
 CREATE POLICY window_interval_meta_read ON live.claim_window_intervals FOR SELECT TO commerce_meta_writer USING
  (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+GRANT USAGE ON SCHEMA identity,live TO commerce_meta_writer; -- the two social.read_comment_* definers read live.* and call identity.principal_holds
 GRANT EXECUTE ON FUNCTION identity.principal_holds(uuid,uuid,uuid,text[]) TO commerce_meta_writer;
 
 -- ---------------------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 // Docker network with a shared 32-byte bearer token; the API side is BridgeClient. Comment text and
 // names exist only inside these responses and are never logged or persisted (the bodies are never
 // logged, and every error is a fixed safe code).
-// Depends on: comment_poll.go (Console), live.console_source (0121), metaoauth.Graph, core.Secret.
+// Depends on: comment_poll.go (Console), live.console_source (0123), metaoauth.Graph, core.Secret.
 // Used by: cmd/claims-worker (Console.Handler), internal/live/stream.go (BridgeClient).
 package metareply
 
@@ -34,7 +34,7 @@ var (
 	ErrBridgeInvalidCur  = errors.New("metareply: bridge invalid cursor")   // 400 → API invalid_cursor
 	ErrBridgeUnavailable = errors.New("metareply: bridge unavailable")      // 503/transport → API stream_unavailable
 
-	// commentRefShape is the plain Meta comment id shape (numeric), matching the 0121 CHECK
+	// commentRefShape is the plain Meta comment id shape (numeric), matching the 0123 CHECK
 	// `comment_ref ~ '^[0-9_]{1,80}$'` on live.comment_prints and live.console_marks.
 	commentRefShape = regexp.MustCompile(`^[0-9_]{1,80}$`)
 	// Go regexp caps repeat counts at 1000; the 1024 bound is enforced in openCursor by len().

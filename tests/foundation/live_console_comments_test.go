@@ -4,7 +4,7 @@
 //
 // Owns: the real-PG console-comment gates. The poller (internal/integrations/metareply.Console) runs against a
 // fake Graph served on 127.0.0.1 (the only loopback origin metareply.Config accepts), reading through the real
-// SECURITY DEFINER lease/token/credential functions in migration 0121; the bridge is the Console's own HTTP handler.
+// SECURITY DEFINER lease/token/credential functions in migration 0123; the bridge is the Console's own HTTP handler.
 //
 // The owner (superuser) pool is used only for synthetic setup, fault injection (expiring a held lease) and read-back
 // of columns no runtime role may read (the poll lease row), exactly as the other live gates do.
@@ -48,8 +48,9 @@ type lcnHit struct {
 }
 
 // lcnGraph serves GET /{version}/{objID}/comments (forward + older backfill) and GET /{version}/{ref}
-// (comment-facts single read). Both answer with the normalizeComments shape {"data":[...],"paging":{...}}.
-// paging.next, when set, is a marker URL the poller must never follow.
+// (comment-facts single read). The page read answers with the {"data":[...],"paging":{...}} shape; the single
+// read answers with the BARE comment object, exactly like Graph. paging.next, when set, is a marker URL the
+// poller must never follow.
 type lcnGraph struct {
 	mu       sync.Mutex
 	comments map[string][]map[string]any // objID -> comments, oldest first
@@ -138,7 +139,7 @@ func (g *lcnGraph) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{"data": []map[string]any{c}, "paging": map[string]any{}})
+	_ = json.NewEncoder(w).Encode(c)
 }
 
 // lcnComment builds one synthetic Graph comment. fromID == assetID makes it a page comment.
@@ -231,10 +232,15 @@ func lcnSetup(t *testing.T) *lcnEnv {
 
 // putSource calls live.put_claim_source as the harness actor (commerce_runtime login, real GUC state).
 func (e *lcnEnv) putSource(session, asset, objectID string, active bool, expected int64) (string, error) {
+	return e.putSourceObject(session, "page", asset, objectID, active, expected)
+}
+
+// putSourceObject is putSource for any object (page|instagram).
+func (e *lcnEnv) putSourceObject(session, object, asset, objectID string, active bool, expected int64) (string, error) {
 	var id string
 	err := platform.WithScope(context.Background(), e.f.runtime, e.h.token, e.f.storeA1, "store:read", func(tx pgx.Tx, _ platform.Scope) error {
 		return tx.QueryRow(context.Background(), `SELECT live.put_claim_source($1::uuid,$2,$3,$4,$5,$6,$7,$8::bigint)::text`,
-			session, "page", asset, objectID, false, "zh-TW", active, expected).Scan(&id)
+			session, object, asset, objectID, false, "zh-TW", active, expected).Scan(&id)
 	})
 	return id, err
 }
@@ -479,12 +485,12 @@ func TestLiveConsoleLCN01BufferCapAgeAndCursor(t *testing.T) {
 		e := lcnSetup(t)
 		now := time.Now().UTC()
 		e.graph.setComments(e.postID, []map[string]any{lcnComment(lcnRef(), now.Format(time.RFC3339), e.asset, "", "x", "", false)})
-		c := e.console(t, "worker-idle", metareply.ConsoleConfig{IdleDrop: 20 * time.Millisecond})
+		c := e.console(t, "worker-idle", metareply.ConsoleConfig{IdleDrop: 3 * time.Second}) // wide enough that a loaded shared runner cannot drop it before the first poll
 		page1 := e.demandAndPoll(t, c, e.sourceID)
 		if page1.Epoch != 1 || len(page1.Items) != 1 {
 			t.Fatalf("page1 epoch=%d items=%d", page1.Epoch, len(page1.Items))
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(3500 * time.Millisecond)
 		c.SweepOnce(context.Background()) // idle drop removes the in-memory buffer (lease row stays)
 		// Force a take-over of the still-held-but-now-expired lease; the fresh buffer bumps poll_epoch → reset:true.
 		mustExec(t, e.f.owner, `UPDATE live.comment_poll_leases SET lease_until=clock_timestamp()-interval '1 second' WHERE source_id=$1`, e.sourceID)

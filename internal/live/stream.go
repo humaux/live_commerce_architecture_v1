@@ -7,7 +7,7 @@
 // Depends on: draft.go (authorize/mapError/mapReadError), metareply.BridgeClient (bridge.go),
 //
 //	meta.PayloadKeyring.OpenComment (comment_read.go), live.console_source/read_comment_events/
-//	console_marks/comment_print (0121).
+//	console_marks/comment_print (0123).
 //
 // Used by: internal/httpapi/live_stream.go (routes A2/A3); cmd/api (NewCommentStream).
 package live

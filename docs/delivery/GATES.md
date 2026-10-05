@@ -104,6 +104,8 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--buyer-http` | private buyer HTTP subset only; not public BFF/browser or provider proof | T2 subset | `bash scripts/dev/test-local.sh --buyer-http` |
 | `--purchase-entry` | merchant purchase-entry real PG/HTTP subset only; not buyer UI or provider checkout | T2 subset | `bash scripts/dev/test-local.sh --purchase-entry` |
 | `--merchant-orders` | isolated merchant order read subset; no merchant UI/provider/deployment claim | T2 subset | `bash scripts/dev/test-local.sh --merchant-orders` |
+| `--inbox` | isolated live-console inbox read-side subset (LCN03 permission split, LCN10 takeover CAS + lazy 6h expiry, customer-link CAS + audit, cross-store RLS, migration 0119 exact grants/definers); no UI/send (LC-B4) or LIVE Meta traffic claim | T2 subset | `bash scripts/dev/test-local.sh --inbox` |
+| `--msg-templates` | isolated live-console message-templates subset (migration 0121 exact grants/definers, fixed order-pay-link/v1 + offer-recommend/v1, publish versioning + template.published audit + idempotent replay, §3.5 public-safe refusal, fixed-id PT409, live:manage vs inbox:reply split, cross-store RLS); no UI/send (LC-B4) or LIVE Meta traffic claim | T2 subset | `bash scripts/dev/test-local.sh --msg-templates` |
 | `--meta-inbox` | isolated Meta inbox subset only; no public mount/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-inbox` |
 | `--meta-consumer` | isolated Meta social consumer subset only; no public mount/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-consumer` |
 | `--meta-runtime` | isolated Meta API/worker runtime subset only; no public deployment/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-runtime` |
@@ -121,7 +123,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--live-media-recovery` | isolated MRR observer SQL/process gates only; no Cloud, human alert delivery, LIVE intake or G06 acceptance | T2 subset | `bash scripts/dev/test-local.sh --live-media-recovery` |
 | `--live-media-runtime` | isolated actual media command, PG18 and local TLS runtime; no Cloud, LIVE intake or G06 acceptance | T2 subset | `bash scripts/dev/test-local.sh --live-media-runtime` |
 | `--studio-backend` | isolated Studio backend/API and local MOCK media gate; not BFF/browser, Cloud, LIVE intake or full Studio acceptance | T2 subset | `bash scripts/dev/test-local.sh --studio-backend` |
-| `--live-console` | live-console comment read-through LCN01/02/04/05 (contracts/live-console-v1.md §2 poller/leases/caps/bridge incl. comment-facts, cursors, deletion eviction, §2.5 marks, §7.4 prints): REAL_PG through the real SECURITY DEFINER lease/token/credential functions, MOCK loopback Graph | T2 subset | `bash scripts/dev/test-local.sh --live-console` |
+| `--live-console` | live-console comment read-through LCN01/02/04/05 (contracts/live-console-v1.md §2 poller/leases/caps/bridge incl. comment-facts, cursors, deletion eviction, §2.5 marks, §7.4 prints, Amendment 1 A1.2 IG comment-facts: platform-branched Graph read, social.read_comment_facts webhook fallback decrypted API-side, facts_unavailable): REAL_PG through the real SECURITY DEFINER lease/token/credential functions, MOCK loopback Graph | T2 subset | `bash scripts/dev/test-local.sh --live-console` |
 
 ## Independent unit gates in the foundation suite (T1/T2, `bash scripts/dev/test-focused.sh '<regex>'`)
 

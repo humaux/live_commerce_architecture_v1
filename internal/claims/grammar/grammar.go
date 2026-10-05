@@ -28,10 +28,20 @@ import (
 // Version names this grammar in every persisted claim event (claims.events.grammar_version).
 // VersionContains is the §2.5 kwc-v1 restricted contains grammar; it persists only for
 // events accepted in a KEYWORD_QTY_CONTAINS window (package claims downgrades it elsewhere).
+//
+// VersionContainsV2 is kwc-v2: kwc-v1 plus the F1-F3 fixes from the K3 adversarial review
+// (more question words, boundary-tolerant negation/question matching, lookalike-letter
+// carve rejection). The kwc-v1 tables are frozen; NEW intake uses v2, stored v1 events
+// keep v1 (determinism is per stored version, I02).
 const (
-	Version         = "kw-v1"
-	VersionContains = "kwc-v1"
+	Version           = "kw-v1"
+	VersionContains   = "kwc-v1"
+	VersionContainsV2 = "kwc-v2"
 )
+
+// IsContainsVersion reports whether v is one of the contains grammar versions (kwc-v1 or
+// kwc-v2); package claims downgrades such a result outside a CONTAINS window.
+func IsContainsVersion(v string) bool { return v == VersionContains || v == VersionContainsV2 }
 
 // Bounds fixed by the frozen grammar (§2.1 step 0, §2.2, §2.2 NormalizeLabel).
 const (
@@ -59,7 +69,7 @@ const (
 // A keyword-shaped comment can be a phone number (0912345678), so every formatting
 // path (String, GoString, Format, MarshalJSON) emits only Version and Kind.
 type Result struct {
-	Version  string // Version (kw-v1) or VersionContains (kwc-v1)
+	Version  string // Version (kw-v1), VersionContains (kwc-v1) or VersionContainsV2 (kwc-v2)
 	Kind     Kind
 	Keyword  string // canonical head; "" for NO_MATCH
 	Quantity int64  // 1..999 for MATCH; 0 otherwise
@@ -233,7 +243,7 @@ func allDigits(s string) bool {
 // not one of the fixed constants is replaced, so a hand-built Result cannot smuggle text.
 func (r Result) redacted() (version, kind string) {
 	version, kind = "invalid", "INVALID"
-	if r.Version == Version || r.Version == VersionContains {
+	if r.Version == Version || IsContainsVersion(r.Version) {
 		version = r.Version
 	}
 	if r.Kind == Match || r.Kind == NoMatch || r.Kind == InvalidQuantity {

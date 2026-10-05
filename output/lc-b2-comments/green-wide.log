@@ -1,0 +1,890 @@
+=== RUN   TestClaimsRetentionCRP10SourceGuards
+=== RUN   TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention
+=== RUN   TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import
+=== RUN   TestClaimsRetentionCRP10SourceGuards/regression-cheap-items
+--- PASS: TestClaimsRetentionCRP10SourceGuards (0.40s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention (0.01s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin (0.02s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin (0.03s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import (0.00s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/regression-cheap-items (0.29s)
+=== RUN   TestClaimsRetentionCRP03ReportOnly
+--- PASS: TestClaimsRetentionCRP03ReportOnly (2.22s)
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C1-links
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C3-intake
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C5-social
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C6-run-log
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link
+--- PASS: TestClaimsRetentionCRP04EnforcedPurge (9.43s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C1-links (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity (0.08s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C3-intake (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger (0.06s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C5-social (0.40s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C6-run-log (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle (8.21s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link (0.26s)
+=== RUN   TestClaimsRetentionCRP05Concurrency
+=== RUN   TestClaimsRetentionCRP05Concurrency/held-row-locks-skip
+=== RUN   TestClaimsRetentionCRP05Concurrency/reopen-in-flight
+=== RUN   TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking
+=== RUN   TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing
+=== RUN   TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply
+--- PASS: TestClaimsRetentionCRP05Concurrency (6.80s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/held-row-locks-skip (0.20s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/reopen-in-flight (0.01s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking (0.19s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing (4.23s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row (0.18s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations (1.07s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply (0.87s)
+=== RUN   TestClaimsRetentionCRP06Erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores
+    claims_retention_test.go:2200: selector_digest = sha256(a|object|asset|hex(sha256(key)))
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-b-comment-id
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/holds
+=== RUN   TestClaimsRetentionCRP06Erasure/reserved-labels
+=== RUN   TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys
+--- PASS: TestClaimsRetentionCRP06Erasure (10.42s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores (0.43s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-b-comment-id (0.17s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle (0.18s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle (0.01s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/holds (0.97s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/reserved-labels (0.22s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys (8.23s)
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/fresh-database
+    claims_retention_test.go:3124: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
+=== RUN   TestClaimsRetentionCRP02Schema/non-retention-roles-denied
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/constraints-and-policy-api
+=== RUN   TestClaimsRetentionCRP02Schema/populated-upgrade
+--- PASS: TestClaimsRetentionCRP02Schema (7.33s)
+    --- PASS: TestClaimsRetentionCRP02Schema/fresh-database (0.22s)
+    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (1.00s)
+    --- PASS: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.27s)
+    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (2.80s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach (0.13s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach (0.12s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach (0.12s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach (0.13s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.10s)
+    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.11s)
+    --- PASS: TestClaimsRetentionCRP02Schema/populated-upgrade (2.93s)
+=== RUN   TestClaimsRetentionCRP07Privacy
+--- PASS: TestClaimsRetentionCRP07Privacy (21.68s)
+=== RUN   TestClaimsRetentionCRP08RestoreReplay
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli
+--- PASS: TestClaimsRetentionCRP08RestoreReplay (7.39s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key (0.27s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold (0.13s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations (0.12s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli (2.61s)
+=== RUN   TestClaimsRetentionCRP09Worker
+=== RUN   TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login
+=== RUN   TestClaimsRetentionCRP09Worker/batch-loop-stops
+=== RUN   TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed
+=== RUN   TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn
+=== RUN   TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only
+--- PASS: TestClaimsRetentionCRP09Worker (37.00s)
+    --- PASS: TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login (4.73s)
+    --- PASS: TestClaimsRetentionCRP09Worker/batch-loop-stops (7.20s)
+    --- PASS: TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed (22.69s)
+    --- PASS: TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn (1.05s)
+    --- PASS: TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only (0.01s)
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL
+--- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness (11.91s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker (0.03s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer (0.04s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress (0.03s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL (0.02s)
+=== RUN   TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies (19.66s)
+=== RUN   TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:130: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:130: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:130: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:130: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:133: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:133: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:133: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:133: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:136: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:136: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:136: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:136: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:139: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:139: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:139: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:139: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies (15.62s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/IP
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted (2.92s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/IP (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP (0.00s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsCleanup
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsCleanup (3.61s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsHeadUntouched
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsHeadUntouched (2.64s)
+=== RUN   TestLegacyRuntimeIsolationPopulatedUpgrade
+--- PASS: TestLegacyRuntimeIsolationPopulatedUpgrade (9.05s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+--- PASS: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (3.70s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeFailClosedRetry
+--- PASS: TestLegacyRuntimeIsolationUpgradeFailClosedRetry (3.42s)
+=== RUN   TestLegacyRuntimeIsolationFamilyCollidingIDs
+--- PASS: TestLegacyRuntimeIsolationFamilyCollidingIDs (4.81s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs
+--- PASS: TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs (3.41s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater
+--- PASS: TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater (3.24s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence
+--- PASS: TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence (6.00s)
+=== RUN   TestMetaConsumerPopulated0028Upgrade
+--- PASS: TestMetaConsumerPopulated0028Upgrade (2.35s)
+=== RUN   TestMetaConsumerAuthority
+=== RUN   TestMetaConsumerAuthority/curator
+=== RUN   TestMetaConsumerAuthority/ordinary_worker
+=== RUN   TestMetaConsumerAuthority/owner
+=== RUN   TestMetaConsumerAuthority/runtime
+=== RUN   TestMetaConsumerAuthority/ingress
+=== RUN   TestMetaConsumerAuthority/registrar
+=== RUN   TestMetaConsumerAuthority/mixed_commerce_runtime
+=== RUN   TestMetaConsumerAuthority/mixed_commerce_meta_ingress
+=== RUN   TestMetaConsumerAuthority/pg_read_all_data
+=== RUN   TestMetaConsumerAuthority/commerce_meta_consumer_settable
+=== RUN   TestMetaConsumerAuthority/inherited_custom_owner
+--- PASS: TestMetaConsumerAuthority (1.20s)
+    --- PASS: TestMetaConsumerAuthority/curator (0.04s)
+    --- PASS: TestMetaConsumerAuthority/ordinary_worker (0.04s)
+    --- PASS: TestMetaConsumerAuthority/owner (0.08s)
+    --- PASS: TestMetaConsumerAuthority/runtime (0.15s)
+    --- PASS: TestMetaConsumerAuthority/ingress (0.01s)
+    --- PASS: TestMetaConsumerAuthority/registrar (0.05s)
+    --- PASS: TestMetaConsumerAuthority/mixed_commerce_runtime (0.10s)
+    --- PASS: TestMetaConsumerAuthority/mixed_commerce_meta_ingress (0.16s)
+    --- PASS: TestMetaConsumerAuthority/pg_read_all_data (0.07s)
+    --- PASS: TestMetaConsumerAuthority/commerce_meta_consumer_settable (0.03s)
+    --- PASS: TestMetaConsumerAuthority/inherited_custom_owner (0.06s)
+=== RUN   TestMetaConsumerRiverPageAndInstagramFacts
+--- PASS: TestMetaConsumerRiverPageAndInstagramFacts (1.07s)
+=== RUN   TestMetaConsumerSQLIdentityAndRollback
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_social.conversations
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_social.messages
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.events
+=== RUN   TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.audit_events
+--- PASS: TestMetaConsumerSQLIdentityAndRollback (0.24s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_social.conversations (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_social.messages (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.events (0.01s)
+    --- PASS: TestMetaConsumerSQLIdentityAndRollback/rollback_meta_inbox.audit_events (0.00s)
+=== RUN   TestMetaConsumerCommentRollbackAtEveryWrite
+=== RUN   TestMetaConsumerCommentRollbackAtEveryWrite/social.comment_events
+=== RUN   TestMetaConsumerCommentRollbackAtEveryWrite/meta_inbox.events
+=== RUN   TestMetaConsumerCommentRollbackAtEveryWrite/meta_inbox.audit_events
+--- PASS: TestMetaConsumerCommentRollbackAtEveryWrite (0.17s)
+    --- PASS: TestMetaConsumerCommentRollbackAtEveryWrite/social.comment_events (0.04s)
+    --- PASS: TestMetaConsumerCommentRollbackAtEveryWrite/meta_inbox.events (0.01s)
+    --- PASS: TestMetaConsumerCommentRollbackAtEveryWrite/meta_inbox.audit_events (0.01s)
+=== RUN   TestMetaConsumerReverseSequenceReplayAndPurge
+--- PASS: TestMetaConsumerReverseSequenceReplayAndPurge (0.19s)
+=== RUN   TestMetaConsumerConcurrentDifferentEventsSamePeer
+--- PASS: TestMetaConsumerConcurrentDifferentEventsSamePeer (0.18s)
+=== RUN   TestMetaConsumerSameEventLockAndFinalAuthority
+--- PASS: TestMetaConsumerSameEventLockAndFinalAuthority (0.17s)
+=== RUN   TestMetaConsumerCommitGuardActuallyFires
+--- PASS: TestMetaConsumerCommitGuardActuallyFires (0.12s)
+=== RUN   TestMetaConsumerWarmedFinalRoleChanges
+=== RUN   TestMetaConsumerWarmedFinalRoleChanges/revoke-consumer
+=== RUN   TestMetaConsumerWarmedFinalRoleChanges/indirect-runtime
+=== RUN   TestMetaConsumerWarmedFinalRoleChanges/make-settable
+--- PASS: TestMetaConsumerWarmedFinalRoleChanges (0.25s)
+    --- PASS: TestMetaConsumerWarmedFinalRoleChanges/revoke-consumer (0.08s)
+    --- PASS: TestMetaConsumerWarmedFinalRoleChanges/indirect-runtime (0.07s)
+    --- PASS: TestMetaConsumerWarmedFinalRoleChanges/make-settable (0.06s)
+=== RUN   TestMetaConsumerFinalCommitDatabaseOwner
+--- PASS: TestMetaConsumerFinalCommitDatabaseOwner (0.11s)
+=== RUN   TestMetaConsumerRouteBindingAndProofWaitFences
+=== RUN   TestMetaConsumerRouteBindingAndProofWaitFences/route-disabled
+=== RUN   TestMetaConsumerRouteBindingAndProofWaitFences/binding-version
+=== RUN   TestMetaConsumerRouteBindingAndProofWaitFences/proof-clock
+--- PASS: TestMetaConsumerRouteBindingAndProofWaitFences (0.46s)
+    --- PASS: TestMetaConsumerRouteBindingAndProofWaitFences/route-disabled (0.26s)
+    --- PASS: TestMetaConsumerRouteBindingAndProofWaitFences/binding-version (0.03s)
+    --- PASS: TestMetaConsumerRouteBindingAndProofWaitFences/proof-clock (0.12s)
+=== RUN   TestMetaConsumerRescuedAttemptAfterJobLockWait
+--- PASS: TestMetaConsumerRescuedAttemptAfterJobLockWait (0.10s)
+=== RUN   TestMetaConsumerProofExpiresBetweenFinishAndCommit
+--- PASS: TestMetaConsumerProofExpiresBetweenFinishAndCommit (1.11s)
+=== RUN   TestMetaConsumerReviewedAndStaleNeverProcess
+=== RUN   TestMetaConsumerReviewedAndStaleNeverProcess/reviewed
+=== RUN   TestMetaConsumerReviewedAndStaleNeverProcess/stale
+--- PASS: TestMetaConsumerReviewedAndStaleNeverProcess (0.22s)
+    --- PASS: TestMetaConsumerReviewedAndStaleNeverProcess/reviewed (0.14s)
+    --- PASS: TestMetaConsumerReviewedAndStaleNeverProcess/stale (0.03s)
+=== RUN   TestMetaConsumerCryptoFailureKeepsPendingBody
+=== RUN   TestMetaConsumerCryptoFailureKeepsPendingBody/missing-key
+=== RUN   TestMetaConsumerCryptoFailureKeepsPendingBody/tampered-tag
+=== RUN   TestMetaConsumerCryptoFailureKeepsPendingBody/invalid-classifier
+--- PASS: TestMetaConsumerCryptoFailureKeepsPendingBody (5.19s)
+    --- PASS: TestMetaConsumerCryptoFailureKeepsPendingBody/missing-key (1.43s)
+    --- PASS: TestMetaConsumerCryptoFailureKeepsPendingBody/tampered-tag (1.36s)
+    --- PASS: TestMetaConsumerCryptoFailureKeepsPendingBody/invalid-classifier (2.36s)
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batches_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.events_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batch_events_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/river_meta.river_job_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.event_bodies_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.quarantine_bodies_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.raw_bodies_INSERT
+=== RUN   TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batches_UPDATE_OF_finalized
+--- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants (0.33s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batches_INSERT (0.04s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.events_INSERT (0.03s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batch_events_INSERT (0.03s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/river_meta.river_job_INSERT (0.03s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.event_bodies_INSERT (0.03s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.quarantine_bodies_INSERT (0.03s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_private.raw_bodies_INSERT (0.04s)
+    --- PASS: TestMetaInboxEveryPersistenceStageRollsBackMixedTenants/meta_inbox.batches_UPDATE_OF_finalized (0.04s)
+=== RUN   TestMetaInboxCommittedResponseLossReplaysHistory
+--- PASS: TestMetaInboxCommittedResponseLossReplaysHistory (0.09s)
+=== RUN   TestMetaInboxProofExpiresAfterFinalizeBeforeCommit
+--- PASS: TestMetaInboxProofExpiresAfterFinalizeBeforeCommit (1.12s)
+=== RUN   TestMetaInboxInactiveScopesCannotRoute
+=== RUN   TestMetaInboxInactiveScopesCannotRoute/control.tenants
+=== RUN   TestMetaInboxInactiveScopesCannotRoute/control.stores
+--- PASS: TestMetaInboxInactiveScopesCannotRoute (0.11s)
+    --- PASS: TestMetaInboxInactiveScopesCannotRoute/control.tenants (0.02s)
+    --- PASS: TestMetaInboxInactiveScopesCannotRoute/control.stores (0.03s)
+=== RUN   TestMetaInboxInstagramThreeKindsProviderAndCipherScope
+--- PASS: TestMetaInboxInstagramThreeKindsProviderAndCipherScope (0.20s)
+=== RUN   TestMetaInboxInstagramCannotBorrowPageRoute
+--- PASS: TestMetaInboxInstagramCannotBorrowPageRoute (0.26s)
+=== RUN   TestMetaInboxReservedQueueIntegrity
+=== RUN   TestMetaInboxReservedQueueIntegrity/orphan_exact_shape
+=== RUN   TestMetaInboxReservedQueueIntegrity/foreign_kind
+=== RUN   TestMetaInboxReservedQueueIntegrity/foreign_queue
+=== RUN   TestMetaInboxReservedQueueIntegrity/both_foreign
+=== RUN   TestMetaInboxReservedQueueIntegrity/decimal_version
+=== RUN   TestMetaInboxReservedQueueIntegrity/extra_payload
+=== RUN   TestMetaInboxReservedQueueIntegrity/kind='generic_v1'
+=== RUN   TestMetaInboxReservedQueueIntegrity/queue='default'
+=== RUN   TestMetaInboxReservedQueueIntegrity/args=args_||_'{"payload":"forbidden"}'::jsonb
+=== RUN   TestMetaInboxReservedQueueIntegrity/args=jsonb_set(args,'{version}','2')
+=== RUN   TestMetaInboxReservedQueueIntegrity/id=id+90000000
+=== RUN   TestMetaInboxReservedQueueIntegrity/unique_key=decode('abcd','hex')
+--- PASS: TestMetaInboxReservedQueueIntegrity (0.61s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/orphan_exact_shape (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/foreign_kind (0.00s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/foreign_queue (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/both_foreign (0.00s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/decimal_version (0.00s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/extra_payload (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/kind='generic_v1' (0.19s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/queue='default' (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/args=args_||_'{"payload":"forbidden"}'::jsonb (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/args=jsonb_set(args,'{version}','2') (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/id=id+90000000 (0.01s)
+    --- PASS: TestMetaInboxReservedQueueIntegrity/unique_key=decode('abcd','hex') (0.01s)
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_runtime
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_payment_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_payment_live
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_expiry_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_ads_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_claims_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_worker
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_identity
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_buyer_runtime
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_buyer_issuer
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_checkout_runtime
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_hosted_runtime
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_registrar
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_curator
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_writer
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_read_all_data
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_write_all_data
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_read_server_files
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_write_server_files
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_execute_server_program
+=== RUN   TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_signal_backend
+--- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays (0.66s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_runtime (0.05s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_payment_worker (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_payment_live (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_expiry_worker (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_ads_worker (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_claims_worker (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_worker (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_worker (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_identity (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_buyer_runtime (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_buyer_issuer (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_checkout_runtime (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_hosted_runtime (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_registrar (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_curator (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/commerce_meta_writer (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_read_all_data (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_write_all_data (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_read_server_files (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_write_server_files (0.02s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_execute_server_program (0.03s)
+    --- PASS: TestMetaInboxPoolAuthorityIsExclusiveBothWays/pg_signal_backend (0.03s)
+=== RUN   TestMetaInboxOwnerGenericJobsKeepLegacyAdmission
+=== RUN   TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/meta_inbox_v1/default
+=== RUN   TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/generic_probe/meta_inbox
+=== RUN   TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/meta_inbox_v1/meta_inbox
+--- PASS: TestMetaInboxOwnerGenericJobsKeepLegacyAdmission (0.06s)
+    --- PASS: TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/meta_inbox_v1/default (0.00s)
+    --- PASS: TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/generic_probe/meta_inbox (0.00s)
+    --- PASS: TestMetaInboxOwnerGenericJobsKeepLegacyAdmission/meta_inbox_v1/meta_inbox (0.00s)
+=== RUN   TestMetaInboxRoleAndRouteAuthority
+=== RUN   TestMetaInboxRoleAndRouteAuthority/migration_owner
+=== RUN   TestMetaInboxRoleAndRouteAuthority/merchant_runtime
+=== RUN   TestMetaInboxRoleAndRouteAuthority/registrar
+=== RUN   TestMetaInboxRoleAndRouteAuthority/curator
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_ingress
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_runtime
+=== RUN   TestMetaInboxRoleAndRouteAuthority/route_denied_curator
+--- PASS: TestMetaInboxRoleAndRouteAuthority (0.17s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/migration_owner (0.01s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/merchant_runtime (0.01s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/registrar (0.02s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/curator (0.02s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_ingress (0.00s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_runtime (0.00s)
+    --- PASS: TestMetaInboxRoleAndRouteAuthority/route_denied_curator (0.00s)
+=== RUN   TestMetaInboxDeferredPartialBatchGuard
+--- PASS: TestMetaInboxDeferredPartialBatchGuard (0.04s)
+=== RUN   TestMetaInboxSignedHTTPAdmissionReplayAndConflict
+--- PASS: TestMetaInboxSignedHTTPAdmissionReplayAndConflict (0.18s)
+=== RUN   TestMetaInboxDeferredCommitFailureNeverACKs
+--- PASS: TestMetaInboxDeferredCommitFailureNeverACKs (0.15s)
+=== RUN   TestMetaInboxMixedBatchAccountingAndRoutingFence
+--- PASS: TestMetaInboxMixedBatchAccountingAndRoutingFence (0.15s)
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_ingress
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_registrar
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_merchant
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_merchant
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_payment_worker
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_claims_worker
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_ingress
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_registrar
+=== RUN   TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_curator
+--- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL (0.29s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_ingress (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_registrar (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/terminal_denied_merchant (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_merchant (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_payment_worker (0.01s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_claims_worker (0.01s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_ingress (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_registrar (0.00s)
+    --- PASS: TestMetaInboxRetentionTerminalEvidenceAndPrivateACL/private_read_denied_curator (0.00s)
+=== RUN   TestMetaInboxConcurrentSameBodyHasOneIdentity
+--- PASS: TestMetaInboxConcurrentSameBodyHasOneIdentity (0.14s)
+=== RUN   TestMetaInboxProofExpiryAfterObservedBindingWait
+--- PASS: TestMetaInboxProofExpiryAfterObservedBindingWait (0.91s)
+=== RUN   TestMetaInboxPurgeSkipsLockedRiverJob
+--- PASS: TestMetaInboxPurgeSkipsLockedRiverJob (0.16s)
+=== RUN   TestMetaInboxBindingVersionFenceAndReauthorization
+--- PASS: TestMetaInboxBindingVersionFenceAndReauthorization (0.11s)
+=== RUN   TestMetaInboxConcurrentRebatchedMIDHasOneJob
+--- PASS: TestMetaInboxConcurrentRebatchedMIDHasOneJob (0.14s)
+=== RUN   TestMetaRuntimeIsolationFailureAndResume
+=== RUN   TestMetaRuntimeIsolationFailureAndResume/running
+=== RUN   TestMetaRuntimeIsolationFailureAndResume/poisoned
+=== RUN   TestMetaRuntimeIsolationFailureAndResume/destination
+=== RUN   TestMetaRuntimeIsolationFailureAndResume/lock_contention
+--- PASS: TestMetaRuntimeIsolationFailureAndResume (16.39s)
+    --- PASS: TestMetaRuntimeIsolationFailureAndResume/running (4.96s)
+    --- PASS: TestMetaRuntimeIsolationFailureAndResume/poisoned (3.88s)
+    --- PASS: TestMetaRuntimeIsolationFailureAndResume/destination (3.04s)
+    --- PASS: TestMetaRuntimeIsolationFailureAndResume/lock_contention (4.50s)
+=== RUN   TestMetaRuntimeIsolationTwoWayRealMaintenance
+    meta_isolation_maintenance_test.go:109: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed checkout backend_after=0
+    meta_isolation_maintenance_test.go:109: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed worker backend_after=0
+    meta_isolation_maintenance_test.go:109: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed expiry backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer backend_after=0
+    meta_isolation_maintenance_test.go:109: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed identity backend_after=0
+    meta_isolation_maintenance_test.go:109: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed checkout backend_after=0
+    meta_isolation_maintenance_test.go:109: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed worker backend_after=0
+    meta_isolation_maintenance_test.go:109: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed expiry backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer backend_after=0
+    meta_isolation_maintenance_test.go:109: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed identity backend_after=0
+    meta_isolation_maintenance_test.go:109: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed checkout backend_after=0
+    meta_isolation_maintenance_test.go:109: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed worker backend_after=0
+    meta_isolation_maintenance_test.go:109: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed expiry backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer backend_after=0
+    meta_isolation_maintenance_test.go:109: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed identity backend_after=0
+    meta_isolation_maintenance_test.go:109: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed checkout backend_after=0
+    meta_isolation_maintenance_test.go:109: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed worker backend_after=0
+    meta_isolation_maintenance_test.go:109: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed expiry backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_runtime backend_after=0
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed buyer_issuer backend_after=0
+    meta_isolation_maintenance_test.go:109: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    meta_isolation_maintenance_test.go:109: seed identity backend_after=0
+--- PASS: TestMetaRuntimeIsolationTwoWayRealMaintenance (16.10s)
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/direct_old_table
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/direct_old_column
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/direct_old_sequence
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/inherited_old_table
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/set_reachable_old_table
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/PUBLIC_old_table
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/migration_ledger
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/Meta_River_ledger_table
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/Meta_River_ledger_column
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/schema_CREATE
+=== RUN   TestMetaRuntimeIsolationWorkerObjectACL/social_table
+--- PASS: TestMetaRuntimeIsolationWorkerObjectACL (6.51s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/direct_old_table (0.21s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/direct_old_column (0.12s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/direct_old_sequence (0.10s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/inherited_old_table (0.11s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/set_reachable_old_table (0.10s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/PUBLIC_old_table (0.09s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/migration_ledger (0.09s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/Meta_River_ledger_table (0.09s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/Meta_River_ledger_column (0.10s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/schema_CREATE (0.21s)
+    --- PASS: TestMetaRuntimeIsolationWorkerObjectACL/social_table (0.25s)
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_postgres
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_payment_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_payment_live
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_expiry_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_ads_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_claims_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_runtime
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_meta_ingress
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_meta_consumer
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_payment_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_payment_live
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_expiry_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_ads_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_claims_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_worker
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_runtime
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_meta_ingress
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_meta_consumer
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_pg_read_all_data
+=== RUN   TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_pg_write_all_data
+--- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix (4.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_postgres (0.01s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_payment_worker (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_payment_live (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_expiry_worker (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_ads_worker (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_claims_worker (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_worker (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_runtime (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_meta_ingress (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/wrong_role_commerce_meta_consumer (0.02s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_payment_worker (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_payment_live (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_expiry_worker (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_ads_worker (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_claims_worker (0.05s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_worker (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_runtime (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_meta_ingress (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_commerce_meta_consumer (0.03s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_pg_read_all_data (0.04s)
+    --- PASS: TestMetaRuntimeIsolationWorkerRoleMatrix/mixed_pg_write_all_data (0.04s)
+=== RUN   TestMetaRuntimeIsolationPopulated0030Cutover
+--- PASS: TestMetaRuntimeIsolationPopulated0030Cutover (3.31s)
+=== RUN   TestMetaRuntimeBinaryPreflightFailureClosesPools
+--- PASS: TestMetaRuntimeBinaryPreflightFailureClosesPools (12.05s)
+=== RUN   TestMetaRuntimeRealAPIBinariesPageInstagramRestart
+--- PASS: TestMetaRuntimeRealAPIBinariesPageInstagramRestart (24.48s)
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_ordinary_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_owner
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_runtime
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_consumer
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_runtime
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ingress
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ordinary_worker
+=== RUN   TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_owner
+--- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity (9.70s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_worker (0.04s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_ordinary_worker (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_owner (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_runtime (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/ingress_rejects_consumer (0.04s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_runtime (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ingress (0.02s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_worker (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_ordinary_worker (0.03s)
+    --- PASS: TestMetaRuntimePoolRolesAndDatabaseIdentity/consumer_rejects_owner (0.03s)
+=== RUN   TestMetaRuntimeSameDatabaseProbeReleasesBorrowedConnectionsAndLocks
+--- PASS: TestMetaRuntimeSameDatabaseProbeReleasesBorrowedConnectionsAndLocks (6.08s)
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_family
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_family
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_legacy
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_legacy
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_social_message_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_social_message_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_social_comment_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_social_comment_commit
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/replaced_function
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/filtered_trigger
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/security_invoker_function
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_wrong_queue
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_wrong_kind
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_extra_args
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_unique_key
+=== RUN   TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_without_link
+--- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed (4.41s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_family (0.03s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_family (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_commit (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_commit (0.03s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_meta_job_legacy (0.07s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_meta_job_legacy (0.04s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_social_message_commit (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_social_message_commit (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/disabled_social_comment_commit (0.03s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/missing_social_comment_commit (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/replaced_function (0.02s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/filtered_trigger (0.03s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/security_invoker_function (0.04s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_wrong_queue (0.12s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_wrong_kind (0.06s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_extra_args (0.04s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_unique_key (0.09s)
+    --- PASS: TestMetaRuntimeGuardMetadataAndActiveQueueFailClosed/active_job_without_link (0.07s)
+=== RUN   TestMetaRuntimePopulated0029Upgrade
+--- PASS: TestMetaRuntimePopulated0029Upgrade (3.48s)
+PASS
+ok  	livecommerce/tests/foundation	320.309s
+test-focused: top-level PASS=69 FAIL=0 SKIP=0 exit=0
+exit=0

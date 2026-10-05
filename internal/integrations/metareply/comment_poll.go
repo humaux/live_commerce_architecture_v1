@@ -6,11 +6,12 @@
 // Comment text/author names live only in these process-memory buffers and in bridge responses; they are
 // never logged and never persisted (I11). Instagram-live sessions are NOT polled here: the API-side
 // console reads them from the encrypted webhook copy via social.read_comment_events (OPEN-4 fallback).
+// comment-facts (Amendment 1 A1.2 1a) is the one IG-aware bridge read: a platform-branched single Graph read.
 // Concurrency: the mutex protects the sources map and each source's state; Graph/DB credential calls are
 // made with a zeroed local copy of the token and never while holding the mutex (no secret under lock).
 // Depends on: metaoauth.Graph, openPageToken (routes.go), live.acquire_comment_poll_lease /
 //
-//	live.comment_poll_sources / live.console_source / integration.load_meta_page_token_for_poll (0121).
+//	live.comment_poll_sources / live.console_source / integration.load_meta_page_token_for_poll (0123).
 //
 // Used by: cmd/claims-worker (NewConsole + Console.Handler); internal/integrations/metareply/bridge.go.
 package metareply
@@ -347,6 +348,9 @@ func (c *Console) SweepOnce(ctx context.Context) {
 			delete(c.sources, id)
 			continue
 		}
+		if s.object == "instagram" {
+			continue // owned on demand only for comment-facts (A1.2 1a); never forward-polled
+		}
 		if !now.Before(s.nextPollAt) {
 			toPoll = append(toPoll, s)
 		}
@@ -395,6 +399,9 @@ func (c *Console) pollSources(ctx context.Context) (map[string]consoleCandidate,
 		if err := rows.Scan(&cand.tenant, &cand.store, &cand.session, &cand.source,
 			&cand.platform, &cand.object, &cand.assetID, &cand.sourceObjectID, &cand.windowOpen); err != nil {
 			return nil, err
+		}
+		if cand.object == "instagram" {
+			continue // IG is served from the webhook copy (OPEN-4); the FB comment field set would not parse there
 		}
 		out[cand.source] = cand
 	}
@@ -763,7 +770,50 @@ func (c *Console) graphOlder(ctx context.Context, objID, assetID, before string,
 	return items, nextBefore, nil
 }
 
-// facts resolves one comment's facts: the ring buffer first, else one Graph read of the comment id.
+// factsFields is the platform-branched single-comment field set of live-console-v1 Amendment 1 A1.2 1a:
+// FB created_time/from{id}/parent{id}; IG timestamp/from{id}/parent_id (IG field set pending probe R3 /
+// LC-U12, so the IG branch is MOCK). Deliberately no message/name: facts carry no comment text.
+func factsFields(object string) string {
+	if object == "instagram" {
+		return "timestamp,from{id},parent_id"
+	}
+	return "created_time,from{id},parent{id}"
+}
+
+// parseCommentFacts derives {created_at,is_page,is_reply} from ONE Graph comment object (a bare object,
+// not a {data:[]} page). ok=false when the body is malformed, the id is not the asked ref, or the author
+// id is missing: an author that cannot be confirmed is "not found" so the API falls back / disables the
+// manual reply instead of guessing is_page=false. from.id is compared to the source asset and dropped.
+func parseCommentFacts(body []byte, object, assetID, ref string) (CommentFacts, bool) {
+	var row struct {
+		ID          string `json:"id"`
+		CreatedTime string `json:"created_time"` // FB
+		Timestamp   string `json:"timestamp"`    // IG
+		ParentID    string `json:"parent_id"`    // IG
+		Parent      *struct {
+			ID string `json:"id"`
+		} `json:"parent"` // FB
+		From *struct {
+			ID string `json:"id"`
+		} `json:"from"`
+	}
+	if json.Unmarshal(body, &row) != nil || row.ID != ref || row.From == nil || row.From.ID == "" {
+		return CommentFacts{}, false
+	}
+	when := row.CreatedTime
+	if object == "instagram" {
+		when = row.Timestamp
+	}
+	created, ok := parseMetaTime(when)
+	if !ok {
+		return CommentFacts{}, false
+	}
+	isReply := row.ParentID != "" || (row.Parent != nil && row.Parent.ID != "")
+	return CommentFacts{Found: true, CreatedAt: &created, IsPage: row.From.ID == assetID, IsReply: isReply}, true
+}
+
+// facts resolves one comment's facts: the ring buffer first, else one platform-branched Graph read of the
+// comment id (A1.2 1a). {found:false} when neither has it; the API then tries the IG webhook copy.
 func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now time.Time) (CommentFacts, error) {
 	c.mu.Lock()
 	if cc, ok := s.byRef[ref]; ok {
@@ -772,7 +822,7 @@ func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now t
 		return CommentFacts{Found: true, CreatedAt: &created, IsPage: cc.IsPage, IsReply: cc.ParentRef != nil}, nil
 	}
 	tok := c.ensureTokenLocked(ctx, s)
-	assetID := s.assetID
+	assetID, object := s.assetID, s.object
 	c.mu.Unlock()
 	if len(tok) == 0 {
 		return CommentFacts{}, ErrBridgeUnavailable
@@ -781,7 +831,8 @@ func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now t
 
 	ctx, cancel := context.WithTimeout(ctx, c.cfg.CallTimeout)
 	defer cancel()
-	rep, err := c.graph.Do(ctx, http.MethodGet, ref, url.Values{"fields": {commentFields}}, tok, nil)
+	// Calls Graph GET /{comment_id} (live-console-v1 §2.3 / Amendment 1 A1.2 1a); token in the header only.
+	rep, err := c.graph.Do(ctx, http.MethodGet, ref, url.Values{"fields": {factsFields(object)}}, tok, nil)
 	if err != nil {
 		return CommentFacts{}, ErrBridgeUnavailable
 	}
@@ -791,12 +842,11 @@ func (c *Console) facts(ctx context.Context, s *consoleSource, ref string, now t
 	if !rep.OK() {
 		return CommentFacts{}, ErrBridgeUnavailable
 	}
-	items, _, _, ok := normalizeComments(rep.Body, assetID, 1)
-	if !ok || len(items) != 1 || items[0].Ref != ref {
+	f, ok := parseCommentFacts(rep.Body, object, assetID, ref)
+	if !ok {
 		return CommentFacts{Found: false}, nil
 	}
-	created := items[0].CreatedAt
-	return CommentFacts{Found: true, CreatedAt: &created, IsPage: items[0].IsPage, IsReply: items[0].ParentRef != nil}, nil
+	return f, nil
 }
 
 // streamState renders §2.4 StreamState; reason is the fixed code and only set on a non-live state.

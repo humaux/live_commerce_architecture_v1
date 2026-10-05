@@ -105,7 +105,7 @@ func TestParseForIngestPrecedence(t *testing.T) {
 			t.Errorf("ParseForIngest(%q) = %#v, want exact %#v", in, got, want)
 		}
 	}
-	if got, want := ParseForIngest("我要H1+1"), (Result{VersionContains, Match, "H1", 1, true}); got != want {
+	if got, want := ParseForIngest("我要H1+1"), (Result{VersionContainsV2, Match, "H1", 1, true}); got != want { // new parses are kwc-v2
 		t.Errorf("ParseForIngest(我要H1+1) = %#v, want %#v", got, want)
 	}
 	if got := ParseForIngest("不要H1+1"); got.Kind != NoMatch || got.Version != Version {

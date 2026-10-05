@@ -26,12 +26,14 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httperror"
+	"livecommerce/internal/inbox"
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/live"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/metaconnect"
+	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefrontadmin"
@@ -85,6 +87,12 @@ type Options struct {
 	// StoreBaseDomain is the platform base zone (LC_STORE_BASE_DOMAIN) the merchant domain request builds CNAME targets from
 	// and refuses hostnames under (R5 unit store-domains). Empty leaves the request route mounted and answering 422.
 	StoreBaseDomain string
+	// Inbox is the merchant inbox read/write service (live-console-v1 §11 A8-A11/A13/A14; cmd/api builds it with
+	// inbox.LoadKeyring). nil leaves the inbox routes unmounted, like every other nil-able service in Options.
+	Inbox *inbox.Service
+	// MsgTemplates is the merchant message-template publish/list service (live-console-v1 §11 /message-templates, unit
+	// W2-05B; cmd/api builds it with msgtemplates.NewService). nil leaves the routes unmounted.
+	MsgTemplates *msgtemplates.Service
 }
 
 func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
@@ -204,6 +212,8 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)
+	registerInboxRoutes(mux, pool, configured.Inbox)
+	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)

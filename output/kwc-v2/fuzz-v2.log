@@ -1,0 +1,25 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/31 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 31/31 completed, now fuzzing with 10 workers
+fuzz: elapsed: 3s, execs: 307451 (102471/sec), new interesting: 67 (total: 98)
+fuzz: elapsed: 6s, execs: 634821 (109133/sec), new interesting: 92 (total: 123)
+fuzz: elapsed: 9s, execs: 864281 (76468/sec), new interesting: 100 (total: 131)
+fuzz: elapsed: 12s, execs: 1354637 (163494/sec), new interesting: 116 (total: 147)
+fuzz: elapsed: 15s, execs: 1607176 (84159/sec), new interesting: 119 (total: 150)
+fuzz: elapsed: 18s, execs: 1615775 (2866/sec), new interesting: 120 (total: 151)
+fuzz: elapsed: 21s, execs: 1615775 (0/sec), new interesting: 120 (total: 151)
+fuzz: elapsed: 24s, execs: 1615775 (0/sec), new interesting: 120 (total: 151)
+fuzz: elapsed: 27s, execs: 1615775 (0/sec), new interesting: 120 (total: 151)
+fuzz: elapsed: 30s, execs: 3389192 (591196/sec), new interesting: 127 (total: 158)
+fuzz: elapsed: 33s, execs: 3438388 (16360/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 36s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 39s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 42s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 45s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 48s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 51s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 54s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 57s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 1m0s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+fuzz: elapsed: 1m1s, execs: 3438388 (0/sec), new interesting: 133 (total: 164)
+PASS
+ok  	livecommerce/internal/claims/grammar	61.915s

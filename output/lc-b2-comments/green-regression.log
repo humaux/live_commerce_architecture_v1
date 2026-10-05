@@ -1,0 +1,391 @@
+=== RUN   TestLiveClaimsKC06Ingest
+--- PASS: TestLiveClaimsKC06Ingest (4.71s)
+=== RUN   TestLiveClaimsKC07Concurrency
+=== RUN   TestLiveClaimsKC07Concurrency/duplicate-delivery-x20
+=== RUN   TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity
+=== RUN   TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave
+=== RUN   TestLiveClaimsKC07Concurrency/deactivate-vs-ingest
+=== RUN   TestLiveClaimsKC07Concurrency/owners-racing-to-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/release-vs-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/cart-lock-ordering
+=== RUN   TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks
+--- PASS: TestLiveClaimsKC07Concurrency (4.41s)
+    --- PASS: TestLiveClaimsKC07Concurrency/duplicate-delivery-x20 (0.15s)
+    --- PASS: TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity (0.15s)
+    --- PASS: TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave (0.08s)
+    --- PASS: TestLiveClaimsKC07Concurrency/deactivate-vs-ingest (0.18s)
+    --- PASS: TestLiveClaimsKC07Concurrency/owners-racing-to-redeem (0.16s)
+    --- PASS: TestLiveClaimsKC07Concurrency/release-vs-redeem (0.21s)
+    --- PASS: TestLiveClaimsKC07Concurrency/cart-lock-ordering (2.42s)
+    --- PASS: TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks (0.68s)
+=== RUN   TestLiveClaimsKC08ManualPrivacy
+--- PASS: TestLiveClaimsKC08ManualPrivacy (2.34s)
+=== RUN   TestLiveClaimsP2bLabelPrivacy
+--- PASS: TestLiveClaimsP2bLabelPrivacy (0.61s)
+=== RUN   TestLiveClaimsP2cDuplicateReconstructible
+--- PASS: TestLiveClaimsP2cDuplicateReconstructible (0.33s)
+=== RUN   TestLiveClaimsP2dLabelNormalization
+--- PASS: TestLiveClaimsP2dLabelNormalization (0.59s)
+=== RUN   TestLiveClaimsP2eModeTransitions
+--- PASS: TestLiveClaimsP2eModeTransitions (1.28s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (6.17s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.20s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.27s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.02s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.55s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (1.68s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.12s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.14s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.80s)
+=== RUN   TestLiveClaimsKC12Isolation
+--- PASS: TestLiveClaimsKC12Isolation (0.77s)
+=== RUN   TestLiveClaimsP2aPolicyContexts
+--- PASS: TestLiveClaimsP2aPolicyContexts (0.23s)
+=== RUN   TestLiveClaimsP2gLinkTTLInDatabase
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.85s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.50s)
+=== RUN   TestLiveClaimsKC02Units
+--- PASS: TestLiveClaimsKC02Units (0.00s)
+=== RUN   TestLiveClaimsKC04Offers
+--- PASS: TestLiveClaimsKC04Offers (0.91s)
+=== RUN   TestLiveClaimsKC05Window
+--- PASS: TestLiveClaimsKC05Window (0.57s)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[])
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe()
+--- PASS: TestLiveConsoleInboxMigration0122ExactACL (0.02s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[]) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe() (0.00s)
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit
+--- PASS: TestLiveConsoleInboxLCN03PermissionSplit (0.02s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7 (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit (0.01s)
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404
+--- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink (0.02s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404 (0.01s)
+=== RUN   TestLiveConsoleInboxCrossStoreIsolation
+--- PASS: TestLiveConsoleInboxCrossStoreIsolation (0.01s)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list()
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint)
+--- PASS: TestLiveConsoleTemplatesMigration0121ExactACL (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list() (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint) (0.00s)
+=== RUN   TestLiveConsoleTemplatesPublishVersionAuditIdempotency
+--- PASS: TestLiveConsoleTemplatesPublishVersionAuditIdempotency (0.02s)
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_safe_template_with_a_URL_is_refused_§3.5
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_reply/recommend_kind_without_public_safe_is_refused
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/publishing_a_fixed_id_is_a_409_template_fixed
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/inbox:reply_principal_cannot_publish_(definer_gate)
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/store:read_only_principal_cannot_open_live:manage_scope
+--- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission (0.01s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_safe_template_with_a_URL_is_refused_§3.5 (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_reply/recommend_kind_without_public_safe_is_refused (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/publishing_a_fixed_id_is_a_409_template_fixed (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/inbox:reply_principal_cannot_publish_(definer_gate) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/store:read_only_principal_cannot_open_live:manage_scope (0.00s)
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/fixed_order-pay-link_resolves_with_the_sealed_link_placeholder
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/fixed_offer-recommend_resolves_public_safe
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/merchant_template_resolves_by_version
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/unknown_id_and_unknown_version_are_not_found
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_resolve_is_not_found_(RLS_isolation)
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_list_is_empty
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/resolve_definer_gate_denies_store:read_only_principal
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/list_definer_gate_denies_store:read_only_principal
+--- PASS: TestLiveConsoleTemplatesResolveAndCrossStore (0.02s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/fixed_order-pay-link_resolves_with_the_sealed_link_placeholder (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/fixed_offer-recommend_resolves_public_safe (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/merchant_template_resolves_by_version (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/unknown_id_and_unknown_version_are_not_found (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_resolve_is_not_found_(RLS_isolation) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_list_is_empty (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/resolve_definer_gate_denies_store:read_only_principal (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/list_definer_gate_denies_store:read_only_principal (0.00s)
+=== RUN   TestLiveToolsGateConsumptionReorderAndExpiry
+--- PASS: TestLiveToolsGateConsumptionReorderAndExpiry (0.87s)
+=== RUN   TestLiveToolsGateConsumptionPartial
+--- PASS: TestLiveToolsGateConsumptionPartial (0.89s)
+=== RUN   TestLiveToolsGateConsumptionPickupCancel
+--- PASS: TestLiveToolsGateConsumptionPickupCancel (0.59s)
+=== RUN   TestLiveToolsGateConsumptionPaidKeeps
+--- PASS: TestLiveToolsGateConsumptionPaidKeeps (4.83s)
+=== RUN   TestLiveToolsGateConsumptionConcurrentBegins
+--- PASS: TestLiveToolsGateConsumptionConcurrentBegins (0.65s)
+=== RUN   TestLiveToolsGateConsumptionLedgerACL
+--- PASS: TestLiveToolsGateConsumptionLedgerACL (0.76s)
+=== RUN   TestLiveToolsGateLivePriceOnlyThroughClaim
+--- PASS: TestLiveToolsGateLivePriceOnlyThroughClaim (1.54s)
+=== RUN   TestLiveToolsGateCartReadLivePrice
+--- PASS: TestLiveToolsGateCartReadLivePrice (0.86s)
+=== RUN   TestLiveToolsGateRawCartForgery
+--- PASS: TestLiveToolsGateRawCartForgery (0.66s)
+=== RUN   TestLiveToolsGateForgedClaimQuantityAboveTheClaim
+--- PASS: TestLiveToolsGateForgedClaimQuantityAboveTheClaim (0.58s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+--- PASS: TestLiveToolsGateOfferLifecycleAndExpiry (1.07s)
+=== RUN   TestLiveToolsGateLinkExpiry
+--- PASS: TestLiveToolsGateLinkExpiry (5.22s)
+=== RUN   TestLiveToolsGateCheckoutPlacesClaimOriginCart
+--- PASS: TestLiveToolsGateCheckoutPlacesClaimOriginCart (0.74s)
+=== RUN   TestLiveToolsGateSnapshotsAndOrders
+--- PASS: TestLiveToolsGateSnapshotsAndOrders (1.06s)
+=== RUN   TestLiveToolsGateLibraryImportCopy
+--- PASS: TestLiveToolsGateLibraryImportCopy (2.60s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (0.55s)
+=== RUN   TestLiveToolsGateRoleBoundaries
+--- PASS: TestLiveToolsGateRoleBoundaries (0.45s)
+=== RUN   TestLiveToolsGatePromotionOnLivePrice
+--- PASS: TestLiveToolsGatePromotionOnLivePrice (5.02s)
+=== RUN   TestLiveToolsGateRefundsCappedAtPaid
+--- PASS: TestLiveToolsGateRefundsCappedAtPaid (5.30s)
+=== RUN   TestLiveToolsLivePriceOnlyThroughClaimOrigin
+--- PASS: TestLiveToolsLivePriceOnlyThroughClaimOrigin (0.66s)
+=== RUN   TestLiveToolsExpiryOffersAndForgedOrigin
+    live_tools_test.go:213: raw UPDATE refused (ERROR: permission denied for table cart_lines (SQLSTATE 42501)); forging through DELETE+INSERT instead
+--- PASS: TestLiveToolsExpiryOffersAndForgedOrigin (0.43s)
+=== RUN   TestLiveToolsLibraryImportAndCopy
+--- PASS: TestLiveToolsLibraryImportAndCopy (0.26s)
+=== RUN   TestLiveToolsVolatility
+--- PASS: TestLiveToolsVolatility (0.12s)
+=== RUN   TestMetaClaimsMCI04SignedReplayToAcceptedClaim
+--- PASS: TestMetaClaimsMCI04SignedReplayToAcceptedClaim (7.98s)
+=== RUN   TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly
+--- PASS: TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly (2.63s)
+=== RUN   TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes
+--- PASS: TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes (1.10s)
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/social_fact
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/stage
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/processed_mark
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/COMMIT
+--- PASS: TestMetaClaimsMCI04ConsumerAtomicity (17.20s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/social_fact (2.78s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/stage (2.49s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/processed_mark (2.37s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/COMMIT (2.39s)
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/23514_check
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row
+--- PASS: TestMetaClaimsMCI04ApplyFailurePaths (1.88s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid (0.35s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/23514_check (0.19s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies (0.27s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row (0.37s)
+=== RUN   TestMetaClaimsMCI04IngestPreconditions
+--- PASS: TestMetaClaimsMCI04IngestPreconditions (0.92s)
+=== RUN   TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce
+--- PASS: TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce (3.92s)
+=== RUN   TestMetaClaimsMCI04RiverGuards
+--- PASS: TestMetaClaimsMCI04RiverGuards (0.43s)
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment
+--- PASS: TestMetaClaimsMCI05OneIntakePerComment (3.69s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate (0.31s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3 (0.53s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments (0.47s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset (0.50s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment (1.54s)
+=== RUN   TestMetaClaimsMCI05ImmutableFactsAndDuplicates
+--- PASS: TestMetaClaimsMCI05ImmutableFactsAndDuplicates (7.66s)
+=== RUN   TestMetaClaimsMCI05StagingCap
+--- PASS: TestMetaClaimsMCI05StagingCap (1.03s)
+=== RUN   TestMetaClaimsMCI06IntervalsGraceAndGenerations
+--- PASS: TestMetaClaimsMCI06IntervalsGraceAndGenerations (2.11s)
+=== RUN   TestMetaClaimsMCI06CloseWhileApplyWaits
+--- PASS: TestMetaClaimsMCI06CloseWhileApplyWaits (1.01s)
+=== RUN   TestMetaClaimsMCI06InstagramUsesDeliveryTime
+--- PASS: TestMetaClaimsMCI06InstagramUsesDeliveryTime (1.04s)
+=== RUN   TestMetaClaimsMCI06RateBounds
+=== RUN   TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies
+=== RUN   TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited
+=== RUN   TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies
+--- PASS: TestMetaClaimsMCI06RateBounds (17.55s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies (3.47s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited (3.25s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies (1.43s)
+=== RUN   TestMetaClaimsMCI09LockOrderWorkload
+--- PASS: TestMetaClaimsMCI09LockOrderWorkload (4.93s)
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget/facebook
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget/instagram_live
+--- PASS: TestMetaClaimsMCI07PlanShapeAndBudget (9.02s)
+    --- PASS: TestMetaClaimsMCI07PlanShapeAndBudget/facebook (1.09s)
+    --- PASS: TestMetaClaimsMCI07PlanShapeAndBudget/instagram_live (0.45s)
+=== RUN   TestMetaClaimsMCI07ReplySkips
+=== RUN   TestMetaClaimsMCI07ReplySkips/binding_disabled
+=== RUN   TestMetaClaimsMCI07ReplySkips/binding_changed
+=== RUN   TestMetaClaimsMCI07ReplySkips/source_off
+=== RUN   TestMetaClaimsMCI07ReplySkips/no_storefront
+--- PASS: TestMetaClaimsMCI07ReplySkips (3.84s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/binding_disabled (0.89s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/binding_changed (1.05s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/source_off (1.10s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/no_storefront (0.80s)
+=== RUN   TestMetaClaimsMCI07BindingVersionBumpIsNotASkip
+--- PASS: TestMetaClaimsMCI07BindingVersionBumpIsNotASkip (1.89s)
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/2xx_sends_the_link_once,_token_only_in_the_JSON_body
+    meta_claims_intake_reply_test.go:499: operation persisted READY//job=running, want SUCCEEDED (job [completed])
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/locale_en_renders_the_/en/_link
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_400
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_5xx
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_429
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_garbled
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_nomsgid
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_hang
+--- FAIL: TestMetaClaimsMCI07SendAndOutcomes (52.28s)
+    --- FAIL: TestMetaClaimsMCI07SendAndOutcomes/2xx_sends_the_link_once,_token_only_in_the_JSON_body (31.54s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/locale_en_renders_the_/en/_link (1.27s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_400 (2.01s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_5xx (2.01s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_429 (1.98s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_garbled (2.01s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_nomsgid (2.24s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_hang (2.01s)
+=== RUN   TestMetaClaimsMCI07CheckDenials
+=== RUN   TestMetaClaimsMCI07CheckDenials/deadline_(IG_live:_received_1_h_ago,_+15_min_already_passed)
+=== RUN   TestMetaClaimsMCI07CheckDenials/source_off
+=== RUN   TestMetaClaimsMCI07CheckDenials/principal_revoked
+=== RUN   TestMetaClaimsMCI07CheckDenials/IG_live_window_closed
+=== RUN   TestMetaClaimsMCI07CheckDenials/merchant_rotated_the_link
+=== RUN   TestMetaClaimsMCI07CheckDenials/merchant_released_a_bound_link
+=== RUN   TestMetaClaimsMCI07CheckDenials/link_expiring_within_10_minutes
+=== RUN   TestMetaClaimsMCI07CheckDenials/link_key_id_changed
+=== RUN   TestMetaClaimsMCI07CheckDenials/binding_changed_after_plan_(dispatcher_gate)
+=== RUN   TestMetaClaimsMCI07CheckDenials/no_Page_token_head
+=== RUN   TestMetaClaimsMCI07CheckDenials/current_Page_token_lacks_the_attested_scope
+=== RUN   TestMetaClaimsMCI07CheckDenials/Check_infrastructure_error_is_UNKNOWN_policy_check_failed,_never_a_denial_or_a_send
+--- PASS: TestMetaClaimsMCI07CheckDenials (34.94s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/deadline_(IG_live:_received_1_h_ago,_+15_min_already_passed) (2.22s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/source_off (1.63s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/principal_revoked (8.47s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/IG_live_window_closed (2.14s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/merchant_rotated_the_link (1.92s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/merchant_released_a_bound_link (1.84s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/link_expiring_within_10_minutes (2.01s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/link_key_id_changed (8.04s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/binding_changed_after_plan_(dispatcher_gate) (1.73s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/no_Page_token_head (1.95s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/current_Page_token_lacks_the_attested_scope (1.58s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/Check_infrastructure_error_is_UNKNOWN_policy_check_failed,_never_a_denial_or_a_send (1.42s)
+=== RUN   TestMetaClaimsMCI07SecretVisibility
+--- PASS: TestMetaClaimsMCI07SecretVisibility (3.67s)
+=== RUN   TestMetaClaimsMCI07ChildKillAfterSend
+--- PASS: TestMetaClaimsMCI07ChildKillAfterSend (31.77s)
+=== RUN   TestMetaClaimsMCI07DispatcherRouteShape
+--- PASS: TestMetaClaimsMCI07DispatcherRouteShape (0.26s)
+=== RUN   TestMetaClaimsMCI08PrivacyScansAndCustody
+--- PASS: TestMetaClaimsMCI08PrivacyScansAndCustody (5.99s)
+=== RUN   TestMetaClaimsMCI08ProcessesCannotLoadReplySecrets
+--- PASS: TestMetaClaimsMCI08ProcessesCannotLoadReplySecrets (0.01s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (3.65s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+=== RUN   TestMetaClaimsMCI02PoolValidator
+--- PASS: TestMetaClaimsMCI02PoolValidator (1.55s)
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only
+--- PASS: TestMetaClaimsMCI02PolicyBehaviour (8.03s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal (0.02s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation (0.03s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege (0.02s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window (0.04s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only (0.02s)
+=== RUN   TestMetaClaimsMCI03PutClaimSource
+=== RUN   TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping
+=== RUN   TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict
+=== RUN   TestMetaClaimsMCI03PutClaimSource/validation
+=== RUN   TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute
+=== RUN   TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential
+=== RUN   TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object
+=== RUN   TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency
+--- PASS: TestMetaClaimsMCI03PutClaimSource (0.51s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping (0.00s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/validation (0.02s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute (0.02s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential (0.00s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency (0.08s)
+FAIL
+FAIL	livecommerce/tests/foundation	294.283s
+FAIL
+test-focused: top-level PASS=75 FAIL=1 SKIP=0 exit=1
+exit=1

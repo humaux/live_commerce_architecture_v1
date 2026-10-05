@@ -1,13 +1,15 @@
 // Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR-13): it runs the
 // claims intake poller (internal/claimsintake) and the main-schema external_operation_v1 River
-// worker whose only routes are the Meta private replies (internal/integrations/metareply), and the merchant-disconnect unsubscribe
-// jobs (metareply.Unsubscriber, migration 0100: one best-effort DELETE /{page-id}/subscribed_apps per disconnected Page).
+// worker whose only routes are the Meta private replies (internal/integrations/metareply), the merchant-disconnect unsubscribe
+// jobs (metareply.Unsubscriber, migration 0100: one best-effort DELETE /{page-id}/subscribed_apps per disconnected Page),
+// and the inbox resubscribe jobs (metareply.Resubscriber, migration 0119: one best-effort POST /{page-id}/subscribed_apps
+// subscribed_fields=feed,messages per already-connected Page, the live-console inbox read side's subscription).
 //
 // It serves exactly one internal HTTP listener when COMMERCE_CLAIMS_CONSOLE_ADDR is set (live-console-v1
 // §2.3, unit LC-B2): the API↔worker comment bridge (POST /internal/v1/comment-page and /comment-facts,
 // shared 32-byte bearer, backend Docker network only) plus the comment poller. It never reads the Meta
 // payload keyring, the claims actor key K_actor (owned by cmd/meta-worker) or any Stripe variable, never
-// sends anything but the first private reply of a new claim bundle and that unsubscribe, and never
+// sends anything but the first private reply of a new claim bundle, that unsubscribe and that resubscribe, and never
 // prints a key, token, DSN or driver error (one fixed error string per failure class).
 //
 // External: graph.facebook.com only (private replies via internal/integrations/metareply; never in tests).

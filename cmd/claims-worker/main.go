@@ -1,4 +1,4 @@
-// Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
+// Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, inbox resubscribe, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
 // Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
 // Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go.
 package main
@@ -277,6 +277,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// Inbox's durable "POST /{page}/subscribed_apps subscribed_fields=feed,messages" jobs (migration 0119): the same private ring.
+	resubscriber, err := metareply.NewResubscriber(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
 		return errWorkerDatabase
@@ -345,11 +350,17 @@ func run(ctx context.Context, getenv func(string) string) error {
 			_ = consoleServer.Shutdown(shutdown)
 		}()
 	}
+	resubscribed := make(chan struct{})
+	go func() {
+		defer close(resubscribed)
+		resubscriber.Run(pollCtx)
+	}()
 	// Fixed local startup witness; never implies Meta access.
 	runErr := jobqueue.Run(ctx, client, "claims_worker_ready")
 	stopPoll()
 	<-polled
 	<-unsubscribed
+	<-resubscribed
 	switch {
 	case errors.Is(runErr, jobqueue.ErrStart):
 		return errWorkerStart

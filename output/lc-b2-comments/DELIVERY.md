@@ -150,3 +150,81 @@ protocol defect, all found by the REAL_PG gate and fixed in place —
 `tests/foundation/live_console_comments_test.go`, `output/lc-b2-comments/DELIVERY.md`. No `apps/`/UI, no
 go.mod/go.sum/OpenAPI-shared-schema/pnpm-lock changes. `experiments/results/packet-check.json` was regenerated
 locally by `check_packet.py` (timestamp bump only) and left uncommitted (integrator pass).
+
+---
+
+## Integrator completion (Sonnet)
+
+Author text above is DeepSeek's and stays as written; wherever it says migration **0121**, read **0123** (renumbered
+here: 0121 is `0121_msg_templates`, 0122 is reserved by LC-B1). Evidence class: **REAL_PG + MOCK Graph** (no LIVE Meta).
+
+### Changes
+1. **Merged `r3/integration` (eb5746f8).** Conflicts, both sides kept: `cmd/api/main.go` (commentStream + inbox service),
+   `cmd/claims-worker/{main.go,doc.go}` (bridge listener + resubscriber), `scripts/dev/test-local.sh` (`--live-console`
+   plus `--inbox`, `--msg-templates` in both the guard and the usage string and the dispatch).
+2. **Migration `0121_live_console_comments.sql` -> `0123_live_console_comments.sql`.** References updated in the migration
+   header, `metareply/{bridge,comment_poll}.go`, `live/stream.go`, `tests/foundation/live_console_comments_test.go`,
+   `contracts/live-console-v1.md` (two `(0121,` mentions + the LC-B2 unit row). The LC-B5 `0121` mentions stay (that is msg_templates).
+3. **Amendment 1 A1.2 (LC-B2 delta).**
+   - `comment_poll.go`: bridge `comment-facts` is platform-branched (`factsFields`, `parseCommentFacts`): FB
+     `created_time,from{id},parent{id}`, IG `timestamp,from{id},parent_id`; no message/name is read for facts; a comment
+     whose author id is missing answers `{found:false}` (no guessed `is_page=false`). The single read is parsed as a BARE
+     object (the old FB code parsed a `{data:[]}` page, which real Graph does not return for `GET /{comment_id}`; the fake
+     Graph in `live_console_comments_test.go` was corrected to the real shape).
+   - `0123`: `social.read_comment_facts(p_session,p_comment_ref)` (STABLE DEFINER, owner `commerce_meta_writer`, EXECUTE
+     `commerce_runtime`, live:read via `identity.principal_holds`; newest copy; comment_key recomputed in SQL as
+     sha256(json["meta-social-comment/v1",app,object,asset,ref])). Same migration grants `commerce_meta_writer` USAGE on
+     schemas `identity`,`live` and column `live.claim_sources.asset_id`: the existing `social.read_comment_events` definer
+     was also missing the schema USAGE (a latent defect: it had never been exercised, the A2 IG read now is).
+   - `internal/live/stream_facts.go` (new): `CommentStream.Facts` (a: bridge, b: IG webhook copy decrypted API-side with the
+     payload keyring, c: `ErrFactsUnavailable`), `PrivateReplyMarks` and `ConsoleMarks.WithFactsUnavailable`
+     (`private_reply_unavailable_reason: "facts_unavailable"`; `used`/`auto_pending` keep precedence). FB found:false stays
+     `Found=false` (A4 `comment_unknown`); IG with neither source is `ErrFactsUnavailable`; a bridge outage with no IG copy is
+     the retryable `ErrStreamUnavailable`. `live.console_marks` keeps its frozen signature; the reason is applied API-side.
+   - Poller: Instagram sources are no longer forward-polled (they were polled with the FB comment field set; the file header
+     already said they are not). IG sources are only acquired on demand for comment-facts.
+4. **Wiring.** Already built into `cmd/api` (`buildCommentStream`) and `cmd/claims-worker` (bridge + sweep) by the author;
+   this unit adds a DB-free full-router test `TestLiveStreamRoutesCoexistWithInboxAndTemplates` (A2/A3 + inbox + templates
+   mounted together). The new `Facts`/`PrivateReplyMarks` have no HTTP route yet: their consumer is the LC-B4 A4 planner
+   (`409 comment_facts_unavailable`) and the A8/A13 marks (LC-B3/B4).
+5. **Exact-privilege rows added to `tests/foundation/live_claims_schema_test.go` (KC03), only LC-B2's own objects:**
+   column SELECT `claims.events.reason`, `integration.operations.{semantic_key,result_code,created_at}`,
+   `live.comment_poll_leases.{tenant_id,store_id,source_id,demand_until}`; table SELECT/INSERT/UPDATE `live.comment_prints`
+   (+ its eight columns); EXECUTE `live.{comment_poll_sources,console_source,console_marks,comment_print}`; owned-object
+   count 23 -> 27 (those four definers).
+6. **Test timing (harness, not a gate):** `LCN01 idle-drop-reset` used `IdleDrop=20ms`, which flaked when the shared Docker
+   host was loaded (page1 items=0 before the first poll); now `IdleDrop=3s`, sleep 3.5s. The asserted behaviour is unchanged.
+7. Docs: `docs/delivery/GATES.md` (`--live-console` row), `scripts/dev/test-local.sh` (`--live-console` now runs
+   `^TestLiveConsoleLCN` only, 300s; Inbox/Templates keep their own modes), `contracts/live-console-v1.md` unit row/A1.6 note.
+
+### New tests
+- `tests/foundation/live_console_comments_facts_test.go`: `TestLiveConsoleLCN02IGFactsBridgeGraphBranch` (IG page/buyer/reply/
+  missing-author/unknown, FB/IG field sets and bearer-in-header asserted on the MOCK Graph) and
+  `TestLiveConsoleLCN02IGFactsFallbackAndUnavailable` (a Graph facts, b real signed IG webhook -> inbox -> consumer ->
+  `social.read_comment_facts` decrypted API-side for page/reply/plain, media-mismatch copy not this source's, c
+  `facts_unavailable` + marks reason, no-keyring api, foreign session, bad ref, FB unknown = Found:false, bridge-down 503 vs
+  copy-still-answers, A2 IG page through `social.read_comment_events`, IG author id never persisted in clear).
+- `internal/integrations/metareply/comment_facts_test.go` (DB-free table test), `internal/httpapi/live_stream_test.go` (router).
+
+### Commands and exit codes (logs in `output/lc-b2-comments/`)
+| command | exit |
+|---|---|
+| `bash scripts/dev/test-focused.sh '^TestLiveConsoleLCN'` (8 tests: LCN01 x3, LCN02 x3 incl. 2 IG, LCN04, LCN05) -> `green-lcn.log` | 0 |
+| `bash scripts/dev/test-focused.sh '^(TestLiveClaims\|TestLiveTools\|TestLiveSessionFlow\|TestMetaClaimsMCI0\|TestLiveClaimsKC03\|TestLiveConsoleInbox\|TestLiveConsoleTemplates)'` -> `green-regression.log` | 1 first run: 75 PASS, 1 FAIL `TestMetaClaimsMCI07SendAndOutcomes` (River job timing under a loaded shared Docker host) |
+| `bash scripts/dev/test-focused.sh '^(TestLiveConsoleLCN01BufferCapAgeAndCursor\|TestMetaClaimsMCI07)'` -> `rerun.log` | 0 |
+| `bash scripts/dev/test-focused.sh '^TestLiveClaimsKC03'` -> `kc03.log` | 0 (after the rows in item 5) |
+| `bash scripts/dev/test-focused.sh '^(TestMetaConsumer\|TestMetaInbox\|TestMetaClaimsIntake\|TestExternalOperation\|TestLegacyRuntime\|TestMetaRuntime\|TestClaimsRetention)'` (guards the new meta_writer grants) -> `green-wide.log` | 0 (69 PASS) |
+| `go build ./... && go vet ./internal/... ./cmd/... ./tests/foundation`; `gofmt -l internal cmd tests` | 0; no output |
+| `go test ./internal/live/... ./internal/httpapi/... ./internal/integrations/metareply/... ./internal/integrations/meta/... ./cmd/api/... ./cmd/claims-worker/...` | 0 |
+| `bash scripts/dev/check-headers.sh` | 0 |
+| `bash scripts/dev/check-gates.sh` (node_modules symlinked from r3-integration, link removed afterwards) -> `check-gates.log` | 0 (67 modes documented) |
+
+### NOT_RUN / limits
+- `bash scripts/dev/test-local.sh --live-console` itself was not run: the same tests ran through `test-focused.sh` (identical pinned PG image
+  and fixture guard) because the shared PG slot is queue-locked; the mode's dispatch only differs by `-race`. **Not run with `-race`.**
+- A first wider selection (adding `TestLiveMedia|TestLivePlanning|TestMetaAds`) hit the 900 s focused timeout and showed an unrelated
+  `TestLiveMediaRecoveryMRR02TimelyReadbackWitnessCommitsAfterNinety` failure; it was not pursued (media code untouched).
+- IG Graph field set is MOCK until probe R3 / LC-U12; no LIVE Meta call; `created_at` for the IG webhook copy is delivery time (U7).
+- Poller token load still requires attested scope `pages_read_engagement` for IG sources too (author behaviour); LC-U12 decides if IG needs
+  `instagram_manage_comments` instead.
+- No HTTP route exposes `Facts`/`PrivateReplyMarks` (LC-B4 A4 / LC-B3 A8,A13 consume them).

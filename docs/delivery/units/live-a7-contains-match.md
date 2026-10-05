@@ -191,3 +191,10 @@ integrator：`contracts/*`、`docs/delivery/GATES.md`、KC03/MCI02 精确清单�
 8. 新增门禁模式批准：`--browser-live-flow`、`--browser-claim-checkout`，`--browser-webkit` 增第 7 步 `claim-checkout`（release-gate 行 6→7 步）。
 9. 粉专直播中影片挑选保持 MOCK；status 取值与 U1（影片 post_id 是否等于留言 webhook 的 post_id）待 owner 测试账号做 LIVE 探针。
 10. 本轮不做店铺级默认匹配模式（复制场次已带模式）。
+
+## §2.5b kwc-v2（2026-10-05，K3 对抗测试 F1–F3 后）
+- 新的 CONTAINS 解析一律用 `kwc-v2`；已存事件按其记录的 `grammar_version` 重放（kwc-v1 冻结不变，I02）。
+- 问句表在 kwc-v1 基础上加 `問`（含 請問）、`如何`、`價格`、`價錢`。
+- 多字否定/问句词容忍中间夹的边界字符（空格、emoji、标点、零宽字符）：`取 消A01+2`、`算😍了A01+2` 均不成单。
+- 片段前紧邻非 ASCII 字母（形近字，如西里尔 А、希腊 Α）且带显式 `+N` 时拒绝（NO_MATCH），不切出另一个关键字。代价：CONTAINS 下 `我要01+2` 转人工。
+- 证据：unit/k3-a7-adversarial（K3，160 例）+ unit/kwc-v2（152c614c/f17cd431）；迁移 0120 放宽 grammar_version 白名单。

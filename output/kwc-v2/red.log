@@ -1,0 +1,35 @@
+ok  	livecommerce/internal/claims	1.529s
+ok  	livecommerce/internal/claims/grammar	1.521s
+--- FAIL: TestKwcV1AdversarialCorpus (0.00s)
+    kwc_adversarial_test.go:88: FINDING K3A-S01 ParseContains("請問A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 請問/問 (the most common Taiwan question opener) is absent from the frozen question table)
+    kwc_adversarial_test.go:88: FINDING K3A-S02 ParseContains("請問一下A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: same gap)
+    kwc_adversarial_test.go:88: FINDING K3A-S03 ParseContains("A01+2如何") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 如何 absent from the question table)
+    kwc_adversarial_test.go:88: FINDING K3A-S04 ParseContains("請問A01+2還有貨") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: availability question without any table fragment)
+    kwc_adversarial_test.go:88: FINDING K3A-S05 ParseContains("取 消A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char negation 取消 evaded by an interposed space)
+    kwc_adversarial_test.go:88: FINDING K3A-S06 ParseContains("算 了A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char negation 算了 evaded)
+    kwc_adversarial_test.go:88: FINDING K3A-S07 ParseContains("取😍消A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char negation 取消 evaded by an emoji)
+    kwc_adversarial_test.go:88: FINDING K3A-S08 ParseContains("多 少A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char question 多少 evaded)
+    kwc_adversarial_test.go:88: FINDING K3A-S09 ParseContains("可 否A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char question 可否 evaded)
+    kwc_adversarial_test.go:88: FINDING K3A-S10 ParseContains("什 麼A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char question 什麼 evaded)
+    kwc_adversarial_test.go:88: FINDING K3A-S11 ParseContains("A01+2價格") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: price question without ? or 多少)
+    kwc_adversarial_test.go:88: FINDING K3A-S12 ParseContains("是 否A01+2") = kind=MATCH keyword="A01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: 2-char question 是否 evaded)
+    kwc_adversarial_test.go:88: FINDING K3A-S13 ParseContains("А01+2") = kind=MATCH keyword="01" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: Cyrillic А is a boundary rune, so kwc-v1 carves the remaining digits into keyword 01 x2 — a claim for a DIFFERENT product if offer 01 exists (visual lookalike of A01))
+    kwc_adversarial_test.go:88: FINDING K3A-S14 ParseContains("Α1+2") = kind=MATCH keyword="1" qty=2 explicit=true; safe outcome is kind=NO_MATCH (FINDING class: Greek Α boundary leaves keyword 1 x2; same wrong-product carve as K3A-S13)
+--- FAIL: TestKwcV1AdversarialParseForIngest (0.00s)
+    kwc_adversarial_test.go:127: K3A-S01 ParseForIngest("請問A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S02 ParseForIngest("請問一下A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S03 ParseForIngest("A01+2如何") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S04 ParseForIngest("請問A01+2還有貨") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S05 ParseForIngest("取 消A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S06 ParseForIngest("算 了A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S07 ParseForIngest("取😍消A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S08 ParseForIngest("多 少A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S09 ParseForIngest("可 否A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S10 ParseForIngest("什 麼A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S11 ParseForIngest("A01+2價格") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S12 ParseForIngest("是 否A01+2") = MATCH kw="A01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S13 ParseForIngest("А01+2") = MATCH kw="01" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+    kwc_adversarial_test.go:127: K3A-S14 ParseForIngest("Α1+2") = MATCH kw="1" qty=2: a corpus NO_MATCH became an order candidate at the ingest entry
+FAIL
+FAIL	livecommerce/tests/claims	1.269s
+FAIL

@@ -4,6 +4,8 @@
 package httpapi
 
 import (
+	"bytes"
+	"encoding/base64"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,8 +13,10 @@ import (
 	"strings"
 	"testing"
 
+	"livecommerce/internal/inbox"
 	"livecommerce/internal/integrations/metareply"
 	"livecommerce/internal/live"
+	"livecommerce/internal/msgtemplates"
 )
 
 func testCommentStream(t *testing.T) *live.CommentStream {
@@ -120,4 +124,42 @@ func mustURL(raw string) *url.URL {
 		panic(err)
 	}
 	return u
+}
+
+// TestLiveStreamRoutesCoexistWithInboxAndTemplates builds the full router with the console comment routes
+// (LC-B2), the inbox (LC-B3) and the message templates (LC-B5) all mounted at once, so a ServeMux route
+// conflict between the three live-console units panics here, DB-free, instead of at deploy. Each surface
+// answers 401 (mounted, no bearer), never 404.
+func TestLiveStreamRoutesCoexistWithInboxAndTemplates(t *testing.T) {
+	key := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0x42}, 32))
+	kr, err := inbox.LoadKeyring(func(name string) string {
+		switch name {
+		case "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID":
+			return "k1"
+		case "COMMERCE_META_PAYLOAD_KEYS_JSON":
+			return `{"keys":[{"id":"k1","key_base64":"` + key + `"}]}`
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatalf("LoadKeyring: %v", err)
+	}
+	inboxService, err := inbox.NewService(kr)
+	if err != nil {
+		t.Fatalf("inbox.NewService: %v", err)
+	}
+	h := NewHandler(nil, Options{Studio: true, CommentStream: testCommentStream(t), Inbox: inboxService,
+		MsgTemplates: msgtemplates.NewService()})
+	const store = "/v1/admin/stores/11111111-1111-4111-8111-111111111111"
+	for _, path := range []string{
+		store + "/live-sessions/22222222-2222-4222-8222-222222222222/comments",
+		store + "/inbox/conversations",
+		store + "/message-templates",
+	} {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("GET %s status %d, want 401 (mounted, no bearer)", path, w.Code)
+		}
+	}
 }

@@ -303,7 +303,7 @@ func validShape(in IngestInput, p grammar.Result, m *metaIngest) bool {
 			return false
 		}
 	}
-	if p.Version != grammar.Version && p.Version != grammar.VersionContains {
+	if p.Version != grammar.Version && !grammar.IsContainsVersion(p.Version) {
 		return false
 	}
 	if m != nil && m.unknownKeyword {
@@ -323,13 +323,13 @@ func validShape(in IngestInput, p grammar.Result, m *metaIngest) bool {
 	return false
 }
 
-// effective is the mode gate for a parsed comment (§2.5 property): a kwc-v1 result survives
+// effective is the mode gate for a parsed comment (§2.5 property): a kwc-v1/kwc-v2 result survives
 // only in a KEYWORD_QTY_CONTAINS window; anywhere else it is downgraded to the exact kw-v1
 // NO_MATCH. kw-v1 results are never touched. Pure. ingest applies it with the matched
 // window's mode; readSource applies it with the stored event's match_mode, so a redelivered
 // source yields the same facts in every mode and never 409s.
 func effective(p grammar.Result, mode MatchMode) grammar.Result {
-	if mode != MatchKeywordQtyContains && p.Version == grammar.VersionContains {
+	if mode != MatchKeywordQtyContains && grammar.IsContainsVersion(p.Version) {
 		return grammar.Result{Version: grammar.Version, Kind: grammar.NoMatch}
 	}
 	return p
