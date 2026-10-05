@@ -169,3 +169,9 @@ Comments explain *why* and *what it touches*, not what the next line does.
 - Migration numbers: this release branch owns 0060–0079. Only the integrator merges migrations,
   OpenAPI, shared JSON schema, go.mod/go.sum and pnpm-lock.
 - Never delete or weaken a failing test to go green; fix the root cause.
+
+## Delegation preamble, documentation ratchet and token economy (owner 2026-10-05)
+- Every delegated prompt starts with `docs/delivery/AGENT-PREAMBLE.md` verbatim (stable prefix → provider prompt-cache hits; unit text comes after it). Change the preamble rarely: each edit invalidates every cached prefix.
+- `scripts/dev/check-headers.sh` (run by `check-gates.sh`) fails when a file added or changed since the base lacks `Purpose:` / `Depends on:` / `Used by:` header lines. Existing files are paid down by the doc-headers unit, never by loosening the script.
+- `scripts/dev/gen-deps.sh` regenerates `docs/architecture/DEPENDENCIES.md` (package imports, third-party modules, env vars, SQL calls) without any model tokens; the integrator runs it after each merge and agents read it instead of exploring.
+- Cost routing: judgment (contracts, money/security review, merges) stays with the integrator; implementation goes to DeepSeek (backend, pay-as-you-go) and Codex (UI, subscription); independent tests/review to Kimi K3 (subscription, 5-hour window) with Claude Sonnet as fallback.

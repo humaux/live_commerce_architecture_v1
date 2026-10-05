@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Purpose: keep the gate registry (docs/delivery/GATES.md) and the test runners in sync, plus repo-wide static ratchets.
+# Depends on: git grep, node (registry/architecture tests), scripts/dev/check-headers.sh, scripts/dev/ui-architecture-gate.mjs.
+# Used by: CI (.github/workflows/foundation.yml), scripts/dev/release-gate.sh, every unit self-check (AGENT-PREAMBLE §2).
 # check-gates.sh — keep docs/delivery/GATES.md and the test runners honest (unit maintainability).
 #  1. every mode in test-local.sh's usage line has a row in GATES.md, and every mode GATES.md names
 #     exists (no undocumented gate, no stale row);
@@ -76,3 +79,5 @@ if bad:
     sys.exit(1)
 print(f"check-gates: ok ({len(modes)} modes, all documented; every tracked test file is run)")
 PY
+# Documentation ratchet (owner 2026-10-05): files added/changed since the base carry Purpose / Depends on / Used by headers.
+bash scripts/dev/check-headers.sh
