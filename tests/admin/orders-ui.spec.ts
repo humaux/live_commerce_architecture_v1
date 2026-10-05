@@ -577,6 +577,7 @@ test("MOU03 labeled fault injection: invalid DTO, non-JSON and network failure r
       });
     };
     await page.route(path, handler);
+    await revealOrderFilters(page);
     await page
       .getByTestId("state-filter")
       .selectOption(
