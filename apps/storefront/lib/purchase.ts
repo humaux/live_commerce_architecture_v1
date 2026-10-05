@@ -589,7 +589,8 @@ export function cartSelection(
   if (!validCart(cart) || !id(sku) || !integer(quantity, 1, 1_000_000_000))
     throw new BuyerClientError("invalid_response");
   const items = [
-    ...cart.items.filter((x) => x.sku_id !== sku),
+    // GET-only price hints must never cross the closed cart write boundary.
+    ...cart.items.filter((x) => x.sku_id !== sku).map(({ sku_id, quantity }) => ({ sku_id, quantity })),
     { sku_id: sku, quantity },
   ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
   if (!validItems(items)) throw new BuyerClientError("request_failed");
@@ -601,7 +602,8 @@ export function cartWithQuantity(cart: Cart, sku: string, quantity: number): Car
   if (!validCart(cart) || !id(sku) || !integer(quantity, 0, 1_000_000_000))
     throw new BuyerClientError("invalid_response");
   const items = [
-    ...cart.items.filter((x) => x.sku_id !== sku),
+    // The server retains claim origins; the buyer only chooses SKU/quantity.
+    ...cart.items.filter((x) => x.sku_id !== sku).map(({ sku_id, quantity }) => ({ sku_id, quantity })),
     ...(quantity === 0 ? [] : [{ sku_id: sku, quantity }]),
   ].sort((a, b) => a.sku_id.localeCompare(b.sku_id));
   if (!validItems(items)) throw new BuyerClientError("request_failed");

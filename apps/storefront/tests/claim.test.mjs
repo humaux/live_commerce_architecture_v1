@@ -7,6 +7,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { handleBuyerRequest } from "../lib/buyer-server.ts";
+import { cartSelection, cartWithQuantity } from "../lib/purchase.ts";
 import {
   claimFragment,
   validClaimPreview,
@@ -138,6 +139,15 @@ test("claim token rides only its header on B1/B2 and is never echoed", async () 
 });
 
 // CDC03: mandatory inventory hint and a closed reason enum fail on the pre-amendment parser.
+test("claim-priced cart edits send only SKU and quantity, keeping server price authority", () => {
+  const other = "33333333-3333-4333-8333-333333333333";
+  const cart = { ...redeemed.cart, items: [{ sku_id: sku, quantity: 2, live_unit_price_minor: 20000 }, { sku_id: other, quantity: 1 }] };
+  const expected = [{ sku_id: sku, quantity: 2 }];
+  assert.deepEqual(cartWithQuantity(cart, other, 0), { expected_version: cart.version, items: expected });
+  assert.deepEqual(cartSelection(cart, other, 3).items, [...expected, { sku_id: other, quantity: 3 }]);
+  assert.equal(cart.items[0].live_unit_price_minor, 20000, "read snapshot is not mutated");
+});
+
 test("direct-checkout sold-out projection is mandatory, boolean and closed", () => {
   assert.equal(validClaimPreview(preview), true);
   const { sold_out, ...legacy } = preview.lines[0];

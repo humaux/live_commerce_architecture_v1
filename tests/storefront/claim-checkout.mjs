@@ -145,7 +145,23 @@ try {
   await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
   await openClaim(merged, mergeLink); await checkout(merged, mergeLink);
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
-  await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2); pass("unpaid merge persisted after reload");
+  await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2);
+  const otherSKU = merged.seen.cart.items.find((item) => item.sku_id !== mergeLink.sku).sku_id;
+  await action(merged, "back-to-cart", () => merged.getByRole("link", { name: "返回購物車", exact: true }).click(), "merged items can be reviewed in the cart", () => expect(merged).toHaveURL(/\/zh-TW\/cart/));
+  await action(merged, "remove-other-cart-line", () => merged.locator(`[data-testid="cart-line"][data-sku="${otherSKU}"]`).getByRole("button", { name: /移出購物車/ }).click(), "only the other cart item is removed", async () => {
+    await expect(merged.getByTestId("cart-line")).toHaveCount(1);
+    await expect(merged.locator(`[data-testid="cart-line"][data-sku="${mergeLink.sku}"]`).getByTestId("cart-line-qty")).toHaveText("2");
+  });
+  await action(merged, "cart-checkout", () => merged.getByTestId("cart-checkout").click(), "chosen claim SKU and quantity return to checkout", async () => {
+    await expect(merged).toHaveURL(/\/zh-TW\/checkout/);
+    await expect(merged.getByTestId("cart-line")).toHaveCount(1);
+    await expect.poll(() => merged.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual([{ sku_id: mergeLink.sku, quantity: 2 }]);
+    assert.equal(merged.seen.cart.items[0].live_unit_price_minor, 20000, "server retains the claim price origin after cart removal");
+  });
+  await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(1);
+  await expect(merged.locator(`[data-testid="cart-line"][data-sku="${mergeLink.sku}"] .sf-line__unit`)).toContainText("× 2");
+  await expect.poll(() => merged.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual([{ sku_id: mergeLink.sku, quantity: 2 }]);
+  pass("unpaid merge survives reload and other item removal preserves chosen SKU/quantity");
 
   const partial = await newPage(engine === "webkit"), partialLink = await fixture("partial");
   await openClaim(partial, partialLink);
