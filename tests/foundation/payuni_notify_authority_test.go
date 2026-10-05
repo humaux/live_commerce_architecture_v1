@@ -109,3 +109,48 @@ func TestPayuniNotifyAuthorityNoExecuteElsewhere(t *testing.T) {
 		t.Fatalf("payuni ingress may set endpoints (err=%v)", err)
 	}
 }
+
+// ACL pin: every SECURITY DEFINER function added by migration 0136 is a fixed-shape definer owned by
+// a NOLOGIN writer role, runs on a frozen search_path and exposes no PUBLIC EXECUTE. The receipts table
+// grants the definer owner exactly the two columns its redelivery bump may write (the guard trigger
+// forbids every other change), and both new tables are forced-RLS with no PUBLIC table privilege.
+func TestPayuniNotifySchemaACLPin(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	for _, d := range []struct{ sig, owner string }{
+		{"payments.guard_payuni_notify_receipt()", "commerce_integration_writer"},
+		{"payments.payuni_resolve_endpoint(bytea)", "commerce_integration_writer"},
+		{"payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text)", "commerce_integration_writer"},
+		{"payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)", "commerce_payment_registry_writer"},
+	} {
+		var ok bool
+		if err := f.owner.QueryRow(ctx, `SELECT EXISTS(
+			SELECT 1 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner
+			WHERE p.oid=to_regprocedure($1) AND p.prosecdef
+			 AND p.proconfig @> ARRAY['search_path=pg_catalog']::text[]
+			 AND NOT r.rolcanlogin AND pg_get_userbyid(p.proowner)=$2
+			 AND NOT EXISTS (SELECT 1 FROM aclexplode(COALESCE(p.proacl,acldefault('f',p.proowner))) acl
+			  WHERE acl.grantee=0 AND acl.privilege_type='EXECUTE'))`,
+			d.sig, d.owner).Scan(&ok); err != nil || !ok {
+			t.Fatalf("0136 definer %s is not a fixed-shape %s definer (err=%v)", d.sig, d.owner, err)
+		}
+	}
+	// The redelivery bump writes exactly these two columns; no other receipts column may be writable.
+	var twoCols bool
+	if err := f.owner.QueryRow(ctx, `SELECT has_column_privilege('commerce_integration_writer','payments.payuni_notify_receipts','redelivery_count','UPDATE')
+		AND has_column_privilege('commerce_integration_writer','payments.payuni_notify_receipts','last_redelivered_at','UPDATE')
+		AND (SELECT count(*) FROM pg_attribute a WHERE a.attrelid='payments.payuni_notify_receipts'::regclass
+			AND a.attnum>0 AND NOT a.attisdropped
+			AND has_column_privilege('commerce_integration_writer',a.attrelid,a.attnum,'UPDATE'))=2`).Scan(&twoCols); err != nil || !twoCols {
+		t.Fatalf("receipts UPDATE column grant is not exactly (redelivery_count,last_redelivered_at) (err=%v)", err)
+	}
+	for _, table := range []string{"payments.payuni_notify_endpoints", "payments.payuni_notify_receipts"} {
+		var forced bool
+		if err := f.owner.QueryRow(ctx, `SELECT c.relrowsecurity AND c.relforcerowsecurity
+			AND NOT EXISTS (SELECT 1 FROM aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner))) acl
+			 WHERE acl.grantee=0 AND acl.privilege_type IN ('SELECT','INSERT','UPDATE','DELETE'))
+			FROM pg_class c WHERE c.oid=to_regclass($1)`, table).Scan(&forced); err != nil || !forced {
+			t.Fatalf("%s is not forced-RLS with no PUBLIC table privilege (err=%v)", table, err)
+		}
+	}
+}

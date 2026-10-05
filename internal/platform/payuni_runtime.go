@@ -94,7 +94,7 @@ func validatePayuniAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	 SELECT oid FROM pg_roles WHERE rolname=session_user
 	  OR pg_has_role(session_user,oid,'USAGE') OR pg_has_role(session_user,oid,'SET')
 	), allowed AS (
-	 SELECT unnest($2::oid[]) AS oid
+	 SELECT unnest($1::oid[]) AS oid
 	)
 	SELECT EXISTS(SELECT 1 FROM reachable r CROSS JOIN pg_class c
 	 JOIN pg_namespace n ON n.oid=c.relnamespace
@@ -121,7 +121,7 @@ func validatePayuniAuthority(ctx context.Context, pool *pgxpool.Pool, authority 
 	  WHERE n.nspname<>'information_schema' AND n.nspname NOT LIKE 'pg\_%' ESCAPE '\'
 	   AND has_schema_privilege(r.oid,n.oid,'CREATE'))
 	 OR EXISTS(SELECT 1 FROM reachable r WHERE has_database_privilege(r.oid,current_database(),'CREATE'))`,
-		authority, allowedOIDs).Scan(&forbidden)
+		allowedOIDs).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errors.New("unsafe payuni database privileges")
 	}

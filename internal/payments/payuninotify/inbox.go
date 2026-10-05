@@ -33,12 +33,12 @@ const dbTimeout = 2 * time.Second
 // one. No plaintext key is ever returned; the handler decrypts in Go with the keyring.
 type material struct {
 	TenantID, StoreID, ConnectionID, Environment, AccountID, Profile string
-	CurVersion                                                      int64
-	CurKeyID                                                        string
-	CurNonce, CurCiphertext                                         []byte
-	PrevVersion                                                     *int64
-	PrevKeyID                                                       *string
-	PrevNonce, PrevCiphertext                                       []byte
+	CurVersion                                                       int64
+	CurKeyID                                                         string
+	CurNonce, CurCiphertext                                          []byte
+	PrevVersion                                                      *int64
+	PrevKeyID                                                        *string
+	PrevNonce, PrevCiphertext                                        []byte
 }
 
 // receipt is the record outcome; disposition is QUEUED, MISMATCH, UNKNOWN_TRADE or DUPLICATE.

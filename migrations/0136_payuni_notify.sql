@@ -103,6 +103,9 @@ CREATE POLICY payuni_receipt_integration ON payments.payuni_notify_receipts TO c
  USING(true) WITH CHECK(true);
 GRANT SELECT ON payments.payuni_notify_endpoints TO commerce_integration_writer;
 GRANT SELECT,INSERT ON payments.payuni_notify_receipts TO commerce_integration_writer;
+-- PostgreSQL requires an UPDATE column grant for SELECT ... FOR UPDATE (the dedup row lock), and the
+-- redelivery bump writes exactly these two columns; guard_payuni_notify_receipt forbids every other change.
+GRANT UPDATE(redelivery_count,last_redelivered_at) ON payments.payuni_notify_receipts TO commerce_integration_writer;
 
 -- The registrar may only touch the notify token/enabled flag; identity columns are fixed by the
 -- UNIQUE conflict target and the column-level grant.
