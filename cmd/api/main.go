@@ -132,6 +132,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// live-console comment read-through (LC-B2): nil when COMMERCE_CLAIMS_CONSOLE_BASE_URL is unset.
+	commentStream, err := buildCommentStream(os.Getenv)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -145,6 +150,7 @@ func run() error {
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
 		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
 		LiveFlowJobs:    liveFlowJobs,
+		CommentStream:   commentStream,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)
 	if err != nil {

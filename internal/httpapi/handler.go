@@ -59,6 +59,9 @@ type Options struct {
 	// LiveFlowJobs is the insert-only main-schema river client for the A5 page-live-videos read route
 	// (cmd/api buildLiveFlowJobs). nil leaves that one POST unmounted; the other A5 rows stay mounted.
 	LiveFlowJobs *river.Client[pgx.Tx]
+	// CommentStream is the live-console comment read-through (unit LC-B2: bridge client + payload keyring,
+	// built by cmd/api). nil leaves the A2/A3 console-comment routes unmounted.
+	CommentStream *live.CommentStream
 	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
 	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
 	Ads *ads.Service
@@ -182,6 +185,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
+	registerLiveStreamRoutes(mux, pool, configured.CommentStream)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {
