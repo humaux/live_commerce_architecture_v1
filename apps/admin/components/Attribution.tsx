@@ -266,7 +266,9 @@ export function Attribution({
                   disabled={!report.drafts.length}
                   onChange={(e) => navigate({ draft: e.target.value })}
                 >
-                  {!selectedDraft && <option value="">{c.noDraft}</option>}
+                  {!selectedDraft && (
+                    <option value="">{report.drafts.length ? c.noDraft : "—"}</option>
+                  )}
                   {report.drafts.map((d) => (
                     <option key={d.draft_id} value={d.draft_id}>
                       {d.source_ref || d.draft_id}
@@ -288,7 +290,9 @@ export function Attribution({
                   disabled={!report.sessions.length}
                   onChange={(e) => navigate({ session: e.target.value })}
                 >
-                  {!selectedSession && <option value="">{c.noSession}</option>}
+                  {!selectedSession && (
+                    <option value="">{report.sessions.length ? c.noSession : "—"}</option>
+                  )}
                   {report.sessions.map((s) => (
                     <option key={s.session_id} value={s.session_id}>
                       {s.title || s.session_id}
