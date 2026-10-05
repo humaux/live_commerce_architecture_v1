@@ -194,7 +194,7 @@ BEGIN
   OR p_trade_status IS NULL OR p_trade_status !~ '^[0-9]{1,4}$' THEN
   RAISE EXCEPTION 'invalid PAYUNi notify record' USING ERRCODE='22023'; END IF;
  SELECT e.* INTO ep FROM payments.payuni_notify_endpoints e
-  WHERE e.token_hash=p_token_hash FOR SHARE;
+  WHERE e.token_hash=p_token_hash; -- plain read: FOR SHARE would need an UPDATE grant on endpoints; a disable racing a receipt is benign (trigger-only)
  IF NOT FOUND OR NOT ep.enabled THEN
   RAISE EXCEPTION 'PAYUNi notify endpoint unavailable' USING ERRCODE='40001'; END IF;
  PERFORM set_config('app.tenant_id',ep.tenant_id::text,true);
