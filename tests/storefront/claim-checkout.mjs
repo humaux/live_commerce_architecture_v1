@@ -137,13 +137,17 @@ try {
   // SETUP: the previous synthetic order is shipped through the actual merchant path, satisfying the PAP one-unshipped-order cap.
   await fixture("zh-TW","ship-previous",orders[0]);
   const second = await fixture("second"); previous.seen.redeem = 0;
-  await openClaim(previous, second); await checkout(previous, second);
+  await openClaim(previous, second);
+  await expect(previous.getByTestId("claim-previous-order")).toContainText("上一筆訂單會保留");
+  await checkout(previous, second);
   assert(!previous.seen.cart.items.some((i) => i.sku_id === previousLink.sku), "previous order's SKU must not be ordered again");
   await place(previous, second); pass("continueShopping prevents repeat purchase of old cart");
 
   const merged = await newPage(engine === "webkit"), mergeLink = await fixture("merge");
   await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
-  await openClaim(merged, mergeLink); await checkout(merged, mergeLink);
+  await openClaim(merged, mergeLink);
+  await expect(merged.getByTestId("claim-merge-notice")).toContainText("其他商品也會一起結帳");
+  await checkout(merged, mergeLink);
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
   await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2);
   const otherSKU = merged.seen.cart.items.find((item) => item.sku_id !== mergeLink.sku).sku_id;
@@ -163,10 +167,29 @@ try {
   await expect.poll(() => merged.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual([{ sku_id: mergeLink.sku, quantity: 2 }]);
   pass("unpaid merge survives reload and other item removal preserves chosen SKU/quantity");
 
+  // P1-1: exercise ClaimLink's own remove callback with a surviving live-priced SKU.
+  await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
+  merged.seen.redeem = 0; await openClaim(merged, mergeLink);
+  await action(merged, "claim-remove-other-live-priced", () => merged.getByTestId(`claim-cart-${otherSKU}`).getByRole("button", { name: "移除", exact: true }).click(), "claim page removes the other SKU while retaining the chosen live-priced line", async () => {
+    await expect(merged.getByTestId(`claim-cart-${otherSKU}`)).toHaveCount(0);
+    await expect(merged.getByTestId(`claim-cart-${mergeLink.sku}`)).toContainText("× 2");
+    await expect.poll(() => merged.seen.cart?.items).toEqual([{ sku_id: mergeLink.sku, quantity: 2, live_unit_price_minor: 20000 }]);
+  });
+  await openClaim(merged, mergeLink);
+  await expect(merged.getByTestId(`claim-cart-${otherSKU}`)).toHaveCount(0);
+  await checkout(merged, mergeLink);
+  pass("claim-page removal with live price survives revisit and checkout");
+
   const partial = await newPage(engine === "webkit"), partialLink = await fixture("partial");
   await openClaim(partial, partialLink);
   await expect(partial.getByTestId("claim-line-B2")).toContainText(/售完|售罄|Sold out/);
   await checkout(partial, partialLink, "zh-TW", true); pass("partial sold-out skip");
+  partial.seen.redeem = 0; await openClaim(partial, partialLink);
+  await expect(partial.getByTestId("claim-add")).toContainText("件可買");
+  await checkout(partial, partialLink, "zh-TW", true);
+  assert.equal(partial.seen.redeemed.applied.length, 0, "revisit redeems nothing");
+  await partial.reload(); await expect(partial.getByTestId("cart-line")).toHaveCount(1);
+  pass("partial claim revisit checks out applied A despite pending sold-out B");
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
   await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
   await fixture("sold", "replenish");
@@ -192,8 +215,8 @@ try {
   await openClaim(repeat, repeatLink); await repeat.getByTestId("claim-add").click({ clickCount: 2 });
   await expect(repeat).toHaveURL(/\/zh-TW\/checkout/); assert.equal(repeat.seen.redeem, 1); pass("double click sends one redeem");
   await repeat.goBack();
-  await expect(repeat.getByTestId("claim-not-found")).toBeVisible();
-  assert.equal(new URL(repeat.url()).hash, ""); await noLeaks(repeat, repeatLink); pass("back navigation forgets token and displays expired view");
+  await expect(repeat.getByTestId("claim-not-found")).toContainText("重新開啟商家私訊中的連結");
+  assert.equal(new URL(repeat.url()).hash, ""); await noLeaks(repeat, repeatLink); pass("back navigation forgets token and asks to reopen the message link");
   repeat.seen.redeem=0;await openClaim(repeat,repeatLink);await checkout(repeat,repeatLink);await place(repeat,repeatLink);
   pass("double-click journey yields exactly one persisted order");
 

@@ -5,6 +5,11 @@
 // as X-Commerce-Claim-Token on B1/B2, is never echoed, and only the frozen projections
 // are forwarded. Private Go transport is stubbed; real chains are KC14/KC16.
 import test from "node:test";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+import * as claimContract from "../lib/claim-contract.ts";
+import { claimCopy } from "../lib/claim-copy.ts";
 import assert from "node:assert/strict";
 import { handleBuyerRequest } from "../lib/buyer-server.ts";
 import { cartSelection, cartWithQuantity } from "../lib/purchase.ts";
@@ -216,5 +221,72 @@ test("claim redeem shares the purchase lock, guards recovery and never persists 
     globalThis.fetch = oldFetch;
     globalThis.window = oldWindow; globalThis.localStorage = oldLocal; globalThis.sessionStorage = oldSession;
     if (oldLocks) Object.defineProperty(navigator, "locks", oldLocks); else delete navigator.locks;
+  }
+});
+
+// Execute the actual component callbacks with deterministic hooks, not a copied decision model.
+// Real DOM/navigation persistence is exercised by claim-checkout.mjs.
+function claimPage({ lines, items, refreshedLines = lines, view = "ready" }) {
+  const require = createRequire(import.meta.url), swc = require("next/dist/build/swc");
+  const source = readFileSync(new URL("../components/ClaimLink.tsx", import.meta.url), "utf8");
+  const compiled = swc.transformSync(source, { filename: "ClaimLink.tsx", jsc: { parser: { syntax: "typescript", tsx: true }, target: "es2022", transform: { react: { runtime: "automatic" } } }, module: { type: "commonjs" } }).code;
+  const cart = { ...redeemed.cart, items }, claimed = { ...preview, lines };
+  const states = ["zh-TW", view, "a".repeat(43), claimed, cart, false, null, false];
+  let stateIndex = 0, refIndex = 0;
+  const calls = { writes: [], navigation: [], reads: [] };
+  const modules = {
+    react: { useEffect() {}, useState: () => { const i = stateIndex++; return [states[i], value => { states[i] = value; }]; }, useRef: value => ({ current: refIndex++ === 0 ? token : value }) },
+    "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }), Fragment: "fragment" },
+    "../lib/buyer-client": { BuyerClientError: class extends Error {}, buyerRequest: async (method, suffix) => { calls.reads.push(suffix); return Response.json({ ...claimed, lines: refreshedLines }); } },
+    "../lib/purchase": { cartWithQuantity, pendingPurchase: () => null, knownOrderID: () => null,
+      redeemClaimLink: async () => ({ ...redeemed, cart, applied: [], skipped: [] }),
+      writePurchase: async (ctx, command) => { calls.writes.push(command); return { kind: "cart", value: { ...cart, items: command.body.items } }; } },
+    "../lib/routes": { cartPath: locale => `/${locale}/cart`, checkoutPath: locale => `/${locale}/checkout` },
+    "../lib/claim-contract": claimContract, "../lib/claim-copy": { claimCopy }, "../lib/money": { formatMoney: () => "NT$200" },
+  };
+  const exports = {};
+  runInNewContext(compiled, { exports, require: name => { assert(name in modules, name); return modules[name]; }, window: { location: { assign: url => calls.navigation.push(url) } } });
+  const tree = exports.default({ locale: "zh-TW" });
+  function find(node, predicate) {
+    if (!node || typeof node !== "object") return null;
+    if (predicate(node)) return node;
+    for (const child of [node.props?.children].flat(Infinity)) { const result = find(child, predicate); if (result) return result; }
+    return null;
+  }
+  return { calls, states, click: async predicate => { const node = find(tree, predicate); assert(node, "control exists"); const button = node.type === "button" ? node : find(node, child => child.type === "button"); assert(button); button.props.onClick(); await new Promise(resolve => setImmediate(resolve)); } };
+}
+
+test("ClaimLink removal projects live-priced survivors on ready and conflict pages", async () => {
+  const other = "33333333-3333-4333-8333-333333333333";
+  for (const view of ["ready", "conflict"]) {
+    const items = [{ sku_id: sku, quantity: 2, live_unit_price_minor: 20000 }, { sku_id: other, quantity: 1 }];
+    const page = claimPage({ lines: preview.lines, items, view });
+    await page.click(node => node.props?.["data-testid"] === `claim-cart-${other}`);
+    assert.deepEqual(JSON.parse(JSON.stringify(page.calls.writes)), [{ kind: "cart", body: { expected_version: redeemed.cart.version, items: [{ sku_id: sku, quantity: 2 }] } }]);
+    assert.equal(items[0].live_unit_price_minor, 20000, "read snapshot stays intact");
+  }
+});
+
+test("ClaimLink revisit checks out applied A while pending B is sold out or unavailable", async () => {
+  for (const status of [{ sold_out: true, available: true }, { sold_out: false, available: false }]) {
+    const lines = [{ ...preview.lines[0], pending: false }, { ...preview.lines[0], sku_id: "33333333-3333-4333-8333-333333333333", keyword: "B2", ...status }];
+    const page = claimPage({ lines, items: redeemed.cart.items });
+    await page.click(node => node.props?.["data-testid"] === "claim-add");
+    assert.deepEqual(page.calls.navigation, ["/zh-TW/checkout?from=claim"]);
+  }
+});
+
+test("ClaimLink refreshes a nothing result after a second tab applied the claim", async () => {
+  const page = claimPage({ lines: preview.lines, refreshedLines: [{ ...preview.lines[0], pending: false }], items: redeemed.cart.items });
+  await page.click(node => node.props?.["data-testid"] === "claim-add");
+  assert.deepEqual(page.calls.reads, ["claim-link"]);
+  assert.deepEqual(page.calls.navigation, ["/zh-TW/checkout?from=claim"]);
+});
+
+test("ClaimLink does not navigate when a buyable claim target is absent or has changed quantity", async () => {
+  for (const items of [[], [{ sku_id: sku, quantity: 1 }]]) {
+    const page = claimPage({ lines: [{ ...preview.lines[0], pending: false }], items });
+    await page.click(node => node.props?.["data-testid"] === "claim-add");
+    assert.deepEqual(page.calls.navigation, []);
   }
 });
