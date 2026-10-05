@@ -294,7 +294,7 @@
     max-width: none;
   }
   .topbar > label:not(.store) select { max-width: 88px; padding-inline: 6px; }
-  .topbar summary { white-space: nowrap; padding-inline: 8px; font-size: 12px; }
+  .topbar summary { min-width: var(--ui-target); box-sizing: border-box; white-space: nowrap; padding-inline: 8px; font-size: 12px; }
   .store .brandMark { display: none; }
   .brand {
     padding-top: 0;
