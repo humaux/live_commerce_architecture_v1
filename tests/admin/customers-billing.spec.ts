@@ -96,7 +96,7 @@ test("CB11 customers list: table, phone last 3 only, search by name and phone di
   await expect(page).toHaveURL(/\/en\/customers/);
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId("customers-table")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.customerList);
   const row = page.getByTestId(`customer-row-${main}`);
   await expect(row).toBeVisible();
   await expect(row).toContainText(`${en.phoneEnding} ${phoneTail}`);
@@ -421,7 +421,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await page.goto(`/${locale}/customers?store=${store}`);
         await expect(page.getByTestId("customers-table")).toBeVisible();
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.title);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].customerList);
         await expect(page.getByTestId("billing-banner")).toBeVisible();
         await shot(page, "customers", locale, viewport);
         await page.goto(`/${locale}/customers/${main}?store=${store}`);
@@ -430,7 +430,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await shot(page, "customer-detail", locale, viewport);
         await page.goto(`/${locale}/finance?store=${store}`);
         await expect(page.getByTestId("finance-page")).toBeVisible();
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.financeTitle);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].financePage);
         await shot(page, "finance", locale, viewport);
         await page.goto(`/${locale}/billing?store=${store}`);
         await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "RESTRICTED");

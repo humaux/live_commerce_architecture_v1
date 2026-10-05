@@ -254,13 +254,13 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   page.once("dialog", async (dialog) => { await dialog.accept(); });
   await page.getByTestId("locale-switch").selectOption("zh-CN");
   await expect(page).toHaveURL(/\/zh-CN\/studio/);
-  await expect(page.getByRole("heading", { name: "直播工作室" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-CN"].studio, exact: true })).toBeVisible();
   await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByText("已准备模拟授权")).toBeVisible();
   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-CN-phone-first-390x844", 390, 844);
   await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByRole("heading", { name: "直播工作室" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-TW"].studio, exact: true })).toBeVisible();
   await screenshot(page, "zh-TW-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-TW-phone-first-390x844", 390, 844);
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);

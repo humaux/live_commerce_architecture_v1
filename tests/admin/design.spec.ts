@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { designCopy, fill } from "../../apps/admin/lib/design-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -100,7 +101,7 @@ for (const j of journeys) {
 
     // ---- empty state: nothing saved, never published, the toolbar fits the viewport ----
     await expect(page.getByTestId("design-page")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.title);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[j.locale].design);
     await expect(status).toContainText(c.noDraft);
     await expect(status).toContainText(c.neverPublished);
     for (const id of ["design-save", "design-preview", "design-publish"]) {

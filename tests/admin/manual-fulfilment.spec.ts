@@ -187,6 +187,11 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
   // the list filters follow the head
   const filter = page.getByLabel(ui.state).first();
   if (await filter.count()) {
+    // Filters are collapsed on every viewport; reveal with a real merchant click.
+    const more = page.getByTestId("orders-more-filters");
+    if (await more.getAttribute("aria-expanded") === "false") await more.click();
+    await expect(more).toHaveAttribute("aria-expanded", "true");
+    await expect(filter).toBeVisible();
     await filter.selectOption("shipped");
     await expect(page.getByTestId(`order-expand-${shipOrder}`)).toBeVisible();
     await expect(page.getByTestId(`order-expand-${reshipOrder}`)).toHaveCount(0);
