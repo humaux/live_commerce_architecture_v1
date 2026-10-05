@@ -17,6 +17,8 @@ import { hasLiveSubscription, type BillingStatus } from "@/lib/billing-model";
 import { displayTime } from "@/lib/orders-model";
 import { billingCopy, type BillingCopy } from "@/lib/billing-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { Badge } from "@live-commerce/ui";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -76,10 +78,7 @@ export function Billing({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="billing">
       <div className="orders-page customers-page" data-testid="billing-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         <div className="orders-controls">
           {stores.length > 1 && (
             <label>
@@ -152,22 +151,17 @@ function Sections({
       <section className="customers-section" aria-label={c.standingTitle}>
         <h2>{c.standingTitle}</h2>
         <p>
-          <span
-            className={`orders-badge ${status.standing === "GOOD" ? "orders-tone-success" : status.standing === "UNBILLED" ? "orders-tone-neutral" : status.standing === "GRACE" ? "orders-tone-neutral" : "orders-tone-warning"}`}
+          <Badge
+            tone={status.standing === "GOOD" ? "success" : status.standing === "UNBILLED" ? "neutral" : "warning"}
             data-testid="billing-standing" data-standing={status.standing}
           >
             {c.standing[status.standing]}
-          </span>
+          </Badge>
         </p>
         <p>{c.standingText[status.standing]}</p>
         {status.payment_pending && <p className="orders-hint" role="status" data-testid="billing-pending">{c.paymentPending}</p>}
-      </section>
-
-      <section className="customers-section" aria-label={c.subscriptionsTitle}>
+        {status.subscriptions.length > 0 && (<>
         <h2>{c.subscriptionsTitle}</h2>
-        {status.subscriptions.length === 0 ? (
-          <p className="orders-empty">{c.subscriptionsNone}</p>
-        ) : (
           <div className="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="billing-subscriptions">
               <thead><tr><th>{c.plan}</th><th>{c.status}</th><th>{c.period}</th></tr></thead>
@@ -190,7 +184,7 @@ function Sections({
               </tbody>
             </table>
           </div>
-        )}
+        </>)}
         {status.customer_pinned && (
           <>
             <div className="customers-actions">

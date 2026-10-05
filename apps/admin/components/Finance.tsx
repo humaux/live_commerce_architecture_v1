@@ -16,6 +16,7 @@ import { isSandbox, type FinanceRow } from "@/lib/customers-model";
 import { readOrderActions } from "@/lib/orders-client";
 import { customersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -90,10 +91,7 @@ export function Finance({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">
       <div className="orders-page customers-page" data-testid="finance-page">
-        <header className="orders-heading">
-          <h1>{c.financeTitle}</h1>
-          <p>{c.financeSubtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.financeSubtitle} />
         <form className="orders-controls customers-finance-controls" onSubmit={submit}>
           {stores.length > 1 && (
             <label>

@@ -17,6 +17,7 @@ import { imageURL } from "@/lib/images-client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -430,11 +431,7 @@ export function Ledger({
     >
       {/* Only products and inventory live here; the other nav entries are separate pages (WorkspaceFrame). */}
       <>
-          <div className="heading-row">
-            <div>
-              <h1>{c.heading}</h1>
-              <p>{c.subtitle}</p>
-            </div>
+          <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
             {/* One way to create a product: the full editor (product-editor §c9); no inline quick-add on this page. */}
             {initial.storeID && (
               <Link
@@ -447,7 +444,7 @@ export function Ledger({
                 {c.create}
               </Link>
             )}
-          </div>
+          </>} />
           <div className="section-bar">
             <span>
               {section === "inventory" ? c.inventory : c.products} / SKU

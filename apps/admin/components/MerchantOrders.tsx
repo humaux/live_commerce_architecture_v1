@@ -36,6 +36,9 @@ import { appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type 
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { TabStrip } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import { amount, badge, detailPanel, type Sections } from "./OrderDetailPanel";
 import { Icon } from "./Icon";
 import "./orders.css";
@@ -118,7 +121,6 @@ export function MerchantOrders({
   // OP2: ids already shown for this store+filter, and the ones that arrived after. Order ids only, never PII.
   const seen = useRef<{ scope: string; ids: Set<string> } | null>(null);
   const polling = useRef(false);
-  const queueRail = useRef<HTMLElement>(null);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
   const current =
     (blocked.current && ["signed-out", "forbidden", "not-found"].includes(view.status)) ||
@@ -481,20 +483,6 @@ export function MerchantOrders({
     if (!previous.current.length || current.status !== "ready") return;
     navigate(store?.id ?? "", state, previous.current.pop() ?? "", "");
   }
-  useEffect(() => {
-    // Only move the queue's horizontal viewport, never scroll the document.
-    const reveal = () => {
-      const rail = queueRail.current;
-      const selected = rail?.querySelector<HTMLElement>('[aria-pressed="true"]');
-      if (!rail || !selected || rail.scrollWidth <= rail.clientWidth) return;
-      const bounds = rail.getBoundingClientRect(), tab = selected.getBoundingClientRect();
-      if (tab.left < bounds.left) rail.scrollLeft += tab.left - bounds.left;
-      else if (tab.right > bounds.right) rail.scrollLeft += tab.right - bounds.right;
-    };
-    reveal();
-    window.addEventListener("resize", reveal);
-    return () => window.removeEventListener("resize", reveal);
-  }, [filters.bucket, current.status]);
   const message = (status: Status) =>
     status === "signed-out"
       ? c.signedOut
@@ -514,10 +502,7 @@ export function MerchantOrders({
       active="orders"
     >
       <div className="orders-page orders-v2" data-testid="merchant-orders">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         {!["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
           onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }}>
         <div className="orders-controls orders-v2-state-controls">
@@ -592,12 +577,12 @@ export function MerchantOrders({
           )}
         {current.status === "ready" && current.page && (
           <>
-            <nav ref={queueRail} className="orders-v2-tabs" aria-label={v2.counts} data-testid="orders-tabs">
+            <TabStrip label={v2.counts} previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next} data-testid="orders-tabs">
               {buckets.map(bucket => <button type="button" key={bucket} data-testid={`orders-bucket-${bucket}`} aria-pressed={filters.bucket === bucket}
                 onClick={() => { previous.current = []; navigate(store?.id ?? "", state, "", "", { ...filters, bucket }); }}>
                 {v2.tabs[bucket]} <span data-testid={`orders-count-${bucket}`}>{current.page!.counts[bucket]}</span>
               </button>)}
-            </nav>
+            </TabStrip>
             <p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p>
             {filters.bucket === "completed" && <p className="orders-v2-note">{v2.completedNote}</p>}
             <div className="orders-table-scroll">
@@ -720,8 +705,8 @@ function OrderRow({
               size={16}
               style={{ transform: selected ? "rotate(90deg)" : undefined }}
             />
-            <span>
-              {row.order_number}
+            <span title={row.order_number}>
+              {row.order_number.length > 16 ? `${row.order_number.slice(0, 11)}…` : row.order_number}
             </span>
             {isNew && (
               <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>

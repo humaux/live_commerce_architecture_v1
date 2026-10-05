@@ -21,7 +21,7 @@
 .orders-table > tbody > tr > td:first-child button { display: inline-flex; align-items: center; gap: 20px; min-height: 40px; padding: 5px 0; border: 0; background: none; color: var(--ink); font-weight: 700; white-space: nowrap; }
 .orders-table > tbody > tr > td:first-child button:hover { color: var(--focus); background: none; }
 .orders-selected { background: #edf6ff; }
-.orders-badge { display: inline-flex; align-items: center; border-radius: 5px; padding: 6px 11px; min-height: 30px; max-width: 100%; font-size: 12px; font-weight: 700; white-space: normal; overflow-wrap: anywhere; background: #e8eef5; color: #455c74; }
+.orders-badge { display: inline-flex; align-items: center; width: fit-content; border-radius: 4px; padding: 3px 8px; max-width: 100%; font-size: var(--ui-text-helper); font-weight: 600; line-height: 1.5; white-space: normal; overflow-wrap: normal; background: #edf0f3; color: var(--ui-muted); }
 .orders-badge-confirmed, .orders-badge-captured, .orders-badge-ready { background: #d8f3e7; color: #126951; }
 .orders-badge-awaiting_payment, .orders-badge-pending, .orders-badge-draft, .orders-badge-authorized { background: #e5f2ff; color: #1769aa; }
 .orders-badge-review_required, .orders-badge-paid_allocation_failed { background: #fff0df; color: #975016; }

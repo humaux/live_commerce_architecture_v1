@@ -25,6 +25,7 @@ import { displayTime } from "@/lib/orders-model";
 import { ordersCopy } from "@/lib/orders-copy";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -63,11 +64,7 @@ export function CustomerDetail({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customer-detail">
-        <header className="orders-heading">
-          <h1>{read.data ? (read.data.display_name ?? c.noName) : c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
-        <Link className="customers-back" href={back}>{c.back}</Link>
+        <AdminPageHeader locale={locale} title={read.data ? (read.data.display_name ?? c.noName) : c.title} description={c.subtitle} actions={<Link className="customers-back" href={back}>{c.back}</Link>} />
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.detailLoading}</p>
         )}

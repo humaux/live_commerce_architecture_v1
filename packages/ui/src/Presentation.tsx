@@ -14,6 +14,18 @@ import {
 import s from "./Presentation.module.css";
 export { s as presentationStyles };
 
+// Keep the browser's keyboard/calendar control and native value contract. The
+// resting label does not inherit the browser installation's English placeholder.
+export function DateControl({ emptyLabel, value, ...props }: {
+  emptyLabel: string;
+} & InputHTMLAttributes<HTMLInputElement>) {
+  const text = typeof value === "string" && value ? value.replace("T", " ") : emptyLabel;
+  return <span className={s.dateControl}>
+    <span aria-hidden="true" className={s.dateDisplay}>{text}</span>
+    <input {...props} type={props.type ?? "date"} value={value} />
+  </span>;
+}
+
 export function PageHeader({
   title,
   description,
@@ -125,12 +137,13 @@ export function TabStrip({
   label,
   previousLabel,
   nextLabel,
+  ...props
 }: {
   children: ReactNode;
   label: string;
   previousLabel: string;
   nextLabel: string;
-}) {
+} & HTMLAttributes<HTMLDivElement>) {
   const { ref, edges } = useScrollFrame();
   useEffect(() => {
     const element = ref.current;
@@ -145,26 +158,28 @@ export function TabStrip({
       element.scrollLeft += inner.right - outer.right;
   }, [children, ref]);
   return (
-    <div className={s.tabs} aria-label={label}>
-      {edges.before && (
+    <div className={s.tabs}>
+      {(edges.before || edges.after) && (
         <button
           type="button"
           className={s.scrollButton}
           aria-label={previousLabel}
-          onClick={() => ref.current?.scrollBy({ left: -240 })}
+          aria-disabled={!edges.before}
+          onClick={() => edges.before && ref.current?.scrollBy({ left: -240 })}
         >
           <Chevron reverse />
         </button>
       )}
-      <div ref={ref} className={s.tabStrip}>
+      <div role="group" {...props} aria-label={props["aria-label"] ?? label} ref={ref} className={`${s.tabStrip} ${props.className ?? ""}`}>
         {children}
       </div>
-      {edges.after && (
+      {(edges.before || edges.after) && (
         <button
           type="button"
           className={s.scrollButton}
           aria-label={nextLabel}
-          onClick={() => ref.current?.scrollBy({ left: 240 })}
+          aria-disabled={!edges.after}
+          onClick={() => edges.after && ref.current?.scrollBy({ left: 240 })}
         >
           <Chevron />
         </button>

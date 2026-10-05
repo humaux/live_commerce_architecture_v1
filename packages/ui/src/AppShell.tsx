@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import styles from "./AppShell.module.css";
 import "./tokens.css";
 export { styles as shellStyles };
-export { PageHeader, FormRow, Field, Badge, TabStrip, TableFrame, FilePicker, presentationStyles } from "./Presentation";
+export { PageHeader, FormRow, Field, Badge, TabStrip, TableFrame, FilePicker, DateControl, presentationStyles } from "./Presentation";
 export function AppShell({
   rail,
   topbar,

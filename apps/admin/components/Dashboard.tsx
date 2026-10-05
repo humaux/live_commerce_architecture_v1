@@ -14,6 +14,9 @@ import { readDashboard } from "@/lib/merchant-tools-client";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./customers.css";
 import "./merchant-tools.css";
@@ -50,11 +53,12 @@ export function Dashboard({
     : [];
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="dashboard">
-      <div className="orders-page customers-page" data-testid="dashboard-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+      <div className="orders-page customers-page dashboard-page" data-testid="dashboard-page">
+        <AdminPageHeader locale={locale} description={c.subtitle} actions={<div className="mt-actions" data-testid="dashboard-actions" aria-label={c.actionsTitle}>
+          <Link className="primary" href={link("orders/new")} data-testid="action-create-order">{c.createOrder}</Link>
+          <Link href={link("products/import")} data-testid="action-import">{c.importProducts}</Link>
+          <Link href={link("inventory")} data-testid="action-inventory">{c.inventory}</Link>
+        </div>} />
         {stores.length > 1 && (
           <div className="orders-controls">
             <label>
@@ -81,7 +85,7 @@ export function Dashboard({
                   <li key={id} className={n > 0 ? "mt-hot" : undefined}>
                     <Link href={href} data-testid={id}>
                       <span>{label}</span>
-                      <span className="mt-count">{n}</span>
+                      <Badge tone={n > 0 ? "warning" : "neutral"}>{n}</Badge>
                     </Link>
                   </li>
                 ))}
@@ -124,7 +128,7 @@ export function Dashboard({
             <section className="mt-card" data-testid="dashboard-latest">
               <h2>{c.latestTitle}</h2>
               {d.latest_orders.length === 0 ? <p className="mt-note">{c.noOrders}</p> : (
-                <div className="mt-table-frame">
+                <TableFrame label={c.latestTitle} scrollHint={presentationCopy[locale].scroll}>
                   <table className="mt-table">
                     <thead><tr><th scope="col">{c.order}</th><th scope="col">{c.created}</th><th scope="col">{c.status}</th><th scope="col">{c.mode}</th><th scope="col" className="num">{c.total}</th></tr></thead>
                     <tbody>
@@ -139,20 +143,12 @@ export function Dashboard({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableFrame>
               )}
               <p className="mt-note"><Link href={link("orders")}>{c.allOrders}</Link></p>
             </section>
           </>
         )}
-        <section className="mt-card" aria-label={c.actionsTitle} data-testid="dashboard-actions">
-          <h2>{c.actionsTitle}</h2>
-          <div className="mt-actions">
-            <Link className="primary" href={link("orders/new")} data-testid="action-create-order">{c.createOrder}</Link>
-            <Link href={link("products/import")} data-testid="action-import">{c.importProducts}</Link>
-            <Link href={link("inventory")} data-testid="action-inventory">{c.inventory}</Link>
-          </div>
-        </section>
       </div>
     </WorkspaceFrame>
   );

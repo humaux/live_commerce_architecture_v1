@@ -18,6 +18,7 @@ import {
 } from "@/lib/promotions-model";
 import { promotionsCopy, type PromotionsCopy } from "@/lib/promotions-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -41,10 +42,7 @@ export function Promotions({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
       <div className="orders-page customers-page" data-testid="promotions-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         <div className="orders-controls">
           {stores.length > 1 && (
             <label>

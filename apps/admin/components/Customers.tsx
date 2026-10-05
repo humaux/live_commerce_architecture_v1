@@ -15,6 +15,7 @@ import type { Customer } from "@/lib/customers-model";
 import { displayTime } from "@/lib/orders-model";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
@@ -72,10 +73,7 @@ export function Customers({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customers-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         <form className="orders-controls" role="search" onSubmit={search}>
           {stores.length > 1 && (
             <label>

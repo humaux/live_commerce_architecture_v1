@@ -17,6 +17,11 @@
   --ui-success: #166534;
   --ui-warning: #854d0e;
   --ui-info: #1d4ed8;
+  --ui-neutral-soft: #edf0f3;
+  --ui-success-soft: #e4f3e9;
+  --ui-warning-soft: #fff4d9;
+  --ui-danger-soft: #fdebe9;
+  --ui-info-soft: #eaf0fc;
   --ui-focus: #1d4ed8;
   --ui-radius: 8px;
   --ui-space-1: 4px;

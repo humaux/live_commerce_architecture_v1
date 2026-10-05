@@ -4,6 +4,7 @@
 // sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). A plain render function with no state of its own: MerchantOrders
 // owns the list, polling and selection and passes the loaded detail in; the BFF routes are listed in the section components.
 import type { Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import { money } from "@/lib/client";
 import type { OrderActions, OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
@@ -22,12 +23,13 @@ export function amount(locale: Locale, currency: string, minor: number) {
 }
 export function badge(state: string, c: OrdersCopy) {
   return (
-    <span
+    <Badge
+      tone={/CAPTURED|FULFILLED|DELIVERED|COLLECTED/.test(state) ? "success" : /FAILED|CANCELLED|EXPIRED/.test(state) ? "danger" : /AWAITING|PENDING|REVIEW/.test(state) ? "warning" : "neutral"}
       className={`orders-badge orders-badge-${state.toLowerCase()}`}
       data-state={state}
     >
       {c.statuses[state as keyof OrdersCopy["statuses"]]}
-    </span>
+    </Badge>
   );
 }
 export type Sections = {

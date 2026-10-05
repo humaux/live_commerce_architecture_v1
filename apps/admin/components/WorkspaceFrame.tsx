@@ -256,22 +256,6 @@ export function WorkspaceFrame({
             >
               {company.productName}
             </div>
-            {selectedStore && (
-              <div className={s.brand} data-testid="shell-store-brand">
-                <span className={s.brandMark} aria-hidden="true">
-                  {Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(
-                    locale,
-                  )}
-                </span>
-                <span
-                  className={s.brandName}
-                  data-testid="shell-store-name"
-                  title={selectedStore.name}
-                >
-                  {selectedStore.name}
-                </span>
-              </div>
-            )}
             {nav.length > 0 && (
               <nav className={s.navigation} aria-label={c.navigation}>
                 {nav.filter((g) => g.id !== "settings").map(groupView)}
@@ -299,6 +283,11 @@ export function WorkspaceFrame({
             {selectedStore && (
               <label className={s.store}>
                 <span className="sr-only">{c.store}</span>
+                <span className={s.brand} data-testid="shell-store-brand" aria-hidden="true">
+                  <span className={s.brandMark}>{Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(locale)}</span>
+                  <span className={s.brandName} data-testid="shell-store-name" title={selectedStore.name}>{selectedStore.name}</span>
+                  <span className={s.storeChevron}>⌄</span>
+                </span>
                 <select
                   aria-label={c.store}
                   data-testid="shell-store-selector"
