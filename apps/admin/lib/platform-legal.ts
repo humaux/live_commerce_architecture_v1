@@ -16,7 +16,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta 連接與使用目的",
-        "商家明確授權並連接後，我們按已授予的權限處理 Facebook 專頁及已連結的 Instagram 帳戶資料、貼文與直播留言、Messenger 訊息及 Instagram 私訊，包括識別碼、姓名或用戶名稱及文字內容，用於留言收單及訂單跟進。在平台權限及訊息規則允許時，系統代表商家以私訊回覆留言，提供訂單認領連結。我們亦處理商家啟用的廣告帳戶及洞察資料。不要求 Facebook 或 Instagram 密碼，不出售 Meta 資料。轉換事件僅按商家啟用的功能及買家同意處理。",
+        "商家明確授權並連接後，我們按已授予的權限處理 Facebook 主頁及已連結的 Instagram 帳戶資料，以及透過這些帳戶收到的貼文與直播留言（包括留言者姓名或用戶名稱、識別碼及留言文字），用於留言收單及訂單跟進。在平台權限及訊息規則允許時，系統代表商家向留言者發送一則含訂單認領連結的私訊回覆，並記錄發送結果及 Meta 提供的送達狀態（如有）。Messenger 訊息及 Instagram 私訊僅在 Meta 實際傳送至平台 Webhook 時處理，用於留言收單及訂單跟進。目前未訂閱傳入私訊事件，因此目前不會經此途徑收到私訊。我們亦處理商家啟用的廣告帳戶及洞察資料。不要求 Facebook 或 Instagram 密碼，不出售 Meta 資料。轉換事件僅按商家啟用的功能及買家同意處理。",
       ],
       [
         "服務提供者與跨境處理",
@@ -38,7 +38,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "服務與營運者",
-        "本服務提供商家網店、商品與庫存、Facebook 及已連結 Instagram 帳戶的留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。經商家授權，系統處理 Messenger 訊息及 Instagram 私訊，並按平台權限及訊息規則，以私訊回覆留言並提供訂單認領連結。營運公司及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
+        "本服務提供商家網店、商品與庫存、Facebook 及已連結 Instagram 帳戶的留言收單、訂單管理及按設定啟用的收款、物流和廣告工作流程。經商家授權，在平台權限及訊息規則允許時，系統代表商家向留言者發送一則含訂單認領連結的私訊回覆，並記錄發送結果及 Meta 提供的送達狀態（如有）。Messenger 訊息及 Instagram 私訊僅在 Meta 實際傳送至平台 Webhook 時處理，用於留言收單及訂單跟進。目前未訂閱傳入私訊事件，因此目前不會經此途徑收到私訊。營運公司及登記資料列於本頁。功能受帳戶權限、商家設定及第三方審核限制；本網站的流程圖僅為產品示意。",
       ],
       [
         "商家責任",
@@ -90,7 +90,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta 连接与使用目的",
-        "商家明确授权并连接后，我们按已授予的权限处理 Facebook 主页及已关联的 Instagram 账户资料、帖子与直播留言、Messenger 消息及 Instagram 私信，包括标识符、姓名或用户名及文字内容，用于留言收单及订单跟进。在平台权限及消息规则允许时，系统代表商家以私信回复留言，提供订单认领链接。我们亦处理商家启用的广告账户及洞察资料。不要求 Facebook 或 Instagram 密码，不出售 Meta 资料。转化事件仅按商家启用的功能及买家同意处理。",
+        "商家明确授权并连接后，我们按已授予的权限处理 Facebook 主页及已关联的 Instagram 账户资料，以及通过这些账户收到的帖子与直播评论（包括评论者姓名或用户名、标识符及评论文字），用于评论收单及订单跟进。在平台权限及消息规则允许时，系统代表商家向评论者发送一条含订单认领链接的私信回复，并记录发送结果及 Meta 提供的送达状态（如有）。Messenger 消息及 Instagram 私信仅在 Meta 实际传送至平台 Webhook 时处理，用于评论收单及订单跟进。目前未订阅传入私信事件，因此目前不会经此途径收到私信。我们亦处理商家启用的广告账户及洞察资料。不要求 Facebook 或 Instagram 密码，不出售 Meta 资料。转化事件仅按商家启用的功能及买家同意处理。",
       ],
       [
         "服务提供者与跨境处理",
@@ -112,7 +112,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "服务与运营者",
-        "本服务提供商家网店、商品与库存、Facebook 及已关联 Instagram 账户的留言收单、订单管理及按设置启用的收款、物流和广告工作流程。经商家授权，系统处理 Messenger 消息及 Instagram 私信，并按平台权限及消息规则，以私信回复留言并提供订单认领链接。运营公司及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
+        "本服务提供商家网店、商品与库存、Facebook 及已关联 Instagram 账户的留言收单、订单管理及按设置启用的收款、物流和广告工作流程。经商家授权，在平台权限及消息规则允许时，系统代表商家向评论者发送一条含订单认领链接的私信回复，并记录发送结果及 Meta 提供的送达状态（如有）。Messenger 消息及 Instagram 私信仅在 Meta 实际传送至平台 Webhook 时处理，用于评论收单及订单跟进。目前未订阅传入私信事件，因此目前不会经此途径收到私信。运营公司及登记资料列于本页。功能受账户权限、商家设置及第三方审核限制；本网站的流程图仅为产品示意。",
       ],
       [
         "商家责任",
@@ -164,7 +164,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
       ],
       [
         "Meta connections and purposes",
-        "After a merchant explicitly connects and authorises an account, we process permitted Facebook Page and linked Instagram account details, post and live-video comments, Messenger messages and Instagram direct messages, including identifiers, names or usernames and text, for comment ordering and order follow-up. Where platform permissions and messaging rules allow, we reply privately to comments on the merchant’s behalf with order-claim links. We also process enabled ad accounts and insights. We do not request Facebook or Instagram passwords or sell Meta data. Conversion events are processed only for enabled features and with buyer consent.",
+        "After a merchant explicitly connects and authorises an account, we process permitted Facebook Page and linked Instagram account details, and post and live-video comments received through those accounts (including commenter names or usernames, identifiers and comment text), for comment ordering and order follow-up. Where platform permissions and messaging rules allow, the system sends one private reply containing an order-claim link to the commenter on the merchant’s behalf, and records the send result and any delivery status Meta provides. Messenger messages and Instagram direct messages are processed only if Meta actually delivers them to the platform’s webhook, for comment ordering and order follow-up. Inbound direct-message events are not currently subscribed to, so no incoming direct messages are currently received through this route. We also process enabled ad accounts and insights. We do not request Facebook or Instagram passwords or sell Meta data. Conversion events are processed only for enabled features and with buyer consent.",
       ],
       [
         "Providers and cross-border processing",
@@ -186,7 +186,7 @@ export const platformLegal: Record<PlatformLocale, Documents> = {
     terms: [
       [
         "Service and operator",
-        "The service provides merchant storefronts, products and inventory, Facebook and linked Instagram comment ordering, order management and configured payment, logistics and advertising workflows. With merchant authorisation, it processes Messenger messages and Instagram direct messages and sends private replies to comments with order-claim links, subject to platform permissions and messaging rules. The operator’s registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
+        "The service provides merchant storefronts, products and inventory, Facebook and linked Instagram comment ordering, order management and configured payment, logistics and advertising workflows. With merchant authorisation, where platform permissions and messaging rules allow, the system sends one private reply containing an order-claim link to the commenter on the merchant’s behalf, and records the send result and any delivery status Meta provides. Messenger messages and Instagram direct messages are processed only if Meta actually delivers them to the platform’s webhook, for comment ordering and order follow-up. Inbound direct-message events are not currently subscribed to, so no incoming direct messages are currently received through this route. The operator’s registered details appear on this page. Features depend on account permissions, merchant setup and third-party approval. Website workflow diagrams are product illustrations only.",
       ],
       [
         "Merchant responsibilities",

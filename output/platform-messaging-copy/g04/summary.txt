@@ -1,0 +1,4 @@
+release-gate  commit=acfd768d17db  dirty_files=49  modes_in_test-local=63  evidence=output/platform-messaging-copy/g04
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

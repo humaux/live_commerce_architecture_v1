@@ -1,0 +1,194 @@
+{
+  "result": {
+    "pass": 30,
+    "fail": 0,
+    "clicks": 390,
+    "messagingCopyCases": 12,
+    "reloads": 30,
+    "ssrCases": 15,
+    "tagCases": 16
+  },
+  "allLedgerRowsPass": true,
+  "screenshots": [
+    {
+      "file": "contact-en-1586.png",
+      "width": 1586,
+      "height": 1368,
+      "sha256": "16786be8a7c9b33bcccd1f0c998967c92dbf6d8c9e6ff9c0be9b6b0153656c7d"
+    },
+    {
+      "file": "contact-en-390.png",
+      "width": 390,
+      "height": 2026,
+      "sha256": "f33a34a888e302044313cbd168f03bf5aee1622b0ef9830e47f3fc552bd964a3"
+    },
+    {
+      "file": "contact-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1273,
+      "sha256": "e20ac57fe0d0e44edb3d99f4dab2793c0014546d3bf17cf3125e56ed5cb176b4"
+    },
+    {
+      "file": "contact-zh-CN-390.png",
+      "width": 390,
+      "height": 1853,
+      "sha256": "2baea3908cf09bdc9cf3e49281c792d31080075ecc366a5941acffadecf5dfc3"
+    },
+    {
+      "file": "contact-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1273,
+      "sha256": "bfa29f559f8273cc71bb3ce1d0d948223dbcb9b81d02499da8119cbfda8e7d4a"
+    },
+    {
+      "file": "contact-zh-TW-390.png",
+      "width": 390,
+      "height": 1853,
+      "sha256": "cd0095332e660b735a7a5825eeafd4eb2253e42f002e4cbe8a9ac911dfd41bb9"
+    },
+    {
+      "file": "data-deletion-en-1586.png",
+      "width": 1586,
+      "height": 1624,
+      "sha256": "0b39e31f55fc1d5cb0e320fd55779ec4fb285e3dd32e4b34752fe4bd194652ff"
+    },
+    {
+      "file": "data-deletion-en-390.png",
+      "width": 390,
+      "height": 2549,
+      "sha256": "85fc4db1603f5c68233f5cba7cffc9a0d3225abe84832dfb3cfd99fbaa541d3c"
+    },
+    {
+      "file": "data-deletion-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1468,
+      "sha256": "78bc352727571beb740276826f9ef82fda09983fc26b03e6906f7d259daf410c"
+    },
+    {
+      "file": "data-deletion-zh-CN-390.png",
+      "width": 390,
+      "height": 2224,
+      "sha256": "83285e1649fa4f5aa14d09f5ecd3c46ae24e9dcbf42845b396ae860f55ee295b"
+    },
+    {
+      "file": "data-deletion-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1468,
+      "sha256": "24c379747f0f5e0d7ffc3906ef06353e0193fd0e56271a7babd0888ee4c4f9de"
+    },
+    {
+      "file": "data-deletion-zh-TW-390.png",
+      "width": 390,
+      "height": 2224,
+      "sha256": "733bed33cdc280df1f5c29e8da8a93db9713b78028480bbda26fb948d5186747"
+    },
+    {
+      "file": "home-en-1586.png",
+      "width": 1586,
+      "height": 1473,
+      "sha256": "8ea503202e0911922966dba48bd181398dbede139e274b073a3cd9a2767e1217"
+    },
+    {
+      "file": "home-en-390.png",
+      "width": 390,
+      "height": 2896,
+      "sha256": "43d0034d695d0d5648cbd8986feb0ab158a213e2e36ab9391043210b60b80da5"
+    },
+    {
+      "file": "home-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1417,
+      "sha256": "c5a999f8d29b04f3b9e9f661186a252fe4c446eb5ec25ff41030fb9eccaf3728"
+    },
+    {
+      "file": "home-zh-CN-390.png",
+      "width": 390,
+      "height": 2619,
+      "sha256": "084930cb44b6e2399b51e82bf24eee4ef3df800b6d42fba3e2ca4263235ea800"
+    },
+    {
+      "file": "home-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1417,
+      "sha256": "1175177b82f917ac56613d2fa344be37f559db2bd7e20e440dadef5a8ca99a44"
+    },
+    {
+      "file": "home-zh-TW-390.png",
+      "width": 390,
+      "height": 2619,
+      "sha256": "0d7d8b8fce7612f4801a2e108ef3cd326fcfadb72ebbdb4db12ddbc8a62f8eb5"
+    },
+    {
+      "file": "privacy-en-1586.png",
+      "width": 1586,
+      "height": 2300,
+      "sha256": "5ddf6e40bf6341d92228b87ebc9b80ab11edecc0da6313b767aee57fd20623fa"
+    },
+    {
+      "file": "privacy-en-390.png",
+      "width": 390,
+      "height": 3966,
+      "sha256": "5b05aaa27d7ed9ac27becabf21728b72a89edf8ecc405cfb8fbd61a8d4781fd1"
+    },
+    {
+      "file": "privacy-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1992,
+      "sha256": "c0726cfcb7830499ad93ef7e56d5da747f67ac41d067db26b20be27738d609a8"
+    },
+    {
+      "file": "privacy-zh-CN-390.png",
+      "width": 390,
+      "height": 3095,
+      "sha256": "2ca85b188a251bf5aff37a4205498ca8aa02f3cf9cde8831cf121ae83a1df142"
+    },
+    {
+      "file": "privacy-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1992,
+      "sha256": "724f8e5498d7c32b0fbd6b4e32e5fee57f68322a7b0dab18f733f96b7f62f628"
+    },
+    {
+      "file": "privacy-zh-TW-390.png",
+      "width": 390,
+      "height": 3095,
+      "sha256": "d3f07a3b142ec26183147fac93ae9ed82ebac6236640baa68d702d29244c579b"
+    },
+    {
+      "file": "terms-en-1586.png",
+      "width": 1586,
+      "height": 2074,
+      "sha256": "507ef5c4ad711d0f22cac1667c3957cf42e69c7db02594ea8b4e2d7063fb0c34"
+    },
+    {
+      "file": "terms-en-390.png",
+      "width": 390,
+      "height": 3474,
+      "sha256": "73f06098f0967e87e80817f1b0c058bba37272c442f55bb33f2b2608a2945aa9"
+    },
+    {
+      "file": "terms-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1767,
+      "sha256": "c77c802c28d468e09abbd1843a68549b02ec9044850d59042801b761d00ccd5a"
+    },
+    {
+      "file": "terms-zh-CN-390.png",
+      "width": 390,
+      "height": 2845,
+      "sha256": "2afacb34ba9f8c706bc8cde5529ef4474fa71266c3c592ff0b95623291520bc7"
+    },
+    {
+      "file": "terms-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1767,
+      "sha256": "d58368da78da820324fa298b3c47e397fcab8cc27c21231c98f14a61edab8f3b"
+    },
+    {
+      "file": "terms-zh-TW-390.png",
+      "width": 390,
+      "height": 2845,
+      "sha256": "4fd7d8731ccaaa64fec897359ed0f9af0ac35bdeb74560f07a0ea2e038941a13"
+    }
+  ]
+}

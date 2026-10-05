@@ -1,0 +1,4 @@
+source=b9154104c6551acf3c7148fe4a8ff4f52f682970
+started=2026-10-05T04:15:48Z
+command=node /Users/luolimo/.codex/skills/impeccable/scripts/detect.mjs --json apps/admin/lib/platform-legal.ts 
+[]

@@ -9,6 +9,7 @@ import { createServer } from "node:net";
 import { mkdir, open, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
+import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
 const output = process.env.LC_PLATFORM_EVIDENCE || "output/platform-site";
 await mkdir(output, { recursive: true });
@@ -174,6 +175,22 @@ async function matrix(s) {
               (await page.locator("main").innerText()).includes(fact),
               `${name}/${locale} main missing ${fact}`,
             );
+        if (name === "privacy" || name === "terms") {
+          assertPlatformMessagingCopy(
+            (await page.locator(".ps-legal-section").allTextContents()).join(
+              " ",
+            ),
+            locale,
+            name,
+          );
+          ledger.push({
+            locale,
+            width,
+            page: name,
+            action: "messaging-copy",
+            result: "PASS",
+          });
+        }
         assert.equal(
           await page.evaluate(
             () => document.documentElement.scrollWidth > innerWidth,
@@ -281,6 +298,14 @@ async function matrix(s) {
             .click();
           await page.waitForURL(origin + routePath(locale, dest));
           assert.equal(await page.locator("main h1").count(), 1);
+          if (dest === "privacy" || dest === "terms")
+            assertPlatformMessagingCopy(
+              (await page.locator(".ps-legal-section").allTextContents()).join(
+                " ",
+              ),
+              locale,
+              dest,
+            );
           ledger.push({
             locale,
             width,
@@ -469,14 +494,21 @@ try {
       2,
     ),
   );
+  // Read assertions are not user clicks; keep this new copy coverage separate.
+  const clicks = ledger.filter(
+    (r) => !["render", "reload", "messaging-copy"].includes(r.action),
+  ).length;
+  const messagingCopyCases = ledger.filter(
+    (r) => r.action === "messaging-copy",
+  ).length;
   await writeFile(
     `${output}/ps-browser-result.json`,
     JSON.stringify(
       {
         pass: 30,
         fail: 0,
-        clicks: ledger.filter((r) => !["render", "reload"].includes(r.action))
-          .length,
+        clicks,
+        messagingCopyCases,
         reloads: ledger.filter((r) => r.action === "reload").length,
         ssrCases: 15,
         tagCases: 16,
@@ -486,7 +518,7 @@ try {
     ),
   );
   console.log(
-    `PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, ${ledger.filter((r) => !["render", "reload"].includes(r.action)).length} real clicks and 30 reloads`,
+    `PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and 30 reloads`,
   );
 } finally {
   await browser?.close();

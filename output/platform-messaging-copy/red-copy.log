@@ -1,0 +1,143 @@
+source=0cc63a1dc8233cbfc776d32f6a2f0f35282a226f
+started=2026-10-05T04:13:31Z
+command=node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts 
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.797333ms)
+✔ PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels (0.130666ms)
+✖ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.27775ms)
+✖ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.171ms)
+✖ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.142709ms)
+✖ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.052125ms)
+✖ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.05ms)
+✖ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.0825ms)
+✔ PS1 legal identity is one untranslated source (0.128833ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.428916ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.721708ms)
+✔ PS4 optional Meta verification value never has a fake default (0.064667ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.050375ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.619709ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.946041ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (1.422083ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 10
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.441542
+
+✖ failing tests:
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.27775ms)
+  AssertionError [ERR_ASSERTION]: zh-TW/privacy: missing 代表商家向留言者發送一則含訂單認領連結的私訊回覆
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.171ms)
+  AssertionError [ERR_ASSERTION]: zh-TW/terms: missing 代表商家向留言者發送一則含訂單認領連結的私訊回覆
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.142709ms)
+  AssertionError [ERR_ASSERTION]: zh-CN/privacy: missing 代表商家向评论者发送一条含订单认领链接的私信回复
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.052125ms)
+  AssertionError [ERR_ASSERTION]: zh-CN/terms: missing 代表商家向评论者发送一条含订单认领链接的私信回复
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.05ms)
+  AssertionError [ERR_ASSERTION]: en/privacy: missing one private reply containing an order-claim link to the commenter on the merchant’s behalf
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/platform-site.test.ts:74:5
+✖ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.0825ms)
+  AssertionError [ERR_ASSERTION]: en/terms: missing one private reply containing an order-claim link to the commenter on the merchant’s behalf
+      at assertPlatformMessagingCopy (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-messaging-copy.fixture.mjs:44:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/platform-messaging-copy/tests/admin/platform-site.test.ts:76:7)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
