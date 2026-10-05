@@ -256,8 +256,10 @@ func TestPickList(t *testing.T) {
 }
 
 // TestPickList500 covers PL08: 500 pickable rows answered inside 10 s. The 500 rows are immutable
-// synthetic read fixtures cloned from one real paid order (unique id/job_id/cart_version), not
-// payment facts.
+// synthetic read fixtures cloned from one real paid order (unique id/job_id/cart_version) and turned into
+// cash_on_delivery AWAITING_COLLECTION orders: the pick list admits only fulfillment.order_money_shippable
+// orders, and a card clone has no payment attempt/CAPTURED fact (so it is correctly not_pickable), whereas the
+// COD branch (0107) is shippable without any payment row.
 func TestPickList500(t *testing.T) {
 	e := rfxNew(t)
 	e.startWorker(t)
@@ -282,7 +284,8 @@ func TestPickList500(t *testing.T) {
 	  INSERT INTO checkout.orders
 	  SELECT (jsonb_populate_record(NULL::checkout.orders, to_jsonb(o)||jsonb_build_object(
 	   'id',g.id,'job_id',g.job,'cart_version',1000000::bigint+g.n,
-	   'commercial_state','CONFIRMED','fulfillment_state','MANUAL_UNASSIGNED',
+	   'commercial_state','AWAITING_COLLECTION','fulfillment_state','MANUAL_UNASSIGNED',
+	   'payment_mode','cash_on_delivery','collection_state','PENDING','cod_surcharge_minor',5000,'cod_carrier','black_cat',
 	   'created_at','2026-01-01T00:00:00Z','updated_at','2026-01-01T00:00:00Z','expires_at','2026-01-01T00:15:00Z'
 	  ))).* FROM checkout.orders o CROSS JOIN gen g WHERE o.id=$1
 	)
@@ -746,7 +749,7 @@ func TestPickListSession(t *testing.T) {
 
 	session := randomUUID()
 	mustExec(t, e.f.owner, `INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
-	 VALUES($1,$2,$3,gen_random_uuid(),gen_random_uuid(),1,$4,clock_timestamp())`, e.f.tenantA, base.store(), base.order, session)
+	 VALUES($1,$2,$3,gen_random_uuid(),gen_random_uuid(),1,$4,clock_timestamp())`, base.s.p.f.tenantA, base.store(), base.order, session)
 
 	t.Run("session selects only its own order", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]string{"session_id": session})
