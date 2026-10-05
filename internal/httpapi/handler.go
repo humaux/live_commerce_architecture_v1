@@ -219,6 +219,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)
 	registerInboxRoutes(mux, pool, configured.Inbox)
+	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
 	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
@@ -380,7 +381,7 @@ func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int
 				w.Header().Set("Retry-After", "60")
 			}
 			status, code := classifier(err)
-			respondError(w, status, code)
+			respondErrorDetails(w, err, status, code)
 			return
 		}
 		respond(w, http.StatusOK, result)
@@ -455,6 +456,17 @@ func catalogClassify(err error) (int, string) {
 
 func respondError(w http.ResponseWriter, status int, code string) {
 	httperror.Write(w, status, code)
+}
+
+// respondErrorDetails is respondError plus the bounded details object of an error that declares one (inbox.SendError: the exceeded limit
+// and/or a fixed reason code, never a request value).
+func respondErrorDetails(w http.ResponseWriter, err error, status int, code string) {
+	var detailed interface{ ErrorDetails() map[string]any }
+	if errors.As(err, &detailed) {
+		httperror.WriteDetails(w, status, code, detailed.ErrorDetails())
+		return
+	}
+	respondError(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
 	if raw, ok := value.(rawResponse); ok { // product-photo preview bytes (images.go)

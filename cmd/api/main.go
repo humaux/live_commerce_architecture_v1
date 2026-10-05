@@ -158,6 +158,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// manual sends (LC-B4: A4/A5/A6/A12): needs the Page HPKE public ring (merchant connect's) and a River client.
+	if err := enableInboxSend(inboxService, pool, os.Getenv); err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
