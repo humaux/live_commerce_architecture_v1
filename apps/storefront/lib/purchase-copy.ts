@@ -20,10 +20,10 @@ const en = {
   more: "Load more options",
   retry: "Retry",
   failed:
-    "We could not confirm the result. Retry to recover the same request; do not start another purchase.",
+    "We could not confirm the result. Tap Retry to check the same purchase; do not start another one.",
   session:
-    "This shopping session needs to be renewed. Your previous order is not canceled by renewal.",
-  renew: "Renew shopping session",
+    "Your shopping connection timed out. Reconnecting does not cancel an order you already placed.",
+  renew: "Reconnect",
   conflict:
     "Your cart or delivery settings changed. Reload the latest information and confirm your choices again.",
   savedCart:
@@ -42,8 +42,8 @@ const en = {
   expires: "Quote valid until",
   noPayment:
     "No payment has been taken. Confirm your address below before creating an unpaid order.",
-  pending: "A previous request needs recovery before continuing.",
-  recover: "Recover previous request",
+  pending: "The result of your previous attempt is not confirmed yet. Check it before continuing.",
+  recover: "Check previous attempt",
   amountInvalid: "Choose a valid quantity within the purchase amount limit.",
 };
 type Copy = { [K in keyof typeof en]: string };
@@ -68,9 +68,9 @@ export const purchaseCopy: Record<Locale, Copy> = {
     delivery: "选择配送",
     more: "加载更多款式",
     retry: "重试",
-    failed: "暂未确认结果。请重试以恢复同一笔请求，不要重新发起购买。",
-    session: "购物会话需要更新。更新会话不会取消此前已创建的订单。",
-    renew: "更新购物会话",
+    failed: "还不确定提交的结果。请点“重试”确认同一笔，不要重新购买。",
+    session: "购物连接已过期，需要重新连接。重新连接不会取消已经创建的订单。",
+    renew: "重新连接",
     conflict: "购物车或配送设置已变更。请重新加载最新信息，再确认选择。",
     savedCart: "购物车内其他商品将保留，并一同计入报价。",
     deliveryTitle: "配送与报价",
@@ -86,8 +86,8 @@ export const purchaseCopy: Record<Locale, Copy> = {
     discount: "优惠",
     expires: "报价有效期至",
     noPayment: "尚未收款。请在下方确认收货信息，再创建未付款订单。",
-    pending: "请先恢复上一笔结果未确认的请求。",
-    recover: "恢复上一笔请求",
+    pending: "上一次提交的结果还未确认，请先确认再继续。",
+    recover: "确认上一次的结果",
     amountInvalid: "请选择有效数量，且商品金额不得超过购买限额。",
   },
   "zh-TW": {
@@ -109,9 +109,9 @@ export const purchaseCopy: Record<Locale, Copy> = {
     delivery: "選擇配送",
     more: "載入更多款式",
     retry: "重試",
-    failed: "暫未確認結果。請重試以恢復同一筆請求，不要重新發起購買。",
-    session: "購物工作階段需要更新。更新不會取消先前已建立的訂單。",
-    renew: "更新購物工作階段",
+    failed: "還不確定送出的結果。請按「重試」確認同一筆，不要重新購買。",
+    session: "購物連線已過期，需要重新連線。重新連線不會取消已經建立的訂單。",
+    renew: "重新連線",
     conflict: "購物車或配送設定已變更。請重新載入最新資訊，再確認選擇。",
     savedCart: "購物車內其他商品將保留，並一同計入報價。",
     deliveryTitle: "配送與報價",
@@ -127,8 +127,8 @@ export const purchaseCopy: Record<Locale, Copy> = {
     discount: "優惠",
     expires: "報價有效期限",
     noPayment: "尚未收款。請在下方確認收件資訊，再建立未付款訂單。",
-    pending: "請先恢復上一筆結果未確認的請求。",
-    recover: "恢復上一筆請求",
+    pending: "上一次送出的結果還未確認，請先確認再繼續。",
+    recover: "確認上一次的結果",
     amountInvalid: "請選擇有效數量，且商品金額不得超過購買限額。",
   },
 };
