@@ -27,7 +27,7 @@ missing=0
 while IFS= read -r f; do
   [[ -f "$f" ]] || continue
   case "$f" in
-    *_test.go|*.test.*|*.spec.*|tests/*|*/tests/*|*.gen.go|*_gen.go|*/.next/*|*/node_modules/*|docs/*|*.md) continue ;;
+    *_test.go|*.test.*|*.spec.*|tests/*|*/tests/*|*.gen.go|*_gen.go|*/.next/*|*/node_modules/*|docs/*|*.md|output/*) continue ;;
     *.go|*.ts|*.tsx|*.mjs|*.js|*.sh|migrations/*.sql) ;;
     *) continue ;;
   esac

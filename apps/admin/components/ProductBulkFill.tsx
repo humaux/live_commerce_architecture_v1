@@ -1,4 +1,7 @@
 "use client";
+// Purpose: Bulk-fill dialog for the product editor's variant rows (price / quantity / SKU code for the selected rows); edits the local draft only.
+// Depends on: react state; lib/product-document (BulkField); lib/product-editor-copy (labels). No API call.
+// Used by: ProductDocumentVariants (opens it from the variant table toolbar).
 // Local draft-only bulk edits. ProductDocumentForm remains the sole document writer.
 import { useEffect, useRef, useState } from "react";
 import type { BulkField } from "@/lib/product-document";

@@ -1,3 +1,6 @@
+// Purpose: Text of the public platform legal pages (privacy, terms, data deletion, contact) in zh-TW / zh-CN / en, describing the implemented data flows incl. Messenger/Instagram.
+// Depends on: ./company (PlatformLocale, company facts). Pure data.
+// Used by: Platform-site legal routes under apps/admin/app (platform host); tests/platform messaging-copy assertions.
 import type { PlatformLocale } from "./company";
 
 // Describes implemented data flows, not a compliance certification or deletion SLA.

@@ -1,4 +1,7 @@
 "use client";
+// Purpose: Variant (SKU) table of the product editor: option axes, generated rows, per-row price/quantity/SKU and bulk selection.
+// Depends on: lib/product-document (applyBulk, DraftRow); lib/catalog-v2-model (OptionAxis); ProductBulkFill; lib/product-editor-copy. Local state only, no API call.
+// Used by: ProductDocumentForm.
 import { useEffect, useRef, useState } from "react";
 import { applyBulk, type DraftRow } from "@/lib/product-document";
 import type { OptionAxis } from "@/lib/catalog-v2-model";

@@ -1,3 +1,6 @@
+// Purpose: All product-editor UI strings per locale (zh-TW, zh-CN, en).
+// Depends on: @live-commerce/i18n (Locale). Pure data.
+// Used by: ProductDocumentForm, ProductDocumentVariants, ProductBulkFill, ProductReadiness, ProductDocumentMedia, ProductQuickEdit.
 import type { Locale } from "@live-commerce/i18n";
 const en = {
   visibility: "Visibility",

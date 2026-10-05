@@ -1,3 +1,6 @@
+// Purpose: Renders the editor's required/recommended checklist and focuses the field a merchant clicks; no API or draft writes.
+// Depends on: lib/product-editor-copy (labels).
+// Used by: ProductDocumentForm (side panel on desktop, chips on mobile).
 // Shared required/recommended checklist rendering; no API or draft writes.
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
 export function ProductReadiness({
