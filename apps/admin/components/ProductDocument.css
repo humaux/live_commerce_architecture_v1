@@ -91,6 +91,9 @@
 }
 .pe-fields {
   min-height: 0;
+  /* Real end spacing keeps the last card and its focus ring off the clip edge. */
+  padding-block-end: var(--ui-space-4);
+  box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--ui-border) var(--ui-surface);
