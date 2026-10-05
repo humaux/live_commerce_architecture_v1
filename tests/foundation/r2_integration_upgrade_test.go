@@ -43,8 +43,10 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0112 adds the lease-fenced public Meta refusal projection (Amendment 2).
 	// 0113 adds the scoped attribution projection and live-audience read helpers (AT7).
 	// 0109 (product-core: A6 inventory_tracked + max_per_order, image cap 12) and post-River 0021 (product-core begin_hold rebuilt on 0020) add two more.
-	if len(r2) != 49 {
-		t.Fatalf("R2 migration set = %d files %v, want 49", len(r2), r2)
+	// 0115 (claims contains mode), 0117 (delivery-allocation backfill), 0118 (live session flow), 0119 (live-console inbox),
+	// 0120 (kwc-v2), 0121 (msg templates) and 0122 (live lifecycle) add seven more files: 49 -> 56.
+	if len(r2) != 56 {
+		t.Fatalf("R2 migration set = %d files %v, want 56", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

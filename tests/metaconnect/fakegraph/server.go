@@ -211,7 +211,9 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	case r.Method == http.MethodPost && strings.HasSuffix(path, "/subscribed_apps"):
 		page := strings.TrimSuffix(path, "/subscribed_apps")
 		tok, _ := body["access_token"].(string)
-		if s.pageOf[tok] != page || s.failSubscribe || q.Get("subscribed_fields") != "feed" {
+		// live-console-v1 §3.1 (LC-B3, migration 0122 era): the Page subscription is now exactly `feed,messages`
+		// (comments + inbox DMs), no longer `feed` alone.
+		if s.pageOf[tok] != page || s.failSubscribe || q.Get("subscribed_fields") != "feed,messages" {
 			graphError(w, 400, 200, "cannot subscribe")
 			return
 		}
