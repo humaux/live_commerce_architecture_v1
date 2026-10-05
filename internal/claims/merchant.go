@@ -4,7 +4,8 @@
 //
 // Non-goals: no manual ingest (manual.go), no link issue (link.go), no HTTP decoding, no
 // session lifecycle (package live owns live.sessions/programs; claims only reads a
-// session's existence and never locks it).
+// session's existence and lifecycle, to refuse opening an ended/archived session, and never
+// locks it). LC-B1 (0122): up to MaxOpenWindowsPerStore windows may be OPEN per store.
 
 package claims
 
@@ -144,10 +145,22 @@ func GetBoard(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessi
 	return Board{Window: window, Offers: offers, Stats: stats}, nil
 }
 
+// MaxOpenWindowsPerStore is the OPEN-15 cap on simultaneously OPEN claim windows of one store
+// (live-console-v1 §8.5); it bounds the pollers of LC-B2 (I23).
+const MaxOpenWindowsPerStore = 5
+
+// ErrTooManyOpenWindows: opening would exceed MaxOpenWindowsPerStore (HTTP 409 too_many_open_windows).
+var ErrTooManyOpenWindows = errors.New("too many open windows")
+
+// ErrInvalidTransition: the requested lifecycle/window transition is not allowed from the session's current
+// lifecycle (HTTP 409 invalid_transition), e.g. opening a window of an ended or archived session.
+var ErrInvalidTransition = errors.New("invalid transition")
+
 // SetWindow opens, closes or re-modes the session's claim window (live:manage) with a
 // version CAS, one receipt (live.claim.window.set) and one audit row. It locks the window
 // row FOR NO KEY UPDATE, so a close waits for in-flight ingests holding it FOR SHARE and
-// any later ingest sees CLOSED. Transition rules are planWindow's. Called by M2.
+// any later ingest sees CLOSED. Transition rules are planWindow's; an open additionally
+// passes the per-store cap and the session-lifecycle check (applyWindow). Called by M2.
 func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID string, in WindowInput) (Window, error) {
 	if !command.ValidID(sessionID) || in.ExpectedVersion < 0 || in.ExpectedVersion == math.MaxInt64 ||
 		(in.State != WindowOpen && in.State != WindowClosed) || !validMode(in.MatchMode) {
@@ -178,11 +191,8 @@ func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 		if current.Version != in.ExpectedVersion {
 			return command.ErrConflict
 		}
-		action, err := planWindow(current, in)
-		if err != nil {
-			return err
-		}
-		out, err = writeWindow(ctx, tx, scope, sessionID, current.Version, in)
+		var action string
+		out, action, err = applyWindow(ctx, tx, scope, sessionID, current, in)
 		if err != nil {
 			return err
 		}
@@ -195,6 +205,72 @@ func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 		return Window{}, err
 	}
 	return out, nil
+}
+
+// ReadWindow returns the session's window (the version-0 CLOSED placeholder when none exists) without locking it.
+// Used by package live (A7 response); the caller has already authorized.
+func ReadWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string) (Window, error) {
+	return readWindow(ctx, tx, scope, sessionID, "")
+}
+
+// ApplyWindow moves the session's window to state (WindowOpen or WindowClosed, keeping its match mode) inside the
+// caller's transaction and receipt (A7 lifecycle start/end). It locks the window row and is idempotent: a window
+// already in that state (or absent when closing) is returned unchanged with action "". Otherwise it takes the
+// planWindow transition for the CURRENT version (the caller's own CAS, the session lifecycle_version, already guards
+// the request) and returns the window plus the audit action suffix ("opened" or "closed"). It writes no receipt and no
+// audit row; the caller does. Lock order matches SetWindow: window row, then (opens only) the store cap advisory lock.
+func ApplyWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID, state string) (Window, string, error) {
+	if !command.ValidID(sessionID) || (state != WindowOpen && state != WindowClosed) {
+		return Window{}, "", command.ErrInvalid
+	}
+	current, err := readWindow(ctx, tx, scope, sessionID, " FOR NO KEY UPDATE")
+	if err != nil {
+		return Window{}, "", err
+	}
+	if current.State == state {
+		return current, "", nil
+	}
+	return applyWindow(ctx, tx, scope, sessionID, current,
+		WindowInput{ExpectedVersion: current.Version, State: state, MatchMode: current.MatchMode})
+}
+
+// applyWindow plans and writes one window transition. An open first checks the session lifecycle (an ended or
+// archived session is only reopened by A7 start, which sets lifecycle live first) and then the per-store cap under a
+// store-level advisory lock, so two concurrent opens in one store cannot both take the last slot. The count excludes
+// this session, so a retry of an already-OPEN window never counts itself.
+func applyWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, current Window, in WindowInput) (Window, string, error) {
+	action, err := planWindow(current, in)
+	if err != nil {
+		return Window{}, "", err
+	}
+	if action == "opened" {
+		var lifecycle string
+		if err := tx.QueryRow(ctx, `SELECT lifecycle FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND id=$3`,
+			scope.TenantID, scope.StoreID, sessionID).Scan(&lifecycle); err != nil {
+			return Window{}, "", mapError(err)
+		}
+		if lifecycle == "ended" || lifecycle == "archived" {
+			return Window{}, "", ErrInvalidTransition
+		}
+		if err := waitAdvisory(ctx, tx, "claims:window-cap:"+scope.TenantID+":"+scope.StoreID); err != nil {
+			return Window{}, "", err
+		}
+		var open int
+		// §8.5 cap: store-wide count of OPEN windows of OTHER sessions (live.claim_windows_open index).
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM live.claim_windows
+			WHERE tenant_id=$1 AND store_id=$2 AND state='OPEN' AND session_id<>$3`,
+			scope.TenantID, scope.StoreID, sessionID).Scan(&open); err != nil {
+			return Window{}, "", err
+		}
+		if open >= MaxOpenWindowsPerStore {
+			return Window{}, "", ErrTooManyOpenWindows
+		}
+	}
+	out, err := writeWindow(ctx, tx, scope, sessionID, current.Version, in)
+	if err != nil {
+		return Window{}, "", err
+	}
+	return out, action, nil
 }
 
 // planWindow is the pure §4.2 transition table (mode changes only while CLOSED, and a
@@ -222,8 +298,8 @@ func planWindow(current Window, in WindowInput) (string, error) {
 // writeWindow applies a transition planWindow accepted. Version 0 inserts the row (OPEN:
 // generation 1; CLOSED: generation 0); otherwise one UPDATE covers all three actions:
 // opening bumps generation and resets opened_at/closed_at, closing stamps closed_at, and a
-// CLOSED→CLOSED mode change touches only match_mode. A second OPEN window in the store
-// fails live_claim_window_one_open (23505 → ErrConflict).
+// CLOSED→CLOSED mode change touches only match_mode. The per-store OPEN cap is applyWindow's
+// (0122 dropped the one-OPEN-window index).
 func writeWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, version int64, in WindowInput) (Window, error) {
 	out := Window{SessionID: sessionID}
 	var row pgx.Row

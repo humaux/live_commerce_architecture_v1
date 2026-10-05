@@ -190,6 +190,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
+	registerLiveLifecycleRoutes(mux, pool, configured.Studio || configured.Live != nil) // LC-B1 A7
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {
