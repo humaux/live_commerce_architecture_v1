@@ -1,3 +1,6 @@
+// Purpose: real-click live-price claim checkout versus ordinary catalog-price purchase regression.
+// Depends on: production storefront/admin, real PG and signed MOCK Meta/IdP/provider fixtures.
+// Used by: --browser-e2e TestBrowserLiveTools; no LIVE provider acceptance.
 // Live tools (R4) browser gate: keyword library import + live-only price, claimed through a signed MOCK Meta comment, bought with pay at pickup
 // at the live price, while the same SKU bought directly from the product page pays the normal price. Written from the contract
 // (contracts/live-keyword-claims-v1.md, amendment "Live tools (R4)") by the independent test author. Started only by
@@ -213,8 +216,10 @@ for (const cell of cells) {
       expect(new URL(buyer.url()).hash).toBe("");
       await shot(buyer, "buyer-claim-live-price", locale, viewport);
       await buyer.getByTestId("claim-add").click();
-      await expect(buyer.getByTestId("claim-added")).toHaveText(claim.added);
-      await expect(buyer.getByTestId(`claim-cart-${run.sku_id}`)).toContainText("× 2");
+      await buyer.waitForURL((url) => url.pathname === `/${locale}/checkout`);
+      await expect(buyer.getByTestId("claim-checkout-notice")).toHaveText(claim.checkoutNotice);
+      await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`)).toBeVisible();
+      await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${run.sku_id}"]`).getByTestId("cart-line-qty")).toHaveText("2");
       await act("check", { name: "cart", scene, sku_id: run.sku_id });
       // The cart drawer and the cart page both show the claimed line at the LIVE price (catalog struck through),
       // and the line/subtotal totals use it (2 x 200 = 400, not the 600 the catalog would give).
