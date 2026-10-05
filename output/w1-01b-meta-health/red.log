@@ -1,0 +1,13 @@
+# MCH01 Derive unit test — first (red) run, captured before the fix.
+# Command: go test ./internal/metaconnect/ -run 'TestDerive|TestCapabilitiesVocabulary' -count=1 -v
+# One case failed: the IG dm_session "field assumed present" case expected ("unknown","lc_u11_open")
+# but the implementation correctly returned ("ok","ok_app_level_assumed") — the case forgot to clear
+# DMConfirmed, and this exposed the intended rule-6 skip for IG app-level subscriptions. Fixed the case
+# to assert the correct expectation (FBFields=nil does NOT yield sub_unread for IG dm_session).
+
+--- FAIL: TestDerive (0.00s)
+    --- FAIL: TestDerive/ig_dm_field_assumed_present (0.00s)
+        derive_test.go:109: Derive(instagram,dm_session) = ("ok","ok_app_level_assumed"), want ("unknown","lc_u11_open")
+    --- PASS: (all other 39 cases)
+FAIL
+FAIL	livecommerce/internal/metaconnect	0.394s

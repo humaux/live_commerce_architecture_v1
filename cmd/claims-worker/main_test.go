@@ -44,6 +44,12 @@ func testEnv() map[string]string {
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,
 		"COMMERCE_META_GRAPH_VERSION":            "v23.0",
+		// Live-console comment bridge (LC-B2): on with a loopback listen address.
+		"COMMERCE_CLAIMS_CONSOLE_ADDR": "127.0.0.1:8081",
+		"COMMERCE_CLAIMS_BRIDGE_TOKEN": b64(9),
+		"COMMERCE_CLAIMS_CURSOR_KEY":   b64(10),
+		"HOSTNAME":                     "worker-test",
+		"COMMERCE_META_PAGE_APP_ID":    "4291253377792879",
 	}
 }
 
@@ -80,6 +86,8 @@ func TestOnlyDocumentedVariablesAreRead(t *testing.T) {
 		allowed[name] = true
 	}
 	allowed["COMMERCE_META_GRAPH_BASE_URL"], allowed["COMMERCE_META_GRAPH_AUTH_HEADER"] = true, true
+	// meta connection-health probe (§3.1): optional, default to no Advanced Access and DM not confirmed.
+	allowed["COMMERCE_META_ADVANCED_ACCESS"], allowed["COMMERCE_META_DM_RECEIVER_CONFIRMED"] = true, true
 	// meta-page-token-v2 private ring (merchant connect): probed for presence on every start, loaded only when set (optional).
 	allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS"], allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE"] = true, true
 	// ECPay CVS switches (taiwan-cvs-logistics-v1 §12): read on every start; the profile and keyring only when enabled.
@@ -116,14 +124,26 @@ func TestConfigRejections(t *testing.T) {
 		"zero link key": func(v map[string]string) {
 			v["COMMERCE_CLAIMS_REPLY_LINK_KEY"] = base64.StdEncoding.EncodeToString(make([]byte, 32))
 		},
-		"link key not base64": func(v map[string]string) { v["COMMERCE_CLAIMS_REPLY_LINK_KEY"] = "!!!" },
-		"no page keyring":     func(v map[string]string) { delete(v, "COMMERCE_META_PAGE_TOKEN_KEYS_JSON") },
-		"unknown active key":  func(v map[string]string) { v["COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID"] = "nope" },
-		"no graph version":    func(v map[string]string) { delete(v, "COMMERCE_META_GRAPH_VERSION") },
-		"bad graph version":   func(v map[string]string) { v["COMMERCE_META_GRAPH_VERSION"] = "23.0" },
-		"foreign graph host":  func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "https://graph.example.com" },
-		"non-loopback http":   func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "http://10.0.0.1:80" },
-		"bad auth header":     func(v map[string]string) { v["COMMERCE_META_GRAPH_AUTH_HEADER"] = "yes" },
+		"link key not base64":  func(v map[string]string) { v["COMMERCE_CLAIMS_REPLY_LINK_KEY"] = "!!!" },
+		"no page keyring":      func(v map[string]string) { delete(v, "COMMERCE_META_PAGE_TOKEN_KEYS_JSON") },
+		"unknown active key":   func(v map[string]string) { v["COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID"] = "nope" },
+		"no graph version":     func(v map[string]string) { delete(v, "COMMERCE_META_GRAPH_VERSION") },
+		"bad graph version":    func(v map[string]string) { v["COMMERCE_META_GRAPH_VERSION"] = "23.0" },
+		"foreign graph host":   func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "https://graph.example.com" },
+		"non-loopback http":    func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "http://10.0.0.1:80" },
+		"bad auth header":      func(v map[string]string) { v["COMMERCE_META_GRAPH_AUTH_HEADER"] = "yes" },
+		"console url addr":     func(v map[string]string) { v["COMMERCE_CLAIMS_CONSOLE_ADDR"] = "http://claims-worker:8081" },
+		"console no port":      func(v map[string]string) { v["COMMERCE_CLAIMS_CONSOLE_ADDR"] = "127.0.0.1" },
+		"missing bridge token": func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_BRIDGE_TOKEN") },
+		"short bridge token": func(v map[string]string) {
+			v["COMMERCE_CLAIMS_BRIDGE_TOKEN"] = base64.StdEncoding.EncodeToString([]byte("short"))
+		},
+		"bridge token not base64": func(v map[string]string) { v["COMMERCE_CLAIMS_BRIDGE_TOKEN"] = "!!!" },
+		"missing cursor key":      func(v map[string]string) { delete(v, "COMMERCE_CLAIMS_CURSOR_KEY") },
+		"short cursor key": func(v map[string]string) {
+			v["COMMERCE_CLAIMS_CURSOR_KEY"] = base64.StdEncoding.EncodeToString([]byte("short"))
+		},
+		"bad page app id": func(v map[string]string) { v["COMMERCE_META_PAGE_APP_ID"] = "not-a-number" },
 	}
 	for name, mutate := range bad {
 		v := testEnv()
@@ -142,7 +162,7 @@ func TestConfigNeverRendersSecrets(t *testing.T) {
 	}
 	blob, _ := json.Marshal(c)
 	for _, rendered := range []string{fmt.Sprint(c), fmt.Sprintf("%+v", c), fmt.Sprintf("%#v", c), string(blob)} {
-		for _, secret := range []string{"sentinel-intake-7c1", "sentinel-worker-7c2", dsnSentinel3, dsnSentinel4, v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8)} {
+		for _, secret := range []string{"sentinel-intake-7c1", "sentinel-worker-7c2", dsnSentinel3, dsnSentinel4, v["COMMERCE_CLAIMS_REPLY_LINK_KEY"], b64(8), b64(9), b64(10)} {
 			if strings.Contains(rendered, secret) {
 				t.Fatalf("config rendering leaked a secret: %s", rendered)
 			}
@@ -150,6 +170,19 @@ func TestConfigNeverRendersSecrets(t *testing.T) {
 		if !strings.Contains(rendered, "redacted") {
 			t.Fatal("config rendering is not redacted")
 		}
+	}
+}
+
+// The comment bridge is optional: an empty console addr leaves it off without requiring its keys.
+func TestConsoleBridgeOptional(t *testing.T) {
+	v := testEnv()
+	v["COMMERCE_CLAIMS_CONSOLE_ADDR"] = ""
+	delete(v, "COMMERCE_CLAIMS_BRIDGE_TOKEN")
+	delete(v, "COMMERCE_CLAIMS_CURSOR_KEY")
+	delete(v, "HOSTNAME")
+	c, err := loadConfig(func(n string) string { return v[n] })
+	if err != nil || c.consoleAddr != "" || len(c.bridgeToken) != 0 || len(c.cursorKey) != 0 {
+		t.Fatalf("optional bridge misconfigured: %v", err)
 	}
 }
 
@@ -164,5 +197,20 @@ func TestValidEnvironmentFailsClosedWithoutLeaking(t *testing.T) {
 		if strings.Contains(err.Error(), banned) {
 			t.Fatalf("error leaked %q", banned)
 		}
+	}
+}
+
+// TestConfigPageAppIDOptional: an unset COMMERCE_META_PAGE_APP_ID turns the meta connection-health probe off instead
+// of refusing the whole worker (integrator fix 2026-10-06: existing deployments predate the variable); a malformed
+// value is still refused by TestConfigRejections ("bad page app id").
+func TestConfigPageAppIDOptional(t *testing.T) {
+	v := testEnv()
+	delete(v, "COMMERCE_META_PAGE_APP_ID")
+	c, err := loadConfig(func(k string) string { return v[k] })
+	if err != nil {
+		t.Fatalf("unset page app id refused: %v", err)
+	}
+	if c.metaHealthPageAppID != "" {
+		t.Fatalf("page app id = %q, want empty (probe off)", c.metaHealthPageAppID)
 	}
 }

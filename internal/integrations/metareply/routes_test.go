@@ -200,7 +200,7 @@ func TestDispatchSuccessBodyAndTokenPlacement(t *testing.T) {
 		h := newHarness(t)
 		route := h.routes(Config{GraphBaseURL: srv.URL, GraphVersion: "v23.0", AuthorizationHeader: header})["instagram"]
 		out, err := route.DispatchWithSecret(context.Background(), h.request("instagram", nil), core.NewSecret([]byte(fakeTok)))
-		if err != nil || out != (core.Outcome{State: "SUCCEEDED", Code: "graph_sent", ProviderReference: "m_abc123"}) {
+		if err != nil || out != (core.Outcome{State: "SUCCEEDED", Code: "graph_sent", ProviderReference: "m_abc123", Detail: sendDetail{recipient: "555"}}) {
 			t.Fatalf("header=%v out=%+v err=%v", header, out, err)
 		}
 		if len(calls) != 1 {

@@ -71,6 +71,11 @@ func mciFencedProjection(s mciSrc, fn *ast.FuncDecl) bool {
 	case s.path == "internal/integrations/metareply/audience.go" && fn.Name.Name == "finishAudience":
 		sqls["SELECT integration.finish_meta_audience($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)"] = []string{"raw"}
 		pure = adsSet("json.Marshal(snapshot)")
+	case s.path == "internal/integrations/metareply/live_videos.go" && fn.Name.Name == "finishLiveVideos":
+		// 0118 (A5-3): the live-videos Finish hook, same fenced-projection shape as finishAudience (one lease-fenced
+		// definer call in the completion transaction); its other calls are pure JSON building.
+		sqls["SELECT integration.finish_meta_live_videos($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)"] = []string{"raw"}
+		pure = adsSet("json.Marshal(items)", "json.Marshal(result)", `json.RawMessage("[]")`)
 	default:
 		return false
 	}
@@ -206,7 +211,16 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 				r, ok := parents[call].(*ast.ReturnStmt)
 				valid = valid && ok && len(r.Results) == 1 && r.Results[0] == call && len(owner.Body.List) == 1 && parents[r] == owner.Body
 				args, loader = []string{"a.keys", "a.v2", "provider", "requiredScopes[provider]"}, "integration.load_meta_page_token"
-			case s.path == "internal/integrations/metareply/audience.go" && owner.Name.Name == "newAudienceRoute":
+			case s.path == "internal/integrations/metareply/send_dm.go" && owner.Name.Name == "loadSecretFor":
+				// LC-B4 (live-console-v1 §4.3): the manual-send routes' constant LoadSecret callsite is the same lease-fenced Page-token loader as
+				// routes.go; the dispatch-copy attachment (inbox.load_send_secret) wraps it OUTSIDE this function (withDispatchCopy).
+				r, ok := parents[call].(*ast.ReturnStmt)
+				valid = valid && ok && len(r.Results) == 1 && r.Results[0] == call && len(owner.Body.List) == 1 && parents[r] == owner.Body
+				args, loader = []string{"a.keys", "a.v2", "provider", "scopes"}, "integration.load_meta_page_token"
+			case (s.path == "internal/integrations/metareply/audience.go" && owner.Name.Name == "newAudienceRoute") ||
+				(s.path == "internal/integrations/metareply/live_videos.go" && owner.Name.Name == "newLiveVideoRoute"):
+				// 0118 (A5-3, live-console-v1 §6.2) adds the live-videos route as the third constant LoadSecret callsite, the same
+				// return-DispatchRoute shape as the audience route; only its loader, scope and result differ.
 				kv, ok := parents[call].(*ast.KeyValueExpr)
 				if !ok || mciExpr(kv.Key) != "LoadSecret" || kv.Value != call {
 					valid = false
@@ -219,7 +233,11 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 				}
 				r, ok := parents[lit].(*ast.ReturnStmt)
 				valid = valid && ok && len(r.Results) == 2 && r.Results[0] == lit && parents[r] == owner.Body
-				args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"read_insights", "pages_read_engagement"}`}, "integration.load_meta_audience_token"
+				if owner.Name.Name == "newLiveVideoRoute" {
+					args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"pages_read_engagement"}`}, "integration.load_meta_live_videos_token"
+				} else {
+					args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"read_insights", "pages_read_engagement"}`}, "integration.load_meta_audience_token"
+				}
 			default:
 				valid = false
 			}
@@ -231,9 +249,11 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 			return true
 		})
 	}
-	return valid && decls == 1 && calls == 2 &&
+	return valid && decls == 1 && calls == 4 &&
 		owners["internal/integrations/metareply/routes.go:loadSecretFor"] == 1 &&
-		owners["internal/integrations/metareply/audience.go:newAudienceRoute"] == 1
+		owners["internal/integrations/metareply/send_dm.go:loadSecretFor"] == 1 &&
+		owners["internal/integrations/metareply/audience.go:newAudienceRoute"] == 1 &&
+		owners["internal/integrations/metareply/live_videos.go:newLiveVideoRoute"] == 1
 }
 
 func mciMutatedSource(t *testing.T, path, source string) mciSrc {
@@ -302,8 +322,12 @@ func TestMetaClaimsMCI10AttributionFinishNegatives(t *testing.T) {
 func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	const routes = "internal/integrations/metareply/routes.go"
 	const audience = "internal/integrations/metareply/audience.go"
+	// 0118 (A5-3): the live-videos route is the third contracted constant callsite, so it joins the parsed source set.
+	const liveVideos = "internal/integrations/metareply/live_videos.go"
+	// LC-B4: the manual-send routes' constant callsite (send_dm.go loadSecretFor) is the fourth.
+	const sendRoutes = "internal/integrations/metareply/send_dm.go"
 	texts := map[string]string{}
-	for _, path := range []string{routes, audience} {
+	for _, path := range []string{routes, audience, liveVideos, sendRoutes} {
 		raw, err := os.ReadFile(filepath.Join("../..", path))
 		if err != nil {
 			t.Fatal(err)
@@ -325,6 +349,8 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 		{"extra call", routes, "// pageSecretLoader shares", "func bad() { pageSecretLoader(nil,nil,`facebook`,nil,`SELECT 1`) }\n// pageSecretLoader shares"},
 		{"package level call", routes, "// pageSecretLoader shares", "var bad = pageSecretLoader(nil,nil,`facebook`,nil,`SELECT 1`)\n// pageSecretLoader shares"},
 		{"wrong audience SQL", audience, "FROM integration.load_meta_audience_token(", "FROM integration.load_meta_page_token("},
+		{"wrong live-videos SQL", liveVideos, "FROM integration.load_meta_live_videos_token(", "FROM integration.load_meta_page_token("},
+		{"wrong live-videos scopes", liveVideos, `[]string{"pages_read_engagement"}`, `[]string{"pages_messaging"}`},
 		{"wrong route field", audience, "LoadSecret: pageSecretLoader", "Dispatch: pageSecretLoader"},
 		{"wrong scopes", audience, `[]string{"read_insights", "pages_read_engagement"}`, `[]string{"pages_messaging"}`},
 		{"unused audience call", audience, "return core.DispatchRoute{\n\t\tProvider", "_ = pageSecretLoader; return core.DispatchRoute{\n\t\tProvider"},
@@ -333,7 +359,7 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var srcs []mciSrc
-			for _, path := range []string{routes, audience} {
+			for _, path := range []string{routes, audience, liveVideos, sendRoutes} {
 				text := texts[path]
 				if path == tc.path && tc.from != "" {
 					text = mciReplace(t, text, tc.from, tc.to)

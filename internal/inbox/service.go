@@ -7,10 +7,16 @@
 package inbox
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+
 	"livecommerce/internal/command"
+	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/msgtemplates"
 )
 
 // Service is the inbox read/write side. It holds the payload keyring (for A9 decryption) but no pool: every method
@@ -18,7 +24,22 @@ import (
 // server-resolved tenant/store/principal.
 type Service struct {
 	keys *Keyring
+	// Send side (live-console-v1 §3.3-3.5, §4; nil until EnableSend): the HPKE public ring that seals the dispatch copy, the River
+	// client that inserts the external_operation_v1 job in the planning transaction, and the template resolver.
+	seal      *pagetoken.SealKeys
+	jobs      *river.Client[pgx.Tx]
+	templates *msgtemplates.Service
 }
+
+// EnableSend turns the manual-send planners (A4/A5/A6/A12) on. seal is the Page HPKE PUBLIC ring (the API never holds the private
+// half), jobs inserts the operation job in the planning transaction, templates resolves published template references (may be nil:
+// then only literal text is accepted).
+func (s *Service) EnableSend(seal *pagetoken.SealKeys, jobs *river.Client[pgx.Tx], templates *msgtemplates.Service) {
+	s.seal, s.jobs, s.templates = seal, jobs, templates
+}
+
+// SendEnabled reports whether the send planners are configured.
+func (s *Service) SendEnabled() bool { return s != nil && s.seal != nil && s.jobs != nil }
 
 // NewService requires the payload keyring (the one A9 uses to open message bodies). cmd/api loads it with LoadKeyring
 // and passes it here; a nil keyring means the inbox is not mounted (like every other nil service in httpapi.Options).
@@ -29,18 +50,46 @@ func NewService(keys *Keyring) (*Service, error) {
 	return &Service{keys: keys}, nil
 }
 
-// ConversationItem is one A8 row (live-console-v1 §11). bundle_id and display_name are LC-B4 (bundles / comment peers)
-// and never set here; linked_customer_id is null until the merchant links it (A14).
+// ConversationItem is one A8 row (live-console-v1 §11). DisplayName (Amendment 1 P2-1) is derived in the API from the newest
+// inbound envelope and is null when unreadable; linked_customer_id is null until the merchant links it (A14). A bundle-only item
+// (P2-2) carries BundleID/SessionID, link_pending_manual=true and null conversation_id/mode/assignee/window_open_until.
 type ConversationItem struct {
-	ConversationID   string    `json:"conversation_id"`
-	Platform         string    `json:"platform"`
-	LastAt           time.Time `json:"last_at"`
-	Unread           bool      `json:"unread"`
-	Unreplied        bool      `json:"unreplied"`
-	Mode             string    `json:"mode"`
-	Assignee         *string   `json:"assignee"`
-	WindowOpenUntil  time.Time `json:"window_open_until"`
-	LinkedCustomerID *string   `json:"linked_customer_id"`
+	ConversationID    string    `json:"conversation_id"`
+	Platform          string    `json:"platform"`
+	DisplayName       *string   `json:"display_name,omitempty"`
+	LastAt            time.Time `json:"last_at"`
+	Unread            bool      `json:"unread"`
+	Unreplied         bool      `json:"unreplied"`
+	Mode              string    `json:"mode"`
+	Assignee          *string   `json:"assignee"`
+	WindowOpenUntil   time.Time `json:"window_open_until"`
+	LinkedCustomerID  *string   `json:"linked_customer_id"`
+	BundleID          *string   `json:"bundle_id,omitempty"`
+	SessionID         *string   `json:"session_id,omitempty"`
+	LinkPendingManual bool      `json:"link_pending_manual,omitempty"`
+	BundleOnly        bool      `json:"-"`
+}
+
+// MarshalJSON renders a bundle-only item with the explicit nulls Amendment 1 P2-2 fixes; conversation items use the plain shape.
+func (c ConversationItem) MarshalJSON() ([]byte, error) {
+	type plain ConversationItem
+	if !c.BundleOnly {
+		return json.Marshal(plain(c))
+	}
+	return json.Marshal(struct {
+		ConversationID    *string   `json:"conversation_id"`
+		BundleID          *string   `json:"bundle_id"`
+		SessionID         *string   `json:"session_id"`
+		Platform          string    `json:"platform"`
+		LastAt            time.Time `json:"last_at"`
+		Unread            bool      `json:"unread"`
+		Unreplied         bool      `json:"unreplied"`
+		Mode              *string   `json:"mode"`
+		Assignee          *string   `json:"assignee"`
+		WindowOpenUntil   *string   `json:"window_open_until"`
+		LinkedCustomerID  *string   `json:"linked_customer_id"`
+		LinkPendingManual bool      `json:"link_pending_manual"`
+	}{nil, c.BundleID, c.SessionID, c.Platform, c.LastAt, false, true, nil, nil, nil, nil, true})
 }
 
 // ConversationList is the A8 response envelope. NextCursor is empty on the last page.
@@ -50,15 +99,19 @@ type ConversationList struct {
 	UnreadTotal int64              `json:"unread_total"`
 }
 
-// MessageItem is one A9 row. The read side only ever returns inbound rows (direction "in"); kind, send_state and
-// principal_id belong to outbound rows (LC-B4) and are omitted. Unreadable is set only when the frozen-classifier
-// replay or the keyring open fails (never dropped silently).
+// MessageItem is one A9 row. Inbound rows carry direction "in" and a seq; outbound rows (the merchant's own sends, LC-B4) carry
+// direction "out", kind, send_state (§4.4: queued | sent | failed | blocked | unknown), principal_id and no seq. Unreadable is set only
+// when the frozen-classifier replay or the keyring open fails (never dropped silently).
 type MessageItem struct {
 	Direction   string           `json:"direction"`
-	Seq         int64            `json:"seq"`
+	Seq         int64            `json:"seq,omitempty"`
 	At          *time.Time       `json:"at"`
 	Text        string           `json:"text"`
 	Attachments []attachmentView `json:"attachments"`
+	Kind        *string          `json:"kind,omitempty"`
+	SendState   *string          `json:"send_state,omitempty"`
+	SendCode    *string          `json:"send_code,omitempty"`
+	PrincipalID *string          `json:"principal_id,omitempty"`
 	Unreadable  *bool            `json:"unreadable,omitempty"`
 }
 
@@ -100,6 +153,8 @@ type BuyerPanel struct {
 	Orders           []OrderRef `json:"orders"`
 	LinkedCustomerID *string    `json:"linked_customer_id,omitempty"`
 	WindowOpenUntil  *time.Time `json:"window_open_until,omitempty"`
+	// LinkPendingManual (Amendment 1 A1.1): the bundle's claim link could not be sent because the comment's private reply was used.
+	LinkPendingManual bool `json:"link_pending_manual"`
 }
 
 // ReadInput is A10 `{read_seq}`.

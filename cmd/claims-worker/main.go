@@ -10,8 +10,12 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +33,7 @@ import (
 	"livecommerce/internal/integrations/shipping/ecpay"
 	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
 	"livecommerce/internal/jobqueue"
+	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/retention"
 	"livecommerce/internal/storefrontdomains"
@@ -53,6 +58,16 @@ type workerConfig struct {
 	pageKeys              *metareply.PageTokenKeyring
 	pageOpen              *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
 	graph                 metareply.Config
+	// Live-console comment bridge (live-console-v1 §2, unit LC-B2): served only when consoleAddr is set.
+	// bridgeToken is shared with cmd/api's BridgeClient; cursorKey is the worker's older_cursor HMAC key.
+	consoleAddr   string
+	consoleHolder string
+	bridgeToken   []byte
+	cursorKey     []byte
+	// meta connection-health probe (§4): the Page app id P3 matches against, and the §3.1 reader config the probe
+	// shares with the API's snapshot reader (same Advanced Access / DM flags).
+	metaHealthPageAppID string
+	metaHealthRCfg      metaconnect.ReaderConfig
 	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
 	ecpayCfg    ecpay.Config
 	ecpayKeys   *ecpay.Keyring
@@ -75,6 +90,20 @@ func main() {
 }
 
 func validDSN(s string) bool { return len(s) >= 1 && len(s) <= 8192 && strings.TrimSpace(s) != "" }
+
+// validConsoleAddr accepts a TCP listen address for the internal comment bridge (":8081" or
+// "0.0.0.0:8081"); it never accepts a URL (the bridge base URL lives on the API side).
+func validConsoleAddr(s string) bool {
+	_, port, err := net.SplitHostPort(s)
+	if err != nil {
+		return false
+	}
+	n, err := strconv.Atoi(port)
+	return err == nil && n >= 1 && n <= 65535
+}
+
+// metaPageAppIDPattern is the Meta app id shape (COMMERCE_META_PAGE_APP_ID, §4.2 P3).
+var metaPageAppIDPattern = regexp.MustCompile(`^[0-9]{1,40}$`)
 
 // loadConfig reads only the variables listed in doc.go: never K_actor, the Meta payload keyring or a
 // Stripe variable (the env sentinel test records every name asked for; MCI10 greps this package for them).
@@ -134,6 +163,33 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	if c.graph.Validate() != nil {
 		return workerConfig{}, errWorkerConfig
 	}
+	// Live-console comment bridge (LC-B2): off unless the listen address is set; when set, the shared
+	// 32-byte bridge token and the 32-byte cursor key are required (base64, like the reply link key).
+	c.consoleAddr = strings.TrimSpace(getenv("COMMERCE_CLAIMS_CONSOLE_ADDR"))
+	if c.consoleAddr != "" {
+		if !validConsoleAddr(c.consoleAddr) {
+			return workerConfig{}, errWorkerConfig
+		}
+		c.consoleHolder = getenv("HOSTNAME")
+		if c.consoleHolder == "" {
+			c.consoleHolder = "claims-worker"
+		}
+		if c.bridgeToken, err = base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_BRIDGE_TOKEN")); err != nil || len(c.bridgeToken) != 32 {
+			return workerConfig{}, errWorkerConfig
+		}
+		if c.cursorKey, err = base64.StdEncoding.DecodeString(getenv("COMMERCE_CLAIMS_CURSOR_KEY")); err != nil || len(c.cursorKey) != 32 {
+			return workerConfig{}, errWorkerConfig
+		}
+	}
+	// meta connection-health probe (§4.2 P3): our app id is required (a missing value would make every Page read as
+	// "not subscribed"); the Advanced Access / DM flags default to the safe pre-review values.
+	// Optional (2026-10-06 integrator fix): unset = the health probe is OFF (one startup log line) instead of the whole
+	// worker refusing to start — the pilot and existing deployments predate this variable. Set but malformed is refused.
+	c.metaHealthPageAppID = strings.TrimSpace(getenv("COMMERCE_META_PAGE_APP_ID"))
+	if c.metaHealthPageAppID != "" && !metaPageAppIDPattern.MatchString(c.metaHealthPageAppID) {
+		return workerConfig{}, errWorkerConfig
+	}
+	c.metaHealthRCfg = metaconnect.NewReaderConfig(getenv("COMMERCE_META_ADVANCED_ACCESS"), getenv("COMMERCE_META_DM_RECEIVER_CONFIRMED") == "1")
 	if c.ecpayCfg, err = ecpay.LoadConfig(getenv); err != nil {
 		return workerConfig{}, errWorkerConfig
 	}
@@ -223,6 +279,12 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerRoutes
 	}
 	routes = append(routes, liveVideoRoutes...)
+	// live-console-v1 §4.3 (LC-B4): DM / public reply / offer recommend routes; the manual private reply shares the meta.private_reply route above.
+	sendRoutes, err := metareply.SendRoutes(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
+	routes = append(routes, sendRoutes...)
 	if c.ecpayCfg.Enabled {
 		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
 		if err != nil {
@@ -244,6 +306,15 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// meta connection-health probe sweep (§4): read-only Graph probe of due Pages, every 5 min + on start.
+	var prober *metareply.Prober
+	if c.metaHealthPageAppID != "" {
+		if prober, err = metareply.NewProber(workerPool, c.pageKeys, c.pageOpen, c.graph.GraphBaseURL, c.graph.GraphVersion, c.metaHealthPageAppID, c.metaHealthRCfg); err != nil {
+			return errWorkerRoutes
+		}
+	} else {
+		slog.Info("meta_health_probe_disabled", "reason", "COMMERCE_META_PAGE_APP_ID unset")
+	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
 		return errWorkerDatabase
@@ -252,13 +323,17 @@ func run(ctx context.Context, getenv func(string) string) error {
 	river.AddWorker(workers, dispatcher)
 	river.AddWorker(workers, retentionWorker)
 	river.AddWorker(workers, storeVerifyWorker)
+	if prober != nil {
+		river.AddWorker(workers, prober)
+	}
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
 		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
 		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_claims_worker (IR-4).
 		// R5 store-domains (P0-2): once a minute + on start (storefrontdomains.PeriodicJob).
-		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob()},
+		// W1-01B: the meta connection-health sweep every 5 min + on start (metareply.ProbePeriodicJob).
+		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob(), metareply.ProbePeriodicJob()},
 		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
@@ -285,6 +360,33 @@ func run(ctx context.Context, getenv func(string) string) error {
 		defer close(unsubscribed)
 		unsubscriber.Run(pollCtx)
 	}()
+	// Live-console comment bridge (LC-B2): the internal bridge listener (backend Docker network, shared
+	// 32-byte bearer) and the comment poller. Both stop with the process; the server shuts down cleanly.
+	if c.consoleAddr != "" {
+		console, err := metareply.NewConsole(workerPool, c.pageKeys, c.pageOpen, metareply.ConsoleConfig{
+			Graph: c.graph, HolderID: c.consoleHolder, BridgeToken: c.bridgeToken, CursorKey: c.cursorKey,
+		})
+		if err != nil {
+			stopPoll()
+			return errWorkerRoutes
+		}
+		consoleServer := &http.Server{
+			Addr:              c.consoleAddr,
+			Handler:           console.Handler(),
+			ReadHeaderTimeout: 5 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      15 * time.Second,
+			IdleTimeout:       60 * time.Second,
+			MaxHeaderBytes:    16 << 10,
+		}
+		go func() { _ = console.Run(pollCtx) }()
+		go func() { _ = consoleServer.ListenAndServe() }()
+		defer func() {
+			shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = consoleServer.Shutdown(shutdown)
+		}()
+	}
 	resubscribed := make(chan struct{})
 	go func() {
 		defer close(resubscribed)

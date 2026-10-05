@@ -3,9 +3,13 @@
 // (contract §4.2).
 //
 // Non-goals: no manual ingest (manual.go), no link issue (link.go), no HTTP decoding, no
-// session lifecycle (package live owns live.sessions/programs; claims only reads a
-// session's existence and lifecycle, to refuse opening an ended/archived session, and never
-// locks it). LC-B1 (0122): up to MaxOpenWindowsPerStore windows may be OPEN per store.
+// session lifecycle (package live owns live.sessions/programs; claims reads a session's
+// lifecycle to refuse opening an ended/archived session; SetWindow locks the session row and,
+// per the 2026-10-05 integrator ruling, auto-starts a draft session when its window opens).
+// LC-B1 (0122): up to MaxOpenWindowsPerStore windows may be OPEN per store.
+// Purpose: merchant claim board, window and offer commands (see above).
+// Depends on: live.sessions/live.claim_windows/live.offers, command.Run/Audit, authorize.
+// Used by: internal/httpapi claims routes (M1-M5), package live (ApplyWindow/ReadWindow).
 
 package claims
 
@@ -178,8 +182,12 @@ func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 	}{scope.PrincipalID, sessionID, in.ExpectedVersion, in.State, in.MatchMode}
 	var out Window
 	err := command.Run(ctx, tx, scope, "live.claim.window.set", key, request, &out, func() error {
-		if err := requireSession(ctx, tx, scope, sessionID); err != nil {
-			return err
+		// LOCK: session row first (same order as live.Lifecycle: session -> window -> store cap), so the draft
+		// auto-start below cannot deadlock against a concurrent A7 transition.
+		var lifecycle string
+		if err := tx.QueryRow(ctx, `SELECT lifecycle FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND id=$3 FOR NO KEY UPDATE`,
+			scope.TenantID, scope.StoreID, sessionID).Scan(&lifecycle); err != nil {
+			return mapError(err)
 		}
 		current, err := readWindow(ctx, tx, scope, sessionID, " FOR NO KEY UPDATE")
 		if err != nil {
@@ -190,6 +198,20 @@ func SetWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 		}
 		if current.Version != in.ExpectedVersion {
 			return command.ErrConflict
+		}
+		// Integrator ruling 2026-10-05 (K3 F-M2-DRAFT): opening a window on a draft session atomically starts the
+		// session (lifecycle draft -> live, lifecycle_version+1, audit live.session.started, same as A7 start) so the
+		// claims board keeps working and no dead window holds a cap slot. A cap/billing refusal below rolls it back.
+		// ended/archived are refused by applyWindow (ErrInvalidTransition, 409 invalid_transition).
+		if in.State == WindowOpen && lifecycle == "draft" {
+			if _, err := tx.Exec(ctx, `UPDATE live.sessions SET lifecycle='live',lifecycle_version=lifecycle_version+1,lifecycle_at=clock_timestamp()
+				WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND lifecycle='draft'`,
+				scope.TenantID, scope.StoreID, sessionID); err != nil {
+				return mapError(err)
+			}
+			if err := command.Audit(ctx, tx, scope, "live.session.started"); err != nil {
+				return err
+			}
 		}
 		var action string
 		out, action, err = applyWindow(ctx, tx, scope, sessionID, current, in)

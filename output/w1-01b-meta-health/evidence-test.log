@@ -1,0 +1,14 @@
+# Test evidence — unit w1-01b-meta-health (backend, DeepSeek V4-Pro)
+# Base SHA: 1a6a9177  worktree: .worktrees/w1-01b-meta-health  branch: unit/w1-01b-meta-health
+
+== DB-free unit tests (exit 0) ==
+$ go test -count=1 ./internal/metaconnect ./internal/notify ./internal/httperror ./cmd/claims-worker ./cmd/expiry-worker ./cmd/api
+ok  	livecommerce/internal/metaconnect	0.470s
+ok  	livecommerce/internal/notify	1.335s
+ok  	livecommerce/internal/httperror	0.780s
+ok  	livecommerce/cmd/claims-worker	4.827s
+ok  	livecommerce/cmd/expiry-worker	0.877s
+ok  	livecommerce/cmd/api	0.833s
+
+== REAL_PG + fake Graph gate (bash scripts/dev/test-focused.sh '^TestMetaHealth') ==
+(pending — see tail; the focused-test PG lock is serialized with another session's full foundation run)

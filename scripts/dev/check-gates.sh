@@ -81,3 +81,6 @@ print(f"check-gates: ok ({len(modes)} modes, all documented; every tracked test 
 PY
 # Documentation ratchet (owner 2026-10-05): files added/changed since the base carry Purpose / Depends on / Used by headers.
 bash scripts/dev/check-headers.sh
+# Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
+unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
+if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi

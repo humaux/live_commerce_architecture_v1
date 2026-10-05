@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"livecommerce/internal/mail"
 )
 
@@ -135,6 +137,48 @@ func TestRenderMerchantBatch(t *testing.T) {
 	}
 }
 
+// TestRenderMetaHealth is the §5.2 content gate for the meta connection-health owner mail: store name, Page name, which
+// capabilities stopped and why (capability/reason copy), the admin link; never a token, permission identifier or raw code
+// (an unknown reason falls back to its raw code so nothing is silently dropped).
+func TestRenderMetaHealth(t *testing.T) {
+	p := Payload{Kind: KindMetaHealth, StoreName: "Shop", PageName: "My Page", To: []string{"owner@example.test"}, Episode: 3,
+		MetaCaps: []MetaCap{{Capability: "read_comment", Reason: "token_expired"}, {Capability: "private_reply", Reason: "perm_pages_messaging"}, {Capability: "dm_session", Reason: "weird_unknown"}},
+		AdminURL: "https://admin.example.test"}
+	m := Render(p)[0]
+	if !strings.Contains(m.Subject, "Shop") || !strings.Contains(m.Subject, "Facebook") || strings.ContainsAny(m.Subject, "\r\n") {
+		t.Fatalf("meta_health header %+v", m)
+	}
+	for _, part := range []string{m.Text, m.HTML} {
+		for _, want := range []string{"My Page", "留言讀取", "存取權杖已過期", "私訊回覆", "缺少傳送訊息的權限", "https://admin.example.test", "weird_unknown"} {
+			if !strings.Contains(part, want) {
+				t.Fatalf("meta_health body lacks %q:\n%s", want, part)
+			}
+		}
+		// §5.2: never a token, permission dump or Graph body — a known reason/capability must render as copy, not as its code.
+		for _, banned := range []string{"token_expired", "read_comment", "perm_pages_messaging", "pages_messaging"} {
+			if strings.Contains(part, banned) {
+				t.Fatalf("meta_health body leaked %q:\n%s", banned, part)
+			}
+		}
+	}
+	// The CTA links only to an https admin origin (contract §10), and one message goes to each owner.
+	if msgs := Render(Payload{Kind: KindMetaHealth, StoreName: "S", To: []string{"a@example.test", "b@example.test"}, AdminURL: "https://admin.example.test"}); len(msgs) != 2 {
+		t.Fatalf("one message per owner: %d", len(msgs))
+	}
+	p.AdminURL = "http://insecure.example.test"
+	if m := Render(p)[0]; strings.Contains(m.Text, "insecure") {
+		t.Fatal("http admin origin must be dropped")
+	}
+	p.AdminURL = ""
+	if m := Render(p)[0]; strings.Contains(m.Text, "admin.example.test") {
+		t.Fatal("empty admin origin must mean no link")
+	}
+	p.To = nil
+	if Render(p) != nil {
+		t.Fatal("no owner, no mail")
+	}
+}
+
 type fakeQ struct {
 	claim   []Payload
 	state   map[string]string
@@ -215,7 +259,40 @@ func TestRecipientHash(t *testing.T) {
 	if string(m1) != string(m2) || string(m1) == string(a) {
 		t.Fatal("merchant hash is order-independent and distinct")
 	}
+	// The meta_health owner mail hashes the same sorted owner list as a merchant batch (§5.2).
+	h1 := recipientHash(Payload{Kind: KindMetaHealth, To: []string{"a@x.y", "b@x.y"}})
+	h2 := recipientHash(Payload{Kind: KindMetaHealth, To: []string{"B@x.y", "a@x.y"}})
+	if string(h1) != string(h2) || string(h1) != string(m1) {
+		t.Fatal("meta_health hash is order-independent and matches the merchant owner-list hash")
+	}
 	if recipientHash(Payload{Kind: KindPaid}) != nil {
 		t.Fatal("no recipient, no hash")
+	}
+}
+
+// TestNewMerchantWorkerValidation guards the admin-origin gate of NewMerchantWorker (https only, no CR/LF/space/quotes).
+func TestNewMerchantWorkerValidation(t *testing.T) {
+	pool, m := &pgxpool.Pool{}, &fakeM{}
+	for name, origin := range map[string]string{
+		"empty": "",
+		"http":  "http://admin.example.test",
+		"space": "https://admin.example.test/x y",
+		"crlf":  "https://admin.example.test\r\nBcc: x@example.test",
+		"quote": "https://admin.example.test\"",
+		"angle": "https://admin.example.test/<script>",
+	} {
+		if _, err := NewMerchantWorker(pool, m, 200, origin); err == nil {
+			t.Errorf("%s: accepted origin %q", name, origin)
+		}
+	}
+	w, err := NewMerchantWorker(pool, m, 200, "https://admin.example.test")
+	if err != nil || w.adminOrigin != "https://admin.example.test" || w.every != DefaultEvery {
+		t.Fatalf("valid origin rejected: %v", err)
+	}
+	if _, err := NewMerchantWorker(nil, m, 200, "https://admin.example.test"); err == nil {
+		t.Fatal("nil pool accepted")
+	}
+	if _, err := NewMerchantWorker(pool, nil, 200, "https://admin.example.test"); err == nil {
+		t.Fatal("nil mailer accepted")
 	}
 }

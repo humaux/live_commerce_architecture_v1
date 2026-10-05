@@ -296,7 +296,10 @@ func sgBundle(role string, universe []string) map[string]bool {
 			out[p] = strings.HasPrefix(p, "live:") || p == "catalog:read" || p == "orders:read" || p == "inventory:read" ||
 				p == "inbox:read" || p == "inbox:reply" || p == "inventory:live_adjust"
 		case "fulfilment":
-			out[p] = p == "orders:read" || p == "fulfillment:write" || p == "orders:export" || strings.HasPrefix(p, "inventory:")
+			// live-console-v1 §14.8 / OPEN-17: the bounded inventory:live_adjust belongs to live_operator only; the 0119 fulfilment
+			// bundle is unchanged (the old "inventory:" prefix match would now wrongly sweep it in).
+			out[p] = p == "orders:read" || p == "fulfillment:write" || p == "orders:export" ||
+				(strings.HasPrefix(p, "inventory:") && p != "inventory:live_adjust")
 		case "viewer":
 			out[p] = strings.HasSuffix(p, ":read") && p != "inbox:read"
 		}

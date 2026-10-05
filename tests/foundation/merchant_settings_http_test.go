@@ -230,7 +230,15 @@ func TestMerchantSettingsHTTPDeliverySwitches(t *testing.T) {
 		t.Fatal("manual delivery did not persist independent switches")
 	}
 	read := settingsRead[fulfillment.Service](t, adminRequest(httpapi.NewHandler(h.f.runtime), "GET", path, h.f.tokens["a"], nil, "", nil))
-	if !reflect.DeepEqual(read, first) {
+	// delivery-allocation brief (0117): the settings PUT also auto-allocates the store's default warehouse and returns it as
+	// default_warehouse_id for the UI; the plain GET projection deliberately does not resolve one (fulfillment.Service doc).
+	// Everything else must round-trip unchanged.
+	if first.DefaultWarehouseID == "" || read.DefaultWarehouseID != "" {
+		t.Fatalf("default_warehouse_id: PUT=%q GET=%q, want set only on the PUT", first.DefaultWarehouseID, read.DefaultWarehouseID)
+	}
+	firstNoWarehouse := first
+	firstNoWarehouse.DefaultWarehouseID = ""
+	if !reflect.DeepEqual(read, firstNoWarehouse) {
 		t.Fatal("delivery GET not persisted")
 	}
 	in.ExpectedVersion, in.Visible = 1, false

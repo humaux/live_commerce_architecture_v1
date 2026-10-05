@@ -35,7 +35,7 @@ var frozenStatus = map[string]int{
 	"missing_permission": http.StatusUnprocessableEntity,
 	"state_mismatch":     http.StatusConflict, "state_used": http.StatusConflict, "state_expired": http.StatusGone,
 	"cap_exceeded": http.StatusConflict, "page_taken": http.StatusConflict, "binding_disabled": http.StatusConflict,
-	"conflict": http.StatusConflict,
+	"conflict": http.StatusConflict, "recheck_too_soon": http.StatusTooManyRequests,
 }
 
 func refusal(code string) *Refusal {

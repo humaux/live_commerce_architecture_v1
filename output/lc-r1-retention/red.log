@@ -1,0 +1,291 @@
+=== RUN   TestClaimsRetentionCRP10SourceGuards
+=== RUN   TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention
+=== RUN   TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin
+=== RUN   TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import
+=== RUN   TestClaimsRetentionCRP10SourceGuards/regression-cheap-items
+--- PASS: TestClaimsRetentionCRP10SourceGuards (0.34s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/definer-callers-only-in-internal-retention (0.00s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/actor-key-loaded-only-by-meta-worker-and-retention-admin (0.01s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/operator-dsn-name-only-in-retention-admin (0.02s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/retention-code-has-no-network-and-no-new-import (0.00s)
+    --- PASS: TestClaimsRetentionCRP10SourceGuards/regression-cheap-items (0.19s)
+=== RUN   TestClaimsRetentionCRP03ReportOnly
+--- PASS: TestClaimsRetentionCRP03ReportOnly (1.41s)
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C1-links
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C3-intake
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger
+    claims_retention_test.go:1167: C4: operations=5, want 6 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=5)
+    claims_retention_test.go:1171: UNKNOWN op: request map[asset_id:10000894625720586706 bundle_id:58be1cb4-41bc-4d5c-85c1-16faa3c3f4e3 comment_ref:10000894625720586706_721165271 link_generation:1 locale:zh-TW message_type:first_private_reply platform:facebook session_id:05fb08cd-00a4-42a4-ab6a-8f2b2016a910 source_id:fa1d02a5-0e0e-40b2-ad20-33abd72fe094 v:1] not redacted (comment_ref must go, redacted:true)
+    claims_retention_test.go:1182: UNKNOWN op: semantic_key="mpr:e0b823d8b37d9332bab7220956b8fd312441bff463221a96" (want mpr-purged:<id>) hash kept=true state=UNKNOWN
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions
+    claims_retention_test.go:1232: C4 a14: operations=0, want 2 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_test.go:1236: c617584f-c2aa-4ab1-b0db-ba6040be1739 op: key="mdm:e66588aeabae6ffd9557fa7844c283f31fa48cb84b76022f" redacted=<nil>, want mdm-purged:<id> redacted
+    claims_retention_test.go:1240: c617584f-c2aa-4ab1-b0db-ba6040be1739 op: id "conversation_id" survived redaction: map[asset_id:15290095368641666473 conversation_id:f9d11de0-2f95-4a3a-ade9-1b898daa878a conversation_known:true kind:dm origin:human outbound_id:19aa9134-9c8c-4ce7-aac1-c2ff80c8e525 peer_key:f5587cc06d94abeb70312b8cd5d41dda8006d88c9b5057475346e86ad6beeffb platform:facebook v:1]
+    claims_retention_test.go:1240: c617584f-c2aa-4ab1-b0db-ba6040be1739 op: id "peer_key" survived redaction: map[asset_id:15290095368641666473 conversation_id:f9d11de0-2f95-4a3a-ade9-1b898daa878a conversation_known:true kind:dm origin:human outbound_id:19aa9134-9c8c-4ce7-aac1-c2ff80c8e525 peer_key:f5587cc06d94abeb70312b8cd5d41dda8006d88c9b5057475346e86ad6beeffb platform:facebook v:1]
+    claims_retention_test.go:1236: d8567daa-594e-44bb-bd2e-5cc6c4cb6301 op: key="mpub:8af3d07f637b13ef4b628cfbc295321d33a21701ec745806" redacted=<nil>, want mpub-purged:<id> redacted
+    claims_retention_test.go:1240: d8567daa-594e-44bb-bd2e-5cc6c4cb6301 op: id "comment_ref" survived redaction: map[asset_id:15290095368641666473 comment_ref:15290095368641666473_186102123 kind:public_reply origin:human outbound_id:6bf6e7d7-80b0-47d5-b7e8-0cd88466c0de platform:facebook v:1]
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C5-social
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C6-run-log
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link
+--- FAIL: TestClaimsRetentionCRP04EnforcedPurge (8.64s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C1-links (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity (0.04s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C3-intake (0.01s)
+    --- FAIL: TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger (0.03s)
+    --- FAIL: TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C5-social (0.16s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C6-run-log (0.01s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle (8.08s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link (0.25s)
+=== RUN   TestClaimsRetentionCRP13UnknownRedaction
+=== RUN   TestClaimsRetentionCRP13UnknownRedaction/A1.4-unknown-redaction
+    claims_retention_test.go:1533: A1.4: operations=0, want 6 (counts: bundles=0 comment_events=0 conversations=0 enforced=1 intake=0 links=0 messages=0 more=0 operations=0)
+    claims_retention_test.go:1544: redact (d9945d06-ef22-481b-aaff-f460f266ddd6) op: key="mpr:00e70f3eb4c68c6fc7381a5610fca3a18ff51e06c9099d4d" state=UNKNOWN, want mpr-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: redact (d9945d06-ef22-481b-aaff-f460f266ddd6) op: redacted flag missing: map[asset_id:14097905941363023832 bundle_id:56d682fa-0402-4ce5-9669-e00c66cdd409 comment_ref:14097905941363023832_502633089 kind:private_reply message_type:first_private_reply platform:facebook session_id:9a8b19a3-4119-433c-862e-fee6f123bd54 source_id:662f25a8-8152-45b9-aa95-53d0feecb9ef v:1]
+    claims_retention_test.go:1554: redact (d9945d06-ef22-481b-aaff-f460f266ddd6) op: id "comment_ref" survived redaction: map[asset_id:14097905941363023832 bundle_id:56d682fa-0402-4ce5-9669-e00c66cdd409 comment_ref:14097905941363023832_502633089 kind:private_reply message_type:first_private_reply platform:facebook session_id:9a8b19a3-4119-433c-862e-fee6f123bd54 source_id:662f25a8-8152-45b9-aa95-53d0feecb9ef v:1]
+    claims_retention_test.go:1564: redact (d9945d06-ef22-481b-aaff-f460f266ddd6) op: sentinel "14097905941363023832_502633089" still appears in the row text: (d9945d06-ef22-481b-aaff-f460f266ddd6,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.private_reply,mpr:00e70f3eb4c68c6fc7381a5610fca3a18ff51e06c9099d4d,"\\x00e70f3eb4c68c6fc7381a5610fca3a18ff51e06c9099d4d325507f2193e5b5c","{""v"": 1, ""kind"": ""private_reply"", ""asset_id"": ""14097905941363023832"", ""platform"": ""facebook"", ""bundle_id"": ""56d682fa-0402-4ce5-9669-e00c66cdd409"", ""source_id"": ""662f25a8-8152-45b9-aa95-53d0feecb9ef"", ""session_id"": ""9a8b19a3-4119-433c-862e-fee6f123bd54"", ""comment_ref"": ""14097905941363023832_502633089"", ""message_type"": ""first_private_reply""}",325001,UNKNOWN,1,"",,,"","","2026-06-07 18:20:03.1502+00","2026-06-07 18:20:03.1502+00",MERCHANT,,,,)
+    claims_retention_test.go:1544: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: key="mdm:2cc9f9546876e98f5b8ee5ca418a585dfe9a1bbbfdafb0e0" state=UNKNOWN, want mdm-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: redacted flag missing: map[asset_id:14097905941363023832 conversation_id:76f77022-3de4-426c-ad22-08bb42779a7b conversation_known:true kind:dm origin:human outbound_id:7c04fc88-77b8-45d0-8a0e-357c77fe3419 peer_key:969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365 platform:facebook v:1]
+    claims_retention_test.go:1554: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: id "conversation_id" survived redaction: map[asset_id:14097905941363023832 conversation_id:76f77022-3de4-426c-ad22-08bb42779a7b conversation_known:true kind:dm origin:human outbound_id:7c04fc88-77b8-45d0-8a0e-357c77fe3419 peer_key:969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365 platform:facebook v:1]
+    claims_retention_test.go:1554: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: id "peer_key" survived redaction: map[asset_id:14097905941363023832 conversation_id:76f77022-3de4-426c-ad22-08bb42779a7b conversation_known:true kind:dm origin:human outbound_id:7c04fc88-77b8-45d0-8a0e-357c77fe3419 peer_key:969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365 platform:facebook v:1]
+    claims_retention_test.go:1564: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: sentinel "76f77022-3de4-426c-ad22-08bb42779a7b" still appears in the row text: (091e6e6c-36cd-46df-b67a-2e5d13d898e7,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.dm_send,mdm:2cc9f9546876e98f5b8ee5ca418a585dfe9a1bbbfdafb0e0,"\\x2cc9f9546876e98f5b8ee5ca418a585dfe9a1bbbfdafb0e005becdcbf3480055","{""v"": 1, ""kind"": ""dm"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""peer_key"": ""969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365"", ""platform"": ""facebook"", ""outbound_id"": ""7c04fc88-77b8-45d0-8a0e-357c77fe3419"", ""conversation_id"": ""76f77022-3de4-426c-ad22-08bb42779a7b"", ""conversation_known"": true}",860001,UNKNOWN,1,"",,,"","","2026-06-07 18:20:03.153475+00","2026-06-07 18:20:03.153475+00",MERCHANT,,,,)
+    claims_retention_test.go:1564: redact (091e6e6c-36cd-46df-b67a-2e5d13d898e7) op: sentinel "969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365" still appears in the row text: (091e6e6c-36cd-46df-b67a-2e5d13d898e7,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.dm_send,mdm:2cc9f9546876e98f5b8ee5ca418a585dfe9a1bbbfdafb0e0,"\\x2cc9f9546876e98f5b8ee5ca418a585dfe9a1bbbfdafb0e005becdcbf3480055","{""v"": 1, ""kind"": ""dm"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""peer_key"": ""969f78ed6c2cfe607be6d1673cee5c968f278f7cf2150a279e64406f7a8c1365"", ""platform"": ""facebook"", ""outbound_id"": ""7c04fc88-77b8-45d0-8a0e-357c77fe3419"", ""conversation_id"": ""76f77022-3de4-426c-ad22-08bb42779a7b"", ""conversation_known"": true}",860001,UNKNOWN,1,"",,,"","","2026-06-07 18:20:03.153475+00","2026-06-07 18:20:03.153475+00",MERCHANT,,,,)
+    claims_retention_test.go:1544: redact (cc40b6ab-5262-4367-ab1d-cf3d111ff46c) op: key="mpub:04aedcfd4293dc08d8db3ae8503c7d69fa5f3a73d94b4394" state=UNKNOWN, want mpub-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: redact (cc40b6ab-5262-4367-ab1d-cf3d111ff46c) op: redacted flag missing: map[asset_id:14097905941363023832 comment_ref:14097905941363023832_834834054 kind:public_reply origin:human outbound_id:de27fca5-0d1b-4157-babd-67673732bb27 platform:facebook v:1]
+    claims_retention_test.go:1554: redact (cc40b6ab-5262-4367-ab1d-cf3d111ff46c) op: id "comment_ref" survived redaction: map[asset_id:14097905941363023832 comment_ref:14097905941363023832_834834054 kind:public_reply origin:human outbound_id:de27fca5-0d1b-4157-babd-67673732bb27 platform:facebook v:1]
+    claims_retention_test.go:1564: redact (cc40b6ab-5262-4367-ab1d-cf3d111ff46c) op: sentinel "14097905941363023832_834834054" still appears in the row text: (cc40b6ab-5262-4367-ab1d-cf3d111ff46c,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.public_reply,mpub:04aedcfd4293dc08d8db3ae8503c7d69fa5f3a73d94b4394,"\\x04aedcfd4293dc08d8db3ae8503c7d69fa5f3a73d94b43945f87b1765c797823","{""v"": 1, ""kind"": ""public_reply"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""platform"": ""facebook"", ""comment_ref"": ""14097905941363023832_834834054"", ""outbound_id"": ""de27fca5-0d1b-4157-babd-67673732bb27""}",123001,UNKNOWN,1,"",,,"","","2026-06-07 18:20:03.155732+00","2026-06-07 18:20:03.155732+00",MERCHANT,,,,)
+    claims_retention_test.go:1544: expired (cb2a9ed1-126d-4874-a4ba-28a7d5d408c8) op: key="mpr:7c3f46d1c6e7a63549b153f44264c02ccacef54d09071385" state=UNKNOWN, want mpr-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: expired (cb2a9ed1-126d-4874-a4ba-28a7d5d408c8) op: redacted flag missing: map[asset_id:14097905941363023832 bundle_id:56d682fa-0402-4ce5-9669-e00c66cdd409 comment_ref:14097905941363023832_117784575 kind:private_reply message_type:first_private_reply platform:facebook session_id:9a8b19a3-4119-433c-862e-fee6f123bd54 source_id:662f25a8-8152-45b9-aa95-53d0feecb9ef v:1]
+    claims_retention_test.go:1554: expired (cb2a9ed1-126d-4874-a4ba-28a7d5d408c8) op: id "comment_ref" survived redaction: map[asset_id:14097905941363023832 bundle_id:56d682fa-0402-4ce5-9669-e00c66cdd409 comment_ref:14097905941363023832_117784575 kind:private_reply message_type:first_private_reply platform:facebook session_id:9a8b19a3-4119-433c-862e-fee6f123bd54 source_id:662f25a8-8152-45b9-aa95-53d0feecb9ef v:1]
+    claims_retention_test.go:1564: expired (cb2a9ed1-126d-4874-a4ba-28a7d5d408c8) op: sentinel "14097905941363023832_117784575" still appears in the row text: (cb2a9ed1-126d-4874-a4ba-28a7d5d408c8,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.private_reply,mpr:7c3f46d1c6e7a63549b153f44264c02ccacef54d09071385,"\\x7c3f46d1c6e7a63549b153f44264c02ccacef54d090713850383eb930f85e8e8","{""v"": 1, ""kind"": ""private_reply"", ""asset_id"": ""14097905941363023832"", ""platform"": ""facebook"", ""bundle_id"": ""56d682fa-0402-4ce5-9669-e00c66cdd409"", ""source_id"": ""662f25a8-8152-45b9-aa95-53d0feecb9ef"", ""session_id"": ""9a8b19a3-4119-433c-862e-fee6f123bd54"", ""comment_ref"": ""14097905941363023832_117784575"", ""message_type"": ""first_private_reply""}",547001,UNKNOWN,1,reconcile,"2026-10-05 17:20:03.151424+00","\\x0000000000000000000000000000000000000000000000000000000000000000","","","2026-06-07 18:20:03.151424+00","2026-06-07 18:20:03.151424+00",MERCHANT,,,,)
+    claims_retention_test.go:1544: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: key="mdm:09b11a09ee8fc66df8288a58a6c97d2666e52c645f84fa43" state=UNKNOWN, want mdm-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: redacted flag missing: map[asset_id:14097905941363023832 conversation_id:f06f9870-0d6e-4987-bd94-e99dd3b8bd80 conversation_known:true kind:dm origin:human outbound_id:717668fd-c30a-428a-b2a8-34756d6d611a peer_key:3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29 platform:facebook v:1]
+    claims_retention_test.go:1554: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: id "conversation_id" survived redaction: map[asset_id:14097905941363023832 conversation_id:f06f9870-0d6e-4987-bd94-e99dd3b8bd80 conversation_known:true kind:dm origin:human outbound_id:717668fd-c30a-428a-b2a8-34756d6d611a peer_key:3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29 platform:facebook v:1]
+    claims_retention_test.go:1554: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: id "peer_key" survived redaction: map[asset_id:14097905941363023832 conversation_id:f06f9870-0d6e-4987-bd94-e99dd3b8bd80 conversation_known:true kind:dm origin:human outbound_id:717668fd-c30a-428a-b2a8-34756d6d611a peer_key:3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29 platform:facebook v:1]
+    claims_retention_test.go:1564: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: sentinel "f06f9870-0d6e-4987-bd94-e99dd3b8bd80" still appears in the row text: (a3809fe7-8dae-4029-a54a-510945c7c1e5,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.dm_send,mdm:09b11a09ee8fc66df8288a58a6c97d2666e52c645f84fa43,"\\x09b11a09ee8fc66df8288a58a6c97d2666e52c645f84fa4340a904c93d70fe02","{""v"": 1, ""kind"": ""dm"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""peer_key"": ""3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29"", ""platform"": ""facebook"", ""outbound_id"": ""717668fd-c30a-428a-b2a8-34756d6d611a"", ""conversation_id"": ""f06f9870-0d6e-4987-bd94-e99dd3b8bd80"", ""conversation_known"": true}",435001,UNKNOWN,1,reconcile,"2026-10-05 17:20:03.154057+00","\\x0000000000000000000000000000000000000000000000000000000000000000","","","2026-06-07 18:20:03.154058+00","2026-06-07 18:20:03.154058+00",MERCHANT,,,,)
+    claims_retention_test.go:1564: expired (a3809fe7-8dae-4029-a54a-510945c7c1e5) op: sentinel "3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29" still appears in the row text: (a3809fe7-8dae-4029-a54a-510945c7c1e5,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.dm_send,mdm:09b11a09ee8fc66df8288a58a6c97d2666e52c645f84fa43,"\\x09b11a09ee8fc66df8288a58a6c97d2666e52c645f84fa4340a904c93d70fe02","{""v"": 1, ""kind"": ""dm"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""peer_key"": ""3e7d4ca7ae185d5765cdc7503bdc367bec8612a3198764e17ed8db610cc88a29"", ""platform"": ""facebook"", ""outbound_id"": ""717668fd-c30a-428a-b2a8-34756d6d611a"", ""conversation_id"": ""f06f9870-0d6e-4987-bd94-e99dd3b8bd80"", ""conversation_known"": true}",435001,UNKNOWN,1,reconcile,"2026-10-05 17:20:03.154057+00","\\x0000000000000000000000000000000000000000000000000000000000000000","","","2026-06-07 18:20:03.154058+00","2026-06-07 18:20:03.154058+00",MERCHANT,,,,)
+    claims_retention_test.go:1544: expired (d22446e7-0da5-4533-8000-f90b535ca4cd) op: key="mpub:99cf41dab3f5e2bdff92daee1606e42190328a88516d7c71" state=UNKNOWN, want mpub-purged:<id> UNKNOWN
+    claims_retention_test.go:1547: expired (d22446e7-0da5-4533-8000-f90b535ca4cd) op: redacted flag missing: map[asset_id:14097905941363023832 comment_ref:14097905941363023832_792329724 kind:public_reply origin:human outbound_id:4a465839-7ad2-4988-aa04-c2ea7d3f09bc platform:facebook v:1]
+    claims_retention_test.go:1554: expired (d22446e7-0da5-4533-8000-f90b535ca4cd) op: id "comment_ref" survived redaction: map[asset_id:14097905941363023832 comment_ref:14097905941363023832_792329724 kind:public_reply origin:human outbound_id:4a465839-7ad2-4988-aa04-c2ea7d3f09bc platform:facebook v:1]
+    claims_retention_test.go:1564: expired (d22446e7-0da5-4533-8000-f90b535ca4cd) op: sentinel "14097905941363023832_792329724" still appears in the row text: (d22446e7-0da5-4533-8000-f90b535ca4cd,0b88c3fd-dd52-4a86-94fb-d60655c9dd94,d16d5143-b29f-4b67-aa4d-eb261cb6212c,bf1394e8-0df5-4f7a-bbab-b1370cf07660,bb874f6c-b682-4db3-93b6-a6e4eb41c25d,1,facebook,14097905941363023832,service,meta.public_reply,mpub:99cf41dab3f5e2bdff92daee1606e42190328a88516d7c71,"\\x99cf41dab3f5e2bdff92daee1606e42190328a88516d7c71952bc4a8316d4651","{""v"": 1, ""kind"": ""public_reply"", ""origin"": ""human"", ""asset_id"": ""14097905941363023832"", ""platform"": ""facebook"", ""comment_ref"": ""14097905941363023832_792329724"", ""outbound_id"": ""4a465839-7ad2-4988-aa04-c2ea7d3f09bc""}",674001,UNKNOWN,1,reconcile,"2026-10-05 17:20:03.15631+00","\\x0000000000000000000000000000000000000000000000000000000000000000","","","2026-06-07 18:20:03.15631+00","2026-06-07 18:20:03.15631+00",MERCHANT,,,,)
+--- FAIL: TestClaimsRetentionCRP13UnknownRedaction (0.08s)
+    --- FAIL: TestClaimsRetentionCRP13UnknownRedaction/A1.4-unknown-redaction (0.03s)
+=== RUN   TestClaimsRetentionCRP05Concurrency
+=== RUN   TestClaimsRetentionCRP05Concurrency/held-row-locks-skip
+=== RUN   TestClaimsRetentionCRP05Concurrency/reopen-in-flight
+=== RUN   TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking
+=== RUN   TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing
+=== RUN   TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations
+=== RUN   TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply
+--- PASS: TestClaimsRetentionCRP05Concurrency (5.78s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/held-row-locks-skip (0.22s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/reopen-in-flight (0.01s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/advisory-key-busy-and-erase-blocking (0.13s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/lock-timeout-is-busy-and-commits-nothing (4.13s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/F5-non-terminal-inbox-job-keeps-row (0.12s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-real-operations (0.42s)
+    --- PASS: TestClaimsRetentionCRP05Concurrency/parked-run-vs-intake-apply (0.70s)
+=== RUN   TestClaimsRetentionCRP06Erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores
+    claims_retention_test.go:2487: selector_digest = sha256(a|object|asset|hex(sha256(key)))
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-b-comment-id
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure
+    claims_retention_test.go:2652: erase (a, A1.4 send actions): operations=2, want 4 (counts: bundles=2 comment_events=4 conversations=1 intake=3 lines=1 links=2 messages=2 operations=2)
+    claims_retention_test.go:2386: operation e6a20f6d-d946-4287-af75-34e63c16250f not redacted: request={"v": 1, "kind": "dm", "origin": "human", "asset_id": "11944933614598796049", "peer_key": "9666a7d246bb0cb727bd6de92014f2c7094e74a0c7c84b08b70979a170f01fba", "platform": "facebook", "outbound_id": "d7087351-485e-4369-b768-bf18b5f4992c", "conversation_id": "85ac86e6-0d1b-4784-90a6-e5c83b4fee99", "conversation_known": true} key=mdm:eb66efbba643281938c6cdb9a13c043614686872d8a31ecd (want mdm-purged:e6a20f6d-d946-4287-af75-34e63c16250f)
+    claims_retention_test.go:2390: operation e6a20f6d-d946-4287-af75-34e63c16250f keeps "peer_key": request={"v": 1, "kind": "dm", "origin": "human", "asset_id": "11944933614598796049", "peer_key": "9666a7d246bb0cb727bd6de92014f2c7094e74a0c7c84b08b70979a170f01fba", "platform": "facebook", "outbound_id": "d7087351-485e-4369-b768-bf18b5f4992c", "conversation_id": "85ac86e6-0d1b-4784-90a6-e5c83b4fee99", "conversation_known": true}
+    claims_retention_test.go:2390: operation e6a20f6d-d946-4287-af75-34e63c16250f keeps "conversation_id": request={"v": 1, "kind": "dm", "origin": "human", "asset_id": "11944933614598796049", "peer_key": "9666a7d246bb0cb727bd6de92014f2c7094e74a0c7c84b08b70979a170f01fba", "platform": "facebook", "outbound_id": "d7087351-485e-4369-b768-bf18b5f4992c", "conversation_id": "85ac86e6-0d1b-4784-90a6-e5c83b4fee99", "conversation_known": true}
+    claims_retention_test.go:2386: operation de524d4a-1cf2-4e05-a81a-c7f0444c9d55 not redacted: request={"v": 1, "kind": "public_reply", "origin": "human", "asset_id": "11944933614598796049", "platform": "facebook", "comment_ref": "11944933614598796049_3435276517", "outbound_id": "aea0d956-d53b-4dc2-81c4-e1a8871d550b"} key=mpub:cff617bc5463dcffe52132eaf53a14affeb0114c68d034af (want mpub-purged:de524d4a-1cf2-4e05-a81a-c7f0444c9d55)
+    claims_retention_test.go:2390: operation de524d4a-1cf2-4e05-a81a-c7f0444c9d55 keeps "comment_ref": request={"v": 1, "kind": "public_reply", "origin": "human", "asset_id": "11944933614598796049", "platform": "facebook", "comment_ref": "11944933614598796049_3435276517", "outbound_id": "aea0d956-d53b-4dc2-81c4-e1a8871d550b"}
+=== RUN   TestClaimsRetentionCRP06Erasure/holds
+    claims_retention_test.go:2711: non-terminal dm_send (READY) of the supplied peer key: counts=bundles=1 comment_events=4 conversations=1 intake=2 lines=1 links=1 messages=2 operations=1 held=false err=<nil>, want held with retry_after
+    claims_retention_test.go:2711: non-terminal public_reply (READY) of the actor's comment: counts=bundles=1 comment_events=4 conversations=1 intake=2 lines=1 links=1 messages=2 operations=1 held=false err=<nil>, want held with retry_after
+=== RUN   TestClaimsRetentionCRP06Erasure/reserved-labels
+=== RUN   TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys
+--- FAIL: TestClaimsRetentionCRP06Erasure (9.75s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores (0.42s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-b-comment-id (0.16s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle (0.16s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle (0.01s)
+    --- FAIL: TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure (0.17s)
+    --- FAIL: TestClaimsRetentionCRP06Erasure/holds (0.85s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/reserved-labels (0.20s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys (7.63s)
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/fresh-database
+    claims_retention_test.go:3421: fresh: §4 privileges the retention roles lack (1): commerce_retention_writer|col|integration.operations.lease_until|SELECT
+    claims_retention_test.go:3459: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
+=== RUN   TestClaimsRetentionCRP02Schema/non-retention-roles-denied
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+    claims_retention_test.go:3367: writer operations: dm_send ledger readable: 0 rows, want 1
+    claims_retention_test.go:3367: writer operations: public_reply ledger readable: 0 rows, want 1
+    claims_retention_test.go:3367: writer operations: offer_recommend ledger readable: 0 rows, want 1
+    claims_retention_test.go:3369: writer operations: redact a terminal dm_send op: 0 rows affected, want 1
+    claims_retention_test.go:3369: writer operations: redact a terminal public_reply op: 0 rows affected, want 1
+    claims_retention_test.go:3363: writer operations: update that keeps peer_key refused: err=<nil> (SQLSTATE ""), want SQLSTATE 42501
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/constraints-and-policy-api
+=== RUN   TestClaimsRetentionCRP02Schema/populated-upgrade
+    claims_retention_test.go:3992: fresh and upgraded privileges differ: fresh-only= upgraded-only=commerce_retention_writer|col|integration.operations.lease_until|SELECT
+--- FAIL: TestClaimsRetentionCRP02Schema (7.57s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/fresh-database (0.17s)
+    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (0.70s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.41s)
+    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (3.59s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities) (0.05s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker (0.05s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker (0.05s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker (0.05s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker (0.06s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner (0.05s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker) (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool (0.01s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker (0.04s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime (0.03s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach (0.15s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.33s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach (0.23s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach (0.18s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach (0.17s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.11s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach (0.12s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach (0.09s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach (0.10s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.09s)
+    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.08s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/populated-upgrade (2.62s)
+=== RUN   TestClaimsRetentionCRP07Privacy
+--- PASS: TestClaimsRetentionCRP07Privacy (19.37s)
+=== RUN   TestClaimsRetentionCRP08RestoreReplay
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations
+    claims_retention_test.go:4672: non-terminal public_reply after the replay: state=READY key=mpub:86229688bf0f385789558ce695b945614fb6c2340f7bb3cc comment_ref present=true, want state untouched (READY), comment_ref redacted and key mpub-purged:<id>
+=== RUN   TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli
+--- FAIL: TestClaimsRetentionCRP08RestoreReplay (5.36s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/red-restore-without-replay-keeps-the-key (0.18s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-log-rows-ignoring-the-hold (0.14s)
+    --- FAIL: TestClaimsRetentionCRP08RestoreReplay/replay-removes-pending-intake-and-redacts-nonterminal-operations (0.09s)
+    --- PASS: TestClaimsRetentionCRP08RestoreReplay/green-replay-from-an-external-tombstone-file-via-the-cli (1.04s)
+=== RUN   TestClaimsRetentionCRP09Worker
+=== RUN   TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login
+=== RUN   TestClaimsRetentionCRP09Worker/batch-loop-stops
+=== RUN   TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed
+=== RUN   TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn
+=== RUN   TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only
+--- PASS: TestClaimsRetentionCRP09Worker (34.10s)
+    --- PASS: TestClaimsRetentionCRP09Worker/start-registers-one-job-and-runs-on-the-job-login (5.04s)
+    --- PASS: TestClaimsRetentionCRP09Worker/batch-loop-stops (8.46s)
+    --- PASS: TestClaimsRetentionCRP09Worker/database-fault-is-a-river-retry-with-earlier-batches-committed (19.34s)
+    --- PASS: TestClaimsRetentionCRP09Worker/refuses-to-start-with-a-bad-retention-dsn (0.48s)
+    --- PASS: TestClaimsRetentionCRP09Worker/deploy-config-carries-the-job-dsn-only (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	93.760s
+FAIL
+test-focused: top-level PASS=5 FAIL=5 SKIP=0 exit=1
