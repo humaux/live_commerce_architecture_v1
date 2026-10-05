@@ -193,7 +193,7 @@ Functions (all `SECURITY DEFINER SET search_path=pg_catalog`, PUBLIC revoked):
 
 | Function | Owner | EXECUTE to | Behavior |
 | --- | --- | --- | --- |
-| `identity.read_merchant_customers(p_hash,p_store,p_customer,p_limit,p_after_ts,p_after_id,p_q)` | commerce_auth | commerce_runtime | `resolve_access(...,'customers:read')` + GUC check exactly as `read_merchant_orders`. List (limit 1..101, keyset on `(last_activity_at,id)` DESC) or detail (`p_customer`, limit 1). Owners with ≥ 1 order or ≥ 1 bound bundle. `p_q` 1..40 chars: phone digits suffix or case-insensitive name prefix over order destinations. One statement snapshot. |
+| `identity.read_merchant_customers(p_hash,p_store,p_customer,p_limit,p_after_ts,p_after_id,p_q,p_tag)` (8 args since 0139 / W6-01B; `p_tag uuid DEFAULT NULL`; the 7-argument form is gone) | commerce_auth | commerce_runtime | `resolve_access(...,'customers:read')` + GUC check exactly as `read_merchant_orders`. List (limit 1..101, keyset on `(last_activity_at,id)` DESC) or detail (`p_customer`, limit 1). Owners with ≥ 1 order or ≥ 1 bound bundle. `p_q` 1..40 chars: phone digits suffix or case-insensitive name prefix over order destinations. One statement snapshot. |
 | `customers.consent_allows(p_tenant,p_store,p_owner,p_purpose,p_channel) → boolean` | commerce_privacy_writer | commerce_auth (R3 grants its planners in its own migration after 0079, C-7) | Latest event granted AND owner active. STABLE. |
 | `customers.buyer_set_consent(p_hash,p_store,p_purpose,p_channel,p_granted,p_source,p_policy,p_key)` | commerce_privacy_writer | commerce_buyer_runtime | `buyer.resolve_scope`; owner active; `p_source` ∈ buyer_checkout/buyer_settings and `p_policy` are passed by Go from the server context/constant (CD4), never from the body. Lock `buyer.owners` row FOR UPDATE; look up `(owner,p_key)` (non-erasure rows): found and (purpose,channel,granted,source,policy) equal → return the stored row; found and different → PT409 `idempotency_conflict`; else **always insert** (also when the state is unchanged), so every key is recorded and a stale retry can never re-grant. |
 | `customers.merchant_withdraw_consent(p_hash,p_store,p_customer,p_purpose,p_channel,p_key)` | commerce_privacy_writer | commerce_runtime | `customers:privacy`; same lock + key rule as `buyer_set_consent`; always inserts granted=false `merchant_recorded`; audit `customers.consent_withdrawn`. |
@@ -528,7 +528,7 @@ points (architecture 14.3 inferred tags need their own contract). Evidence class
 
 - **Tables** (schema `customers`, FORCE RLS, policies GUC-scoped to tenant+store, no login-role grant; written only by
   `commerce_privacy_writer` definers): `tags(tenant_id, store_id, id, name, color, created_at)` with `name` 1..20 characters,
-  NFC, trimmed, no control characters, unique per store case-insensitively (`lower(name)`), `color` one of
+  NFC, trimmed, no control characters, unique per store under NFKC + lower-case (`lower(normalize(name,NFKC))`, so full-width and ligature spellings collide; invisible format characters (Unicode Cf, e.g. U+200B) are refused by Go and by a table CHECK; Go normalises input to NFC before sending), `color` one of
   gray/red/orange/yellow/green/teal/blue/purple, at most 100 tags per store; `owner_tags(tenant_id, store_id, owner_id, tag_id)`
   at most 20 per customer; `notes(tenant_id, store_id, id, owner_id, body, author_id, created_at, edited_at, version)` with
   `body` 1..1000 characters (not blank), at most 200 per customer.
@@ -541,7 +541,8 @@ points (architecture 14.3 inferred tags need their own contract). Evidence class
   `customers.list_tags / list_notes` (read); internal helpers `tn_*`, `erase_tags_notes`, `export_tags_notes` have no runtime
   EXECUTE. Every write audits one of `customers.tag_created|tag_renamed|tag_deleted|tagged|note_added|note_edited|note_deleted`
   (action only, never a body) and fences authority again after its writes. Idempotency: Go `command.Run` receipts
-  (`Idempotency-Key`); the receipt of a note write stores the note WITHOUT its body.
+  (`Idempotency-Key`); the receipt of a note write stores the note WITHOUT its body, and the receipts of tag-set and note writes carry `customer_id`
+  so that erasure deletes them (`customers.erase_tags_notes` removes the four operations' `ops.command_results` rows of that customer).
 - **CAS**: `set_owner_tags` replaces the whole set and requires `revision` = `tags_revision` of the detail read (sha256 of the
   sorted tag-id list); a stale value is 409 `version_changed`. `edit_note` requires the note `version`.
 - **Customer list/detail**: `identity.read_merchant_customers(p_hash, p_store, p_customer, p_limit, p_after_ts, p_after_id,
@@ -551,7 +552,8 @@ points (architecture 14.3 inferred tags need their own contract). Evidence class
 - **Erasure and export**: `apply_erasure` deletes the customer's `owner_tags` and `notes` in the erasure transaction (also on
   `replay_erasures`); the store tag catalogue is untouched; the erased owner is inactive, so no tag or note can be written for
   it afterwards. The buyer self-service export (`buyer_read_privacy(p_detail=true)`) adds `tags:[{name,color}]` and
-  `notes:[{body,created_at,edited_at}]` (no staff principal id). Default ruling for CT-OPEN-1: notes ARE exported to the buyer;
+  `notes:[{body,created_at,edited_at}]` and `notes_omitted` (no staff principal id). The notes section is capped separately so notes
+  can never cause `export_too_large`: the newest notes whose bodies total at most 60000 characters; `notes_omitted` counts the older ones left out (the merchant still sees them). Default ruling for CT-OPEN-1: notes ARE exported to the buyer;
   if the owner decides internal notes must not be shown to the buyer, that needs legal confirmation and a change here.
 - **HTTP** under `/v1/admin/stores/{store_id}/customers`: `GET tags` (list with usage counts), `POST tags`
   `{name,color}` 201, `PATCH tags/{tag_id}` `{name?,color?}`, `DELETE tags/{tag_id}` (links go with it),

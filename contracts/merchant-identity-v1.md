@@ -49,3 +49,7 @@ Reuse PostgreSQL transactions/constraints and the existing merchant session reso
 `identity.store_grants.permission` gains `customers:write` (add/rename/delete customer tags, set a customer's tags, add and
 edit notes; see `contracts/customers-billing-v1.md` Amendment W6-01B). The owner and admin bundles (derived from the live
 permission catalogue) hold it; existing owner/admin staff are backfilled; viewer, live_operator and fulfilment do not.
+
+Status of the role matrix (integrator note, W6-01B review): the unit brief listed an "owner/admin + 客服包" bundle, but no customer-service role exists
+yet, so `customers:write` is owner/admin only for now. The note rule "author, or a `customers:privacy` holder, may edit/delete a note" is reserved for the
+day a non-privacy role (e.g. a customer-service bundle) receives `customers:write`; until then every writer is also a privacy holder.
