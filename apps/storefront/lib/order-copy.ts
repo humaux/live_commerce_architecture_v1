@@ -20,10 +20,10 @@ const en = {
   confirmed:
     "Address and total confirmed. Editing any field requires confirmation again.",
   uncertain:
-    "The address request could not be confirmed. Confirm again to recover it before continuing.",
-  recoverAddress: "Recover saved address",
+    "We could not tell whether your address was received. Confirm it again before continuing.",
+  recoverAddress: "Bring back saved address",
   recoverWithoutQuote:
-    "Check and recover your saved address first. Then request a new quotation before ordering.",
+    "Check and bring back your saved address first. Then get a new total before ordering.",
   recovered:
     "A saved address was found. Check it and confirm again before ordering.",
   failed:
@@ -49,7 +49,7 @@ const en = {
   unavailable:
     "Payment is not open on this page yet. No payment is taken by creating an order.",
   recovery:
-    "An order may already exist. Restore access and recover the same request; a new shopping session will not recover it.",
+    "You may already have placed this order. Find that order first so you do not order twice; starting a new cart will not bring it back.",
   // manual-fulfilment-v1 §5.2: the seller's attestation only; never "in transit" or "delivered".
   shipped: "Shipped by the seller",
   carrier: "Carrier",
@@ -116,9 +116,9 @@ export const orderCopy: Record<Locale, Copy> = {
     loading: "正在加载收货信息…",
     explain: "请核对收货地址和报价总额，再创建订单。",
     confirmed: "收货信息与总额已确认。修改任一字段后，需要重新确认。",
-    uncertain: "地址请求结果尚未确认，请再次确认以恢复该请求，再继续操作。",
-    recoverAddress: "恢复已保存地址",
-    recoverWithoutQuote: "请先核对并恢复已保存的地址，再获取新的报价后下单。",
+    uncertain: "还不确定地址是否已送出，请再确认一次，再继续。",
+    recoverAddress: "带回已保存的地址",
+    recoverWithoutQuote: "请先核对并带回已保存的地址，再获取新的总额后下单。",
     recovered: "已找到之前保存的地址，请核对后重新确认。",
     failed: "暂时无法确认收货信息，请重新加载最新报价后重试。",
     expired: "报价已过期，请获取新的总额后再确认收货信息。",
@@ -138,7 +138,7 @@ export const orderCopy: Record<Locale, Copy> = {
     CANCELLED: "订单已取消",
     unavailable: "此页面暂未开放支付。创建订单不会扣款。",
     recovery:
-      "此前可能已创建订单。请恢复访问后查询同一笔请求；新建购物会话不能恢复原订单。",
+      "你可能已经下过这笔订单。请先找回该订单，避免重复下单；重新开始购物车不会找回它。",
     shipped: "商家已发货",
     carrier: "物流公司",
     tracking: "运单号",
@@ -164,9 +164,9 @@ export const orderCopy: Record<Locale, Copy> = {
     loading: "正在載入收件資訊…",
     explain: "請核對收件地址與報價總額，再建立訂單。",
     confirmed: "收件資訊與總額已確認。修改任一欄位後，需要重新確認。",
-    uncertain: "地址請求結果尚未確認，請再次確認以恢復該請求，再繼續操作。",
-    recoverAddress: "恢復已儲存地址",
-    recoverWithoutQuote: "請先核對並恢復已儲存的地址，再取得新的報價後下單。",
+    uncertain: "還不確定地址是否已送出，請再確認一次，再繼續。",
+    recoverAddress: "帶回已儲存的地址",
+    recoverWithoutQuote: "請先核對並帶回已儲存的地址，再取得新的總額後下單。",
     recovered: "已找到先前儲存的地址，請核對後重新確認。",
     failed: "暫時無法確認收件資訊，請重新載入最新報價後重試。",
     expired: "報價已過期，請取得新的總額後再確認收件資訊。",
@@ -186,7 +186,7 @@ export const orderCopy: Record<Locale, Copy> = {
     CANCELLED: "訂單已取消",
     unavailable: "此頁面暫未開放付款。建立訂單不會扣款。",
     recovery:
-      "先前可能已建立訂單。請恢復存取後查詢同一筆請求；新的購物工作階段無法恢復原訂單。",
+      "你可能已經下過這筆訂單。請先找回該訂單，避免重複下單；重新開始購物車不會找回它。",
     shipped: "商家已出貨",
     carrier: "物流業者",
     tracking: "貨運單號",

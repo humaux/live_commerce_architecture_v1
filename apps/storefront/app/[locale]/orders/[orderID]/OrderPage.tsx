@@ -46,13 +46,13 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   return (
-    <main data-testid="order-page" aria-busy={state === "loading"}>
+    <main className="purchase-main claim-main" data-testid="order-page" aria-busy={state === "loading"}>
       {state === "loading" && <p role="status">{copy.loading}</p>}
       {state === "failed" && (
         <div role="alert" data-testid="order-page-failed">
           <p>{copy.loadFailed}</p>
           <button type="button" onClick={() => void load()}>{copy.retry}</button>{" "}
-          <a href={`/${locale}/orders/lookup`}>{copy.lookupLink}</a>
+          <a className="tap-link" href={`/${locale}/orders/lookup`}>{copy.lookupLink}</a>
         </div>
       )}
       {state === "ready" && order && (

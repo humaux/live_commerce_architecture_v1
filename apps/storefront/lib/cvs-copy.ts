@@ -78,7 +78,7 @@ const en = {
   expired: "The store selection expired. Choose the store again.",
   mismatch: "That store belongs to another chain. Choose the store again.",
   noSession:
-    "Continue in your browser: this page was opened in an app whose browsing session was not kept. Open this page in your phone's browser and choose the store again.",
+    "Continue in your phone's browser: the app you opened this in does not keep your shopping details. Open this page in your phone's browser and choose the store again.",
   copyLink: "Copy page link",
   copied: "Link copied",
   copyFailed: "Copy failed. Select the address bar and copy it.",
@@ -187,7 +187,7 @@ export const cvsCopy: Record<Locale, Copy> = {
     expired: "门市选择已过期，请重新选择门市。",
     mismatch: "该门市属于其他超商品牌，请重新选择门市。",
     noSession:
-      "请在浏览器中继续：此页面在未保留浏览会话的 App 中打开。请用手机浏览器打开本页，再重新选择门市。",
+      "请改用手机浏览器继续：你现在打开的 App 没有保存购物资料。请用手机浏览器打开本页，再重新选择门市。",
     copyLink: "复制页面链接",
     copied: "已复制链接",
     copyFailed: "复制失败，请选取地址栏后手动复制。",
@@ -290,7 +290,7 @@ export const cvsCopy: Record<Locale, Copy> = {
     expired: "門市選擇已過期，請重新選擇門市。",
     mismatch: "該門市屬於其他超商品牌，請重新選擇門市。",
     noSession:
-      "請在瀏覽器中繼續：此頁面在未保留瀏覽工作階段的 App 中開啟。請用手機瀏覽器開啟本頁，再重新選擇門市。",
+      "請改用手機瀏覽器繼續：你現在開啟的 App 沒有保存購物資料。請用手機瀏覽器開啟本頁，再重新選擇門市。",
     copyLink: "複製頁面連結",
     copied: "已複製連結",
     copyFailed: "複製失敗，請選取網址列後手動複製。",

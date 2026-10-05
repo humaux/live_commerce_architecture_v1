@@ -49,10 +49,10 @@ export default function LookupForm({ locale }: { locale: Locale }) {
   }
 
   return (
-    <main className="order-section" data-testid="order-lookup">
+    <main className="purchase-main claim-main order-section" data-testid="order-lookup">
       <h1>{copy.title}</h1>
       <p>{copy.intro}</p>
-      <form onSubmit={(event) => void submit(event)} noValidate>
+      <form className="lookup-form" onSubmit={(event) => void submit(event)} noValidate>
         <label>
           {copy.orderRef}
           <input

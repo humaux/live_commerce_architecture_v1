@@ -137,7 +137,7 @@ select {
 .purchase-main {
   max-width: 760px;
   margin: 0 auto;
-  padding: 40px 21px 160px;
+  padding: 40px 21px 40px;
 }
 h1,
 h2,
@@ -492,6 +492,46 @@ h2 {
 .order-id {
   overflow-wrap: anywhere;
 }
+/* Order number: a small label over the number, never "label: number" wrapping mid-id on a phone. */
+.order-ref {
+  display: grid;
+  gap: 2px;
+}
+.order-ref > span:first-child {
+  color: var(--muted);
+  font-size: 14px;
+}
+.order-ref .order-id {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+/* Order lookup form: stacked label + field, fields >= 44px tall (phone tap target) and 16px (iOS must not zoom on focus). */
+.lookup-form label {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+.lookup-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #becddd;
+  border-radius: 5px;
+  background: white;
+  color: var(--ink);
+  font-size: 16px;
+}
+.lookup-form button[type="submit"] {
+  margin-top: 8px;
+  min-width: 140px;
+}
+/* A link that is the whole line (not inside a sentence): 44px tap area without changing the type size. */
+.tap-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
 .order-state {
   color: var(--teal);
   font-weight: 700;
@@ -645,6 +685,12 @@ h2 {
   color: var(--muted);
   font-size: 14px;
   overflow-wrap: anywhere;
+}
+.claim-lines li > button {
+  flex: none;
+  align-self: center;
+  white-space: nowrap;
+  min-width: 88px;
 }
 .claim-amounts {
   flex: none;

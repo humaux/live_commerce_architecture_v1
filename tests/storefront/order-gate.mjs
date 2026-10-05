@@ -106,10 +106,15 @@ async function created(p,quote,ownerOrders=1) {
   for(const key of ["orders","holds","jobs","receipts","reserve_lines"])assert.equal(f[key],ownerOrders,`per-buyer ${key}`);
   assert.equal(f.hold_state,"HELD");
   assert.equal(f.total,quote.amount.total_minor);assert.equal(f.currency,quote.currency);assert.equal(f.country,quote.country);
-  const breakdown=p.getByTestId("order-breakdown").locator("div");
-  await expect(breakdown).toHaveCount(3);
-  for(const [index,key] of ["shipping_minor","tax_minor","discount_minor"].entries()) {
-    await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency,minimumFractionDigits:quote.amount[key]%100===0?0:2}).format(quote.amount[key]/100)); // storefront money: whole amounts carry no ".00" (lib/money.ts)
+  // SF-12: only the amounts that moved the total are listed ("Delivery NT$0 / Tax NT$0 / Discount NT$0" is not); no row at all when none did.
+  const shown=["shipping_minor","tax_minor","discount_minor"].filter(key=>quote.amount[key]!==0);
+  if(shown.length===0)await expect(p.getByTestId("order-breakdown")).toHaveCount(0);
+  else {
+    const breakdown=p.getByTestId("order-breakdown").locator("div");
+    await expect(breakdown).toHaveCount(shown.length);
+    for(const [index,key] of shown.entries()) {
+      await expect(breakdown.nth(index).locator("dd")).toHaveText(new Intl.NumberFormat("en",{style:"currency",currency:quote.currency,minimumFractionDigits:quote.amount[key]%100===0?0:2}).format(quote.amount[key]/100)); // storefront money: whole amounts carry no ".00" (lib/money.ts)
+    }
   }
   await expect(p.getByTestId("create-order")).toHaveCount(0);
   // This legacy fixture does not enable buyer payment. New payment UI must not

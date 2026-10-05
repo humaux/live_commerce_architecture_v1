@@ -1,9 +1,9 @@
 // Unit tests for lib/legal-copy.ts (legal-pages unit). Pure data; no server, no network.
-// Also writes the owner's to-do list (every rendered owner-text marker) to output/legal-pages/.
+// Also writes the owner's to-do list (every non-final text that keeps a legal page unpublished) to output/legal-pages/.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { legalFooterLinks, legalPage, legalSlugs, pendingOwnerText } from "../lib/legal-copy.ts";
+import { legalFooterLinks, legalPage, legalPublished, legalSlugs, pendingOwnerText } from "../lib/legal-copy.ts";
 
 const locales = ["zh-TW", "zh-CN", "en"];
 
@@ -45,14 +45,23 @@ test("final text is only the owner-confirmed company facts (CR 81215167 name + r
   assert.equal(finals, 15); // privacy (name+address), terms (operator), contact (name+address) x 3 locales
 });
 
-test("footer has 7 unique hrefs: 5 policies, anti-fraud guidance and data-deletion, per locale", () => {
+test("a legal page is published only when every text on it is final; buyers see no link to an unpublished one", () => {
   for (const l of locales) {
+    const published = legalSlugs.filter((s) => legalPublished(l, s));
+    for (const s of legalSlugs) {
+      const p = legalPage(l, s);
+      const allFinal = [p.updated, ...p.sections.flatMap((x) => x.body)].every((t) => t.kind === "final");
+      assert.equal(legalPublished(l, s), allFinal, `${l}/${s}`);
+    }
+    // Today every policy still has owner text pending or awaiting approval: none is published, so the footer carries only the two
+    // pages that are real content (anti-fraud guidance and data-deletion instructions).
+    assert.deepEqual(published, [], `${l}: a policy page became publishable; check its link and the unpublished-page gate`);
     const links = legalFooterLinks(l);
-    assert.equal(new Set(links.map((x) => x.href)).size, 7);
     assert.deepEqual(
       links.map((x) => x.href),
-      [...legalSlugs.map((s) => `/${l}/legal/${s}`), `/${l}/legal/anti-fraud`, `/${l}/data-deletion`],
+      [...published.map((s) => `/${l}/legal/${s}`), `/${l}/legal/anti-fraud`, `/${l}/data-deletion`],
     );
+    assert.equal(new Set(links.map((x) => x.href)).size, links.length);
     assert.ok(links.every((x) => x.label.length > 0));
   }
 });
@@ -65,7 +74,7 @@ test("data-deletion path is named in the privacy page of every locale", () => {
   }
 });
 
-test("pendingOwnerText lists exactly the rendered markers and is written for the owner", () => {
+test("pendingOwnerText lists exactly the texts that keep a page unpublished and is written for the owner", () => {
   let expected = 0;
   for (const l of locales)
     for (const s of legalSlugs) {

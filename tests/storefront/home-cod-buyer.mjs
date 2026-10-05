@@ -43,11 +43,11 @@ let browser, edge, proxy;
 const copy = {
   "zh-TW": {
     delivery: "選擇配送", quote: "取得目前總額", cod: /貨到付款/, createCod: "送出訂單（貨到付款）",
-    paid: "已貨到收款", note: /現金/,
+    paid: "已貨到收款", note: /現金/, orderTitle: "你的訂單",
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", cod: /Cash on delivery/, createCod: "Place order (cash on delivery)",
-    paid: "Paid on delivery", note: /cash/i,
+    paid: "Paid on delivery", note: /cash/i, orderTitle: "Your order",
   },
 };
 const pii = { recipient_name: "Synthetic Gate Recipient", phone: "+886900000091", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Address Ninety One", line2: "Synthetic Unit Ninety Two" };
@@ -219,7 +219,11 @@ async function place(buyer) {
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${(total + surcharge) / 100}`);
   await expect(cod.getByTestId("order-cod-amount")).toContainText(`NT$${surcharge / 100}`);
   await expect(cod.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Black Cat" : "黑貓");
-  await expect(page.locator("#order-title")).toHaveText(await cod.getByTestId("order-cod-state").innerText());
+  // SF-2: the page title is the order itself; the payment instruction is the labelled "Cash on delivery" section, stated once (no second status line).
+  await expect(page.locator("#order-title")).toHaveText(c.orderTitle);
+  await expect(cod.getByRole("heading", { level: 2 })).toHaveText(c.cod); // the section is labelled with the payment method, once
+  await expect(page.getByTestId("order-state")).toHaveCount(0);
+  assert.notEqual((await page.locator("#order-title").innerText()).trim(), (await cod.getByTestId("order-cod-state").innerText()).trim(), `${label}: the H1 is not the payment instruction`);
   await shot(page, "order-pending", locale, viewport);
   if (label === "order A") {
     const linked = await ctx.newPage();
@@ -291,8 +295,8 @@ try {
   {
     const a = buyers.A; await refresh(a.page);
     await expect(a.page.getByTestId("order-cod").getByTestId("order-cod-state")).toHaveAttribute("data-state", "COLLECTED");
-    await expect(a.page.locator("#order-title")).toHaveText(copy[a.locale].paid);
-    await expect(a.page.getByTestId("order-cod")).toContainText(copy[a.locale].paid);
+    await expect(a.page.locator("#order-title")).toHaveText(copy[a.locale].orderTitle);
+    await expect(a.page.getByTestId("order-cod").getByTestId("order-cod-state")).toHaveText(copy[a.locale].paid);
     const order = await api(a.page, "GET", `orders/${a.id}`);
     assert.equal(order.status, 200); assert.equal(order.body.commercial_state, "AWAITING_COLLECTION", "a collected COD order never becomes CONFIRMED");
     assert.equal(order.body.collection_state, "COLLECTED");
@@ -324,7 +328,8 @@ try {
       for (const terminal of Object.keys(terminalTitles[locale])) {
         state = terminal;
         await preview.goto(`${origin}/${locale}/orders/${a.id}`);
-        await expect(preview.locator("#order-title")).toHaveText(terminalTitles[locale][state]);
+        await expect(preview.locator("#order-title")).toHaveText(copy[locale].orderTitle);
+        await expect(preview.getByTestId("order-cod-state")).toHaveText(terminalTitles[locale][state]);
         await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Carrier at checkout · Hsinchu" : "下單時的物流商 · 新竹");
         for (const width of [390, 1586]) {
           await preview.setViewportSize({ width, height: width === 390 ? 844 : 992 });

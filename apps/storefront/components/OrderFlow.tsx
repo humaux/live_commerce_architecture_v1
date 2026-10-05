@@ -24,6 +24,7 @@ import { purchaseCopy } from "../lib/purchase-copy";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
+import { countryName } from "../lib/country-name";
 import {
   isTransferErrorCode,
   settledCommercialState,
@@ -687,16 +688,15 @@ export function OrderDetails({
       data-testid="order-section"
       aria-labelledby="order-title"
     >
-      <h1 id="order-title">{order.payment_mode === "cash_on_delivery" && order.collection_state ? codCopy[locale].orderStates[order.collection_state] : copy.order}</h1>
-      <p
-        className="order-state"
-        data-testid="order-state"
-        data-state={shownState}
-      >
-        {order.payment_mode === "cash_on_delivery" ? codCopy[locale].orderTitle : copy[shownState]}
-      </p>
-      <p>
-        {copy.orderID}:{" "}
+      <h1 id="order-title">{copy.order}</h1>
+      {/* A cash-on-delivery order states its status once, inside its own "Cash on delivery" section (CodOrderStatus). */}
+      {!(order.payment_mode === "cash_on_delivery" && order.collection_state) && (
+        <p className="order-state" data-testid="order-state" data-state={shownState}>
+          {copy[shownState]}
+        </p>
+      )}
+      <p className="order-ref">
+        <span>{copy.orderID}</span>
         <span data-testid="order-id" className="order-id">
           {order.order_id}
         </span>
@@ -717,25 +717,29 @@ export function OrderDetails({
           </li>
         ))}
       </ul>
-      <dl className="order-breakdown" data-testid="order-breakdown">
-        {(
+      {/* Only amounts that changed the total are listed: "Delivery NT$0 / Tax NT$0 / Discount NT$0" says nothing the total does not. */}
+      {(() => {
+        const amount = order.snapshot.quote.amount;
+        const rows = (
           [
             [common.shipping, "shipping_minor"],
             [common.taxes, "tax_minor"],
             [common.discount, "discount_minor"],
           ] as const
-        ).map(([label, key]) => (
-          <div key={key}>
-            <dt>{label}</dt>
-            <dd>
-              {money(
-                order.snapshot.quote.amount[key],
-                order.snapshot.quote.currency,
-              )}
-            </dd>
-          </div>
-        ))}
-      </dl>
+        ).filter(([, key]) => amount[key] !== 0);
+        return (
+          rows.length > 0 && (
+            <dl className="order-breakdown" data-testid="order-breakdown">
+              {rows.map(([label, key]) => (
+                <div key={key}>
+                  <dt>{label}</dt>
+                  <dd>{money(amount[key], order.snapshot.quote.currency)}</dd>
+                </div>
+              ))}
+            </dl>
+          )
+        );
+      })()}
       <p className={`order-total${order.payment_mode === "cash_on_delivery" ? " cod-order-subtotal" : ""}`}>
         {common.orderTotal}{" "}
         <strong>
@@ -769,7 +773,7 @@ export function OrderDetails({
           </>
         )}
         <br />
-        {destination.country}
+        {countryName(locale, destination.country)}
       </address>
       {order.payment_mode !== "cash_on_delivery" && (
         <CvsOrderStatus order={order} locale={locale} money={money} />

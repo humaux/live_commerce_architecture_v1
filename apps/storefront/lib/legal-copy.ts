@@ -5,7 +5,8 @@
 // Calls no BFF / no Go endpoint / no SQL: pure data, imported by the legal page and LegalFooter.
 // Non-goals: engineering never invents policy terms. Every commitment is `owner(...)` (a value the
 // owner must supply) or `draft(...)` (derived from contracts, awaiting owner approval); `final` text
-// exists only after the owner pastes/approves it. No consent capture, no deletion execution, no
+// exists only after the owner pastes/approves it. A page with any non-final text is not published to
+// buyers (legalPublished): no footer link, and the URL shows a plain "not published yet" page. No consent capture, no deletion execution, no
 // per-store text (W1: one platform-level set for the owner's own store, 香港大碗貿易有限公司).
 import type { Locale } from "@live-commerce/i18n";
 import { browseCopy } from "./browse-copy.ts";
@@ -23,12 +24,6 @@ const draft = (text: string): LegalText => ({ kind: "draft", text });
 const fact = (text: string): LegalText => ({ kind: "final", text });
 const ADDRESS = "Rm 10, 23/F, New Trend Centre, 704 Prince Edward Road East, San Po Kong, Hong Kong";
 const sec = (heading: string, ...body: LegalText[]): Section => ({ heading, body });
-
-// Marker labels are bilingual in every locale so a reviewer of any language sees the same warning.
-export const markerLabel = {
-  pending: "待業主提供 · Owner text pending:",
-  draft: "草稿 · Draft pending owner approval",
-} as const;
 
 const chrome: Record<Locale, { updated: string; nav: string; deletion: string }> = {
   "zh-TW": { updated: "最後更新", nav: "政策與法律資訊", deletion: "資料刪除" },
@@ -148,7 +143,7 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
         draft("您在結帳時填寫的收件資料：收件人姓名、電話，以及收件地址或超商取貨門市。"),
         draft("若您在我們於 Facebook 或 Instagram 的直播貼文留言，Meta 會將您的留言與應用程式範圍識別碼提供給我們，以便以私訊寄送購物車連結。我們不會取得您的 Meta 密碼。"),
         draft("信用卡資料由您在 Stripe 的付款頁面輸入。我們不會收到或儲存完整卡號，只保留 Stripe 的付款編號與狀態。"),
-        draft("瀏覽器會保存一個購物工作階段識別碼，讓您能回到購物車與訂單。它屬必要功能；目前我們不設定廣告 Cookie。")),
+        draft("瀏覽器會保存一個購物連線識別碼，讓您能回到購物車與訂單。它屬必要功能；目前我們不設定廣告 Cookie。")),
       sec("我們如何使用",
         draft("用於收款、處理與寄出訂單、顯示訂單狀態、處理退款與客服需求，以及偵測詐欺或濫用。"),
         owner("是否將聯絡資料用於行銷，以及取得同意的文字"),
@@ -157,7 +152,7 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
         draft("Stripe（付款處理）、物流業者（收件人姓名、電話與地址），以及 Meta（於其平台上的私訊）。"),
         owner("需列明的其他處理者或主機所在地")),
       sec("您的資料與刪除",
-        draft(`您可以要求刪除未與訂單綁定的個人檔案、聯絡與收件資料，並撤回行銷同意。說明請見 /${l}/data-deletion。已取得購物工作階段的買家也可使用 /${l}/privacy 的自助頁面。`),
+        draft(`您可以要求刪除與訂單無關的個人檔案、聯絡與收件資料，並撤回行銷同意。說明請見 /${l}/data-deletion。已取得購物連線的買家也可使用 /${l}/privacy 的自助頁面。`),
         draft("訂單、付款、退款與出貨紀錄基於法律與財務保存要求而保留，不會因刪除要求而移除。")),
       sec("準據法", owner("隱私事務的準據法與申訴管道")),
     ],
@@ -244,7 +239,7 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
         draft("您在结账时填写的收件信息：收件人姓名、电话，以及收件地址或便利店取货门店。"),
         draft("如果您在我们于 Facebook 或 Instagram 的直播帖子下留言，Meta 会把您的留言与应用范围标识符提供给我们，以便通过私信发送购物车链接。我们不会获取您的 Meta 密码。"),
         draft("银行卡信息由您在 Stripe 的支付页面输入。我们不会接收或存储完整卡号，只保留 Stripe 的支付编号与状态。"),
-        draft("浏览器会保存一个购物会话标识符，使您可以回到购物车与订单。它属于必要功能；目前我们不设置广告 Cookie。")),
+        draft("浏览器会保存一个购物连接标识符，使您可以回到购物车与订单。它属于必要功能；目前我们不设置广告 Cookie。")),
       sec("我们如何使用",
         draft("用于收款、处理并寄出订单、显示订单状态、处理退款与客服请求，以及识别欺诈或滥用。"),
         owner("是否将联系信息用于营销，以及获取同意的文字"),
@@ -253,7 +248,7 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
         draft("Stripe（支付处理）、物流承运商（收件人姓名、电话与地址），以及 Meta（其平台上的私信）。"),
         owner("需列明的其他处理方或服务器所在地")),
       sec("您的数据与删除",
-        draft(`您可以要求删除未与订单绑定的个人档案、联系与收件信息，并撤回营销同意。说明见 /${l}/data-deletion。已获得购物会话的买家也可使用 /${l}/privacy 的自助页面。`),
+        draft(`您可以要求删除与订单无关的个人档案、联系与收件信息，并撤回营销同意。说明见 /${l}/data-deletion。已获得购物连接的买家也可使用 /${l}/privacy 的自助页面。`),
         draft("订单、付款、退款与发货记录基于法律与财务保存要求而保留，不会因删除请求而移除。")),
       sec("适用法律", owner("隐私事务的适用法律与投诉渠道")),
     ],
@@ -331,15 +326,23 @@ export function legalPage(locale: Locale, slug: LegalSlug): Page {
   return pages[locale](locale)[slug];
 }
 
+// A legal page is the merchant's text, so it is shown to buyers only when every text on it is final (supplied or approved by the owner).
+// Until then buyers see no developer placeholder: the footer has no link to the page, and the URL answers "the store has not published this
+// page yet" (app/[locale]/legal/[slug]/page.tsx). pendingOwnerText() below is what keeps a page unpublished.
+export function legalPublished(locale: Locale, slug: LegalSlug): boolean {
+  const page = legalPage(locale, slug);
+  return [page.updated, ...page.sections.flatMap((s) => s.body)].every((t) => t.kind === "final");
+}
+
 export function legalFooterLinks(locale: Locale): { href: string; label: string }[] {
   return [
-    ...legalSlugs.map((slug) => ({ href: `/${locale}/legal/${slug}`, label: legalPage(locale, slug).title })),
+    ...legalSlugs.filter((slug) => legalPublished(locale, slug)).map((slug) => ({ href: `/${locale}/legal/${slug}`, label: legalPage(locale, slug).title })),
     { href: `/${locale}/legal/anti-fraud`, label: browseCopy[locale].fraud },
     { href: `/${locale}/data-deletion`, label: chrome[locale].deletion },
   ];
 }
 
-// The owner's to-do list: exactly the non-final texts legalPage() makes the page render as markers.
+// The owner's to-do list: exactly the non-final texts that keep a legal page unpublished (legalPublished).
 export function pendingOwnerText(): { locale: Locale; page: string; what: string; kind: "draft" | "pending" }[] {
   const out: { locale: Locale; page: string; what: string; kind: "draft" | "pending" }[] = [];
   for (const locale of Object.keys(pages) as Locale[]) {

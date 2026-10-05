@@ -102,6 +102,10 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
   const name = line.gone ? copy.lineUnavailable : line.title;
   const href = line.slug ? productPath(locale, line.slug) : null;
   const image = line.productID && line.imageID ? productImage(line.productID, line.imageID) : null;
+  // The unit price is shown only when it says something the line total does not: at quantity 1 the two are the same number.
+  const unit = formatMoney(locale, line.unitMinor, currency);
+  const unitText = line.quantity > 1 ? (readOnly ? `${unit} × ${line.quantity}` : fmt(copy.unitEach, { amount: unit })) : readOnly ? `× ${line.quantity}` : null;
+  const onSale = line.compareAtMinor !== null && line.compareAtMinor > line.unitMinor;
   return (
     <li className="sf-line" data-testid="cart-line" data-sku={line.sku_id}>
       <div className="sf-line__media">
@@ -129,10 +133,10 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
           )}
         </div>
         {line.variantTitle && <p className="sf-line__variant">{line.variantTitle}</p>}
-        {!line.gone && (
+        {!line.gone && (unitText || onSale || line.liveUnitMinor !== null || line.stock === "low" || line.stock === "out") && (
           <p className="sf-line__unit">
-            {formatMoney(locale, line.unitMinor, currency)}
-            {line.compareAtMinor !== null && line.compareAtMinor > line.unitMinor && <s>{formatMoney(locale, line.compareAtMinor, currency)}</s>}
+            {unitText}
+            {onSale && <s>{formatMoney(locale, line.compareAtMinor ?? 0, currency)}</s>}
             {line.liveUnitMinor !== null && <em className="sf-line__live">{copy.livePrice}</em>}
             {line.stock === "low" && <em>{copy.lowStock}</em>}
             {line.stock === "out" && <em className="sf-line__out">{copy.outOfStock}</em>}
@@ -159,7 +163,6 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
           </button>
         </div>
         )}
-        {readOnly && !line.gone && <p className="sf-line__unit">× {line.quantity}</p>}
       </div>
     </li>
   );

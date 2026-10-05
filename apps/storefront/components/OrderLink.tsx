@@ -73,14 +73,14 @@ export default function OrderLink({ locale }: { locale: Locale }) {
   }, []);
 
   return (
-    <main className="order-section" data-testid="order-link" data-view={view}>
+    <main className="purchase-main claim-main order-section" data-testid="order-link" data-view={view}>
       <h1>{copy.title}</h1>
       {view === "opening" && <p role="status">{copy.opening}</p>}
       {view === "refused" && (
         <div role="alert" data-testid="order-link-refused">
           <p>{copy.refused}</p>
           <p className="order-note">{copy.refusedHelp}</p>
-          <p><a href={`/${locale}/orders/lookup`}>{copy.lookup}</a></p>
+          <p><a className="tap-link" href={`/${locale}/orders/lookup`}>{copy.lookup}</a></p>
         </div>
       )}
       {view === "unavailable" && (
