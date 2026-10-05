@@ -284,7 +284,7 @@ func mciSecretClaimAllowed(s mciSrc, fn *ast.FuncDecl, loads, loadsAds, cvsSQL b
 	if fn.Name.Name == "FinishRefusal" {
 		return mciAdsRefusalFinish(s, fn)
 	}
-	if fn.Name.Name == "finishAudience" {
+	if fn.Name.Name == "finishAudience" || fn.Name.Name == "finishLiveVideos" {
 		return mciFencedProjection(s, fn)
 	}
 	if fn.Name.Name == "pageSecretLoader" {

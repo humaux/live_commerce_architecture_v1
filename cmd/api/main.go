@@ -133,6 +133,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// live-console comment read-through (LC-B2): nil when COMMERCE_CLAIMS_CONSOLE_BASE_URL is unset.
+	commentStream, err := buildCommentStream(os.Getenv)
+	if err != nil {
+		return err
+	}
+	// meta connection-health banner (contract meta-connection-health-v1 §9): the §7.4 TableReader swap, nil off the same flag.
+	metaHealth, err := newMetaHealth(os.Getenv)
+	if err != nil {
+		return err
+	}
 	// inbox read side (live-console-v1 §11 A8-A11/A13/A14): nil when the payload keyring is absent (surface off), so the
 	// routes stay unmounted. The API process opens sealed message bodies only; it never holds the private page-token ring.
 	inboxService, err := newInbox(os.Getenv)
@@ -150,8 +160,9 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
 		LiveFlowJobs:    liveFlowJobs,
+		CommentStream:   commentStream,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)
 	if err != nil {

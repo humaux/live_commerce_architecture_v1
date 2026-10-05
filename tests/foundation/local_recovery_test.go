@@ -489,6 +489,9 @@ func lrAssertForeignUnchanged(t *testing.T, before, after lrEvidence) {
 		"river_meta.river_job": true, "river_meta.river_queue": true,
 		"meta_inbox.events": true, "meta_inbox.audit_events": true,
 		"social.conversations": true, "social.messages": true,
+		// 0119 (live-console-v1 §3.2, LC-B3): the AFTER INSERT trigger conversation_state_advance on social.messages advances
+		// inbox.conversation_state, so replaying the one restored Meta DM legitimately touches it (a projection of social.messages).
+		"inbox.conversation_state": true,
 	}
 	for name, hash := range before.tables {
 		if !mutable[name] && after.tables[name] != hash {

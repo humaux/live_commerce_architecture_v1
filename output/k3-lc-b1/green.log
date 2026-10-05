@@ -1,0 +1,46 @@
+=== RUN   TestK3LcB1ConcurrentStartSameSession
+--- PASS: TestK3LcB1ConcurrentStartSameSession (2.61s)
+=== RUN   TestK3LcB1ConcurrentEndArchiveRaces
+--- PASS: TestK3LcB1ConcurrentEndArchiveRaces (0.43s)
+=== RUN   TestK3LcB1CapIsPerStoreUnderCrossStoreRace
+--- PASS: TestK3LcB1CapIsPerStoreUnderCrossStoreRace (0.42s)
+=== RUN   TestK3LcB1SixthSlotRace
+--- PASS: TestK3LcB1SixthSlotRace (0.61s)
+=== RUN   TestK3LcB1IdempotencyKeyReuse
+--- PASS: TestK3LcB1IdempotencyKeyReuse (0.75s)
+=== RUN   TestK3LcB1StaleVersionHasNoSideEffect
+--- PASS: TestK3LcB1StaleVersionHasNoSideEffect (0.53s)
+=== RUN   TestK3LcB1DraftWindowViaM2
+    k3_lc_b1_adversarial_test.go:391: FINDING F-M2-DRAFT: M2 opened a window on a draft session (lifecycle=draft, window=OPEN generation=1); §2.2 never polls draft sessions, so this dead window still occupies one of the 5 cap slots
+--- FAIL: TestK3LcB1DraftWindowViaM2 (0.68s)
+=== RUN   TestK3LcB1ArchivedSessionMutations
+    k3_lc_b1_adversarial_test.go:422: FINDING F-ARCH-OFFER-UPDATE: offer of an archived session is still mutable (§9 read-only)
+    k3_lc_b1_adversarial_test.go:426: FINDING F-ARCH-OFFER-CREATE: new offer accepted on an archived session (§9 read-only)
+    k3_lc_b1_adversarial_test.go:432: FINDING F-ARCH-TIMELINE: offer_timeline append accepted on an archived session (§9 read-only; contract silent — safe outcome asserted)
+--- FAIL: TestK3LcB1ArchivedSessionMutations (0.56s)
+=== RUN   TestK3LcB1EndWhileClaimsArrive
+--- PASS: TestK3LcB1EndWhileClaimsArrive (0.65s)
+=== RUN   TestK3LcB1ClaimsAfterEndAndArchive
+--- PASS: TestK3LcB1ClaimsAfterEndAndArchive (0.28s)
+=== RUN   TestK3LcB1TenantIsolation
+--- PASS: TestK3LcB1TenantIsolation (0.33s)
+=== RUN   TestK3LcB1EndWithoutWindow
+--- PASS: TestK3LcB1EndWithoutWindow (0.39s)
+=== RUN   TestK3LcB1ReopenNeverRacesPastEnd
+--- PASS: TestK3LcB1ReopenNeverRacesPastEnd (1.16s)
+=== RUN   TestLiveLifecycleTransitions
+--- PASS: TestLiveLifecycleTransitions (0.78s)
+=== RUN   TestLiveLifecycleReplayAndAuthority
+--- PASS: TestLiveLifecycleReplayAndAuthority (0.38s)
+=== RUN   TestLiveLifecycleMultiWindow
+--- PASS: TestLiveLifecycleMultiWindow (0.78s)
+=== RUN   TestLiveLifecycleCapUnderRace
+--- PASS: TestLiveLifecycleCapUnderRace (0.39s)
+=== RUN   TestLiveLifecycleOfferTimeline
+--- PASS: TestLiveLifecycleOfferTimeline (0.35s)
+=== RUN   TestLiveLifecycleNoSingleOpenWindowQuery
+--- PASS: TestLiveLifecycleNoSingleOpenWindowQuery (1.27s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.136s
+FAIL
+test-focused: top-level PASS=17 FAIL=2 SKIP=0 exit=1

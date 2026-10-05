@@ -21,10 +21,13 @@ import (
 
 var smtpHostPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
 
-// mailConfig is the SMTP account and the daily cap shared with the login-code mail (COMMERCE_MAIL_DAILY_CAP).
+// mailConfig is the SMTP account, the daily cap shared with the login-code mail (COMMERCE_MAIL_DAILY_CAP) and the admin
+// origin of the meta connection-health owner mail (COMMERCE_ADMIN_ORIGIN, contract meta-connection-health-v1 §10). adminOrigin
+// "" = the merchant-alert loop stays off (nothing mails until an admin origin is configured).
 type mailConfig struct {
-	smtp     *mail.SMTP
-	dailyCap int
+	smtp        *mail.SMTP
+	dailyCap    int
+	adminOrigin string
 }
 
 // loadMailConfig mirrors cmd/api's password-mail variables (same names, same validation): COMMERCE_SMTP_HOST / _USERNAME / _PASSWORD
@@ -49,13 +52,19 @@ func loadMailConfig(getenv func(string) string) (*mailConfig, error) {
 			return nil, errWorkerConfig
 		}
 	}
+	// meta connection-health owner mail (0125 §10): the admin origin the reconnect CTA points at, https only, never a
+	// storefront or Meta URL. Unset = the merchant-alert loop stays off.
+	adminOrigin := strings.TrimSpace(getenv("COMMERCE_ADMIN_ORIGIN"))
+	if adminOrigin != "" && (!strings.HasPrefix(adminOrigin, "https://") || strings.ContainsAny(adminOrigin, " \r\n\"<>")) {
+		return nil, errWorkerConfig
+	}
 	// Port stays 0 (= 465, implicit TLS) and RootCAs nil (system roots), exactly as cmd/api.
 	smtp, err := mail.NewSMTP(mail.Config{Host: host, Username: getenv("COMMERCE_SMTP_USERNAME"), Password: password,
 		From: getenv("COMMERCE_MAIL_FROM"), AllowLoopback: loopback})
 	if err != nil {
 		return nil, errWorkerConfig
 	}
-	return &mailConfig{smtp: smtp, dailyCap: dailyCap}, nil
+	return &mailConfig{smtp: smtp, dailyCap: dailyCap, adminOrigin: adminOrigin}, nil
 }
 
 func isLoopback(host string) bool {
