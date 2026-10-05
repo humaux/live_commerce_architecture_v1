@@ -1,0 +1,21 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.69s)
+=== RUN   TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath
+    meta_claims_intake_guards_test.go:411: internal/integrations/metareply/probe.go defines a River job kind (internal/integrations/metareply.Kind); claims and the intake worker own none
+--- FAIL: TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath (0.53s)
+=== RUN   TestMetaClaimsMCI10PackageComments
+    meta_claims_intake_guards_test.go:551: internal/integrations/metareply/probe.go names graph.facebook.com without its developers.facebook.com docs URL and retrieval date
+--- FAIL: TestMetaClaimsMCI10PackageComments (0.03s)
+=== RUN   TestMetaConnectGateCustody
+    meta_connect_gate_test.go:729: pick: 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"ffe4f5e8b210a82326e6cbe76532d44b","retryable":true,"details":{}}
+--- FAIL: TestMetaConnectGateCustody (7.49s)
+=== RUN   TestMetaHealthProbeDerivesAndRecords
+    meta_health_test.go:434: exec test setup: ERROR: permission denied for table binding_capabilities (SQLSTATE 42501)
+--- FAIL: TestMetaHealthProbeDerivesAndRecords (0.04s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+    r2_integration_upgrade_test.go:49: R2 migration set = 60 files [0070_merchant_password_auth.sql 0071_claims_retention.sql 0072_taiwan_cvs_logistics.sql 0073_taiwan_cvs_functions.sql 0074_meta_ads.sql 0075_meta_ads_insights.sql 0077_stripe_live_enable.sql 0078_customers_privacy.sql 0079_platform_billing.sql 0080_meta_capi.sql 0081_storefront_publish.sql 0082_product_images.sql 0083_cvs_restock_guard.sql 0085_finance_pay_at_pickup.sql 0086_catalog_v2.sql 0087_store_design.sql 0088_checkout_offline.sql 0089_staff_team.sql 0090_buyer_comms.sql 0091_promotions.sql 0092_live_tools.sql 0093_storefront_integration.sql 0094_merchant_tools.sql 0095_meta_connect.sql 0096_worker_authorities.sql 0097_order_locale.sql 0098_buyer_comms_fixes.sql 0099_checkout_offline_fixes.sql 0100_meta_connect_fixes.sql 0101_promotion_live_fixes.sql 0102_cvs_collected_guard.sql 0103_claim_checkout_live_price.sql 0104_authz_ip_scope_link_replay.sql 0105_claim_live_price_uses.sql 0106_store_domains.sql 0107_home_cod.sql 0108_meta_multi_page.sql 0109_product_core.sql 0110_merchant_orders_v2.sql 0111_product_image_sizes.sql 0112_meta_ads_refusal_text.sql 0113_ads_attribution.sql 0115_claims_contains_mode.sql 0117_delivery_allocation_backfill.sql 0118_live_session_flow.sql 0119_live_console_inbox.sql 0120_kwc_v2.sql 0121_msg_templates.sql 0122_live_lifecycle.sql 0123_live_console_comments.sql 0124_lc_b1_readonly_archived.sql 0125_meta_connection_health.sql 0126_tracking_import.sql post_river/0015_meta_ads_river.sql post_river/0016_stripe_live.sql post_river/0017_taiwan_cvs_begin_hold.sql post_river/0018_checkout_offline_begin_hold.sql post_river/0019_worker_authorities.sql post_river/0020_home_cod_begin_hold.sql post_river/0021_product_core_begin_hold.sql], want 56
+--- FAIL: TestR2IntegrationUpgradeFromReleaseHead (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	10.473s
+FAIL
+test-focused: top-level PASS=1 FAIL=5 SKIP=0 exit=1

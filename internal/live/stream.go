@@ -4,7 +4,7 @@
 // webhook copy via social.read_comment_events (Instagram: decrypted here with the payload keyring), and
 // joins each comment to its claims/prints/replies facts through live.console_marks. Comment text and
 // names exist only in these in-memory values and the HTTP response; nothing here persists or logs them.
-// Depends on: draft.go (authorize/mapError/mapReadError), metareply.BridgeClient (bridge.go),
+// Depends on: draft.go (authorize/mapError/mapReadError), metabridge.BridgeClient (client.go),
 //
 //	meta.PayloadKeyring.OpenComment (comment_read.go), live.console_source/read_comment_events/
 //	console_marks/comment_print (0123).
@@ -22,7 +22,7 @@ import (
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/meta"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/platform"
 )
 
@@ -39,11 +39,11 @@ var consoleRef = regexp.MustCompile(`^[0-9_]{1,80}$`)
 // CommentStream reads console comments. bridge serves Facebook sources; payload (optional) decrypts the
 // IG webhook fallback — a nil payload makes the IG path answer stream_unavailable (ig_fallback_unavailable).
 type CommentStream struct {
-	bridge  *metareply.BridgeClient
+	bridge  *metabridge.BridgeClient
 	payload *meta.PayloadKeyring
 }
 
-func NewCommentStream(bridge *metareply.BridgeClient, payload *meta.PayloadKeyring) (*CommentStream, error) {
+func NewCommentStream(bridge *metabridge.BridgeClient, payload *meta.PayloadKeyring) (*CommentStream, error) {
 	if bridge == nil {
 		return nil, command.ErrInvalid
 	}
@@ -214,12 +214,12 @@ func (cs *CommentStream) resolveSource(ctx context.Context, tx pgx.Tx, scope pla
 // facebookPage reads through the bridge and joins the returned refs to marks (both inside the scope tx;
 // the bridge call is a short backend-network read and holds no token).
 func (cs *CommentStream) facebookPage(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, src consoleSource, q ConsolePageQuery) (ConsoleStreamPage, error) {
-	req := metareply.BridgePageRequest{
+	req := metabridge.BridgePageRequest{
 		TenantID: scope.TenantID, StoreID: scope.StoreID, SessionID: sessionID, SourceID: src.ID,
 		Limit: q.Limit,
 	}
 	if q.AfterEpoch != nil && q.AfterSeq != nil {
-		req.After = &metareply.Cursor{Epoch: *q.AfterEpoch, Seq: *q.AfterSeq}
+		req.After = &metabridge.Cursor{Epoch: *q.AfterEpoch, Seq: *q.AfterSeq}
 	}
 	req.BeforeCursor = q.BeforeCursor
 	page, err := cs.bridge.CommentPage(ctx, req)
@@ -406,18 +406,18 @@ func (cs *CommentStream) marks(ctx context.Context, tx pgx.Tx, scope platform.Sc
 // bridgeError maps the bridge's fixed safe errors to live sentinels.
 func bridgeError(err error) error {
 	switch {
-	case errors.Is(err, metareply.ErrBridgeNotFound):
+	case errors.Is(err, metabridge.ErrBridgeNotFound):
 		return command.ErrNotFound
-	case errors.Is(err, metareply.ErrBridgeInvalidCur):
+	case errors.Is(err, metabridge.ErrBridgeInvalidCur):
 		return ErrInvalidCursor
-	case errors.Is(err, metareply.ErrBridgeNotOwner), errors.Is(err, metareply.ErrBridgeUnavailable):
+	case errors.Is(err, metabridge.ErrBridgeNotOwner), errors.Is(err, metabridge.ErrBridgeUnavailable):
 		return ErrStreamUnavailable
 	default:
 		return ErrStreamUnavailable
 	}
 }
 
-func bridgeStream(s metareply.BridgeStreamState) ConsoleStreamState {
+func bridgeStream(s metabridge.BridgeStreamState) ConsoleStreamState {
 	return ConsoleStreamState{
 		State: s.State, PollIntervalMs: s.PollIntervalMs, LastOKAt: s.LastOKAt, LagMs: s.LagMs,
 		SourcePlatform: s.SourcePlatform, VideoEmbeddable: s.VideoEmbeddable, Reason: s.Reason,

@@ -76,7 +76,9 @@ func (r SnapshotReader) Capabilities(ctx context.Context, tx pgx.Tx, scope platf
 	if err != nil {
 		return nil, err
 	}
-	return r.fromSnapshot(rows, bindingID), nil
+	out := r.fromSnapshot(rows, bindingID)
+	sortCapabilities(out) // same order as TableReader so an empty table and the snapshot are byte-identical (MCH08)
+	return out, nil
 }
 
 // snapshotRow is one connected Page's read-side facts, returned by integration.meta_health_snapshot().
