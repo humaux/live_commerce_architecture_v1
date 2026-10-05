@@ -2,7 +2,7 @@
 // Depends on: signed MOCK IdP, real BFF/Go/PG, fixture-only control and Playwright; no real Meta traffic.
 // Used by: --browser-meta-health-ui; every new control has a persisted click ledger entry.
 import { test, expect, type Page } from "@playwright/test";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 const origin=process.env.LC_BROWSER_PUBLIC_ORIGIN!,store=process.env.LC_HEALTH_STORE!,other=process.env.LC_HEALTH_OTHER_STORE!,pageID=process.env.LC_HEALTH_PAGE!;
 const evidence=process.env.LC_BROWSER_EVIDENCE!;
@@ -30,8 +30,11 @@ const review={"zh-TW":"僅測試帳號","zh-CN":"仅测试账号",en:"Test accou
 const recheck={"zh-TW":"重新檢查","zh-CN":"重新检查",en:"Check again"};
 test.use({actionTimeout:15000,navigationTimeout:30000});
 test.afterAll(async()=>{
- await writeFile(path.join(evidence,"click-ledger.json"),JSON.stringify(ledger,null,2));
- await writeFile(path.join(evidence,"click-ledger.md"),"# MCH11 click ledger\n\n| Page | Control | Expected | Actual | Pass |\n|---|---|---|---|---|\n"+ledger.map(x=>`| ${x.page} | ${x.control} | ${x.expected} | ${x.actual.replaceAll("|","/")} | ${x.pass} |`).join("\n"));
+ // A failed test restarts the single worker; retain preceding workers' real-click records.
+ const previous = await readFile(path.join(evidence,"click-ledger.json"),"utf8").then(text=>JSON.parse(text) as typeof ledger).catch((error:NodeJS.ErrnoException)=>{if(error.code==="ENOENT")return [];throw error;});
+ const complete=[...previous,...ledger];
+ await writeFile(path.join(evidence,"click-ledger.json"),JSON.stringify(complete,null,2));
+ await writeFile(path.join(evidence,"click-ledger.md"),"# MCH11 click ledger\n\n| Page | Control | Expected | Actual | Pass |\n|---|---|---|---|---|\n"+complete.map(x=>`| ${x.page} | ${x.control} | ${x.expected} | ${x.actual.replaceAll("|","/")} | ${x.pass} |`).join("\n"));
 });
 for(const locale of locales){
  test(`${locale} 390: blocking connection advice opens its settings card`,async({page})=>{
