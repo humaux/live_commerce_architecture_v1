@@ -889,3 +889,173 @@ consumer→live edge), 7 (§6), 8 (LC-U11, §3.1, R4), 9 (§3.6), 10 (§3.6), 11
 - **P2-16** "exclude comments from the Page's other apps": no defined meaning — comments come from one Graph object
   read with the store's own Page token and the Page's own comments are already flagged `is_page`; the `limit` /
   `after_seq` validation half of P2-16 is applied (§2.6).
+
+## Amendment 1 (2026-10-05, K3 round-2)
+
+Source: K3 adversarial re-review `output/live-console-review-k3b/REVIEW.md` (branch `unit/k3-lcn-review`, commit
+`d231cc23`; FREEZE_AFTER_FIXES, 0 P0 / 4 P1 / 10 P2). Append-only: the frozen text above is not edited; where a clause
+below conflicts with it, **this amendment wins** for the clause it names, and every other clause stays frozen.
+Integrator-delegated (Opus); evidence label DESIGN; every added gate case NOT_RUN. Migration numbers are assigned by
+the integrator at merge (real numbers already differ from the §16 placeholders: LC-B3 = 0119, LC-B5 = 0121).
+
+### A1.1 P1-1 — `link_pending_manual` remediation (amends §4.2 bullet 2, §11 A4/A8/A13, §14.1 clause 2)
+
+1. **Copy.** The console text for `link_pending_manual = true` is replaced by 「此買家的認領連結無法送出：這則留言的私訊
+   額度已用。買家回覆私訊後 24 小時內可用一般私訊補發認領連結」. A manual private reply does not open a 24 h window (L5),
+   so A12 to the buyer's thread keeps returning `409 window_closed` until the buyer writes; the UI never offers a send
+   control for the flagged bundle before that. No automatic send of any kind is planned for a flagged bundle. When an
+   inbound message opens the window the merchant sends the link by A12 (DMs may carry links, §12); the flag clears when
+   a claim link is issued for the bundle (unchanged).
+2. **Exposure.** A13 gains `link_pending_manual: bool`; A8 lists flagged bundles as bundle-only items (A1.5 P2-2).
+3. **Planner gate.** `inbox.plan_manual_private_reply` refuses with `409 auto_pending_confirm` when all hold: frozen
+   `comment_created_at > clock_timestamp() − 120 s`, the session's claim window is OPEN, and the comment's source has
+   `private_reply = true` (the intake row may not be staged yet, so the §4.2 `FOR SHARE` yield cannot fire) — unless the
+   request carries `confirm_preempt_auto: true`. A4 body gains that optional key (strict decoder: only `true` or
+   absent). The UI asks 「系統可能正要自動傳送認領連結。手動私訊會用掉這則留言唯一一次私訊機會，確定繼續？」 and resends
+   with the flag. The confirmed send is audited `inbox.private_reply.preempt_confirmed` (principal, comment_ref).
+4. LCN07 adds: inside 120 s without the flag → `auto_pending_confirm`; with it → planned; the full race (manual wins,
+   claim ACCEPTED) leaves a bundle whose A13 shows `link_pending_manual`, A12 → `window_closed` before any inbound
+   message, a DM with the link succeeds after one, and the flag then clears.
+
+### A1.2 P1-2 — comment facts for IG and the IG webhook fallback (amends §2.3 `comment-facts`, §2.5, §3.3 row 2)
+
+1. **Lookup order** (the API drives it; the bridge never decrypts):
+   a. bridge `comment-facts` — ring buffer, else one Graph read inside the shared rate budget, **platform-branched**:
+      FB `GET /{comment_id}?fields=created_time,from{id},parent{id}`; IG `GET /{ig_comment_id}?fields=timestamp,from{id},parent_id`
+      (exact IG field set recorded at probe R3 as new **LC-U12**; until then the IG Graph branch is MOCK). `is_page` =
+      author id equals the source `asset_id`; `is_reply` = `parent{id}`/`parent_id` present; `created_at` =
+      `created_time` (FB) / `timestamp` (IG). The bridge answers `{found:false}` when neither buffer nor Graph has it.
+   b. only for an IG source served by the OPEN-4 webhook fallback, and only after (a) answered `found:false`: the API
+      reads the webhook copy through **`social.read_comment_facts(p_session uuid, p_comment_ref text)`** (STABLE
+      SECURITY DEFINER, owner `commerce_meta_writer`, EXECUTE **`commerce_runtime`**, `M` transaction + `live:read`;
+      returns the newest `social.comment_events` envelope + AAD columns for that comment of the session's IG source,
+      zero rows when none), decrypts with the payload keyring it already holds, and derives the same three facts
+      (`created_at` = the copy's `occurred_at`, which for IG is delivery time — known limit U7, unchanged). The
+      author id stays in API memory. This is deliberately **not** run in claims-worker: that process does not hold the
+      Meta payload keyring and must not gain it (custody, `secrets.manifest.tsv`).
+   c. neither source → **manual private reply is disabled for that comment**: A4 answers `409 comment_facts_unavailable`;
+      `live.console_marks` / the comment marks return `private_reply_available: false`,
+      `private_reply_unavailable_reason: "facts_unavailable"`, and the UI shows 「無法確認這則留言的時間與作者，暫時不能私訊；
+      可公開回覆或等買家私訊」. No guess, no default timestamp.
+2. The §3.3 row-2 deny-code list and §2.5 reason list gain `comment_facts_unavailable` / `facts_unavailable`
+   (the frozen `comment_unknown` stays for "not a comment of this session's source").
+3. LCN02/LCN07 add IG cases: Graph branch found/page/reply; fallback copy found/page/reply; neither → disabled with the
+   reason; the IG author id never appears in a response, log or table.
+
+### A1.3 P1-3 — `duplicate_recent` and the recommend rate are DB-serialised (amends §3.3 rate bullet, §4.1 recommend bullet, §5.1 step 4)
+
+1. Inside the planning transaction, **before** reading for duplicates and before any insert, the planner takes
+   `pg_advisory_xact_lock(hashtextextended('lcn-dup|' ‖ store_id ‖ '|' ‖ target ‖ '|' ‖ encode(body_hmac,'hex'), 0))`
+   where target = `conversation_id` for A12 and the §5.1 step-4 DM, `comment_ref` for A4/A5. It then checks for an
+   operation of the same action, target and `body_hmac` created in the last 30 s (any state) and refuses `409
+   duplicate_recent`. The second concurrent planner blocks on the lock until the first commits, then sees its row.
+2. The recommend rule takes `pg_advisory_xact_lock(hashtextextended('lcn-rec|' ‖ store_id ‖ '|' ‖ offer_id, 0))`
+   before checking for a `meta.offer_recommend` of that offer in the last 10 min.
+3. Lock order: these advisory locks come **first** in the producer, before `conversation_state` `FOR UPDATE`, the
+   intake `FOR SHARE` (§4.2) and the binding `FOR SHARE`; no other path takes an `lcn-dup|`/`lcn-rec|` key.
+4. The 60 sends/min store cap stays approximate (no lock).
+5. LCN06/07/08 add: two concurrent same-body requests with different Idempotency-Keys → exactly one operation and
+   one `409 duplicate_recent` (A12, A4, A5 and the for-buyer DM); two concurrent recommends → one operation.
+
+### A1.4 P1-4 — bounded redaction of UNKNOWN operations (amends §10 row C4, §14.7; amends claims-retention-purge-v1 §1 C4 and §0 "Rejected: redacting non-terminal / UNKNOWN")
+
+1. **Actions covered:** `meta.private_reply` (auto, manual, `:m1`), `meta.dm_send`, `meta.public_reply`,
+   `meta.offer_recommend`.
+2. **Eligible** (`claims.run_retention` step C4, same `p_limit`, oldest first, `FOR UPDATE SKIP LOCKED`):
+   `created_at < now() − intake_days` **and** `request` still holds an id to redact **and** either
+   `state ∈ (SUCCEEDED, FAILED_FINAL, CANCELLED, BLOCKED_POLICY, STALE_BINDING)` or
+   `state = 'UNKNOWN' AND (lease_until IS NULL OR lease_until < now())`. `intake_days` ≥ 8 (RD5) is past Meta's 7-day
+   private-reply window and the 24 h DM window, so no remote action can still be attributed to the ids. A leased
+   (reconciling) row is skipped and picked up by a later run; the worker's `complete_operation` locks the row
+   `FOR UPDATE`, so the two never interleave.
+3. **Why the 2026-09-30 rejection no longer holds for v1:** every covered action's Reconcile is query-only and returns
+   UNKNOWN without reading `comment_ref`/`conversation_id` (MCI U4 unresolved; §4.3), so the ids have no use — the same
+   argument as the §3.4 secret wipe. **Revisit trigger:** a reviewed reconciler that reads these ids for an action
+   removes that action's UNKNOWN branch here until its reconcile budget is exhausted.
+4. **Action:** `request := (request − 'comment_ref' − 'conversation_id' − 'peer_key') || '{"redacted":true}'`;
+   `semantic_key := <prefix>-purged: ‖ id` with prefix `mpr` (incl. `:m1`), `mdm`, `mpub`, `mrec` (the `mpub:`/`mdm:`
+   keys are deterministic in the merchant-chosen Idempotency-Key, which is not entropy); `request_hash` kept; state
+   unchanged (an UNKNOWN stays UNKNOWN, flagged `redacted`). An adapter that reconciles a redacted request returns
+   UNKNOWN with zero HTTP calls.
+5. **Privileges** (the retention unit's migration; CRP02 equality updated by the integrator): `commerce_retention_writer`
+   column SELECT on `integration.operations` gains `lease_until`; policies `operation_retention_read/update` widen
+   `action='meta.private_reply'` to the four actions and the state list to "terminal five OR (UNKNOWN AND lease
+   expired)"; WITH CHECK becomes `NOT (request ?| array['comment_ref','conversation_id','peer_key']) AND semantic_key
+   ~ '^(mpr|mdm|mpub|mrec)-purged:'`. The replay flag path is unchanged.
+6. **Consumers:** `live.console_marks` (§2.5) and A9 tolerate renamed/redacted rows (an old comment simply shows no
+   reply mark; an old outbound row whose operation was redacted keeps its `send_state`).
+7. LCN13 / CRP gates add: an UNKNOWN operation of each action older than `intake_days` with no live lease → ids
+   redacted and key renamed; a leased one is skipped; a younger one untouched; a redacted UNKNOWN reconciled → UNKNOWN,
+   zero HTTP; replay mode unchanged.
+
+### A1.5 P2 dispositions
+
+Applied:
+- **P2-1** `display_name`: `social.list_conversations` stays metadata-only (merged in 0119). New
+  `social.conversation_heads(p_ids uuid[])` (≤ 50 ids; same owner/EXECUTE/permission as `social.read_thread`) returns
+  the envelope + AAD columns of the newest inbound message per conversation; the API derives `display_name` from it
+  (null when unreadable). LC-B4.
+- **P2-2** A8 bundle-only items: `{bundle_id, conversation_id: null, session_id, link_pending_manual: true,
+  unread: false, unreplied: true, last_at: bundle created_at, mode: null, assignee: null, window_open_until: null}`;
+  the UI opens A13 and offers only 「複製認領連結」 through the reused `POST …/claims/bundles/{id}/link` — never a send
+  button. LC-B4 (API), LC-U2 (UI).
+- **P2-3** takeover-expiry generation: ruled **as already implemented in 0119** — `inbox.dm_window` returns the
+  *effective* generation (stored + 1 once `human_until` has passed), and the lazy write stores exactly that value, so
+  Check is deterministic. Planners of automated sends freeze the **effective** generation read through `dm_window` /
+  `dm_window_for_bundle`; an automated op planned after expiry therefore passes, one planned before the takeover is
+  denied `takeover_changed` (conservative by design). LC-B4.
+- **P2-4** producer signatures (all SECURITY DEFINER, owner `commerce_integration_writer`, EXECUTE `commerce_runtime`,
+  `M` transaction, return the operation id; Go creates the operation UUID and River job first, as `plan_claim_reply`;
+  refusals are SQLSTATE `PT409` with the deny code as message, `PT422` for `invalid_text`). Common tail ‹E› =
+  `p_operation uuid, p_job bigint, p_outbound uuid, p_body_hmac bytea, p_display_key_id text, p_display_nonce bytea,
+  p_display_ciphertext bytea, p_secret_enc bytea, p_secret_sealed bytea, p_template_id uuid, p_template_version int`.
+  - `inbox.plan_dm(p_conversation uuid, p_expected_generation bigint, p_order uuid, ‹E›)` — locks: `lcn-dup` →
+    `conversation_state` FOR UPDATE → binding FOR SHARE. Deny: `window_closed, takeover_changed, capability,
+    conversation_gone, duplicate_recent`.
+  - `inbox.plan_manual_private_reply(p_session uuid, p_comment_ref text, p_comment_created_at timestamptz,
+    p_confirm_preempt boolean, ‹E›)` — locks: `lcn-dup` → intake FOR SHARE → `conversation_state` FOR UPDATE (only
+    when the peer is linked) → binding FOR SHARE. Deny: `used, auto_pending, auto_pending_confirm, expired_7d,
+    ig_live_ended, capability, duplicate_recent`.
+  - `inbox.plan_public_reply(p_session uuid, p_comment_ref text, ‹E›)` — locks: `lcn-dup` → binding FOR SHARE. Deny:
+    `capability, ig_live_unsupported, duplicate_recent` (content is validated in Go before sealing; the definer
+    re-checks length only).
+  - `live.plan_offer_recommend(p_session uuid, p_offer uuid, p_expected_version bigint, ‹E›)` — locks: `lcn-rec` →
+    offer FOR SHARE → binding FOR SHARE. Deny: `offer_unavailable, capability, duplicate_recent, version_conflict`.
+  LC-B4.
+- **P2-5** `inbox.bundle_peers` has `UNIQUE (tenant_id, store_id, bundle_id, peer_key)`; the Finish hook inserts
+  `ON CONFLICT DO NOTHING`. `dm_window_for_bundle` gains `p_app_id text, p_object text, p_asset_id text` and matches
+  only peers of the operation's own platform/asset. LC-B4.
+- **P2-7** money leftovers: (a) A15 items gain `live_quantity_remaining` (claimed − units held in
+  `claims.live_price_uses` by non-CANCELLED orders) and the drawer shows it per line; (b) A16 with
+  `send_payment_link: true` from a principal without `inbox:reply` → `409 capability`, nothing created (checked
+  before step 3a); (c) A13/A15 by `conversation_id` with no `inbox.bundle_peers` row → `200` with `items: []`,
+  `live_price_eligible: false`, `live_price_reason: "bundle_buyer_unverified"` (not 404), so the UI offers the bundle
+  path. LC-B6 (A15/A16), LC-B4 (A13).
+- **P2-8** LC-B6 additionally depends on LC-B5 (template `order-pay-link/v1`; merged as 0121).
+- **P2-9** §9 note: re-`start` of an ended session can open a claim window with no IG broadcast running; the IG-live
+  "window OPEN" proxy then passes locally and Meta refuses (UNKNOWN until LC-U9). Accepted as a known limit; probe S2
+  records Meta's answer to an IG private reply after the broadcast ended as LC-U9 evidence. No code change.
+- **P2-10** §0.2 annotation: "`subscribed_fields=feed` only" and deviation A18 describe base `80b79487`; **fixed by
+  LC-B3** (`internal/metaconnect/graph.go` now subscribes `feed,messages`).
+
+Skipped:
+- **P2-6** (trigger must upsert): already satisfied — `inbox.advance_conversation_state()` in 0119 inserts
+  `ON CONFLICT (tenant_id, store_id, conversation_id) DO NOTHING` and then updates; no change needed.
+
+### A1.6 Unit deltas
+
+- **LC-B2 (in progress)** must add: the platform-branched IG Graph read in bridge `comment-facts` (A1.2 1a) with
+  `is_page`/`is_reply`/`created_at` derivation and `{found:false}` when neither buffer nor Graph has the comment; the
+  definer `social.read_comment_facts` (A1.2 1b, in its own migration beside `social.read_comment_events`) and the API
+  fallback path that calls it; reason `facts_unavailable` in `live.console_marks`; LCN02/LCN07 IG facts cases.
+- **LC-B4**: A1.1 (120 s confirm gate, `confirm_preempt_auto`, audit, `link_pending_manual` in A13 and A8), A1.2's
+  `comment_facts_unavailable` refusal in A4, A1.3 advisory locks in all four producers, A1.4.4 adapters return UNKNOWN
+  with zero HTTP on a redacted request, P2-1, P2-2, P2-3, P2-4, P2-5, P2-7(c) for A13; gates LCN06/07/08/10 additions.
+- **LC-B6**: A1.3 lock for the step-4 DM (target = conversation), P2-7 (a)(b)(c) for A15/A16, P2-8 dependency on LC-B5;
+  LCN12 additions.
+- **Retention unit (LC-R1, follow-up to U08 retention-core; DeepSeek)**: A1.4 — `claims.run_retention` C4 widening,
+  `apply_actor_erasure` C4 redaction covering the four actions, privilege/policy changes, CRP gate cases; amends
+  `claims-retention-purge-v1` §1 C4 and its §0 rejection line by reference to this amendment. Write paths: one new
+  migration (integrator-numbered), `internal/retention/**`, `tests/foundation/claims_retention_*_test.go`.
+- **LC-U2 (UI)**: the A1.1 copy and confirm dialog, the A1.2 disabled-reason text, bundle-only A8 items (copy-link only).
+- LC-B1, LC-B3, LC-B5, LC-B7: no change (P2-9 and P2-10 are text-only; P2-6 already satisfied in 0119).
