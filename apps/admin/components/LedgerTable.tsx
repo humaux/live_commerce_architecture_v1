@@ -122,7 +122,10 @@ export function LedgerTable({
               <td className="numeric stock-col">{row.reserved}</td>
               <td className="numeric available-value">{row.available}</td>
               <td className="status-col">
-                <Badge tone={row.status === "active" ? "success" : "neutral"}>
+                <Badge
+                  className={`status ${row.status}`}
+                  tone={row.status === "active" ? "success" : "neutral"}
+                >
                   {row.status === "active" ? c.active : c.archived}
                 </Badge>
               </td>
