@@ -9,16 +9,27 @@
 // orders already placed (each keeps its own surcharge snapshot); the surcharge is shown only to the merchant and to the buyer of that order.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { Field, FormRow } from "@live-commerce/ui";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
 import { putCodSettings, readCodSettings } from "@/lib/logistics-client";
-import { codSettingsBody, type CodCarrier, type CodSettings } from "@/lib/cod-model";
+import {
+  codSettingsBody,
+  type CodCarrier,
+  type CodSettings,
+} from "@/lib/cod-model";
 import { codCopy, codError } from "@/lib/cod-copy";
 import "./settings.css";
 
 type Load = "loading" | "ready" | "hidden" | "error";
 
-export function CodSettings({ store, locale }: { store: string; locale: Locale }) {
+export function CodSettings({
+  store,
+  locale,
+}: {
+  store: string;
+  locale: Locale;
+}) {
   const cc = codCopy[locale];
   const [boundary, setBoundary] = useState("");
   const [load, setLoad] = useState<Load>("loading");
@@ -59,7 +70,9 @@ export function CodSettings({ store, locale }: { store: string; locale: Locale }
       (error) => {
         if (active.signal.aborted) return;
         setSaved(null);
-        setLoad(error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error");
+        setLoad(
+          error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error",
+        );
       },
     );
     return () => active.abort();
@@ -81,7 +94,12 @@ export function CodSettings({ store, locale }: { store: string; locale: Locale }
     if (pending.current?.body !== text) pending.current = { key: `cod-set-${crypto.randomUUID()}`, body: text };
     setBusy(true);
     setProblem("");
-    const result = await putCodSettings(store, pending.current.key, text, boundary);
+    const result = await putCodSettings(
+      store,
+      pending.current.key,
+      text,
+      boundary,
+    );
     setBusy(false);
     if (result.ok) {
       pending.current = null;
@@ -97,7 +115,9 @@ export function CodSettings({ store, locale }: { store: string; locale: Locale }
     }
     pending.current = null;
     setUncertain(false);
-    setProblem(result.code === "forbidden" ? cc.noPermission : codError(cc, result.code));
+    setProblem(
+      result.code === "forbidden" ? cc.noPermission : codError(cc, result.code),
+    );
     if (result.code === "version_changed") setTick((value) => value + 1);
   }
 
@@ -118,25 +138,54 @@ export function CodSettings({ store, locale }: { store: string; locale: Locale }
             <input type="checkbox" data-testid="cod-enabled" checked={enabled} disabled={busy} onChange={(event) => setEnabled(event.target.checked)} />
             {cc.setEnabled}
           </label>
-          <div className="settings-field-grid">
-            <label>
-              {cc.setMax}
-              <input data-testid="cod-max" inputMode="numeric" value={maxTwd} maxLength={5} disabled={busy} onChange={(event) => setMaxTwd(event.target.value)} />
-              <small>{cc.setMaxHint}</small>
-            </label>
-            <label>
-              {cc.setSurcharge}
-              <input data-testid="cod-surcharge" inputMode="numeric" value={surchargeTwd} maxLength={4} disabled={busy} onChange={(event) => setSurchargeTwd(event.target.value)} />
-              <small>{cc.setSurchargeHint}</small>
-            </label>
-            <label>
-              {cc.setCarrier}
-              <select data-testid="cod-carrier" value={carrier} disabled={busy} onChange={(event) => setCarrier(event.target.value as CodCarrier)}>
+          <FormRow>
+            <Field
+              id="cod-max"
+              label={cc.setMax}
+              hint={cc.setMaxHint}
+              width="short"
+            >
+              <input
+                id="cod-max"
+                aria-describedby="cod-max-hint"
+                data-testid="cod-max"
+                inputMode="numeric"
+                value={maxTwd}
+                maxLength={5}
+                disabled={busy}
+                onChange={(event) => setMaxTwd(event.target.value)}
+              />
+            </Field>
+            <Field
+              id="cod-surcharge"
+              label={cc.setSurcharge}
+              hint={cc.setSurchargeHint}
+              width="short"
+            >
+              <input
+                id="cod-surcharge"
+                aria-describedby="cod-surcharge-hint"
+                data-testid="cod-surcharge"
+                inputMode="numeric"
+                value={surchargeTwd}
+                maxLength={4}
+                disabled={busy}
+                onChange={(event) => setSurchargeTwd(event.target.value)}
+              />
+            </Field>
+            <Field id="cod-carrier" label={cc.setCarrier}>
+              <select
+                id="cod-carrier"
+                data-testid="cod-carrier"
+                value={carrier}
+                disabled={busy}
+                onChange={(event) => setCarrier(event.target.value as CodCarrier)}
+              >
                 <option value="black_cat">{cc.carrierBlackCat}</option>
                 <option value="hsinchu">{cc.carrierHsinchu}</option>
               </select>
-            </label>
-          </div>
+            </Field>
+          </FormRow>
           <p className="settings-note">{cc.setNote}</p>
           <div className="settings-actions">
             <button className="primary" type="submit" data-testid="cod-settings-save" disabled={busy}>
@@ -145,8 +194,12 @@ export function CodSettings({ store, locale }: { store: string; locale: Locale }
           </div>
         </form>
       )}
-      {problem && <p className="settings-warning" role="alert" data-testid="cod-settings-problem">{problem}</p>}
-      {notice && <p className="message pending" role="status" data-testid="cod-settings-notice">{notice}</p>}
+      {problem && (
+        <p className="settings-warning" role="alert" data-testid="cod-settings-problem">{problem}</p>
+      )}
+      {notice && (
+        <p className="message pending" role="status" data-testid="cod-settings-notice">{notice}</p>
+      )}
     </section>
   );
 }

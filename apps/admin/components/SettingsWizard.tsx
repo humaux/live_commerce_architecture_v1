@@ -17,6 +17,7 @@ import {
   type FormEvent,
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
 import { BankTransferSettings } from "./BankTransferSettings";
@@ -1636,10 +1637,7 @@ export function SettingsWizard({
       locked={busy}
     >
       <div className="settings-page" data-testid="settings-wizard">
-        <div className="settings-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </div>
+        <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
         <ol className="settings-steps" aria-label={c.title}>
           {c.steps.map((label, index) => {
             const number = (index + 1) as 1 | 2 | 3 | 4;

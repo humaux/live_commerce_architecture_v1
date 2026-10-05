@@ -17,6 +17,7 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 import { money, displayTime } from "../../packages/format/src/index.ts";
 import { formatROAS } from "../../apps/admin/lib/attribution-format.ts";
+import { pageTitle } from "../../apps/admin/src/page-title.ts";
 
 // MOCK SSR: execute the actual panel JSX; only navigation and the separate read control are stubbed.
 // This supplements, never replaces, the real PG click gate in attribution.spec.ts.
@@ -25,6 +26,21 @@ const requireApp = createRequire(
 );
 const React = requireApp("react"),
   { renderToStaticMarkup } = requireApp("react-dom/server");
+// Execute the frozen presentation primitives too: only CSS class names and pathname are supplied by this SSR harness.
+const presentation: Record<string, any> = {};
+runInNewContext(ts.transpileModule(readFileSync(new URL("../../packages/ui/src/Presentation.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText, {
+  exports: presentation,
+  require: (name: string) => name.endsWith(".css") ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : requireApp(name),
+});
+const header: Record<string, any> = {};
+runInNewContext(ts.transpileModule(readFileSync(new URL("../../apps/admin/components/AdminPageHeader.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText, {
+  exports: header,
+  require: (name: string) => name === "@live-commerce/ui" ? presentation : name === "@/src/page-title" ? { pageTitle } : name === "next/navigation" ? { usePathname: () => "/en/ads/attribution" } : requireApp(name),
+});
 const exports: Record<string, any> = {};
 let reportForRender: any = null,
   stateCalls = 0;
@@ -67,6 +83,8 @@ runInNewContext(code, {
           React.createElement("a", props, children),
       };
     if (name === "@live-commerce/format") return { money, displayTime };
+    if (name === "@live-commerce/ui") return presentation;
+    if (name === "./AdminPageHeader") return header;
     if (name === "@/lib/attribution-format") return { formatROAS };
     if (name === "@/lib/attribution-copy") return { attributionCopy };
     if (name === "@/src/routes") return { matchRoute };
@@ -86,6 +104,27 @@ const renderPanel = (name: string, props: object) =>
   renderToStaticMarkup(React.createElement(exports[name], props));
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`shared presentation preserves registry title and one empty buyer message in ${locale}`, () => {
+    const session = structuredClone(attributionFixture.sessions[0]);
+    session.buyers.counties = [];
+    session.buyers.top_products = [];
+    session.buyers.orders_per_minute = [];
+    session.timeline = [];
+    const html = renderPanel("SessionPanel", { c: attributionCopy[locale], locale, session, store: "test-store" });
+    assert.equal(html.split(attributionCopy[locale].noBuyers).length - 1, 1);
+    assert.equal(html.split(attributionCopy[locale].noTimeline).length - 1, 1);
+    assert.ok(html.includes(attributionCopy[locale].newBuyers));
+    assert.ok(html.includes(attributionCopy[locale].average));
+    assert.match(html, /role="region"[^>]*aria-label=/);
+    reportForRender = structuredClone(attributionFixture);
+    stateCalls = 0;
+    const page = renderPanel("Attribution", { locale, store: { id: "test-store", name: "Synthetic", currency: "TWD" }, from: "2026-10-01", to: "2026-10-03", draftID: "", sessionID: "", initialError: null });
+    assert.ok(page.includes(`<h1>${pageTitle(locale, "/ads/attribution")}</h1>`));
+    assert.match(page, /id="attribution-from"[^>]*lang=/);
+    assert.ok(page.includes('for="attribution-session"'));
+    reportForRender = null;
+  });
+
   test(`R11 large linked-draft list is complete but collapsed in ${locale}`, () => {
     const session = structuredClone(attributionFixture.sessions[0]);
     session.draft_ids = Array.from(

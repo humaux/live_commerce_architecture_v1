@@ -1,11 +1,11 @@
 .settings-page {
   /* Scoped contrast fix: inherited muted ink failed 4.5:1 on the canvas. */
   --muted: #5f7083;
-  max-width: 1500px;
-  margin: 6px auto 0;
+  width: 100%;
+  margin: 0;
 }
 .settings-heading {
-  padding: 5px 6px 18px;
+  padding: 0;
 }
 .settings-heading p {
   color: var(--muted);
@@ -52,7 +52,7 @@
   cursor: default;
 }
 .settings-steps .current button {
-  color: var(--teal);
+  color: var(--ui-primary);
 }
 .settings-steps .complete button {
   color: var(--ink);
@@ -72,8 +72,8 @@
 }
 .settings-steps .current .step-number {
   color: #fff;
-  background: var(--teal);
-  border-color: var(--teal);
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
 }
 .settings-steps .complete .step-number {
   color: #176451;
@@ -87,19 +87,19 @@
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #fff;
-  min-height: 550px;
+  align-items: start;
 }
 .settings-form-area {
   min-width: 0;
-  padding: 28px 30px 26px;
+  padding: 24px;
 }
 .settings-status-column {
-  margin: 28px 0;
-  padding: 6px 28px 0;
+  margin: 24px 0;
+  padding: 0 24px;
   border-left: 1px solid var(--line);
 }
 .settings-section-title {
-  font-size: 19px;
+  font-size: var(--ui-heading-section);
   line-height: 1.4;
   margin-bottom: 8px;
 }
@@ -152,7 +152,7 @@
   width: 17px;
   height: 17px;
   margin: 0;
-  accent-color: var(--teal);
+  accent-color: var(--ui-primary);
 }
 .settings-radio {
   display: grid;
@@ -264,7 +264,7 @@
 }
 .settings-status-column h2 {
   font-size: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 .settings-status-column dl,
 .settings-status-list {
@@ -272,7 +272,7 @@
 }
 .settings-status-column dl > div,
 .settings-status-list > div {
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 .settings-status-column dt,
 .settings-status-list dt {
@@ -287,9 +287,9 @@
   overflow-wrap: anywhere;
 }
 .settings-status-next {
-  margin-top: 30px;
+  margin-top: 20px;
   border-top: 1px solid var(--line);
-  padding-top: 22px;
+  padding-top: 16px;
 }
 .settings-status-next h3 {
   font-size: 14px;
@@ -393,10 +393,73 @@
 }
 
 /* Settings -> 网店发布 card (components/StorefrontSettings.tsx). */
-.storefront-card {
-  border-top: 1px solid var(--line);
-  margin-top: 28px;
-  padding-top: 4px;
+.storefront-card,
+.metaconnect-card,
+.storefront-domains-card {
+  margin-top: 24px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--ui-radius);
+  min-width: 0;
+}
+.settings-page a {
+  color: var(--ui-link);
+  text-underline-offset: 3px;
+}
+.settings-page
+  :is(button, input:not([type="checkbox"]):not([type="radio"]), select) {
+  min-height: var(--ui-target);
+}
+.settings-page .settings-danger {
+  color: var(--ui-danger);
+  background: #fff;
+  border-color: var(--ui-danger);
+}
+.settings-page .settings-danger:hover:not(:disabled) {
+  color: var(--ui-danger);
+  background: var(--ui-page);
+}
+.settings-page > section > .settings-subtitle {
+  margin-top: 0;
+}
+.settings-page > section > .settings-status-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.settings-page > section > .settings-status-list > div {
+  margin: 0;
+}
+.settings-page .settings-fields :is(small, label) {
+  font-size: max(12px, 1em);
+}
+.settings-fields .settings-field-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 6px 20px;
+}
+.settings-field-grid > label {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+  align-content: start;
+}
+.settings-fields input:not([type="checkbox"]):not([type="radio"]),
+.settings-fields select {
+  max-width: var(--ui-field-long);
+}
+.settings-page .settings-check {
+  min-height: var(--ui-target);
+}
+.settings-fields .settings-actions {
+  margin-top: 4px;
+  padding-top: 16px;
+}
+.settings-fields .settings-note {
+  max-width: 75ch;
 }
 .storefront-card dd small {
   display: block;
@@ -414,39 +477,123 @@
   border-radius: 8px;
   min-width: 0;
 }
-.storefront-domains-card .primary { background: #b94700; border-color: #b94700; color: #fff; }
-.storefront-domain-list { list-style: none; margin: 20px 0; padding: 0; }
-.storefront-domain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 20px 0; border-bottom: 1px solid var(--line); }
-.storefront-domain-origin { flex: 1 1 260px; min-width: 0; overflow-wrap: anywhere; }
-.storefront-domain-origin a { display: block; font-weight: 600; }
-.storefront-domain-kind { display: block; margin-top: 6px; }
-.storefront-domains-card a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.storefront-domains-card a:hover { color: #b94700; }
-.storefront-domain-badge { display: inline-block; margin-top: 6px; font-size: 12px; color: #247052; }
-.storefront-domain-state { font-size: 13px; font-weight: 600; }
-.storefront-domain-actions { display: flex; gap: 8px; }
-.storefront-domain-token { flex-basis: 100%; display: grid; gap: 6px; overflow-wrap: anywhere; }
-.storefront-domain-request { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
-.storefront-domain-request label { flex: 1 1 260px; min-width: 0; display: grid; gap: 8px; }
-.storefront-domain-request input { width: 100%; box-sizing: border-box; }
-.storefront-domains-card button, .storefront-domains-card input { min-height: 44px; }
-.storefront-dns { margin-top: 24px; border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
-.storefront-dns dl { display: grid; gap: 16px; }
-.storefront-dns dt { font-size: 13px; color: var(--muted); }
-.storefront-dns dd { margin: 6px 0 0; overflow-wrap: anywhere; }
-.storefront-dns code, .storefront-domain-token code { white-space: normal; }
+.storefront-domain-list {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0;
+}
+.storefront-domain-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+.storefront-domain-origin {
+  flex: 1 1 260px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.storefront-domain-origin a {
+  display: block;
+  font-weight: 600;
+}
+.storefront-domain-kind {
+  display: block;
+  margin-top: 6px;
+}
+.storefront-domains-card a {
+  color: var(--ui-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.storefront-domains-card a:hover {
+  color: var(--ui-primary);
+}
+.storefront-domain-badge {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #247052;
+}
+.storefront-domain-state {
+  font-size: 13px;
+  font-weight: 600;
+}
+.storefront-domain-actions {
+  display: flex;
+  gap: 8px;
+}
+.storefront-domain-token {
+  flex-basis: 100%;
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.storefront-domain-request {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.storefront-domain-request label {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+.storefront-domain-request input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.storefront-domain-request > div {
+  flex: 1 1 260px;
+}
+.storefront-domain-request button {
+  align-self: center;
+}
+.storefront-domains-card button,
+.storefront-domains-card input {
+  min-height: 44px;
+}
+.storefront-dns {
+  margin-top: 24px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+.storefront-dns dl {
+  display: grid;
+  gap: 16px;
+}
+.storefront-dns dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+.storefront-dns dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.storefront-dns code,
+.storefront-domain-token code {
+  white-space: normal;
+}
 @media (max-width: 600px) {
-  .storefront-domains-card { padding: 16px; }
-  .storefront-domain-request > button { width: 100%; }
-  .storefront-domain-actions { flex-basis: 100%; }
+  .storefront-card,
+  .metaconnect-card,
+  .storefront-domains-card {
+    padding: 16px;
+  }
+  .storefront-domain-request > button {
+    width: 100%;
+  }
+  .storefront-domain-actions {
+    flex-basis: 100%;
+  }
 }
 
 /* Settings -> Facebook Page / Instagram card (components/MetaConnect.tsx). */
-.metaconnect-card {
-  border-top: 1px solid var(--line);
-  margin-top: 28px;
-  padding-top: 4px;
-}
 .metaconnect-card dd small,
 .metaconnect-pages small {
   display: block;
@@ -462,9 +609,35 @@
   margin: 0 0 12px;
   padding: 0;
 }
-.metaconnect-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.metaconnect-toolbar p { font-weight: 600; font-variant-numeric: tabular-nums; }
-.metaconnect-row { border-top: 1px solid var(--line); padding: 20px 0; min-width: 0; }
-.metaconnect-row h3 { margin: 0 0 12px; overflow-wrap: anywhere; }
-.metaconnect-row h3 small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; margin-top: 4px; }
-.metaconnect-card button, .metaconnect-card .settings-check { min-height: 44px; }
+.metaconnect-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.metaconnect-toolbar p {
+  margin-right: auto;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metaconnect-row {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+  min-width: 0;
+}
+.metaconnect-row h3 {
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.metaconnect-row h3 small {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.metaconnect-card button,
+.metaconnect-card .settings-check {
+  min-height: 44px;
+}

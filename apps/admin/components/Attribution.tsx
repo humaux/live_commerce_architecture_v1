@@ -5,6 +5,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Field, FormRow, TableFrame } from "@live-commerce/ui";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { money, displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { validAdsQuery } from "@/lib/ads-request";
@@ -134,16 +136,18 @@ export function Attribution({
       active="ads-attribution"
     >
       <div className="attribution-page" data-testid="ads-attribution">
-        <header>
-          <Link
+        <AdminPageHeader
+          locale={locale}
+          description={c.intro}
+          actions={
+            <Link
             data-testid="attribution-back"
             href={`/${locale}/ads${store ? `?store=${store.id}` : ""}`}
           >
             {c.back}
           </Link>
-          <h1>{c.title}</h1>
-          <p>{c.intro}</p>
-        </header>
+          }
+        />
         <form
           className="attribution-filters"
           onSubmit={(event) => {
@@ -162,28 +166,32 @@ export function Attribution({
             else navigate({ ...range, draft: "", session: "" });
           }}
         >
-          <label>
-            {c.from}
-            <input
-              type="date"
-              required
-              value={range.from}
-              onChange={(e) =>
+          <FormRow>
+            <Field id="attribution-from" label={c.from} width="short">
+              <input
+                id="attribution-from"
+                lang={locale}
+                type="date"
+                required
+                value={range.from}
+                onChange={(e) =>
                 setRange((v) => ({ ...v, from: e.target.value }))
               }
-              data-testid="attribution-from"
-            />
-          </label>
-          <label>
-            {c.to}
-            <input
-              type="date"
-              required
-              value={range.to}
-              onChange={(e) => setRange((v) => ({ ...v, to: e.target.value }))}
-              data-testid="attribution-to"
-            />
-          </label>
+                data-testid="attribution-from"
+              />
+            </Field>
+            <Field id="attribution-to" label={c.to} width="short">
+              <input
+                id="attribution-to"
+                lang={locale}
+                type="date"
+                required
+                value={range.to}
+                onChange={(e) => setRange((v) => ({ ...v, to: e.target.value }))}
+                data-testid="attribution-to"
+              />
+            </Field>
+          </FormRow>
           <button
             type="submit"
             disabled={
@@ -244,10 +252,16 @@ export function Attribution({
             {!report.drafts.length && !report.sessions.length && (
               <p data-testid="attribution-empty">{c.empty}</p>
             )}
-            <div className="attribution-filters">
-              <label>
-                {c.selectDraft}
+            <FormRow className="attribution-selection">
+              <Field
+                id="attribution-draft"
+                label={c.selectDraft}
+                hint={!report.drafts.length ? c.noDraft : undefined}
+                width="long"
+              >
                 <select
+                  id="attribution-draft"
+                  aria-describedby="attribution-draft-hint"
                   data-testid="attribution-draft"
                   value={selectedDraft?.draft_id ?? ""}
                   disabled={!report.drafts.length}
@@ -260,10 +274,16 @@ export function Attribution({
                     </option>
                   ))}
                 </select>
-              </label>
-              <label>
-                {c.selectSession}
+              </Field>
+              <Field
+                id="attribution-session"
+                label={c.selectSession}
+                hint={!report.sessions.length ? c.noSession : undefined}
+                width="long"
+              >
                 <select
+                  id="attribution-session"
+                  aria-describedby="attribution-session-hint"
                   data-testid="attribution-session"
                   value={selectedSession?.session_id ?? ""}
                   disabled={!report.sessions.length}
@@ -276,8 +296,8 @@ export function Attribution({
                     </option>
                   ))}
                 </select>
-              </label>
-            </div>
+              </Field>
+            </FormRow>
             {selectedDraft && (
               <DraftPanel c={c} locale={locale} draft={selectedDraft} />
             )}
@@ -302,20 +322,21 @@ function Table({
   children,
   empty,
   testID,
+  emptyText,
 }: {
   c: AttributionCopy;
   headers: string[];
   children: ReactNode;
   empty: boolean;
   testID?: string;
+  emptyText?: string;
 }) {
-  if (empty) return <p className="attribution-note">{c.noRows}</p>;
+  if (empty) return <p className="attribution-note">{emptyText ?? c.noRows}</p>;
   return (
-    <div
+    <TableFrame
       className="attribution-scroll"
-      tabIndex={0}
-      role="region"
-      aria-label={headers.join(" · ")}
+      label={headers.join(" · ")}
+      scrollHint={c.scrollHint}
     >
       <table data-testid={testID}>
         <thead>
@@ -329,7 +350,7 @@ function Table({
         </thead>
         <tbody>{children}</tbody>
       </table>
-    </div>
+    </TableFrame>
   );
 }
 const number = (locale: Locale, n: number | null, c: AttributionCopy) =>
@@ -522,7 +543,13 @@ function BuyerPanel({
           <dd>{amount(locale, currency, b.average_order_minor, c)}</dd>
         </div>
       </dl>
-      <Table
+      {!b.counties.length &&
+      !b.top_products.length &&
+      !b.orders_per_minute.length ? (
+        <p className="attribution-note">{c.noBuyers}</p>
+      ) : (
+        <>
+          <Table
         c={c}
         testID="attribution-counties"
         headers={[c.county, c.orders, c.net]}
@@ -536,8 +563,8 @@ function BuyerPanel({
           </tr>
         ))}
       </Table>
-      <h4>{c.products}</h4>
-      <Table
+          <h4>{c.products}</h4>
+          <Table
         c={c}
         testID="attribution-products"
         headers={[c.product, c.quantity]}
@@ -550,8 +577,8 @@ function BuyerPanel({
           </tr>
         ))}
       </Table>
-      <h4>{c.minuteOrders}</h4>
-      <Table
+          <h4>{c.minuteOrders}</h4>
+          <Table
         c={c}
         headers={[c.at, c.orders, c.net]}
         empty={!b.orders_per_minute.length}
@@ -564,6 +591,8 @@ function BuyerPanel({
           </tr>
         ))}
       </Table>
+        </>
+      )}
     </div>
   );
 }
@@ -670,9 +699,9 @@ function SessionPanel({
       </Table>
       <h3>{c.timeline}</h3>
       <p className="attribution-note">{c.timelineNote}</p>
-      {!s.timeline.length && <p>{c.noTimeline}</p>}
       <Table
         c={c}
+        emptyText={c.noTimeline}
         headers={[
           c.at,
           c.spend,

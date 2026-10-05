@@ -367,9 +367,9 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.
   for (const [locale, label, heading] of [
-    ["zh-CN", "Language", "物流与收款设置"],
-    ["zh-TW", "语言", "物流與收款設定"],
-    ["en", "語言", "Delivery & payment settings"],
+    ["zh-CN", "Language", "店铺设置"],
+    ["zh-TW", "语言", "商店設定"],
+    ["en", "語言", "Store settings"],
   ]) {
     await page.getByLabel(label, { exact: true }).selectOption(locale);
     await expect(
@@ -467,7 +467,9 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   await policyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
     .click();
-  await expect(page.getByText("NT$ amounts are whole dollars, for example 60.")).toBeVisible();
+  await expect(
+    page.getByText("NT$ amounts are whole dollars, for example 60."),
+  ).toBeVisible();
   expect(policyWrites).toBe(0);
   await policyForm
     .getByLabel("Flat shipping (NT$)", { exact: true })
@@ -532,7 +534,9 @@ test("REAL_PG A wizard creates unseeded configuration and preserves safe uncerta
   // BFF answer is read from the response the click triggers).
   await page.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();
   const [logoutResponse] = await Promise.all([
-    page.waitForResponse((r) => new URL(r.url()).pathname === "/api/auth/logout" && r.request().method() === "POST"),
+    page.waitForResponse(
+      (r) => new URL(r.url()).pathname === "/api/auth/logout" && r.request().method() === "POST",
+    ),
     page.getByTestId("workspace-sign-out").click(),
   ]);
   const logout = logoutResponse.status();
