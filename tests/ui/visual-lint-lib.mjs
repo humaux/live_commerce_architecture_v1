@@ -1,3 +1,6 @@
+// Purpose: G-UI9 layout lint: in-page collector + pure rules R1..R11; R6/R9 measure the visible (ancestor-clipped) rect of a control.
+// Depends on: nothing at import time (collect() runs in the page via Playwright page.evaluate).
+// Used by: tests/ui/visual-audit.mjs, tests/ui/visual-lint-canary.mjs, tests/ui/visual-lint-lib.test.mjs.
 // G-UI9 deterministic layout lint (unit ui-visual-audit, owner 2026-10-05: "UI layout is not acceptable, the visual review was never completed").
 //
 // Two halves, deliberately separate so the rules are testable without a browser:
@@ -13,13 +16,13 @@
 //                                          cell next to single-line cells (row-stacked: every row of the table may be doubled, so no median sees it); a control wider than its cell
 //   R4 warn   min text size                visible text under 12px (kind small-helper for helper/counter text)
 //   R5 warn   tap targets (390 only)       interactive element under 40x40 css px (inline text links inside a sentence excepted)
-//   R6 block  overlap                      two interactive elements, or two text boxes, intersecting by more than 2px
+//   R6 block  overlap                      two interactive elements (visible, ancestor-clipped rects), or two text boxes, intersecting by more than 2px
 //   R7 block  clipped text in a control    text of a button / select / tab cut by an ancestor (clipped-control), spilling out of its own box (text-overflows-control: centred
 //                                          nowrap text runs out on BOTH sides, which scrollWidth cannot see) or a select that cannot show its value (select-value-clipped);
 //                                          labels and links (clipped-text, text-overflows-label) and text cut only by a scroll frame (cut-by-scroll-frame: reachable by
 //                                          scrolling that box, cut at rest) are WARN
 //   R8 warn   duplicate list labels        the same visible label twice inside one list / checklist container
-//   R9 block  edge padding (390 only)      visible text or a control whose left/right edge is under 8px from the viewport edge (content flush to the screen)
+//   R9 block  edge padding (390 only)      visible text or a control (visible, ancestor-clipped rect) whose left/right edge is under 8px from the viewport edge (content flush to the screen)
 //   R10 warn  fixed-bar occlusion          after scrolling to the middle and to the bottom, a fixed/sticky bar covers main content that scrolling cannot clear
 //   R11 warn  narrow control               input / select / textarea narrower than a usable minimum (96px at 1586, 64px at 390)
 
@@ -182,6 +185,10 @@ export function r4SmallText(s, t = T) {
   return out;
 }
 
+// What the user can see of an interactive target: its rect cut by every overflow hidden/auto/scroll/clip ancestor (collect() sets vrect; a fully clipped
+// control is never collected). R6 and R9 judge this, R5 (tap size) keeps the raw box. Snapshots without vrect (older fixtures) fall back to the raw rect.
+const visRect = (x) => x.vrect ?? x.rect;
+
 // ---- R5 tap targets (the caller applies it to the 390 viewport only) ---------------------------------------------------------------------------------------
 export function r5TapTargets(s, t = T) {
   const out = [];
@@ -196,15 +203,15 @@ export function r5TapTargets(s, t = T) {
 // ---- R6 overlap ----------------------------------------------------------------------------------------------------------------------------------------------------
 export function r6Overlap(s, t = T) {
   const out = [];
-  const targets = (s.targets ?? []).filter((x) => !x.inline && !x.disabled).sort((a, b) => a.rect.x - b.rect.x);
+  const targets = (s.targets ?? []).filter((x) => !x.inline && !x.disabled).sort((a, b) => visRect(a).x - visRect(b).x);
   const byId = new Map(targets.map((x) => [x.id, x]));
   const related = (a, b) => { for (const [p, q] of [[a, b], [b, a]]) for (let n = q.parent, guard = 0; n !== undefined && n !== -1 && guard < 50; n = byId.get(n)?.parent, guard++) if (n === p.id) return true; return false; };
-  for (let i = 0; i < targets.length; i++) for (let j = i + 1; j < targets.length && targets[j].rect.x < right(targets[i].rect) - t.OVERLAP_MIN_PX; j++) {
+  for (let i = 0; i < targets.length; i++) for (let j = i + 1; j < targets.length && visRect(targets[j]).x < right(visRect(targets[i])) - t.OVERLAP_MIN_PX; j++) {
     const a = targets[i], b = targets[j];
     if (!!a.pinned !== !!b.pinned || related(a, b)) continue; // a pinned bar over scrolling content is a layering by design
-    const o = overlap(a.rect, b.rect);
+    const ra = visRect(a), rb = visRect(b), o = overlap(ra, rb);
     if (o.w > t.OVERLAP_MIN_PX && o.h > t.OVERLAP_MIN_PX)
-      out.push({ rule: "R6", kind: "interactive-overlap", ids: [a.id, b.id], rect: { x: Math.max(a.rect.x, b.rect.x), y: Math.max(a.rect.y, b.rect.y), w: r1(o.w), h: r1(o.h) }, measured: { overlapWidth: r1(o.w), overlapHeight: r1(o.h), a: { text: a.text, tag: a.tag, rect: a.rect }, b: { text: b.text, tag: b.tag, rect: b.rect } } });
+      out.push({ rule: "R6", kind: "interactive-overlap", ids: [a.id, b.id], rect: { x: Math.max(ra.x, rb.x), y: Math.max(ra.y, rb.y), w: r1(o.w), h: r1(o.h) }, measured: { overlapWidth: r1(o.w), overlapHeight: r1(o.h), a: { text: a.text, tag: a.tag, rect: ra, rawRect: a.rect }, b: { text: b.text, tag: b.tag, rect: rb, rawRect: b.rect } } });
   }
   const lines = [];
   for (const x of s.texts ?? []) if (!x.icon) for (const r of x.rects) lines.push({ id: x.id, text: x.text, pinned: !!x.pinned, rect: inkRect(r, x.size), raw: r });
@@ -267,12 +274,12 @@ export function r9EdgePadding(s, t = T) {
   }
   for (const x of s.targets ?? []) {
     if (x.inline || x.disabled || seen.has(x.id)) continue;
-    const fullBleed = x.rect.w >= vw - t.FULL_BLEED_SLACK_PX;
+    const vr = visRect(x), fullBleed = vr.w >= vw - t.FULL_BLEED_SLACK_PX;
     if (fullBleed && !/^(input|select|textarea)$/.test(x.tag)) continue; // a full-width bar / button is full-bleed by design, a full-width field has no gutter
-    const m = margins(x.rect);
+    const m = margins(vr);
     if (!flush(m)) continue;
     seen.add(x.id);
-    out.push({ rule: "R9", kind: "control-flush", ids: [x.id], rect: x.rect, measured: { leftMargin: r1(m.left), rightMargin: r1(m.right), tag: x.tag, text: x.text } });
+    out.push({ rule: "R9", kind: "control-flush", ids: [x.id], rect: vr, measured: { leftMargin: r1(m.left), rightMargin: r1(m.right), tag: x.tag, text: x.text } });
   }
   return out;
 }
@@ -545,7 +552,7 @@ export function collect() {
     const rest = p ? norm(p.textContent).replace(norm(target.textContent), "") : "";
     const inline = target.tagName === "A" && cs(target).display === "inline" && rest.length >= 3;
     const anc = p && p.closest(TARGET);
-    targets.push({ id: reg(target), tag: target.tagName.toLowerCase(), type: target.getAttribute("type") || "", rect: R(target.getBoundingClientRect()), inline, pinned: pinned(target), parent: anc ? reg(anc) : -1, text: norm(target.textContent || target.getAttribute("aria-label") || target.value || target.getAttribute("name")).slice(0, 30) });
+    targets.push({ id: reg(target), tag: target.tagName.toLowerCase(), type: target.getAttribute("type") || "", rect: R(target.getBoundingClientRect()), vrect: R({ left: v.clip.l, top: v.clip.t, width: v.clip.r - v.clip.l, height: v.clip.b - v.clip.t }), inline, pinned: pinned(target), parent: anc ? reg(anc) : -1, text: norm(target.textContent || target.getAttribute("aria-label") || target.value || target.getAttribute("name")).slice(0, 30) });
   }
 
   // selects (R7): the selected option's text against the room the select has for it; fixed/sticky bars (R10)

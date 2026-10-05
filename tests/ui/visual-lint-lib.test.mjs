@@ -217,6 +217,24 @@ test("R9: text and controls flush to the screen edge at 390", () => {
   assert.equal(evaluate({ ...vp, texts: [tx(1, 0, 200)] }, { mobile: true }).find((x) => x.rule === "R9").severity, "block");
 });
 
+test("R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05)", () => {
+  // vrect = rect intersected with the clip box of every overflow hidden/auto/scroll/clip ancestor (collect() computes it; a fully clipped control is not collected at all)
+  const tg = (id, x, y, w, h, vrect, extra = {}) => ({ id, tag: "button", rect: rc(x, y, w, h), ...(vrect ? { vrect } : {}), inline: false, disabled: false, parent: -1, text: `b${id}`, ...extra });
+  // (a) raw rects overlap by 5.5px in y, but the field is clipped by its scrollport to 9.5px: the visible rects do not touch
+  assert.equal(r6Overlap(snap({ targets: [tg(1, 0, 897.5, 600, 44, rc(0, 897.5, 600, 9.5)), tg(2, 300, 936, 127, 44)] })).length, 0, "a clipped tail is not an overlap");
+  // (b) two genuinely visible overlapping controls are still R6, measured on the visible rects (vrect narrower than the raw rect, still overlapping)
+  const hit = r6Overlap(snap({ targets: [tg(1, 0, 0, 100, 40, rc(0, 0, 100, 40)), tg(2, 96, 10, 100, 40, rc(96, 10, 100, 40))] }));
+  assert.equal(hit.length, 1); assert.deepEqual([hit[0].measured.overlapWidth, hit[0].measured.overlapHeight], [4, 30]);
+  const vp = { viewport: { w: 390, h: 844 }, doc: { scrollWidth: 390, scrollHeight: 2000 } };
+  // (c) raw right edge 3px from the edge, but a scrollport ends 16px from it: the user sees 16px of gutter
+  assert.equal(r9EdgePadding({ ...vp, targets: [tg(1, 335, 400, 48, 44, rc(335, 400, 39, 44))] }).length, 0, "visibly 16px from the edge");
+  // (d) a visible button 7px from the edge is still flush
+  const flush = r9EdgePadding({ ...vp, targets: [tg(2, 200, 400, 183, 44, rc(200, 400, 183, 44))] });
+  assert.deepEqual(flush.map((x) => [x.ids[0], x.kind, x.measured.rightMargin]), [[2, "control-flush", 7]]);
+  // and a raw rect that fits but whose visible part sits flush (clipped on the left by a scrollport) IS flush: the visible rect decides in both directions
+  assert.equal(r9EdgePadding({ ...vp, targets: [tg(3, 20, 500, 100, 44, rc(4, 500, 116, 44))] }).length, 1);
+});
+
 test("R10: a fixed or sticky bar covering main content after scrolling", () => {
   const vp = { viewport: { w: 1586, h: 992 }, scrollY: 2000, doc: { scrollWidth: 1586, scrollHeight: 3000 } };
   const bottomBar = { id: 50, rect: rc(0, 2000 + 992 - 64, 1586, 64) }; // attached to the bottom viewport edge
