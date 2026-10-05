@@ -1,3 +1,6 @@
+// Purpose: Per-market delivery allocation (which warehouses serve a delivery service, in priority order): explicit SetAllocation and the settings-path ensureDefaultAllocation (auto default warehouse, delivery-allocation P0).
+// Depends on: pgx tx; SQL fulfillment.allocation_heads/allocation_versions/allocation_warehouses, inventory.lock_warehouse(); internal/command (idempotency), internal/platform (scope).
+// Used by: SetServiceWithDefaultAllocation (service.go); internal/checkout (lockAllocation reads the heads); tests/foundation/delivery_allocation*_test.go.
 package fulfillment
 
 import (
@@ -128,6 +131,89 @@ func SetAllocation(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 		return command.Audit(ctx, tx, scope, "fulfillment.allocation.set")
 	})
 	return out, mapError(err)
+}
+
+// ensureDefaultAllocation is the idempotent auto-allocation used by the settings-path enable/update
+// (SetServiceWithDefaultAllocation). It runs in the caller's transaction and only acts when the
+// service has no allocation head yet, so an explicit merchant warehouse priority is never overwritten.
+// The service head was already locked FOR UPDATE by SetService, so the lock order stays globally
+// consistent with SetAllocation: service head -> allocation advisory lock -> allocation head ->
+// locked warehouse.
+//
+// It returns the allocation's first-position warehouse (the chosen default on create, the merchant's
+// existing priority otherwise) so the response can show it; an empty allocation yields an empty string.
+//
+// It is deliberately not wrapped in command.Run: the allocation is a deterministic consequence of the
+// already-replayed service write, and its existence check is the idempotency guard. A missing or
+// inactive default warehouse is an explicit conflict (the service write rolls back with it), never a
+// silent "enabled but no allocation".
+func ensureDefaultAllocation(ctx context.Context, tx pgx.Tx, scope platform.Scope, service Service) (string, error) {
+	lockKey := "fulfillment.allocation|" + scope.TenantID + "|" + scope.StoreID + "|" + service.MarketID + "|" + service.Country + "|" + service.Code
+	if err := advisoryLock(ctx, tx, lockKey); err != nil {
+		return "", err
+	}
+	var currentVersion int64
+	lockErr := tx.QueryRow(ctx, `SELECT current_version FROM fulfillment.allocation_heads
+		WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country=$4 AND code=$5 FOR UPDATE`,
+		scope.TenantID, scope.StoreID, service.MarketID, service.Country, service.Code).Scan(&currentVersion)
+	if lockErr == nil {
+		// An allocation already exists: keep the merchant's own priority and just report its
+		// first warehouse (empty when the merchant chose an empty allocation).
+		var existing string
+		if err := tx.QueryRow(ctx, `SELECT warehouse_id::text FROM fulfillment.allocation_warehouses
+			WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country=$4 AND code=$5 AND version=$6 AND position=1`,
+			scope.TenantID, scope.StoreID, service.MarketID, service.Country, service.Code, currentVersion).Scan(&existing); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return "", nil
+			}
+			return "", mapError(err)
+		}
+		return existing, nil
+	}
+	if !errors.Is(lockErr, pgx.ErrNoRows) {
+		return "", mapError(lockErr)
+	}
+
+	// Default warehouse: the store's sole active warehouse, else the first active by creation order.
+	var warehouseID string
+	if err := tx.QueryRow(ctx, `SELECT w.id::text FROM inventory.warehouses w
+		WHERE w.tenant_id=$1 AND w.store_id=$2 AND w.active
+		ORDER BY w.created_at, w.id LIMIT 1`, scope.TenantID, scope.StoreID).Scan(&warehouseID); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", command.ErrConflict
+		}
+		return "", mapError(err)
+	}
+	// Lock and re-check the chosen warehouse, mirroring SetAllocation's active check.
+	var active bool
+	if err := tx.QueryRow(ctx, `SELECT active FROM inventory.lock_warehouse($1::uuid)`, warehouseID).Scan(&active); err != nil {
+		return "", mapError(err)
+	}
+	if !active {
+		return "", command.ErrConflict
+	}
+
+	if _, err := tx.Exec(ctx, `INSERT INTO fulfillment.allocation_versions(
+		tenant_id,store_id,market_id,country,code,version,service_version,warehouse_count,principal_id)
+		VALUES($1,$2,$3,$4,$5,1,$6,1,$7)`, scope.TenantID, scope.StoreID,
+		service.MarketID, service.Country, service.Code, service.Version, scope.PrincipalID); err != nil {
+		return "", mapError(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO fulfillment.allocation_warehouses(
+		tenant_id,store_id,market_id,country,code,version,position,warehouse_id)
+		VALUES($1,$2,$3,$4,$5,1,1,$6)`, scope.TenantID, scope.StoreID,
+		service.MarketID, service.Country, service.Code, warehouseID); err != nil {
+		return "", mapError(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO fulfillment.allocation_heads(
+		tenant_id,store_id,market_id,country,code,current_version) VALUES($1,$2,$3,$4,$5,1)`,
+		scope.TenantID, scope.StoreID, service.MarketID, service.Country, service.Code); err != nil {
+		return "", mapError(err)
+	}
+	if err := command.Audit(ctx, tx, scope, "fulfillment.allocation.ensure"); err != nil {
+		return "", err
+	}
+	return warehouseID, nil
 }
 
 func GetAllocation(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, marketID, country, code string) (out Allocation, err error) {
