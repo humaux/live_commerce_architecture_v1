@@ -576,10 +576,18 @@ CREATE POLICY sku_send_read ON catalog.skus FOR SELECT TO commerce_integration_w
 CREATE FUNCTION live.offer_recommend_facts(p_session uuid, p_offer uuid)
 RETURNS TABLE(keyword text, product_name text, sku_code text, price_minor bigint, currency text, version bigint)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
-DECLARE v uuid[];
+DECLARE v uuid[]; src record;
 BEGIN
     v := inbox.lcn_scope();
-    IF NOT identity.principal_holds(v[1], v[2], v[3], ARRAY['live:manage']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403'; END IF;
+    -- Same permission set as live.plan_offer_recommend, and the same precedence as the other three planners: a severed/unsupported connection
+    -- answers `capability` BEFORE the Go side renders and content-checks the comment (a rendered product name must not mask the real cause).
+    IF NOT identity.principal_holds(v[1], v[2], v[3], ARRAY['live:manage', 'inbox:reply']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403'; END IF;
+    SELECT s.platform, s.binding_id INTO src FROM live.claim_sources s
+     WHERE s.tenant_id = v[1] AND s.store_id = v[2] AND s.session_id = p_session AND s.active ORDER BY s.updated_at DESC, s.id LIMIT 1;
+    IF FOUND AND src.platform = 'facebook' AND (NOT EXISTS (SELECT 1 FROM integration.bindings z WHERE z.tenant_id = v[1] AND z.store_id = v[2] AND z.id = src.binding_id AND z.enabled)
+       OR coalesce(integration.binding_capability_state(v[1], v[2], src.binding_id, 'reply_public', ARRAY[]::text[]), 'unknown') NOT IN ('ok', 'review_required')) THEN
+        RAISE EXCEPTION 'capability' USING ERRCODE = 'PT409';
+    END IF;
     RETURN QUERY
     SELECT f.keyword, p.name, k.code, k.price_minor, k.currency, f.version
       FROM live.offers f JOIN catalog.skus k ON k.tenant_id = f.tenant_id AND k.store_id = f.store_id AND k.id = f.sku_id
