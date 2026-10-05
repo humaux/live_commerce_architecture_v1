@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type InputHTMLAttributes,
   type HTMLAttributes,
+  type Ref,
 } from "react";
 import s from "./Presentation.module.css";
 export { s as presentationStyles };
@@ -227,17 +228,20 @@ export function FilePicker({
   emptyLabel,
   onChange,
   className = "",
+  inputRef,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   emptyLabel: string;
+  inputRef?: Ref<HTMLInputElement>;
 }) {
   const [name, setName] = useState("");
   return (
     <div className={`${s.filePicker} ${className}`}>
       <label className={s.fileButton} data-disabled={!!props.disabled}>
         <span>{label}</span>
-        <input
+      <input
+        ref={inputRef}
           {...props}
           type="file"
           aria-label={props["aria-label"] ?? label}
