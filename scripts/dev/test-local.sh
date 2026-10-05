@@ -455,23 +455,27 @@ cleanup() {
   fi
 }
 trap cleanup EXIT INT TERM
-if [[ "$test_mode" == --stripe-browser ]]; then
-  # One PG-holding run at a time machine-wide (Docker Desktop memory); same lock as test-focused.sh.
-  # Bounded wait (LC_TEST_LOCK_WAIT, default 300 s): a foreign holder must not deadlock this gate. On
-  # timeout the run proceeds WITHOUT exclusivity and says so; it never removes or edits a live lock.
-  lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
-  lock_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-300} ))
-  until mkdir "$lock_dir" 2>/dev/null; do
-    holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
-    if [[ -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then rm -rf "$lock_dir"; continue; fi
-    if (( $(date +%s) >= lock_deadline )); then
-      printf 'WARNING: PG lock %s still held by pid %s after %ss; continuing without exclusivity.\n' "$lock_dir" "${holder:-?}" "${LC_TEST_LOCK_WAIT:-300}" >&2
-      lock_dir=""; break
-    fi
-    sleep 2
-  done
-  if [[ -n "$lock_dir" ]]; then echo $$ > "$lock_dir/pid"; stripe_lock="$lock_dir"; fi
-fi
+# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the
+# 1.9 GB Docker VM with test-focused.sh runs and pushed PG into recovery mode — flaky full-suite reds). Same lock dir
+# as test-focused.sh. Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2)
+# instead of running without exclusivity. A holder that is dead, or whose PID now belongs to a process that is not
+# one of our test runners (PID reuse), is stale and removed.
+lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
+lock_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-7200} ))
+until mkdir "$lock_dir" 2>/dev/null; do
+  holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+  if [[ -n "$holder" ]] && { ! kill -0 "$holder" 2>/dev/null ||
+      ! ps -o command= -p "$holder" 2>/dev/null | grep -qE 'test-(focused|local)\.sh'; }; then
+    rm -rf "$lock_dir"; continue
+  fi
+  if [[ -z "$holder" ]] && [[ -n "$(find "$lock_dir" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then rm -rf "$lock_dir"; continue; fi
+  if (( $(date +%s) >= lock_deadline )); then
+    printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lock_dir" "${holder:-?}" "${LC_TEST_LOCK_WAIT:-7200}" >&2
+    exit 2
+  fi
+  sleep 2
+done
+echo $$ > "$lock_dir/pid"; stripe_lock="$lock_dir"
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the

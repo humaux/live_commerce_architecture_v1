@@ -33,7 +33,7 @@ until mkdir "$lock_dir" 2>/dev/null; do
   # Stale if the holder died, or its PID was reused by an unrelated process (observed
   # 2026-09-29: a dead holder's PID reused by `sleep 3000` blocked every agent).
   if [[ -n "$holder" ]] && { ! kill -0 "$holder" 2>/dev/null ||
-      ! ps -o command= -p "$holder" 2>/dev/null | grep -q 'test-focused\.sh'; }; then
+      ! ps -o command= -p "$holder" 2>/dev/null | grep -qE 'test-(focused|local)\.sh'; }; then
     rm -rf "$lock_dir"
     continue
   fi
