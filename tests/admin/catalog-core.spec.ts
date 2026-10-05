@@ -255,10 +255,17 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await page.getByTestId("products-search-submit").click();
       const productRows = page.locator('[data-testid^="product-row-"]');
       await expect(productRows).toHaveCount(25);
+      await expect(productRows.first()).toContainText(`${tag} paging`);
       await expect(page.getByTestId("products-next")).toBeEnabled();
+      const firstPageRow = await productRows.first().getAttribute("data-testid");
       await page.getByTestId("products-next").click();
+      // Both pages contain 25 rows. Count alone can accept the stale first page
+      // before the route/read completes and click the same cursor twice.
+      await expect(productRows.first()).not.toHaveAttribute("data-testid", firstPageRow!);
       await expect(productRows).toHaveCount(25);
+      const secondPageRow = await productRows.first().getAttribute("data-testid");
       await page.getByTestId("products-next").click();
+      await expect(productRows.first()).not.toHaveAttribute("data-testid", secondPageRow!);
       await expect(productRows).toHaveCount(10);
       await expect(page.getByTestId("products-next")).toBeDisabled();
       await expect(page.getByTestId("products-previous")).toBeEnabled();
