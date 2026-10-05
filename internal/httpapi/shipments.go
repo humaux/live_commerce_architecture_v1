@@ -4,7 +4,9 @@
 //
 // Non-goals: no fulfilment rule (internal/merchantorders and migrations/0063 decide every invariant,
 // CAS and permission), no buyer route (the buyer sees shipments through GET /v1/buyer/orders/{id}),
-// no bulk tracking import (M-7), no logging of bodies, tracking numbers, recipients or bearer tokens.
+// the bulk tracking import (Amendment "M-7 revoked") lives in internal/httpapi/merchanttools.go plus
+// internal/merchanttools/tracking_import.go; this file's PUT stays the only per-order shipment write, and
+// there is no logging of bodies, tracking numbers, recipients or bearer tokens.
 //
 // Each route runs in one commerce_runtime READ COMMITTED transaction (platform.WithScope) whose nil return is
 // the COMMIT acknowledgement every 2xx waits for. Route → Go endpoint: this file's handlers ARE the Go
