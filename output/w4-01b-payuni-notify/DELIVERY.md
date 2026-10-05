@@ -37,8 +37,8 @@
 
 - 静态（`evidence-static.log`）：`go build ./...` exit 0；`go vet`（touched 包 + tests/foundation）exit 0；`gofmt -l` 空。
 - DB-free 单测：`go test -count=1 ./internal/payments/payuninotify ./internal/platform ./cmd/api ./internal/integrations/psp/payuni ./internal/integrations/accounts` — 全绿 exit 0。
-- REAL_PG 门禁 `bash scripts/dev/test-focused.sh '^TestPayuniNotify|^TestPayuniNotifyAuthority'` — **见 `evidence-test.log`**（结果：TODO 待补，运行后回填）。
-- 修复记录：门禁首跑暴露两处真实缺陷并修复——(1) `validatePayuniAuthority` 第二段探测 SQL 复制自 stripe 后残留未用的 `$1`（authority）参数，导致 42P18「could not determine data type of parameter $1」把干净 ingress login 全部拒之门外；改为 `allowed AS (SELECT unnest($1::oid[]) AS oid)` 并只传 `allowedOIDs`。(2) `payuni_record_notify` 的去重 `SELECT ... FOR UPDATE` 与重复回执的 `UPDATE redelivery_count` 需要 receipts 表 UPDATE 权限，0136 原只授 `SELECT,INSERT`；补 `GRANT UPDATE(redelivery_count,last_redelivered_at)`（与 guard 触发允许的两列一致）。
+- REAL_PG 门禁（Sonnet finisher，trunk 3a718115 合并后）`bash scripts/dev/test-focused.sh '^(TestPayuniNotify|TestPayuniNotifyAuthority|TestWAS0|TestT06|TestR2Integration|TestPoolAuthority)'` → **exit 0，PASS=44 FAIL=0**（`evidence-test.log`；合并后首跑 5 红见 `red.log`）。`go build`/`go vet` exit 0；DB-free 单测 exit 0；`bash scripts/dev/check-gates.sh` exit 0（`check-gates.log`）。
+- 修复记录：作者阶段门禁首跑暴露两处真实缺陷并修复——(1) `validatePayuniAuthority` 第二段探测 SQL 复制自 stripe 后残留未用的 `$1`（authority）参数，导致 42P18「could not determine data type of parameter $1」把干净 ingress login 全部拒之门外；改为 `allowed AS (SELECT unnest($1::oid[]) AS oid)` 并只传 `allowedOIDs`。(2) `payuni_record_notify` 的去重 `SELECT ... FOR UPDATE` 与重复回执的 `UPDATE redelivery_count` 需要 receipts 表 UPDATE 权限，0136 原只授 `SELECT,INSERT`；补 `GRANT UPDATE(redelivery_count,last_redelivered_at)`（与 guard 触发允许的两列一致）。
 
 ## 迁移校验（0136）
 
@@ -73,3 +73,10 @@
 
 - 交付：实现、测试命令与退出码、证据文件（`evidence-static.log`、`evidence-test.log`）、风险、NOT_RUN/BLOCKED，均在本目录。
 - 本单元无 P0/P1 未解决项；无删除/放宽任何失败测试、阈值或 fixture。
+
+## Finisher（Sonnet）追加修复与核对
+- 缺陷 3（根因，P0 功能面）：`payuni_record_notify` 对 `payuni_notify_endpoints` 做 `SELECT ... FOR SHARE`，而 owner `commerce_integration_writer` 只有 SELECT（行锁需 UPDATE 列权限）→ 42501，**所有真实验签通知都 503**（5 个 REAL_PG 红：IngressPositive/QueuedWakes/Mismatch/UnknownTrade/ResolveMaterialAndGrace）。修法：改为普通 SELECT（不扩权；disable 与回执竞态无害——回执只是触发器），0136 就地修改（从未部署）。
+- 缺陷 4：R2 迁移集合 pin 62→63（tests/foundation/r2_integration_upgrade_test.go）；7 个新文件补齐 Purpose/Depends/Used by 头（check-headers）。
+- 权限核对：`commerce_integration_writer` 在 river_payment.river_job 原有 `SELECT, UPDATE(queue)`（post_river 0005）；migrate.go 新增 `UPDATE(scheduled_at)` 后 UPDATE 列恰为 {queue, scheduled_at}，无 INSERT/DELETE；唤醒 SQL 另限 kind/unique_key IS NULL/state/args 精确匹配，guard 触发器冻结 id/kind/args/unique_key/queue。已加 ACL-pin（`TestPayuniNotifySchemaACLPin`）：列集合恰为 (queue,scheduled_at) 且无 INSERT/DELETE。
+- ACK/重试语义：200 空体 ACK、PAYUNi 重试行为 **NOT_VERIFIED**（官方文档未确认，payuni-wire :19-21）。
+- NOT_RUN：LIVE、真实 PAYUNi 回调（合成签名体 = MOCK/REAL_PG）、全仓 `go test -race ./...`。
