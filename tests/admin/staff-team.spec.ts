@@ -1,4 +1,7 @@
-// INDEPENDENT browser gate for unit staff-team (contracts/storefront-v2.md §D; docs/delivery/units/staff-team.md), Chromium against the
+// Purpose: Preserve the staff authorization chain and regress unobscured member controls at mobile widths.
+// Depends on: Playwright, the isolated staff/password/SMTP fixture and the real admin Team page.
+// Used by: --browser-password-auth; layout checks do not alter roles, bypass hit-testing or relax authorization assertions.
+// Original independent browser gate for unit staff-team (contracts/storefront-v2.md §D; docs/delivery/units/staff-team.md), Chromium against the
 // packaged Next admin BFF, an in-process Go api (staff routes + the real SMTP adapter against the loopback fake) and real PG, started by
 // tests/foundation/browser_staff_team_test.go (`bash scripts/dev/test-local.sh --browser-password-auth`). Password login on, OIDC off.
 // Written from the contract and the brief, not from Team.tsx / TeamInvite.tsx: the chain is the one the brief names, driven by
@@ -115,6 +118,19 @@ async function noHorizontalScroll(page: Page, what: string) {
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, `${what}: no horizontal page scroll`).toBeLessThanOrEqual(0);
+}
+
+async function unobscuredMemberRole(page: Page, testId: string) {
+  const control = page.getByTestId(testId);
+  // Real table scrolling is allowed; forcing clicks or injecting CSS would hide a sticky-column regression.
+  await control.scrollIntoViewIfNeeded();
+  await expect.poll(() => control.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return [0.25, 0.5, 0.75].every((fraction) => {
+      const hit = document.elementFromPoint(rect.left + rect.width * fraction, rect.top + rect.height / 2);
+      return hit === element || (hit !== null && element.contains(hit));
+    });
+  }), { message: "member role must not be covered by the actions column" }).toBe(true);
 }
 
 // Sign-up up to a session; `priorMails` = mails already sent to the address (the sign-up code is the next one).
@@ -328,6 +344,7 @@ for (const { locale, vp, first } of chains) {
       const member = (listed.body.members as { principal_id: string; email: string; role: string }[]).find((m) => m.email === inviteeEmail);
       expect(member?.role).toBe("fulfilment");
       await expect(owner.page.getByTestId(`member-${member!.principal_id}`)).toContainText(inviteeEmail);
+      await unobscuredMemberRole(owner.page, `member-role-${member!.principal_id}`);
       const [roleResponse] = await Promise.all([
         owner.page.waitForResponse((r) => new URL(r.url()).pathname === "/api/team/set-role"),
         owner.page.getByTestId(`member-role-${member!.principal_id}`).selectOption("viewer"),
