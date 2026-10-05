@@ -36,7 +36,7 @@ func TestBrowserMetaHealthUI(t *testing.T) {
 	m := mhSetup(t)
 	p := m.connectPage(t, "Health check", true, mhScopes, true)
 	m.sweep(t)
-	principal, fixtureToken := lcPrincipal(t, m.f, m.f.tenantA, []string{m.store, m.f.storeA2}, "store:read", "integration:read", "integration:manage", "orders:read", "catalog:read", "live:read", "live:manage", "claims:read", "claims:manage")
+	principal, fixtureToken := lcPrincipal(t, m.f, m.f.tenantA, []string{m.store, m.f.storeA2}, "store:read", "integration:read", "integration:manage", "orders:read", "catalog:read", "live:read", "live:manage", "integration:execute", "inventory:read")
 	var draft live.Draft
 	if err := platform.WithScope(ctx, m.f.runtime, fixtureToken, m.store, "live:manage", func(tx pgx.Tx, scope platform.Scope) (err error) {
 		draft, err = live.CreateDraft(ctx, tx, scope, fixtureToken, t04Key("health-scene"), live.DraftInput{Title: "Synthetic health scene", AspectRatio: "9:16"})
