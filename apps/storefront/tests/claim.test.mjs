@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import * as claimContract from "../lib/claim-contract.ts";
+import { BuyerClientError } from "../lib/buyer-client.ts";
 import { claimCopy } from "../lib/claim-copy.ts";
 import assert from "node:assert/strict";
 import { handleBuyerRequest } from "../lib/buyer-server.ts";
@@ -226,20 +227,20 @@ test("claim redeem shares the purchase lock, guards recovery and never persists 
 
 // Execute the actual component callbacks with deterministic hooks, not a copied decision model.
 // Real DOM/navigation persistence is exercised by claim-checkout.mjs.
-function claimPage({ lines, items, refreshedLines = lines, view = "ready" }) {
+function claimPage({ lines, items, refreshedLines = lines, view = "ready", recoveryError = null }) {
   const require = createRequire(import.meta.url), swc = require("next/dist/build/swc");
   const source = readFileSync(new URL("../components/ClaimLink.tsx", import.meta.url), "utf8");
   const compiled = swc.transformSync(source, { filename: "ClaimLink.tsx", jsc: { parser: { syntax: "typescript", tsx: true }, target: "es2022", transform: { react: { runtime: "automatic" } } }, module: { type: "commonjs" } }).code;
   const cart = { ...redeemed.cart, items }, claimed = { ...preview, lines };
   const states = ["zh-TW", view, "a".repeat(43), claimed, cart, false, null, false];
   let stateIndex = 0, refIndex = 0;
-  const calls = { writes: [], navigation: [], reads: [] };
+  const calls = { writes: [], navigation: [], reads: [], redeems: 0 };
   const modules = {
     react: { useEffect() {}, useState: () => { const i = stateIndex++; return [states[i], value => { states[i] = value; }]; }, useRef: value => ({ current: refIndex++ === 0 ? token : value }) },
     "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }), Fragment: "fragment" },
-    "../lib/buyer-client": { BuyerClientError: class extends Error {}, buyerRequest: async (method, suffix) => { calls.reads.push(suffix); return Response.json({ ...claimed, lines: refreshedLines }); } },
-    "../lib/purchase": { cartWithQuantity, pendingPurchase: () => null, knownOrderID: () => null,
-      redeemClaimLink: async () => ({ ...redeemed, cart, applied: [], skipped: [] }),
+    "../lib/buyer-client": { BuyerClientError, buyerRequest: async (method, suffix) => { calls.reads.push(suffix); return Response.json({ ...claimed, lines: refreshedLines }); } },
+    "../lib/purchase": { cartWithQuantity, pendingPurchase: () => { if (recoveryError?.reader === "pending") throw new BuyerClientError(recoveryError.code); return null; }, knownOrderID: () => { if (recoveryError?.reader === "order") throw new BuyerClientError(recoveryError.code); return null; },
+      redeemClaimLink: async () => { calls.redeems++; return { ...redeemed, cart, applied: [], skipped: [] }; },
       writePurchase: async (ctx, command) => { calls.writes.push(command); return { kind: "cart", value: { ...cart, items: command.body.items } }; } },
     "../lib/routes": { cartPath: locale => `/${locale}/cart`, checkoutPath: locale => `/${locale}/checkout` },
     "../lib/claim-contract": claimContract, "../lib/claim-copy": { claimCopy }, "../lib/money": { formatMoney: () => "NT$200" },
@@ -288,5 +289,17 @@ test("ClaimLink does not navigate when a buyable claim target is absent or has c
     const page = claimPage({ lines: [{ ...preview.lines[0], pending: false }], items });
     await page.click(node => node.props?.["data-testid"] === "claim-add");
     assert.deepEqual(page.calls.navigation, []);
+  }
+});
+
+// The notice is optional; unreadable recovery state must remain governed by the
+// guarded explicit click rather than throwing out of React's render.
+test("ClaimLink optional prior-order notice tolerates unreadable storage without bypassing recovery", async () => {
+  for (const reader of ["order", "pending"]) for (const code of ["unavailable", "uncertain"]) {
+    const page = claimPage({ lines: preview.lines, items: redeemed.cart.items, recoveryError: { reader, code } });
+    await page.click(node => node.props?.["data-testid"] === "claim-add");
+    assert.equal(page.calls.redeems, 0, "unreadable recovery never redeems");
+    assert.deepEqual(page.calls.navigation, code === "uncertain" ? ["/zh-TW/checkout?from=claim-recovery"] : []);
+    assert.equal(page.states[6], code === "uncertain" ? "recovery" : "unavailable");
   }
 });

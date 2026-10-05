@@ -249,6 +249,13 @@ export default function ClaimLink({
   const applicable = buyable.length > 0;
   const partial = preview?.lines.some((line) => line.pending && (!line.available || line.sold_out));
   const cartVisible = (view === "ready" || view === "conflict") && cart;
+  let previousOrder = false;
+  try {
+    previousOrder = !!context && !!(knownOrderID(context) || pendingPurchase(context)?.kind === "next-cart");
+  } catch {
+    // This optional notice must not crash rendering when storage is unavailable.
+    // The explicit checkout handler still fails closed on unreadable recovery state.
+  }
 
   return (
     <>
@@ -338,7 +345,7 @@ export default function ClaimLink({
             {notice === "nothing" && <p role="status" className="claim-success">{copy.nothing}</p>}
             {skipped && <p role="status" className="claim-note">{copy.skipped}</p>}
             {cart?.items.some((item) => !names.has(item.sku_id)) && <p className="claim-note" data-testid="claim-merge-notice">{copy.mergeNotice}</p>}
-            {context && (knownOrderID(context) || pendingPurchase(context)?.kind === "next-cart") &&
+            {previousOrder &&
               <p className="claim-note" data-testid="claim-previous-order">{copy.previousOrder}</p>}
             <button
               className="primary claim-add"
