@@ -216,6 +216,12 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store AND ot.owner_id=p_owner),''),'UTF8')),'hex')
 $$;
 
+CREATE FUNCTION customers.tn_has_tag(p_tenant uuid,p_store uuid,p_owner uuid,p_tag uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ SELECT EXISTS(SELECT 1 FROM customers.owner_tags ot WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store
+  AND ot.owner_id=p_owner AND ot.tag_id=p_tag)
+$$;
+
 CREATE FUNCTION customers.tn_note_json(n customers.notes) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT jsonb_build_object('id',n.id,'body',n.body,'author_id',n.author_id,
@@ -449,7 +455,7 @@ BEGIN
  FOREACH f IN ARRAY ARRAY[
   'customers.tn_authority(bytea,uuid,text)','customers.tn_fence(bytea,uuid,text,uuid,uuid,bigint)',
   'customers.tn_lock_owner(uuid,uuid,uuid)','customers.tn_owner_visible(uuid,uuid,uuid)','customers.tn_check_tag(text,text)',
-  'customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_note_json(customers.notes)',
+  'customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_has_tag(uuid,uuid,uuid,uuid)','customers.tn_note_json(customers.notes)',
   'customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)',
   'customers.create_tag(bytea,uuid,text,text)','customers.rename_tag(bytea,uuid,uuid,text,text)','customers.delete_tag(bytea,uuid,uuid)',
   'customers.set_owner_tags(bytea,uuid,uuid,uuid[],text)','customers.add_note(bytea,uuid,uuid,text)',
@@ -467,7 +473,7 @@ BEGIN
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f);
  END LOOP;
  -- identity.read_merchant_customers is owned by commerce_auth: it needs the three JSON readers (no table grant for it).
- FOREACH f IN ARRAY ARRAY['customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)',
+ FOREACH f IN ARRAY ARRAY['customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_has_tag(uuid,uuid,uuid,uuid)',
   'customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)'] LOOP
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_auth',f);
  END LOOP;
@@ -555,9 +561,8 @@ BEGIN
      AND qo.owner_id=ow.id AND CASE WHEN v_phone
       THEN right(regexp_replace(coalesce(qo.snapshot#>>'{destination,phone}',''),'[^0-9]','','g'),char_length(v_digits))=v_digits
       ELSE starts_with(lower(coalesce(qo.snapshot#>>'{destination,recipient_name}','')),lower(p_q)) END))
-   -- W6-01B: tag filter. An unknown or other-store tag id simply matches nobody (RLS-free: tenant/store are in the join).
-   AND (p_tag IS NULL OR EXISTS(SELECT 1 FROM customers.owner_tags ot WHERE ot.tenant_id=ow.tenant_id AND ot.store_id=ow.store_id
-     AND ot.owner_id=ow.id AND ot.tag_id=p_tag))
+   -- W6-01B: tag filter. An unknown or other-store tag id simply matches nobody (tenant/store are arguments of the helper).
+   AND (p_tag IS NULL OR customers.tn_has_tag(ow.tenant_id,ow.store_id,ow.id,p_tag))
  ), paged AS MATERIALIZED (
   SELECT b.* FROM base b
   WHERE b.last_activity IS NOT NULL AND (p_after_id IS NULL OR (b.last_activity,b.id)<(p_after_ts,p_after_id))
@@ -665,3 +670,34 @@ COMMENT ON TABLE customers.owner_tags IS 'internal/customers (W6-01B): tag links
 COMMENT ON TABLE customers.notes IS 'internal/customers (W6-01B): private merchant notes about a customer (<=200, body 1..1000). Buyer personal data: deleted by erasure, included in the buyer self-service export. Audit rows never contain the body.';
 COMMENT ON FUNCTION identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamptz,uuid,text,uuid) IS
  'internal/customers (customers:read): list (limit 1..101, keyset on (last_activity_at,id) DESC, optional p_tag filter) or detail (p_customer). Rows carry tags; the detail adds tags_revision and the newest 50 notes. Replaces the 0078 7-argument function (W6-01B); W5-02B extends this body.';
+
+-- Function comments (the CB02 documentation gate: every function names its owning package).
+DO $$
+DECLARE r record;
+BEGIN
+ FOR r IN SELECT * FROM (VALUES
+  ('customers.create_tag(bytea,uuid,text,text)','customers:write: adds a store tag (<=100, unique case-insensitively); audit customers.tag_created.'),
+  ('customers.rename_tag(bytea,uuid,uuid,text,text)','customers:write: renames and/or recolours a tag; audit customers.tag_renamed.'),
+  ('customers.delete_tag(bytea,uuid,uuid)','customers:write: deletes a tag and its customer links; audit customers.tag_deleted.'),
+  ('customers.set_owner_tags(bytea,uuid,uuid,uuid[],text)','customers:write: replaces one customer''s tag set (<=20) under the tags_revision CAS; audit customers.tagged.'),
+  ('customers.add_note(bytea,uuid,uuid,text)','customers:write: adds a private note (<=200 per customer, body 1..1000); audit customers.note_added without the body.'),
+  ('customers.edit_note(bytea,uuid,uuid,uuid,text,bigint)','customers:write: edits a note under its version; author or customers:privacy holder only; audit customers.note_edited.'),
+  ('customers.delete_note(bytea,uuid,uuid,uuid)','customers:write: deletes a note; author or customers:privacy holder only; audit customers.note_deleted.'),
+  ('customers.list_tags(bytea,uuid)','customers:read: the store tag catalogue with usage counts.'),
+  ('customers.list_notes(bytea,uuid,uuid,integer,timestamptz,uuid)','customers:read: one customer''s notes, newest first, keyset on (created_at,id).'),
+  ('customers.tn_authority(bytea,uuid,text)','Internal (EXECUTE nobody): the merchant authority prologue of the tag/note definers of internal/customers.'),
+  ('customers.tn_fence(bytea,uuid,text,uuid,uuid,bigint)','Internal (EXECUTE nobody): post-write authority re-check of the customers tag/note definers.'),
+  ('customers.tn_lock_owner(uuid,uuid,uuid)','Internal (EXECUTE nobody): locks an active, merchant-visible customer owner row; same lock order as erase_owner.'),
+  ('customers.tn_owner_visible(uuid,uuid,uuid)','Internal (EXECUTE nobody): whether a customer is visible to the merchant list (order or bound bundle).'),
+  ('customers.tn_check_tag(text,text)','Internal (EXECUTE nobody): tag name and colour validation of the customers tag definers.'),
+  ('customers.tn_tags_json(uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): the tags of one customer as JSON for identity.read_merchant_customers.'),
+  ('customers.tn_tags_revision(uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): sha256 CAS token of a customer''s tag-id set.'),
+  ('customers.tn_has_tag(uuid,uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): whether a customer carries a tag, for the list filter of identity.read_merchant_customers.'),
+  ('customers.tn_note_json(customers.notes)','Internal (EXECUTE nobody): one note as JSON.'),
+  ('customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)','Internal (EXECUTE commerce_auth): a customer''s notes page as JSON.'),
+  ('customers.erase_tags_notes(uuid,uuid,uuid)','internal/customers erasure-only (called by apply_erasure): deletes a customer''s tag links and notes.'),
+  ('customers.export_tags_notes(uuid,uuid,uuid)','internal/customers export-only (called by buyer_read_privacy detail): tag names and note bodies of the buyer.')
+ ) AS v(sig,descr) LOOP
+  EXECUTE format('COMMENT ON FUNCTION %s IS %L',r.sig,'internal/customers (W6-01B): '||r.descr);
+ END LOOP;
+END $$;

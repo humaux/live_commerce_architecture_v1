@@ -164,6 +164,7 @@ var cbsFunctions = []cbsFn{
 	{"customers.tn_check_tag(text,text)", "commerce_privacy_writer", nil, false},
 	{"customers.tn_tags_json(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.tn_tags_revision(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.tn_has_tag(uuid,uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.tn_note_json(customers.notes)", "commerce_privacy_writer", nil, true},
 	{"customers.tn_notes_json(uuid,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.erase_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
