@@ -9,9 +9,11 @@
 .pe-document {
   display: grid;
   grid-template-columns: 184px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-  padding-bottom: 90px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 16px 24px;
+  align-items: stretch;
+  height: var(--pe-editor-height, auto);
+  min-height: 0;
   max-width: 1280px;
   --pe-accent: var(--ui-primary);
   --pe-fill: var(--ui-page);
@@ -19,13 +21,15 @@
   --pe-muted: var(--ui-muted);
 }
 .pe-index {
-  position: sticky;
-  top: 82px;
   display: grid;
+  align-content: start;
   gap: 16px;
   min-width: 0;
-  max-height: calc(100dvh - 164px);
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--ui-border) var(--ui-surface);
+  scrollbar-width: thin;
 }
 .pe-index nav,
 .pe-index section {
@@ -85,13 +89,19 @@
 .pe-fieldset {
   min-width: 0;
 }
+.pe-fields {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--ui-border) var(--ui-surface);
+  scrollbar-width: thin;
+}
 .pe-fieldset {
   border: 0;
   padding: 0;
   margin: 0;
 }
 .pe-document .product-section {
-  scroll-margin-top: 85px;
   padding: 20px;
   border-radius: 8px;
 }
@@ -465,11 +475,7 @@
 }
 .pe-savebar {
   grid-column: 1/-1;
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  width: calc(100% - var(--ui-rail-width, 220px));
-  z-index: 12;
+  min-width: 0;
   padding: 12px 24px;
   box-sizing: border-box;
   background: white;
@@ -477,12 +483,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
-}
-@media (max-width: 1023px) {
-  .pe-savebar {
-    width: 100%;
-  }
 }
 .pe-quick.pe-quick-inline {
   position: static;
@@ -499,6 +501,10 @@
 }
 .pe-savebar > div {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
 }
 .pe-savebar > span {
@@ -722,10 +728,9 @@
 @media (max-width: 900px) {
   .pe-document {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .pe-index {
-    position: static;
-    max-height: none;
     overflow: visible;
   }
   .pe-index nav {
@@ -742,9 +747,6 @@
   .pe-index section {
     display: none;
   }
-  .pe-savebar {
-    width: 100%;
-  }
 }
 @media (max-width: 680px) {
   .pe-page {
@@ -752,10 +754,8 @@
   }
   .pe-document .product-section {
     padding: 16px 12px;
-    scroll-margin-top: 70px;
   }
   .pe-savebar {
-    width: 100%;
     padding: 10px 12px;
   }
   .pe-savebar > span {

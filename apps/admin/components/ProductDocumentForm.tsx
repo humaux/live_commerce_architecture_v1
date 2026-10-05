@@ -2,7 +2,7 @@
 // Purpose: Product create/edit form — the single writer of the product document (details, media, variants, price, stock, live keyword, visibility) and its save flow.
 // Depends on: lib/use-product-document (load/save of the product document through the admin BFF → Go catalog v2 API); lib/catalog-v2-client (readCollections, readWarehouses); lib/product-document (draft model, money toMinor/fromMinor); ProductDocumentVariants, ProductBulkFill, ProductReadiness; lib/product-editor-copy.
 // Used by: ProductEditor (routes /[locale]/products/new and /[locale]/products/[product]).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
@@ -69,6 +69,8 @@ export function ProductDocumentForm({
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
+  const editor = useRef<HTMLFormElement>(null),
+    fields = useRef<HTMLDivElement>(null);
   const disabled =
     !referencesReady ||
     !write.fenceReady ||
@@ -92,6 +94,52 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
+  useLayoutEffect(() => {
+    const form = editor.current;
+    if (!form) return;
+    let frame = 0;
+    // Shell, breadcrumb, page heading and notices all contribute to the real
+    // editor top. Reserve only the viewport space that remains below it.
+    const measure = () => {
+      const viewport = window.visualViewport;
+      const viewportHeight = viewport?.height ?? window.innerHeight;
+      const bottom = (viewport?.offsetTop ?? 0) + viewportHeight;
+      // Never grow beyond one visible viewport if the outer document scrolls
+      // above the editor: that would continuously lengthen the document itself.
+      const height = `${Math.max(0, Math.min(viewportHeight, bottom - form.getBoundingClientRect().top))}px`;
+      if (form.style.getPropertyValue("--pe-editor-height") !== height)
+        form.style.setProperty("--pe-editor-height", height);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(measure);
+    };
+    const observer = new ResizeObserver(schedule);
+    // A preceding heading/notice can move the editor without resizing the form.
+    // Observe its layout ancestors and their preceding siblings too.
+    for (let node: Element | null = form; node; node = node.parentElement) {
+      observer.observe(node);
+      for (
+        let before = node.previousElementSibling;
+        before;
+        before = before.previousElementSibling
+      )
+        observer.observe(before);
+    }
+    measure();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.visualViewport?.addEventListener("scroll", schedule);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.visualViewport?.removeEventListener("scroll", schedule);
+    };
+  }, []);
   useEffect(() => {
     if (write.savedDetail) {
       const fresh = draftFromDetail(write.savedDetail);
@@ -169,6 +217,8 @@ export function ProductDocumentForm({
     onNavigationChange,
   ]);
   useEffect(() => {
+    const root = fields.current;
+    if (!root) return;
     const observer = new IntersectionObserver(
       (entries) => {
         // Navigation focuses its actual section. A short section may intersect
@@ -177,11 +227,13 @@ export function ProductDocumentForm({
         const focused =
           document.activeElement?.closest<HTMLElement>(".product-section");
         const bounds = focused?.getBoundingClientRect();
+        const viewport = root.getBoundingClientRect();
         if (
           focused &&
+          root.contains(focused) &&
           bounds &&
-          bounds.bottom > 85 &&
-          bounds.top < innerHeight - 85
+          bounds.bottom > viewport.top &&
+          bounds.top < viewport.bottom
         ) {
           setSection(focused.id);
           return;
@@ -191,7 +243,7 @@ export function ProductDocumentForm({
           .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
         if (seen[0]) setSection(seen[0].target.id);
       },
-      { rootMargin: "-10% 0px -65% 0px" },
+      { root, rootMargin: "0px" },
     );
     sections.forEach((id) => {
       const el = document.getElementById(id);
@@ -250,11 +302,20 @@ export function ProductDocumentForm({
     },
   ];
   function focus(id: string) {
+    const root = fields.current;
     const target = document.getElementById(id);
+    if (!root || !target || !root.contains(target)) return;
     if (target instanceof HTMLDetailsElement) target.open = true;
-    target?.scrollIntoView({ block: "start" });
+    // scrollIntoView would also move the shell/document. Only this owning pane
+    // scrolls; the reserved nav and save rows stay continuously available.
+    root.scrollTo({
+      top:
+        root.scrollTop +
+        target.getBoundingClientRect().top -
+        root.getBoundingClientRect().top,
+    });
     target
-      ?.querySelector<HTMLElement>("input,textarea,button")
+      .querySelector<HTMLElement>("input,textarea,button,select")
       ?.focus({ preventScroll: true });
     setSection(id);
   }
@@ -299,6 +360,7 @@ export function ProductDocumentForm({
   };
   return (
     <form
+      ref={editor}
       className="pe-document"
       data-testid={mode === "create" ? "product-create-form" : "product-form"}
       onSubmit={(e) => {
@@ -348,7 +410,7 @@ export function ProductDocumentForm({
           />
         </section>
       </aside>
-      <div className="pe-fields">
+      <div className="pe-fields" ref={fields} data-testid="product-fields">
         {detail ? (
           <section id="media" className="product-section pe-media">
             <ProductPhotoManager

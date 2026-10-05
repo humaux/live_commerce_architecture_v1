@@ -6,6 +6,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import axe from "axe-core";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
+import { assertProductEditorReservedLayout } from "./product-editor-layout.acceptance";
 export function registerProductEditorAcceptance() {
   test("PE12-17 document workflow, matrix, list actions and click ledger", async ({
     page,
@@ -141,6 +142,12 @@ export function registerProductEditorAcceptance() {
                 : "隔離驗收用的虛構商品。",
             );
           await page.getByTestId("product-keyword").fill("P12");
+          await assertProductEditorReservedLayout(
+            page,
+            locale === "en" && (width === 1586 || width === 375)
+              ? (section) => shot(`editor-${locale}-${width}-${section}`)
+              : undefined,
+          );
           await page
             .getByRole("navigation", {
               name: productEditorCopy[locale].progress,
@@ -308,6 +315,7 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(
         12,
       );
+      await assertProductEditorReservedLayout(page);
       expect(writes.length).toBe(networkBefore);
       await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").fill("80");
