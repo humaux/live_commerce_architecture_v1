@@ -1,5 +1,6 @@
-// claims_retention_test.go holds the independent CRP02-CRP08 gates of U08 (contract
-// contracts/claims-retention-purge-v1.md §7; brief docs/delivery/units/retention-tests.md). Written from the
+// claims_retention_test.go holds the independent CRP02-CRP08 and CRP13 gates of U08 (contract
+// contracts/claims-retention-purge-v1.md §7; brief docs/delivery/units/retention-tests.md) plus the A1.4
+// (contracts/live-console-v1.md Amendment 1, LC-R1) widenings. Written from the
 // FROZEN contract, D1-D10 and the frozen Go interface only. Evidence label: REAL_PG (PG 18 via
 // scripts/dev/test-focused.sh); no network, no LIVE, no production DSN, no real buyer data.
 //
@@ -305,6 +306,70 @@ func (w *crWorld) operationAs(t *testing.T, m crMeta, b crBundle, comment, state
 		w.tenant, m.sess.store, id, w.prin, m.binding, m.platform, m.asset, key, hash[:], string(raw), 1+int(time.Now().UnixNano()%1000000), state, gen, mode, until, tok, action)
 	w.operations = append(w.operations, id)
 	return id
+}
+
+// operationC4 seeds one A1.4 send operation (meta.private_reply / meta.dm_send / meta.public_reply /
+// meta.offer_recommend) in the producer's request shape (contracts/live-console-v1 §4.1) and semantic-key class
+// (mpr/mdm/mpub/mrec). leaseExpr non-empty gives a UNKNOWN row a live reconcile lease (lease_mode='reconcile',
+// lease_until=<expr>, token); empty leaves it unleased. Non-UNKNOWN states are always unleased (0008 CHECK).
+func (w *crWorld) operationC4(t *testing.T, m crMeta, b crBundle, action, state, createdExpr, leaseExpr string) (string, string, map[string]any) {
+	t.Helper()
+	conv, peer := randomUUID(), crHex64()
+	var req map[string]any
+	var prefix string
+	switch action {
+	case "meta.dm_send":
+		req = map[string]any{"v": 1, "kind": "dm", "origin": "human", "platform": m.platform, "asset_id": m.asset,
+			"conversation_id": conv, "conversation_known": true, "peer_key": peer, "outbound_id": randomUUID()}
+		prefix = "mdm:"
+	case "meta.public_reply":
+		req = map[string]any{"v": 1, "kind": "public_reply", "origin": "human", "platform": m.platform, "asset_id": m.asset,
+			"comment_ref": m.asset + "_" + crDigits(9), "outbound_id": randomUUID()}
+		prefix = "mpub:"
+	case "meta.offer_recommend":
+		req = map[string]any{"v": 1, "kind": "offer_recommend", "origin": "auto", "platform": m.platform, "asset_id": m.asset,
+			"session_id": m.sess.id, "offer_id": randomUUID(), "outbound_id": randomUUID()}
+		prefix = "mrec:"
+	default: // meta.private_reply
+		req = map[string]any{"v": 1, "kind": "private_reply", "platform": m.platform, "source_id": m.source, "asset_id": m.asset,
+			"comment_ref": m.asset + "_" + crDigits(9), "bundle_id": b.id, "session_id": m.sess.id, "message_type": "first_private_reply"}
+		prefix = "mpr:"
+	}
+	id, key := w.operationC4Req(t, m, action, prefix, state, createdExpr, leaseExpr, req)
+	return id, key, req
+}
+
+// operationC4Req inserts one A1.4 send operation with an explicit request and semantic-key prefix (owner-seeded). It is
+// the erasure tests' hook to bind a dm_send to a specific peer_key or a public_reply to a specific comment_ref.
+func (w *crWorld) operationC4Req(t *testing.T, m crMeta, action, prefix, state, createdExpr, leaseExpr string, req map[string]any) (string, string) {
+	t.Helper()
+	return w.operationC4ReqOn(t, w.owner, m, action, prefix, state, createdExpr, leaseExpr, req)
+}
+
+// operationC4ReqOn is operationC4Req into an explicit pool (the CRP08 replay restores databases, so its non-terminal
+// public_reply is seeded into the restored owner, not w.owner).
+func (w *crWorld) operationC4ReqOn(t *testing.T, pool *pgxpool.Pool, m crMeta, action, prefix, state, createdExpr, leaseExpr string, req map[string]any) (string, string) {
+	t.Helper()
+	id := randomUUID()
+	raw, _ := json.Marshal(req)
+	hash := sha256.Sum256(raw)
+	key := prefix + hex.EncodeToString(func() []byte { s := sha256.Sum256(raw); return s[:] }())[:48]
+	gen := 1
+	mode, untilExpr := "", "NULL"
+	var tok any
+	switch {
+	case state == "READY":
+		gen = 0
+	case state == "DISPATCHING":
+		mode, untilExpr, tok = "dispatch", `(clock_timestamp() + interval '1 hour')`, make([]byte, 32)
+	case state == "UNKNOWN" && leaseExpr != "":
+		mode, untilExpr, tok = "reconcile", leaseExpr, make([]byte, 32)
+	}
+	mustExec(t, pool, `INSERT INTO integration.operations(tenant_id,store_id,id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,lease_mode,lease_until,lease_token_hash,created_at,updated_at)
+		VALUES($1,$2,$3,$4,$5,1,$6,$7,'service',$8,$9,$10,$11::jsonb,$12,$13,$14,$15,`+untilExpr+`,$16,`+createdExpr+`,`+createdExpr+`)`,
+		w.tenant, m.sess.store, id, w.prin, m.binding, m.platform, m.asset, action, key, hash[:], string(raw), 1+int(time.Now().UnixNano()%1000000), state, gen, mode, tok)
+	w.operations = append(w.operations, id)
+	return id, key
 }
 
 // ---------------------------------------------------------------------------------------
@@ -637,8 +702,10 @@ func crEligible(t *testing.T, pool *pgxpool.Pool, link, intake, claims, social i
 		"bundles": fmt.Sprintf(`SELECT count(*) FROM claims.bundles b JOIN live.claim_windows w ON (w.tenant_id,w.store_id,w.session_id)=(b.tenant_id,b.store_id,b.session_id)
 			WHERE b.purged_at IS NULL AND w.state='CLOSED' AND w.closed_at < clock_timestamp() - interval '%d days'`, claims),
 		"intake": fmt.Sprintf(`SELECT count(*) FROM claims.meta_intake WHERE state IN ('APPLIED','DROPPED','FAILED') AND received_at < clock_timestamp() - interval '%d days'`, intake),
-		"operations": fmt.Sprintf(`SELECT count(*) FROM integration.operations WHERE action='meta.private_reply'
-			AND state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING') AND created_at < clock_timestamp() - interval '%d days' AND request ? 'comment_ref'`, intake),
+		"operations": fmt.Sprintf(`SELECT count(*) FROM integration.operations WHERE action IN ('meta.private_reply','meta.dm_send','meta.public_reply','meta.offer_recommend')
+			AND created_at < clock_timestamp() - interval '%d days' AND request ?| array['comment_ref','conversation_id','peer_key']
+			AND (state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+			  OR (state='UNKNOWN' AND (lease_until IS NULL OR lease_until < clock_timestamp())))`, intake),
 		"comment_events": fmt.Sprintf(`SELECT count(*) FROM social.comment_events WHERE received_at < clock_timestamp() - interval '%d days' AND meta_inbox.purgeable(event_id)`, social),
 		"messages":       fmt.Sprintf(`SELECT count(*) FROM social.messages WHERE received_at < clock_timestamp() - interval '%d days' AND meta_inbox.purgeable(event_id)`, social),
 		"conversations": fmt.Sprintf(`SELECT count(*) FROM social.conversations c WHERE c.created_at < clock_timestamp() - interval '%d days'
@@ -1067,7 +1134,10 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 			r2 := ref()
 			keepNew = append(keepNew, opSeed{w.operation(t, m, b, r2, st, crNew(30)), r2, st})
 		}
-		for _, st := range []string{"READY", "DISPATCHING", "UNKNOWN", "ACKNOWLEDGED"} {
+		// A1.4: an UNKNOWN operation older than intake_days with no live lease is now eligible (redacted, state kept).
+		rU := ref()
+		redact = append(redact, opSeed{w.operation(t, m, b, rU, "UNKNOWN", crAgo(120, 0)), rU, "UNKNOWN"})
+		for _, st := range []string{"READY", "DISPATCHING", "ACKNOWLEDGED"} {
 			r := ref()
 			keepOpen = append(keepOpen, opSeed{w.operation(t, m, b, r, st, crAgo(120, 0)), r, st})
 		}
@@ -1094,7 +1164,7 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 		}
 		e.markSeed()
 		c := e.run(500)
-		crWant(t, "C4", c, map[string]int64{"enforced": 1, "operations": 5, "intake": 0, "links": 0, "more": 0})
+		crWant(t, "C4", c, map[string]int64{"enforced": 1, "operations": 6, "intake": 0, "links": 0, "more": 0})
 		for _, o := range redact {
 			after, was := read(o.id), before[o.id]
 			if _, has := after.req["comment_ref"]; has || after.req["redacted"] != true {
@@ -1121,6 +1191,66 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 			}
 		}
 		crWant(t, "C4 second", e.run(500), map[string]int64{"operations": 0})
+	})
+
+	e.sub(t, "C4-a14-send-actions", func(t *testing.T) {
+		// A1.4: run_retention C4 redacts TERMINAL dm_send/public_reply too (not just private_reply); offer_recommend
+		// carries no person id and is never eligible.
+		s := w.session(t, w.store)
+		w.closedAt(t, s, crAgo(1, 0))
+		m := w.source(t, s, "page")
+		b := w.bundle(t, s, "manual", "", "c4a-"+t04Tag())
+		type opSeed struct {
+			id, key, prefix string
+			ids             []string
+		}
+		seed := func(action, prefix string, ids []string, createdExpr string) opSeed {
+			id, key, _ := w.operationC4(t, m, b, action, "SUCCEEDED", createdExpr, "")
+			return opSeed{id, key, prefix, ids}
+		}
+		redact := []opSeed{
+			seed("meta.dm_send", "mdm", []string{"conversation_id", "peer_key"}, crOld(30)),
+			seed("meta.public_reply", "mpub", []string{"comment_ref"}, crOld(30)),
+		}
+		keep := []opSeed{
+			seed("meta.dm_send", "mdm", []string{"conversation_id", "peer_key"}, crNew(30)),
+			seed("meta.public_reply", "mpub", []string{"comment_ref"}, crNew(30)),
+		}
+		offer := seed("meta.offer_recommend", "mrec", nil, crOld(30))
+		read := func(id string) (key, state string, req map[string]any) {
+			var raw string
+			if err := w.owner.QueryRow(ctx, `SELECT semantic_key,state,request::text FROM integration.operations WHERE id=$1`, id).Scan(&key, &state, &raw); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(raw), &req); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		e.markSeed()
+		c := e.run(500)
+		crWant(t, "C4 a14", c, map[string]int64{"enforced": 1, "operations": 2, "intake": 0, "links": 0, "more": 0})
+		for _, o := range redact {
+			key, _, req := read(o.id)
+			if key != o.prefix+"-purged:"+o.id || req["redacted"] != true {
+				t.Errorf("%s op: key=%q redacted=%v, want %s-purged:<id> redacted", o.id, key, req["redacted"], o.prefix)
+			}
+			for _, k := range o.ids {
+				if _, has := req[k]; has {
+					t.Errorf("%s op: id %q survived redaction: %v", o.id, k, req)
+				}
+			}
+		}
+		for _, o := range keep {
+			key, _, req := read(o.id)
+			if req["redacted"] == true || key != o.key {
+				t.Errorf("%s op (younger) was touched: key=%q redacted=%v", o.id, key, req["redacted"])
+			}
+		}
+		if key, _, req := read(offer.id); req["redacted"] == true || key != offer.key {
+			t.Errorf("offer_recommend op was touched: key=%q redacted=%v", key, req["redacted"])
+		}
+		crWant(t, "C4 a14 second", e.run(500), map[string]int64{"operations": 0})
 	})
 
 	e.sub(t, "C5-social", func(t *testing.T) {
@@ -1331,6 +1461,120 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 }
 
 func regexpMatch(pattern, s string) bool { return regexp.MustCompile(pattern).MatchString(s) }
+
+// CRP13 + A1.4 (P1-4): run_retention C4 redacts UNKNOWN send operations older than intake_days whose lease has
+// expired (or is NULL) — the worker no longer holds them — across the four send actions, renaming the key to
+// <prefix>-purged:<id>. A leased (reconciling) UNKNOWN row is skipped, a younger one is untouched, and
+// offer_recommend (no person id) is never eligible. The redacted request keeps its state (UNKNOWN) and hash.
+func TestClaimsRetentionCRP13UnknownRedaction(t *testing.T) {
+	e := crSetup(t)
+	w := e.w
+	ctx := context.Background()
+
+	e.sub(t, "A1.4-unknown-redaction", func(t *testing.T) {
+		s := w.session(t, w.store)
+		w.closedAt(t, s, crAgo(1, 0))
+		m := w.source(t, s, "page")
+		b := w.bundle(t, s, "manual", "", "a14-"+t04Tag())
+
+		actions := []struct {
+			action, prefix string
+			ids            []string // the request ids the redaction must remove (nil = offer_recommend)
+		}{
+			{"meta.private_reply", "mpr", []string{"comment_ref"}},
+			{"meta.dm_send", "mdm", []string{"conversation_id", "peer_key"}},
+			{"meta.public_reply", "mpub", []string{"comment_ref"}},
+			{"meta.offer_recommend", "mrec", nil},
+		}
+		type opSeed struct {
+			id, key, prefix string
+			ids             []string
+			sentinels       []string // the values of the ids (must vanish from the whole row text)
+			hash            []byte   // request_hash at seed time (must be unchanged)
+			kind            string   // "redact" | "expired" | "skip" | "keep"
+		}
+		seed := func(action, prefix string, ids []string, kind, createdExpr, leaseExpr string) opSeed {
+			id, key, req := w.operationC4(t, m, b, action, "UNKNOWN", createdExpr, leaseExpr)
+			sentinels := []string{}
+			for _, k := range ids {
+				if v, ok := req[k].(string); ok {
+					sentinels = append(sentinels, v)
+				}
+			}
+			var h []byte
+			if err := w.owner.QueryRow(ctx, `SELECT request_hash FROM integration.operations WHERE id=$1`, id).Scan(&h); err != nil {
+				t.Fatal(err)
+			}
+			return opSeed{id, key, prefix, ids, sentinels, h, kind}
+		}
+		var redact, expired, skip, keep []opSeed
+		for _, a := range actions {
+			redact = append(redact, seed(a.action, a.prefix, a.ids, "redact", crAgo(120, 0), ""))
+			// an expired NON-NULL reconcile lease (lease_mode='reconcile', lease_until past) is eligible too.
+			expired = append(expired, seed(a.action, a.prefix, a.ids, "expired", crAgo(120, 0), `(clock_timestamp() - interval '1 hour')`))
+			// a live lease must stay untouched.
+			skip = append(skip, seed(a.action, a.prefix, a.ids, "skip", crAgo(120, 0), `(clock_timestamp() + interval '1 hour')`))
+			keep = append(keep, seed(a.action, a.prefix, a.ids, "keep", crNew(30), ""))
+		}
+		read := func(id string) (key, state string, req map[string]any, hash []byte) {
+			var raw string
+			if err := w.owner.QueryRow(ctx, `SELECT semantic_key,state,request::text,request_hash FROM integration.operations WHERE id=$1`, id).Scan(&key, &state, &raw, &hash); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(raw), &req); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		e.markSeed()
+		c := e.run(500)
+		// Three of the four actions hold an id and are redacted in both the unleased and the expired-lease shape;
+		// offer_recommend holds none and is never eligible.
+		crWant(t, "A1.4", c, map[string]int64{"enforced": 1, "operations": 6, "intake": 0, "links": 0, "bundles": 0, "more": 0})
+
+		for _, o := range append(append([]opSeed{}, redact...), expired...) {
+			key, state, req, hash := read(o.id)
+			if len(o.ids) == 0 { // offer_recommend: never eligible, untouched
+				if req["redacted"] == true || key != o.key {
+					t.Errorf("%s op: redacted despite holding no id (key=%q)", o.id, key)
+				}
+				continue
+			}
+			if key != o.prefix+"-purged:"+o.id || state != "UNKNOWN" {
+				t.Errorf("%s (%s) op: key=%q state=%s, want %s-purged:<id> UNKNOWN", o.kind, o.id, key, state, o.prefix)
+			}
+			if req["redacted"] != true {
+				t.Errorf("%s (%s) op: redacted flag missing: %v", o.kind, o.id, req)
+			}
+			if !bytes.Equal(hash, o.hash) {
+				t.Errorf("%s (%s) op: request_hash changed", o.kind, o.id)
+			}
+			for _, k := range o.ids {
+				if _, has := req[k]; has {
+					t.Errorf("%s (%s) op: id %q survived redaction: %v", o.kind, o.id, k, req)
+				}
+			}
+			// the sentinel id values must be gone from the whole row text, not just the JSON keys
+			var rowText string
+			if err := w.owner.QueryRow(ctx, `SELECT o::text FROM integration.operations o WHERE id=$1`, o.id).Scan(&rowText); err != nil {
+				t.Fatal(err)
+			}
+			for _, v := range o.sentinels {
+				if strings.Contains(rowText, v) {
+					t.Errorf("%s (%s) op: sentinel %q still appears in the row text: %s", o.kind, o.id, v, rowText)
+				}
+			}
+		}
+		for _, o := range append(append([]opSeed{}, skip...), keep...) {
+			key, state, req, hash := read(o.id)
+			if req["redacted"] == true || key != o.key || state != "UNKNOWN" || !bytes.Equal(hash, o.hash) {
+				t.Errorf("%s (%s) op (leased/younger) was touched: key=%q state=%s redacted=%v", o.kind, o.id, key, state, req["redacted"])
+			}
+		}
+		// redacted UNKNOWN rows stay eligible for nothing: a second run finds no further operations.
+		crWant(t, "A1.4 second", e.run(500), map[string]int64{"operations": 0})
+	})
+}
 
 // ---------------------------------------------------------------------------------------
 // CRP05 concurrency
@@ -1975,10 +2219,13 @@ type crActor struct {
 	sessions                 []crSess
 	comments                 []string // comment refs with intake rows (the last one has no social rows)
 	events                   []mcEvent
-	ops                      []string
+	ops                      []string // meta.private_reply ops
+	dmOps                    []string // meta.dm_send ops bound to the actor's peer (A1.4)
+	pubOps                   []string // meta.public_reply ops naming one of the actor's comment refs (A1.4)
 	msgs                     []mcEvent
 	intake                   int
 	lane                     *crSocial
+	meta                     crMeta // the first store's Meta lane, for seeding dm/public ops
 }
 
 // actorWorld builds the footprint of sender on lane's asset. intakeExpr ages every intake row; twoStores adds the
@@ -1992,6 +2239,7 @@ func (e *crEnv) actorWorld(lane *crSocial, sender string, twoStores bool, intake
 	s1 := w.session(t, w.store)
 	w.closedAt(t, s1, crAgo(10, 0))
 	m1 := w.sourceOn(t, s1, "page", lane.asset)
+	a.meta = m1
 	b1 := w.bundle(t, s1, "facebook", a.key, "")
 	w.bind(t, s1, b1)
 	w.link(t, s1, b1, future)
@@ -2027,6 +2275,29 @@ func (e *crEnv) actorWorld(lane *crSocial, sender string, twoStores bool, intake
 	return a
 }
 
+// seedDMOp binds a meta.dm_send operation to the actor's peer and records it in a.dmOps (A1.4 erasure target).
+func (e *crEnv) seedDMOp(a *crActor, state, createdExpr string) string {
+	e.t.Helper()
+	id, _ := e.w.operationC4Req(e.t, a.meta, "meta.dm_send", "mdm:", state, createdExpr, "", map[string]any{
+		"v": 1, "kind": "dm", "origin": "human", "platform": a.meta.platform, "asset_id": a.meta.asset,
+		"conversation_id": randomUUID(), "conversation_known": true, "peer_key": a.peer, "outbound_id": randomUUID(),
+	})
+	a.dmOps = append(a.dmOps, id)
+	return id
+}
+
+// seedPubOp binds a meta.public_reply operation to one of the actor's comment refs and records it in a.pubOps (A1.4
+// erasure target, resolved via the actor's intake refs).
+func (e *crEnv) seedPubOp(a *crActor, state, createdExpr string) string {
+	e.t.Helper()
+	id, _ := e.w.operationC4Req(e.t, a.meta, "meta.public_reply", "mpub:", state, createdExpr, "", map[string]any{
+		"v": 1, "kind": "public_reply", "origin": "human", "platform": a.meta.platform, "asset_id": a.meta.asset,
+		"comment_ref": a.comments[0], "outbound_id": randomUUID(),
+	})
+	a.pubOps = append(a.pubOps, id)
+	return id
+}
+
 func (a *crActor) commentKeys() []string {
 	var out []string
 	for _, c := range a.comments {
@@ -2054,6 +2325,8 @@ func (e *crEnv) footprint(a *crActor) string {
 		crDigest(t, p, "claims.meta_intake", "actor_key=$1", a.key),
 		crDigest(t, p, "social.comment_events", "comment_key=ANY($1::text[])", a.commentKeys()),
 		crDigest(t, p, "integration.operations", "id=ANY($1::uuid[])", a.ops),
+		crDigest(t, p, "integration.operations", "id=ANY($1::uuid[])", a.dmOps),
+		crDigest(t, p, "integration.operations", "id=ANY($1::uuid[])", a.pubOps),
 		crDigest(t, p, "social.conversations", "peer_key=$1", a.peer),
 		crDigest(t, p, "social.messages", "conversation_id IN (SELECT id FROM social.conversations WHERE peer_key=$1)", a.peer),
 	}, "|")
@@ -2061,7 +2334,7 @@ func (e *crEnv) footprint(a *crActor) string {
 
 func (e *crEnv) wantErasure(a *crActor, peers bool, comments int) map[string]int64 {
 	m := map[string]int64{"bundles": int64(len(a.bundles)), "lines": 1, "links": int64(len(a.bundles)), "intake": int64(a.intake),
-		"comment_events": int64(comments), "operations": int64(len(a.ops)), "messages": 0, "conversations": 0}
+		"comment_events": int64(comments), "operations": int64(len(a.ops) + len(a.dmOps) + len(a.pubOps)), "messages": 0, "conversations": 0}
 	if peers {
 		m["messages"], m["conversations"] = int64(len(a.msgs)), 1
 	}
@@ -2104,14 +2377,28 @@ func (e *crEnv) assertErased(a *crActor, peers, commentsGone bool) {
 	} else if crCount(t, p, `SELECT count(*) FROM social.conversations WHERE peer_key=$1`, a.peer) != 1 {
 		t.Errorf("a selector without peer keys removed the peer conversation")
 	}
-	for _, id := range a.ops {
+	redacted := func(id, prefix string, sentinels []string) {
 		var raw, key string
 		if err := p.QueryRow(ctx, `SELECT request::text,semantic_key FROM integration.operations WHERE id=$1`, id).Scan(&raw, &key); err != nil {
 			t.Fatal(err)
 		}
-		if strings.Contains(raw, `"comment_ref"`) || !strings.Contains(raw, `"redacted": true`) || key != "mpr-purged:"+id {
-			t.Errorf("operation %s not redacted: request=%s key=%s", id, raw, key)
+		if !strings.Contains(raw, `"redacted": true`) || key != prefix+"-purged:"+id {
+			t.Errorf("operation %s not redacted: request=%s key=%s (want %s-purged:%s)", id, raw, key, prefix, id)
 		}
+		for _, s := range sentinels {
+			if strings.Contains(raw, s) {
+				t.Errorf("operation %s keeps %s: request=%s", id, s, raw)
+			}
+		}
+	}
+	for _, id := range a.ops {
+		redacted(id, "mpr", []string{`"comment_ref"`})
+	}
+	for _, id := range a.dmOps {
+		redacted(id, "mdm", []string{`"peer_key"`, `"conversation_id"`})
+	}
+	for _, id := range a.pubOps {
+		redacted(id, "mpub", []string{`"comment_ref"`})
 	}
 }
 
@@ -2340,6 +2627,38 @@ func TestClaimsRetentionCRP06Erasure(t *testing.T) {
 		}
 	})
 
+	e.sub(t, "a14-send-actions-erasure", func(t *testing.T) {
+		a := e.actorWorld(lane, "918273647", true, crAgo(20, 0))
+		q := e.actorWorld(lane, "918273648", false, crAgo(20, 0))
+		qBefore := e.footprint(q)
+		// terminal dm_send / public_reply bound to the erased actor (redacted), plus one of each bound to another
+		// peer / comment (not the actor's; must stay byte-identical).
+		e.seedDMOp(a, "SUCCEEDED", crAgo(1, 0))
+		e.seedPubOp(a, "SUCCEEDED", crAgo(1, 0))
+		otherDM, _ := w.operationC4Req(t, a.meta, "meta.dm_send", "mdm:", "SUCCEEDED", crAgo(1, 0), "", map[string]any{
+			"v": 1, "kind": "dm", "origin": "human", "platform": a.meta.platform, "asset_id": a.meta.asset,
+			"conversation_id": randomUUID(), "conversation_known": true, "peer_key": crHex64(), "outbound_id": randomUUID(),
+		})
+		otherPub, _ := w.operationC4Req(t, a.meta, "meta.public_reply", "mpub:", "SUCCEEDED", crAgo(1, 0), "", map[string]any{
+			"v": 1, "kind": "public_reply", "origin": "human", "platform": a.meta.platform, "asset_id": a.meta.asset,
+			"comment_ref": a.asset + "_" + crDigits(10), "outbound_id": randomUUID(),
+		})
+		otherBefore := crDigest(t, w.owner, "integration.operations", "id=ANY($1::uuid[])", []string{otherDM, otherPub})
+		sel := retention.Selector{Request: randomUUID(), Object: "page", Asset: a.asset, ActorKey: a.key, PeerKeys: []string{a.peer}}
+		c, held, err := retention.Erase(ctx, e.op, sel)
+		if err != nil || held.IsHeld() {
+			t.Fatalf("Erase(a, A1.4 send actions): counts=%v held=%v err=%v", c, held.IsHeld(), err)
+		}
+		crWant(t, "erase (a, A1.4 send actions)", c, e.wantErasure(a, true, 4))
+		e.assertErased(a, true, true)
+		if e.footprint(q) != qBefore {
+			t.Error("another actor changed")
+		}
+		if crDigest(t, w.owner, "integration.operations", "id=ANY($1::uuid[])", []string{otherDM, otherPub}) != otherBefore {
+			t.Error("a dm_send/public_reply of another peer/comment changed")
+		}
+	})
+
 	e.sub(t, "holds", func(t *testing.T) {
 		type hold struct {
 			name    string
@@ -2370,6 +2689,12 @@ func TestClaimsRetentionCRP06Erasure(t *testing.T) {
 			}, hourOut},
 			{"non-terminal operation (UNKNOWN)", func(a *crActor) {
 				mustExec(t, w.owner, `UPDATE integration.operations SET state='UNKNOWN' WHERE id=$1`, a.ops[0])
+			}, hourOut},
+			{"non-terminal dm_send (READY) of the supplied peer key", func(a *crActor) {
+				e.seedDMOp(a, "READY", crAgo(1, 0))
+			}, hourOut},
+			{"non-terminal public_reply (READY) of the actor's comment", func(a *crActor) {
+				e.seedPubOp(a, "READY", crAgo(1, 0))
 			}, hourOut},
 			{"social row whose inbox job is non-terminal (F5)", func(a *crActor) {
 				mustExec(t, w.owner, `UPDATE river_meta.river_job SET state='running',finalized_at=NULL WHERE id=$1`, a.events[1].job)
@@ -2589,7 +2914,7 @@ func crWantMatrix() map[string]bool {
 	cols("claims.meta_intake", "UPDATE", "updated_at")
 	cols("live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "closed_at")
 	cols("live.claim_windows", "UPDATE", "updated_at")
-	cols("integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request", "created_at")
+	cols("integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request", "created_at", "lease_until")
 	cols("integration.operations", "UPDATE", "request", "semantic_key", "updated_at")
 	add(W, "table", "social.conversations", "SELECT", "DELETE")
 	add(W, "table", "social.messages", "SELECT", "DELETE")
@@ -2932,6 +3257,9 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 	opTerminal := w.operation(t, m, live, m.asset+"_"+crDigits(9), "SUCCEEDED", crAgo(40, 0))
 	opReady := w.operation(t, m, live, m.asset+"_"+crDigits(9), "READY", crAgo(40, 0))
 	opOther := w.operationAs(t, m, live, m.asset+"_"+crDigits(9), "SUCCEEDED", crAgo(40, 0), "meta.other_action")
+	opDM, _, _ := w.operationC4(t, m, live, "meta.dm_send", "SUCCEEDED", crAgo(40, 0), "")
+	opPub, _, _ := w.operationC4(t, m, live, "meta.public_reply", "SUCCEEDED", crAgo(40, 0), "")
+	opRec, _, _ := w.operationC4(t, m, live, "meta.offer_recommend", "SUCCEEDED", crAgo(40, 0), "")
 	lane := e.socialLane(w.store)
 	cmt := e.commentEvent(lane, lane.asset+"_"+crDigits(10), crDigits(9), "add", crAgo(40, 0), "completed", 0)
 	msg := e.message(lane, crHex64(), crAgo(40, 0), "completed")
@@ -2987,13 +3315,20 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 		{"windows: FOR SHARE lock works", `SELECT state,closed_at FROM live.claim_windows WHERE session_id=$1 FOR SHARE`, []any{s.id}, 1, ""},
 		{"windows: lock-only UPDATE", `UPDATE live.claim_windows SET updated_at=clock_timestamp() WHERE session_id=$1`, []any{s.id}, 0, "42501"},
 		{"windows: state not writable", `UPDATE live.claim_windows SET state='OPEN' WHERE session_id=$1`, []any{s.id}, 0, "42501"},
-		// integration.operations: read USING action='meta.private_reply'; update terminal-only with redaction WITH CHECK
+		// integration.operations: read USING the four send actions; update terminal-only (or UNKNOWN lease-expired/replay)
+		// with the redaction WITH CHECK (three ids gone, <prefix>-purged: key).
 		{"operations: private-reply ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opTerminal}, 1, ""},
-		{"operations: other actions invisible (USING action=meta.private_reply)", `UPDATE integration.operations SET updated_at=clock_timestamp() WHERE id=$1`, []any{opOther}, 0, ""},
+		{"operations: dm_send ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opDM}, 1, ""},
+		{"operations: public_reply ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opPub}, 1, ""},
+		{"operations: offer_recommend ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opRec}, 1, ""},
+		{"operations: other actions invisible (USING the four actions)", `UPDATE integration.operations SET updated_at=clock_timestamp() WHERE id=$1`, []any{opOther}, 0, ""},
 		{"operations: other actions unreadable", `SELECT id FROM integration.operations WHERE id=$1`, []any{opOther}, 0, ""},
 		{"operations: redact a terminal op", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opTerminal}, 1, ""},
+		{"operations: redact a terminal dm_send op", `UPDATE integration.operations SET request=(request-'conversation_id'-'peer_key')||'{"redacted":true}'::jsonb,semantic_key='mdm-purged:'||id::text WHERE id=$1`, []any{opDM}, 1, ""},
+		{"operations: redact a terminal public_reply op", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpub-purged:'||id::text WHERE id=$1`, []any{opPub}, 1, ""},
 		{"operations: non-terminal op is not updatable", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opReady}, 0, ""},
 		{"operations: update that keeps comment_ref refused", `UPDATE integration.operations SET semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opTerminal}, 0, "42501"},
+		{"operations: update that keeps peer_key refused", `UPDATE integration.operations SET semantic_key='mdm-purged:'||id::text WHERE id=$1`, []any{opDM}, 0, "42501"},
 		{"operations: update with a foreign semantic_key refused", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='other-key-'||id::text WHERE id=$1`, []any{opTerminal}, 0, "42501"},
 		{"operations: state not writable", `UPDATE integration.operations SET state='CANCELLED' WHERE id=$1`, []any{opTerminal}, 0, "42501"},
 		// social.*: delete true, lock-only update
@@ -3518,10 +3853,16 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := fmt.Sprintf("%x", sha256.Sum256(body))
+	r1Body, err := os.ReadFile("../../migrations/0127_lc_r1_retention.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r1Sum := fmt.Sprintf("%x", sha256.Sum256(r1Body))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
-	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum) // hold 0071 back
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)  // hold 0071 back
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum) // hold 0127 back (its 55000 precondition needs 0071)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071: %v", err)
+		t.Fatalf("apply every migration but 0071 and 0127: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -3595,11 +3936,13 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0071_claims_retention.sql'`); n != 0 {
 		t.Error("a refused 0071 is recorded in the migration ledger")
 	}
-	// the operator renames the row (no auto-relabel of merchant data), the migration then applies
+	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
+	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version='0127_lc_r1_retention.sql'`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {
@@ -4030,6 +4373,7 @@ type crPlain struct {
 	sessions  []crSess
 	intakeIDs []string
 	ops       []string
+	meta      crMeta // one Meta lane of the actor, for seeding dm/public ops in a restored database (A1.4)
 }
 
 func (w *crWorld) plainActor(t *testing.T, key string, twoStores bool) *crPlain {
@@ -4052,6 +4396,7 @@ func (w *crWorld) plainActor(t *testing.T, key string, twoStores bool) *crPlain 
 		a.intakeIDs = append(a.intakeIDs, ref)
 		a.ops = append(a.ops, w.operation(t, m, b, ref, "SUCCEEDED", crAgo(20, 0)))
 		a.bundles, a.sessions = append(a.bundles, b), append(a.sessions, s)
+		a.meta = m
 	}
 	return a
 }
@@ -4280,6 +4625,13 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 		}
 		mustExec(t, ownerR, `UPDATE claims.meta_intake SET state='PENDING',applied_event_id=NULL,drop_reason=NULL,received_at=clock_timestamp() WHERE comment_ref=$1`, p.intakeIDs[0])
 		mustExec(t, ownerR, `UPDATE integration.operations SET state='READY',generation=0 WHERE id=$1`, p.ops[0])
+		// A1.4: a non-terminal public_reply naming one of the actor's comment refs is redacted by the replay too (the
+		// comment refs are captured from intake before its delete). A dm_send cannot be: replay_actor_erasures passes
+		// p_peer_keys=NULL, so the peer_key match never fires in a restore (the live RD5 hold protects that path instead).
+		pubOp, _ := w.operationC4ReqOn(t, ownerR, p.meta, "meta.public_reply", "mpub:", "READY", crAgo(20, 0), "", map[string]any{
+			"v": 1, "kind": "public_reply", "origin": "human", "platform": p.meta.platform, "asset_id": p.meta.asset,
+			"comment_ref": p.intakeIDs[0], "outbound_id": randomUUID(),
+		})
 		other := q.fingerprint(t, ownerR)
 		if _, err := retention.Replay(ctx, opR, nil); err != nil {
 			t.Fatalf("replay: %v", err)
@@ -4301,6 +4653,14 @@ func TestClaimsRetentionCRP08RestoreReplay(t *testing.T) {
 		}
 		if hasRef || state != "READY" {
 			t.Errorf("non-terminal reply operation after the replay: state=%s comment_ref present=%t, want state untouched (READY) and comment_ref redacted", state, hasRef)
+		}
+		var pubState, pubKey string
+		var pubRef bool
+		if err := ownerR.QueryRow(ctx, `SELECT state,semantic_key,request ? 'comment_ref' FROM integration.operations WHERE id=$1`, pubOp).Scan(&pubState, &pubKey, &pubRef); err != nil {
+			t.Fatal(err)
+		}
+		if pubRef || pubState != "READY" || pubKey != "mpub-purged:"+pubOp {
+			t.Errorf("non-terminal public_reply after the replay: state=%s key=%s comment_ref present=%t, want state untouched (READY), comment_ref redacted and key mpub-purged:<id>", pubState, pubKey, pubRef)
 		}
 		if q.fingerprint(t, ownerR) != other {
 			t.Error("the replay changed an untouched actor")

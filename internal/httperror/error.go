@@ -106,6 +106,8 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"encoding_not_utf8": "The file must be UTF-8 encoded.",
 		"too_many_rows":     "Too many rows.",
 		"required":          "A required column is missing.",
+		// manual-fulfilment-v1 Amendment W3-02B (pick list, unit w3-02b-picklist): > 500 order_ids.
+		"too_many": "Too many orders.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
 		"ecpay_probe_failed": "ECPay rejected the keys or could not be reached.", "invalid_sender": "Sender name or mobile number is not valid.",
 		"ecpay_environment_not_allowed": "This ECPay environment is not allowed on this deployment.",

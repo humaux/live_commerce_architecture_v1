@@ -173,6 +173,17 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 		t.Error("claims worker inserted an ads periodic job")
 		_, _ = f.owner.Exec(ctx, `DELETE FROM river.river_job WHERE kind='ads_oauth_purge_v1' AND queue='ads'`)
 	}
+	// 0130: the pick-list reader and its session helper are merchant-side only — no worker login (or the
+	// empty legacy role) may call either; the refusal is the SQL 42501, not just a catalog flag.
+	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
+		p := wasLogin(t, role)
+		if _, err := p.Exec(ctx, `SELECT fulfillment.read_pick_list($1::bytea,$2::uuid,NULL::uuid[],$3::uuid,false)`, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {
+			t.Errorf("%s ran read_pick_list: %v (want 42501)", role, err)
+		}
+		if _, err := p.Exec(ctx, `SELECT claims.pick_list_session_orders($1::uuid,$2::uuid,$3::uuid)`, randomUUID(), randomUUID(), randomUUID()); sqlState(err) != "42501" {
+			t.Errorf("%s ran pick_list_session_orders: %v (want 42501)", role, err)
+		}
+	}
 }
 
 // WAS03: claim_operation/complete_operation answer 'operation not found' (P0002) to an authority that does not own the lane,

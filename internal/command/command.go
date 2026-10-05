@@ -120,3 +120,22 @@ func Audit(ctx context.Context, tx pgx.Tx, scope platform.Scope, action string) 
 		scope.TenantID, scope.StoreID, scope.PrincipalID, action)
 	return err
 }
+
+// AuditDetails is Audit plus a small structured detail (ops.audit_events.details, added by 0130). It is
+// never logged by this package; the caller supplies only non-sensitive scalar facts (e.g. the carrier
+// export template and row count). A nil detail is the same as Audit.
+func AuditDetails(ctx context.Context, tx pgx.Tx, scope platform.Scope, action string, details map[string]any) error {
+	if !opPattern.MatchString(action) {
+		return ErrInvalid
+	}
+	if details == nil {
+		return Audit(ctx, tx, scope, action)
+	}
+	raw, err := json.Marshal(details)
+	if err != nil || len(raw) > 1024 {
+		return ErrInvalid
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details) VALUES($1,$2,$3,$4,$5::jsonb)`,
+		scope.TenantID, scope.StoreID, scope.PrincipalID, action, string(raw))
+	return err
+}
