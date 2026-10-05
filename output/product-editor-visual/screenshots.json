@@ -1,0 +1,343 @@
+{
+  "beforeSource": "0cc63a1d",
+  "afterSource": "ece52ead",
+  "count": 48,
+  "entries": [
+    {
+      "path": "before/existing-empty-en-1586.png",
+      "width": 1586,
+      "height": 2040,
+      "bytes": 164897,
+      "sha256": "a1068b27a1932cbb818423372d72a976c329a40bb69e3a5a977dfd356e47c245"
+    },
+    {
+      "path": "before/existing-empty-en-390.png",
+      "width": 390,
+      "height": 2332,
+      "bytes": 109730,
+      "sha256": "510509715d567dadba3a34e2e3031c8aa27d4b86231196e0748ac0c78169fda1"
+    },
+    {
+      "path": "before/existing-empty-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2101,
+      "bytes": 152700,
+      "sha256": "c5d8b9c020effc39d778e8cc785cdb0b2a19ccc4bed1396f98d0e3855d82a4fc"
+    },
+    {
+      "path": "before/existing-empty-zh-CN-390.png",
+      "width": 390,
+      "height": 2337,
+      "bytes": 105703,
+      "sha256": "38838779eb1715ea318961b0976582e2269adb70dc40dcf1fec076957e64fa82"
+    },
+    {
+      "path": "before/existing-empty-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2101,
+      "bytes": 156095,
+      "sha256": "4a931ecef3f01a0e8a8027ecdf75c4d092a1356e2973d0a58ef089bf42b77103"
+    },
+    {
+      "path": "before/existing-empty-zh-TW-390.png",
+      "width": 390,
+      "height": 2337,
+      "bytes": 108151,
+      "sha256": "d5d036cb7f701131edba97479bf19f69f5dc1c0dda12d82eb05c59038ccce2b0"
+    },
+    {
+      "path": "before/existing-three-en-1586.png",
+      "width": 1586,
+      "height": 2169,
+      "bytes": 189870,
+      "sha256": "9a62dde041b7ec382e2e17895d82c01e287aa0823d25713cd093f567ba43e974"
+    },
+    {
+      "path": "before/existing-three-en-390.png",
+      "width": 390,
+      "height": 3801,
+      "bytes": 160461,
+      "sha256": "5e5d5f9cc9501bf5a797429922b751db522efca897ceec97ac2a4bcaa10cb469"
+    },
+    {
+      "path": "before/existing-three-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2223,
+      "bytes": 175809,
+      "sha256": "39b9f35e583bae8674582a30a8d593274d0bd1727bcb6747103ef6d0bc207a64"
+    },
+    {
+      "path": "before/existing-three-zh-CN-390.png",
+      "width": 390,
+      "height": 3861,
+      "bytes": 156263,
+      "sha256": "e8ff35cf63e028026281899c071c2ca1831701c77b1a6606db2a7bf71dc68d77"
+    },
+    {
+      "path": "before/existing-three-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2223,
+      "bytes": 179501,
+      "sha256": "cf01b814bdc4348810b431ad3c27bdec72d4a620f4f7dd480be262f207989e30"
+    },
+    {
+      "path": "before/existing-three-zh-TW-390.png",
+      "width": 390,
+      "height": 3861,
+      "bytes": 160160,
+      "sha256": "49ee911c6e021fd1ca0403d1ceae314f6ea6934c1db18ea0efef1e6e3a056a05"
+    },
+    {
+      "path": "before/new-empty-en-1586.png",
+      "width": 1586,
+      "height": 1993,
+      "bytes": 149026,
+      "sha256": "d02e302b82678ca793ad860fd0ab95b5e876b95370c1d14d82414bbcbd4ee72a"
+    },
+    {
+      "path": "before/new-empty-en-390.png",
+      "width": 390,
+      "height": 2269,
+      "bytes": 97355,
+      "sha256": "64737fc6f85c6136e00aafff60fa4f6d8b14ad803ae4a2b65de1f15e8d1adf03"
+    },
+    {
+      "path": "before/new-empty-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2045,
+      "bytes": 131322,
+      "sha256": "d4a320e2863892930ce0cefd4925f188be277ab740016a254406a8e3c1c533c7"
+    },
+    {
+      "path": "before/new-empty-zh-CN-390.png",
+      "width": 390,
+      "height": 2265,
+      "bytes": 89726,
+      "sha256": "d280cc7b79c2e91490dff27c0564b20e59fe0b80125c065cbf3cc5befb9e2b65"
+    },
+    {
+      "path": "before/new-empty-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2045,
+      "bytes": 134204,
+      "sha256": "8b66b155561e478f5c33a31cf52a1a1ab9b6a2f3daffb827df6710bc059efae6"
+    },
+    {
+      "path": "before/new-empty-zh-TW-390.png",
+      "width": 390,
+      "height": 2265,
+      "bytes": 91699,
+      "sha256": "6ca43b603e16a7261c879e6a7961d584431903e8d0b5e66f14fd739b1fd2e276"
+    },
+    {
+      "path": "before/new-three-en-1586.png",
+      "width": 1586,
+      "height": 2121,
+      "bytes": 175583,
+      "sha256": "42c6c1dffc57f0d41ba934c2c5f876733dcf3410b5168a96992569288874ccec"
+    },
+    {
+      "path": "before/new-three-en-390.png",
+      "width": 390,
+      "height": 3737,
+      "bytes": 147384,
+      "sha256": "20b73f47e8aeab892a3f74c6ba49a0e3077395b4322225170817c9dc0fd503c8"
+    },
+    {
+      "path": "before/new-three-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2166,
+      "bytes": 162790,
+      "sha256": "6e53805c7c2d02146519f07f9d456809ddf9b5f72007637949a9337834abd893"
+    },
+    {
+      "path": "before/new-three-zh-CN-390.png",
+      "width": 390,
+      "height": 3788,
+      "bytes": 141595,
+      "sha256": "b5ee3e77ee5e424cc5a8278425dd1196037f081a4ed498274b392a3e9d1fd68b"
+    },
+    {
+      "path": "before/new-three-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2166,
+      "bytes": 166086,
+      "sha256": "a9542afb92a59e09cb7b4cef9f5412abc1c9e5c3acb39a6bda0e015e0a000d25"
+    },
+    {
+      "path": "before/new-three-zh-TW-390.png",
+      "width": 390,
+      "height": 3788,
+      "bytes": 144358,
+      "sha256": "16823dc36c975da354dffae6911b005812b4f1a50b0e49abd714ae9ac684d928"
+    },
+    {
+      "path": "after/existing-empty-en-1586.png",
+      "width": 1586,
+      "height": 2062,
+      "bytes": 168859,
+      "sha256": "cca9c32fce365550e9eb2f09dd159cc2911ee25b637f04e49b4299cd0dd06a00"
+    },
+    {
+      "path": "after/existing-empty-en-390.png",
+      "width": 390,
+      "height": 2266,
+      "bytes": 109208,
+      "sha256": "4b091575e662d92ad12c27dd6f2c25ea6c09045d1bce1fae81134a940bd83df7"
+    },
+    {
+      "path": "after/existing-empty-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2117,
+      "bytes": 161701,
+      "sha256": "0dcb05b77f50474778968f9243e89e80c71c2ce02df084251a2ed05043a8b44c"
+    },
+    {
+      "path": "after/existing-empty-zh-CN-390.png",
+      "width": 390,
+      "height": 2305,
+      "bytes": 106556,
+      "sha256": "48b4a9487a6484990d56751f84706e2e949c72d0a9ce35ab0a92acd1c73d44f6"
+    },
+    {
+      "path": "after/existing-empty-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2117,
+      "bytes": 165740,
+      "sha256": "bfacbe62b911ae5bbb4682f61de5da94c007969a106c62f545937c478774c25d"
+    },
+    {
+      "path": "after/existing-empty-zh-TW-390.png",
+      "width": 390,
+      "height": 2305,
+      "bytes": 108862,
+      "sha256": "a288d5cde4ff0a27a7af57b883bc331ec03d1b536d2aa72e052f3df089ee98ad"
+    },
+    {
+      "path": "after/existing-three-en-1586.png",
+      "width": 1586,
+      "height": 2049,
+      "bytes": 184669,
+      "sha256": "e2b4dd5f02e6a0b3400383d9afa9b22472dd2b60d30619a38e834de4a9c44d47"
+    },
+    {
+      "path": "after/existing-three-en-390.png",
+      "width": 390,
+      "height": 2270,
+      "bytes": 108632,
+      "sha256": "ce4e1b12d4cbd861c41dd2f81593d1ba0ff41ea6af401845c63118392e764f6e"
+    },
+    {
+      "path": "after/existing-three-zh-CN-1586.png",
+      "width": 1586,
+      "height": 2094,
+      "bytes": 174807,
+      "sha256": "7756a00322122567607e6f0e6bc2e3da1d96f98f01aa43f21c5d4a4bd811579d"
+    },
+    {
+      "path": "after/existing-three-zh-CN-390.png",
+      "width": 390,
+      "height": 2282,
+      "bytes": 109327,
+      "sha256": "79e8a90928ddcbee2df40865194f4b3fff2d46f0665ff63715d69006a19bbd6a"
+    },
+    {
+      "path": "after/existing-three-zh-TW-1586.png",
+      "width": 1586,
+      "height": 2094,
+      "bytes": 178350,
+      "sha256": "32ca27b1eef40c6783ca599018e0fc394ff53c8364ed5f684446396034a245fb"
+    },
+    {
+      "path": "after/existing-three-zh-TW-390.png",
+      "width": 390,
+      "height": 2282,
+      "bytes": 111143,
+      "sha256": "7b62dc8a056f749daf8dca8558844d7180b5caa99fcfb57866a611db128e16ce"
+    },
+    {
+      "path": "after/new-empty-en-1586.png",
+      "width": 1586,
+      "height": 1944,
+      "bytes": 149795,
+      "sha256": "1a8fd51acfdb14dabc539d2db04151ae4bb161147d09f3331e05ddd79cc23e75"
+    },
+    {
+      "path": "after/new-empty-en-390.png",
+      "width": 390,
+      "height": 2113,
+      "bytes": 89645,
+      "sha256": "bc138cac84026863db35b0cbf2b4afe5148aa95299fa05f7f91454c8c25d0579"
+    },
+    {
+      "path": "after/new-empty-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1993,
+      "bytes": 138475,
+      "sha256": "abca52936955c09aeab79d4efb5bb97817d40ba96af7b78bb1e8042d303a93e7"
+    },
+    {
+      "path": "after/new-empty-zh-CN-390.png",
+      "width": 390,
+      "height": 2146,
+      "bytes": 85965,
+      "sha256": "707c49305d3482a68c350e2bcbbab20591d9c72c921918f4d37379a2e51440fd"
+    },
+    {
+      "path": "after/new-empty-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1993,
+      "bytes": 142344,
+      "sha256": "3b089497b738699ffb12ed2afaab6f77ad356aa30d183d4d8ca5888fd3b13062"
+    },
+    {
+      "path": "after/new-empty-zh-TW-390.png",
+      "width": 390,
+      "height": 2146,
+      "bytes": 87890,
+      "sha256": "4b16d2b6b678bdb59b304f5ee5208d93511192aab2afb1efea82a21d5dff36cc"
+    },
+    {
+      "path": "after/new-three-en-1586.png",
+      "width": 1586,
+      "height": 1931,
+      "bytes": 171700,
+      "sha256": "1c04bed0c4894c9e8f69779c74560fd220f4e9e8117098e248273412f3d57771"
+    },
+    {
+      "path": "after/new-three-en-390.png",
+      "width": 390,
+      "height": 2117,
+      "bytes": 94385,
+      "sha256": "3bca1430e807ef029c9d9712c972c21160a1c2e16fc4175cdbe1ce4b356321aa"
+    },
+    {
+      "path": "after/new-three-zh-CN-1586.png",
+      "width": 1586,
+      "height": 1970,
+      "bytes": 157750,
+      "sha256": "a72b2a0f6e3ed6a91c418d9c5f88fe6548d2ff03685b669a4d51fbac90cbd173"
+    },
+    {
+      "path": "after/new-three-zh-CN-390.png",
+      "width": 390,
+      "height": 2123,
+      "bytes": 93115,
+      "sha256": "074c45a9952eae4a218689b28e07f73e88bd7177c47429990665b1ac6d4b1a82"
+    },
+    {
+      "path": "after/new-three-zh-TW-1586.png",
+      "width": 1586,
+      "height": 1970,
+      "bytes": 161863,
+      "sha256": "0ed1f1f1fee3eba921b791974fdc16228adb744a81e31ee283b15a7814f4447f"
+    },
+    {
+      "path": "after/new-three-zh-TW-390.png",
+      "width": 390,
+      "height": 2123,
+      "bytes": 95093,
+      "sha256": "64aeece3ad4249ea146e99c26635e5a459dc3a3b40ae6a24da921fa3c949364e"
+    }
+  ]
+}

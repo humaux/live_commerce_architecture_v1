@@ -1,0 +1,60 @@
+
+Running 12 tests using 1 worker
+
+(node:63727) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/product-editor.acceptance.ts:10:3 › PE12-17 document workflow, matrix, list actions and click ledger (18.9s)
+  ✓   2 tests/admin/product-review.acceptance.ts:45:3 › review: bulk price 80 plus archive sends exclusive archive entry and persists (4.9s)
+  ✓   3 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then client preserves receipt fence after reload (2.4s)
+  ✓   4 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then 401 preserves receipt fence after reload (1.4s)
+  ✓   5 tests/admin/product-review.acceptance.ts:121:5 › review: create UNKNOWN then 403 preserves receipt fence after reload (1.1s)
+  ✘   6 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then client preserves receipt fence after reload (11.4s)
+  -   7 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then 401 preserves receipt fence after reload
+  -   8 tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then 403 preserves receipt fence after reload
+  -   9 tests/admin/product-review.acceptance.ts:121:5 › review: order UNKNOWN then 403 preserves receipt fence after reload
+  -  10 tests/admin/product-review.acceptance.ts:121:5 › review: publish UNKNOWN then 403 preserves receipt fence after reload
+  -  11 tests/admin/product-visual.acceptance.ts:9:5 › product visual: compact bulk, selected rows, tags and persistence
+  -  12 tests/admin/product-visual.acceptance.ts:137:3 › product visual: full-page new/existing empty/three-variant matrix
+
+
+  1) tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then client preserves receipt fence after reload 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('A previous catalogue command still needs reconciliation. Do not copy or submit it again. Ask an administrator to confirm its receipt before continuing; only the command identifier was retained.', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('A previous catalogue command still needs reconciliation. Do not copy or submit it again. Ask an administrator to confirm its receipt before continuing; only the command identifier was retained.', { exact: true }) with timeout 10000ms
+      - waiting for getByText('A previous catalogue command still needs reconciliation. Do not copy or submit it again. Ask an administrator to confirm its receipt before continuing; only the command identifier was retained.', { exact: true })
+
+
+      215 |       ).toBe(originalKey);
+      216 |       await page.reload();
+    > 217 |       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
+          |                                                               ^
+      218 |       await expect(trigger()).toBeDisabled();
+      219 |       expect(
+      220 |         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/product-editor-visual/tests/admin/product-review.acceptance.ts:217:63
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261005T044527.510796000/results/catalog-core-review-copy-U-29ca9--receipt-fence-after-reload/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/catalog-core/20261005T044527.510796000/results/catalog-core-review-copy-U-29ca9--receipt-fence-after-reload/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/catalog-core/20261005T044527.510796000/results/catalog-core-review-copy-U-29ca9--receipt-fence-after-reload/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/catalog-core/20261005T044527.510796000/results/catalog-core-review-copy-U-29ca9--receipt-fence-after-reload/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/product-review.acceptance.ts:121:5 › review: copy UNKNOWN then client preserves receipt fence after reload 
+  6 did not run
+  5 passed (41.0s)

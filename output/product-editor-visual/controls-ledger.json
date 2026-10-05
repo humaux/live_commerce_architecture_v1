@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "tier": "REAL_PG+BROWSER",
+  "controls": [
+    "add axis",
+    "values Enter",
+    "remove tag",
+    "bulk field five options",
+    "all/selected",
+    "quantity set/add/subtract",
+    "create",
+    "reload"
+  ],
+  "assertions": "3 variants; selected row price90, others80; stock5; selected keyword persisted"
+}

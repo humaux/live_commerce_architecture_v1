@@ -1,0 +1,22 @@
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:58689, storefront https://buyer.example (Next :58706); 24 registry routes; workers=3 sample=3
+[   2s] /products/import desktop/zh-TW [main] 3 controls, 3 classes sampled
+[   3s] /products desktop/zh-TW [main] 27 controls, 27 classes sampled
+[   3s] /products/[product] desktop/zh-TW [main] 32 controls, 32 classes sampled
+[   7s] admin /products/import desktop/zh-TW done
+[   7s] /products/import mobile/zh-TW [main] 3 controls, 3 classes sampled
+[  11s] admin /products/import mobile/zh-TW done
+[  12s] /products/import desktop/en [main] 3 controls, 3 classes sampled
+[  16s] admin /products/import desktop/en done
+[  44s] admin /products desktop/zh-TW done
+[  45s] /products mobile/zh-TW [main] 33 controls, 31 classes sampled
+[  52s] admin /products/[product] desktop/zh-TW done
+[  53s] /products/[product] mobile/zh-TW [main] 23 controls, 23 classes sampled
+[  89s] admin /products/[product] mobile/zh-TW done
+[  89s] admin /products mobile/zh-TW done
+[  89s] /products/[product] desktop/en [main] 32 controls, 32 classes sampled
+[  90s] /products desktop/en [main] 39 controls, 35 classes sampled
+[ 137s] admin /products/[product] desktop/en done
+[ 140s] admin /products desktop/en done
+[ 140s] 9 page/viewport/locale units opened (0 with a page-load failure), 204 control clicks (197 pass, 1 fail, 6 skip), 0 journey steps (0 pass, 0 fail); failures: known 0, new 1; stale known-defect entries 0.
+NEW FAIL admin /products/[product] mobile/zh-TW [main] "移除 T04-45f819662e55-0" destructive-changed-state: DOM changed (7 mutations); scrolled | server state changed after the destructive control (output/ui-click-sweep/screenshots/r00107.png)

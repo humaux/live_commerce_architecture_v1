@@ -1,0 +1,22 @@
+browser engine: chromium
+[   1s] stack up; admin http://127.0.0.1:62589, storefront https://buyer.example (Next :62601); 24 registry routes; workers=1 sample=3
+[   2s] /products desktop/zh-TW [main] 27 controls, 27 classes sampled
+[  44s] admin /products desktop/zh-TW done
+[  45s] /products mobile/zh-TW [main] 33 controls, 31 classes sampled
+[  89s] admin /products mobile/zh-TW done
+[  89s] /products desktop/en [main] 33 controls, 31 classes sampled
+[ 137s] admin /products desktop/en done
+[ 137s] /products/[product] desktop/zh-TW [main] 32 controls, 32 classes sampled
+[ 185s] admin /products/[product] desktop/zh-TW done
+[ 186s] /products/[product] mobile/zh-TW [main] 23 controls, 23 classes sampled
+[ 221s] admin /products/[product] mobile/zh-TW done
+[ 221s] /products/[product] desktop/en [main] 32 controls, 32 classes sampled
+[ 269s] admin /products/[product] desktop/en done
+[ 270s] /products/import desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 274s] admin /products/import desktop/zh-TW done
+[ 275s] /products/import mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 279s] admin /products/import mobile/zh-TW done
+[ 279s] /products/import desktop/en [main] 3 controls, 3 classes sampled
+[ 283s] admin /products/import desktop/en done
+[ 283s] 9 page/viewport/locale units opened (0 with a page-load failure), 205 control clicks (195 pass, 0 fail, 10 skip), 0 journey steps (0 pass, 0 fail); failures: known 0, new 0; stale known-defect entries 0.
+PASS G-UI8 click sweep

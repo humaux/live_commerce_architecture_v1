@@ -1,0 +1,266 @@
+[
+  {
+    "file": "new-empty-zh-TW-1586.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 473,
+        "y": 492.59375,
+        "width": 640,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "12px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "12px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "待填寫圖片",
+        "待填寫商品名稱",
+        "待填寫售價",
+        "待填寫庫存",
+        "待填寫描述",
+        "待填寫分類",
+        "待填寫直播關鍵字",
+        "待填寫搜尋引擎最佳化"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-zh-TW-1586.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 473,
+        "y": 492.59375,
+        "width": 640,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 473,
+        "y": 781.78125,
+        "width": 314.65625,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 799.65625,
+        "y": 781.78125,
+        "width": 629.34375,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1441,
+        "y": 781.78125,
+        "width": 62,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 976.96875,
+        "y": 1080.96875,
+        "width": 140.109375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 897.078125,
+        "y": 1080.96875,
+        "width": 220,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 473,
+        "y": 1070.96875,
+        "width": 1030,
+        "height": 65,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "12px"
+        },
+        {
+          "text": "按 Enter 或用逗號、換行分隔，最多 50 個不重複值。",
+          "font": "12px"
+        },
+        {
+          "text": "3 / 100 · 已選取: 0",
+          "font": "12px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "待填寫圖片",
+        "待填寫商品名稱",
+        "已完成售價",
+        "已完成庫存",
+        "待填寫描述",
+        "待填寫分類",
+        "待填寫直播關鍵字",
+        "待填寫搜尋引擎最佳化"
+      ],
+      "bulk": [
+        "批量填入"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1433,
+        "y": 1092.96875,
+        "width": 20,
+        "height": 20,
+        "font": "12px",
+        "accent": "rgb(36, 121, 101)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-zh-TW-1586.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 473,
+        "y": 616.765625,
+        "width": 640,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "12px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "12px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "待填寫圖片",
+        "已完成商品名稱",
+        "已完成售價",
+        "已完成庫存",
+        "待填寫描述",
+        "待填寫分類",
+        "待填寫直播關鍵字",
+        "待填寫搜尋引擎最佳化"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  }
+]
