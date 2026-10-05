@@ -93,9 +93,10 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
-  const { editor, fields, focus } = useProductEditorLayout(
+  const { editor, fields, feedback, focus } = useProductEditorLayout(
     sections,
     setSection,
+    JSON.stringify([write.message, write.done?.id, write.recoveryBlocked]),
   );
   useEffect(() => {
     if (write.savedDetail) {
@@ -652,77 +653,81 @@ export function ProductDocumentForm({
             </div>
           </details>
         </fieldset>
-        {write.message && (
-          <div
-            className="orders-message"
-            role={write.done ? "status" : "alert"}
-            data-testid="product-message"
-          >
-            <p>{write.message}</p>
-            {write.pending && !write.busy && !write.recoveryBlocked && (
-              <button
-                type="button"
-                data-testid="product-retry"
-                onClick={() => void write.retry()}
+        {(write.message || write.done) && (
+          <div className="pe-feedback" ref={feedback} tabIndex={-1}>
+            {write.message && (
+              <div
+                className="orders-message"
+                role={write.done ? "status" : "alert"}
+                data-testid="product-message"
               >
-                {c.retry}
-              </button>
+                <p>{write.message}</p>
+                {write.pending && !write.busy && !write.recoveryBlocked && (
+                  <button
+                    type="button"
+                    data-testid="product-retry"
+                    onClick={() => void write.retry()}
+                  >
+                    {c.retry}
+                  </button>
+                )}
+              </div>
+            )}
+            {write.done && (
+              <section
+                className="product-section"
+                data-testid="product-save-result"
+              >
+                <h2>{write.done.name}</h2>
+                <p>{c.storeUnpublished}</p>
+                <div className="pe-actions">
+                  <Link href={`/${locale}/settings?store=${store.id}`}>
+                    {c.settings}
+                  </Link>
+                  <Link
+                    href={`/${locale}/products/${write.done.id}?store=${store.id}`}
+                  >
+                    {c.save}
+                  </Link>
+                  <Link href={`/${locale}/products?store=${store.id}`}>
+                    {c.back}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      write.reset();
+                      setDraft(emptyDraft());
+                      setPhotos([]);
+                      photos.forEach((p) => {
+                        if (p.file) URL.revokeObjectURL(p.url);
+                      });
+                      initial.current = JSON.stringify(emptyDraft());
+                    }}
+                  >
+                    {c.another}
+                  </button>
+                  {draft.rows.some((r) => !!r.keyword) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard
+                          .writeText(
+                            draft.rows
+                              .filter((r) => r.keyword)
+                              .map((r) => r.keyword)
+                              .join("\n"),
+                          )
+                          .then(() => write.setMessage(c.copied))
+                          .catch(() => write.setMessage(c.failed))
+                      }
+                    >
+                      {c.copyKeyword}
+                    </button>
+                  )}
+                </div>
+              </section>
             )}
           </div>
-        )}
-        {write.done && (
-          <section
-            className="product-section"
-            data-testid="product-save-result"
-          >
-            <h2>{write.done.name}</h2>
-            <p>{c.storeUnpublished}</p>
-            <div className="pe-actions">
-              <Link href={`/${locale}/settings?store=${store.id}`}>
-                {c.settings}
-              </Link>
-              <Link
-                href={`/${locale}/products/${write.done.id}?store=${store.id}`}
-              >
-                {c.save}
-              </Link>
-              <Link href={`/${locale}/products?store=${store.id}`}>
-                {c.back}
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  write.reset();
-                  setDraft(emptyDraft());
-                  setPhotos([]);
-                  photos.forEach((p) => {
-                    if (p.file) URL.revokeObjectURL(p.url);
-                  });
-                  initial.current = JSON.stringify(emptyDraft());
-                }}
-              >
-                {c.another}
-              </button>
-              {draft.rows.some((r) => !!r.keyword) && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    void navigator.clipboard
-                      .writeText(
-                        draft.rows
-                          .filter((r) => r.keyword)
-                          .map((r) => r.keyword)
-                          .join("\n"),
-                      )
-                      .then(() => write.setMessage(c.copied))
-                      .catch(() => write.setMessage(c.failed))
-                  }
-                >
-                  {c.copyKeyword}
-                </button>
-              )}
-            </div>
-          </section>
         )}
       </div>
       <footer className="pe-savebar">

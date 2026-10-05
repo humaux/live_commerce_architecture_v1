@@ -6,9 +6,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 export function useProductEditorLayout(
   sections: readonly string[],
   onSection: (id: string) => void,
+  feedbackKey: string,
 ) {
   const editor = useRef<HTMLFormElement>(null),
-    fields = useRef<HTMLDivElement>(null);
+    fields = useRef<HTMLDivElement>(null),
+    feedback = useRef<HTMLDivElement>(null);
   const sectionKey = sections.join("|");
   useLayoutEffect(() => {
     const form = editor.current;
@@ -56,39 +58,71 @@ export function useProductEditorLayout(
       window.visualViewport?.removeEventListener("scroll", schedule);
     };
   }, []);
+  useLayoutEffect(() => {
+    const root = fields.current;
+    const target = feedback.current;
+    if (!root || !target) return;
+    // Outcomes belong to the real command UI, not a second footer summary.
+    // Reveal both the notice and its recovery actions without moving the shell.
+    root.scrollTo({
+      top:
+        root.scrollTop +
+        target.getBoundingClientRect().top -
+        root.getBoundingClientRect().top,
+    });
+    target.focus({ preventScroll: true });
+  }, [feedbackKey]);
   useEffect(() => {
     const root = fields.current;
     if (!root) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Keep the actual focused destination highlighted while it is visible,
-        // rather than letting observer delivery order win for short sections.
-        const focused =
-          document.activeElement?.closest<HTMLElement>(".product-section");
-        const bounds = focused?.getBoundingClientRect();
-        const viewport = root.getBoundingClientRect();
-        if (
-          focused &&
-          root.contains(focused) &&
-          bounds &&
-          bounds.bottom > viewport.top &&
-          bounds.top < viewport.bottom
-        ) {
-          onSection(focused.id);
-          return;
-        }
-        const seen = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (seen[0]) onSection(seen[0].target.id);
-      },
-      { root, rootMargin: "0px" },
-    );
-    sectionKey.split("|").forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) observer.observe(element);
+    const targets = sectionKey
+      .split("|")
+      .map((id) => document.getElementById(id))
+      .filter(
+        (target): target is HTMLElement => !!target && root.contains(target),
+      );
+    let frame = 0;
+    const update = () => {
+      // Keep the actual focused destination highlighted while it is visible,
+      // rather than letting observer delivery order win for short sections.
+      const focused =
+        document.activeElement?.closest<HTMLElement>(".product-section");
+      const bounds = focused?.getBoundingClientRect();
+      const viewport = root.getBoundingClientRect();
+      if (
+        focused &&
+        targets.includes(focused) &&
+        bounds &&
+        bounds.bottom > viewport.top &&
+        bounds.top < viewport.bottom
+      ) {
+        onSection(focused.id);
+        return;
+      }
+      // IntersectionObserver entries are only changes, not the visible set.
+      // Inspect every ordered section against the owning pane on each scroll.
+      const first = targets.find((target) => {
+        const rect = target.getBoundingClientRect();
+        return rect.bottom > viewport.top && rect.top < viewport.bottom;
+      });
+      if (first) onSection(first.id);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    const observer = new IntersectionObserver(schedule, {
+      root,
+      rootMargin: "0px",
     });
-    return () => observer.disconnect();
+    targets.forEach((target) => observer.observe(target));
+    root.addEventListener("scroll", schedule, { passive: true });
+    update();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+      root.removeEventListener("scroll", schedule);
+    };
   }, [sectionKey, onSection]);
   const focus = useCallback(
     (id: string) => {
@@ -111,5 +145,5 @@ export function useProductEditorLayout(
     },
     [onSection],
   );
-  return { editor, fields, focus };
+  return { editor, fields, feedback, focus };
 }
