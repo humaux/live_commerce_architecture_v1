@@ -485,10 +485,10 @@ code {
   width: 98px;
 }
 .text-button {
-  min-height: 30px;
+  min-height: var(--ui-target);
   border: 0;
   background: transparent;
-  color: #1768b0;
+  color: var(--ui-link);
   padding: 5px 10px;
 }
 .inspector {
@@ -599,7 +599,8 @@ code {
 }
 .icon-button {
   padding: 7px;
-  min-height: 32px;
+  min-height: var(--ui-target);
+  min-width: var(--ui-target);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1089,7 +1090,7 @@ code {
   font-weight: 700;
 }
 .entry-signout {
-  min-height: 34px;
+  min-height: var(--ui-target);
   padding: 6px 10px;
   border-color: transparent;
   color: #516982;
@@ -1202,7 +1203,7 @@ code {
   color: var(--ink);
 }
 .entry-completed-row button {
-  min-height: 32px;
+  min-height: var(--ui-target);
   margin-left: auto;
   padding: 4px 8px;
   border-color: transparent;

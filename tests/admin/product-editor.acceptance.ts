@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import axe from "axe-core";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { assertProductEditorReservedLayout } from "./product-editor-layout.acceptance";
+import { assertProductListLayout } from "./product-list-layout.acceptance";
 export function registerProductEditorAcceptance() {
   test("PE12-17 document workflow, matrix, list actions and click ledger", async ({
     page,
@@ -414,6 +415,16 @@ export function registerProductEditorAcceptance() {
       await expect(page.getByTestId("products-tab-draft")).toHaveText(
         "Draft 2",
       );
+      for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+        await page.getByTestId("locale-switch").selectOption(locale);
+        await expect(page).toHaveURL(new RegExp(`/${locale}/products`));
+        for (const [width, height] of [[1586, 992], [390, 844]]) {
+          await page.setViewportSize({ width, height });
+          await assertProductListLayout(page);
+          await shot(`list-populated-${locale}-${width}`);
+        }
+      }
+      await page.setViewportSize({ width: 1586, height: 992 });
       await page.getByRole("checkbox", { name: "All", exact: true }).check();
       await page
         .getByTestId("product-batch")
