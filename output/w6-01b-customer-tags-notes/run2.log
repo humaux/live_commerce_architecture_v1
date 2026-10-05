@@ -1,0 +1,70 @@
+=== RUN   TestBuyerHTTPRetirementAuthorityAndStrictInput
+    buyer_retirement_test.go:277: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestBuyerHTTPRetirementAuthorityAndStrictInput (1.30s)
+=== RUN   TestCustomerTags
+    customer_tags_test.go:165: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomerTags (0.00s)
+=== RUN   TestCustomersBillingCB04BuyerHTTPConcurrency
+    customers_billing_buyer_concurrency_test.go:15: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB04BuyerHTTPConcurrency (0.00s)
+=== RUN   TestCustomersBillingCB04Consent
+    customers_billing_consent_test.go:222: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB04Consent (0.00s)
+=== RUN   TestCustomersBillingCB05Erasure
+    customers_billing_erasure_test.go:109: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB05Erasure (0.00s)
+=== RUN   TestCustomersBillingCB09HTTP
+    payment_start_test.go:60: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB09HTTP (0.00s)
+=== RUN   TestCustomersBillingCB09Permissions
+    payment_start_test.go:60: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB09Permissions (0.00s)
+=== RUN   TestCustomersBillingCB03List
+    customers_billing_list_test.go:111: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB03List (0.00s)
+=== RUN   TestCustomersBillingCB02Schema
+    customers_billing_schema_test.go:265: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB02Schema (0.00s)
+=== RUN   TestCustomersBillingCB02Comments
+    customers_billing_schema_test.go:721: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestCustomersBillingCB02Comments (0.00s)
+=== RUN   TestIdentityInitialStoreAtomicIdempotentAndScoped
+    identity_integration_test.go:198: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestIdentityInitialStoreAtomicIdempotentAndScoped (0.00s)
+=== RUN   TestLiveClaimsKC03Schema
+    live_claims_schema_test.go:146: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestLiveClaimsKC03Schema (0.00s)
+=== RUN   TestOwnerProvisioningOP01
+    owner_provisioning_test.go:39: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestOwnerProvisioningOP01 (0.00s)
+=== RUN   TestStaffGateSG02RoleBundlesExactlyAsContract
+    staff_team_gate_test.go:563: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestStaffGateSG02RoleBundlesExactlyAsContract (0.00s)
+=== RUN   TestStaffGateSG02StoreCreatorIsAnOwnerWithEveryPermission
+    staff_team_gate_test.go:606: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestStaffGateSG02StoreCreatorIsAnOwnerWithEveryPermission (0.00s)
+=== RUN   TestStaffGateSG02HTTPSurfacePerRole
+    staff_team_gate_test.go:619: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestStaffGateSG02HTTPSurfacePerRole (0.00s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.00s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+    worker_authority_split_test.go:100: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.00s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+    worker_authority_split_test.go:172: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestWAS03CrossAuthorityClaimRefused (0.00s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+    worker_authority_split_test.go:244: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestWAS04OperationReadsAreLaneScoped (0.00s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+    worker_authority_split_test.go:285: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestWAS05ProfileFenceDerivedFromAuthority (0.00s)
+=== RUN   TestWAS06PrivilegeInventory
+    worker_authority_split_test.go:301: set up isolated foundation database: first migration apply: apply 0139_customer_tags_notes.sql: ERROR: malformed array literal: "customers:write" (SQLSTATE 22P02)
+--- FAIL: TestWAS06PrivilegeInventory (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.041s
+FAIL
+test-focused: top-level PASS=1 FAIL=21 SKIP=0 exit=1
+exit 1

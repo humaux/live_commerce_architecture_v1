@@ -46,7 +46,7 @@ BEGIN
  IF v_list IS NULL OR NOT ('customers:read'=ANY(v_list) AND 'customers:privacy'=ANY(v_list) AND 'inbox:reply'=ANY(v_list)) THEN
   RAISE EXCEPTION '0139 applied out of order: store_grants_permission_check lacks 0078/0119 permissions: %',v_def;
  END IF;
- IF NOT 'customers:write'=ANY(v_list) THEN v_list:=v_list||'customers:write'; END IF;
+ IF NOT 'customers:write'=ANY(v_list) THEN v_list:=array_append(v_list,'customers:write'::text); END IF;
  ALTER TABLE identity.store_grants DROP CONSTRAINT store_grants_permission_check;
  EXECUTE format('ALTER TABLE identity.store_grants ADD CONSTRAINT store_grants_permission_check CHECK (permission IN (%s))',
   (SELECT string_agg(quote_literal(p),',' ORDER BY ord) FROM unnest(v_list) WITH ORDINALITY AS u(p,ord)));
