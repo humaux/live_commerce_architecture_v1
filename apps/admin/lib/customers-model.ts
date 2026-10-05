@@ -12,6 +12,11 @@ export const consentPairs: readonly { purpose: ConsentPurpose; channel: ConsentC
   { purpose: "ads_personalization", channel: "meta_ads" },
 ];
 export type Consents = { marketing_messages: boolean; ads_personalization: boolean };
+// W6-01B (customers-billing-v1 Amendment): merchant-typed tags and private notes. Parsers only; rendering is W6-U1.
+export const tagColors = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple"] as const;
+export type TagColor = (typeof tagColors)[number];
+export type Tag = { id: string; name: string; color: TagColor };
+export type Note = { id: string; body: string; author_id: string; created_at: string; edited_at: string | null; version: number };
 export type Customer = {
   customer_id: string;
   first_seen_at: string;
@@ -27,6 +32,7 @@ export type Customer = {
   platforms: string[];
   consents: Consents;
   active: boolean;
+  tags: Tag[];
 };
 export type CustomerList = { items: Customer[]; next_cursor: string };
 export type ClaimSummary = { session_id: string; platform: string; bound_at: string; line_count: number };
@@ -44,6 +50,8 @@ export type CustomerDetail = Customer & {
   claims: ClaimSummary[];
   consent_history: ConsentEvent[];
   privacy_actions: PrivacyAction[];
+  tags_revision: string;
+  notes: Note[];
 };
 export type FinanceRow = {
   day: string;
@@ -108,8 +116,29 @@ function parseConsents(value: unknown): Consents {
 }
 const customerKeys = [
   "customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-  "paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active",
+  "paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "tags",
 ];
+function parseTag(value: unknown): Tag {
+  const v = object(value, ["id", "name", "color"]);
+  if (typeof v.id !== "string" || !canonicalUUID.test(v.id) || !short(v.name, 20) || v.name === "" ||
+    !(tagColors as readonly unknown[]).includes(v.color)) throw new Error("unavailable");
+  return v as Tag;
+}
+function parseTags(value: unknown): Tag[] {
+  if (!Array.isArray(value) || value.length > 20) throw new Error("unavailable");
+  const tags = value.map(parseTag);
+  if (new Set(tags.map((tag) => tag.id)).size !== tags.length) throw new Error("unavailable");
+  return tags;
+}
+function parseNote(value: unknown): Note {
+  const v = object(value, ["id", "body", "author_id", "created_at", "edited_at", "version"]);
+  // Bodies keep line breaks and tabs; every other control character is refused (Go ValidNoteBody).
+  if (typeof v.id !== "string" || !canonicalUUID.test(v.id) || typeof v.author_id !== "string" || !canonicalUUID.test(v.author_id) ||
+    typeof v.body !== "string" || Array.from(v.body).length < 1 || Array.from(v.body).length > 1000 || v.body.trim() === "" ||
+    /[\p{Cc}]/u.test(v.body.replace(/[\n\r\t]/g, "")) || !isInstant(v.created_at) || !(v.edited_at === null || isInstant(v.edited_at)) ||
+    !Number.isSafeInteger(v.version) || (v.version as number) < 1) throw new Error("unavailable");
+  return v as Note;
+}
 function customerFrom(v: Record<string, unknown>): Customer {
   if (typeof v.customer_id !== "string" || !canonicalUUID.test(v.customer_id) ||
     !isInstant(v.first_seen_at) || !isInstant(v.last_activity_at) ||
@@ -124,7 +153,7 @@ function customerFrom(v: Record<string, unknown>): Customer {
   // An erased owner (active=false) never shows a granted consent: consent_allows is false for it (CD4/CD7).
   const consents = parseConsents(v.consents);
   if (!v.active && (consents.marketing_messages || consents.ads_personalization)) throw new Error("unavailable");
-  return { ...(v as Omit<Customer, "consents">), consents };
+  return { ...(v as Omit<Customer, "consents" | "tags">), consents, tags: parseTags(v.tags) };
 }
 export function parseCustomer(value: unknown): Customer {
   return customerFrom(object(value, customerKeys));
@@ -163,12 +192,13 @@ function parsePrivacyAction(value: unknown): PrivacyAction {
 }
 
 export function parseCustomerDetail(value: unknown, requestedID: string): CustomerDetail {
-  const v = object(value, [...customerKeys, "orders", "claims", "consent_history", "privacy_actions"]);
+  const v = object(value, [...customerKeys, "orders", "claims", "consent_history", "privacy_actions", "tags_revision", "notes"]);
   const head = customerFrom(Object.fromEntries(customerKeys.map((key) => [key, v[key]])));
   // Bounds: newest 50 orders (§7); the other lists are bounded by what one owner can hold in v1.
   if (head.customer_id !== requestedID || !Array.isArray(v.orders) || v.orders.length > 50 ||
     !Array.isArray(v.claims) || v.claims.length > 500 || !Array.isArray(v.consent_history) ||
-    v.consent_history.length > 1000 || !Array.isArray(v.privacy_actions) || v.privacy_actions.length > 100)
+    v.consent_history.length > 1000 || !Array.isArray(v.privacy_actions) || v.privacy_actions.length > 100 ||
+    typeof v.tags_revision !== "string" || !/^[0-9a-f]{64}$/.test(v.tags_revision) || !Array.isArray(v.notes) || v.notes.length > 50)
     throw new Error("unavailable");
   const orders = v.orders.map(parseOrderSummary);
   if (new Set(orders.map((order) => order.order_id)).size !== orders.length) throw new Error("unavailable");
@@ -178,6 +208,8 @@ export function parseCustomerDetail(value: unknown, requestedID: string): Custom
     claims: v.claims.map(parseClaim),
     consent_history: v.consent_history.map(parseConsentEvent),
     privacy_actions: v.privacy_actions.map(parsePrivacyAction),
+    tags_revision: v.tags_revision,
+    notes: v.notes.map(parseNote),
   };
 }
 

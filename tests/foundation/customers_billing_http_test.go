@@ -620,7 +620,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 		if x.status != 200 || json.Unmarshal(x.body, &doc) != nil {
 			t.Fatalf("buyer export: %d %s", x.status, x.body)
 		}
-		if got := cbhKeys(doc); got != "claims,consents,format,generated_at,notes,orders,privacy_actions,store,tags" || doc["format"] != customers.ExportFormat {
+		if got := cbhKeys(doc); got != "claims,consents,format,generated_at,notes,notes_omitted,orders,privacy_actions,store,tags" || doc["format"] != customers.ExportFormat {
 			t.Errorf("buyer export keys %s (same envelope as the merchant's, no customer_id or principal ids)", got)
 		}
 		if !strings.HasPrefix(x.header.Get("Content-Type"), "application/json") || !strings.HasPrefix(x.header.Get("Content-Disposition"), "attachment;") || !strings.Contains(x.header.Get("Cache-Control"), "no-store") {

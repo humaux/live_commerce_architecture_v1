@@ -19,6 +19,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"golang.org/x/text/unicode/norm"
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
@@ -70,6 +71,14 @@ type TagSet struct {
 	TagsRevision string `json:"tags_revision"`
 }
 
+// tagSetReceipt is what the idempotency receipt of a tag-set write stores: the result plus the customer id, so erasure can
+// delete the receipt of an erased customer (customers.erase_tags_notes matches operation and customer_id).
+type tagSetReceipt struct {
+	Tags         []Tag  `json:"tags"`
+	TagsRevision string `json:"tags_revision"`
+	CustomerID   string `json:"customer_id"`
+}
+
 // DeletedTag reports how many customer links went with the tag.
 type DeletedTag struct {
 	TagID    string `json:"tag_id"`
@@ -77,18 +86,21 @@ type DeletedTag struct {
 }
 
 // ValidTagName is the Go half of the name rule (the database re-checks NFC): 1..20 characters, valid UTF-8, trimmed,
-// no control characters.
+// no control characters and no invisible format characters (Unicode Cf, e.g. U+200B, which would let two tags look equal).
 func ValidTagName(name string) bool {
 	if !utf8.ValidString(name) || name == "" || utf8.RuneCountInString(name) > 20 || name != trimSpace(name) {
 		return false
 	}
 	for _, r := range name {
-		if unicode.IsControl(r) {
+		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
 			return false
 		}
 	}
 	return true
 }
+
+// nfc normalises a name to NFC before it is validated and sent, so a decomposed spelling is stored composed.
+func nfc(name string) string { return norm.NFC.String(name) }
 
 func trimSpace(s string) string {
 	start, end := 0, len(s)
@@ -192,6 +204,7 @@ func decodeInto(raw []byte, out any) error {
 // case-insensitively, ErrLimitReached at 100 tags.
 func CreateTag(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in TagInput) (TagRecord, error) {
 	var out TagRecord
+	in.Name = nfc(in.Name)
 	if !ValidTagName(in.Name) || !tagColors[in.Color] {
 		return out, command.ErrInvalid
 	}
@@ -203,6 +216,10 @@ func CreateTag(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key 
 // RenameTag changes the name and/or colour of a tag (DB: customers.rename_tag).
 func RenameTag(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, tagID string, in TagPatch) (TagRecord, error) {
 	var out TagRecord
+	if in.Name != nil {
+		n := nfc(*in.Name)
+		in.Name = &n
+	}
 	if !command.ValidID(tagID) || (in.Name == nil && in.Color == nil) || (in.Name != nil && !ValidTagName(*in.Name)) ||
 		(in.Color != nil && !tagColors[*in.Color]) {
 		return out, command.ErrInvalid
@@ -229,6 +246,7 @@ func DeleteTag(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key,
 // revision is stale, ErrLimitReached above 20 tags, command.ErrInvalid for an unknown tag id.
 func SetOwnerTags(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, customerID string, in SetTagsInput) (TagSet, error) {
 	var out TagSet
+	var rec tagSetReceipt
 	if !command.ValidID(customerID) || !revisionPattern.MatchString(in.Revision) || len(in.TagIDs) > maxTagSet {
 		return out, command.ErrInvalid
 	}
@@ -244,12 +262,20 @@ func SetOwnerTags(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, k
 	err := writeCall(ctx, tx, scope, token, key, "customer.tags.set", struct {
 		CustomerID string `json:"customer_id"`
 		SetTagsInput
-	}{customerID, SetTagsInput{TagIDs: ids, Revision: in.Revision}}, &out, nil,
-		`SELECT customers.set_owner_tags($1,$2::uuid,$3::uuid,$4::uuid[],$5)`, customerID, ids, in.Revision)
-	if err == nil && (!validTags(out.Tags) || !revisionPattern.MatchString(out.TagsRevision)) {
+	}{customerID, SetTagsInput{TagIDs: ids, Revision: in.Revision}}, &rec, func(raw []byte) error {
+		if err := decodeInto(raw, &out); err != nil {
+			return err
+		}
+		rec = tagSetReceipt{out.Tags, out.TagsRevision, customerID}
+		return nil
+	}, `SELECT customers.set_owner_tags($1,$2::uuid,$3::uuid,$4::uuid[],$5)`, customerID, ids, in.Revision)
+	if err != nil {
+		return TagSet{}, err
+	}
+	if !validTags(rec.Tags) || !revisionPattern.MatchString(rec.TagsRevision) {
 		return TagSet{}, ErrUnavailable
 	}
-	return out, err
+	return TagSet{rec.Tags, rec.TagsRevision}, nil
 }
 
 // ListTags returns the store tag catalogue, name-ordered, with usage counts (customers:read; DB: customers.list_tags).

@@ -18,7 +18,7 @@ func TestValidTagNameAndNoteBody(t *testing.T) {
 			t.Fatalf("%q refused", ok)
 		}
 	}
-	for _, bad := range []string{"", " VIP", "VIP ", strings.Repeat("a", 21), "a\nb", "a\x00b", "\xff"} {
+	for _, bad := range []string{"", " VIP", "VIP ", strings.Repeat("a", 21), "a\nb", "a\x00b", "\xff", "a\u200bb", "\ufeffVIP", "a\u00adb"} {
 		if ValidTagName(bad) {
 			t.Fatalf("%q accepted", bad)
 		}

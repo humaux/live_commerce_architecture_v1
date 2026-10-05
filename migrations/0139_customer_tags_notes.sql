@@ -68,13 +68,15 @@ ON CONFLICT DO NOTHING;
 CREATE TABLE customers.tags (
  tenant_id uuid NOT NULL, store_id uuid NOT NULL, id uuid NOT NULL DEFAULT gen_random_uuid(),
  name text NOT NULL CHECK (char_length(name) BETWEEN 1 AND 20 AND name=normalize(name,NFC) AND name=btrim(name)
-  AND name !~ '[[:cntrl:]]'),
+  AND name !~ '[[:cntrl:]]' AND name !~ '[­؀-؅؜۝܏᠎​-‏‪-‮⁠-⁤⁦-⁯﻿￹-￻\U000e0001\U000e0020-\U000e007f]'),
  color text NOT NULL CHECK (color IN ('gray','red','orange','yellow','green','teal','blue','purple')),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY (tenant_id,store_id,id),
  FOREIGN KEY (tenant_id,store_id) REFERENCES control.stores(tenant_id,id));
--- Case-insensitive unique name per store (CT02).
-CREATE UNIQUE INDEX customer_tags_name ON customers.tags(tenant_id,store_id,lower(name));
+-- Unique name per store under compatibility normalisation and case folding (CT02): NFKC makes full-width and
+-- ligature spellings equal, lower() folds case. normalize() and lower() are immutable, so this is a plain expression index.
+-- ponytail: lower() is locale-dependent for non-ASCII under a C collation; full Unicode case folding needs an ICU collation.
+CREATE UNIQUE INDEX customer_tags_name ON customers.tags(tenant_id,store_id,lower(normalize(name,NFKC)));
 
 CREATE TABLE customers.owner_tags (
  tenant_id uuid NOT NULL, store_id uuid NOT NULL, owner_id uuid NOT NULL, tag_id uuid NOT NULL,
@@ -124,6 +126,17 @@ BEGIN
  END LOOP;
 END $$;
 
+-- Erasure also removes this customer's idempotency receipts: the privacy writer may read (operation, response) of and delete
+-- ONLY the four customer tag/note operations of the GUC-scoped store.
+GRANT SELECT (tenant_id,store_id,operation,response) ON ops.command_results TO commerce_privacy_writer;
+GRANT DELETE ON ops.command_results TO commerce_privacy_writer;
+CREATE POLICY privacy_receipt_select ON ops.command_results FOR SELECT TO commerce_privacy_writer
+ USING (operation IN ('customer.note.add','customer.note.edit','customer.note.delete','customer.tags.set')
+  AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+CREATE POLICY privacy_receipt_delete ON ops.command_results FOR DELETE TO commerce_privacy_writer
+ USING (operation IN ('customer.note.add','customer.note.edit','customer.note.delete','customer.tags.set')
+  AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+
 -- Audit: the privacy writer may now also insert the seven tag/note actions (names only, never a body). The policy is
 -- replaced (not added to) because the ACL pin requires every INSERT policy of the role to carry the full action list.
 DROP POLICY privacy_audit_insert ON ops.audit_events;
@@ -134,6 +147,7 @@ CREATE POLICY privacy_audit_insert ON ops.audit_events FOR INSERT TO commerce_pr
   AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
   AND principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
+COMMENT ON POLICY privacy_audit_insert ON ops.audit_events IS 'commerce_privacy_writer may insert only customers.consent_withdrawn, customers.exported, customers.erased and (W6-01B) customers.tag_created/tag_renamed/tag_deleted/tagged/note_added/note_edited/note_deleted, scoped to the GUCs verified from the merchant authentication result. Never a note body.';
 
 -- ---------------------------------------------------------------------------------------
 -- Internal helpers (owner commerce_privacy_writer). EXECUTE: nobody for the authority/lock helpers (only same-owner
@@ -194,7 +208,7 @@ CREATE FUNCTION customers.tn_check_tag(p_name text,p_color text) RETURNS void
 LANGUAGE plpgsql IMMUTABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 BEGIN
  IF p_name IS NOT NULL AND (char_length(p_name) NOT BETWEEN 1 AND 20 OR p_name<>normalize(p_name,NFC)
-   OR p_name<>btrim(p_name) OR p_name ~ '[[:cntrl:]]') THEN
+   OR p_name<>btrim(p_name) OR p_name ~ '[[:cntrl:]]' OR p_name ~ '[­؀-؅؜۝܏᠎​-‏‪-‮⁠-⁤⁦-⁯﻿￹-￻\U000e0001\U000e0020-\U000e007f]') THEN
   RAISE EXCEPTION 'invalid tag name' USING ERRCODE='PT422'; END IF;
  IF p_color IS NOT NULL AND p_color NOT IN ('gray','red','orange','yellow','green','teal','blue','purple') THEN
   RAISE EXCEPTION 'invalid tag color' USING ERRCODE='PT422'; END IF;
@@ -216,10 +230,10 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
   WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store AND ot.owner_id=p_owner),''),'UTF8')),'hex')
 $$;
 
-CREATE FUNCTION customers.tn_has_tag(p_tenant uuid,p_store uuid,p_owner uuid,p_tag uuid) RETURNS boolean
+-- Set-returning twin of the tag filter: the owners carrying one tag, driven by customer_owner_tags_by_tag.
+CREATE FUNCTION customers.tn_owners_with_tag(p_tenant uuid,p_store uuid,p_tag uuid) RETURNS SETOF uuid
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
- SELECT EXISTS(SELECT 1 FROM customers.owner_tags ot WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store
-  AND ot.owner_id=p_owner AND ot.tag_id=p_tag)
+ SELECT ot.owner_id FROM customers.owner_tags ot WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store AND ot.tag_id=p_tag
 $$;
 
 CREATE FUNCTION customers.tn_note_json(n customers.notes) RETURNS jsonb
@@ -251,7 +265,7 @@ BEGIN
  IF p_name IS NULL OR p_color IS NULL THEN RAISE EXCEPTION 'invalid tag' USING ERRCODE='PT422'; END IF;
  PERFORM customers.tn_check_tag(p_name,p_color);
  PERFORM pg_advisory_xact_lock(hashtextextended('lc:customer-tags:'||p_store::text,0));
- IF EXISTS(SELECT 1 FROM customers.tags t WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store AND lower(t.name)=lower(p_name)) THEN
+ IF EXISTS(SELECT 1 FROM customers.tags t WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store AND lower(normalize(t.name,NFKC))=lower(normalize(p_name,NFKC))) THEN
   RAISE EXCEPTION 'tag_exists' USING ERRCODE='PT409'; END IF;
  IF (SELECT count(*) FROM customers.tags t WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store)>=100 THEN
   RAISE EXCEPTION 'limit_reached' USING ERRCODE='PT409'; END IF;
@@ -274,7 +288,7 @@ BEGIN
  SELECT t.* INTO v_row FROM customers.tags t WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store AND t.id=p_tag FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'tag not found' USING ERRCODE='PT404'; END IF;
  IF p_name IS NOT NULL AND EXISTS(SELECT 1 FROM customers.tags t WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store
-   AND lower(t.name)=lower(p_name) AND t.id<>p_tag) THEN
+   AND lower(normalize(t.name,NFKC))=lower(normalize(p_name,NFKC)) AND t.id<>p_tag) THEN
   RAISE EXCEPTION 'tag_exists' USING ERRCODE='PT409'; END IF;
  UPDATE customers.tags t SET name=coalesce(p_name,t.name),color=coalesce(p_color,t.color)
   WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store AND t.id=p_tag RETURNING * INTO v_row;
@@ -433,20 +447,32 @@ END $$;
 CREATE FUNCTION customers.erase_tags_notes(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
 LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
  DELETE FROM customers.owner_tags ot WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store AND ot.owner_id=p_owner;
- DELETE FROM customers.notes n WHERE n.tenant_id=p_tenant AND n.store_id=p_store AND n.owner_id=p_owner
+ DELETE FROM customers.notes n WHERE n.tenant_id=p_tenant AND n.store_id=p_store AND n.owner_id=p_owner;
+ -- The idempotency receipts of this customer's tag-set and note writes (the Go layer stores customer_id in them, never a
+ -- body) go too, so nothing keyed to the erased customer survives in ops.command_results.
+ DELETE FROM ops.command_results c WHERE c.tenant_id=p_tenant AND c.store_id=p_store
+  AND c.operation IN ('customer.note.add','customer.note.edit','customer.note.delete','customer.tags.set')
+  AND c.response->>'customer_id'=p_owner::text
 $$;
 
+-- Notes are capped separately so they can never push the export over its 1 MiB cap: the newest notes whose bodies sum to at
+-- most 60000 characters (<= 200 notes anyway), and notes_omitted says how many older ones were left out (they stay
+-- readable by the merchant; a buyer wanting them asks the merchant, who sees every note).
 CREATE FUNCTION customers.export_tags_notes(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH ranked AS (
+  SELECT n.*,sum(char_length(n.body)) OVER (ORDER BY n.created_at DESC,n.id DESC) AS running
+  FROM customers.notes n WHERE n.tenant_id=p_tenant AND n.store_id=p_store AND n.owner_id=p_owner),
+ kept AS (SELECT * FROM ranked WHERE running<=60000)
  SELECT jsonb_build_object(
   'tags',coalesce((SELECT jsonb_agg(jsonb_build_object('name',t.name,'color',t.color) ORDER BY lower(t.name),t.id)
     FROM customers.owner_tags ot JOIN customers.tags t ON t.tenant_id=ot.tenant_id AND t.store_id=ot.store_id AND t.id=ot.tag_id
     WHERE ot.tenant_id=p_tenant AND ot.store_id=p_store AND ot.owner_id=p_owner),'[]'::jsonb),
-  'notes',coalesce((SELECT jsonb_agg(jsonb_build_object('body',n.body,
-     'created_at',to_char(n.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-     'edited_at',CASE WHEN n.edited_at IS NULL THEN NULL ELSE to_char(n.edited_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END)
-     ORDER BY n.created_at DESC,n.id DESC)
-    FROM customers.notes n WHERE n.tenant_id=p_tenant AND n.store_id=p_store AND n.owner_id=p_owner),'[]'::jsonb))
+  'notes',coalesce((SELECT jsonb_agg(jsonb_build_object('body',k.body,
+     'created_at',to_char(k.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+     'edited_at',CASE WHEN k.edited_at IS NULL THEN NULL ELSE to_char(k.edited_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') END)
+     ORDER BY k.created_at DESC,k.id DESC) FROM kept k),'[]'::jsonb),
+  'notes_omitted',(SELECT count(*) FROM ranked)-(SELECT count(*) FROM kept))
 $$;
 
 DO $$
@@ -455,7 +481,7 @@ BEGIN
  FOREACH f IN ARRAY ARRAY[
   'customers.tn_authority(bytea,uuid,text)','customers.tn_fence(bytea,uuid,text,uuid,uuid,bigint)',
   'customers.tn_lock_owner(uuid,uuid,uuid)','customers.tn_owner_visible(uuid,uuid,uuid)','customers.tn_check_tag(text,text)',
-  'customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_has_tag(uuid,uuid,uuid,uuid)','customers.tn_note_json(customers.notes)',
+  'customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_owners_with_tag(uuid,uuid,uuid)','customers.tn_note_json(customers.notes)',
   'customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)',
   'customers.create_tag(bytea,uuid,text,text)','customers.rename_tag(bytea,uuid,uuid,text,text)','customers.delete_tag(bytea,uuid,uuid)',
   'customers.set_owner_tags(bytea,uuid,uuid,uuid[],text)','customers.add_note(bytea,uuid,uuid,text)',
@@ -473,7 +499,7 @@ BEGIN
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f);
  END LOOP;
  -- identity.read_merchant_customers is owned by commerce_auth: it needs the three JSON readers (no table grant for it).
- FOREACH f IN ARRAY ARRAY['customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_has_tag(uuid,uuid,uuid,uuid)',
+ FOREACH f IN ARRAY ARRAY['customers.tn_tags_json(uuid,uuid,uuid)','customers.tn_tags_revision(uuid,uuid,uuid)','customers.tn_owners_with_tag(uuid,uuid,uuid)',
   'customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)'] LOOP
   EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_auth',f);
  END LOOP;
@@ -540,11 +566,16 @@ BEGIN
  -- buyer.issue_capability creates an owner per anonymous visitor, so scanning owners made each page O(visitors)
  -- (lane-close review P2, CB03 10k idle owners). The per-customer aggregates below then run over customers only.
  WITH active_owner AS MATERIALIZED (
+  -- W6-01B: tag filter. The active owners are restricted to the carriers of p_tag (an index probe on
+  -- customer_owner_tags_by_tag through the set-returning helper), so the search starts from the tagged set, not from every
+  -- customer. An unknown or other-store tag id matches nobody.
   SELECT o.owner_id AS id FROM checkout.orders o WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
    AND (p_customer IS NULL OR o.owner_id=p_customer)
+   AND (p_tag IS NULL OR o.owner_id IN (SELECT customers.tn_owners_with_tag(s.tenant_id,p_store,p_tag)))
   UNION
   SELECT b.owner_id FROM claims.bundles b WHERE b.tenant_id=s.tenant_id AND b.store_id=p_store AND b.owner_id IS NOT NULL
    AND (p_customer IS NULL OR b.owner_id=p_customer)
+   AND (p_tag IS NULL OR b.owner_id IN (SELECT customers.tn_owners_with_tag(s.tenant_id,p_store,p_tag)))
  ), base AS MATERIALIZED (
   SELECT ow.tenant_id,ow.store_id,ow.id,ow.created_at AS first_seen,ow.active,
    greatest(
@@ -561,8 +592,6 @@ BEGIN
      AND qo.owner_id=ow.id AND CASE WHEN v_phone
       THEN right(regexp_replace(coalesce(qo.snapshot#>>'{destination,phone}',''),'[^0-9]','','g'),char_length(v_digits))=v_digits
       ELSE starts_with(lower(coalesce(qo.snapshot#>>'{destination,recipient_name}','')),lower(p_q)) END))
-   -- W6-01B: tag filter. An unknown or other-store tag id simply matches nobody (tenant/store are arguments of the helper).
-   AND (p_tag IS NULL OR customers.tn_has_tag(ow.tenant_id,ow.store_id,ow.id,p_tag))
  ), paged AS MATERIALIZED (
   SELECT b.* FROM base b
   WHERE b.last_activity IS NOT NULL AND (p_after_id IS NULL OR (b.last_activity,b.id)<(p_after_ts,p_after_id))
@@ -692,7 +721,7 @@ BEGIN
   ('customers.tn_check_tag(text,text)','Internal (EXECUTE nobody): tag name and colour validation of the customers tag definers.'),
   ('customers.tn_tags_json(uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): the tags of one customer as JSON for identity.read_merchant_customers.'),
   ('customers.tn_tags_revision(uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): sha256 CAS token of a customer''s tag-id set.'),
-  ('customers.tn_has_tag(uuid,uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): whether a customer carries a tag, for the list filter of identity.read_merchant_customers.'),
+  ('customers.tn_owners_with_tag(uuid,uuid,uuid)','Internal (EXECUTE commerce_auth): the owners carrying one tag, for the list filter of identity.read_merchant_customers.'),
   ('customers.tn_note_json(customers.notes)','Internal (EXECUTE nobody): one note as JSON.'),
   ('customers.tn_notes_json(uuid,uuid,uuid,integer,timestamptz,uuid)','Internal (EXECUTE commerce_auth): a customer''s notes page as JSON.'),
   ('customers.erase_tags_notes(uuid,uuid,uuid)','internal/customers erasure-only (called by apply_erasure): deletes a customer''s tag links and notes.'),

@@ -164,7 +164,7 @@ var cbsFunctions = []cbsFn{
 	{"customers.tn_check_tag(text,text)", "commerce_privacy_writer", nil, false},
 	{"customers.tn_tags_json(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.tn_tags_revision(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
-	{"customers.tn_has_tag(uuid,uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.tn_owners_with_tag(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.tn_note_json(customers.notes)", "commerce_privacy_writer", nil, true},
 	{"customers.tn_notes_json(uuid,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.erase_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
@@ -221,6 +221,8 @@ var cbsPrivacyRequiredNarrow = map[string][]string{"storefront.destination_snaps
 var cbsPrivacyExtra = []cbsPriv{
 	{"control.stores", "SELECT", []string{"id", "name", "tenant_id"}},
 	{"claims.bundles", "SELECT", []string{"platform", "session_id", "line_count"}},
+	// W6-01B: erasure deletes the idempotency receipts of the customer's tag-set/note writes (policy-limited to those four operations).
+	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response"}},
 }
 
 var cbsBillingFrozen = []cbsPriv{
@@ -423,9 +425,9 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			}
 		}
 		for _, r := range []string{"commerce_privacy_writer", "commerce_billing_writer"} {
-			// W6-01B: DELETE is allowed on exactly customers.tags / owner_tags / notes (tag delete, set replacement, erasure).
+			// W6-01B: DELETE is allowed on exactly customers.tags / owner_tags / notes (tag delete, set replacement, erasure) and ops.command_results (erasure of receipts).
 			if e.bool(`SELECT EXISTS(SELECT 1 FROM information_schema.table_privileges WHERE grantee=$1 AND privilege_type IN ('DELETE','TRUNCATE','TRIGGER','REFERENCES')
-			 AND NOT (privilege_type='DELETE' AND table_schema='customers' AND table_name IN ('tags','owner_tags','notes')))`, r) {
+			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
 				t.Errorf("%s holds DELETE/TRUNCATE/TRIGGER/REFERENCES somewhere", r)
 			}
 		}

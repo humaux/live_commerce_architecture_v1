@@ -79,21 +79,22 @@ func validNote(n Note) bool {
 // noteReceipt is what the idempotency receipt of a note write stores: the note WITHOUT its body. ops.command_results keeps
 // the marshalled result, and a body there would survive erasure; the request body (hashed, never stored) is the replay body.
 type noteReceipt struct {
-	ID        string  `json:"id"`
-	AuthorID  string  `json:"author_id"`
-	CreatedAt string  `json:"created_at"`
-	EditedAt  *string `json:"edited_at"`
-	Version   int64   `json:"version"`
+	CustomerID string  `json:"customer_id"` // lets erasure find and delete this receipt (customers.erase_tags_notes)
+	ID         string  `json:"id"`
+	AuthorID   string  `json:"author_id"`
+	CreatedAt  string  `json:"created_at"`
+	EditedAt   *string `json:"edited_at"`
+	Version    int64   `json:"version"`
 }
 
 // decodeNote strictly decodes the definer's note into a receipt.
-func decodeNote(rec *noteReceipt) func(raw []byte) error {
+func decodeNote(rec *noteReceipt, customerID string) func(raw []byte) error {
 	return func(raw []byte) error {
 		var n Note
 		if len(raw) == 0 || len(raw) > 1<<16 || strict(raw, &n) != nil || !validNote(n) {
 			return ErrUnavailable
 		}
-		*rec = noteReceipt{n.ID, n.AuthorID, n.CreatedAt, n.EditedAt, n.Version}
+		*rec = noteReceipt{customerID, n.ID, n.AuthorID, n.CreatedAt, n.EditedAt, n.Version}
 		return nil
 	}
 }
@@ -107,7 +108,7 @@ func AddNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, c
 	err := writeCall(ctx, tx, scope, token, key, "customer.note.add", struct {
 		CustomerID string `json:"customer_id"`
 		NoteInput
-	}{customerID, in}, &rec, decodeNote(&rec), `SELECT customers.add_note($1,$2::uuid,$3::uuid,$4)`, customerID, in.Body)
+	}{customerID, in}, &rec, decodeNote(&rec, customerID), `SELECT customers.add_note($1,$2::uuid,$3::uuid,$4)`, customerID, in.Body)
 	if err != nil {
 		return Note{}, err
 	}
@@ -125,7 +126,7 @@ func EditNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, 
 		CustomerID string `json:"customer_id"`
 		NoteID     string `json:"note_id"`
 		EditNoteInput
-	}{customerID, noteID, in}, &rec, decodeNote(&rec), `SELECT customers.edit_note($1,$2::uuid,$3::uuid,$4::uuid,$5,$6)`,
+	}{customerID, noteID, in}, &rec, decodeNote(&rec, customerID), `SELECT customers.edit_note($1,$2::uuid,$3::uuid,$4::uuid,$5,$6)`,
 		customerID, noteID, in.Body, in.Version)
 	if err != nil {
 		return Note{}, err
@@ -135,13 +136,22 @@ func EditNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, 
 
 // DeleteNote removes a note (DB: customers.delete_note); same authorship rule as EditNote.
 func DeleteNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, customerID, noteID string) (DeletedNote, error) {
-	var out DeletedNote
+	var rec struct {
+		DeletedNote
+		CustomerID string `json:"customer_id"` // receipt-only, see noteReceipt
+	}
 	if !command.ValidID(customerID) || !command.ValidID(noteID) {
-		return out, command.ErrInvalid
+		return DeletedNote{}, command.ErrInvalid
 	}
 	err := writeCall(ctx, tx, scope, token, key, "customer.note.delete", map[string]string{"customer_id": customerID, "note_id": noteID},
-		&out, nil, `SELECT customers.delete_note($1,$2::uuid,$3::uuid,$4::uuid)`, customerID, noteID)
-	return out, err
+		&rec, func(raw []byte) error {
+			if err := decodeInto(raw, &rec.DeletedNote); err != nil {
+				return err
+			}
+			rec.CustomerID = customerID
+			return nil
+		}, `SELECT customers.delete_note($1,$2::uuid,$3::uuid,$4::uuid)`, customerID, noteID)
+	return rec.DeletedNote, err
 }
 
 // ListNotes pages one customer's notes newest first (customers:read; DB: customers.list_notes). The cursor is bound to

@@ -186,11 +186,12 @@ func BuyerExport(ctx context.Context, tx pgx.Tx, storeID, token, key string) ([]
 		PrivacyActions []PrivacyAction `json:"privacy_actions"`
 		Tags           []ExportTag     `json:"tags"`
 		Notes          []ExportNote    `json:"notes"`
+		NotesOmitted   int             `json:"notes_omitted"`
 	}
 	// tags and notes (W6-01B, CT-OPEN-1 default ruling): merchant-private data about this buyer is part of the export.
-	if err = exactKeys(rawPrivacy, "store_name", "consents", "erased", "consent_history", "claims", "privacy_actions", "tags", "notes"); err != nil ||
+	if err = exactKeys(rawPrivacy, "store_name", "consents", "erased", "consent_history", "claims", "privacy_actions", "tags", "notes", "notes_omitted"); err != nil ||
 		strict(rawPrivacy, &priv) != nil || priv.ConsentHistory == nil || priv.Claims == nil || priv.PrivacyActions == nil ||
-		priv.Tags == nil || priv.Notes == nil || len(priv.Tags) > 20 || len(priv.Notes) > 200 {
+		priv.Tags == nil || priv.Notes == nil || len(priv.Tags) > 20 || len(priv.Notes) > 200 || priv.NotesOmitted < 0 || priv.NotesOmitted > 200 {
 		return nil, ErrUnavailable
 	}
 	for _, t := range priv.Tags {
@@ -224,7 +225,7 @@ func BuyerExport(ctx context.Context, tx pgx.Tx, storeID, token, key string) ([]
 	}
 	doc := buyerExportDoc{Format: ExportFormat, GeneratedAt: time.Now().UTC().Format(TimestampLayout),
 		Store: exportStore{Name: priv.StoreName}, Orders: orders, Consents: priv.ConsentHistory, Claims: priv.Claims,
-		PrivacyActions: priv.PrivacyActions, Tags: priv.Tags, Notes: priv.Notes}
+		PrivacyActions: priv.PrivacyActions, Tags: priv.Tags, Notes: priv.Notes, NotesOmitted: priv.NotesOmitted}
 	body, err := marshalBounded(doc, len(orders))
 	if err != nil {
 		return nil, err

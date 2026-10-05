@@ -475,6 +475,8 @@ type buyerExportDoc struct {
 	PrivacyActions []PrivacyAction   `json:"privacy_actions"`
 	Tags           []ExportTag       `json:"tags"`
 	Notes          []ExportNote      `json:"notes"`
+	// NotesOmitted counts older notes left out so the notes section stays bounded (newest notes up to 60000 characters).
+	NotesOmitted int `json:"notes_omitted"`
 }
 
 // ExportTag is a tag of the buyer's own customer record as exported to the buyer (name and colour only).

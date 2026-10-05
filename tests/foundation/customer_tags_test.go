@@ -153,6 +153,12 @@ func (c *ctEnv) count(query string, args ...any) (n int) {
 	return n
 }
 
+// rawTagInsert inserts a tag straight through the owner pool to prove the table CHECKs on their own.
+func (c *ctEnv) rawTagInsert(store, name string) error {
+	_, err := c.f.owner.Exec(context.Background(), `INSERT INTO customers.tags(tenant_id,store_id,name,color) VALUES($1,$2,$3,'gray')`, c.f.tenantA, store, name)
+	return err
+}
+
 func ctIDs(items []customers.Customer) map[string]bool {
 	out := map[string]bool{}
 	for _, i := range items {
@@ -282,7 +288,22 @@ func TestCustomerTags(t *testing.T) {
 		if err != nil {
 			t.Fatalf("rename own case: %v", err)
 		}
-		for _, bad := range []string{"", " x", "x ", strings.Repeat("a", 21), "a\tb", "a\u0000b", "é"} { // last: not NFC
+		// compatibility spelling and case are the same tag: full-width letters fold onto ASCII (NFKC + lower)
+		for _, dup := range []string{"ＶＩＰ", "ｖｉｐ"} {
+			if _, err := c.newTag(c.adminTok, a1, dup, "gray"); !errors.Is(err, customers.ErrTagExists) {
+				t.Fatalf("full-width %q: %v", dup, err)
+			}
+		}
+		// a decomposed spelling is normalised to NFC by Go before it is sent; the database refuses non-NFC and invisible-format names
+		if r, err := c.newTag(c.adminTok, a1, "e\u0301", "gray"); err != nil || r.Name != "\u00e9" {
+			t.Fatalf("decomposed name: %+v %v", r, err)
+		}
+		for _, raw := range []string{"e\u0301x", "zero\u200bwidth", "\ufeffbom"} {
+			if cbcCode(c.rawTagInsert(a1, raw)) != "23514" {
+				t.Fatalf("DB accepted %q", raw)
+			}
+		}
+		for _, bad := range []string{"", " x", "x ", strings.Repeat("a", 21), "a\tb", "a\u0000b", "zero\u200bwidth", "\ufeffbom"} {
 			if _, err := c.newTag(c.adminTok, a1, bad, "red"); !errors.Is(err, command.ErrInvalid) {
 				t.Fatalf("name %q: %v", bad, err)
 			}
@@ -505,12 +526,21 @@ func TestCustomerTags(t *testing.T) {
 		if got := c.count(`SELECT count(*) FROM customers.notes WHERE owner_id=$1`, owner); got != 3 {
 			t.Fatalf("notes before erasure: %d", got)
 		}
+		receipts := func(op string) int {
+			return c.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND response->>'customer_id'=$2 AND operation=$3`, f.tenantA, owner, op)
+		}
+		if receipts("customer.note.add") != 3 || receipts("customer.tags.set") < 1 {
+			t.Fatalf("expected idempotency receipts before erasure: notes=%d tags=%d", receipts("customer.note.add"), receipts("customer.tags.set"))
+		}
 		err := c.run(c.adminTok, a1, func(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
 			_, e := customers.Erase(ctx, tx, s, c.adminTok, t04Key("ct-erase"), owner)
 			return e
 		})
 		if err != nil {
 			t.Fatalf("erase: %v", err)
+		}
+		if n := c.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND response->>'customer_id'=$2`, f.tenantA, owner); n != 0 {
+			t.Fatalf("%d idempotency receipts of the erased customer survived", n)
 		}
 		if got := c.count(`SELECT count(*) FROM customers.notes WHERE owner_id=$1`, owner) + c.count(`SELECT count(*) FROM customers.owner_tags WHERE owner_id=$1`, owner); got != 0 {
 			t.Fatalf("%d tag links/notes survived the merchant erasure", got)
@@ -584,8 +614,9 @@ func TestCustomerTags(t *testing.T) {
 			t.Fatal(err)
 		}
 		var parsed struct {
-			Tags  []customers.ExportTag  `json:"tags"`
-			Notes []customers.ExportNote `json:"notes"`
+			Tags         []customers.ExportTag  `json:"tags"`
+			Notes        []customers.ExportNote `json:"notes"`
+			NotesOmitted int                    `json:"notes_omitted"`
 		}
 		if err := json.Unmarshal(doc, &parsed); err != nil || len(parsed.Tags) != 2 || len(parsed.Notes) != 1 {
 			t.Fatalf("export tags/notes: %+v %v", parsed, err)
@@ -593,8 +624,28 @@ func TestCustomerTags(t *testing.T) {
 		if parsed.Notes[0].Body != ctMarker+"-export" || parsed.Tags[0].Name == "" {
 			t.Fatalf("export content: %+v", parsed)
 		}
-		if strings.Contains(string(doc), c.authorA) {
-			t.Fatal("the export names a staff principal")
+		if strings.Contains(string(doc), c.authorA) || parsed.NotesOmitted != 0 {
+			t.Fatalf("the export names a staff principal or omitted notes: %d", parsed.NotesOmitted)
+		}
+		// 150 maximal notes (150000 characters): the export stays under its cap, keeps the newest 60000 characters and says how many it left out
+		big := c.bundleCustomer()
+		mustExec(t, f.owner, `INSERT INTO customers.notes(tenant_id,store_id,owner_id,body,author_id,created_at)
+			SELECT $1,$2,$3,repeat('x',1000),$4,clock_timestamp()-make_interval(secs=>g) FROM generate_series(1,150) g`, f.tenantA, a1, big.Scope.OwnerID, c.authorA)
+		tx3, err := c.h.a.runtime.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx3.Rollback(context.Background())
+		doc3, err := customers.BuyerExport(ctx, tx3, a1, big.Token, t04Key("ct-export3"))
+		if err != nil {
+			t.Fatalf("export with 150 maximal notes: %v", err)
+		}
+		var p3 struct {
+			Notes        []customers.ExportNote `json:"notes"`
+			NotesOmitted int                    `json:"notes_omitted"`
+		}
+		if err := json.Unmarshal(doc3, &p3); err != nil || len(p3.Notes) != 60 || p3.NotesOmitted != 90 {
+			t.Fatalf("capped notes: kept=%d omitted=%d err=%v", len(p3.Notes), p3.NotesOmitted, err)
 		}
 		// a customer without tags or notes exports empty lists, not null
 		empty := c.bundleCustomer()
