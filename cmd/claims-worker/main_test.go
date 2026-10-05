@@ -143,7 +143,6 @@ func TestConfigRejections(t *testing.T) {
 		"short cursor key": func(v map[string]string) {
 			v["COMMERCE_CLAIMS_CURSOR_KEY"] = base64.StdEncoding.EncodeToString([]byte("short"))
 		},
-		"no page app id":  func(v map[string]string) { delete(v, "COMMERCE_META_PAGE_APP_ID") },
 		"bad page app id": func(v map[string]string) { v["COMMERCE_META_PAGE_APP_ID"] = "not-a-number" },
 	}
 	for name, mutate := range bad {
@@ -198,5 +197,20 @@ func TestValidEnvironmentFailsClosedWithoutLeaking(t *testing.T) {
 		if strings.Contains(err.Error(), banned) {
 			t.Fatalf("error leaked %q", banned)
 		}
+	}
+}
+
+// TestConfigPageAppIDOptional: an unset COMMERCE_META_PAGE_APP_ID turns the meta connection-health probe off instead
+// of refusing the whole worker (integrator fix 2026-10-06: existing deployments predate the variable); a malformed
+// value is still refused by TestConfigRejections ("bad page app id").
+func TestConfigPageAppIDOptional(t *testing.T) {
+	v := testEnv()
+	delete(v, "COMMERCE_META_PAGE_APP_ID")
+	c, err := loadConfig(func(k string) string { return v[k] })
+	if err != nil {
+		t.Fatalf("unset page app id refused: %v", err)
+	}
+	if c.metaHealthPageAppID != "" {
+		t.Fatalf("page app id = %q, want empty (probe off)", c.metaHealthPageAppID)
 	}
 }

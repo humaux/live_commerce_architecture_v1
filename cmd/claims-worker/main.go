@@ -183,8 +183,10 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	}
 	// meta connection-health probe (§4.2 P3): our app id is required (a missing value would make every Page read as
 	// "not subscribed"); the Advanced Access / DM flags default to the safe pre-review values.
-	c.metaHealthPageAppID = getenv("COMMERCE_META_PAGE_APP_ID")
-	if !metaPageAppIDPattern.MatchString(c.metaHealthPageAppID) {
+	// Optional (2026-10-06 integrator fix): unset = the health probe is OFF (one startup log line) instead of the whole
+	// worker refusing to start — the pilot and existing deployments predate this variable. Set but malformed is refused.
+	c.metaHealthPageAppID = strings.TrimSpace(getenv("COMMERCE_META_PAGE_APP_ID"))
+	if c.metaHealthPageAppID != "" && !metaPageAppIDPattern.MatchString(c.metaHealthPageAppID) {
 		return workerConfig{}, errWorkerConfig
 	}
 	c.metaHealthRCfg = metaconnect.NewReaderConfig(getenv("COMMERCE_META_ADVANCED_ACCESS"), getenv("COMMERCE_META_DM_RECEIVER_CONFIRMED") == "1")
@@ -299,9 +301,13 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerRoutes
 	}
 	// meta connection-health probe sweep (§4): read-only Graph probe of due Pages, every 5 min + on start.
-	prober, err := metareply.NewProber(workerPool, c.pageKeys, c.pageOpen, c.graph.GraphBaseURL, c.graph.GraphVersion, c.metaHealthPageAppID, c.metaHealthRCfg)
-	if err != nil {
-		return errWorkerRoutes
+	var prober *metareply.Prober
+	if c.metaHealthPageAppID != "" {
+		if prober, err = metareply.NewProber(workerPool, c.pageKeys, c.pageOpen, c.graph.GraphBaseURL, c.graph.GraphVersion, c.metaHealthPageAppID, c.metaHealthRCfg); err != nil {
+			return errWorkerRoutes
+		}
+	} else {
+		slog.Info("meta_health_probe_disabled", "reason", "COMMERCE_META_PAGE_APP_ID unset")
 	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
@@ -311,7 +317,9 @@ func run(ctx context.Context, getenv func(string) string) error {
 	river.AddWorker(workers, dispatcher)
 	river.AddWorker(workers, retentionWorker)
 	river.AddWorker(workers, storeVerifyWorker)
-	river.AddWorker(workers, prober)
+	if prober != nil {
+		river.AddWorker(workers, prober)
+	}
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
