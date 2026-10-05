@@ -9,6 +9,26 @@ import {
   canOpen,
 } from "../../apps/admin/src/routes.ts";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
+import { pageTitle } from "../../apps/admin/src/page-title.ts";
+test("ADM06 create/detail titles share the route vocabulary without adding a phantom Next page", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    assert.equal(
+      pageTitle(locale, `/${locale}/products/new`),
+      shellCopy[locale].productNew,
+    );
+    assert.equal(
+      pageTitle(locale, "/products/product-id"),
+      shellCopy[locale].product,
+    );
+    for (const route of routes.filter(
+      (route) => route.path !== "/products/[product]",
+    ))
+      assert.equal(
+        pageTitle(locale, route.path),
+        shellCopy[locale][route.labelKey],
+      );
+  }
+});
 const walk = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`],
@@ -27,7 +47,11 @@ test("G-UI1 Next pages and route registry are bidirectional, unique, typed, docu
   for (const route of routes) {
     assert.ok(route.permission || route.public, route.id);
     assert.ok(existsSync(route.spec), route.id);
-    assert.match(route.spec, /^tests\/.*(?:\.spec\.ts|(?:-gate|-browser)\.mjs)$/, `${route.id}: spec must be executable browser coverage, not a design brief`);
+    assert.match(
+      route.spec,
+      /^tests\/.*(?:\.spec\.ts|(?:-gate|-browser)\.mjs)$/,
+      `${route.id}: spec must be executable browser coverage, not a design brief`,
+    );
     for (const locale of ["en", "zh-TW", "zh-CN"] as const)
       assert.ok(shellCopy[locale][route.labelKey]);
   }
@@ -70,13 +94,20 @@ test("G-UI2 every route permission is a permission Go knows, and /orders/new nee
   for (const route of routes)
     if (route.permission && route.permission !== "owner")
       assert.ok(
-        backend.includes(`'${route.permission}'`) || backend.includes(`"${route.permission}"`),
+        backend.includes(`'${route.permission}'`) ||
+          backend.includes(`"${route.permission}"`),
         `${route.id}: "${route.permission}" is not a permission Go or SQL knows`,
       );
   const manual = matchRoute("/orders/new")!;
   assert.equal(manual.permission, "inventory:reserve");
-  assert.equal(canOpen(manual, { role: "staff", permissions: ["inventory:reserve"] }), true);
-  assert.equal(canOpen(manual, { role: "staff", permissions: ["orders:read"] }), false);
+  assert.equal(
+    canOpen(manual, { role: "staff", permissions: ["inventory:reserve"] }),
+    true,
+  );
+  assert.equal(
+    canOpen(manual, { role: "staff", permissions: ["orders:read"] }),
+    false,
+  );
 });
 test("G-UI1 dynamic and public routes match, details never appear as navigation", () => {
   assert.equal(matchRoute("/customers/id")?.id, "customer-detail");

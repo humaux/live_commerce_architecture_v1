@@ -619,7 +619,7 @@ export function Ledger({
                             >
                               {row.product_name}
                             </button>
-                            <small>{initial.fixture ? c.demo : row.code}</small>
+                            {initial.fixture && <small>{c.demo}</small>}
                             <small className="mobile-sku">
                               {row.code}
                               {/* status-col is display:none ≤680px; this badge is

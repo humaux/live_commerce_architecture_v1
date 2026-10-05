@@ -31,7 +31,7 @@ export const groups: readonly { id: GroupID; icon: string }[] = [
   { id: "customers", icon: "support" },
   { id: "marketing", icon: "meta" },
   { id: "storefront", icon: "inventory" },
-  { id: "finance", icon: "orders" },
+  { id: "finance", icon: "wallet" },
   { id: "settings", icon: "settings" },
 ];
 export function matchRoute(path: string): RouteEntry | undefined {

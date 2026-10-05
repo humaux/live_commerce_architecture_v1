@@ -226,7 +226,7 @@ export function PasswordAuth({
     reset: c.verifyReset,
   }[mode];
   const left = { textAlign: "left" } as const;
-  const link = { color: "var(--focus)" } as const;
+  const link = { color: "var(--ui-link)", display: "inline-flex", alignItems: "center", minHeight: "var(--ui-target)" } as const;
 
   return (
     <section className="entry-auth-panel" aria-labelledby="password-auth-title">

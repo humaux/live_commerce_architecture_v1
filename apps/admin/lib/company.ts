@@ -17,6 +17,13 @@ export function brandedTitle(pageName: string): string {
 }
 export const platformLocales = ["zh-TW", "zh-CN", "en"] as const;
 export type PlatformLocale = (typeof platformLocales)[number];
+export function operatorSentence(locale: PlatformLocale): string {
+  if (locale === "zh-TW")
+    return `${company.productName} 由 ${company.legalChinese} 營運`;
+  if (locale === "zh-CN")
+    return `${company.productName} 由 ${company.legalChinese} 运营`;
+  return operatedBy;
+}
 export const platformPages = [
   "home",
   "privacy",

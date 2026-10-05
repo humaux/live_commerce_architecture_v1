@@ -1,10 +1,10 @@
 // Platform operator attribution only; no BFF/Go calls and no merchant-storefront branding.
-import { operatedBy } from "@/lib/company";
+import { operatorSentence, type PlatformLocale } from "@/lib/company";
 
-export function OperatorFooter() {
+export function OperatorFooter({ locale }: { locale: PlatformLocale }) {
   return (
     <footer className="operator-footer" data-testid="operator-footer">
-      <p>{operatedBy}</p>
+      <p>{operatorSentence(locale)}</p>
     </footer>
   );
 }

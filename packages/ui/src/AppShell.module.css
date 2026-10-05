@@ -18,7 +18,7 @@
 /* Chrome palette must not override selection inside unchanged domain pages. */
 .rail ::selection,
 .topbar ::selection {
-  background: #ffdbbf;
+  background: var(--ui-primary-soft);
   color: var(--ui-text);
 }
 .skip {
@@ -44,10 +44,10 @@
   z-index: 40;
 }
 .brand {
-  padding: 20px 16px;
-  min-height: 76px;
+  padding: 12px 16px;
+  min-height: 60px;
   font-weight: 750;
-  font-size: 19px;
+  font-size: 14px;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -103,8 +103,8 @@
 }
 .navButton[aria-current],
 .navButton[data-active="true"] {
-  color: #ffab70;
-  background: #3b3635;
+  color: var(--ui-rail-active);
+  background: var(--ui-rail-selected);
   box-shadow: inset 3px 0 var(--ui-brand);
 }
 .subLink {
@@ -113,7 +113,7 @@
   color: #e5e7eb;
 }
 .subLink[aria-current] {
-  color: #ffab70;
+  color: var(--ui-rail-active);
   font-weight: 700;
 }
 .chevron {
@@ -149,11 +149,17 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: 13px;
-  margin-bottom: 16px;
+  align-items: center;
+  margin-bottom: 12px;
   color: var(--ui-muted);
 }
 .crumbs a {
-  color: var(--ui-brand-text);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ui-target);
+  min-width: var(--ui-target);
+  color: var(--ui-link);
+  text-underline-offset: 3px;
 }
 .store {
   min-width: 0;

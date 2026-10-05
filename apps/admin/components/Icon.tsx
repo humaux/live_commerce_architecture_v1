@@ -5,6 +5,7 @@ const paths: Record<string, string> = {
   product: "M3 7l9-4 9 4-9 4-9-4zm0 0v11l9 4 9-4V7M12 11v11",
   inventory: "M3 9l9-6 9 6v12H3V9zm4 12v-9h10v9M7 16h10",
   orders: "M5 3h14v18l-3-2-4 2-4-2-3 2V3zm3 5h8M8 12h8",
+  wallet: "M4 5h15v14H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 0v4h17v7h-6V9M17 12h1",
   live: "M3 6h12v12H3zM15 10l6-3v10l-6-3",
   chat: "M20 15a8 8 0 10-14 2l-3 4 6-2a8 8 0 0011-4z",
   meta: "M4 18l5-12 6 12 5-12",

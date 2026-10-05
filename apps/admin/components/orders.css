@@ -81,7 +81,7 @@
   .orders-table > tbody > tr:first-child { border-top: 0; }
   .orders-table > tbody > tr > td { display: flex; align-items: center; justify-content: space-between; gap: 7px; width: auto; height: auto; padding: 5px 3px; border: 0; font-size: 12px; min-width: 0; }
   .orders-table > tbody > tr:not(.orders-detail-row) > td { width: 100%; }
-  .orders-table > tbody > tr > td::before { content: attr(data-label); color: var(--orders-muted); font-size: 11px; }
+  .orders-table > tbody > tr > td::before { content: attr(data-label); color: var(--orders-muted); font-size: var(--ui-text-helper); }
   .orders-table > tbody > tr > td:first-child { grid-column: 1 / -1; }
   .orders-table > tbody > tr > td:first-child::before { display: none; }
   .orders-table > tbody > tr > td:first-child button { min-height: 44px; gap: 10px; }

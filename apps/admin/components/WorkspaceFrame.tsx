@@ -16,6 +16,7 @@ import {
 } from "@live-commerce/i18n";
 import { AppShell, shellStyles as s } from "@live-commerce/ui";
 import { shellCopy } from "@/src/shell-copy";
+import { pageTitle } from "@/src/page-title";
 import { canOpen, matchRoute, visibleGroups } from "@/src/routes";
 import { readWorkspace, logoutWorkspace } from "@/src/shell/api";
 import { navAccessFrom } from "@/lib/team-model";
@@ -155,8 +156,16 @@ export function WorkspaceFrame({
     );
   }
   useEffect(() => {
-    if (data && data.key === storeParam && route?.path === "/" && !allowed && home !== "/")
-      router.replace(`/${locale}${home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`);
+    if (
+      data &&
+      data.key === storeParam &&
+      route?.path === "/" &&
+      !allowed &&
+      home !== "/"
+    )
+      router.replace(
+        `/${locale}${home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`,
+      );
   }, [data, storeParam, route, allowed, home, locale, router]);
   async function signOut() {
     if (locked || busy.current) return;
@@ -231,7 +240,7 @@ export function WorkspaceFrame({
         {error === "expired" || signingOut
           ? c.signIn
           : route
-            ? c[route.labelKey]
+            ? pageTitle(locale, pathname)
             : "Commerce workspace"}
       </title>
       <AppShell
@@ -241,7 +250,12 @@ export function WorkspaceFrame({
         skipLabel={c.skip}
         rail={
           <>
-            <div className="platform-shell-brand" data-testid="shell-platform-brand">{company.productName}</div>
+            <div
+              className="platform-shell-brand"
+              data-testid="shell-platform-brand"
+            >
+              {company.productName}
+            </div>
             {selectedStore && (
               <div className={s.brand} data-testid="shell-store-brand">
                 <span className={s.brandMark} aria-hidden="true">
@@ -360,21 +374,25 @@ export function WorkspaceFrame({
             data-shell-route={route.path}
             aria-label={c.navigation}
           >
-            <a
-              href={`/${locale}/`}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/");
-              }}
-            >
-              {c.overview}
-            </a>
             {route.id !== "dashboard" && (
               <>
+                <a
+                  href={`/${locale}/`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/");
+                  }}
+                >
+                  {c.overview}
+                </a>
+                {c[route.group] !== pageTitle(locale, pathname) && (
+                  <>
+                    <span aria-hidden="true">/</span>
+                    <span>{c[route.group]}</span>
+                  </>
+                )}
                 <span aria-hidden="true">/</span>
-                <span>{c[route.group]}</span>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">{c[route.labelKey]}</span>
+                <span aria-current="page">{pageTitle(locale, pathname)}</span>
               </>
             )}
           </nav>
@@ -401,7 +419,12 @@ export function WorkspaceFrame({
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
             <h1>{c.forbidden}</h1>
-            <button data-testid="route-forbidden-home" onClick={() => navigate(home)}>{c.back}</button>
+            <button
+              data-testid="route-forbidden-home"
+              onClick={() => navigate(home)}
+            >
+              {c.back}
+            </button>
           </div>
         ) : (
           <>
@@ -412,7 +435,7 @@ export function WorkspaceFrame({
             {children}
           </>
         )}
-        <OperatorFooter />
+        <OperatorFooter locale={locale} />
       </AppShell>
     </>
   );

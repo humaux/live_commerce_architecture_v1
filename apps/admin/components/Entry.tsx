@@ -348,10 +348,6 @@ export function Entry({
       {!path && <title>{brandedTitle(passwordMode === "signin" ? passwordCopy[locale].signinTitle : status === "onboarding" ? c.title : c.signInTitle)}</title>}
       <header className="entry-topbar">
         <div className="entry-brand" data-testid="platform-brand">{company.productName}</div>
-        <div className="entry-manage">
-          <Icon name="inventory" size={20} />
-          {c.manage}
-        </div>
         <div className="entry-account-tools">
           <label className="entry-language">
             <span className="sr-only">{c.language}</span>
@@ -368,10 +364,6 @@ export function Entry({
               ))}
             </select>
           </label>
-          <span className="entry-avatar" aria-hidden="true">
-            M
-          </span>
-          <span className="entry-account-label">{c.account}</span>
           {status === "onboarding" && (
             <button
               className="entry-signout"
@@ -710,7 +702,7 @@ export function Entry({
           </>
         )}
       </main>
-      <OperatorFooter />
+      <OperatorFooter locale={locale} />
     </div>
   );
 }
