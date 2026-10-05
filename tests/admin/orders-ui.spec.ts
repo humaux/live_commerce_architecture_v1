@@ -55,10 +55,18 @@ async function signedLogin(page: Page) {
   await expect(page.getByTestId("orders-table")).toBeVisible();
   // These frozen MOU scenarios explicitly inspect drafts. v2's default is tested
   // separately; choose the all-states inspection scope via the actual control.
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   await expect(page).toHaveURL(/state=all/);
   await expect(page.getByTestId("orders-table")).toBeVisible();
   expect(await detailCalls(page)).toBe(before);
+}
+
+// Filters are collapsed on every viewport. Exercise their real disclosure before
+// using an existing filter; all state, privacy and response assertions stay intact.
+async function revealOrderFilters(page: Page) {
+  const toggle = page.getByTestId("orders-more-filters");
+  if (await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }
 
 async function switchOrderStore(page: Page, next: string) {
@@ -297,6 +305,7 @@ test("MOU02 two principals, store authority and invalid sessions never reveal PI
   expect(missing.body).not.toContain("Synthetic Buyer");
   await switchOrderStore(page, foreignStore);
   await expect(page).toHaveURL(new RegExp(`store=${foreignStore}`));
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   await expect(page.getByTestId(`order-row-${ids.pending}`)).toHaveCount(0);
   await expand(page, foreignOrder);
@@ -321,6 +330,7 @@ test("MOU02 two principals, store authority and invalid sessions never reveal PI
     403,
   );
   await page.goto(`/en/orders?store=${foreignStore}`);
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all"); // explicit access to the foreign-store draft, only with its authorized principal
   await expand(page, foreignOrder);
   await session(context, noOrdersToken);
@@ -623,9 +633,11 @@ test("MOU03 delayed old success/error cannot repaint filter, locale or new sessi
   // in-flight old-store read: the late response is never observed repainting. It does NOT
   // prove the in-page generation fence for a store change, because a store can no longer
   // change in-page. The filter/locale cases below exercise the late-response generation fences.
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("DRAFT");
   await oldStore.intercepted;
   await switchOrderStore(page, foreignStore);
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("DRAFT");
   await expect(page.getByTestId(`order-row-${foreignOrder}`)).toBeVisible();
   oldStore.release();
@@ -635,8 +647,10 @@ test("MOU03 delayed old success/error cannot repaint filter, locale or new sessi
     `**/api/stores/${foreignStore}/orders?*`,
     true,
   );
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("CONFIRMED");
   await oldFilter.intercepted;
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("CANCELLED");
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   oldFilter.release();
@@ -646,6 +660,7 @@ test("MOU03 delayed old success/error cannot repaint filter, locale or new sessi
     `**/api/stores/${foreignStore}/orders?*`,
     false,
   );
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   await oldLocale.intercepted;
   await page.getByTestId("locale-switch").selectOption("zh-CN");
@@ -691,6 +706,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await signedLogin(page);
   const clicks: Array<{control:string; result:string}> = [];
   await switchOrderStore(page, foreignStore);
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   await expect(page.getByTestId(`order-row-${foreignOrder}`)).toBeVisible();
   await expect(page.getByTestId(`order-row-${ids.pending}`)).toHaveCount(0);
@@ -700,6 +716,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await switchOrderStore(page, store);
   await expect(page.getByTestId(`order-row-${ids.pending}`)).toBeVisible();
   await expect(page.getByTestId(`order-row-${foreignOrder}`)).toHaveCount(0);
+  await revealOrderFilters(page);
   await page.getByTestId("state-filter").selectOption("all");
   clicks.push({control:"shell store A → B → reload B → A", result:"real shell selection + Orders navigation; selected store persisted; other store rows absent in both directions"});
   async function apply(control: string, action: () => Promise<unknown>) {
@@ -715,6 +732,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
     clicks.push({ control, result: `visible SQL total ${data.total}; counts match response` });
     return data;
   }
+  await revealOrderFilters(page);
   await apply("explicit cancelled state", () => page.getByTestId("state-filter").selectOption("CANCELLED"));
   await apply("cancelled queue retains state", () => page.getByTestId("orders-bucket-cancelled").click());
   await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
@@ -724,6 +742,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await expect(page.getByTestId("orders-bucket-cancelled")).toHaveAttribute("aria-pressed", "true");
   await apply("all queue retains state", () => page.getByTestId("orders-bucket-all").click());
   await expect(page.getByTestId("state-filter")).toHaveValue("CANCELLED");
+  await revealOrderFilters(page);
   await apply("default hide drafts", () => page.getByTestId("state-filter").selectOption("active"));
   await expect(page.getByTestId(`order-row-${ids.draft0}`)).toHaveCount(0);
   for (const bucket of ["unpaid","transfer_review","ready_to_ship","ready_to_consign","shipped","completed","cancelled","all"]) {
@@ -742,17 +761,21 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await expect(page.getByTestId("orders-search")).toHaveValue(""); // deliberate privacy rule, not storage
   clicks.push({control:"refresh private search",result:"query cleared, not persisted in URL or storage"});
   for (const payment of ["cash_on_delivery","bank_transfer","pay_at_pickup","card"]) {
+    await revealOrderFilters(page);
     await page.getByTestId("orders-payment-filter").selectOption(payment);
     await apply(`payment ${payment}`, () => page.getByTestId("orders-apply").click());
     await expect(page).toHaveURL(new RegExp(`payment_mode=${payment}`));
   }
+  await revealOrderFilters(page);
   await page.getByTestId("orders-delivery-filter").selectOption("home");
   await apply("delivery home", () => page.getByTestId("orders-apply").click());
   await page.reload();
   await expect(page.getByTestId("orders-payment-filter")).toHaveValue("card");
   await expect(page.getByTestId("orders-delivery-filter")).toHaveValue("home");
   await apply("reset filters", () => page.getByTestId("orders-reset").click());
+  await revealOrderFilters(page);
   await apply("inspect drafts for recorded live claim", () => page.getByTestId("state-filter").selectOption("all"));
+  await revealOrderFilters(page);
   await page.getByTestId("orders-session-filter").selectOption(ids.live_session);
   const live = await apply("live session", () => page.getByTestId("orders-apply").click());
   expect(live.total).toBe(1);
@@ -761,7 +784,9 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await expect(page.getByTestId("orders-session-filter")).toHaveValue(ids.live_session);
   await apply("reset live filter", () => page.getByTestId("orders-reset").click());
   const today = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+  await revealOrderFilters(page);
   await page.getByTestId("orders-from").fill(today);
+  await revealOrderFilters(page);
   await page.getByTestId("orders-to").fill(today);
   const dated = await apply("Taipei day", () => page.getByTestId("orders-apply").click());
   expect(dated.total).toBeGreaterThan(0);
@@ -769,6 +794,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await expect(page.getByTestId("orders-from")).toHaveValue(today);
   await expect(page.getByTestId("orders-to")).toHaveValue(today);
   await apply("reset before visual acceptance", () => page.getByTestId("orders-reset").click());
+  await revealOrderFilters(page);
   await apply("active ledger", () => page.getByTestId("state-filter").selectOption("active"));
   for (const locale of ["zh-TW","zh-CN","en"]) {
     await page.getByTestId("locale-switch").selectOption(locale);
@@ -786,6 +812,7 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         await expect(page.getByTestId("state-filter")).toBeHidden();
         await more.click();
         await expect(more).toHaveAttribute("aria-expanded", "true");
+        await revealOrderFilters(page);
         await page.getByTestId("orders-payment-filter").selectOption("card");
         await page.getByTestId("orders-apply").click();
         await expect(page).toHaveURL(/payment_mode=card/);

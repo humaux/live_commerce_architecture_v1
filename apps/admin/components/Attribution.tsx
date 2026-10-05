@@ -5,7 +5,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
-import { Field, FormRow, TableFrame } from "@live-commerce/ui";
+import { Field, FormRow, TableFrame, DateControl } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { money, displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
@@ -168,7 +169,7 @@ export function Attribution({
         >
           <FormRow>
             <Field id="attribution-from" label={c.from} width="short">
-              <input
+              <DateControl emptyLabel={presentationCopy[locale].date}
                 id="attribution-from"
                 lang={locale}
                 type="date"
@@ -181,7 +182,7 @@ export function Attribution({
               />
             </Field>
             <Field id="attribution-to" label={c.to} width="short">
-              <input
+              <DateControl emptyLabel={presentationCopy[locale].date}
                 id="attribution-to"
                 lang={locale}
                 type="date"

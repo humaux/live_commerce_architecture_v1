@@ -1,4 +1,6 @@
 "use client";
+import { DateControl } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 
 // Merchant ads page: Meta connection, draft list + detail, draft form, report, CAPI setting (contracts/meta-ads-v1.md §2, §5, §7).
 // BFF routes, all -> Go internal/httpapi/ads.go under /v1/admin/stores/{store_id}/ads (lib/ads-client.ts is the only caller):
@@ -856,7 +858,7 @@ function DraftFormPanel({
         </label>
         <FormRow>
           <Field id="ads-f-starts" label={c.fStarts}>
-            <input
+            <DateControl emptyLabel={presentationCopy[locale].dateTime}
               id="ads-f-starts"
               lang={locale}
               type="datetime-local"
@@ -866,7 +868,7 @@ function DraftFormPanel({
             />
           </Field>
           <Field id="ads-f-ends" label={c.fEnds}>
-            <input
+            <DateControl emptyLabel={presentationCopy[locale].dateTime}
               id="ads-f-ends"
               lang={locale}
               type="datetime-local"
@@ -1111,7 +1113,7 @@ function ReportSection({
       <form className="ads-controls" onSubmit={(e) => { e.preventDefault(); void load(from, to, new AbortController().signal); }}>
         <FormRow>
           <Field id="ads-report-from" label={c.reportFrom} width="short">
-            <input
+            <DateControl emptyLabel={presentationCopy[locale].date}
               id="ads-report-from"
               lang={locale}
               type="date"
@@ -1121,7 +1123,7 @@ function ReportSection({
             />
           </Field>
           <Field id="ads-report-to" label={c.reportTo} width="short">
-            <input
+            <DateControl emptyLabel={presentationCopy[locale].date}
               id="ads-report-to"
               lang={locale}
               type="date"

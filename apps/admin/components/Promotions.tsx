@@ -19,6 +19,8 @@ import {
 import { promotionsCopy, type PromotionsCopy } from "@/lib/promotions-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { DateControl, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -165,11 +167,11 @@ function Sections({
           </label>
           <label>
             {c.startsAt}
-            <input data-testid="promotion-starts" type="datetime-local" value={form.startsAt} onChange={(event) => set("startsAt", event.target.value)} />
+            <DateControl emptyLabel={presentationCopy[locale].dateTime} lang={locale} data-testid="promotion-starts" type="datetime-local" value={form.startsAt} onChange={(event) => set("startsAt", event.target.value)} />
           </label>
           <label>
             {c.endsAt}
-            <input data-testid="promotion-ends" type="datetime-local" value={form.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
+            <DateControl emptyLabel={presentationCopy[locale].dateTime} lang={locale} data-testid="promotion-ends" type="datetime-local" value={form.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
             <small>{c.windowHint}</small>
           </label>
           <label>
@@ -197,7 +199,7 @@ function Sections({
         {rows.length === 0 ? (
           <p className="orders-empty" data-testid="promotions-empty">{c.empty}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.title} scrollHint={presentationCopy[locale].scroll}>
             <table className="orders-actions-table" data-testid="promotions-table">
               <thead>
                 <tr><th>{c.colCode}</th><th>{c.colDiscount}</th><th>{c.colMinimum}</th><th>{c.colWindow}</th><th>{c.colUsage}</th><th>{c.colPerBuyer}</th><th>{c.colStatus}</th><th>{c.colActions}</th></tr>
@@ -220,7 +222,7 @@ function Sections({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
     </>

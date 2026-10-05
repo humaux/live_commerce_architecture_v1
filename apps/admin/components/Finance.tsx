@@ -17,6 +17,8 @@ import { readOrderActions } from "@/lib/orders-client";
 import { customersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { DateControl, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -106,12 +108,12 @@ export function Finance({
           )}
           <label>
             {c.from}
-            <input type="date" data-testid="finance-from" value={draftFrom} max={today} required
+            <DateControl emptyLabel={presentationCopy[locale].date} lang={locale} type="date" data-testid="finance-from" value={draftFrom} max={today} required
               onChange={(event) => setDraftFrom(event.target.value)} />
           </label>
           <label>
             {c.to}
-            <input type="date" data-testid="finance-to" value={draftTo} max={today} required
+            <DateControl emptyLabel={presentationCopy[locale].date} lang={locale} type="date" data-testid="finance-to" value={draftTo} max={today} required
               onChange={(event) => setDraftTo(event.target.value)} />
           </label>
           <button type="submit" data-testid="finance-show" disabled={!store || !valid || read.status === "loading"}>
@@ -142,7 +144,7 @@ export function Finance({
             {summary.rows.length === 0 ? (
               <p className="orders-message" role="status">{c.financeEmpty}</p>
             ) : (
-              <div className="orders-actions-scroll">
+              <TableFrame label={c.financeTitle} scrollHint={presentationCopy[locale].scroll}>
                 <table className="orders-actions-table customers-finance-table" data-testid="finance-table">
                   <thead>
                     <tr>
@@ -161,7 +163,7 @@ export function Finance({
                     ))}
                   </tfoot>
                 </table>
-              </div>
+              </TableFrame>
             )}
           </>
         )}
