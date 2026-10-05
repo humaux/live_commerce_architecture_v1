@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 
 	"livecommerce/internal/checkout"
@@ -91,21 +92,30 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
-	// notify.Worker: the buyer / merchant mail outbox loop (mail.go). It stops with the River client and is waited for, so a record in flight
-	// is written before the pool closes.
+	// notify.Worker: the buyer / merchant mail outbox loop (mail.go), plus the meta connection-health owner mail (0125 §5.2) when
+	// COMMERCE_ADMIN_ORIGIN is set. Both stop with the River client and are waited for, so a record in flight is written before the pool closes.
 	loopCtx, stopLoop := context.WithCancel(ctx)
-	loopDone := make(chan struct{})
-	close(loopDone)
+	var loops sync.WaitGroup
 	if config.mail != nil {
 		nw, err := notify.NewWorker(pool, config.mail.smtp, config.mail.dailyCap)
 		if err != nil {
 			stopLoop()
 			return errWorkerConfig
 		}
-		loopDone = make(chan struct{})
-		go func() { defer close(loopDone); nw.Run(loopCtx) }()
+		loops.Add(1)
+		go func() { defer loops.Done(); nw.Run(loopCtx) }()
+		if config.mail.adminOrigin != "" {
+			mw, err := notify.NewMerchantWorker(pool, config.mail.smtp, config.mail.dailyCap, config.mail.adminOrigin)
+			if err != nil {
+				stopLoop()
+				loops.Wait()
+				return errWorkerConfig
+			}
+			loops.Add(1)
+			go func() { defer loops.Done(); mw.Run(loopCtx) }()
+		}
 	}
-	defer func() { stopLoop(); <-loopDone }()
+	defer func() { stopLoop(); loops.Wait() }()
 	switch err := jobqueue.Run(ctx, client, "expiry_worker_ready"); {
 	case errors.Is(err, jobqueue.ErrStart):
 		return errWorkerStart

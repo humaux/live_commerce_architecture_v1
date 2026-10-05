@@ -25,6 +25,9 @@
 // Live-console comment bridge (LC-B2): optional COMMERCE_CLAIMS_CONSOLE_ADDR (a TCP listen address like
 // ":8081"; empty = bridge off), and, when set, COMMERCE_CLAIMS_BRIDGE_TOKEN (std base64, 32 bytes, shared with
 // cmd/api's BridgeClient) and COMMERCE_CLAIMS_CURSOR_KEY (std base64, 32 bytes, the worker's older_cursor HMAC key).
+// The meta connection-health probe (contract meta-connection-health-v1 §4) additionally reads
+// COMMERCE_META_PAGE_APP_ID (required: the app id P3 matches against), COMMERCE_META_ADVANCED_ACCESS (comma list of
+// permissions with Advanced Access, default empty) and COMMERCE_META_DM_RECEIVER_CONFIRMED ("1" closes LC-U11, default off).
 // ECPay CVS route (taiwan-cvs-logistics-v1 §12, registered only when CVS_ECPAY_ENABLED=1): CVS_ECPAY_ENABLED,
 // CVS_ECPAY_LIVE_CREATE, COMMERCE_CVS_HOOKS_ORIGIN, and, only when enabled, COMMERCE_PAYMENT_PROFILE (one ECPay
 // environment per deployment) and ECPAY_LOGISTICS_KEYRING. The worker calls logistics(-stage).ecpay.com.tw through
