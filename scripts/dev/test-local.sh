@@ -34,17 +34,12 @@ fi
 if [[ "$test_mode" == --browser-platform-site ]]; then
   # Share the browser/PG gate queue: rebuilding this checkout while another
   # browser run is using its standalone output invalidates that run's evidence.
-  platform_lock="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
-  platform_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-300} ))
-  until mkdir "$platform_lock" 2>/dev/null; do
-    if (( $(date +%s) >= platform_deadline )); then
-      printf 'platform-site: test lock busy; no build started\n' >&2
-      exit 2
-    fi
-    sleep 1
-  done
-  printf '%s\n' "$$" > "$platform_lock/pid"
-  trap 'if [[ "$(cat "$platform_lock/pid" 2>/dev/null)" == "$$" ]]; then rm -f "$platform_lock/pid"; rmdir "$platform_lock"; fi' EXIT
+  source scripts/dev/test-lock.sh
+  if ! lc_lock_acquire "${LC_TEST_LOCK_WAIT:-300}"; then
+    printf 'platform-site: test lock busy; no build started\n' >&2
+    exit 2
+  fi
+  trap lc_lock_release EXIT
   mkdir -p output/platform-site
   node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts
   pnpm --filter admin build > output/platform-site/build.log 2>&1
@@ -452,33 +447,21 @@ test_container="lc-foundation-test-$$"
 test_owned=0
 stripe_lock=""
 cleanup() {
-  if [[ -n "$stripe_lock" ]]; then rm -rf "$stripe_lock"; fi
+  if [[ -n "$stripe_lock" ]]; then lc_lock_release; fi
   if [[ "$test_owned" == 1 ]] && [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
     docker rm -f "$test_container" >/dev/null
   fi
 }
 trap cleanup EXIT INT TERM
-# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the
-# 1.9 GB Docker VM with test-focused.sh runs and pushed PG into recovery mode — flaky full-suite reds). Same lock dir
-# as test-focused.sh. Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2)
-# instead of running without exclusivity. A holder that is dead, or whose PID now belongs to a process that is not
-# one of our test runners (PID reuse), is stale and removed.
-lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
-lock_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-7200} ))
-until mkdir "$lock_dir" 2>/dev/null; do
-  holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
-  if [[ -n "$holder" ]] && { ! kill -0 "$holder" 2>/dev/null ||
-      ! ps -o command= -p "$holder" 2>/dev/null | grep -qE 'test-(focused|local)\.sh'; }; then
-    rm -rf "$lock_dir"; continue
-  fi
-  if [[ -z "$holder" ]] && [[ -n "$(find "$lock_dir" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then rm -rf "$lock_dir"; continue; fi
-  if (( $(date +%s) >= lock_deadline )); then
-    printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lock_dir" "${holder:-?}" "${LC_TEST_LOCK_WAIT:-7200}" >&2
-    exit 2
-  fi
-  sleep 2
-done
-echo $$ > "$lock_dir/pid"; stripe_lock="$lock_dir"
+# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the Docker VM
+# with test-focused.sh runs — flaky full-suite reds). Heartbeat-based lock shared with test-focused.sh (scripts/dev/test-lock.sh).
+# Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2) instead of running unexclusive.
+source scripts/dev/test-lock.sh  # cwd is the repo root (line 6)
+if ! lc_lock_acquire "${LC_TEST_LOCK_WAIT:-7200}"; then
+  printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lc_lock_dir" "$(cat "$lc_lock_dir/pid" 2>/dev/null || echo '?')" "${LC_TEST_LOCK_WAIT:-7200}" >&2
+  exit 2
+fi
+stripe_lock=1
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the

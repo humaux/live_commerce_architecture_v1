@@ -46,9 +46,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0115 (claims contains mode), 0117 (delivery-allocation backfill), 0118 (live session flow), 0119 (live-console inbox),
 	// 0120 (kwc-v2), 0121 (msg templates) and 0122 (live lifecycle) add seven more files: 49 -> 56.
 	// 0123 (LC-B2 live-console comments), 0124 (LC-B1 readonly-archived), 0125 (meta connection health) and 0126 (tracking
-	// import) add four more: 56 -> 60.
-	if len(r2) != 60 {
-		t.Fatalf("R2 migration set = %d files %v, want 60", len(r2), r2)
+	// import) add four more: 56 -> 60. 0127 (LC-R1 retention of the four send actions) adds one more: 60 -> 61.
+	if len(r2) != 61 {
+		t.Fatalf("R2 migration set = %d files %v, want 61", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
