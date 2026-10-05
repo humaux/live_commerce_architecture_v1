@@ -93,11 +93,13 @@ export function validErasureSummary(value: unknown): value is { erased: true; or
 /** POST privacy/export 200: the lc.customer-export.v1 envelope; the buyer copy never carries customer_id (customers-core D8). */
 export function validBuyerExport(value: unknown): boolean {
   return (
-    exact(value, ["format", "generated_at", "store", "orders", "consents", "claims", "privacy_actions"]) &&
+    exact(value, ["format", "generated_at", "store", "orders", "consents", "claims", "privacy_actions", "tags", "notes", "notes_omitted"]) &&
     value.format === "lc.customer-export.v1" && instant(value.generated_at) &&
     value.store !== null && typeof value.store === "object" && !Array.isArray(value.store) &&
     Array.isArray(value.orders) && Array.isArray(value.consents) && Array.isArray(value.claims) &&
-    Array.isArray(value.privacy_actions)
+    Array.isArray(value.privacy_actions) &&
+    // W6-01B: the merchant's tags and notes about this buyer are part of the export (notes_omitted counts older notes left out).
+    Array.isArray(value.tags) && Array.isArray(value.notes) && Number.isSafeInteger(value.notes_omitted) && (value.notes_omitted as number) >= 0
   );
 }
 
