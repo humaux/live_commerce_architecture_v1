@@ -70,7 +70,7 @@
   max-width: 420px;
 }
 .product-search input {
-  height: 45px;
+  height: var(--ui-target);
   box-sizing: border-box;
   color: var(--ink);
   font-size: 14px;

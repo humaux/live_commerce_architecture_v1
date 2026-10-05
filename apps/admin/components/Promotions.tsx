@@ -45,16 +45,6 @@ export function Promotions({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
       <div className="orders-page customers-page" data-testid="promotions-page">
         <AdminPageHeader locale={locale} description={c.subtitle} />
-        <div className="orders-controls">
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""} onChange={(event) => window.location.assign(`/${locale}/promotions?store=${event.target.value}`)}>
-                {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </label>
-          )}
-        </div>
         {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
           <div className="orders-message" role="status">

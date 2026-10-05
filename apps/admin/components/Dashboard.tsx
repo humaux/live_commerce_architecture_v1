@@ -59,16 +59,6 @@ export function Dashboard({
           <Link href={link("products/import")} data-testid="action-import">{c.importProducts}</Link>
           <Link href={link("inventory")} data-testid="action-inventory">{c.inventory}</Link>
         </div>} />
-        {stores.length > 1 && (
-          <div className="orders-controls">
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""} onChange={(event) => window.location.assign(`/${locale}/?store=${event.target.value}`)}>
-                {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </label>
-          </div>
-        )}
         {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
           <div className="orders-message" role="status">

@@ -73,25 +73,10 @@ export function Billing({
     : read.status === "not-found" ? (store ? c.notFound : c.noStore)
     : read.status === "unavailable" ? c.unavailable
     : "";
-  const go = (nextStore: string) => {
-    window.location.assign(`/${locale}/billing?store=${nextStore}`);
-  };
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="billing">
       <div className="orders-page customers-page" data-testid="billing-page">
         <AdminPageHeader locale={locale} description={c.subtitle} />
-        <div className="orders-controls">
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""} onChange={(event) => go(event.target.value)}>
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
         {checkout === "cancel" && <p className="orders-message" role="status" data-testid="billing-cancelled">{c.checkoutCancel}</p>}
         {phase === "updating" && <p className="orders-message" role="status" data-testid="billing-updating">{c.checkoutDone}</p>}
         {phase === "slow" && <p className="orders-message" role="status">{c.checkoutDoneSlow}</p>}

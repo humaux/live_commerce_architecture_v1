@@ -95,17 +95,6 @@ export function Finance({
       <div className="orders-page customers-page" data-testid="finance-page">
         <AdminPageHeader locale={locale} description={c.financeSubtitle} />
         <form className="orders-controls customers-finance-controls" onSubmit={submit}>
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""}
-                onChange={(event) => navigate(event.target.value, from, to)}>
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
           <label>
             {c.from}
             <DateControl emptyLabel={presentationCopy[locale].date} lang={locale} type="date" data-testid="finance-from" value={draftFrom} max={today} required

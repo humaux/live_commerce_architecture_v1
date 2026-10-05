@@ -10,12 +10,8 @@
 .orders-v2-filter-toggle { display: block; justify-self: start; min-height: var(--ui-target); }
 .orders-v2-filters[data-expanded="false"] .orders-v2-state-field { display: none; }
 .orders-v2-filter-actions { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
-.orders-v2-filter-actions button, .orders-v2-tabs button { min-height: 44px; padding: 9px 12px; }
+.orders-v2-filter-actions button { min-height: var(--ui-target); padding: 9px 12px; }
 .orders-v2-filter-actions button:first-child { background: var(--ui-primary); border-color: var(--ui-primary); color: white; }
-.orders-v2-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
-.orders-v2-tabs button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 4px; font-size: 13px; }
-.orders-v2-tabs button[aria-pressed="true"] { color: #8b3516; background: #fff3eb; border-color: #e7b495; }
-.orders-v2-tabs button span { font-variant-numeric: tabular-nums; font-weight: 700; }
 .orders-v2-total { margin: 16px 0; font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }
 .orders-v2-note { font-size: 13px; color: var(--orders-muted); }
 .orders-v2 .orders-table { table-layout: fixed; }
@@ -31,8 +27,6 @@
   .orders-v2 .orders-table > thead > tr > th:nth-child(4), .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; }
 }
 @media (max-width: 680px) {
-  .orders-v2-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #c45222 #f5f6f8; }
-  .orders-v2-tabs button { flex: 0 0 auto; white-space: nowrap; }
   .orders-v2-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-secondary { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-filter-toggle { display: block; justify-self: start; min-height: 44px; padding: 9px 12px; }

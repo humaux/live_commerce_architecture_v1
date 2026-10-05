@@ -29,7 +29,7 @@
 .mt-row { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .mt-lines { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .mt-lines li { display: grid; grid-template-columns: minmax(0, 1fr) 92px auto; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 5px; }
-.mt-lines input { min-height: 40px; width: 100%; box-sizing: border-box; padding: 0 8px; border: 1px solid #cbd6e2; border-radius: 5px; font-size: 14px; }
+.mt-lines input { min-height: var(--ui-control-compact); width: 100%; box-sizing: border-box; padding: 0 8px; border: 1px solid #cbd6e2; border-radius: 5px; font-size: 14px; }
 .mt-lines small, .mt-results small { display: block; color: var(--orders-muted); }
 .mt-results { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .mt-results li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; display: grid; gap: 8px; }

@@ -7,8 +7,8 @@
 .orders-heading p { margin-top: 3px; color: var(--orders-muted); font-size: 15px; }
 .orders-controls { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; }
 .orders-controls label { display: grid; gap: 5px; color: var(--orders-muted); font-size: 12px; font-weight: 600; }
-.orders-controls select { min-width: 216px; height: 45px; color: var(--ink); font-size: 14px; }
-.orders-controls button { min-height: 45px; display: inline-flex; align-items: center; gap: 9px; padding: 9px 20px; }
+.orders-controls select { min-width: 216px; height: var(--ui-target); color: var(--ink); font-size: 14px; }
+.orders-controls button { min-height: var(--ui-target); display: inline-flex; align-items: center; gap: 9px; padding: 9px 20px; }
 .orders-table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; scrollbar-color: #71869e #edf2f7; scrollbar-width: thin; }
 .orders-table { width: 100%; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
 .orders-table > thead > tr > th { height: 55px; background: #f2f5f9; color: #4b5f78; font-size: 12px; font-weight: 700; padding: 14px 22px; }
@@ -18,7 +18,7 @@
 .orders-table > thead > tr > th:nth-child(3), .orders-table > tbody > tr > td:nth-child(3) { width: 18%; }
 .orders-table > thead > tr > th:nth-child(4), .orders-table > tbody > tr > td:nth-child(4) { width: 21%; }
 .orders-table > thead > tr > th:nth-child(5), .orders-table > tbody > tr > td:nth-child(5) { width: 20%; }
-.orders-table > tbody > tr > td:first-child button { display: inline-flex; align-items: center; gap: 20px; min-height: 40px; padding: 5px 0; border: 0; background: none; color: var(--ink); font-weight: 700; white-space: nowrap; }
+.orders-table > tbody > tr > td:first-child button { display: inline-flex; align-items: center; gap: 20px; min-height: var(--ui-control-compact); padding: 5px 0; border: 0; background: none; color: var(--ink); font-weight: 700; white-space: nowrap; }
 .orders-table > tbody > tr > td:first-child button:hover { color: var(--focus); background: none; }
 .orders-selected { background: #edf6ff; }
 .orders-badge { display: inline-flex; align-items: center; width: fit-content; border-radius: 4px; padding: 3px 8px; max-width: 100%; font-size: var(--ui-text-helper); font-weight: 600; line-height: 1.5; white-space: normal; overflow-wrap: normal; background: var(--ui-neutral-soft); color: var(--ui-muted); }

@@ -76,23 +76,6 @@ export function Customers({
       <div className="orders-page customers-page" data-testid="customers-page">
         <AdminPageHeader locale={locale} description={c.subtitle} />
         <form className="orders-controls" role="search" onSubmit={search}>
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select
-                data-testid="store-selector"
-                value={store?.id ?? ""}
-                onChange={(event) => {
-                  previous.current = [];
-                  go(event.target.value, "", "");
-                }}
-              >
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
           <label className="customers-search">
             {c.search}
             <input
