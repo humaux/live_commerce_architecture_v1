@@ -17,11 +17,14 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"livecommerce/internal/command"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
 )
@@ -143,6 +146,41 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		}
 		respond(w, status, result)
 	}))
+	// ---- bulk tracking import (manual-fulfilment-v1 Amendment "M-7 revoked", unit w3-01b) ----
+	// POST preview: dry-run one CSV with the same §3 rules and audit as the single PUT; nothing is written.
+	mux.HandleFunc("POST "+base+"/shipments/tracking-import/preview", cvsRoute(http.MethodPost, false, func(w http.ResponseWriter, r *http.Request) {
+		trackingImportCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+			return merchanttools.TrackingImportPreview(ctx, tx, s, bearerToken(r), data)
+		})
+	}))
+	// POST commit?expected_apply_rows=N: apply the previewed file once (idempotent per file hash, not per header).
+	mux.HandleFunc("POST "+base+"/shipments/tracking-import/commit", trackingImportRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		expected, ok := trackingImportExpectedApplyRows(r)
+		if !ok {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		trackingImportCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+			return merchanttools.TrackingImportCommit(ctx, tx, s, bearerToken(r), data, expected)
+		})
+	}))
+	// GET result.csv[?only=failed]: the downloadable per-row result of one committed batch (no recipient PII).
+	mux.HandleFunc("GET "+base+"/shipments/tracking-import/{batch_id}/result.csv", trackingImportRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {
+		onlyFailed, ok := trackingImportOnlyFailed(r)
+		if !ok {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		var csv []byte
+		ok = toolsRun(w, r, pool, "orders:read", 0, func(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
+			var err error
+			csv, err = merchanttools.TrackingResultCSV(ctx, tx, s, r.PathValue("batch_id"), onlyFailed)
+			return err
+		})
+		if ok {
+			writeAttachment(w, "text/csv; charset=utf-8", `attachment; filename="tracking-import-result.csv"`, csv)
+		}
+	}))
 }
 
 // toolsServe runs fn in one platform.WithScope transaction (budget 0 = the default 5 s) and answers its result or the classified refusal.
@@ -188,4 +226,104 @@ func toolsClassify(err error) (int, string) {
 		return coded.Status, coded.Code
 	}
 	return claimsClassify(err)
+}
+
+// trackingImportRoute is cvsRoute's sibling for the bulk tracking import: exact method, optional query (the commit's
+// expected_apply_rows and the result's only=failed), canonical store_id/batch_id, no Idempotency-Key (idempotency is the
+// file hash, never a header) and a canonical bearer. Every response is private and non-cacheable.
+func trackingImportRoute(method string, query bool, next http.HandlerFunc) http.HandlerFunc {
+	return studioRoute(method, query, func(w http.ResponseWriter, r *http.Request) {
+		if len(r.Header.Values("Idempotency-Key")) != 0 {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		for _, name := range []string{"store_id", "batch_id"} {
+			if value := r.PathValue(name); value != "" && !command.ValidID(value) {
+				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
+		}
+		if !canonicalBearer(r) {
+			respondError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		next(w, r)
+	})
+}
+
+// trackingImportCSV reads one 2 MiB text/csv body and runs fn in one 60 s WithScopeBudget transaction (fulfillment:write):
+// the preview always rolls back, the commit keeps only a matching preview. A stale commit answers 409 preview_stale with the
+// fresh preview so the merchant re-confirms the new count.
+func trackingImportCSV(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, fn func(context.Context, pgx.Tx, platform.Scope, []byte) (any, error)) {
+	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil || media != "text/csv" {
+		respondError(w, http.StatusUnsupportedMediaType, "invalid_request")
+		return
+	}
+	// Per-request deadlines: the 2 MiB body may be slow, the all-or-nothing apply may take most of importBudget.
+	control := http.NewResponseController(w)
+	_ = control.SetReadDeadline(time.Now().Add(30 * time.Second))
+	_ = control.SetWriteDeadline(time.Now().Add(importBudget + 15*time.Second))
+	r.Body = http.MaxBytesReader(w, r.Body, merchanttools.MaxCSVBytes)
+	data, err := io.ReadAll(r.Body)
+	if err != nil || len(data) == 0 {
+		respondError(w, http.StatusRequestEntityTooLarge, "invalid_request")
+		return
+	}
+	var result any
+	err = withToolsScope(r, pool, "fulfillment:write", importBudget, func(ctx context.Context, tx pgx.Tx, s platform.Scope) error {
+		var inner error
+		result, inner = fn(ctx, tx, s, data)
+		return inner
+	})
+	switch {
+	case err == nil || errors.Is(err, merchanttools.ErrPreviewRolledBack):
+		respond(w, http.StatusOK, result) // a preview answers 200 even with row failures; its transaction rolled back
+	default:
+		var stale *merchanttools.PreviewStaleError
+		if errors.As(err, &stale) {
+			respond(w, http.StatusConflict, stale.Preview) // 409 preview_stale, body = the fresh preview
+			return
+		}
+		status, code := toolsClassify(err)
+		respondError(w, status, code)
+	}
+}
+
+// trackingImportQuery parses the request's query strictly: at most one distinct key named `name`, exactly one value.
+func trackingImportQuery(r *http.Request, name string) ([]string, bool) {
+	values, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(values) != 1 {
+		return nil, false
+	}
+	got, present := values[name]
+	if !present || len(got) != 1 {
+		return nil, false
+	}
+	return got, true
+}
+
+// trackingImportExpectedApplyRows reads the commit's single query key ?expected_apply_rows=N (0..500).
+func trackingImportExpectedApplyRows(r *http.Request) (int64, bool) {
+	got, ok := trackingImportQuery(r, "expected_apply_rows")
+	if !ok {
+		return 0, false
+	}
+	n, err := strconv.ParseInt(got[0], 10, 64)
+	if err != nil || n < 0 || n > merchanttools.MaxTrackingImportRows {
+		return 0, false
+	}
+	return n, true
+}
+
+// trackingImportOnlyFailed reads the result.csv filter: no query means every row, ?only=failed the failed rows only.
+func trackingImportOnlyFailed(r *http.Request) (bool, bool) {
+	if r.URL.RawQuery == "" && !r.URL.ForceQuery {
+		return false, true
+	}
+	got, ok := trackingImportQuery(r, "only")
+	if !ok || got[0] != "failed" {
+		return false, false
+	}
+	return true, true
 }

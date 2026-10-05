@@ -98,6 +98,13 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"invalid_url":           "Tracking URL is not valid.",
 		"void_requires_shipped": "Only a shipped record can be voided.",
 		"invalid_void":          "Void request is not valid.",
+		// manual-fulfilment-v1 Amendment "M-7 revoked" (bulk tracking import, unit w3-01b). The file-level
+		// codes refuse the whole CSV (422); preview_stale (409) carries the fresh preview in its body.
+		"preview_stale":     "The preview changed since it was loaded.",
+		"nothing_to_apply":  "Nothing to apply.",
+		"encoding_not_utf8": "The file must be UTF-8 encoded.",
+		"too_many_rows":     "Too many rows.",
+		"required":          "A required column is missing.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
 		"ecpay_probe_failed": "ECPay rejected the keys or could not be reached.", "invalid_sender": "Sender name or mobile number is not valid.",
 		"ecpay_environment_not_allowed": "This ECPay environment is not allowed on this deployment.",
