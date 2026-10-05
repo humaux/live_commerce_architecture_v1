@@ -29,6 +29,7 @@ import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
+import { ProductReadiness } from "./ProductReadiness";
 function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
   return draftFromDetail(detail);
@@ -319,49 +320,29 @@ export function ProductDocumentForm({
         <section>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
-          {requirements.map((r, i) => (
-            <button
-              className="pe-readiness"
-              key={i}
-              type="button"
-              onClick={() => focus(r.key)}
-            >
-              <span className="pe-readiness-state" data-ready={r.ok}>
-                {r.ok ? c.ready : c.pending}
-              </span>
-              <span>{r.label}</span>
-            </button>
-          ))}
+          <ProductReadiness c={c} items={requirements} focus={focus} />
           <p>
             {c.missing}: {requirements.filter((r) => !r.ok).length}
           </p>
           <h3>{c.recommended}</h3>
-          {[
-            { key: "basics", label: c.description, ok: !!draft.description },
-            {
-              key: "collections",
-              label: c.collections,
-              ok: !!draft.collections.length,
-            },
-            {
-              key: singleVariant ? "basics" : "variants",
-              label: c.keyword,
-              ok: draft.rows.some((r) => !!r.keyword),
-            },
-            { key: "seo", label: c.seo, ok: !!draft.seo_title },
-          ].map((r) => (
-            <button
-              type="button"
-              className="pe-readiness"
-              key={r.label}
-              onClick={() => focus(r.key)}
-            >
-              <span className="pe-readiness-state" data-ready={r.ok}>
-                {r.ok ? c.ready : c.pending}
-              </span>
-              <span>{r.label}</span>
-            </button>
-          ))}
+          <ProductReadiness
+            c={c}
+            focus={focus}
+            items={[
+              { key: "basics", label: c.description, ok: !!draft.description },
+              {
+                key: "collections",
+                label: c.collections,
+                ok: !!draft.collections.length,
+              },
+              {
+                key: singleVariant ? "basics" : "variants",
+                label: c.keyword,
+                ok: draft.rows.some((r) => !!r.keyword),
+              },
+              { key: "seo", label: c.seo, ok: !!draft.seo_title },
+            ]}
+          />
         </section>
       </aside>
       <div className="pe-fields">
