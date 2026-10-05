@@ -58,6 +58,12 @@ table.claims-table { table-layout: auto; font-variant-numeric: tabular-nums; }
 .claims-manual-form > .primary { flex: none; }
 .claims-form > .primary { min-height: 39px; white-space: nowrap; }
 .claims-form-hint, .claims-form > [role="status"] { grid-column: 1 / -1; font-size: 13px; }
+/* Offer hints and actions have their own rows so long translations cannot size a field column. */
+.claims-form.claims-offer-form { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.claims-offer-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: start; gap: 12px; }
+.claims-offer-fields > .claims-field { align-content: start; }
+.claims-offer-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.claims-offer-actions > button { min-height: 39px; }
 /* Comment source: one wrapping row, link field first and full width (Claims panel idiom). */
 .claims-form.claims-source-form { display: flex; flex-wrap: wrap; align-items: flex-start; }
 .claims-source-form > .claims-field { flex: 1 1 240px; }
@@ -98,6 +104,8 @@ table.claims-table { table-layout: auto; font-variant-numeric: tabular-nums; }
   .claims-rail, .claims-section { padding: 20px 16px 24px; }
   .claims-form, .claims-manual-form, .claims-prompt-controls { grid-template-columns: minmax(0, 1fr); }
   .claims-form > .primary { width: 100%; }
+  .claims-offer-fields { grid-template-columns: minmax(0, 1fr); }
+  .claims-offer-actions > button { width: 100%; }
   .claims-table-scroll { border: 0; overflow-x: visible; }
   .claims-table, .claims-table > tbody, .claims-table > tbody > tr { display: block; width: 100%; }
   .claims-table > thead { display: none; }

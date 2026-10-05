@@ -49,6 +49,48 @@ async function fitsWidth(page: Page) {
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 }
+async function offerLayout(page: Page) {
+  const form = page.locator(".claims-offer-form");
+  await expect(form.locator(".claims-field")).toHaveCount(5);
+  await expect(page.locator("#claims-offer-live")).toHaveAccessibleDescription(claimsCopy.en.live.livePriceHint);
+  // ADM15/16 [READ/MEASURE]: DOM geometry only; user interactions stay click/fill/selectOption.
+  const geometry = await form.evaluate((element) => {
+    const rect = (node: Element | Range) => {
+      const box = node.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+    };
+    const fields = [...element.querySelectorAll(".claims-field")].map((field) => ({
+      label: rect(field.querySelector("label")!), control: rect(field.querySelector("input, select")!),
+    }));
+    const actions = [...element.querySelectorAll("button")].map((button) => {
+      const range = document.createRange();
+      range.selectNodeContents(button);
+      return { ...rect(button), text: rect(range) };
+    });
+    return { form: rect(element), fields, actions, hint: rect(element.querySelector("#claims-offer-live-hint")!) };
+  });
+  expect(geometry.actions).toHaveLength(2);
+  for (const field of geometry.fields) {
+    expect(field.control.height).toBeGreaterThan(0);
+    expect(field.control.width).toBeGreaterThanOrEqual(160);
+    expect(field.control.left).toBeGreaterThanOrEqual(geometry.form.left - 1);
+    expect(field.control.right).toBeLessThanOrEqual(geometry.form.right + 1);
+  }
+  if ((page.viewportSize()?.width ?? 0) >= 1586) {
+    const labels = geometry.fields.map((field) => field.label.top);
+    const controls = geometry.fields.map((field) => field.control.top);
+    expect(Math.max(...labels) - Math.min(...labels)).toBeLessThanOrEqual(1);
+    expect(Math.max(...controls) - Math.min(...controls)).toBeLessThanOrEqual(1);
+  }
+  expect(geometry.hint.top).toBeGreaterThanOrEqual(Math.max(...geometry.fields.map((field) => field.control.bottom)));
+  for (const action of geometry.actions) {
+    expect(action.height).toBeGreaterThan(0);
+    expect(action.top).toBeGreaterThanOrEqual(geometry.hint.bottom);
+    expect(action.text.width).toBeGreaterThan(0);
+    expect(action.text.left).toBeGreaterThanOrEqual(action.left);
+    expect(action.text.right).toBeLessThanOrEqual(action.right);
+  }
+}
 // Buyer pages have no fixed chrome, so they are captured whole; the admin shell has a
 // fixed rail and skip link, so admin evidence is the settled viewport (Studio idiom).
 async function shot(page: Page, name: string, fullPage = true) {
@@ -299,6 +341,8 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");
   await expect(merchant.getByLabel("Quantity rule", { exact: true })).toBeDisabled();
   const offerForm = merchant.locator(".claims-offer-form");
+  await offerLayout(merchant);
+  pass("ADM15/16: five offer fields have readable widths and aligned tops; live hint and unclipped actions have separate rows");
   for (const [keyword, sku, max, canonical] of [["ａ１", skuA, "5", "A1"], ["b2", skuB, "3", "B2"]]) {
     await offerForm.getByLabel("Keyword", { exact: true }).fill(keyword);
     await offerForm.getByLabel("Product", { exact: true }).selectOption({ label: product });
@@ -453,6 +497,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 
   await merchant.setViewportSize({ width: 390, height: 844 });
   await fitsWidth(merchant);
+  await offerLayout(merchant);
   await merchant.evaluate(() => window.scrollTo(0, 0));
   await merchantShot(merchant, "merchant-claims-390");
   expect(pageErrors).toEqual([]);

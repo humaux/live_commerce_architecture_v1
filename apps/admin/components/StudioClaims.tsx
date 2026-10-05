@@ -642,27 +642,32 @@ export function StudioClaims({ locale, store, scene, initialError }: {
               </div> : <p className="claims-muted">{c.noOffers}</p>}
               {alert("update")}
               <form className="claims-form claims-offer-form" onSubmit={(event) => { event.preventDefault(); addOffer(); }}>
-                <Field id="claims-offer-keyword" label={c.keyword}>
-                  <input id="claims-offer-keyword" value={offerForm.keyword} maxLength={32} autoComplete="off" disabled={blocked}
-                    aria-describedby="claims-keyword-hint" onChange={(event) => setOfferForm({ ...offerForm, keyword: event.target.value })} /></Field>
-                <Field id="claims-offer-product" label={c.product}>
-                  <select id="claims-offer-product" value={offerForm.product} disabled={blocked || !products?.length}
-                    onChange={(event) => setOfferForm({ ...offerForm, product: event.target.value, sku: "" })}>
-                    <option value="">{c.chooseProduct}</option>
-                    {products?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-                <Field id="claims-offer-sku" label={c.sku}>
-                  <select id="claims-offer-sku" value={offerForm.sku} disabled={blocked || !skus.length}
-                    onChange={(event) => setOfferForm({ ...offerForm, sku: event.target.value })}>
-                    <option value="">{c.chooseSKU}</option>
-                    {skus.map((item) => <option key={item.id} value={item.id}>{item.code}</option>)}</select></Field>
-                <Field id="claims-offer-max" label={c.maxPerClaim}>
-                  <input id="claims-offer-max" type="number" min={1} max={999} step={1} inputMode="numeric" value={offerForm.max} disabled={blocked}
-                    onChange={(event) => setOfferForm({ ...offerForm, max: event.target.value })} /></Field>
-                <Field id="claims-offer-live" label={c.live.livePrice} hint={c.live.livePriceHint}>
-                  <input id="claims-offer-live" type="text" inputMode="decimal" autoComplete="off" value={offerForm.live} disabled={blocked}
-                    aria-describedby="claims-offer-live-hint" onChange={(event) => setOfferForm({ ...offerForm, live: event.target.value })} /></Field>
-                <button type="submit" className="primary" disabled={blocked}>{busy === "offer" ? c.working : c.addOffer}</button>
-                <button type="button" disabled={blocked} data-testid="claims-add-library" onClick={addLibrary}>{busy === "library" ? c.working : c.live.libraryAdd}</button>
+                <div className="claims-offer-fields">
+                  <Field id="claims-offer-keyword" label={c.keyword}>
+                    <input id="claims-offer-keyword" value={offerForm.keyword} maxLength={32} autoComplete="off" disabled={blocked}
+                      aria-describedby="claims-keyword-hint" onChange={(event) => setOfferForm({ ...offerForm, keyword: event.target.value })} /></Field>
+                  <Field id="claims-offer-product" label={c.product}>
+                    <select id="claims-offer-product" value={offerForm.product} disabled={blocked || !products?.length}
+                      onChange={(event) => setOfferForm({ ...offerForm, product: event.target.value, sku: "" })}>
+                      <option value="">{c.chooseProduct}</option>
+                      {products?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+                  <Field id="claims-offer-sku" label={c.sku}>
+                    <select id="claims-offer-sku" value={offerForm.sku} disabled={blocked || !skus.length}
+                      onChange={(event) => setOfferForm({ ...offerForm, sku: event.target.value })}>
+                      <option value="">{c.chooseSKU}</option>
+                      {skus.map((item) => <option key={item.id} value={item.id}>{item.code}</option>)}</select></Field>
+                  <Field id="claims-offer-max" label={c.maxPerClaim}>
+                    <input id="claims-offer-max" type="number" min={1} max={999} step={1} inputMode="numeric" value={offerForm.max} disabled={blocked}
+                      onChange={(event) => setOfferForm({ ...offerForm, max: event.target.value })} /></Field>
+                  <Field id="claims-offer-live" label={c.live.livePrice}>
+                    <input id="claims-offer-live" type="text" inputMode="decimal" autoComplete="off" value={offerForm.live} disabled={blocked}
+                      aria-describedby="claims-offer-live-hint" onChange={(event) => setOfferForm({ ...offerForm, live: event.target.value })} /></Field>
+                </div>
+                <p id="claims-offer-live-hint" className="claims-muted claims-form-hint">{c.live.livePriceHint}</p>
+                <div className="claims-offer-actions">
+                  <button type="submit" className="primary" disabled={blocked}>{busy === "offer" ? c.working : c.addOffer}</button>
+                  <button type="button" disabled={blocked} data-testid="claims-add-library" onClick={addLibrary}>{busy === "library" ? c.working : c.live.libraryAdd}</button>
+                </div>
                 <p id="claims-keyword-hint" className="claims-muted claims-form-hint">{c.keywordHint}</p>
                 {catalogError ? <p className="claims-muted" role="status">{c.catalogUnavailable}</p>
                   : products && !products.length && <p className="claims-muted" role="status">{c.noProducts}</p>}
