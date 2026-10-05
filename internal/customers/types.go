@@ -1,9 +1,12 @@
-// types.go holds the FROZEN customers interface types (docs/delivery/units/customers-core.md), the sentinel
-// errors, and the pure logic that needs no database: CD4 current-consent derivation, query and key
-// validation, the customer-id keyed idempotency mapping, strict result decoding and the export size cap.
+// Purpose: the FROZEN customers interface types (docs/delivery/units/customers-core.md, plus the W6-01B tag/note types),
+//   the sentinel errors, and the pure logic that needs no database: CD4 current-consent derivation, query and key
+//   validation, the customer-id keyed idempotency mapping, strict result decoding and the export size cap.
+// Depends on: internal/command (ValidID, ErrInvalid), internal/merchantorders (Summary/Detail), internal/pagination.
+// Used by: read.go, privacy.go, tags.go, notes.go, internal/httpapi/customers.go and customer_tags.go, internal/buyerhttp.
+// Invariants: customers-billing-v1 Amendment W6-01B (tags are merchant-typed; notes are private buyer data).
 //
 // Non-goals: no SQL and no HTTP here (read.go, privacy.go, internal/httpapi and internal/buyerhttp own those);
-// no authority decision (the 0078 definers decide it).
+// no authority decision (the 0078/0139 definers decide it).
 
 package customers
 
@@ -46,6 +49,8 @@ const (
 	MaxExportOrders = 200
 	// detailOrders is the merchant detail page's order window (contract §5: newest 50).
 	detailOrders = 50
+	// detailNotes is the number of newest notes the detail projection carries (W6-01B); ListNotes pages the rest.
+	detailNotes = 50
 	// TimestampLayout is the microsecond UTC layout every timestamp of this package uses; it equals
 	// internal/merchantorders' layout and is what pagination.timeKeyed collections require.
 	TimestampLayout = "2006-01-02T15:04:05.000000Z"
@@ -61,6 +66,12 @@ var (
 	// ErrExportTooLarge: more than MaxExportOrders orders or more than MaxExportBytes after marshal; the
 	// transaction rolls back, so no EXPORT row exists.
 	ErrExportTooLarge = errors.New("export_too_large")
+	// ErrTagExists: another tag of the store has this name (case-insensitively); PT409 tag_exists.
+	ErrTagExists = errors.New("tag_exists")
+	// ErrLimitReached: 100 tags per store, 20 tags per customer or 200 notes per customer is full; PT409 limit_reached.
+	ErrLimitReached = errors.New("limit_reached")
+	// ErrVersionChanged: the tag-set revision or the note version moved since the merchant read it; PT409 version_changed.
+	ErrVersionChanged = errors.New("version_changed")
 	// ErrUnavailable is any projection failure (drift, malformed database result, oversize read).
 	ErrUnavailable = errors.New("customers unavailable")
 )
@@ -87,6 +98,8 @@ type Customer struct {
 	Platforms       []string `json:"platforms"`
 	Consents        Consents `json:"consents"`
 	Active          bool     `json:"active"`
+	// Tags are the merchant-typed store tags of this customer, name-ordered (W6-01B); never nil.
+	Tags []Tag `json:"tags"`
 }
 
 // ClaimSummary never carries an actor_key (CD3).
@@ -119,6 +132,9 @@ type PrivacyAction struct {
 // consent history (newest first) and privacy actions.
 type Detail struct {
 	Customer
+	// TagsRevision is the CAS token PUT .../tags must echo; Notes are the newest 50 (older ones: ListNotes).
+	TagsRevision   string                   `json:"tags_revision"`
+	Notes          []Note                   `json:"notes"`
 	Orders         []merchantorders.Summary `json:"orders"`
 	Claims         []ClaimSummary           `json:"claims"`
 	ConsentHistory []ConsentEvent           `json:"consent_history"`
@@ -129,6 +145,8 @@ type Detail struct {
 type ListRequest struct {
 	Page pagination.Request
 	Q    string
+	// Tag filters the list to customers carrying this tag id (W6-01B); empty means no filter.
+	Tag string
 }
 
 // ConsentInput is the strict buyer PUT body (D12). Context selects the server-side source.
@@ -286,8 +304,9 @@ func strict(raw []byte, out any) error {
 }
 
 var customerKeys = []string{"customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active"}
-var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions")
+	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "tags"}
+var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions",
+	"tags_revision", "notes")
 
 func nonNegative(values ...int64) bool {
 	for _, v := range values {
@@ -304,7 +323,7 @@ func validCustomer(c Customer) bool {
 	_, e2 := canonicalTime(c.LastActivityAt)
 	if !command.ValidID(c.CustomerID) || e1 != nil || e2 != nil ||
 		!nonNegative(c.OrdersCount, c.PaidOrdersCount, c.CapturedMinor, c.RefundedMinor, c.ClaimsCount) ||
-		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil {
+		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil || !validTags(c.Tags) {
 		return false
 	}
 	if c.PhoneLast3 != nil && !phoneLast3.MatchString(*c.PhoneLast3) {
@@ -353,6 +372,8 @@ type detailWire struct {
 	Claims         []ClaimSummary  `json:"claims"`
 	ConsentHistory []ConsentEvent  `json:"consent_history"`
 	PrivacyActions []PrivacyAction `json:"privacy_actions"`
+	TagsRevision   string          `json:"tags_revision"`
+	Notes          []Note          `json:"notes"`
 }
 
 func decodeCustomer(raw json.RawMessage) (Customer, error) {
@@ -372,8 +393,14 @@ func decodeDetail(raw json.RawMessage) (detailWire, error) {
 	}
 	var d detailWire
 	if strict(raw, &d) != nil || !validCustomer(d.Customer) || d.OrderIDs == nil || len(d.OrderIDs) > MaxExportOrders+1 ||
-		d.Claims == nil || d.ConsentHistory == nil || d.PrivacyActions == nil {
+		d.Claims == nil || d.ConsentHistory == nil || d.PrivacyActions == nil || !revisionPattern.MatchString(d.TagsRevision) ||
+		d.Notes == nil || len(d.Notes) > detailNotes {
 		return detailWire{}, ErrUnavailable
+	}
+	for _, n := range d.Notes {
+		if !validNote(n) {
+			return detailWire{}, ErrUnavailable
+		}
 	}
 	for _, id := range d.OrderIDs {
 		if !command.ValidID(id) {
@@ -446,6 +473,21 @@ type buyerExportDoc struct {
 	Consents       []ConsentEvent    `json:"consents"`
 	Claims         []ClaimSummary    `json:"claims"`
 	PrivacyActions []PrivacyAction   `json:"privacy_actions"`
+	Tags           []ExportTag       `json:"tags"`
+	Notes          []ExportNote      `json:"notes"`
+}
+
+// ExportTag is a tag of the buyer's own customer record as exported to the buyer (name and colour only).
+type ExportTag struct {
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
+// ExportNote is a merchant note about the buyer as exported to the buyer: text and timestamps, no author principal id.
+type ExportNote struct {
+	Body      string  `json:"body"`
+	CreatedAt string  `json:"created_at"`
+	EditedAt  *string `json:"edited_at"`
 }
 
 type exportStore struct {

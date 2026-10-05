@@ -184,10 +184,24 @@ func BuyerExport(ctx context.Context, tx pgx.Tx, storeID, token, key string) ([]
 		ConsentHistory []ConsentEvent  `json:"consent_history"`
 		Claims         []ClaimSummary  `json:"claims"`
 		PrivacyActions []PrivacyAction `json:"privacy_actions"`
+		Tags           []ExportTag     `json:"tags"`
+		Notes          []ExportNote    `json:"notes"`
 	}
-	if err = exactKeys(rawPrivacy, "store_name", "consents", "erased", "consent_history", "claims", "privacy_actions"); err != nil ||
-		strict(rawPrivacy, &priv) != nil || priv.ConsentHistory == nil || priv.Claims == nil || priv.PrivacyActions == nil {
+	// tags and notes (W6-01B, CT-OPEN-1 default ruling): merchant-private data about this buyer is part of the export.
+	if err = exactKeys(rawPrivacy, "store_name", "consents", "erased", "consent_history", "claims", "privacy_actions", "tags", "notes"); err != nil ||
+		strict(rawPrivacy, &priv) != nil || priv.ConsentHistory == nil || priv.Claims == nil || priv.PrivacyActions == nil ||
+		priv.Tags == nil || priv.Notes == nil || len(priv.Tags) > 20 || len(priv.Notes) > 200 {
 		return nil, ErrUnavailable
+	}
+	for _, t := range priv.Tags {
+		if !ValidTagName(t.Name) || !tagColors[t.Color] {
+			return nil, ErrUnavailable
+		}
+	}
+	for _, n := range priv.Notes {
+		if !ValidNoteBody(n.Body) {
+			return nil, ErrUnavailable
+		}
 	}
 	for _, e := range priv.ConsentHistory {
 		if !validEvent(e) {
@@ -210,7 +224,7 @@ func BuyerExport(ctx context.Context, tx pgx.Tx, storeID, token, key string) ([]
 	}
 	doc := buyerExportDoc{Format: ExportFormat, GeneratedAt: time.Now().UTC().Format(TimestampLayout),
 		Store: exportStore{Name: priv.StoreName}, Orders: orders, Consents: priv.ConsentHistory, Claims: priv.Claims,
-		PrivacyActions: priv.PrivacyActions}
+		PrivacyActions: priv.PrivacyActions, Tags: priv.Tags, Notes: priv.Notes}
 	body, err := marshalBounded(doc, len(orders))
 	if err != nil {
 		return nil, err

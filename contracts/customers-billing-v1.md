@@ -520,3 +520,46 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
   actor data). Note: C2 clears bindings after `claims_days`, so the CB03 projection loses old claims.
 - IR-U1 (ruling B23): 0071 `bundle_label_reserved` admits `label = 'erased-'||replace(id::text,'-','')` (a bundle's
   own id only), so CD7's `customers.apply_erasure` relabel does not hit 23514.
+
+## Amendment W6-01B tags and notes (integrator ruling 2026-10-06; migration 0139; unit w6-01b-customer-tags-notes)
+
+Scope: merchant-typed customer tags and private notes. NOT inferred tags, segments, RFM, audience export, member levels or
+points (architecture 14.3 inferred tags need their own contract). Evidence class of this amendment: REAL_PG / MOCK.
+
+- **Tables** (schema `customers`, FORCE RLS, policies GUC-scoped to tenant+store, no login-role grant; written only by
+  `commerce_privacy_writer` definers): `tags(tenant_id, store_id, id, name, color, created_at)` with `name` 1..20 characters,
+  NFC, trimmed, no control characters, unique per store case-insensitively (`lower(name)`), `color` one of
+  gray/red/orange/yellow/green/teal/blue/purple, at most 100 tags per store; `owner_tags(tenant_id, store_id, owner_id, tag_id)`
+  at most 20 per customer; `notes(tenant_id, store_id, id, owner_id, body, author_id, created_at, edited_at, version)` with
+  `body` 1..1000 characters (not blank), at most 200 per customer.
+- **Permission** `customers:write` (new value in `store_grants_permission_check`): add/rename/delete tags, set a customer's
+  tags, add notes, edit/delete own notes. Reads stay `customers:read`. A note may be edited or deleted by its author or by a
+  holder of `customers:privacy` (owner and admin bundles). Bundles: owner and admin gain `customers:write` through the live
+  catalogue; viewer, live_operator and fulfilment do not (ruling: `live_operator` does not hold `customers:read` either).
+- **Definers** (owner `commerce_privacy_writer`, SECURITY DEFINER, `search_path=pg_catalog`, EXECUTE `commerce_runtime`):
+  `customers.create_tag / rename_tag / delete_tag / set_owner_tags / add_note / edit_note / delete_note` (write) and
+  `customers.list_tags / list_notes` (read); internal helpers `tn_*`, `erase_tags_notes`, `export_tags_notes` have no runtime
+  EXECUTE. Every write audits one of `customers.tag_created|tag_renamed|tag_deleted|tagged|note_added|note_edited|note_deleted`
+  (action only, never a body) and fences authority again after its writes. Idempotency: Go `command.Run` receipts
+  (`Idempotency-Key`); the receipt of a note write stores the note WITHOUT its body.
+- **CAS**: `set_owner_tags` replaces the whole set and requires `revision` = `tags_revision` of the detail read (sha256 of the
+  sorted tag-id list); a stale value is 409 `version_changed`. `edit_note` requires the note `version`.
+- **Customer list/detail**: `identity.read_merchant_customers(p_hash, p_store, p_customer, p_limit, p_after_ts, p_after_id,
+  p_q, p_tag uuid DEFAULT NULL)` replaces the 7-argument function. Every row adds `tags:[{id,name,color}]`; the detail adds
+  `tags_revision` and `notes` (newest 50; older ones through `GET .../notes`). `p_tag` filters to customers carrying the tag
+  (unknown tag id = empty list); the keyset cursor is bound to the tag. List response cap 524288 bytes (was 262144).
+- **Erasure and export**: `apply_erasure` deletes the customer's `owner_tags` and `notes` in the erasure transaction (also on
+  `replay_erasures`); the store tag catalogue is untouched; the erased owner is inactive, so no tag or note can be written for
+  it afterwards. The buyer self-service export (`buyer_read_privacy(p_detail=true)`) adds `tags:[{name,color}]` and
+  `notes:[{body,created_at,edited_at}]` (no staff principal id). Default ruling for CT-OPEN-1: notes ARE exported to the buyer;
+  if the owner decides internal notes must not be shown to the buyer, that needs legal confirmation and a change here.
+- **HTTP** under `/v1/admin/stores/{store_id}/customers`: `GET tags` (list with usage counts), `POST tags`
+  `{name,color}` 201, `PATCH tags/{tag_id}` `{name?,color?}`, `DELETE tags/{tag_id}` (links go with it),
+  `PUT {customer_id}/tags` `{tag_ids,revision}`, `GET {customer_id}/notes?limit&after`, `POST {customer_id}/notes` `{body}` 201,
+  `PATCH {customer_id}/notes/{note_id}` `{body,version}`, `DELETE {customer_id}/notes/{note_id}`, and `GET ?tag={tag_id}` on the
+  list. Writes need exactly one `Idempotency-Key`. Codes: 409 `tag_exists`, 409 `limit_reached` (100 tags / 20 per customer /
+  200 notes), 409 `version_changed`, 409 `idempotency_conflict`, 422 `invalid_request` (name, colour, body length, unknown tag id),
+  403 `forbidden` (no `customers:write`, or editing another author's note without `customers:privacy`), 404 `not_found`
+  (customer of another store or tenant, erased, unknown tag or note).
+- **Gate**: `tests/foundation/customer_tags_test.go` CT01-CT09 (`bash scripts/dev/test-focused.sh '^TestCustomerTags'`), the
+  schema/consent/erasure pins, `internal/httpapi/customer_tags_test.go` (DB-free full router).

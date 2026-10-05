@@ -33,8 +33,10 @@ import (
 
 const customerBase = "/v1/admin/stores/{store_id}/customers"
 
-// registerCustomerRoutes mounts the five §5 customer rows; NewHandler calls it unconditionally (integrator).
+// registerCustomerRoutes mounts the five §5 customer rows plus the W6-01B tag/note rows (customer_tags.go); NewHandler
+// calls it unconditionally (integrator).
 func registerCustomerRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
+	registerCustomerTagRoutes(mux, pool)
 	mux.HandleFunc("GET "+customerBase, customerRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {
 		in, err := parseCustomersQuery(r.URL)
 		if err != nil {
@@ -117,9 +119,11 @@ func customerRoute(method string, allowQuery bool, next http.HandlerFunc) http.H
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
-		if id := r.PathValue("customer_id"); id != "" && !command.ValidID(id) {
-			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
-			return
+		for _, name := range []string{"customer_id", "tag_id", "note_id"} { // tag/note rows: customer_tags.go
+			if id := r.PathValue(name); id != "" && !command.ValidID(id) {
+				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
 		}
 		if method == http.MethodGet {
 			if _, present := r.Header[http.CanonicalHeaderKey("Idempotency-Key")]; present || hasBody(r) {
@@ -169,6 +173,12 @@ func customersClassify(err error) (int, string) {
 		return http.StatusConflict, "idempotency_conflict"
 	case errors.Is(err, customers.ErrErasureBlocked):
 		return http.StatusConflict, "erasure_blocked"
+	case errors.Is(err, customers.ErrTagExists):
+		return http.StatusConflict, "tag_exists"
+	case errors.Is(err, customers.ErrLimitReached):
+		return http.StatusConflict, "limit_reached"
+	case errors.Is(err, customers.ErrVersionChanged):
+		return http.StatusConflict, "version_changed"
 	case errors.Is(err, customers.ErrExportTooLarge):
 		return http.StatusConflict, "export_too_large"
 	case errors.Is(err, customers.ErrErased):
@@ -190,7 +200,7 @@ func writeAttachment(w http.ResponseWriter, contentType, disposition string, bod
 }
 
 // parseCustomersQuery reads limit (1..100, canonical digits), after (opaque cursor, <= 1024) and q (1..40 chars
-// after trimming, D6) — each at most once and non-empty; any other key is 422.
+// after trimming, D6) and tag (a tag id, W6-01B) — each at most once and non-empty; any other key is 422.
 func parseCustomersQuery(u *url.URL) (customers.ListRequest, error) {
 	var in customers.ListRequest
 	if u.ForceQuery || len(u.RawQuery) > 4096 {
@@ -231,6 +241,11 @@ func parseCustomersQuery(u *url.URL) (customers.ListRequest, error) {
 				return in, err
 			}
 			in.Q = value[0]
+		case "tag": // W6-01B: filter by one tag id
+			if !command.ValidID(value[0]) {
+				return in, command.ErrInvalid
+			}
+			in.Tag = value[0]
 		default:
 			return in, command.ErrInvalid
 		}

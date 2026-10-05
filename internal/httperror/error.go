@@ -158,6 +158,9 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"erasure_blocked":  "Erasure is blocked while a hold, payment or refund is in progress.",
 		"erased":           "This data has been erased.",
 		"export_too_large": "The export is too large to generate.",
+		// customers-billing-v1 Amendment W6-01B (tags and notes); version_changed is shared, declared above.
+		"tag_exists":    "A tag with this name already exists.",
+		"limit_reached": "The limit for tags or notes has been reached.",
 		// customers-billing-v1 §5 / billing-core B2, B12: platform billing.
 		"billing_unavailable": "Billing is temporarily unavailable.",
 		"billing_restricted":  "New claim windows are paused until billing is up to date.",

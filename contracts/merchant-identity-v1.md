@@ -43,3 +43,9 @@ Still required before T03/global G01/G02/G11 PASS: approved login/onboarding vis
 ## Dependencies and simplicity decision
 
 Reuse PostgreSQL transactions/constraints and the existing merchant session resolver. Use maintained `coreos/go-oidc/v3` for JOSE/OIDC and `x/oauth2` for code/PKCE exchange; do not write a JWT verifier or password store. No extra cache/session service is introduced. The provider interface is a testing seam for signed mock and failure injection, not a pluggable marketplace.
+
+## Amendment W6-01B: permission `customers:write` (migration 0139)
+
+`identity.store_grants.permission` gains `customers:write` (add/rename/delete customer tags, set a customer's tags, add and
+edit notes; see `contracts/customers-billing-v1.md` Amendment W6-01B). The owner and admin bundles (derived from the live
+permission catalogue) hold it; existing owner/admin staff are backfilled; viewer, live_operator and fulfilment do not.
