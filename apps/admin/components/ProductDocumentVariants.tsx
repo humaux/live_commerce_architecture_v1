@@ -1,12 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import {
-  applyBulk,
-  type BulkField,
-  type DraftRow,
-} from "@/lib/product-document";
+import { applyBulk, type DraftRow } from "@/lib/product-document";
 import type { OptionAxis } from "@/lib/catalog-v2-model";
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
+import { ProductBulkFill } from "./ProductBulkFill";
 
 export function ProductDocumentVariants({
   axes,
@@ -17,6 +14,7 @@ export function ProductDocumentVariants({
   c,
   sign,
   inventoryDisabled = false,
+  onInvalidValues,
 }: {
   axes: OptionAxis[];
   rows: DraftRow[];
@@ -26,19 +24,20 @@ export function ProductDocumentVariants({
   c: ProductEditorCopy;
   sign: string;
   inventoryDisabled?: boolean;
+  onInvalidValues: () => void;
 }) {
-  const [bulk, setBulk] = useState<BulkField | null>(null),
+  const [bulk, setBulk] = useState(false),
     [notice, setNotice] = useState("");
-  const triggers = useRef<Partial<Record<BulkField, HTMLButtonElement | null>>>(
-    {},
-  );
+  const [selected, setSelected] = useState<string[]>([]);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const rowKey = (row: DraftRow) => JSON.stringify(row.values);
   const changeAxis = (i: number, patch: Partial<OptionAxis>) =>
     setAxes(axes.map((a, n) => (n === i ? { ...a, ...patch } : a)));
   const changeRow = (i: number, patch: Partial<DraftRow>) =>
     setRows(rows.map((r, n) => (i === n ? { ...r, ...patch } : r)));
   function closeBulk() {
-    if (bulk) triggers.current[bulk]?.focus();
-    setBulk(null);
+    trigger.current?.focus();
+    setBulk(false);
   }
   return (
     <section
@@ -50,8 +49,8 @@ export function ProductDocumentVariants({
       <div className="pe-axes">
         {axes.map((axis, i) => (
           <div className="product-axis" key={i}>
-            <label>
-              {c.axis}
+            <label className="pe-axis-name">
+              <span>{c.axis}</span>
               <input
                 data-testid={`axis-name-${i}`}
                 value={axis.name}
@@ -67,9 +66,22 @@ export function ProductDocumentVariants({
               i={i}
               values={axis.values}
               disabled={disabled}
+              maxValues={Math.min(
+                50,
+                Math.floor(
+                  100 /
+                    axes.reduce(
+                      (count, a, n) =>
+                        n === i ? count : count * Math.max(1, a.values.length),
+                      1,
+                    ),
+                ),
+              )}
+              onInvalid={onInvalidValues}
               onChange={(values) => changeAxis(i, { values })}
             />
             <button
+              className="pe-axis-remove"
               type="button"
               disabled={disabled}
               aria-label={`${c.remove} ${c.axis} ${i + 1}`}
@@ -95,50 +107,74 @@ export function ProductDocumentVariants({
       </button>
       {(axes.length > 0 || rows.length > 1) && (
         <>
-          <p className="pe-hint">{rows.length} / 100</p>
           <div className="pe-bulk-controls">
-            {(["price", "compare", "quantity", "code", "keyword"] as const).map(
-              (field) => (
-                <div className="pe-bulk-anchor" key={field}>
-                  <button
-                    type="button"
-                    ref={(el) => {
-                      triggers.current[field] = el;
-                    }}
-                    data-testid={`bulk-${field}`}
-                    disabled={
-                      disabled || (field === "quantity" && inventoryDisabled)
-                    }
-                    aria-expanded={bulk === field}
-                    onClick={() => setBulk(bulk === field ? null : field)}
-                  >
-                    {c[field]} · {c.bulk}
-                  </button>
-                  {bulk === field && (
-                    <BulkFill
-                      c={c}
-                      field={field}
-                      close={closeBulk}
-                      apply={(value, scope, operation) => {
-                        const result = applyBulk(
-                          rows,
-                          field,
-                          value,
-                          scope,
-                          operation,
-                        );
-                        setRows(result.rows);
-                        setNotice(`${c.skipped}: ${result.skipped}`);
-                        closeBulk();
-                      }}
-                    />
-                  )}
-                </div>
-              ),
-            )}
+            <div className="pe-bulk-anchor">
+              <button
+                type="button"
+                ref={trigger}
+                data-testid="bulk-open"
+                disabled={disabled}
+                aria-expanded={bulk}
+                onClick={() => setBulk(!bulk)}
+              >
+                {c.bulk}
+              </button>
+              {bulk && (
+                <ProductBulkFill
+                  c={c}
+                  inventoryDisabled={inventoryDisabled}
+                  selectedCount={
+                    rows.filter((r) => selected.includes(rowKey(r))).length
+                  }
+                  close={closeBulk}
+                  apply={(field, value, scope, operation, target) => {
+                    const targets = rows.filter(
+                      (r) => target === "all" || selected.includes(rowKey(r)),
+                    );
+                    const result = applyBulk(
+                      targets,
+                      field,
+                      value,
+                      scope,
+                      operation,
+                    );
+                    // Code suffixes retain the original matrix ordinal even
+                    // when only a subset is selected (SKU2 must not become SKU1).
+                    const patchRows =
+                      field === "code"
+                        ? applyBulk(
+                            rows,
+                            field,
+                            value,
+                            scope,
+                            operation,
+                          ).rows.filter((r) =>
+                            targets.some((t) => rowKey(t) === rowKey(r)),
+                          )
+                        : result.rows;
+                    const patches = new Map(
+                      patchRows.map((r) => [rowKey(r), r]),
+                    );
+                    setRows(rows.map((r) => patches.get(rowKey(r)) ?? r));
+                    setNotice(`${c.skipped}: ${result.skipped}`);
+                    closeBulk();
+                  }}
+                />
+              )}
+            </div>
+            <p className="pe-hint">
+              {rows.length} / 100 · {c.selected}:{" "}
+              {rows.filter((r) => selected.includes(rowKey(r))).length}
+            </p>
           </div>
           {notice && <p role="status">{notice}</p>}
-          <div className="pe-matrix" data-testid="variant-matrix">
+          <div
+            className="pe-matrix"
+            data-testid="variant-matrix"
+            tabIndex={0}
+            role="region"
+            aria-label={c.variants}
+          >
             <div className="pe-matrix-head" aria-hidden="true">
               <span>{c.variants}</span>
               <span>
@@ -157,10 +193,26 @@ export function ProductDocumentVariants({
                 data-sku-id={row.id}
                 key={JSON.stringify(row.values)}
               >
-                <div>
-                  <strong>{row.values.join(" / ")}</strong>
-                  <small>{row.id ? c.existing : c.newRow}</small>
-                </div>
+                <label
+                  className="pe-variant-name"
+                  title={row.values.join(" / ") || c.defaultVariant}
+                >
+                  <input
+                    type="checkbox"
+                    data-testid={`matrix-select-${i}`}
+                    aria-label={`${c.selected} ${row.values.join(" / ") || c.defaultVariant}`}
+                    disabled={disabled}
+                    checked={selected.includes(rowKey(row))}
+                    onChange={(e) =>
+                      setSelected((now) =>
+                        e.target.checked
+                          ? [...now, rowKey(row)]
+                          : now.filter((key) => key !== rowKey(row)),
+                      )
+                    }
+                  />
+                  <strong>{row.values.join(" / ") || c.defaultVariant}</strong>
+                </label>
                 <label>
                   <span>{c.price}</span>
                   <input
@@ -184,7 +236,7 @@ export function ProductDocumentVariants({
                   />
                 </label>
                 <div className="pe-row-stock">
-                  <label className="pe-check">
+                  <label className="pe-check" title={c.untracked}>
                     <input
                       type="checkbox"
                       checked={!row.tracked}
@@ -269,44 +321,71 @@ function AxisValues({
   disabled,
   i,
   c,
+  maxValues,
+  onInvalid,
 }: {
   values: string[];
   onChange: (v: string[]) => void;
   disabled: boolean;
   i: number;
   c: ProductEditorCopy;
+  maxValues: number;
+  onInvalid: () => void;
 }) {
-  const [text, setText] = useState(values.join(", "));
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Clear only after the parent accepts the axis; a rejected 100-SKU matrix
+  // must leave the user's pending values editable.
+  useEffect(() => setText(""), [values]);
   function commit() {
-    const values = [
-      ...new Set(
-        text
+    if (!text.trim()) return;
+    const next = [
+      ...new Set([
+        ...values,
+        ...text
           .split(/[,，\n]/)
           .map((s) => s.trim())
           .filter(Boolean),
-      ),
+      ]),
     ];
-    onChange(values);
+    if (next.length > maxValues) {
+      onInvalid();
+      return;
+    }
+    onChange(next);
   }
   return (
-    <label>
-      {c.values}
-      <textarea
-        rows={2}
+    <div className="pe-axis-values">
+      <label htmlFor={`axis-values-${i}`}>{c.values}</label>
+      <input
+        ref={inputRef}
+        id={`axis-values-${i}`}
         data-testid={`axis-values-${i}`}
         value={text}
         disabled={disabled}
         onChange={(e) => setText(e.target.value)}
+        onPaste={(e) => {
+          const pasted = e.clipboardData.getData("text/plain");
+          if (!/[\r\n]/.test(pasted)) return;
+          // A single-line input otherwise strips line breaks before parsing.
+          e.preventDefault();
+          const input = e.currentTarget;
+          setText(
+            text.slice(0, input.selectionStart ?? 0) +
+              pasted.replace(/\r?\n/g, ",") +
+              text.slice(input.selectionEnd ?? text.length),
+          );
+        }}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === "Enter") {
+          if (e.key === "Enter" && !e.nativeEvent.isComposing) {
             e.preventDefault();
             commit();
           }
         }}
       />
-      <small>{c.valueHelp}</small>
-      <span className="pe-value-chips">
+      <small className="pe-hint">{c.valueHelp}</small>
+      <div className="pe-value-chips">
         {values.map((value, n) => (
           <span
             draggable={!disabled}
@@ -319,99 +398,24 @@ function AxisValues({
               if (Number.isInteger(from) && from >= 0 && from < values.length) {
                 const next = [...values];
                 next.splice(n, 0, next.splice(from, 1)[0]);
-                setText(next.join(", "));
                 onChange(next);
               }
             }}
           >
             {value}
+            <button
+              type="button"
+              disabled={disabled}
+              aria-label={`${c.remove} ${value}`}
+              onClick={(e) => {
+                onChange(values.filter((v) => v !== value));
+                if (e.detail === 0) inputRef.current?.focus();
+              }}
+            >
+              ×
+            </button>
           </span>
         ))}
-      </span>
-    </label>
-  );
-}
-function BulkFill({
-  c,
-  field,
-  close,
-  apply,
-}: {
-  c: ProductEditorCopy;
-  field: BulkField;
-  close: () => void;
-  apply: (v: string, s: "all" | "empty", o: "set" | "add" | "subtract") => void;
-}) {
-  const [value, setValue] = useState(""),
-    [scope, setScope] = useState<"all" | "empty">("all"),
-    [operation, setOperation] = useState<"set" | "add" | "subtract">("set");
-  const input = useRef<HTMLInputElement>(null);
-  useEffect(() => input.current?.focus(), []);
-  return (
-    <div
-      className="pe-popover"
-      role="region"
-      aria-label={`${c.bulk} ${c[field]}`}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          close();
-        }
-        if (e.key === "Enter") {
-          e.preventDefault();
-          apply(value, scope, operation);
-        }
-      }}
-    >
-      <label>
-        {c.bulk}
-        <select
-          aria-label={c.bulk}
-          value={scope}
-          onChange={(e) => setScope(e.target.value as "all" | "empty")}
-        >
-          <option value="all">{c.all}</option>
-          <option value="empty">{c.empty}</option>
-        </select>
-      </label>
-      <label>
-        {c.set}
-        <select
-          aria-label={c.set}
-          value={operation}
-          onChange={(e) =>
-            setOperation(e.target.value as "set" | "add" | "subtract")
-          }
-        >
-          <option value="set">{field === "code" ? c.prefix : c.set}</option>
-          {field === "quantity" && (
-            <>
-              <option value="add">{c.add}</option>
-              <option value="subtract">{c.subtract}</option>
-            </>
-          )}
-        </select>
-      </label>
-      <label>
-        {c.amount}
-        <input
-          ref={input}
-          data-testid="bulk-value"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-        />
-      </label>
-      <div className="pe-actions">
-        <button type="button" onClick={close}>
-          {c.cancel}
-        </button>
-        <button
-          type="button"
-          data-testid="bulk-apply"
-          onClick={() => apply(value, scope, operation)}
-        >
-          {c.apply}
-        </button>
       </div>
     </div>
   );

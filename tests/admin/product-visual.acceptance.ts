@@ -5,6 +5,135 @@ import path from "node:path";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
 export function registerProductVisualAcceptance() {
+  if (process.env.PRODUCT_VISUAL_PHASE === "after")
+    test("product visual: compact bulk, selected rows, tags and persistence", async ({
+      page,
+    }) => {
+      const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN!,
+        store = process.env.LC_BROWSER_STORE!;
+      await page.goto(`${origin}/en/`);
+      await page
+        .getByRole("button", { name: "Sign in with identity service" })
+        .click();
+      await expect(page.getByTestId("nav-orders")).toBeAttached();
+      await page.goto(`${origin}/en/products?store=${store}`);
+      await page.getByTestId("product-new").click();
+      await page
+        .getByTestId("product-name")
+        .fill(`visual-controls-${process.env.LC_BROWSER_TAG}`);
+      await page.getByTestId("axis-add").click();
+      await page.getByTestId("axis-name-0").fill("Size");
+      await page.getByTestId("axis-values-0").fill("S, M, L");
+      await page.getByTestId("axis-values-0").press("Enter");
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(3);
+      await page.getByRole("button", { name: "Remove L", exact: true }).click();
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
+      await page.getByTestId("axis-values-0").fill("L");
+      await page.getByTestId("axis-values-0").press("Enter");
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(3);
+      const bulk = async (
+        field: string,
+        value: string,
+        op = "set",
+        target = "all",
+      ) => {
+        await page.getByTestId("bulk-open").click();
+        await page.getByTestId("bulk-field").selectOption(field);
+        await page.getByTestId("bulk-target").selectOption(target);
+        await page
+          .getByRole("combobox", { name: "Set to", exact: true })
+          .selectOption(op);
+        await page.getByTestId("bulk-value").fill(value);
+        await page.getByTestId("bulk-apply").click();
+      };
+      await bulk("price", "80");
+      await bulk("compare", "100");
+      await bulk("quantity", "5");
+      await bulk("code", `VIS${process.env.LC_BROWSER_TAG}`);
+      await page.getByTestId("matrix-select-1").check();
+      await bulk("code", `VIS${process.env.LC_BROWSER_TAG}`, "set", "selected");
+      for (let i = 0; i < 3; i++)
+        await expect(page.getByTestId(`matrix-code-${i}`)).toHaveValue(
+          `VIS${process.env.LC_BROWSER_TAG}${i + 1}`,
+        );
+      await bulk("price", "90", "set", "selected");
+      await bulk("quantity", "2", "subtract", "selected");
+      await bulk("keyword", "VISONE", "set", "selected");
+      await expect(page.getByTestId("new-price-0")).toHaveValue("80");
+      await expect(page.getByTestId("new-price-1")).toHaveValue("90");
+      await expect(page.getByTestId("matrix-quantity-1")).toHaveValue("3");
+      await bulk("quantity", "2", "add", "selected");
+      await expect(page.getByTestId("matrix-quantity-1")).toHaveValue("5");
+      await page.getByTestId("product-create").click();
+      const result = page.getByTestId("product-save-result");
+      await expect(result).toBeVisible();
+      await result.locator('a[href*="/products/"]').click();
+      await expect(page.getByTestId("product-save")).toBeEnabled();
+      await page.reload();
+      await expect(page.getByTestId("new-price-1")).toHaveValue("90");
+      await expect(page.getByTestId("new-price-0")).toHaveValue("80");
+      await expect(page.getByTestId("matrix-quantity-1")).toHaveValue("5");
+      await expect(
+        page
+          .getByTestId("matrix-row-1")
+          .getByRole("textbox", { name: "Live keyword 2", exact: true }),
+      ).toHaveValue("VISONE");
+      // Native clipboard fixture, not a form write: paste through the real keyboard.
+      await page
+        .context()
+        .grantPermissions(["clipboard-read", "clipboard-write"]);
+      await page.evaluate(() => navigator.clipboard.writeText("XL\nXXL"));
+      await page.getByTestId("axis-values-0").click();
+      await page.keyboard.press("ControlOrMeta+V");
+      await page.getByTestId("axis-values-0").press("Enter");
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(5);
+      await page
+        .getByRole("button", { name: "Remove XL", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Remove XXL", exact: true })
+        .press("Space");
+      await expect(page.getByTestId("axis-values-0")).toBeFocused();
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(3);
+      await page.getByTestId("axis-add").click();
+      await page.getByTestId("axis-name-1").fill("Pack");
+      const tooMany = Array.from({ length: 34 }, (_, i) => `P${i}`).join(",");
+      await page.getByTestId("axis-values-1").fill(tooMany);
+      await page.getByTestId("axis-values-1").press("Enter");
+      await expect(page.getByRole("alert")).toHaveText(
+        productEditorCopy.en.matrixLimit,
+      );
+      await expect(page.getByTestId("axis-values-1")).toHaveValue(tooMany);
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(3);
+      await page.getByTestId("axis-values-1").fill("One, Two");
+      await page.getByTestId("axis-values-1").press("Enter");
+      await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(6);
+      await expect(page.getByTestId("axis-values-1")).toHaveValue("");
+      await mkdir("output/product-editor-visual", { recursive: true });
+      await writeFile(
+        "output/product-editor-visual/controls-ledger.json",
+        JSON.stringify(
+          {
+            status: "PASS",
+            tier: "REAL_PG+BROWSER",
+            controls: [
+              "add axis",
+              "values Enter",
+              "remove tag",
+              "bulk field five options",
+              "all/selected",
+              "quantity set/add/subtract",
+              "create",
+              "reload",
+            ],
+            assertions:
+              "3 variants; selected row price90, others80; stock5; selected keyword persisted",
+          },
+          null,
+          2,
+        ),
+      );
+    });
   test("product visual: full-page new/existing empty/three-variant matrix", async ({
     page,
   }) => {
@@ -75,6 +204,10 @@ export function registerProductVisualAcceptance() {
               );
               await expect(page.getByTestId("product-save")).toBeEnabled();
             }
+            if (variants)
+              await page
+                .getByTestId("matrix-select-0")
+                .scrollIntoViewIfNeeded();
             await page
               .locator("header[data-shell-topbar]")
               .scrollIntoViewIfNeeded();
