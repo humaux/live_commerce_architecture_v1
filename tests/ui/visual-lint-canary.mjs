@@ -1,3 +1,6 @@
+// Purpose: G-UI9 canary (R6/R9 judge the visible, ancestor-clipped rectangle: the GOOD page holds a control whose raw box overlaps its neighbour but is clipped by its scrollport).
+// Depends on: @playwright/test (Chromium), tests/ui/visual-lint-lib.mjs.
+// Used by: scripts/dev/test-local.sh --browser-visual-lint.
 // G-UI9 canary: the in-page collector + the rules, end to end, on two small synthetic pages in real Chromium. A lint that cannot observe a failure proves
 // nothing (verify-first), so the known-BAD page must trip every rule R1..R8 and the known-GOOD page must trip none. Run by
 // `bash scripts/dev/test-local.sh --browser-visual-lint` before the stack is built; no network, no PG, no Next.
@@ -56,6 +59,7 @@ const GOOD = `${HEAD}<body style="padding:16px 16px 90px">
 <label for="hid" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">A visually hidden label that is longer than its one pixel box</label><input id="hid" style="width:200px;height:44px;display:block;margin-top:8px">
 <p>Readable body text with a <a href="#x">link inside the sentence</a>.</p><small style="font-size:12px">helper at the floor</small>
 <div style="margin-top:16px"><button style="height:44px;width:120px">Save</button> <button style="height:44px;width:120px">Cancel</button></div>
+<div id="clipok" style="width:300px;height:40px;overflow:auto;margin-top:16px"><button style="display:block;width:120px;height:44px;margin-top:20px;padding:0 0 24px;line-height:20px">Clipped tail</button></div><button style="display:block;width:120px;height:44px">Below the frame</button>
 <div style="height:700px"></div>
 <ul><li>Connect page</li><li>Add product</li><li>Review order</li></ul><section><h3>Required</h3><button class="it" style="display:block;height:44px">Images ○</button><button class="it" style="display:block;height:44px">Name ○</button><button class="it" style="display:block;height:44px">Price ○</button><h3>Recommended</h3><button class="it" style="display:block;height:44px">Description ✓</button><button class="it" style="display:block;height:44px">SEO ○</button></section>
 <div style="position:fixed;left:0;right:0;bottom:0;height:60px;background:#222;color:#fff;padding:8px 16px">Fixed bar, cleared by the page padding</div>
