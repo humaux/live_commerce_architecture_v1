@@ -760,12 +760,12 @@ func TestK3LCB4TextValidationBoundaries(t *testing.T) {
 		t.Fatalf("301-rune public reply: %v", err)
 	}
 	for name, text := range map[string]string{
-		"origin full":          e.origin,
-		"origin upper scheme":  "HTTPS://" + host,
-		"origin upper host":    "https://" + strings.ToUpper(host),
+		"origin full":           e.origin,
+		"origin upper scheme":   "HTTPS://" + host,
+		"origin upper host":     "https://" + strings.ToUpper(host),
 		"origin trailing slash": e.origin + "/",
-		"buyer variable":       "下單{{order.pay_link}}",
-		"display placeholder":  "結帳{{連結}}",
+		"buyer variable":        "下單{{order.pay_link}}",
+		"display placeholder":   "結帳{{連結}}",
 	} {
 		ref := lbRef()
 		if _, err := e.publicReply(ref, text); planCode(err) != "public_reply_forbidden_content" {
