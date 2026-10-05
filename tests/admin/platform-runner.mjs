@@ -9,6 +9,7 @@ import { createServer } from "node:net";
 import { mkdir, open, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
+import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
 const output = process.env.LC_PLATFORM_EVIDENCE || "output/platform-site";
 await mkdir(output, { recursive: true });
@@ -174,6 +175,22 @@ async function matrix(s) {
               (await page.locator("main").innerText()).includes(fact),
               `${name}/${locale} main missing ${fact}`,
             );
+        if (name === "privacy" || name === "terms") {
+          assertPlatformMessagingCopy(
+            (await page.locator(".ps-legal-section").allTextContents()).join(
+              " ",
+            ),
+            locale,
+            name,
+          );
+          ledger.push({
+            locale,
+            width,
+            page: name,
+            action: "messaging-copy",
+            result: "PASS",
+          });
+        }
         assert.equal(
           await page.evaluate(
             () => document.documentElement.scrollWidth > innerWidth,
@@ -281,6 +298,12 @@ async function matrix(s) {
             .click();
           await page.waitForURL(origin + routePath(locale, dest));
           assert.equal(await page.locator("main h1").count(), 1);
+          if (dest === "privacy" || dest === "terms")
+            assertPlatformMessagingCopy(
+              (await page.locator(".ps-legal-section").allTextContents()).join(" "),
+              locale,
+              dest,
+            );
           ledger.push({
             locale,
             width,

@@ -16,6 +16,7 @@ import { platformLegal } from "../../apps/admin/lib/platform-legal.ts";
 import { readFileSync } from "node:fs";
 import * as platformCompany from "../../apps/admin/lib/company.ts";
 import { metaConnectCopy } from "../../apps/admin/lib/meta-connect-copy.ts";
+import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
 
 const env = {
   NODE_ENV: "production",
@@ -46,7 +47,7 @@ test("PS review: actual Host matching normalizes case, port and a terminal DNS d
   ])
     assert.equal(platformCompany.requestHostname(value), null);
 });
-test("PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels", () => {
+test("PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels", () => {
   for (const locale of platformLocales) {
     for (const page of ["privacy", "terms"] as const) {
       const copy = platformLegal[locale][page]
@@ -66,6 +67,18 @@ test("PS review: all privacy/terms disclose actual Messenger and Instagram proce
     );
   }
 });
+// pages_messaging/instagram_manage_messages purposes stay disclosed, without
+// pretending inbound DMs are subscribed or that a send result proves delivery.
+for (const locale of platformLocales) {
+  for (const page of ["privacy", "terms"] as const) {
+    test(`P2-N1 ${locale}/${page}: current comments and private reply, conditional inbound messages`, () => {
+      const text = platformLegal[locale][page]
+        .map(([, body]) => body)
+        .join(" ");
+      assertPlatformMessagingCopy(text, locale, page);
+    });
+  }
+}
 test("PS1 legal identity is one untranslated source", () => {
   assert.equal(company.productName, "DaWan Live");
   assert.equal(company.legalEnglish, "Hong Kong Da Wan Trading Limited");
