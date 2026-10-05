@@ -71,6 +71,51 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 	}
 }
 
+// 0130 adds two read-only definers for the pick list: the shared reader (EXECUTE commerce_runtime only,
+// owner commerce_checkout_writer) and the session->orders resolution helper (claims-owned, EXECUTE
+// commerce_checkout_writer only). No worker authority, legacy role, auth login, buyer role or any other
+// commerce_* role may call either.
+func TestMerchantOrdersV2PickListReadAuthority(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	for _, helper := range []struct {
+		signature, owner string
+		exec             []string // explicit non-owner grantees (the owner holds the implicit grant)
+		stable           bool
+	}{
+		{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},
+		{"claims.pick_list_session_orders(uuid,uuid,uuid)", "commerce_claims_writer", []string{"commerce_checkout_writer"}, true},
+	} {
+		t.Run(helper.signature, func(t *testing.T) {
+			var owner string
+			var definer, noLogin, noBypass, fixedPath, stable, publicExec bool
+			var principals []string
+			err := f.owner.QueryRow(ctx, `SELECT pg_get_userbyid(p.proowner),p.prosecdef,NOT r.rolcanlogin,NOT r.rolbypassrls,
+			 p.proconfig=ARRAY['search_path=pg_catalog']::text[], p.provolatile='s',
+			 EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'),
+			 ARRAY(SELECT pg_get_userbyid(a.grantee) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+			  WHERE a.privilege_type='EXECUTE' AND a.grantee<>p.proowner ORDER BY 1)
+			 FROM pg_proc p JOIN pg_roles r ON r.oid=p.proowner WHERE p.oid=$1::regprocedure`, helper.signature).
+				Scan(&owner, &definer, &noLogin, &noBypass, &fixedPath, &stable, &publicExec, &principals)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if owner != helper.owner || !definer || !noLogin || !noBypass || !fixedPath || stable != helper.stable || publicExec ||
+				!slices.Equal(principals, helper.exec) {
+				t.Fatalf("pick-list definer: owner=%s definer=%v noLogin=%v noBypass=%v path=%v stable=%v publicExec=%v ACL=%v",
+					owner, definer, noLogin, noBypass, fixedPath, stable, publicExec, principals)
+			}
+			// Enumerate every commerce role except the owner and its explicit grantees: none may call it.
+			var others int
+			if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_roles WHERE rolname LIKE 'commerce\_%'
+			 AND rolname <> $2 AND NOT rolname = ANY($3::text[]) AND has_function_privilege(oid,$1,'EXECUTE')`,
+				helper.signature, helper.owner, helper.exec).Scan(&others); err != nil || others != 0 {
+				t.Fatalf("unexpected pick-list caller=%d err=%v", others, err)
+			}
+		})
+	}
+}
+
 func TestMerchantOrdersV2DomainReadScope(t *testing.T) {
 	e := ltgNew(t)
 	f, ctx := e.p.f, context.Background()

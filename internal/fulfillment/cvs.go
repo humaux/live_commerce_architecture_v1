@@ -552,19 +552,9 @@ func (c *CVS) Request(ctx context.Context, token, storeID, key, orderID string, 
 	}
 	var out Requested
 	err = c.scoped(ctx, token, storeID, "fulfillment:write", func(tx pgx.Tx, s platform.Scope) error {
-		// core.InsertOperationJob: external_operation_v1 args {operation_id, version:1}, default queue, no InsertOpts (the shape
-		// integration.plan_cvs_create verifies). It never runs here: only cmd/claims-worker executes it.
-		job, err := core.InsertOperationJob(ctx, c.jobs, tx, operation)
-		if err != nil {
-			return err
-		}
-		hash := tokenHash(token)
-		var raw []byte
-		if err := tx.QueryRow(ctx, `SELECT fulfillment.request_cvs_shipment($1,$2::uuid,$3::uuid,$4,$5,$6,$7::uuid,$8::bigint)`,
-			hash[:], storeID, orderID, key, digest, in.ExpectedVersion, operation, job).Scan(&raw); err != nil {
-			return mapCVSError(err)
-		}
-		return decodeRequested(raw, &out)
+		var err error
+		out, err = c.requestOne(ctx, tx, s, token, storeID, orderID, key, in.ExpectedVersion, operation, digest)
+		return err
 	})
 	if errors.Is(err, errCVSReplay) {
 		// The transaction above rolled back with its job; answer from the stored command result (or 409 idempotency_conflict).
@@ -578,6 +568,31 @@ func (c *CVS) Request(ctx context.Context, token, storeID, key, orderID string, 
 		})
 	}
 	return out, mapCVSError(err)
+}
+
+// requestOne is the per-order core of a single label request. It mints nothing: the caller supplies the
+// operation id, the idempotency key, the expected_version and the request digest. The River job is
+// inserted in the caller's transaction so a later refusal rolls it back with the same transaction
+// (orphan-free). Batch reuses Request -> requestOne, so the job's xmin is always top-level (a savepoint
+// would give it the sub-transaction xmin and fail plan_cvs_create's xmin check — see cvs_batch.go).
+func (c *CVS) requestOne(ctx context.Context, tx pgx.Tx, s platform.Scope, token, storeID, orderID, key string, expectedVersion int64, operation string, digest []byte) (Requested, error) {
+	// core.InsertOperationJob: external_operation_v1 args {operation_id, version:1}, default queue, no InsertOpts (the shape
+	// integration.plan_cvs_create verifies). It never runs here: only cmd/claims-worker executes it.
+	job, err := core.InsertOperationJob(ctx, c.jobs, tx, operation)
+	if err != nil {
+		return Requested{}, err
+	}
+	hash := tokenHash(token)
+	var raw []byte
+	if err := tx.QueryRow(ctx, `SELECT fulfillment.request_cvs_shipment($1,$2::uuid,$3::uuid,$4,$5,$6,$7::uuid,$8::bigint)`,
+		hash[:], storeID, orderID, key, digest, expectedVersion, operation, job).Scan(&raw); err != nil {
+		return Requested{}, mapCVSError(err)
+	}
+	var out Requested
+	if err := decodeRequested(raw, &out); err != nil {
+		return Requested{}, err
+	}
+	return out, nil
 }
 
 func decodeRequested(raw []byte, out *Requested) error {
