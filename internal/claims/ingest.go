@@ -163,6 +163,7 @@ func ingest(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result, m 
 			return closed, nil
 		}
 	}
+	p = effective(p, w.mode)
 	if p.Kind == grammar.NoMatch {
 		return record(ctx, tx, in, w, shape(p, ReasonNoMatch, offer{}))
 	}
@@ -262,6 +263,7 @@ type offer struct {
 // event is one claims.events row in Go form. Zero values mean SQL NULL (no persisted
 // quantity, version or count is ever 0); explicit is a pointer because false is a value.
 type event struct {
+	version                              string // grammar_version actually persisted (p.Version)
 	kind                                 grammar.Kind
 	reason                               Reason // "" = ACCEPTED
 	offerID, keyword                     string // keyword is the offer's, never an unresolved head
@@ -301,7 +303,7 @@ func validShape(in IngestInput, p grammar.Result, m *metaIngest) bool {
 			return false
 		}
 	}
-	if p.Version != grammar.Version {
+	if p.Version != grammar.Version && p.Version != grammar.VersionContains {
 		return false
 	}
 	if m != nil && m.unknownKeyword {
@@ -321,17 +323,29 @@ func validShape(in IngestInput, p grammar.Result, m *metaIngest) bool {
 	return false
 }
 
+// effective is the mode gate for a parsed comment (§2.5 property): a kwc-v1 result survives
+// only in a KEYWORD_QTY_CONTAINS window; anywhere else it is downgraded to the exact kw-v1
+// NO_MATCH. kw-v1 results are never touched. Pure. ingest applies it with the matched
+// window's mode; readSource applies it with the stored event's match_mode, so a redelivered
+// source yields the same facts in every mode and never 409s.
+func effective(p grammar.Result, mode MatchMode) grammar.Result {
+	if mode != MatchKeywordQtyContains && p.Version == grammar.VersionContains {
+		return grammar.Result{Version: grammar.Version, Kind: grammar.NoMatch}
+	}
+	return p
+}
+
 // offerReason applies the §2.3 precedence once the offer exists: OFFER_INACTIVE (inactive
 // or occurred before activated_at) → INVALID_QUANTITY → QUANTITY_REQUIRED
-// (KEYWORD_QTY_ONLY without "+N") → QUANTITY_OVER_MAX. "" means the command may be
-// accepted (BUNDLE_LIMIT is decided later on the locked bundle). Pure.
+// (KEYWORD_QTY_ONLY or KEYWORD_QTY_CONTAINS without "+N") → QUANTITY_OVER_MAX. "" means the
+// command may be accepted (BUNDLE_LIMIT is decided later on the locked bundle). Pure.
 func offerReason(p grammar.Result, mode MatchMode, o offer, occurredAt time.Time) Reason {
 	switch {
 	case !o.active || occurredAt.Before(o.activatedAt):
 		return ReasonOfferInactive
 	case p.Kind == grammar.InvalidQuantity:
 		return ReasonInvalidQuantity
-	case mode == MatchKeywordQtyOnly && !p.Explicit:
+	case (mode == MatchKeywordQtyOnly || mode == MatchKeywordQtyContains) && !p.Explicit:
 		return ReasonQuantityRequired
 	case p.Quantity > o.maxQuantity:
 		return ReasonQuantityOverMax
@@ -343,7 +357,7 @@ func offerReason(p grammar.Result, mode MatchMode, o offer, occurredAt time.Time
 // with an offer its id (and keyword for the result) is kept, and quantity/explicit only
 // when the grammar produced a MATCH. Pure.
 func shape(p grammar.Result, reason Reason, o offer) event {
-	e := event{kind: p.Kind, reason: reason}
+	e := event{version: p.Version, kind: p.Kind, reason: reason}
 	if o.id == "" {
 		return e
 	}
@@ -363,7 +377,7 @@ func (e event) result(eventID, sessionID string, generation int64, duplicate boo
 		outcome = OutcomeRejected
 	}
 	return IngestResult{Outcome: outcome, Reason: e.reason, Duplicate: duplicate, EventID: eventID, SessionID: sessionID,
-		WindowGeneration: generation, GrammarVersion: grammar.Version, OfferID: e.offerID, Keyword: e.keyword,
+		WindowGeneration: generation, GrammarVersion: e.version, OfferID: e.offerID, Keyword: e.keyword,
 		BundleID: e.bundleID, Quantity: e.quantity, PreviousQuantity: e.previous, LineVersion: e.lineVersion,
 		BundleVersion: e.bundleVersion, BundleCreated: e.bundleCreated && !duplicate}
 }
@@ -383,7 +397,7 @@ func record(ctx context.Context, tx pgx.Tx, in IngestInput, w window, e event) (
 		$16,nullif($17,'')::uuid,nullif($18::bigint,0),nullif($19::integer,0),nullif($20::bigint,0),nullif($21,'')::uuid)
 		RETURNING id::text`,
 		in.TenantID, in.StoreID, in.SessionID, w.generation, in.SourceKind, in.SourceEventID, in.Platform, in.OccurredAt,
-		grammar.Version, string(e.kind), string(w.mode), outcome, string(e.reason), e.offerID, e.quantity, e.explicit,
+		e.version, string(e.kind), string(w.mode), outcome, string(e.reason), e.offerID, e.quantity, e.explicit,
 		e.bundleID, e.lineVersion, e.previous, e.bundleVersion, in.PrincipalID).Scan(&eventID)
 	if err != nil {
 		return IngestResult{}, mapError(err)
@@ -393,28 +407,30 @@ func record(ctx context.Context, tx pgx.Tx, in IngestInput, w window, e event) (
 
 // readSource is the §4.3 step-2 dedup under the claim-source advisory lock. It compares
 // only immutable delivery/parse facts (never re-resolved offer state, S03): source kind,
-// platform, session, occurred_at (µs), grammar version and kind; the stored offer's
-// immutable keyword; the stored quantity/explicit; and for ACCEPTED the bundle's actor
-// key. A mismatch is ErrConflict; a match returns the stored outcome and writes nothing.
+// platform, session, occurred_at (µs), the stored grammar version and kind; the stored
+// offer's immutable keyword; the stored quantity/explicit; and for ACCEPTED the bundle's
+// actor key. The parse is first gated by the stored event's match_mode (effective), so a
+// redelivered source yields the same facts in every mode and never 409s. A mismatch is
+// ErrConflict; a match returns the stored outcome and writes nothing.
 func readSource(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result) (IngestResult, bool, error) {
 	var (
 		e                                                 event
 		eventID, sessionID, sourceKind, platform, version string
-		kind, outcome, actorKey                           string
+		kind, outcome, actorKey, matchMode                string
 		generation                                        int64
 		occurredAt                                        time.Time
 		quantity, lineVersion, previous, bundleVersion    *int64
 	)
 	err := tx.QueryRow(ctx, `SELECT e.id::text,e.session_id::text,e.window_generation,e.source_kind,e.platform,e.occurred_at,
-		e.grammar_version,e.grammar_kind,e.outcome,coalesce(e.reason,''),coalesce(e.offer_id::text,''),coalesce(o.keyword,''),
-		e.quantity,e.explicit_quantity,coalesce(e.bundle_id::text,''),coalesce(b.actor_key,''),e.line_version,
-		e.previous_quantity,e.bundle_version
+		e.grammar_version,e.grammar_kind,e.match_mode,e.outcome,coalesce(e.reason,''),coalesce(e.offer_id::text,''),
+		coalesce(o.keyword,''),e.quantity,e.explicit_quantity,coalesce(e.bundle_id::text,''),coalesce(b.actor_key,''),
+		e.line_version,e.previous_quantity,e.bundle_version
 		FROM claims.events e
 		LEFT JOIN live.offers o ON o.tenant_id=e.tenant_id AND o.store_id=e.store_id AND o.id=e.offer_id
 		LEFT JOIN claims.bundles b ON b.tenant_id=e.tenant_id AND b.store_id=e.store_id AND b.id=e.bundle_id
 		WHERE e.tenant_id=$1 AND e.store_id=$2 AND e.source_event_id=$3`,
 		in.TenantID, in.StoreID, in.SourceEventID).Scan(&eventID, &sessionID, &generation, &sourceKind, &platform, &occurredAt,
-		&version, &kind, &outcome, &e.reason, &e.offerID, &e.keyword, &quantity, &e.explicit, &e.bundleID, &actorKey,
+		&version, &kind, &matchMode, &outcome, &e.reason, &e.offerID, &e.keyword, &quantity, &e.explicit, &e.bundleID, &actorKey,
 		&lineVersion, &previous, &bundleVersion)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return IngestResult{}, false, nil
@@ -422,13 +438,14 @@ func readSource(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result
 	if err != nil {
 		return IngestResult{}, false, mapError(err)
 	}
+	ep := effective(p, MatchMode(matchMode))
 	same := sourceKind == in.SourceKind && platform == in.Platform && sessionID == in.SessionID &&
-		occurredAt.Equal(in.OccurredAt) && version == p.Version && kind == string(p.Kind)
+		occurredAt.Equal(in.OccurredAt) && version == ep.Version && kind == string(ep.Kind)
 	if e.offerID != "" {
-		same = same && e.keyword == p.Keyword
+		same = same && e.keyword == ep.Keyword
 	}
 	if quantity != nil {
-		same = same && *quantity == p.Quantity && e.explicit != nil && *e.explicit == p.Explicit
+		same = same && *quantity == ep.Quantity && e.explicit != nil && *e.explicit == ep.Explicit
 	}
 	if outcome == OutcomeAccepted {
 		same = same && actorKey == in.ActorKey
@@ -436,6 +453,7 @@ func readSource(ctx context.Context, tx pgx.Tx, in IngestInput, p grammar.Result
 	if !same {
 		return IngestResult{}, false, command.ErrConflict
 	}
+	e.version = version
 	e.kind = grammar.Kind(kind)
 	e.quantity, e.lineVersion, e.previous, e.bundleVersion = value(quantity), value(lineVersion), value(previous), value(bundleVersion)
 	return e.result(eventID, sessionID, generation, true), true, nil

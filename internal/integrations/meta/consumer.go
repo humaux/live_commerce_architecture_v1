@@ -1,3 +1,6 @@
+// Purpose: Meta webhook consumer: turns verified inbound Page/IG events into staged claim intake and social facts (meta-consumer-v1, meta-claims-intake-v1).
+// Depends on: SQL meta_inbox.stage_claim_intake (12 args incl. p_version since 0115), claim_intake.go (qualifyClaim → grammar.ParseForIngest), internal/integrations/core, pgx.
+// Used by: cmd/meta-worker (River consumer); tests/foundation TestMetaClaimsMCI*.
 package meta
 
 import (
@@ -211,9 +214,9 @@ func (w *ConsumerWorker) stageClaim(ctx context.Context, tx pgx.Tx, job *river.J
 	actor := ClaimActorKey(w.actor, *loaded.object, *loaded.assetID, candidate.FromID)
 	var staged *string
 	if err := tx.QueryRow(ctx, `SELECT meta_inbox.stage_claim_intake($1::uuid,$2::bigint,$3::integer,$4::text,$5::text,$6::text,
-		NULL::timestamptz,$7::text,$8::text,$9::integer,$10::boolean)::text`,
+		NULL::timestamptz,$7::text,$8::text,$9::integer,$10::boolean,$11::text)::text`,
 		job.Args.EventID, job.ID, job.Attempt, candidate.ObjectID, candidate.CommentRef, actor,
-		string(candidate.Parsed.Kind), keyword, quantity, explicit).Scan(&staged); err != nil {
+		string(candidate.Parsed.Kind), keyword, quantity, explicit, candidate.Parsed.Version).Scan(&staged); err != nil {
 		return ErrConsumerStorage
 	}
 	return nil

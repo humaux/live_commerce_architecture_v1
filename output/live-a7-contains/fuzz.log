@@ -1,0 +1,31 @@
+$ go test -run='^$' -fuzz='^FuzzParseContains$' -fuzztime=60s ./internal/claims/grammar
+
+fuzz: elapsed: 0s, gathering baseline coverage: 0/16 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 16/16 completed, now fuzzing with 10 workers
+fuzz: elapsed: 3s, execs: 424539 (141510/sec), new interesting: 71 (total: 87)
+fuzz: elapsed: 6s, execs: 698710 (91379/sec), new interesting: 79 (total: 95)
+fuzz: elapsed: 9s, execs: 950859 (84047/sec), new interesting: 86 (total: 102)
+fuzz: elapsed: 12s, execs: 1234495 (94551/sec), new interesting: 89 (total: 105)
+fuzz: elapsed: 15s, execs: 1674227 (146586/sec), new interesting: 95 (total: 111)
+fuzz: elapsed: 18s, execs: 2219434 (181715/sec), new interesting: 100 (total: 116)
+fuzz: elapsed: 21s, execs: 2601168 (127256/sec), new interesting: 105 (total: 121)
+fuzz: elapsed: 24s, execs: 3055943 (151547/sec), new interesting: 111 (total: 127)
+fuzz: elapsed: 27s, execs: 3580609 (174888/sec), new interesting: 115 (total: 131)
+fuzz: elapsed: 30s, execs: 3949554 (122970/sec), new interesting: 118 (total: 134)
+fuzz: elapsed: 33s, execs: 4415394 (155341/sec), new interesting: 121 (total: 137)
+fuzz: elapsed: 36s, execs: 5004434 (196294/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 39s, execs: 5639659 (211801/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 42s, execs: 6065118 (141794/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 45s, execs: 6498414 (144458/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 48s, execs: 7043146 (181528/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 51s, execs: 7617852 (191594/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 54s, execs: 8157550 (179911/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 57s, execs: 8398074 (80169/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 1m0s, execs: 8738879 (113613/sec), new interesting: 122 (total: 138)
+fuzz: elapsed: 1m0s, execs: 8738879 (0/sec), new interesting: 122 (total: 138)
+PASS
+ok  	livecommerce/internal/claims/grammar	60.912s
+
+Evidence label: UNIT (MODEL_ONLY). 8,738,879 execs, 0 panics, 0 failures.
+Corpus count: 138 total interesting (16 baseline seeds + 122 discovered), 0 persisted to testdata
+(no crash was found, so nothing is written to the seed corpus).

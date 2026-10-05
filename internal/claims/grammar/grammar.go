@@ -6,9 +6,12 @@
 //
 // Non-goals: no NFKC or locale-aware folding (NFKC would also accept ①, ², ﬁ, Roman
 // numerals and the Kelvin sign), no unicode.ToUpper (ſ→S, ı→I, U+212A→K traps), no
-// regexp (no backtracking), no substring/"contains" matching, no guessed SKU, no
-// negation or question interpretation, and no knowledge of offers, windows or modes:
-// the KEYWORD_QTY_ONLY rule is applied at ingest by package claims (§2.3).
+// regexp (no backtracking), no guessed SKU, and no knowledge of offers, windows or
+// modes: the KEYWORD_QTY_ONLY rule is applied at ingest by package claims (§2.3).
+//
+// kw-v1 (Parse) is the whole-comment exact grammar. kwc-v1 (ParseContains) is the one
+// restricted contains form (§2.5): a single [A-Z0-9+] fragment with the same §2.2 head
+// rules plus a frozen negation/question table. Never unrestricted contains matching.
 //
 // Stdlib only: unicode/utf8 decodes; the unicode category
 // tables are consulted solely by NormalizeLabel to reject control (Cc) and format (Cf)
@@ -23,7 +26,12 @@ import (
 )
 
 // Version names this grammar in every persisted claim event (claims.events.grammar_version).
-const Version = "kw-v1"
+// VersionContains is the §2.5 kwc-v1 restricted contains grammar; it persists only for
+// events accepted in a KEYWORD_QTY_CONTAINS window (package claims downgrades it elsewhere).
+const (
+	Version         = "kw-v1"
+	VersionContains = "kwc-v1"
+)
 
 // Bounds fixed by the frozen grammar (§2.1 step 0, §2.2, §2.2 NormalizeLabel).
 const (
@@ -51,7 +59,7 @@ const (
 // A keyword-shaped comment can be a phone number (0912345678), so every formatting
 // path (String, GoString, Format, MarshalJSON) emits only Version and Kind.
 type Result struct {
-	Version  string // always Version
+	Version  string // Version (kw-v1) or VersionContains (kwc-v1)
 	Kind     Kind
 	Keyword  string // canonical head; "" for NO_MATCH
 	Quantity int64  // 1..999 for MATCH; 0 otherwise
@@ -225,8 +233,8 @@ func allDigits(s string) bool {
 // not one of the fixed constants is replaced, so a hand-built Result cannot smuggle text.
 func (r Result) redacted() (version, kind string) {
 	version, kind = "invalid", "INVALID"
-	if r.Version == Version {
-		version = Version
+	if r.Version == Version || r.Version == VersionContains {
+		version = r.Version
 	}
 	if r.Kind == Match || r.Kind == NoMatch || r.Kind == InvalidQuantity {
 		kind = string(r.Kind)

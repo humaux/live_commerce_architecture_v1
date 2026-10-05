@@ -164,7 +164,7 @@ func TestMetaClaimsMCI01Qualification(t *testing.T) {
 			if got.ObjectID != c.obj || got.CommentRef != c.ref || got.FromID != c.from {
 				t.Fatalf("candidate ids: object=%q ref=%q from=%q", got.ObjectID, got.CommentRef, got.FromID)
 			}
-			if want := grammar.Parse(c.text); got.Parsed != want {
+			if want := grammar.ParseForIngest(c.text); got.Parsed != want { // live-a7-contains: qualification uses the ingest parser (kw-v1 first, kwc-v1 fallback); the mode gate is applied later at ingest
 				t.Fatalf("parse mismatch: kind=%s keyword=%q qty=%d explicit=%t; want kind=%s keyword=%q qty=%d explicit=%t",
 					got.Parsed.Kind, got.Parsed.Keyword, got.Parsed.Quantity, got.Parsed.Explicit, want.Kind, want.Keyword, want.Quantity, want.Explicit)
 			}
