@@ -30,7 +30,7 @@ import (
 	"livecommerce/internal/storefront"
 )
 
-// Frozen buyer DTOs (contract §4.4, §7.2 B1–B2): no title, label, actor, platform, owner or principal.
+// PreviewLine is the buyer-safe claim projection; amounts and stock hints never authorize checkout.
 type PreviewLine struct {
 	Keyword        string `json:"keyword"`
 	SKUID          string `json:"sku_id"`
@@ -46,19 +46,27 @@ type PreviewLine struct {
 	Available             bool   `json:"available"`
 	SoldOut               bool   `json:"sold_out"`
 }
+
+// Preview describes a live claim link without identity, locks or stock reservation.
 type Preview struct {
 	BundleVersion int64         `json:"bundle_version"`
 	Bound         bool          `json:"bound"`
 	ExpiresAt     time.Time     `json:"expires_at"`
 	Lines         []PreviewLine `json:"lines"` // ORDER BY keyword
 }
+
+// RedeemInput pins the observed bundle version for the explicit buyer command.
 type RedeemInput struct {
 	ExpectedBundleVersion int64 `json:"expected_bundle_version"`
 }
+
+// Skipped reports a pending line that B2 did not apply; it remains available to retry later.
 type Skipped struct {
 	SKUID  string `json:"sku_id"`
 	Reason string `json:"reason"` // unavailable | offer_inactive | sold_out
 }
+
+// Redeemed reports the same-transaction cart merge, applied lines and pending skips.
 type Redeemed struct {
 	BundleVersion int64             `json:"bundle_version"`
 	Cart          storefront.Cart   `json:"cart"`

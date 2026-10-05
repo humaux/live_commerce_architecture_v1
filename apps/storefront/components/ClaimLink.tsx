@@ -195,7 +195,7 @@ export default function ClaimLink({
         return;
       }
       const claimed = await readClaim(context, link);
-      if (version === epoch.current) { setPreview(claimed); setNotice("nothing"); }
+      if (version === epoch.current) { setPreview(claimed); setNotice(null); }
     } catch (reason) {
       if (version !== epoch.current) return;
       if (reason instanceof BuyerClientError && reason.code === "uncertain") {
@@ -313,7 +313,7 @@ export default function ClaimLink({
                       <small className="claim-flag">{copy.unavailable}</small>
                     ) : line.sold_out ? (
                       <small className="claim-flag">{copy.soldOut}</small>
-                    ) : !line.pending ? (
+                    ) : !line.pending && cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity) ? (
                       <small className="claim-flag done">{copy.inCart}</small>
                     ) : null}
                   </div>

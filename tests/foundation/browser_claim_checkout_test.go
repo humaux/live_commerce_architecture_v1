@@ -43,6 +43,9 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 		main, _ := filepath.Abs(filepath.Join(root, "../.."))
 		evidence := brfEvidence(t, main, "claim-checkout")
 		e := ltgNew(t, tcvOpts{origin: sbOrigin})
+		// psSetup inside tcvNew already owns a synthetic CARD order; count only this journey's delta.
+		baseOrders := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store())
+		e.grantCreator("fulfillment:write", "orders:read")
 		e.cvsSettings(tcvAllChains, true, "20000", 500)
 		e.service("cvs_711", "MANUAL", 0)
 		fixtures := map[string]cdcLink{}
@@ -92,6 +95,8 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 			var in struct {
 				Name   string `json:"name"`
 				Action string `json:"action"`
+				Order  string `json:"order,omitempty"`
+				SKU    string `json:"sku,omitempty"`
 			}
 			if json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in) != nil {
 				http.Error(w, "invalid", 400)
@@ -115,6 +120,14 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 					http.Error(w, "fixture failed", 500)
 					return
 				}
+			} else if in.Action == "ship-previous" {
+				// SETUP: exercise the real merchant manual-shipment path on a synthetic order.
+				// The existing per-owner pay-at-pickup cap forbids another unshipped order.
+				status, _, _ := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+in.Order+"/shipment", t04Key("cdc-ship"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
+				if status != 200 {
+					http.Error(w, "fixture shipment failed", 500)
+					return
+				}
 			} else if in.Action == "replenish" {
 				_, err := e.p.f.owner.Exec(ctx, `UPDATE inventory.balances SET on_hand=reserved+allocated+unavailable+100 WHERE tenant_id=$1 AND store_id=$2 AND sku_id=$3`, e.tenant(), e.store(), link.SKU)
 				if err != nil {
@@ -122,7 +135,7 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 					return
 				}
 			} else if in.Action == "archive-other" {
-				_, err := e.p.f.owner.Exec(ctx, `UPDATE catalog.skus SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.p.stock.skus[0].ID)
+				_, err := e.p.f.owner.Exec(ctx, `UPDATE catalog.skus SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), in.SKU)
 				if err != nil {
 					http.Error(w, "fixture failed", 500)
 					return
@@ -138,7 +151,7 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 		t.Cleanup(control.Close)
 		cmd := exec.CommandContext(ctx, "node", "tests/storefront/claim-checkout.mjs")
 		cmd.Dir = root
-		cmd.Env = browserEnvironment(map[string]string{"LC_CDC_ORIGIN": sbOrigin, "LC_CDC_PROXY": proxy, "LC_CDC_EVIDENCE": evidence, "LC_CDC_CONTROL": control.URL, "LC_CDC_CONTROL_KEY": controlKey, "LC_CDC_PRODUCT": e.p.stock.product.ID, "LC_CDC_OTHER_CODE": e.p.stock.skus[0].Code})
+		cmd.Env = browserEnvironment(map[string]string{"LC_CDC_ORIGIN": sbOrigin, "LC_CDC_PROXY": proxy, "LC_CDC_EVIDENCE": evidence, "LC_CDC_CONTROL": control.URL, "LC_CDC_CONTROL_KEY": controlKey, "LC_CDC_PRODUCT": e.p.stock.product.ID})
 		log := browserLog(t, filepath.Join(evidence, "browser.log"))
 		cmd.Stdout, cmd.Stderr = log, log
 		if err := cmd.Run(); err != nil {
@@ -149,7 +162,7 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 			Orders []string `json:"orders"`
 		}
 		raw, err := os.ReadFile(filepath.Join(evidence, "result.json"))
-		if err != nil || json.Unmarshal(raw, &result) != nil || result.Cases < 12 || len(result.Orders) < 4 {
+		if err != nil || json.Unmarshal(raw, &result) != nil || result.Cases != 17 || len(result.Orders) != 6 {
 			t.Fatalf("missing CDC cases/order result: %v", err)
 		}
 		for _, id := range result.Orders {
@@ -158,8 +171,8 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 				t.Fatalf("CDC order readback %s: %s %s %v", id, state, mode, err)
 			}
 		}
-		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n != len(result.Orders) {
-			t.Fatalf("CDC duplicate order: persisted=%d browser=%d", n, len(result.Orders))
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n-baseOrders != len(result.Orders) {
+			t.Fatalf("CDC duplicate order: persisted delta=%d browser=%d (baseline=%d)", n-baseOrders, len(result.Orders), baseOrders)
 		}
 		var doubleOrders int
 		if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o JOIN storefront.quotes q ON q.tenant_id=o.tenant_id AND q.store_id=o.store_id AND q.id=o.quote_id WHERE o.store_id=$1 AND EXISTS(SELECT 1 FROM jsonb_array_elements(q.snapshot->'lines') l WHERE l->>'sku_id'=$2)`, e.store(), fixtures["repeat"].SKU).Scan(&doubleOrders); err != nil || doubleOrders != 1 {

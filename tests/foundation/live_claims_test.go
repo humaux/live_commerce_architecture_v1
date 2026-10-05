@@ -1,3 +1,6 @@
+// Purpose: real-PG claim harness and catalog/window/offer transaction gates.
+// Depends on: claims, buyer/storefront scopes, inventory ledger and isolated foundation fixtures.
+// Used by: LiveClaims, DirectCheckout, LiveTools and browser acceptance gates.
 // T10 live keyword claims gates, written by the independent test_worker from
 // contracts/live-keyword-claims-v1.md (FROZEN, with the §0.1 integrator rulings).
 //
@@ -44,6 +47,7 @@ import (
 	"livecommerce/internal/claims"
 	"livecommerce/internal/claims/grammar"
 	"livecommerce/internal/command"
+	"livecommerce/internal/inventory"
 	"livecommerce/internal/live"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
@@ -856,6 +860,14 @@ func TestLiveClaimsKC04Offers(t *testing.T) {
 	// only the active offer's line and reports the inactive one as skipped.
 	s3 := h.draft(t, f.storeA1)
 	x := lcSKUs(t, f, f.tenantA, f.storeA1, "USD", 1)[0]
+	// CDC: this gate proves typo recovery, so seed positive stock through the real ledger.
+	// Sold-out/missing balances are exercised separately by TestClaimDirectCheckoutAvailability.
+	if _, err := t04Scoped(h.ctx, f, f.tokens["a"], f.storeA1, "inventory:write", func(tx pgx.Tx, s platform.Scope) (inventory.Balance, error) {
+		return inventory.AdjustOnHand(h.ctx, tx, s, t04Key("kc04-typo-stock"), inventory.Adjustment{WarehouseID: h.stock.warehouse.ID, SKUID: x, Delta: 3, ExpectedVersion: 0, Reason: "synthetic typo recovery stock"})
+	}); err != nil {
+		t.Fatal(err)
+	}
+
 	h.open(t, s3, claims.MatchExact)
 	typo := h.offer(t, s3, "A11", x, 5)
 	onTypo := h.accepted(t, s3, "", "typo-buyer", "A11+2")

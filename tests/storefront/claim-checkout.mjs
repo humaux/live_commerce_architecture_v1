@@ -13,17 +13,17 @@ const origin = process.env.LC_CDC_ORIGIN, evidence = process.env.LC_CDC_EVIDENCE
 assert(origin && evidence && process.env.LC_CDC_CONTROL_KEY);
 const browser = await launch({ proxy: { server: process.env.LC_CDC_PROXY } });
 const ledger = [], orders = [], contexts = [], tokens = [];
-let cases = 0;
+let cases = 0, activePage = null;
 const copy = {
   "zh-TW": { checkout: "直接結帳", delivery: "選擇配送", quote: "取得目前總額", pickup: /取貨付款/, merge: /其他商品也會一起結帳/ },
   "zh-CN": { checkout: "直接结账", delivery: "选择配送", quote: "获取当前总额", pickup: /取货付款/, merge: /其他商品也会一起结账/ },
   en: { checkout: "Check out now", delivery: "Choose delivery", quote: "Get current total", pickup: /Pay at pickup/i, merge: /other items.*checked out together/i },
 };
-async function fixture(name, action = "link") {
+async function fixture(name, action = "link", order = undefined, sku = undefined) {
   // SETUP/FAULT INJECTION: loopback owner fixture; never substitutes for a buyer UI action.
   const response = await fetch(process.env.LC_CDC_CONTROL, { method: "POST", headers: {
     "Content-Type": "application/json", "X-CDC-Control": process.env.LC_CDC_CONTROL_KEY,
-  }, body: JSON.stringify({ name, action }) });
+  }, body: JSON.stringify({ name, action, order, sku }) });
   assert.equal(response.status, 200, "fixture setup must succeed");
   const result = await response.json(); tokens.push(result.token); return result;
 }
@@ -43,11 +43,14 @@ async function newPage(mobile = false) {
       if (name === "/api/buyer/claim-link") seen.preview = value;
       if (name === "/api/buyer/claim-link/redeem") seen.redeemed = value;
     }
+    if (new URL(r.url()).pathname === "/api/buyer/checkout" && r.status() >= 400)
+      seen.checkoutRefusal = { status: r.status(), body: await r.json().catch(() => null) };
     if (r.status() >= 500 && r.url().startsWith(origin)) seen.errors.push(`HTTP ${r.status()} ${new URL(r.url()).pathname}`);
   });
   page.seen = seen; return page;
 }
 async function action(page, control, operation, expected, verify) {
+  activePage = page;
   const row = { page: new URL(page.url()).pathname, control, operation, expected, actual: "", pass: false };
   ledger.push(row);
   try { await operation(); await verify(); row.actual = expected; row.pass = true; }
@@ -64,8 +67,9 @@ async function noLeaks(page, link) {
   assert.deepEqual(page.seen.errors, [], "no uncaught error or server error");
 }
 async function openClaim(page, link, locale = "zh-TW") {
+  activePage = page;
   await page.goto(`${origin}/${locale}/claim#t=${link.token}`);
-  await expect(page.getByTestId("claim-preview")).toBeVisible();
+  await expect(page.getByTestId("claim-line-A1")).toBeVisible();
   assert.equal(page.seen.redeem, 0, "opening a claim is read-only");
   await noLeaks(page, link);
 }
@@ -98,7 +102,8 @@ async function place(page, link, locale = "zh-TW", loseReply = false, deplete = 
   if (deplete) {
     await fixture(deplete, "deplete");
     await page.getByTestId("create-order").click();
-    await expect(page.locator('[role="alert"]')).not.toHaveCount(0);
+    await expect.poll(() => page.seen.checkoutRefusal?.body?.code).toBe("insufficient_inventory");
+    await expect(page.getByText("購物車或配送設定已變更。請重新載入最新資訊，再確認選擇。", { exact: true })).toBeVisible();
     await expect(page.getByTestId("order-section")).toHaveCount(0);
     return;
   }
@@ -106,7 +111,7 @@ async function place(page, link, locale = "zh-TW", loseReply = false, deplete = 
     // FAULT INJECTION: lose the real click's reply after server commit; retain the actual purchase recovery journal.
     await page.route("**/api/buyer/checkout", async (route) => { await route.fetch(); await route.abort("failed"); });
     await page.getByTestId("create-order").click();
-    await expect(page.locator(".purchase-error")).toBeVisible();
+    await expect(page.locator("main.purchase-main > .purchase-error")).toBeVisible();
     await page.unroute("**/api/buyer/checkout"); return;
   }
   await action(page, "create-order", () => page.getByTestId("create-order").click(), "confirmed pay-at-pickup order", () => expect(page.getByTestId("order-section")).toBeVisible());
@@ -129,13 +134,15 @@ try {
     if (locale === "zh-TW") { previous = page; previousLink = link; }
   }
   // An already-ordered cart is cleared before a second, different claim is merged.
+  // SETUP: the previous synthetic order is shipped through the actual merchant path, satisfying the PAP one-unshipped-order cap.
+  await fixture("zh-TW","ship-previous",orders[0]);
   const second = await fixture("second"); previous.seen.redeem = 0;
   await openClaim(previous, second); await checkout(previous, second);
   assert(!previous.seen.cart.items.some((i) => i.sku_id === previousLink.sku), "previous order's SKU must not be ordered again");
   await place(previous, second); pass("continueShopping prevents repeat purchase of old cart");
 
   const merged = await newPage(engine === "webkit"), mergeLink = await fixture("merge");
-  await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT, { sku: process.env.LC_CDC_OTHER_CODE });
+  await addToCart(merged, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
   await openClaim(merged, mergeLink); await checkout(merged, mergeLink);
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
   await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2); pass("unpaid merge persisted after reload");
@@ -147,7 +154,7 @@ try {
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
   await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
   await fixture("sold", "replenish");
-  await sold.getByRole("button",{name:"重新讀取登記",exact:true}).click();
+  await openClaim(sold,soldLink);
   await expect(sold.getByTestId("claim-add")).toBeEnabled();
   await checkout(sold,soldLink); pass("replenishment keeps pending and permits a fresh checkout click");
 
@@ -162,6 +169,7 @@ try {
   await expect.poll(() => race.seen.preview?.lines.some((line) => line.sold_out)).toBe(true);
   await expect(race.getByTestId("claim-add")).toHaveText("直接結帳");
   await expect(race.getByTestId("claim-add")).toBeDisabled();
+  await expect(race.getByText("購物車裡已有這些商品。",{exact:true})).toHaveCount(0);
   assert.equal(race.seen.redeemed.skipped[0].reason,"sold_out"); assert.deepEqual(race.seen.redeemed.cart.items,[]);
   assert.equal(new URL(race.url()).pathname, "/zh-TW/claim"); pass("B1/B2 stock race settles sold-out without cart write/navigation");
   const repeat = await newPage(engine === "webkit"), repeatLink = await fixture("repeat");
@@ -182,22 +190,25 @@ try {
   const recoveryLink = await fixture("conflict"); pending.seen.redeem = 0;
   await openClaim(pending, recoveryLink); await pending.getByTestId("claim-add").click();
   await expect(pending).toHaveURL(/\/zh-TW\/checkout/); assert.equal(pending.seen.redeem, 0, "in-flight checkout never redeems a new link");
-  await expect(pending.getByTestId("order-id")).toBeVisible(); orders.push((await pending.getByTestId("order-id").innerText()).trim()); pass("in-flight order recovers without B2");
+  await action(pending,"recover-checkout",()=>pending.getByRole("button",{name:"確認上一次的結果",exact:true}).click(),"the same pending checkout recovers its order",()=>expect(pending.getByTestId("order-id")).toBeVisible());
+  orders.push((await pending.getByTestId("order-id").innerText()).trim()); pass("in-flight order recovers without B2");
   // 409 from a pre-existing archived item: navigate to cart, really remove it, then reopen claim.
   const bad=await newPage(engine==="webkit"), badLink=await fixture("archived");
-  await addToCart(bad,origin,"zh-TW",process.env.LC_CDC_PRODUCT,{sku:process.env.LC_CDC_OTHER_CODE});
-  await fixture("archived","archive-other");await openClaim(bad,badLink);await bad.getByTestId("claim-add").click();
+  await addToCart(bad,origin,"zh-TW",process.env.LC_CDC_PRODUCT);
+  await expect.poll(() => bad.seen.cart?.items.length).toBe(1);
+  await fixture("archived","archive-other",undefined,bad.seen.cart.items[0].sku_id);await openClaim(bad,badLink);await bad.getByTestId("claim-add").click();
   await expect(bad.getByTestId("claim-conflict")).toBeVisible();
   await bad.getByRole("link",{name:"檢查購物車",exact:true}).click();
   await expect(bad).toHaveURL(/\/zh-TW\/cart/);
-  await bad.getByTestId("cart-line").getByRole("button",{name:/移除/}).click();
+  await action(bad,"remove-archived-cart-line",()=>bad.getByTestId("cart-line").getByRole("button",{name:/移出購物車/}).click(),"unavailable cart item is removed",()=>expect(bad.getByTestId("cart-line")).toHaveCount(0));
   await expect(bad.getByTestId("cart-line")).toHaveCount(0);
   bad.seen.redeem=0;await openClaim(bad,badLink);await checkout(bad,badLink);pass("409 cart recovery through actual remove click");
   assert.equal(new Set(orders).size, orders.length);
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({ cases, orders, engine }, null, 2));
 } catch (error) {
-  const page = contexts.flatMap((context) => context.pages()).at(-1);
+  const page = activePage ?? contexts.flatMap((context) => context.pages()).at(-1);
   if (page && !page.isClosed()) await page.screenshot({ path: path.join(evidence, "failure.png"), fullPage: true }).catch(() => {});
+  if (page && !page.isClosed()) console.error("CDC visible alerts", JSON.stringify(await page.locator('[role="alert"], .purchase-error').allInnerTexts()));
   console.error("FAIL CDC", String(error.message).replaceAll(/#t=[A-Za-z0-9_-]+/g, "#t=REDACTED")); process.exitCode = 1;
 } finally {
   const serialized = JSON.stringify(ledger, null, 2);
