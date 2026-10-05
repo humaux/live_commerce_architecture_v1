@@ -1047,11 +1047,10 @@ func TestLiveClaimsKC05Window(t *testing.T) {
 	lcIs(t, lcErr(h.setWindow(h.token, f.storeA1, s, claims.WindowInput{ExpectedVersion: 3, State: claims.WindowOpen, MatchMode: claims.MatchKeywordQtyOnly})), command.ErrConflict, "mode change while OPEN")
 	lcIs(t, lcErr(h.setWindow(h.token, f.storeA1, s, claims.WindowInput{ExpectedVersion: 3, State: claims.WindowClosed, MatchMode: claims.MatchKeywordQtyOnly})), command.ErrConflict, "close with a different mode")
 	lcIs(t, lcErr(h.setWindow(h.token, f.storeA1, s, claims.WindowInput{ExpectedVersion: 2, State: claims.WindowClosed, MatchMode: claims.MatchExact})), command.ErrConflict, "stale version")
-	// A second OPEN window in the store is 23505 -> ErrConflict.
+	// LC-B1 (live-console-v1 §8, migration 0122): a second OPEN window in the store is allowed (cap 5, TestLiveLifecycleMultiWindow).
 	other := h.draft(t, f.storeA1)
-	lcIs(t, lcErr(h.setWindow(h.token, f.storeA1, other, claims.WindowInput{State: claims.WindowOpen, MatchMode: claims.MatchExact})), command.ErrConflict, "second OPEN window in store")
-	if h.board(t, other).Window.Version != 0 {
-		t.Fatal("rejected open left a window row")
+	if w2 := h.mustWindow(t, other, 0, claims.WindowOpen, claims.MatchExact); w2.State != claims.WindowOpen || w2.Generation != 1 {
+		t.Fatalf("second OPEN window in store: %+v", w2)
 	}
 	w = h.mustWindow(t, s, 3, claims.WindowClosed, claims.MatchExact)
 	if w.State != claims.WindowClosed || w.Generation != 1 || w.OpenedAt == nil || !w.OpenedAt.Equal(opened) || w.ClosedAt == nil || w.ClosedAt.Before(opened) || w.MatchMode != claims.MatchExact {
@@ -1064,17 +1063,17 @@ func TestLiveClaimsKC05Window(t *testing.T) {
 		}
 		w = h.mustWindow(t, s, w.Version, claims.WindowClosed, claims.MatchExact)
 	}
-	// One audit row per successful SetWindow (8 here); the contract does not name the
-	// action of the initial CLOSED insert, so only opened/closed are counted exactly.
+	// One audit row per successful SetWindow (9 here: 8 on this session + the LC-B1 second-store-window open above);
+	// the contract does not name the action of the initial CLOSED insert, so only opened/closed are counted exactly.
 	total := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE principal_id=$1 AND action LIKE 'live.claim.window.%'`, h.actor)
-	if audits("opened") != 3 || audits("closed") != 3 || audits("mode_set") < 1 || total != 8 {
+	if audits("opened") != 4 || audits("closed") != 3 || audits("mode_set") < 1 || total != 9 {
 		t.Fatalf("window audits opened=%d closed=%d mode_set=%d total=%d", audits("opened"), audits("closed"), audits("mode_set"), total)
 	}
 	// Missing live:manage.
 	_, readerToken := lcPrincipal(t, f, f.tenantA, []string{f.storeA1}, "store:read", "live:read")
 	lcIs(t, lcErr(h.setWindow(readerToken, f.storeA1, s, claims.WindowInput{ExpectedVersion: w.Version, State: claims.WindowOpen, MatchMode: claims.MatchExact})), platform.ErrForbidden, "window without live:manage")
 
-	// Two sessions opened concurrently in one store -> exactly one 409.
+	// Two sessions opened concurrently in one store -> both succeed under the LC-B1 cap of 5 (was: exactly one 409).
 	a, b := h.draft(t, f.storeA1), h.draft(t, f.storeA1)
 	results := make([]error, 2)
 	start := make(chan struct{})
@@ -1089,14 +1088,11 @@ func TestLiveClaimsKC05Window(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
-	if ok, conflicts := lcOutcomes(t, results); ok != 1 || conflicts != 1 {
+	if ok, conflicts := lcOutcomes(t, results); ok != 2 || conflicts != 0 {
 		t.Fatalf("concurrent opens winners=%d conflicts=%d", ok, conflicts)
 	}
-	winner := a
-	if results[0] != nil {
-		winner = b
-	}
-	h.closeWindow(t, winner)
+	h.closeWindow(t, a)
+	h.closeWindow(t, b)
 
 	// Close waits for an in-flight ingest holding the window FOR SHARE (observed in
 	// pg_stat_activity), then any later ingest sees CLOSED and persists nothing.
