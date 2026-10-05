@@ -1,5 +1,8 @@
 "use client";
 
+// Purpose: merchant Facebook/Instagram connection controls and per-Page health capabilities.
+// Depends on: existing Meta connect BFF, health B1/B2, session fence and locale copy.
+// Used by: SettingsWizard; health banner links to this card.
 // Settings -> Facebook Page / Instagram card (mounted by SettingsWizard.tsx below the storefront card): the merchant connects their
 // own Pages (up to ten, with their Instagram accounts) through Facebook Login for Business, picks one per authorization, and sees
 // each Page's permissions and Taipei event/expiry times. Disconnect targets exactly one Page; reauthorization selects a Page anew.
@@ -15,6 +18,9 @@ import { displayTime } from "@/lib/orders-model";
 import { newKey, postConnect, postDisconnect, postPick, readPickState, readStatus, type ConnectStatus, type PickState } from "@/lib/meta-connect-client";
 import { pickable, type PickPage } from "@/lib/meta-connect-model";
 import { metaConnectCopy, type MetaConnectCopy } from "@/lib/meta-connect-copy";
+import { useMetaHealth } from "@/lib/meta-health-hook";
+import { refreshMetaHealth } from "@/lib/meta-health-client";
+import { MetaHealthCapabilities } from "./MetaHealthCapabilities";
 import "./settings.css";
 
 type Load = "loading" | "ready" | "hidden" | "error";
@@ -22,7 +28,8 @@ const day = 86_400_000;
 // Permission / Page-task names -> text: tasks are translated, permissions are Meta's own identifiers.
 const label = (c: MetaConnectCopy, code: string) => (code === "task_messaging" ? c.task_messaging : code === "task_moderate" ? c.task_moderate : code);
 
-export function MetaConnect({ store, locale }: { store: string; locale: Locale }) {
+/** Reads Page connections and health; authorized actions use the existing reauthorization flow. */
+export function MetaConnect({ store, locale, canManage = false }: { store: string; locale: Locale; canManage?: boolean }) {
   const c = metaConnectCopy[locale];
   const [load, setLoad] = useState<Load>("loading");
   const [status, setStatus] = useState<ConnectStatus | null>(null);
@@ -38,6 +45,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
   const [withIG, setWithIG] = useState(true);
   const key = useRef<{ kind: string; value: string } | null>(null);
   const inFlight = useRef(false);
+  const health = useMetaHealth(store);
   const pickIntent = useRef<{ id: string; ig: boolean; before: string | null } | null>(null);
 
   useEffect(() => {
@@ -45,6 +53,10 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
     sessionBoundary().then((v) => live && setBoundary(v), () => live && setBoundary(""));
     return () => { live = false; };
   }, [store]);
+
+  useEffect(() => {
+    if (load === "ready" && window.location.hash === "#facebook-instagram") document.getElementById("facebook-instagram")?.scrollIntoView({ block: "start" });
+  }, [store, load]);
 
   // The return from Facebook: ?meta_connect=<state_id> (open the pick list) or ?meta_error=<fixed code>; stripped once read. The
   // ref keeps the parsed values across a dev double-mount, which would otherwise find the URL already stripped.
@@ -55,7 +67,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
       arrival.current = { id: params.get("meta_connect"), error: params.get("meta_error") };
       params.delete("meta_connect");
       params.delete("meta_error");
-      window.history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}`);
+      window.history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
     }
     const { id, error } = arrival.current;
     if (error) setProblem(c.errors[error] ?? c.errors.unavailable);
@@ -75,6 +87,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
       (value) => {
         if (active.signal.aborted) return;
         setStatus(value); setLoad("ready");
+        if (tick > 0) refreshMetaHealth(store);
         const pendingPage = key.current?.kind.startsWith("disconnect-") ? key.current.kind.slice(11) : null;
         if (pendingPage && !value.pages.some((p) => p.id === pendingPage)) {
           key.current = null; setUncertain(false); setConfirming(""); setProblem(""); setNotice(c.disconnectedNotice);
@@ -106,6 +119,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
   };
 
   async function connect() {
+    if (!canManage) return;
     if (inFlight.current || (uncertain && key.current?.kind !== "connect")) return;
     inFlight.current = true;
     setBusy(true); setProblem(""); setNotice("");
@@ -114,6 +128,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
     inFlight.current = false; setBusy(false); fail(result.code, result.uncertain);
   }
   async function submitPick() {
+    if (!canManage) return;
     if (inFlight.current || uncertain || !pick || load !== "ready" || !status) return;
     const page = pick.pages.find((p) => p.page_id === chosen);
     if (!page || !pickable(page, false)) return;
@@ -126,6 +141,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
     setTick((v) => v + 1);
   }
   async function disconnect() {
+    if (!canManage) return;
     if (inFlight.current || uncertain || !confirming) return;
     inFlight.current = true; setBusy(true); setProblem(""); setNotice("");
     const result = await postDisconnect(store, keyFor(`disconnect-${confirming}`), confirming, boundary);
@@ -136,10 +152,10 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
   }
 
   const chosenPage: PickPage | undefined = pick?.pages.find((p) => p.page_id === chosen);
-  const locked = busy || uncertain || !boundary;
+  const locked = !canManage || busy || uncertain || !boundary;
 
   return (
-    <section className="settings-fields metaconnect-card" data-testid="metaconnect-card" aria-labelledby="metaconnect-title">
+    <section className="settings-fields metaconnect-card" id="facebook-instagram" data-testid="metaconnect-card" aria-labelledby="metaconnect-title">
       <h2 id="metaconnect-title" className="settings-section-title settings-subtitle">{c.title}</h2>
       <p className="settings-note">{c.intro}</p>
       {load === "loading" && <p role="status">{c.loading}</p>}
@@ -191,9 +207,9 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
             <p data-testid="metaconnect-count">{c.count.replace("{count}", String(status.count)).replace("{cap}", String(status.cap))}</p>
             <button className="primary" type="button" data-testid={status.connected ? "metaconnect-add" : "metaconnect-connect"}
               aria-describedby={status.count >= status.cap ? "metaconnect-cap" : undefined}
-              disabled={busy || !boundary || status.count >= status.cap || (uncertain && key.current?.kind !== "connect")}
+              disabled={!canManage || busy || !boundary || status.count >= status.cap || (uncertain && key.current?.kind !== "connect")}
               onClick={() => void connect()}>{busy ? c.connecting : status.connected ? c.add : c.connect}</button>
-            {status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>}
+            {status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={!canManage || busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>}
           </div>
           {status.count >= status.cap && <p id="metaconnect-cap" className="settings-note">{c.capReached}</p>}
           {!status.connected && <p data-testid="metaconnect-none">{c.notConnected}</p>}
@@ -208,6 +224,7 @@ export function MetaConnect({ store, locale }: { store: string; locale: Locale }
             <div><dt>{c.connectedAt}</dt><dd>{displayTime(locale, connected.connected_at)}</dd></div>
             <div><dt>{c.routeUntil}</dt><dd>{displayTime(locale, connected.route_expires_at)}</dd></div>
           </dl>
+          <MetaHealthCapabilities key={`${store}:${connected.id}`} store={store} page={health.data?.pages.find(page => page.page_id === connected.id)} locale={locale} canManage={canManage} boundary={boundary} failed={health.failed} />
           {Date.parse(connected.route_expires_at) - Date.now() < 30 * day && connected.status === "active" && <p className="settings-warning">{c.renewSoon}</p>}
           {confirming === connected.id ? (
             <div className="settings-pending" role="alertdialog" aria-label={`${c.disconnect}: ${connected.name || connected.id}`} data-testid="metaconnect-confirm">

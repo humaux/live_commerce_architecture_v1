@@ -1,4 +1,7 @@
 "use client";
+// Purpose: authenticated workspace navigation and store-scoped billing/Meta advice.
+// Depends on: shell API, route permissions, BillingBanner and MetaHealthBanner B1.
+// Used by: all admin workspace pages.
 // W0 shell only. API boundary: src/shell/api.ts; existing child page bodies are unchanged.
 import {
   useCallback,
@@ -21,10 +24,12 @@ import { readWorkspace, logoutWorkspace } from "@/src/shell/api";
 import { navAccessFrom } from "@/lib/team-model";
 import type { Store } from "@/lib/model";
 import { BillingBanner } from "./BillingBanner";
+import { MetaHealthBanner } from "./MetaHealthBanner";
 import { Icon } from "./Icon";
 import { company } from "@/lib/company";
 import { OperatorFooter } from "./OperatorFooter";
 
+/** Frames authorized pages and mounts advisory banners for the current authenticated store. */
 export function WorkspaceFrame({
   locale,
   active,
@@ -405,6 +410,7 @@ export function WorkspaceFrame({
           </div>
         ) : (
           <>
+            <MetaHealthBanner store={selectedStore ?? null} locale={locale} />
             <BillingBanner
               locale={locale}
               storeId={selectedStore?.id ?? null}
