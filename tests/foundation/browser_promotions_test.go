@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,11 +99,24 @@ func TestBrowserPromotions(t *testing.T) {
 	if _, err := e.p.setPolicy(pol); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := dsSet(e.p.cqHarness, t04Key("brp-service"), in); err != nil {
+	// delivery-allocation P0: enable the service through the real merchant settings route (the same BFF/Go
+	// route the admin UI uses), so the auto-allocation is what the buyer sees; the store has exactly one
+	// warehouse, so the response must name it as the chosen default.
+	serviceBody, err := json.Marshal(in)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := daSet(e.p.cqHarness, t04Key("brp-allocation"), fulfillment.AllocationInput{MarketID: e.p.market.ID, Country: "TW", Code: in.Code, ExpectedServiceVersion: 1, WarehouseIDs: []string{e.p.stock.warehouse.ID}}); err != nil {
+	servicePath := "/v1/admin/stores/" + f.storeA1 + "/markets/" + e.p.market.ID + "/countries/TW/delivery-services/" + in.Code
+	enabled := adminRequest(e.merchant, http.MethodPut, servicePath, f.tokens["a"], serviceBody, "application/json", map[string]string{"Idempotency-Key": t04Key("brp-service")})
+	if enabled.Code != http.StatusOK {
+		t.Fatalf("settings delivery-service enable status=%d body=%s", enabled.Code, enabled.Body.String())
+	}
+	var enabledService fulfillment.Service
+	if err := json.Unmarshal(enabled.Body.Bytes(), &enabledService); err != nil {
 		t.Fatal(err)
+	}
+	if !enabledService.Enabled || enabledService.Version != 1 || enabledService.DefaultWarehouseID != e.p.stock.warehouse.ID {
+		t.Fatalf("auto-allocation default=%q service=%+v", enabledService.DefaultWarehouseID, enabledService)
 	}
 	matrix := []struct{ locale, vp string }{{"zh-TW", "desktop"}, {"zh-TW", "mobile"}, {"en", "desktop"}, {"en", "mobile"}}
 	cells := make([]brpCell, len(matrix))

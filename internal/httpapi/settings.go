@@ -23,7 +23,10 @@ func registerSettingsRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		if !matchesSettingsTarget(r, in.MarketID, in.Country, in.Code) {
 			return nil, command.ErrInvalid
 		}
-		return fulfillment.SetService(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
+		// delivery-allocation P0: enabling/updating a service through the merchant settings path also
+		// ensures its allocation in the same transaction, so the buyer sees the option without the
+		// merchant configuring "warehouse allocation" explicitly.
+		return fulfillment.SetServiceWithDefaultAllocation(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
 	})))
 	mux.HandleFunc("GET "+settingsBase+"/payment-methods/{code}", exactResourceRoute(scoped(pool, "integration:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return payments.GetMethod(ctx, tx, s, bearerToken(r), r.PathValue("market_id"), r.PathValue("country"), r.PathValue("code"))

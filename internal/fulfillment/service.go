@@ -75,6 +75,11 @@ type Service struct {
 	SortOrder      int    `json:"sort_order"`
 	BindingID      string `json:"binding_id,omitempty"`
 	BindingVersion int64  `json:"binding_version,omitempty"`
+	// DefaultWarehouseID is set only by the merchant settings-path entry point
+	// (SetServiceWithDefaultAllocation) and names the store's default warehouse
+	// chosen for the auto-created allocation, so the UI can display it. The plain
+	// SetService/GetService projections leave it empty (they do not resolve one).
+	DefaultWarehouseID string `json:"default_warehouse_id,omitempty"`
 }
 
 func SetService(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in ServiceInput) (out Service, err error) {
@@ -194,6 +199,33 @@ func SetService(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key
 	// Both a new command and a saved replay may wait on locks. Re-resolve the
 	// grant before returning so the caller rolls back if it was revoked meanwhile.
 	if err = authorize(ctx, tx, scope, token, managePermission); err != nil {
+		return Service{}, err
+	}
+	return out, nil
+}
+
+// SetServiceWithDefaultAllocation is the merchant settings-path entry point for a delivery service
+// enable/update: it writes the revision exactly as SetService and, when the resulting service is
+// enabled, ensures an allocation head exists in the same transaction. It is the fix for
+// delivery-allocation P0 — a merchant who only enables a service (without knowing "warehouse
+// allocation") must still produce a buyer-selectable option.
+//
+// The allocation side effect is idempotent and never overwrites a merchant-configured priority: an
+// existing allocation head is left untouched. Only a service that has no allocation yet gets a
+// single-warehouse head pointing at the store's default warehouse (the sole active warehouse, else
+// the first active warehouse by creation order; see ensureDefaultAllocation). Disabling a service
+// keeps its allocation history and simply stops listing it in buyer options. The chosen warehouse is
+// returned in DefaultWarehouseID for the UI to display.
+func SetServiceWithDefaultAllocation(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key string, in ServiceInput) (out Service, err error) {
+	out, err = SetService(ctx, tx, scope, token, key, in)
+	if err != nil {
+		return Service{}, err
+	}
+	if !out.Enabled {
+		return out, nil
+	}
+	out.DefaultWarehouseID, err = ensureDefaultAllocation(ctx, tx, scope, out)
+	if err != nil {
 		return Service{}, err
 	}
 	return out, nil
