@@ -1,8 +1,8 @@
 // Purpose: the merchant message-template HTTP adapter (contracts/live-console-v1.md §11 /message-templates, unit
 // W2-05B) under /v1/admin/stores/{store_id}/message-templates: POST publish (live:manage, idempotent) and GET list
-// (inbox:reply). It decides no rule (internal/msgtemplates and the 0124 SECURITY DEFINER functions do), never returns
+// (inbox:reply). It decides no rule (internal/msgtemplates and the 0121 SECURITY DEFINER functions do), never returns
 // a driver message, never logs a body, and keeps the private no-store response boundary.
-// Depends on: livecommerce/internal/msgtemplates, livecommerce/internal/platform (WithScope), and the 0124 definers.
+// Depends on: livecommerce/internal/msgtemplates, livecommerce/internal/platform (WithScope), and the 0121 definers.
 // Used by: internal/httpapi/handler.go (registerTemplateRoutes, gated on Options.MsgTemplates); cmd/api builds the service.
 
 package httpapi

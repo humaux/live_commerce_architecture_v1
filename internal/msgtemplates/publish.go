@@ -2,7 +2,7 @@
 // flagged templates, and the idempotent command.Run wrapper around the msgtemplates.publish SECURITY DEFINER (which
 // appends the next version, audits template.published, and re-checks live:manage). A republish is a new version; there
 // is no edit, so a correction is a new version by design.
-// Depends on: msgtemplates.publish definer (migration 0124), internal/command (Run), internal/platform (Scope).
+// Depends on: msgtemplates.publish definer (migration 0121), internal/command (Run), internal/platform (Scope).
 // Used by: internal/httpapi/templates.go (the POST handler) and the foundation tests.
 
 package msgtemplates

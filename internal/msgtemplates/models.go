@@ -20,7 +20,7 @@ var validKind = map[string]bool{
 	KindDM: true, KindPrivateReply: true, KindPublicReply: true, KindRecommend: true,
 }
 
-// System-fixed template ids (migration 0124 seeds these; merchants can never republish them — publish raises PT409).
+// System-fixed template ids (migration 0121 seeds these; merchants can never republish them — publish raises PT409).
 const (
 	FixedOrderPayLink   = "order-pay-link/v1"
 	FixedOfferRecommend = "offer-recommend/v1"

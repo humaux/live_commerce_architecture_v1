@@ -1,7 +1,7 @@
 // Purpose: the list read (GET /message-templates): the latest published version of each merchant template_id, scoped to
 // the server-resolved tenant/store by the msgtemplates.list SECURITY DEFINER (inbox:reply). It is a read, so no
 // idempotency receipt and no command.Run.
-// Depends on: msgtemplates.list definer (migration 0124).
+// Depends on: msgtemplates.list definer (migration 0121).
 // Used by: internal/httpapi/templates.go (the GET handler) and the foundation tests.
 
 package msgtemplates

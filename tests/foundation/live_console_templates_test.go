@@ -1,7 +1,7 @@
 package foundation_test
 
 // Real-PG gate for the LC-B5 merchant message templates (contracts/live-console-v1.md §3.4/§3.5/§7.3, §11
-// /message-templates, unit W2-05B). Exercises migration 0124 exactly once (the shared fixture already applies it
+// /message-templates, unit W2-05B). Exercises migration 0121 exactly once (the shared fixture already applies it
 // twice), the frozen role/definer/EXECUTE-grant ACL, the two system-fixed templates, the live:manage vs inbox:reply
 // permission split, publish append-only versioning with the template.published audit and the idempotent receipt
 // replay, the §3.5 public-safe refusal, the fixed-id PT409 conflict, and cross-store RLS isolation. No send path
@@ -21,16 +21,16 @@ import (
 	"livecommerce/internal/platform"
 )
 
-func TestLiveConsoleTemplatesMigration0124ExactACL(t *testing.T) {
+func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
 
 	var migrationCount int
-	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0124_msg_templates.sql'`).Scan(&migrationCount); err != nil {
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0121_msg_templates.sql'`).Scan(&migrationCount); err != nil {
 		t.Fatal(err)
 	}
 	if migrationCount != 1 {
-		t.Fatalf("0124 migration row count=%d, want exactly 1", migrationCount)
+		t.Fatalf("0121 migration row count=%d, want exactly 1", migrationCount)
 	}
 
 	var login, super, bypass, createRole, createDB, replication bool
@@ -106,7 +106,7 @@ func TestLiveConsoleTemplatesMigration0124ExactACL(t *testing.T) {
 			}
 			if owner != fn.owner || !definer || !noLogin || !noBypass || !fixedPath || volatility != wantVolatility ||
 				!slices.Equal(principals, []string{"commerce_msgtemplates_writer", "commerce_runtime"}) {
-				t.Fatalf("0124 boundary: owner=%s definer=%v noLogin=%v noBypass=%v path=%v volatility=%s ACL=%v", owner, definer, noLogin, noBypass, fixedPath, volatility, principals)
+				t.Fatalf("0121 boundary: owner=%s definer=%v noLogin=%v noBypass=%v path=%v volatility=%s ACL=%v", owner, definer, noLogin, noBypass, fixedPath, volatility, principals)
 			}
 			for _, sub := range fn.resultSubstr {
 				if !strings.Contains(result, sub) {

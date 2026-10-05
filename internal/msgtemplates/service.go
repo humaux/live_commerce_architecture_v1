@@ -2,7 +2,7 @@
 // /message-templates row). Service is deliberately config-free: publish/list/resolve all run inside the single
 // scoped transaction platform.WithScope opens, and every SECURITY DEFINER call re-checks the server-resolved
 // tenant/store/principal, so the Service itself never holds a pool, a key or an authority.
-// Depends on: migration 0124 (msgtemplates.publish/list/resolve definers), internal/command (idempotent Run),
+// Depends on: migration 0121 (msgtemplates.publish/list/resolve definers), internal/command (idempotent Run),
 // internal/platform (Scope), golang.org/x/text (the §3.5 NFKC/NFD/fold normalization).
 // Used by: internal/httpapi/templates.go (POST/GET /message-templates) and LC-B4's send path via Resolve.
 

@@ -2,7 +2,7 @@
 // templates first, then the caller's merchant templates — returning the body (and its kinds/public_safe/fixed flags)
 // to render. The msgtemplates.resolve SECURITY DEFINER re-checks inbox:reply OR live:manage and re-scopes to the
 // transaction's tenant/store. This unit owns the resolver so LC-B4 never reaches into the template tables directly.
-// Depends on: msgtemplates.resolve definer (migration 0124), internal/command (ErrNotFound).
+// Depends on: msgtemplates.resolve definer (migration 0121), internal/command (ErrNotFound).
 // Used by: LC-B4's send path; the foundation tests exercise it directly.
 
 package msgtemplates

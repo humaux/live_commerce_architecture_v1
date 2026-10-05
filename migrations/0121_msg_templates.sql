@@ -1,4 +1,4 @@
--- 0124 live-console message templates (contracts/live-console-v1.md §3.4/§3.5/§7.3, §11 /message-templates; FROZEN 2026-10-05).
+-- 0121 live-console message templates (contracts/live-console-v1.md §3.4/§3.5/§7.3, §11 /message-templates; FROZEN 2026-10-05).
 --
 -- Purpose: the merchant message-template vocabulary of W2-05B — template ids/versions with the frozen
 -- {template_id, version, public_safe, kinds} shape, the two system-fixed templates (order-pay-link/v1 with the
@@ -18,22 +18,22 @@
 -- Roles: commerce_runtime reaches the merchant definers only; commerce_msgtemplates_writer is the NOLOGIN definer owner.
 
 -- ---------------------------------------------------------------------------------------
--- Preconditions. 0124 rides on 0119's guard and permission; re-deriving the permission
+-- Preconditions. 0121 rides on 0119's guard and permission; re-deriving the permission
 -- CHECK is not needed (no new permission is added here), but the guard must exist.
 -- ---------------------------------------------------------------------------------------
 DO $$
 DECLARE v_perm text;
 BEGIN
     IF to_regprocedure('inbox.principal_holds(text[])') IS NULL THEN
-        RAISE EXCEPTION '0124 requires inbox.principal_holds(text[]) (migration 0119)';
+        RAISE EXCEPTION '0121 requires inbox.principal_holds(text[]) (migration 0119)';
     END IF;
     IF NOT EXISTS(SELECT 1 FROM pg_constraint c
         WHERE c.conrelid='identity.store_grants'::regclass AND c.conname='store_grants_permission_check'
           AND pg_get_constraintdef(c.oid) LIKE '%''inbox:reply''%') THEN
-        RAISE EXCEPTION '0124 requires the inbox:reply permission (migration 0119)';
+        RAISE EXCEPTION '0121 requires the inbox:reply permission (migration 0119)';
     END IF;
     FOREACH v_perm IN ARRAY ARRAY['commerce_runtime','commerce_auth'] LOOP
-        IF to_regrole(v_perm) IS NULL THEN RAISE EXCEPTION '0124 requires role %',v_perm; END IF;
+        IF to_regrole(v_perm) IS NULL THEN RAISE EXCEPTION '0121 requires role %',v_perm; END IF;
     END LOOP;
 END $$;
 
@@ -44,7 +44,7 @@ END $$;
 -- ---------------------------------------------------------------------------------------
 CREATE ROLE commerce_msgtemplates_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 COMMENT ON ROLE commerce_msgtemplates_writer IS
- '0124 NOLOGIN definer owner of the merchant message-template writes/reads (publish/list/resolve). Never a login; touches msgtemplates.templates and msgtemplates.fixed_templates only through its fixed functions.';
+ '0121 NOLOGIN definer owner of the merchant message-template writes/reads (publish/list/resolve). Never a login; touches msgtemplates.templates and msgtemplates.fixed_templates only through its fixed functions.';
 
 CREATE SCHEMA msgtemplates;
 REVOKE ALL ON SCHEMA msgtemplates FROM PUBLIC;
