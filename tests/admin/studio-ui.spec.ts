@@ -334,22 +334,25 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   const listPath = `**/api/stores/${store}/live-sessions?*`;
   let listHeld = false;
   let releaseList!: () => void;
+  let finishList!: () => void;
   const listGate = new Promise<void>((resolve) => { releaseList = resolve; });
+  const listContinued = new Promise<void>((resolve) => { finishList = resolve; });
   const holdList = async (route: import("@playwright/test").Route) => {
     listHeld = true;
     await listGate;
-    await route.continue();
+    try { await route.continue(); } finally { finishList(); }
   };
   const createsBeforeLoading = createRequests.length;
   await page.route(listPath, holdList);
   try {
     await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
     await expect.poll(() => listHeld).toBe(true);
-    await expect(page.getByText("Loading scenes…", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Scenes", exact: true }).getByText("Loading scenes…", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
     expect(createRequests).toHaveLength(createsBeforeLoading);
   } finally {
     releaseList();
+    if (listHeld) await listContinued;
     await page.unroute(listPath, holdList);
   }
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
