@@ -103,7 +103,9 @@ BEGIN
      WHERE b.tenant_id = NEW.tenant_id AND b.store_id = NEW.store_id AND b.id = NEW.bundle_id AND b.link_pending_manual;
     RETURN NULL;
 END $$;
-ALTER FUNCTION claims.clear_link_pending_manual() OWNER TO commerce_claims_writer;
+-- Owner commerce_integration_writer: its bundle policies (below) cover both link-issuing contexts, the merchant transaction (GUC scope) and the
+-- intake apply (claims.intake_scope()); an UPDATE must also leave a row the updater could SELECT, which claims_writer's scoped policies would not.
+ALTER FUNCTION claims.clear_link_pending_manual() OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION claims.clear_link_pending_manual() FROM PUBLIC;
 CREATE TRIGGER links_clear_link_pending AFTER INSERT OR UPDATE ON claims.links
     FOR EACH ROW EXECUTE FUNCTION claims.clear_link_pending_manual();
@@ -153,8 +155,10 @@ CREATE POLICY bundle_send_read ON claims.bundles FOR SELECT TO commerce_integrat
     USING (inbox.lcn_in_scope(tenant_id, store_id)
         OR (tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s));
 CREATE POLICY bundle_send_flag ON claims.bundles FOR UPDATE TO commerce_integration_writer
-    USING ((tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s))
-    WITH CHECK ((tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s));
+    USING (inbox.lcn_in_scope(tenant_id, store_id)
+        OR (tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s))
+    WITH CHECK (inbox.lcn_in_scope(tenant_id, store_id)
+        OR (tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s));
 
 GRANT SELECT(tenant_id, store_id, id, session_id, keyword, sku_id, active, version) ON live.offers TO commerce_integration_writer;
 CREATE POLICY offer_send_read ON live.offers FOR SELECT TO commerce_integration_writer
@@ -712,6 +716,13 @@ BEGIN
     ELSIF o.action = 'meta.private_reply' AND p_peer_key IS NOT NULL AND r->>'app_id' ~ '^[0-9]{1,40}$' THEN
         v_object := CASE r->>'platform' WHEN 'facebook' THEN 'page' ELSE 'instagram' END;
         v_bundle := nullif(r->>'bundle_id', '')::uuid;
+        IF v_bundle IS NULL THEN
+            -- A manual reply planned before the comment was staged carries no bundle: resolve it now through the applied intake event.
+            SELECT e.bundle_id INTO v_bundle FROM claims.meta_intake i
+              JOIN claims.events e ON e.tenant_id = i.tenant_id AND e.store_id = i.store_id AND e.id = i.applied_event_id
+             WHERE i.tenant_id = o.tenant_id AND i.store_id = o.store_id AND i.object = v_object
+               AND i.asset_id = r->>'asset_id' AND i.comment_ref = r->>'comment_ref';
+        END IF;
         IF v_bundle IS NOT NULL THEN
             INSERT INTO inbox.bundle_peers(tenant_id, store_id, bundle_id, peer_key, app_id, object, asset_id, operation_id)
             VALUES (o.tenant_id, o.store_id, v_bundle, p_peer_key, r->>'app_id', v_object, r->>'asset_id', p_operation)
@@ -1073,3 +1084,18 @@ CREATE TRIGGER operations_wipe_send_secret AFTER UPDATE OF state ON integration.
 -- integration.meta_connections failed with 42501 (merchant connect included). The policy binding_capabilities_writer already allows FOR ALL; only the
 -- table grant was missing. Integrator: this line may move into 0125 itself.
 GRANT DELETE ON integration.binding_capabilities TO commerce_integration_writer;
+
+-- §3.5 "the store's own origin" is part of the public-reply content rule. Origins are public data; the definer only needs the GUC scope.
+CREATE POLICY domain_send_read ON control.storefront_domains FOR SELECT TO commerce_integration_writer
+    USING (inbox.lcn_in_scope(tenant_id, store_id));
+CREATE FUNCTION inbox.store_origins() RETURNS text[]
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+DECLARE v uuid[];
+BEGIN
+    v := inbox.lcn_scope();
+    RETURN ARRAY(SELECT d.origin FROM control.storefront_domains d
+                  WHERE d.tenant_id = v[1] AND d.store_id = v[2] AND d.state = 'ACTIVE' ORDER BY d.origin LIMIT 8);
+END $$;
+ALTER FUNCTION inbox.store_origins() OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.store_origins() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.store_origins() TO commerce_runtime;

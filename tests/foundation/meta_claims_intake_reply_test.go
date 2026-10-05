@@ -315,7 +315,9 @@ func TestMetaClaimsMCI07PlanShapeAndBudget(t *testing.T) {
 			if err := json.Unmarshal([]byte(raw), &req); err != nil {
 				t.Fatal(err)
 			}
-			wantKeys := []string{"asset_id", "bundle_id", "comment_ref", "deadline_at", "link_generation", "link_key_id", "live_media", "locale", "message_type", "origin", "origin_ref",
+			// live-console-v1 §14.1 clause 3 (LC-B4, migration 0128): the request also freezes app_id (peer link), conversation_known and
+			// origin_kind="auto" (the frozen `origin` key already holds the storefront origin URL, so the kind gets its own key).
+			wantKeys := []string{"app_id", "asset_id", "bundle_id", "comment_ref", "conversation_known", "deadline_at", "link_generation", "link_key_id", "live_media", "locale", "message_type", "origin", "origin_kind", "origin_ref",
 				"platform", "policy", "session_id", "source_id", "takeover_generation", "template", "v"}
 			var gotKeys []string
 			for k := range req {

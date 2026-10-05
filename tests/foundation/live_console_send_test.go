@@ -333,6 +333,8 @@ func TestLiveConsoleSendMigration0128ExactACL(t *testing.T) {
 		{"inbox.dm_window_for_bundle(uuid,uuid,uuid,text,text,text)", "commerce_meta_writer",
 			[]string{"commerce_claims_worker", "commerce_claims_writer", "commerce_integration_writer", "commerce_meta_writer"}},
 		{"social.conversation_heads(uuid[])", "commerce_meta_writer", []string{"commerce_meta_writer", "commerce_runtime"}},
+		{"inbox.store_origins()", "commerce_integration_writer", runtimeAndOwner},
+		{"claims.clear_link_pending_manual()", "commerce_integration_writer", ownerOnly},
 		{"inbox.lcn_scope()", "commerce_integration_writer", ownerOnly},
 		{"inbox.lcn_in_scope(uuid,uuid)", "commerce_integration_writer", ownerOnly},
 		{"inbox.lcn_rate_check(uuid,uuid)", "commerce_integration_writer", ownerOnly},

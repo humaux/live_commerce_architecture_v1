@@ -65,6 +65,10 @@ type resolvedText struct {
 // resolveText turns a TextInput into validated text for kind on platform (instagram vs everything else).
 // Calls msgtemplates.Resolve (migration 0121) for a template reference; no network call.
 func (s *Service) resolveText(ctx context.Context, tx pgx.Tx, kind, platform string, in TextInput) (resolvedText, error) {
+	origins, err := s.originsFor(ctx, tx, kind)
+	if err != nil {
+		return resolvedText{}, err
+	}
 	var out resolvedText
 	hasText, hasTemplate := in.Text != "", in.TemplateID != ""
 	if hasText == hasTemplate || (hasTemplate && in.TemplateVersion < 1) || (hasText && in.TemplateVersion != 0) {
@@ -92,7 +96,7 @@ func (s *Service) resolveText(ctx context.Context, tx pgx.Tx, kind, platform str
 		text = r.Body
 		out.templateID, out.version = &r.TemplateID, &r.Version
 	}
-	checked, err := checkText(kind, platform, text)
+	checked, err := checkText(kind, platform, text, origins...)
 	if err != nil {
 		return resolvedText{}, err
 	}
@@ -101,7 +105,7 @@ func (s *Service) resolveText(ctx context.Context, tx pgx.Tx, kind, platform str
 }
 
 // checkText applies NFC, the control-character rule and the per-kind limit; public kinds also run the §3.5 content rule.
-func checkText(kind, platform, raw string) (string, error) {
+func checkText(kind, platform, raw string, origins ...string) (string, error) {
 	if !utf8.ValidString(raw) {
 		return "", invalidText(0, "encoding")
 	}
@@ -119,8 +123,10 @@ func checkText(kind, platform, raw string) (string, error) {
 		if utf8.RuneCountInString(text) > maxPublicRunes {
 			return "", invalidText(maxPublicRunes, "too_long")
 		}
-		if reason := msgtemplates.ValidatePublicSafe(text, ""); reason != "" {
-			return "", &SendError{Status: 422, Code: "public_reply_forbidden_content", Reason: reason}
+		for _, origin := range append([]string{""}, origins...) {
+			if reason := msgtemplates.ValidatePublicSafe(text, origin); reason != "" {
+				return "", &SendError{Status: 422, Code: "public_reply_forbidden_content", Reason: reason}
+			}
 		}
 	case platform == "instagram":
 		if len(text) > maxInstagram {
@@ -184,4 +190,21 @@ func (e *SendError) ErrorDetails() map[string]any {
 		d["reason"] = e.Reason
 	}
 	return d
+}
+
+// originsFor returns the store's active storefront origins for the public kinds (the §3.5 "store's own origin" rule) and nothing for the
+// private kinds. Calls inbox.store_origins (migration 0128).
+func (s *Service) originsFor(ctx context.Context, tx pgx.Tx, kind string) ([]string, error) {
+	if kind != KindPublic && kind != KindRecommend {
+		return nil, nil
+	}
+	var origins []string
+	if err := tx.QueryRow(ctx, `SELECT inbox.store_origins()`).Scan(&origins); err != nil {
+		return nil, databaseError(err)
+	}
+	// The origin and its bare host (a reply may drop the scheme).
+	for _, o := range origins {
+		origins = append(origins, strings.TrimPrefix(strings.TrimPrefix(o, "https://"), "http://"))
+	}
+	return origins, nil
 }

@@ -312,7 +312,11 @@ func (s *Service) PlanRecommend(ctx context.Context, tx pgx.Tx, scope platform.S
 		amount = fmt.Sprintf("NT$%d", price)
 	}
 	text := strings.NewReplacer("{{product.name}}", name, "{{variant}}", code, "{{keyword}}", keyword, "{{live_price}}", amount).Replace(body)
-	text, err = checkText(KindRecommend, "facebook", text)
+	origins, err := s.originsFor(ctx, tx, KindRecommend)
+	if err != nil {
+		return "", err
+	}
+	text, err = checkText(KindRecommend, "facebook", text, origins...)
 	if err != nil {
 		return "", err
 	}
