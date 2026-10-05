@@ -49,6 +49,35 @@ export async function assertProductEditorReservedLayout(
     }
   };
   await assertReserved();
+  // Diagnostic companion, NOT a replacement for frozen R6/R9. Read the actual
+  // clip and native hit-test result; retain any frozen raw-rectangle failure.
+  const clippedBounds = await form.evaluate((element) => {
+    const nav = element.querySelector(".pe-index nav")!;
+    const fields = element.querySelector(".pe-fields")!;
+    const bar = element.querySelector(".pe-savebar")!.getBoundingClientRect();
+    const n = nav.getBoundingClientRect(), p = fields.getBoundingClientRect();
+    const navTargets = [...nav.querySelectorAll("button")].map((button) => {
+      const r = button.getBoundingClientRect();
+      return { label: button.textContent, rawLeft: r.left, rawRight: r.right,
+        visibleLeft: Math.max(n.left, r.left), visibleRight: Math.min(n.right, r.right) };
+    }).filter((r) => r.visibleRight > r.visibleLeft);
+    const rawTails = [...fields.querySelectorAll("button,input,select,textarea")].flatMap((control) => {
+      const r = control.getBoundingClientRect();
+      const top = Math.max(r.top, bar.top), bottom = Math.min(r.bottom, bar.bottom);
+      if (r.top >= p.bottom || top >= bottom || r.width === 0) return [];
+      const hit = document.elementFromPoint(Math.max(p.left, r.left) + 1, (top + bottom) / 2);
+      return [{ id: control.id || control.getAttribute("data-testid"), rawBottom: r.bottom,
+        paneBottom: p.bottom, barTop: bar.top, clippedTailHittable: !!hit && control.contains(hit) }];
+    });
+    return { locale: document.documentElement.lang, width: innerWidth,
+      navLeft: n.left, navRight: n.right, navTargets, rawTails };
+  });
+  for (const tail of clippedBounds.rawTails) expect(tail.clippedTailHittable).toBe(false);
+  if (clippedBounds.width <= 390) for (const target of clippedBounds.navTargets) {
+    expect(target.visibleLeft).toBeGreaterThanOrEqual(8);
+    expect(target.visibleRight).toBeLessThanOrEqual(clippedBounds.width - 8);
+  }
+  console.log("EDITOR_VISIBLE_CLIP_DIAGNOSTIC", JSON.stringify(clippedBounds));
   // Iterate the controls that actually exist (single-SKU has a pricing section,
   // matrix mode does not). No fixture DOM mutation or synthetic event dispatch.
   const ids = await buttons.evaluateAll((nodes) =>
