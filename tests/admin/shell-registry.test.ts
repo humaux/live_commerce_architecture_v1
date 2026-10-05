@@ -10,6 +10,23 @@ import {
 } from "../../apps/admin/src/routes.ts";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 import { pageTitle } from "../../apps/admin/src/page-title.ts";
+import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy.ts";
+import { claimsCopy } from "../../apps/admin/lib/claims-copy.ts";
+test("ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const c = claimsCopy[locale];
+    assert.ok(c.skuChooseProduct?.length > 0, `${locale}: product prerequisite`);
+    assert.ok(c.skuNotAvailable?.length > 0, `${locale}: unavailable options`);
+    assert.equal(catalogCopy[locale].collections.title, shellCopy[locale].collections);
+    assert.equal(catalogCopy[locale].nav.collections, shellCopy[locale].collections);
+    if (locale !== "en")
+      for (const text of Object.values(catalogCopy[locale].collections))
+        if (typeof text === "string") assert.doesNotMatch(text, /集合/, `${locale}: ${text}`);
+  }
+  const claims = readFileSync("apps/admin/components/StudioClaims.tsx", "utf8");
+  assert.match(claims, /aria-describedby="claims-offer-sku-hint"/);
+  assert.match(claims, /hint=\{!offerForm\.product \? c\.skuChooseProduct : !skus\.length \? c\.skuNotAvailable : undefined\}/);
+});
 test("ADM06 create/detail titles share the route vocabulary without adding a phantom Next page", () => {
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     assert.equal(

@@ -646,8 +646,9 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                       onChange={(event) => setOfferForm({ ...offerForm, product: event.target.value, sku: "" })}>
                       <option value="">{c.chooseProduct}</option>
                       {products?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-                  <Field id="claims-offer-sku" label={c.sku}>
+                  <Field id="claims-offer-sku" label={c.sku} hint={!offerForm.product ? c.skuChooseProduct : !skus.length ? c.skuNotAvailable : undefined}>
                     <select id="claims-offer-sku" value={offerForm.sku} disabled={blocked || !skus.length}
+                      aria-describedby="claims-offer-sku-hint"
                       onChange={(event) => setOfferForm({ ...offerForm, sku: event.target.value })}>
                       <option value="">{c.chooseSKU}</option>
                       {skus.map((item) => <option key={item.id} value={item.id}>{item.code}</option>)}</select></Field>

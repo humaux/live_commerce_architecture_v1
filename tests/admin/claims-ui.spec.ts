@@ -218,6 +218,9 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
     const box = merchant.getByTestId("claims-source");
     await expect(box.getByTestId("claims-source-status")).toBeVisible();
     await expect(merchant.getByTestId("claims-feed")).toHaveText(words.feedNone);
+    await expect(merchant.locator("#claims-offer-sku")).toBeDisabled();
+    await expect(merchant.locator("#claims-offer-sku")).toHaveAccessibleDescription(words.skuChooseProduct);
+    await expect(merchant.locator("#claims-offer-sku-hint")).toHaveText(words.skuChooseProduct);
     await box.locator("#claims-source-active").check();
     for (const [index, code] of sourceCodes.entries()) {
       // Statuses differ on purpose: the wording keys on the backend code, not the HTTP status.
@@ -351,12 +354,15 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");
   await expect(merchant.getByLabel("Quantity rule", { exact: true })).toBeDisabled();
   const offerForm = merchant.locator(".claims-offer-form");
+  await expect(offerForm.getByLabel("SKU", { exact: true })).toBeDisabled();
+  await expect(offerForm.getByLabel("SKU", { exact: true })).toHaveAccessibleDescription(claimsCopy.en.skuChooseProduct);
   await offerLayout(merchant);
   pass("ADM15/16: five offer fields have readable widths and aligned tops; live hint and unclipped actions have separate rows");
   for (const [keyword, sku, max, canonical] of [["ａ１", skuA, "5", "A1"], ["b2", skuB, "3", "B2"]]) {
     await offerForm.getByLabel("Keyword", { exact: true }).fill(keyword);
     await offerForm.getByLabel("Product", { exact: true }).selectOption({ label: product });
     await expect(offerForm.getByLabel("SKU", { exact: true })).toBeEnabled();
+    await expect(merchant.locator("#claims-offer-sku-hint")).toBeEmpty();
     await offerForm.getByLabel("SKU", { exact: true }).selectOption({ label: sku });
     await offerForm.getByLabel("Max per claim", { exact: true }).fill(max);
     await offerForm.getByRole("button", { name: "Add offer" }).click();
