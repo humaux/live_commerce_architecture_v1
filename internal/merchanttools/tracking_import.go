@@ -5,7 +5,7 @@
 // Depends on: internal/merchanttools (tracking_csv.go parse/fold/normalize, csvfile.go guardCell,
 //   csvimport.go abort), internal/command (Run/Audit/ValidID), internal/merchantorders
 //   (RecordShipment/NormalizeShipment), internal/platform (Scope), pgx/v5; SQL
-//   fulfillment.tracking_import_batches and fulfillment.tracking_import_precheck (migration 0124).
+//   fulfillment.tracking_import_batches and fulfillment.tracking_import_precheck (migration 0126).
 // Used by: internal/httpapi/merchanttools.go (the three tracking-import routes); pinned by the DB-free
 //   unit tests in internal/merchanttools/tracking_import_test.go and the smoke test
 //   tests/foundation/tracking_import_test.go.

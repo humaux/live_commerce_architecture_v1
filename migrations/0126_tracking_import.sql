@@ -1,4 +1,4 @@
--- 0124 tracking-import batches (unit w3-01b, contracts/manual-fulfilment-v1.md Amendment "M-7 revoked"). PLACEHOLDER NUMBER —
+-- 0126 tracking-import batches (unit w3-01b, contracts/manual-fulfilment-v1.md Amendment "M-7 revoked"). PLACEHOLDER NUMBER —
 -- the integrator renumbers this file; the unit brief draft named it 0128.
 --
 -- Purpose: the batch record and the lock-free precheck for the home-delivery bulk tracking backfill
@@ -23,15 +23,15 @@ DO $$
 DECLARE v_role text;
 BEGIN
     IF to_regprocedure('fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)') IS NULL THEN
-        RAISE EXCEPTION '0124 requires fulfillment.record_manual_shipment (migration 0107)';
+        RAISE EXCEPTION '0126 requires fulfillment.record_manual_shipment (migration 0107)';
     END IF;
     IF to_regclass('fulfillment.manual_shipment_heads') IS NULL
        OR to_regclass('fulfillment.manual_shipment_versions') IS NULL
        OR to_regclass('fulfillment.cvs_shipments') IS NULL THEN
-        RAISE EXCEPTION '0124 requires fulfillment.manual_shipment_heads/_versions and fulfillment.cvs_shipments';
+        RAISE EXCEPTION '0126 requires fulfillment.manual_shipment_heads/_versions and fulfillment.cvs_shipments';
     END IF;
     FOREACH v_role IN ARRAY ARRAY['commerce_runtime','commerce_checkout_writer'] LOOP
-        IF to_regrole(v_role) IS NULL THEN RAISE EXCEPTION '0124 requires role %',v_role; END IF;
+        IF to_regrole(v_role) IS NULL THEN RAISE EXCEPTION '0126 requires role %',v_role; END IF;
     END LOOP;
 END $$;
 
