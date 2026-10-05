@@ -18,8 +18,7 @@ import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
-import { Badge, TableFrame } from "@live-commerce/ui";
-import { presentationCopy } from "@/lib/presentation-copy";
+import { LedgerTable } from "./LedgerTable";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -560,115 +559,23 @@ export function Ledger({
                 {c.refresh}
               </button>
             </form>
-            <TableFrame label={c.inventory} scrollHint={presentationCopy[locale].scroll} scrollClassName="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="selection-col">
-                      <span className="sr-only">{c.edit}</span>
-                    </th>
-                    <th>{c.product}</th>
-                    <th className="sku-col">SKU</th>
-                    <th className="numeric">{c.price}</th>
-                    <th className="numeric stock-col">{c.onHand}</th>
-                    <th className="numeric stock-col">{c.reserved}</th>
-                    <th className="numeric">{c.available}</th>
-                    <th className="status-col">{c.status}</th>
-                    <th className="action-col">{c.actions}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {initial.rows.items.map((row) => (
-                    <tr
-                      key={row.sku_id}
-                      className={row.sku_id === selectedID ? "selected" : ""}
-                    >
-                      <td className="selection-col">
-                        <label className="sku-select">
-                        <input
-                          type="radio"
-                          name="sku"
-                          aria-label={`${c.edit} ${row.code}`}
-                          checked={row.sku_id === selectedID}
-                          disabled={locked}
-                          onChange={() => {
-                            select(row.sku_id);
-                            setDelta("0");
-                            setReason("");
-                            setError(null);
-                          }}
-                        />
-                        </label>
-                      </td>
-                      <th scope="row">
-                        <div className="product-cell">
-                          <ProductPhoto
-                            code={row.code}
-                            name={row.product_name}
-                            demo={initial.fixture}
-                            imageSrc={
-                              row.cover_image_id
-                                ? imageURL(initial.storeID, row.product_id, row.cover_image_id)
-                                : undefined
-                            }
-                          />
-                          <div>
-                            <button
-                              className="product-name"
-                              disabled={locked}
-                              onClick={() => select(row.sku_id)}
-                            >
-                              {row.product_name}
-                            </button>
-                            {initial.fixture && <small>{c.demo}</small>}
-                            <small className="mobile-sku">
-                              {row.code}
-                              {/* status-col is display:none ≤680px; this badge is
-                                  the only mobile-visible active/archived signal */}
-                              <Badge className="mobile-status" tone={row.status === "active" ? "success" : "neutral"}>
-                                {row.status === "active" ? c.active : c.archived}
-                              </Badge>
-                            </small>
-                          </div>
-                        </div>
-                      </th>
-                      <td className="sku-col">
-                        <code>{row.code}</code>
-                      </td>
-                      <td className="numeric">
-                        {money(locale, row.currency, row.price_minor)}
-                      </td>
-                      <td className="numeric stock-col">{row.on_hand}</td>
-                      <td className="numeric stock-col">{row.reserved}</td>
-                      <td className="numeric available-value">
-                        {row.available}
-                      </td>
-                      <td className="status-col">
-                        <Badge tone={row.status === "active" ? "success" : "neutral"}>
-                          {row.status === "active" ? c.active : c.archived}
-                        </Badge>
-                      </td>
-                      <td className="action-col">
-                        <button
-                          className="text-button"
-                          disabled={locked}
-                          onClick={() => select(row.sku_id)}
-                        >
-                          {c.edit}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!initial.rows.items.length && (
-                <div className="empty-state">
-                  <Icon name="product" size={30} />
-                  <h2>{initial.error ? c.noSession : c.empty}</h2>
-                  <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
-                </div>
-              )}
-            </TableFrame>
+            <LedgerTable
+              locale={locale}
+              c={c}
+              rows={initial.rows.items}
+              storeID={initial.storeID}
+              fixture={initial.fixture}
+              readError={Boolean(initial.error)}
+              selectedID={selectedID}
+              locked={locked}
+              onSelect={select}
+              onRadioSelect={(skuID) => {
+                select(skuID);
+                setDelta("0");
+                setReason("");
+                setError(null);
+              }}
+            />
             {(initial.rows.next_cursor || search.get("cursor")) && (
               <div className="pagination">
                 <button
