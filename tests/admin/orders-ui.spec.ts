@@ -980,7 +980,7 @@ test("MOU05 approved inline comp at desktop/mobile in three locales and page-two
       path: testInfo.outputPath(`inline-full-${locale}-390.png`),
       fullPage: true,
     });
-    await page.getByTestId("orders-more-filters").click();
+    await revealOrderFilters(page);
     await expect(page.getByTestId("state-filter")).toBeVisible();
     await page.getByTestId("state-filter").focus();
     await page.keyboard.press("Tab");
