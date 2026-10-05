@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"livecommerce/internal/command"
+	"livecommerce/internal/inbox"
 )
 
 const testUUID = "11111111-2222-3333-4444-555555555555"
@@ -168,4 +171,54 @@ func TestInboxCustomerLinkBody(t *testing.T) {
 	if _, ok = inboxCustomerLinkBody(rec, req); ok || rec.Code != http.StatusBadRequest {
 		t.Fatalf("unknown field: ok=%v code=%d", ok, rec.Code)
 	}
+}
+
+// TestInboxRoutesMountWhenServicePresent builds the whole router twice (the route-conflict surface of NewHandler) and
+// asserts the inbox routes are absent with a nil service and present (401, not 404, without a bearer) with a non-nil one.
+// No database is touched: route registration only, so a nil pool is safe here exactly like every other DB-free router test.
+func TestInboxRoutesMountWhenServicePresent(t *testing.T) {
+	svc := func(t *testing.T) *inbox.Service {
+		t.Helper()
+		key := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{0x42}, 32))
+		kr, err := inbox.LoadKeyring(func(name string) string {
+			switch name {
+			case "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID":
+				return "k1"
+			case "COMMERCE_META_PAYLOAD_KEYS_JSON":
+				return `{"keys":[{"id":"k1","key_base64":"` + key + `"}]}`
+			}
+			return ""
+		})
+		if err != nil {
+			t.Fatalf("LoadKeyring: %v", err)
+		}
+		s, err := inbox.NewService(kr)
+		if err != nil {
+			t.Fatalf("NewService: %v", err)
+		}
+		return s
+	}
+
+	t.Run("nil service unmounted", func(t *testing.T) {
+		h := NewHandler(nil) // Options zero value: Inbox nil
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+testUUID+"/inbox/conversations", nil)
+		h.ServeHTTP(res, req)
+		if res.Code != http.StatusNotFound {
+			t.Fatalf("unmounted inbox route status=%d body=%s, want 404", res.Code, res.Body.String())
+		}
+	})
+
+	t.Run("non-nil service mounted", func(t *testing.T) {
+		h := NewHandler(nil, Options{Inbox: svc(t)})
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+testUUID+"/inbox/conversations", nil)
+		h.ServeHTTP(res, req)
+		if res.Code != http.StatusUnauthorized {
+			t.Fatalf("mounted inbox route status=%d body=%s, want 401", res.Code, res.Body.String())
+		}
+		if got := res.Header().Get("Cache-Control"); got != "private, no-store" {
+			t.Fatalf("Cache-Control=%q, want private, no-store", got)
+		}
+	})
 }

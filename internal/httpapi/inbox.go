@@ -1,12 +1,12 @@
-// inbox.go owns the merchant inbox read/write HTTP adapter (contracts/live-console-v1.md §3.2/§3.6/§3.7, §11
-// A8–A11/A13/A14) under /v1/admin/stores/{store_id}/inbox: the conversation list, the decrypted thread, the
+// Purpose: the merchant inbox read/write HTTP adapter (contracts/live-console-v1.md §3.2/§3.6/§3.7, §11
+// A8-A11/A13/A14) under /v1/admin/stores/{store_id}/inbox: the conversation list, the decrypted thread, the
 // read/takeover/release/customer-link writes and the buyer panel. It decides no rule (internal/inbox and the
 // SECURITY DEFINER functions do), never returns a driver message, never logs a body, and keeps the private
 // no-store response boundary. Plaintext message bodies exist only in the A9 response.
-//
-// Wiring (integrator-merged): add `Inbox *inbox.Service` to httpapi.Options and call
-// `registerInboxRoutes(mux, pool, configured.Inbox)` inside NewHandler (handler.go); cmd/api builds the service
-// with inbox.NewService(inbox.LoadKeyring(...)) exactly like the other nil-able services.
+// Depends on: livecommerce/internal/inbox, livecommerce/internal/platform (WithScope), livecommerce/internal/command
+// (ValidID), and the SECURITY DEFINER functions of migration 0122.
+// Used by: internal/httpapi/handler.go (registerInboxRoutes, gated on Options.Inbox); cmd/api builds the service.
+
 package httpapi
 
 import (

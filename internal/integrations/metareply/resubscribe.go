@@ -1,3 +1,11 @@
+// Purpose: the inbox read side's durable resubscribe jobs (migration 0122, integration.meta_resubscribe_jobs): the
+// claims-worker end that leases one job, POSTs /{page-id}/subscribed_apps?subscribed_fields=feed,messages with the head
+// Page token the API sealed to the PUBLIC ring, and finishes it. Only a definite not-applied answer (429/503) is retried
+// (bounded by the SQL); everything ambiguous is UNKNOWN and never repeated.
+// Depends on: integration.claim_meta_resubscribe / integration.finish_meta_resubscribe (0122), internal/integrations/
+// meta/pagetoken/pageopen (v2 private ring), internal/integrations/meta/oauth (Graph), livecommerce/internal/platform.
+// Used by: cmd/claims-worker (run loop, the only process holding the private ring).
+
 package metareply
 
 import (

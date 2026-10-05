@@ -1,3 +1,9 @@
+// Purpose: the inbox Service and the A8-A11/A13/A14 request/response models (live-console-v1 §11). NewService requires
+// the payload keyring (nil means the inbox is not mounted); the service holds no pool and every method runs inside the
+// scoped transaction platform.WithScope provides.
+// Depends on: livecommerce/internal/command (ErrNotFound), internal/inbox/keyring.go (Keyring).
+// Used by: cmd/api (newInbox), internal/httpapi/inbox.go (route handlers), internal/inbox read.go/write.go.
+
 package inbox
 
 import (

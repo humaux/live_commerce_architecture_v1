@@ -1,3 +1,10 @@
+// Purpose: the API process entrypoint. run loads the per-surface configuration, opens the single shared
+// database pool, builds each handler and nil-able service (identity, buyer, meta, Stripe webhook, billing,
+// accounts, studio planner, refund jobs, ads, meta connect and the live-console inbox read side) and composes
+// the httpapi.Options the authenticated merchant/admin router is built from.
+// Depends on: the load*/build*/new* builders in this package and livecommerce/internal/httpapi.
+// Used by: the api binary (main).
+
 package main
 
 import (
@@ -125,6 +132,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// inbox read side (live-console-v1 §11 A8-A11/A13/A14): nil when the payload keyring is absent (surface off), so the
+	// routes stay unmounted. The API process opens sealed message bodies only; it never holds the private page-token ring.
+	inboxService, err := newInbox(os.Getenv)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -136,7 +149,7 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Inbox: inboxService, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)
 	if err != nil {

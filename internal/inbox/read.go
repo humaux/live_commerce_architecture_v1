@@ -1,3 +1,10 @@
+// Purpose: the inbox read side's definer callers and projections: A8 ListConversations (metadata only, no ciphertext),
+// A9 ReadThread (header + opened/decrypted inbound messages), A13 BuyerPanel (conversation-scoped fields), and the
+// shared databaseError mapper that passes only the fixed PT400/PT403/PT404/PT409/PT422 codes through.
+// Depends on: the SECURITY DEFINER functions social.list_conversations / social.read_thread / social.conversation_meta /
+// social.unread_conversation_count / inbox.thread_opened (migration 0122), internal/inbox/keyring.go + classifier.go.
+// Used by: internal/httpapi/inbox.go (A8/A9/A13 handlers), internal/inbox tests.
+
 package inbox
 
 import (

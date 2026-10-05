@@ -84,3 +84,33 @@
 
 - 交付：实现、测试命令与退出码、证据文件（`evidence-test.log`、`evidence-static.log`）、风险、NOT_RUN/BLOCKED 列表，均在本目录。
 - 独立复跑：单元与静态门禁由本执行者跑通；REAL_PG 迁移/门禁/接线由 integrator 合并时独立复跑，作者不能作为唯一验收人。
+
+---
+
+## Round 2（integrator 接线落地 + REAL_PG 门禁；base `80d53739`）
+
+本轮覆盖 Round 1「Integrator 接线 / 未触碰」清单（handler.go、cmd/api、cmd/claims-worker、test-local.sh、GATES.md），并把门禁首次跑到 REAL_PG，同时修掉三处 REAL_PG 暴露的缺陷。**本节优先级高于上文的「未触碰」与「NOT_RUN」条目。**
+
+### 接线（本轮写入）
+- `internal/httpapi/handler.go`：`Options.Inbox *inbox.Service`；`NewHandler` 调 `registerInboxRoutes`，`Inbox==nil` 时不挂载（与其他 nil-able 服务一致）；补 DB-free 全路由器测试（nil 时不挂载）。
+- `cmd/api/inbox.go`（新增）：`newInbox(getenv)` 以 `inbox.LoadKeyring`（`COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID` + `COMMERCE_META_PAYLOAD_KEYS_JSON`，与 meta payload 同一对 env）构造 `inbox.NewService`，缺失/坏密钥环软降级 `nil,nil`（只一行固定日志，绝不打印密钥值）。
+- `cmd/api/main.go`：组装 `httpapi.Options{... Inbox: inboxService ...}`。
+- `cmd/claims-worker/main.go`：`metareply.NewResubscriber` 接入运行循环（与 Unsubscriber 并列，`<-resubscribed` 汇合）。
+- `scripts/dev/test-local.sh`：登记 `--inbox` 门禁；`docs/delivery/GATES.md` 增行。
+- `tests/foundation/live_console_inbox_test.go`（新增）：LCN03/LCN10/跨店隔离 + 0122 精确 ACL 的 REAL_PG 门禁。
+
+### REAL_PG 证据（SANDBOX —— test-focused.sh 一次性 PG 18.6 容器，非 LIVE）
+- `bash scripts/dev/test-focused.sh 'LiveConsoleInbox|Inbox'` → **PASS=24 FAIL=0 SKIP=0 exit=0**：本单元 4 个门禁（0122 fresh 应用精确 ACL、A8/A9/A10 权限拆分、A11 接管 CAS + 6h 惰性过期、A14 客户链接 CAS + 越界 PT404、跨店 RLS 隔离）+ 20 个 MetaInbox 既有门禁。
+- `go test ./internal/... ./cmd/...` → 全绿（DB-free 单测）。
+
+### REAL_PG 暴露并已修的缺陷（三处）
+1. **定义者缺 schema USAGE（P1）**：`inbox.takeover/release/customer_link/thread_opened` 写 `ops.audit_events` 但 `commerce_inbox_writer` 无 `USAGE ON SCHEMA ops`；`thread_opened` 读 `social.conversations` 但无 `USAGE ON SCHEMA social` 且无 SELECT 权限/策略 → REAL_PG 报 `permission denied for schema ops/social`。0122 已补 `GRANT USAGE ON SCHEMA ops/social TO commerce_inbox_writer`、`GRANT SELECT ON social.conversations`、`CREATE POLICY social_conversation_inbox_read ... USING (true)`（FORCE RLS 下 definer 体内的 tenant/store/conversation 过滤为控制面，策略非控制面）。
+2. **测试夹具 peer_key 撞键**：`lcConversation` 固定 `peer_key='aaa…'` 命中 `UNIQUE(tenant_id,store_id,app_id,object,asset_id,peer_key)`（共享 fixture 跨测试持久化）。改为由 conversation UUID 派生 64 hex peer_key，每次唯一。
+3. **测试列名笔误**：A11 行断言 `coalesce(assignee::text)`，`inbox.conversation_state` 实际列名 `assignee_principal`；已改。
+
+### 头文档与静态门禁
+- `cmd/api/main.go`、`cmd/claims-worker/main.go`、`internal/metaconnect/graph.go` 补 leading doc comment；`internal/inbox/keyring.go`（包文档载体）补 `Purpose:` 标签（check-headers 两层：ADDED 需三标签、MODIFIED 需 leading doc comment）。
+- `go build ./...` exit 0；`bash scripts/dev/check-pkgdocs.sh` → `ok`。check-headers 由 integrator 以 r3/integration 基线复跑（本 worktree 对 `check-headers.sh` 无执行许可，已按脚本逻辑逐文件人工核对）。
+
+### 迁移幂等
+0122 仍由 `lc_schema_migrations` 版本门控应用一次（门禁断言 `migrationCount=1`）；新增 GRANT/POLICY 均幂等，fresh 容器上应用干净（见上 REAL_PG PASS）。

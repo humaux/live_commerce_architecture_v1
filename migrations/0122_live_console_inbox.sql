@@ -1,6 +1,6 @@
 -- 0122 live-console inbox (contracts/live-console-v1.md §3.1/§3.2/§3.6/§3.7, §11 A8-A11/A13/A14, §14.8; FROZEN 2026-10-02).
 --
--- Owns: the inbound read authority (social.read_thread / social.list_conversations / social.conversation_meta /
+-- Purpose: the inbound read authority (social.read_thread / social.list_conversations / social.conversation_meta /
 -- social.unread_conversation_count), the conversation-state table inbox.conversation_state plus its AFTER INSERT
 -- trigger on social.messages, the merchant write definers (inbox.mark_read / inbox.takeover / inbox.release /
 -- inbox.customer_link / inbox.thread_opened), the claims-worker window read inbox.dm_window, the permission
@@ -18,7 +18,7 @@
 -- credentials, meta_connections, the unsubscribe-job pattern), 0079/0089 (permission CHECK re-derivation,
 -- staff_role_permissions, the staff-team backfill).
 --
--- Callers: internal/inbox (read side + definer callers), internal/httpapi/inbox.go (A8-A11/A13/A14), cmd/claims-worker
+-- Used by: internal/inbox (read side + definer callers), internal/httpapi/inbox.go (A8-A11/A13/A14), cmd/claims-worker
 -- via internal/integrations/metareply (Resubscriber) and the send path (dm_window, LC-B4). Roles: commerce_runtime
 -- reaches the merchant definers only; commerce_claims_worker reaches dm_window and the resubscribe claim/finish only.
 
@@ -153,9 +153,16 @@ GRANT SELECT, INSERT ON inbox.thread_open_marks TO commerce_inbox_writer;
 GRANT UPDATE (last_opened_at) ON inbox.thread_open_marks TO commerce_inbox_writer;
 CREATE POLICY thread_open_marks_inbox ON inbox.thread_open_marks FOR ALL TO commerce_inbox_writer USING (true) WITH CHECK (true);
 
+GRANT USAGE ON SCHEMA ops TO commerce_inbox_writer;
 GRANT INSERT ON ops.audit_events TO commerce_inbox_writer;
 CREATE POLICY audit_inbox_insert ON ops.audit_events FOR INSERT TO commerce_inbox_writer
  WITH CHECK (action IN ('inbox.thread_opened','inbox.takeover','inbox.release','inbox.customer_linked','inbox.customer_unlinked'));
+
+-- thread_opened cross-checks the conversation in social.conversations (FORCE RLS); the definer body
+-- (server-resolved tenant_id/store_id/conversation_id) is the control, not the policy.
+GRANT USAGE ON SCHEMA social TO commerce_inbox_writer;
+GRANT SELECT ON social.conversations TO commerce_inbox_writer;
+CREATE POLICY social_conversation_inbox_read ON social.conversations FOR SELECT TO commerce_inbox_writer USING (true);
 
 -- A14 customer validation: only the three scope/id columns of buyer.owners are visible to the inbox
 -- definer, and only the current server-resolved tenant/store (the policy, not the caller, decides

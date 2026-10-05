@@ -1,3 +1,9 @@
+// Purpose: the frozen-classifier replay of one stored inbound message unit (A9): replayMessage re-runs the frozen
+// Verifier.message rules on the exact plaintext the consumer sealed and projected, extracting text and attachment types.
+// A tag/hash/classifier failure renders the message unreadable (never dropped silently).
+// Depends on: livecommerce/internal/integrations/meta (ParseStrict) and the frozen message shape of 0029/normalize.go.
+// Used by: internal/inbox/read.go (openMessage), internal/inbox tests.
+
 package inbox
 
 import (

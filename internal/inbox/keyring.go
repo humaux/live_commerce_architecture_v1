@@ -1,8 +1,14 @@
 // Package inbox owns the merchant inbox read side (contracts/live-console-v1.md §3.2/§3.6/§3.7, §11 A8-A11/A13/A14):
 // the payload keyring that opens the inbound message bodies (A9), the frozen-classifier replay that extracts text and
 // attachments, and the definer callers for conversation listing, thread reads, read/unread, takeover/release and the
-// customer link. The scoped transaction and server-resolved tenant/store come from platform.WithScope; the authorization
-// is re-checked inside each SECURITY DEFINER function against identity.store_grants.
+// customer link. It never returns a driver message, never logs a message body or key material, and never trusts a
+// request tenant/store/principal: scope comes from platform.WithScope and is re-checked inside each SECURITY DEFINER
+// function against identity.store_grants.
+// Purpose: own the Keyring and LoadKeyring: load the payload keyring pair (active key id + key map) and open/decrypt
+// one sealed inbound message body (A9) via Keyring.open and eventContext.
+// Depends on: livecommerce/internal/command (ValidID), livecommerce/internal/integrations/meta (ParseStrict), and the
+// COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID + COMMERCE_META_PAYLOAD_KEYS_JSON environment pair shared with the consumer.
+// Used by: cmd/api (newInbox builds the service), internal/httpapi/inbox.go (A8-A11/A13/A14 routes), internal/inbox methods.
 package inbox
 
 import (

@@ -1,3 +1,9 @@
+// Purpose: the three Graph reads/writes of a connect beyond the shared OAuth exchange: the Page pick list (listPages),
+// the per-Page token fetch (pageToken) and the subscribe that turns on a Page's feed+messages webhook delivery
+// (subscribe, live-console-v1 §3.1 inbox subscription). Every call goes through the Service's metaoauth.Graph client.
+// Depends on: internal/integrations/meta/oauth (metaoauth.Graph, the Service.graph field) and ErrConnectFailed.
+// Used by: internal/metaconnect/service.go (pick and bind flows); cmd/api (newMetaConnect).
+
 package metaconnect
 
 import (

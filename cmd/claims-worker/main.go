@@ -1,3 +1,11 @@
+// Purpose: the claims worker run loop. run loads configuration, opens the worker/intake/retention pools,
+// registers the River workers (meta private replies, merchant-disconnect unsubscribe, inbox resubscribe,
+// retention sweep, store-domain verification) and runs the poller, unsubscriber and resubscriber until shutdown.
+// Depends on: livecommerce/internal/jobqueue, livecommerce/internal/integrations/metareply (RoutesV2,
+// AudienceRoutes, NewUnsubscriber, NewResubscriber), livecommerce/internal/claimsintake,
+// livecommerce/internal/retention and livecommerce/internal/storefrontdomains.
+// Used by: the claims-worker binary (main).
+
 package main
 
 import (
@@ -229,6 +237,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// Inbox's durable "POST /{page}/subscribed_apps subscribed_fields=feed,messages" jobs (migration 0122): the same private ring.
+	resubscriber, err := metareply.NewResubscriber(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
 		return errWorkerDatabase
@@ -270,11 +283,17 @@ func run(ctx context.Context, getenv func(string) string) error {
 		defer close(unsubscribed)
 		unsubscriber.Run(pollCtx)
 	}()
+	resubscribed := make(chan struct{})
+	go func() {
+		defer close(resubscribed)
+		resubscriber.Run(pollCtx)
+	}()
 	// Fixed local startup witness; never implies Meta access.
 	runErr := jobqueue.Run(ctx, client, "claims_worker_ready")
 	stopPoll()
 	<-polled
 	<-unsubscribed
+	<-resubscribed
 	switch {
 	case errors.Is(runErr, jobqueue.ErrStart):
 		return errWorkerStart
