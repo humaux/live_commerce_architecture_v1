@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"strings"
 	"sync"
 	"testing"
@@ -292,8 +293,12 @@ func TestLiveConsoleSendLCN07AutoManualRace(t *testing.T) {
 		var out inbox.SendOutput
 		var merr error
 		var wg sync.WaitGroup
+		// jitter moves the manual planner across the interleavings (before staging, while PENDING, during apply, after apply); it is a
+		// fault-injection offset, never a synchronisation: every outcome is checked against the invariants below.
+		jitter := time.Duration(rand.Intn(70)) * time.Millisecond
 		runManual := func() {
 			defer wg.Done()
+			time.Sleep(jitter)
 			out, merr = e.manual(ref, fmt.Sprintf("race-%d-%s", i, t04Tag()), time.Now().Add(-10*time.Minute), false)
 		}
 		if i%2 == 0 {

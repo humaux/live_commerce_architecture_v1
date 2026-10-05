@@ -809,7 +809,7 @@ END $$;
 CREATE OR REPLACE FUNCTION integration.plan_claim_reply(p_intake uuid,p_operation uuid,p_link_hash bytea,p_link_key_id text,p_job bigint)
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE i record; ev record; src record; b record; j record; v_domain uuid; v_origin text; v_expires timestamptz;
- v_deadline timestamptz; v_request jsonb; v_key text; w record; v_known boolean:=false; v_gen bigint:=0;
+ v_deadline timestamptz; v_request jsonb; v_key text; dw record; v_known boolean:=false; v_gen bigint:=0;
 BEGIN
  IF p_intake IS NULL OR p_operation IS NULL OR p_link_hash IS NULL OR octet_length(p_link_hash)<>32
   OR p_link_key_id IS NULL OR p_link_key_id !~ '^[0-9a-f]{16}$' OR p_job IS NULL OR p_job<=0
@@ -843,8 +843,8 @@ BEGIN
   AND r.xmin=pg_current_xact_id()::xid;
  IF NOT FOUND THEN RAISE EXCEPTION 'invalid claim reply plan' USING ERRCODE='22023'; END IF;
  -- §3.6 / P2-3: freeze the EFFECTIVE takeover generation of the actor's known conversation (via bundle peers), else 0.
- SELECT t.takeover_generation INTO w FROM inbox.dm_window_for_bundle(i.tenant_id,i.store_id,ev.bundle_id,i.app_id,i.object,i.asset_id) t;
- IF FOUND THEN v_known:=true; v_gen:=w.takeover_generation; END IF;
+ SELECT t.takeover_generation INTO dw FROM inbox.dm_window_for_bundle(i.tenant_id,i.store_id,ev.bundle_id,i.app_id,i.object,i.asset_id) t;
+ IF FOUND THEN v_known:=true; v_gen:=dw.takeover_generation; END IF;
  v_expires:=claims.issue_system_link(p_intake,p_link_hash);
  v_deadline:=least(i.occurred_at+interval '7 days'-interval '1 hour',v_expires-interval '10 minutes',
   CASE WHEN i.live_media THEN i.received_at+interval '15 minutes' END);
@@ -873,7 +873,7 @@ ALTER FUNCTION integration.plan_claim_reply(uuid,uuid,bytea,text,bigint) OWNER T
 -- carry origin_kind; older READY operations skip the branch).
 CREATE OR REPLACE FUNCTION claims.check_meta_reply(p_operation uuid,p_hash bytea) RETURNS text
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE o record; src record; v_deadline timestamptz; v_live boolean; v_ok boolean; w record;
+DECLARE o record; src record; v_deadline timestamptz; v_live boolean; v_ok boolean; dw record;
 BEGIN
  IF p_operation IS NULL OR p_hash IS NULL OR octet_length(p_hash)<>32
   OR nullif(current_setting('app.tenant_id',true),'') IS NOT NULL OR nullif(current_setting('app.store_id',true),'') IS NOT NULL
@@ -903,11 +903,11 @@ BEGIN
  END IF;
  -- §3.6: resolve the actor's conversation through the bundle's peers (conversation_known=false) or the frozen generation.
  IF o.request->>'origin_kind'='auto' AND o.request->>'app_id' ~ '^[0-9]{1,40}$' THEN
-  SELECT t.mode,t.takeover_generation INTO w FROM inbox.dm_window_for_bundle(o.tenant_id,o.store_id,(o.request->>'bundle_id')::uuid,
+  SELECT t.mode,t.takeover_generation INTO dw FROM inbox.dm_window_for_bundle(o.tenant_id,o.store_id,(o.request->>'bundle_id')::uuid,
    o.request->>'app_id',CASE o.request->>'platform' WHEN 'facebook' THEN 'page' ELSE 'instagram' END,o.request->>'asset_id') t;
   IF FOUND THEN
-   IF w.mode='human' THEN RETURN 'human_takeover'; END IF;
-   IF (o.request->>'conversation_known')::boolean AND w.takeover_generation<>(o.request->>'takeover_generation')::bigint THEN
+   IF dw.mode='human' THEN RETURN 'human_takeover'; END IF;
+   IF (o.request->>'conversation_known')::boolean AND dw.takeover_generation<>(o.request->>'takeover_generation')::bigint THEN
     RETURN 'takeover_changed';
    END IF;
   END IF;

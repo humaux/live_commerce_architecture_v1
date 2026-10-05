@@ -225,6 +225,9 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 		return nil
 	}
 	if checkDenyCodes[code] {
+		if code == "human_takeover" || code == "takeover_changed" {
+			return core.DenyPolicy(code) // recorded as the operation's result code (live-console-v1 §3.6, LCN10)
+		}
 		return fmt.Errorf("%s: %w", code, core.ErrPolicyDenied)
 	}
 	return errors.New("metareply: unexpected check result")
