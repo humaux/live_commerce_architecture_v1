@@ -15,8 +15,8 @@ command -v node >/dev/null
 test_mode="${1:-foundation}"
 # Public-site build-only configuration. Synthetic fixture data, never production defaults.
 export LC_PLATFORM_HOST=platform.example.invalid LC_ADMIN_HOST=admin.example.invalid LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != --browser-platform-site && "$test_mode" != foundation && "$test_mode" != --meta-health && "$test_mode" != --browser-admin-shell && "$test_mode" != --browser-click-sweep && "$test_mode" != --browser-visual-lint && "$test_mode" != --browser-buyer-comms && "$test_mode" != --browser-checkout-offline && "$test_mode" != --browser-home-cod && "$test_mode" != --browser-identity && "$test_mode" != --browser-product-editor && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-claim-checkout && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-ads-attribution && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-store-domains && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --inbox && "$test_mode" != --msg-templates && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --live-console && "$test_mode" != --studio-backend && "$test_mode" != --ops-disk-guard ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-platform-site|--meta-health|--browser-admin-shell|--browser-click-sweep|--browser-visual-lint|--browser-identity|--browser-buyer-comms|--browser-checkout-offline|--browser-home-cod|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-claim-checkout|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-ads-attribution|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-store-domains|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--inbox|--msg-templates|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--live-console|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-product-editor|--browser-catalog-core|--ops-disk-guard]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != --browser-platform-site && "$test_mode" != foundation && "$test_mode" != --meta-health && "$test_mode" != --browser-admin-shell && "$test_mode" != --browser-click-sweep && "$test_mode" != --browser-visual-lint && "$test_mode" != --browser-buyer-comms && "$test_mode" != --browser-checkout-offline && "$test_mode" != --browser-home-cod && "$test_mode" != --browser-identity && "$test_mode" != --browser-product-editor && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-claim-checkout && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-ads-attribution && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-store-domains && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --inbox && "$test_mode" != --inbox-send && "$test_mode" != --msg-templates && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --live-console && "$test_mode" != --studio-backend && "$test_mode" != --ops-disk-guard ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-platform-site|--meta-health|--browser-admin-shell|--browser-click-sweep|--browser-visual-lint|--browser-identity|--browser-buyer-comms|--browser-checkout-offline|--browser-home-cod|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-claim-checkout|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-ads-attribution|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-store-domains|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--inbox|--inbox-send|--msg-templates|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--live-console|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-product-editor|--browser-catalog-core|--ops-disk-guard]\n' >&2
   exit 2
 fi
 
@@ -34,17 +34,12 @@ fi
 if [[ "$test_mode" == --browser-platform-site ]]; then
   # Share the browser/PG gate queue: rebuilding this checkout while another
   # browser run is using its standalone output invalidates that run's evidence.
-  platform_lock="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
-  platform_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-300} ))
-  until mkdir "$platform_lock" 2>/dev/null; do
-    if (( $(date +%s) >= platform_deadline )); then
-      printf 'platform-site: test lock busy; no build started\n' >&2
-      exit 2
-    fi
-    sleep 1
-  done
-  printf '%s\n' "$$" > "$platform_lock/pid"
-  trap 'if [[ "$(cat "$platform_lock/pid" 2>/dev/null)" == "$$" ]]; then rm -f "$platform_lock/pid"; rmdir "$platform_lock"; fi' EXIT
+  source scripts/dev/test-lock.sh
+  if ! lc_lock_acquire "${LC_TEST_LOCK_WAIT:-300}"; then
+    printf 'platform-site: test lock busy; no build started\n' >&2
+    exit 2
+  fi
+  trap lc_lock_release EXIT
   mkdir -p output/platform-site
   node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts
   pnpm --filter admin build > output/platform-site/build.log 2>&1
@@ -457,33 +452,21 @@ test_container="lc-foundation-test-$$"
 test_owned=0
 stripe_lock=""
 cleanup() {
-  if [[ -n "$stripe_lock" ]]; then rm -rf "$stripe_lock"; fi
+  if [[ -n "$stripe_lock" ]]; then lc_lock_release; fi
   if [[ "$test_owned" == 1 ]] && [[ "$(docker inspect -f '{{index .Config.Labels "livecommerce.fixture"}}' "$test_container" 2>/dev/null || true)" == "$test_container" ]]; then
     docker rm -f "$test_container" >/dev/null
   fi
 }
 trap cleanup EXIT INT TERM
-# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the
-# 1.9 GB Docker VM with test-focused.sh runs and pushed PG into recovery mode — flaky full-suite reds). Same lock dir
-# as test-focused.sh. Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2)
-# instead of running without exclusivity. A holder that is dead, or whose PID now belongs to a process that is not
-# one of our test runners (PID reuse), is stale and removed.
-lock_dir="${LC_TEST_LOCK_DIR:-${TMPDIR:-/tmp}/lc-test-pg.lock}"
-lock_deadline=$(( $(date +%s) + ${LC_TEST_LOCK_WAIT:-7200} ))
-until mkdir "$lock_dir" 2>/dev/null; do
-  holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
-  if [[ -n "$holder" ]] && { ! kill -0 "$holder" 2>/dev/null ||
-      ! ps -o command= -p "$holder" 2>/dev/null | grep -qE 'test-(focused|local)\.sh'; }; then
-    rm -rf "$lock_dir"; continue
-  fi
-  if [[ -z "$holder" ]] && [[ -n "$(find "$lock_dir" -maxdepth 0 -mmin +1 2>/dev/null)" ]]; then rm -rf "$lock_dir"; continue; fi
-  if (( $(date +%s) >= lock_deadline )); then
-    printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lock_dir" "${holder:-?}" "${LC_TEST_LOCK_WAIT:-7200}" >&2
-    exit 2
-  fi
-  sleep 2
-done
-echo $$ > "$lock_dir/pid"; stripe_lock="$lock_dir"
+# One PG-holding run at a time machine-wide, for EVERY mode (2026-10-06: modes that skipped the lock shared the Docker VM
+# with test-focused.sh runs — flaky full-suite reds). Heartbeat-based lock shared with test-focused.sh (scripts/dev/test-lock.sh).
+# Bounded wait (LC_TEST_LOCK_WAIT, default 7200 s); on timeout the run STOPS as NOT_RUN (exit 2) instead of running unexclusive.
+source scripts/dev/test-lock.sh  # cwd is the repo root (line 6)
+if ! lc_lock_acquire "${LC_TEST_LOCK_WAIT:-7200}"; then
+  printf 'NOT_RUN: PG test lock %s still held by pid %s after %ss\n' "$lc_lock_dir" "$(cat "$lc_lock_dir/pid" 2>/dev/null || echo '?')" "${LC_TEST_LOCK_WAIT:-7200}" >&2
+  exit 2
+fi
+stripe_lock=1
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # Memory: on Linux cgroup v2 the 256 MiB tmpfs data directory is charged to the
@@ -857,6 +840,11 @@ elif [[ "$test_mode" == --inbox ]]; then
   test -f tests/foundation/live_console_inbox_test.go
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveConsoleInbox' -v ./tests/foundation
   printf 'PASS: isolated live-console inbox read-side subset only; no UI/send (LC-B4) or LIVE Meta traffic claim.\n'
+elif [[ "$test_mode" == --inbox-send ]]; then
+  test -f tests/foundation/live_console_send_test.go
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=900s -run '^TestLiveConsoleSend' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run 'Send|PrivateReplyFacts|Scrub|CheckText|Outbound|BodyHMAC|PublicReply' -v ./internal/inbox ./internal/httpapi ./internal/integrations/metareply
+  printf 'PASS: isolated live-console sends + takeover (LCN06/07/08/10/11, display-copy half of LCN13) only; MOCK Graph, retention halves of LCN13 and LIVE sends (LCN16) not claimed.\n'
 elif [[ "$test_mode" == --msg-templates ]]; then
   test -f tests/foundation/live_console_templates_test.go
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveConsoleTemplates' -v ./tests/foundation

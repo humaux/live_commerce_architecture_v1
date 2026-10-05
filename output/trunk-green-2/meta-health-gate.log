@@ -1,0 +1,37 @@
+=== RUN   TestMetaHealthProbeDerivesAndRecords
+--- PASS: TestMetaHealthProbeDerivesAndRecords (1.34s)
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/revoked
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/expired
+=== RUN   TestMetaHealthTokenInvalidFlipsConnection/page_gone
+--- PASS: TestMetaHealthTokenInvalidFlipsConnection (0.17s)
+    --- PASS: TestMetaHealthTokenInvalidFlipsConnection/revoked (0.06s)
+    --- PASS: TestMetaHealthTokenInvalidFlipsConnection/expired (0.05s)
+    --- PASS: TestMetaHealthTokenInvalidFlipsConnection/page_gone (0.06s)
+=== RUN   TestMetaHealthPermissionAndSubscription
+=== RUN   TestMetaHealthPermissionAndSubscription/permission_revoked
+=== RUN   TestMetaHealthPermissionAndSubscription/p2_permission_error_snapshot
+=== RUN   TestMetaHealthPermissionAndSubscription/messages_not_subscribed
+=== RUN   TestMetaHealthPermissionAndSubscription/app_absent
+--- PASS: TestMetaHealthPermissionAndSubscription (0.08s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/permission_revoked (0.01s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/p2_permission_error_snapshot (0.01s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/messages_not_subscribed (0.01s)
+    --- PASS: TestMetaHealthPermissionAndSubscription/app_absent (0.01s)
+=== RUN   TestMetaHealthRateLimitAndProbeFailing
+--- PASS: TestMetaHealthRateLimitAndProbeFailing (0.07s)
+=== RUN   TestMetaHealthMissingCredentialRecordsUnknown
+--- PASS: TestMetaHealthMissingCredentialRecordsUnknown (0.07s)
+=== RUN   TestMetaHealthTokenNeverLeaks
+--- PASS: TestMetaHealthTokenNeverLeaks (0.05s)
+=== RUN   TestMetaHealthBannerRoutes
+--- PASS: TestMetaHealthBannerRoutes (0.08s)
+=== RUN   TestMetaHealthReaderSwap
+--- PASS: TestMetaHealthReaderSwap (0.06s)
+=== RUN   TestMetaHealthReauthReconnectResets
+--- PASS: TestMetaHealthReauthReconnectResets (0.06s)
+PASS
+ok  	livecommerce/tests/foundation	3.633s
+ok  	livecommerce/internal/metaconnect	1.412s
+PASS: meta-connection-health backend (MCH01-MCH09): REAL_PG probe sweep (v2 HPKE + v1 AES custody) + B1/B2 banner routes against the fake Graph, and the pure Derive/reader units; Meta = MOCK loopback fake (evidence MOCK), no real Meta traffic; MCH10-MCH12 are NOT_RUN (see docs/delivery/GATES.md).
+exit 0
