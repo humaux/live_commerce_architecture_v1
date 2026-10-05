@@ -1,5 +1,11 @@
 "use client";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 // Presentation only: the editor owns a viewport-sized scroll pane and a real
 // footer row. No drafts, command state, catalog DTOs or persistence belong here.
@@ -7,11 +13,17 @@ export function useProductEditorLayout(
   sections: readonly string[],
   onSection: (id: string) => void,
   feedbackKey: string,
+  feedbackBusy: boolean,
 ) {
   const editor = useRef<HTMLFormElement>(null),
     fields = useRef<HTMLDivElement>(null),
     feedback = useRef<HTMLDivElement>(null);
   const sectionKey = sections.join("|");
+  const [feedbackAttempt, setFeedbackAttempt] = useState(0);
+  const noteSaveAttempt = useCallback(
+    () => setFeedbackAttempt((n) => n + 1),
+    [],
+  );
   useLayoutEffect(() => {
     const form = editor.current;
     if (!form) return;
@@ -61,7 +73,7 @@ export function useProductEditorLayout(
   useLayoutEffect(() => {
     const root = fields.current;
     const target = feedback.current;
-    if (!root || !target) return;
+    if (!root || !target || feedbackBusy) return;
     // Outcomes belong to the real command UI, not a second footer summary.
     // Reveal both the notice and its recovery actions without moving the shell.
     root.scrollTo({
@@ -71,7 +83,7 @@ export function useProductEditorLayout(
         root.getBoundingClientRect().top,
     });
     target.focus({ preventScroll: true });
-  }, [feedbackKey]);
+  }, [feedbackKey, feedbackAttempt, feedbackBusy]);
   useEffect(() => {
     const root = fields.current;
     if (!root) return;
@@ -145,5 +157,5 @@ export function useProductEditorLayout(
     },
     [onSection],
   );
-  return { editor, fields, feedback, focus };
+  return { editor, fields, feedback, focus, noteSaveAttempt };
 }

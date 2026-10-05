@@ -93,11 +93,13 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
-  const { editor, fields, feedback, focus } = useProductEditorLayout(
-    sections,
-    setSection,
-    JSON.stringify([write.message, write.done?.id, write.recoveryBlocked]),
-  );
+  const { editor, fields, feedback, focus, noteSaveAttempt } =
+    useProductEditorLayout(
+      sections,
+      setSection,
+      JSON.stringify([write.message, write.done?.id, write.recoveryBlocked]),
+      write.busy,
+    );
   useEffect(() => {
     if (write.savedDetail) {
       const fresh = draftFromDetail(write.savedDetail);
@@ -228,6 +230,7 @@ export function ProductDocumentForm({
     if (disabled) return;
     if (axisError) {
       write.setMessage(axisError);
+      noteSaveAttempt();
       return;
     }
     if (
@@ -238,6 +241,7 @@ export function ProductDocumentForm({
     ) {
       write.setMessage(c.chooseWarehouse);
       focus("shipping");
+      noteSaveAttempt();
       return;
     }
     if (
@@ -262,6 +266,7 @@ export function ProductDocumentForm({
         ? requestedStatus
         : undefined,
     );
+    noteSaveAttempt();
   };
   return (
     <form
