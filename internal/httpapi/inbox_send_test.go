@@ -10,6 +10,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"crypto/ecdh"
 	"crypto/rand"
 	"encoding/base64"
@@ -19,6 +20,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -27,7 +29,9 @@ import (
 
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/live"
 	"livecommerce/internal/msgtemplates"
+	"livecommerce/internal/platform"
 )
 
 const (
@@ -224,5 +228,45 @@ func TestSendErrorDetailsReachTheEnvelope(t *testing.T) {
 	}
 	if err := json.Unmarshal(res.Body.Bytes(), &env); err != nil || env.Details["max"] != float64(1000) {
 		t.Fatalf("details lost: %s", res.Body.String())
+	}
+}
+
+type fakeFacts struct {
+	facts live.CommentFacts
+	err   error
+}
+
+func (f fakeFacts) Facts(context.Context, pgx.Tx, platform.Scope, string, string, string) (live.CommentFacts, error) {
+	return f.facts, f.err
+}
+
+// A4's facts mapping (LCN07 / Amendment 1 A1.2): found + not page + not reply passes created_at through; each other case is its fixed code.
+func TestPrivateReplyFactsMapping(t *testing.T) {
+	created := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	for _, tc := range []struct {
+		name   string
+		facts  fakeFacts
+		status int
+		code   string
+	}{
+		{"ok", fakeFacts{facts: live.CommentFacts{Found: true, CreatedAt: created}}, 0, ""},
+		{"unknown", fakeFacts{facts: live.CommentFacts{Found: false}}, 409, "comment_unknown"},
+		{"page", fakeFacts{facts: live.CommentFacts{Found: true, CreatedAt: created, IsPage: true}}, 409, "page_comment"},
+		{"reply", fakeFacts{facts: live.CommentFacts{Found: true, CreatedAt: created, IsReply: true}}, 409, "reply_comment_unsupported"},
+		{"unavailable", fakeFacts{err: live.ErrFactsUnavailable}, 409, "comment_facts_unavailable"},
+		{"bridge down", fakeFacts{err: live.ErrStreamUnavailable}, 503, "stream_unavailable"},
+		{"no source", fakeFacts{err: live.ErrNoSource}, 409, "no_source"},
+	} {
+		got, err := privateReplyFacts(tc.facts, nil, platform.Scope{}, "t", sendSession, "1111_2222")(context.Background())
+		if tc.code == "" {
+			if err != nil || !got.Equal(created) {
+				t.Fatalf("%s: %v %v", tc.name, got, err)
+			}
+			continue
+		}
+		status, code := inboxSendClassify(err)
+		if err == nil || status != tc.status || code != tc.code {
+			t.Fatalf("%s: err=%v -> %d %s, want %d %s", tc.name, err, status, code, tc.status, tc.code)
+		}
 	}
 }

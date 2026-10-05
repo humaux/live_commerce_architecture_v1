@@ -1,3 +1,13 @@
+// Purpose: the claims-worker dispatcher routes of the Meta private reply: the automatic claim-link reply (meta-claims-intake-v1 §6: Check =
+// claims.check_meta_reply, link token re-derived in memory, one POST that is never repeated, query-only Reconcile) and, on the SAME route, the
+// manual private reply of live-console-v1 §4.3 (message_type manual_private_reply), which the send adapter (send_dm.go) serves.
+// Depends on: internal/integrations/core (DispatchRoute), internal/claims (ReplyLinkKey), pagetoken/pageopen (Page-token custody), SQL
+// claims.check_meta_reply, integration.load_meta_page_token, integration.meta_connect_mark_reauth, inbox.* send definers (send_dm.go); Graph
+// POST /{asset}/messages (MOCK against a loopback fake; LIVE only at the probe).
+// Used by: cmd/claims-worker (RoutesV2), internal/integrations/metareply tests, tests/foundation (MCI07, LCN06-LCN13).
+// Invariants: one private reply per comment (mpr: key, live-console-v1 §4.2); deny codes human_takeover / takeover_changed (§3.6).
+// Status: MOCK.
+
 package metareply
 
 import (
@@ -149,7 +159,10 @@ func newRoutesWithSend(check checkFunc, reauth func(context.Context, string), li
 			Reconcile:          a.reconcile,
 		}
 		if send != nil {
-			route.Finish = send.finish // wipes the dispatch copy and records the bundle↔peer link (live-console-v1 §3.7/§4.3)
+			// A manual private reply carries a sealed dispatch copy beside the token (the automatic claim-link reply has none and keeps the
+			// raw token); Finish wipes the copy and records the bundle↔peer link (live-console-v1 §3.4/§3.7/§4.3).
+			route.LoadSecret = send.withDispatchCopy(route.LoadSecret)
+			route.Finish = send.finish
 		}
 		routes = append(routes, route)
 	}
@@ -238,13 +251,8 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 // inside the dispatcher's transaction. Zero rows or a missing attested scope is a pre-dispatch
 // denial (capability evidence, arch §10.2/I07).
 func (a *adapter) loadSecretFor(provider string) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {
-	page := pageSecretLoader(a.keys, a.v2, provider, requiredScopes[provider], `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
+	return pageSecretLoader(a.keys, a.v2, provider, requiredScopes[provider], `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
 			FROM integration.load_meta_page_token($1::uuid,$2::bigint,$3::bytea)`)
-	if a.send == nil {
-		return page
-	}
-	// A manual private reply carries a sealed dispatch copy beside the token; the automatic claim-link reply has none (raw token).
-	return a.send.withDispatchCopy(page)
 }
 
 // pageSecretLoader shares custody/opening, while each route supplies its own

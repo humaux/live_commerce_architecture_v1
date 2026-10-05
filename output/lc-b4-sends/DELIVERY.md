@@ -1,0 +1,21 @@
+# lc-b4-sends delivery
+- Branch/commit: unit/lc-b4-sends (see final SHA in the integrator hand-off)   Base: r3/integration 0c1dce66   Model: Claude Sonnet 5.5 (fallback after the DeepSeek run)
+- Summary: migration 0128 (`migrations/0128_lc_b4_sends.sql`) = tables `inbox.outbound_messages|send_secrets|bundle_peers`, `claims.bundles.link_pending_manual` (+clear trigger),
+  producers `inbox.plan_dm|plan_manual_private_reply|plan_public_reply`, `live.plan_offer_recommend` (P2-4 signatures, advisory locks first, PT409/PT422/PT429), worker side
+  `inbox.check_send|load_send_secret|finish_send|dm_window_for_bundle`, auto-reply deltas (`claim_reply_plannable` reply_used + flag, `plan_claim_reply`/`claims.check_meta_reply`
+  human_takeover/takeover_changed), read side `social.conversation_heads`, `inbox.read_outbound|link_pending_bundles|link_pending_for|store_origins`, secret-wipe trigger.
+  Go: `internal/inbox/send*.go` (planners, text rules, display-copy seal, A9 merge), `internal/integrations/metareply/{send_dm.go,manual_reply.go,routes.go}` (DM/public/recommend routes via
+  `SendRoutes`, manual private reply on the existing route), `internal/httpapi/inbox_send.go` (A4/A5/A6/A12; A8/A13 deltas in inbox.go), pagetoken `SealSend` / pageopen `OpenSend`
+  (HPKE info `meta-send/v1`), cmd/api `enableInboxSend`, cmd/claims-worker `SendRoutes`, `test-local.sh --inbox-send`.
+- Contract/interface changes: none to the frozen text. Deviations (all in the 0128 header): template id is text/bigint (LC-B5 ids are strings); mdm:/mpub:/mrec: keys derive from the operation id (producer
+  signature has no Idempotency-Key; HTTP replay is absorbed by command.Run); the mpr: unique index is unchanged (it already admits `:m1`); the auto claim request keeps `origin` = storefront URL and gets
+  `origin_kind:"auto"` + `conversation_known` + `app_id` (the contract's `origin:"auto"` would collide with the existing key); `send_secrets` has no key id (the ring is tried, info binds tenant/store/operation).
+- Tests: `bash scripts/dev/test-focused.sh 'Claim|Meta|Inbox|Template|LiveConsole|LCN|T06'` (result below); new real-PG gates `tests/foundation/live_console_send_{,quota_,takeover_}test.go`
+  (ACL, LCN06 x3, LCN07 quota/confirm/concurrent/100-iteration auto-manual race, LCN08, LCN10, LCN11 x3 modes, LCN13 display-copy half + A9/A8/A13); DB-free unit tests in internal/inbox, metareply, httpapi.
+- Evidence class: MOCK (REAL_PG + loopback fake Graph + real River dispatcher on the claims-worker authority pool).
+- Risks: see Integrator to-do (two W1-01B/0125 defects fixed in 0128). Outbound rows older than the first inbound page are not merged on older A9 pages (ponytail in read.go).
+- NOT_RUN / BLOCKED: LCN13 retention halves (C5/C5c/C7/RD4/C4 redaction of the new tables: retention unit LC-R1/U08); child-process kill after send for the send routes (the MCI07 harness covers the auto route); A4 over real HTTP with the live CommentStream/bridge (facts mapping unit-tested with a fake, planner tested in real PG); LCN14 browser, LCN15/16 LIVE; STALE_BINDING path exercised through the wipe trigger only; A13 claims/orders/auto_reply population (not an LC-B4 delta).
+- Integrator to-do: assign/confirm 0128; BFF allowlist += A4/A5/A6/A12 (+ A8/A9/A13 shape additions: display_name, bundle-only items, send_state, link_pending_manual); no new env var (API reuses the existing Page HPKE public ring);
+  http error table gained the LC-B3/B4 codes (they were being rewritten to "internal"); retention unit must add C5/C5c/C7/C3/RD4 rows for outbound_messages/send_secrets/bundle_peers and the C4 widening (A1.4);
+  `external_operation_authority_test` count unchanged (no new integration-schema function: only CREATE OR REPLACE of existing ones).
+  0125 defects fixed at the end of 0128 (move into 0125 if preferred): missing `GRANT DELETE ON integration.binding_capabilities` (every meta_connections insert failed 42501) and `gen_random_bytes` (pgcrypto absent) in `claim_meta_health_probes`.

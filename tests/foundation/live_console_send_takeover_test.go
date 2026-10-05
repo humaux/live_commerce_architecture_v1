@@ -63,6 +63,7 @@ func TestLiveConsoleSendLCN10Takeover(t *testing.T) {
 	e := lbSetup(t)
 	e.onlySource(t, "facebook")
 	f := e.h.f
+	takeoverBase := e.auditCount(t, "inbox.takeover") // the audit table is shared by the whole package run
 
 	// Implicit takeover on the first DM only; a second DM by the same staff member keeps the generation.
 	conv := e.postDM(t, mciDigits(15), "hello", time.Now())
@@ -74,7 +75,7 @@ func TestLiveConsoleSendLCN10Takeover(t *testing.T) {
 	if err != nil || *second.TakeoverGeneration != 1 {
 		t.Fatalf("second DM by the assignee must keep the generation: %+v %v", second, err)
 	}
-	if n := e.auditCount(t, "inbox.takeover"); n != 1 {
+	if n := e.auditCount(t, "inbox.takeover") - takeoverBase; n != 1 {
 		t.Fatalf("takeover audit rows=%d, want exactly the first DM", n)
 	}
 	if _, err := e.sendDM(conv, "three", 0); planCode(err) != "takeover_changed" {

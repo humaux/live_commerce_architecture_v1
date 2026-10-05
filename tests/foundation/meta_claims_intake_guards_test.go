@@ -290,6 +290,18 @@ func mciSecretClaimAllowed(s mciSrc, fn *ast.FuncDecl, loads, loadsAds, cvsSQL b
 	if fn.Name.Name == "pageSecretLoader" {
 		return mciPageLoaderBody(s, fn)
 	}
+	// LC-B4 (live-console-v1 §3.4/§4.3): the manual-send route's constant Page-token loader, the dispatch-copy wrapper whose only SQL is the
+	// lease-fenced inbox.load_send_secret, and the Finish hook whose only SQL is the lease-fenced inbox.finish_send / evidence mark.
+	if s.path == "internal/integrations/metareply/send_dm.go" {
+		switch fn.Name.Name {
+		case "loadSecretFor":
+			return loads
+		case "withDispatchCopy":
+			return strings.Count(s.text, "inbox.load_send_secret(") == 1
+		case "finish":
+			return strings.Count(s.text, "SELECT inbox.finish_send(") == 1
+		}
+	}
 	return (s.path == "internal/integrations/metareply/routes.go" && fn.Name.Name == "loadSecretFor" && loads) ||
 		(s.path == "internal/integrations/meta_ads/routes.go" && fn.Name.Name == "LoadSecret" && loadsAds) ||
 		(s.path == "internal/attribution/capiroute/route.go" && fn.Name.Name == "loadSecret" && loadsAds) ||

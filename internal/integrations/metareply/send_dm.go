@@ -134,7 +134,7 @@ func (a *sendAdapter) routes() []core.DispatchRoute {
 		out = append(out, core.DispatchRoute{
 			Provider: provider, Action: action, Purpose: "service",
 			Check:              a.checkRoute,
-			LoadSecret:         a.loadSecretFor(provider, scopes),
+			LoadSecret:         a.withDispatchCopy(a.loadSecretFor(provider, scopes)),
 			DispatchWithSecret: a.dispatch,
 			Reconcile:          a.reconcile,
 			Finish:             a.finish,
@@ -205,9 +205,8 @@ func (a *sendAdapter) checkRoute(ctx context.Context, req core.DispatchRequest) 
 // (inbox.load_send_secret, same fence), opens it with the HPKE private ring and packs both in one Secret. An operation without a
 // dispatch copy (the automatic claim-link reply) gets the raw token, exactly as before.
 func (a *sendAdapter) loadSecretFor(provider string, scopes []string) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {
-	page := pageSecretLoader(a.keys, a.v2, provider, scopes, `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
+	return pageSecretLoader(a.keys, a.v2, provider, scopes, `SELECT tenant_id::text,store_id::text,binding_id::text,provider,asset_id,version,key_id,nonce,ciphertext,scopes_attested
 			FROM integration.load_meta_page_token($1::uuid,$2::bigint,$3::bytea)`)
-	return a.withDispatchCopy(page)
 }
 
 func (a *sendAdapter) withDispatchCopy(page func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error)) func(context.Context, pgx.Tx, core.SecretClaim) (core.Secret, error) {

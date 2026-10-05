@@ -61,22 +61,7 @@ func registerInboxSendRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.
 			}
 			inboxSendScoped(pool, "inbox:reply", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 				session, ref := r.PathValue("session_id"), r.PathValue("comment_ref")
-				facts := func(ctx context.Context) (time.Time, error) {
-					f, err := cs.Facts(ctx, tx, s, bearerToken(r), session, ref)
-					switch {
-					case errors.Is(err, live.ErrFactsUnavailable):
-						return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "comment_facts_unavailable"}
-					case err != nil:
-						return time.Time{}, err
-					case !f.Found:
-						return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "comment_unknown"}
-					case f.IsPage:
-						return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "page_comment"}
-					case f.IsReply:
-						return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "reply_comment_unsupported"}
-					}
-					return f.CreatedAt, nil
-				}
+				facts := privateReplyFacts(cs, tx, s, bearerToken(r), session, ref)
 				return svc.SendPrivateReply(ctx, tx, s, r.Header.Get("Idempotency-Key"), session, ref, in, facts)
 			})(w, r)
 		}))
@@ -109,6 +94,34 @@ func registerInboxSendRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.
 	for _, path := range []string{liveBase + "/{session_id}/comments/{comment_ref}/private-reply", liveBase + "/{session_id}/comments/{comment_ref}/public-reply",
 		liveBase + "/{session_id}/claims/offers/{offer_id}/recommend"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
+	}
+}
+
+// commentFacts is the part of live.CommentStream the A4 handler needs (a seam for the DB-free mapping test).
+type commentFacts interface {
+	Facts(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID, commentRef string) (live.CommentFacts, error)
+}
+
+// privateReplyFacts returns the comment-facts lookup of A4 (live-console-v1 §3.3 row 2, Amendment 1 A1.2): the comment's created_at when it
+// can receive a manual private reply, else the fixed refusal — comment_facts_unavailable (neither the bridge nor the IG webhook copy can confirm
+// time and author), comment_unknown (not a comment of this session's source), page_comment (the Page's own), reply_comment_unsupported (a reply
+// to a comment). Other lookup errors (bridge down, no source) pass through to the live-stream classifier.
+func privateReplyFacts(f commentFacts, tx pgx.Tx, s platform.Scope, token, session, ref string) func(context.Context) (time.Time, error) {
+	return func(ctx context.Context) (time.Time, error) {
+		facts, err := f.Facts(ctx, tx, s, token, session, ref)
+		switch {
+		case errors.Is(err, live.ErrFactsUnavailable):
+			return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "comment_facts_unavailable"}
+		case err != nil:
+			return time.Time{}, err
+		case !facts.Found:
+			return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "comment_unknown"}
+		case facts.IsPage:
+			return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "page_comment"}
+		case facts.IsReply:
+			return time.Time{}, &inbox.SendError{Status: http.StatusConflict, Code: "reply_comment_unsupported"}
+		}
+		return facts.CreatedAt, nil
 	}
 }
 

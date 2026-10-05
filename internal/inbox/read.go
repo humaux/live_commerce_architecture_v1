@@ -14,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"livecommerce/internal/command"
 )
@@ -39,9 +40,20 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 	defer rows.Close()
 	for rows.Next() {
 		var item ConversationItem
-		if err := rows.Scan(&item.ConversationID, &item.Platform, &item.LastAt, &item.Unread, &item.Unreplied,
-			&item.Mode, &item.Assignee, &item.WindowOpenUntil, &item.LinkedCustomerID); err != nil {
+		// A conversation row without an inbound message has no window (NULL or -infinity last_at / window_open_until); it renders with zero times
+		// instead of failing the whole page.
+		var lastAt, windowUntil pgtype.Timestamptz
+		var unread, unreplied *bool
+		if err := rows.Scan(&item.ConversationID, &item.Platform, &lastAt, &unread, &unreplied,
+			&item.Mode, &item.Assignee, &windowUntil, &item.LinkedCustomerID); err != nil {
 			return out, databaseError(err)
+		}
+		item.Unread, item.Unreplied = unread != nil && *unread, unreplied != nil && *unreplied
+		if lastAt.Valid && lastAt.InfinityModifier == pgtype.Finite {
+			item.LastAt = lastAt.Time
+		}
+		if windowUntil.Valid && windowUntil.InfinityModifier == pgtype.Finite {
+			item.WindowOpenUntil = windowUntil.Time
 		}
 		out.Items = append(out.Items, item)
 	}

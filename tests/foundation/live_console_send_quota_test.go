@@ -149,18 +149,19 @@ func TestLiveConsoleSendLCN07ConfirmGateAndLinkPending(t *testing.T) {
 	e := lbSetup(t)
 	e.onlySource(t, "facebook")
 	ref := lbRef()
+	preemptBase := e.auditCount(t, "inbox.private_reply.preempt_confirmed")
 	body := "gate-" + t04Tag()
 	if _, err := e.manual(ref, body, time.Now(), false); planCode(err) != "auto_pending_confirm" {
 		t.Fatalf("inside 120 s without the flag: %v", err)
 	}
-	if e.auditCount(t, "inbox.private_reply.preempt_confirmed") != 0 {
+	if e.auditCount(t, "inbox.private_reply.preempt_confirmed") != preemptBase {
 		t.Fatal("preempt audit written for a refused request")
 	}
 	out, err := e.manual(ref, body, time.Now(), true)
 	if err != nil {
 		t.Fatalf("confirmed manual reply: %v", err)
 	}
-	if e.auditCount(t, "inbox.private_reply.preempt_confirmed") != 1 {
+	if e.auditCount(t, "inbox.private_reply.preempt_confirmed") != preemptBase+1 {
 		t.Fatal("confirmed pre-emption was not audited")
 	}
 
@@ -377,6 +378,7 @@ func TestLiveConsoleSendLCN08PublicReply(t *testing.T) {
 	e := lbSetup(t)
 	e.onlySource(t, "facebook")
 	ref := lbRef()
+	takeoverBase := e.auditCount(t, "inbox.takeover")
 	for name, text := range map[string]string{
 		"url": "https://shop.example.com/x", "fullwidth www": "ｗｗｗ．ａｂｃ．ｃｏｍ", "fullwidth phone": "０９１２３４５６７８",
 		"dashed phone": "0912-345-678", "spaced line": "l i n e", "zero width": "w​ww.ab​c.com", "t.me": "t.me/abc",
@@ -387,7 +389,7 @@ func TestLiveConsoleSendLCN08PublicReply(t *testing.T) {
 			t.Fatalf("%s: %v", name, err)
 		}
 	}
-	if n := miCount(t, e.h.f.owner, `SELECT count(*) FROM integration.operations WHERE action='meta.public_reply' AND tenant_id=$1`, e.h.f.tenantA); n != 0 {
+	if n := miCount(t, e.h.f.owner, `SELECT count(*) FROM integration.operations WHERE action='meta.public_reply' AND tenant_id=$1 AND created_at>clock_timestamp()-interval '10 minutes' AND request->>'comment_ref'=$2`, e.h.f.tenantA, ref); n != 0 {
 		t.Fatalf("a refused public reply left %d operations", n)
 	}
 	out, err := e.publicReply(ref, "謝謝支持，歡迎私訊")
@@ -401,7 +403,7 @@ func TestLiveConsoleSendLCN08PublicReply(t *testing.T) {
 		t.Fatalf("public reply traffic: %+v", reqs)
 	}
 	// A public reply never takes a conversation over (§3.6): no state row changed, no audit takeover.
-	if n := e.auditCount(t, "inbox.takeover"); n != 0 {
+	if n := e.auditCount(t, "inbox.takeover") - takeoverBase; n != 0 {
 		t.Fatalf("takeover audit rows=%d after a public reply", n)
 	}
 

@@ -211,6 +211,12 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 				r, ok := parents[call].(*ast.ReturnStmt)
 				valid = valid && ok && len(r.Results) == 1 && r.Results[0] == call && len(owner.Body.List) == 1 && parents[r] == owner.Body
 				args, loader = []string{"a.keys", "a.v2", "provider", "requiredScopes[provider]"}, "integration.load_meta_page_token"
+			case s.path == "internal/integrations/metareply/send_dm.go" && owner.Name.Name == "loadSecretFor":
+				// LC-B4 (live-console-v1 §4.3): the manual-send routes' constant LoadSecret callsite is the same lease-fenced Page-token loader as
+				// routes.go; the dispatch-copy attachment (inbox.load_send_secret) wraps it OUTSIDE this function (withDispatchCopy).
+				r, ok := parents[call].(*ast.ReturnStmt)
+				valid = valid && ok && len(r.Results) == 1 && r.Results[0] == call && len(owner.Body.List) == 1 && parents[r] == owner.Body
+				args, loader = []string{"a.keys", "a.v2", "provider", "scopes"}, "integration.load_meta_page_token"
 			case (s.path == "internal/integrations/metareply/audience.go" && owner.Name.Name == "newAudienceRoute") ||
 				(s.path == "internal/integrations/metareply/live_videos.go" && owner.Name.Name == "newLiveVideoRoute"):
 				// 0118 (A5-3, live-console-v1 §6.2) adds the live-videos route as the third constant LoadSecret callsite, the same
@@ -243,8 +249,9 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 			return true
 		})
 	}
-	return valid && decls == 1 && calls == 3 &&
+	return valid && decls == 1 && calls == 4 &&
 		owners["internal/integrations/metareply/routes.go:loadSecretFor"] == 1 &&
+		owners["internal/integrations/metareply/send_dm.go:loadSecretFor"] == 1 &&
 		owners["internal/integrations/metareply/audience.go:newAudienceRoute"] == 1 &&
 		owners["internal/integrations/metareply/live_videos.go:newLiveVideoRoute"] == 1
 }
@@ -317,8 +324,10 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	const audience = "internal/integrations/metareply/audience.go"
 	// 0118 (A5-3): the live-videos route is the third contracted constant callsite, so it joins the parsed source set.
 	const liveVideos = "internal/integrations/metareply/live_videos.go"
+	// LC-B4: the manual-send routes' constant callsite (send_dm.go loadSecretFor) is the fourth.
+	const sendRoutes = "internal/integrations/metareply/send_dm.go"
 	texts := map[string]string{}
-	for _, path := range []string{routes, audience, liveVideos} {
+	for _, path := range []string{routes, audience, liveVideos, sendRoutes} {
 		raw, err := os.ReadFile(filepath.Join("../..", path))
 		if err != nil {
 			t.Fatal(err)
@@ -350,7 +359,7 @@ func TestMetaClaimsMCI10SharedPageLoaderNegatives(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var srcs []mciSrc
-			for _, path := range []string{routes, audience, liveVideos} {
+			for _, path := range []string{routes, audience, liveVideos, sendRoutes} {
 				text := texts[path]
 				if path == tc.path && tc.from != "" {
 					text = mciReplace(t, text, tc.from, tc.to)
