@@ -19,6 +19,7 @@
 6. **Deliver** — commit (small, descriptive messages) and write `output/<unit>/DELIVERY.md` (template in §5).
 - A service nobody constructs is dead code: wire every new service/route/worker into its process (`cmd/api`, `cmd/claims-worker`, …) and prove it with a test that builds that process's handler.
 - If you add or change HTTP routes, add a DB-free test that builds the full router (`httpapi.NewHandler` / the cmd mux) so a route conflict fails before PostgreSQL is needed.
+- Shared machine: PG tests take a machine-wide lock (`scripts/dev/test-*.sh`; waiting is normal). Never `pkill`/`kill` by pattern — stop only the PIDs you started. Merge the current `r3/integration` before your first gate run so your scripts carry the current lock.
 - Never delete or weaken a failing test, threshold or fixture to pass. Same blocker: at most two targeted fixes, then stop and write BLOCKED.
 
 ## 3. Comments and dependency documentation (enforced by `scripts/dev/check-headers.sh`)

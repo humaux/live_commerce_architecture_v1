@@ -287,6 +287,18 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.check_meta_live_videos(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_meta_live_videos_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.finish_meta_live_videos(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- LC-B2 (migration 0123): live-console comment poller loads the Page token under its own lease; claims worker only.
+	 ('integration.load_meta_page_token_for_poll(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- meta-connection-health-v1 (migration 0125): trigger has no EXECUTE grantee; the merchant reads the snapshot and
+	 -- requests a recheck (runtime_execute); probe claim/record and capability evidence belong to the claims worker.
+	 ('integration.meta_health_on_connection()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.meta_health_snapshot()'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.request_meta_health_recheck(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.claim_meta_health_probes(integer)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.record_meta_health(text,bigint,bytea,jsonb)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.report_capability_failure(uuid,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.mark_capability_evidence(uuid,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.binding_capability_state(uuid,uuid,uuid,text,text[])'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 -- R11: report definer-only current Page-grant boolean. Exact commerce_ads_writer
 	 -- EXECUTE is pinned by MA02; no runtime/worker/token-custody authority is added.
 	 ('integration.meta_audience_authorized(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
@@ -308,7 +320,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 76 || !safe {
+	if err != nil || functions != 85 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

@@ -438,8 +438,10 @@ func TestMetaHealthProbeDerivesAndRecords(t *testing.T) {
 	wantOK := mhAll("ok", "ok")
 	for _, p := range []mhPage{v2, v1} {
 		m.assertStates(t, p.fbBinding, wantOK)
-		m.assertStates(t, p.igBinding, wantOK)
-		// IG dm_session has no IG-scoped perm to grant → ok by app-level assume (Derive rule 9).
+		wantIG := mhAll("ok", "ok")
+		wantIG["dm_session"] = [2]string{"ok", "ok_app_level_assumed"} // IG dm_session has no IG-scoped perm to grant → ok by app-level assume (§4.3 rule 6)
+		m.assertStates(t, p.igBinding, wantIG)
+		// Same fact read back through the row itself (Derive rule 9).
 		if ig := m.capRows(t, p.igBinding)["dm_session"]; ig.reason != "ok_app_level_assumed" {
 			t.Fatalf("IG dm_session reason %q, want ok_app_level_assumed", ig.reason)
 		}
@@ -654,7 +656,7 @@ func TestMetaHealthTokenNeverLeaks(t *testing.T) {
 		"notify.merchant_alerts",
 		"ops.audit_events",
 	} {
-		if n := miCount(t, m.f.owner, `SELECT count(*) FROM `+tbl+` WHERE to_jsonb(`+tbl+`)::text LIKE '%'||$1||'%'`, p.token); n != 0 {
+		if n := miCount(t, m.f.owner, `SELECT count(*) FROM `+tbl+` x WHERE to_jsonb(x)::text LIKE '%'||$1||'%'`, p.token); n != 0 {
 			t.Fatalf("sentinel token persisted in %s", tbl)
 		}
 	}

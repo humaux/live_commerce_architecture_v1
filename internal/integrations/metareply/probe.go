@@ -12,6 +12,9 @@
 // on return (I11); at most one sweep per fleet via UniqueOpts{ByArgs}; the whole probe is bounded below the 60 s lease and
 // River's 1-minute rescue window; nothing from a response body is logged — only page id, call #, status, code and duration.
 // Status: MOCK (REAL_PG + fake Graph; LIVE probe is MCH12, NOT_RUN).
+// External: graph.facebook.com GET /{version}/{page-id}?fields=id (P1), /me/permissions (P2), /{page-id}/subscribed_apps (P3), all read-only;
+//   https://developers.facebook.com/docs/graph-api/reference/page/ , https://developers.facebook.com/docs/graph-api/reference/user/permissions/
+//   and https://developers.facebook.com/docs/graph-api/reference/page/subscribed_apps/ (retrieved 2026-10-06).
 
 package metareply
 

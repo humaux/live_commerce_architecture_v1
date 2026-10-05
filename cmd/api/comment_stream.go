@@ -3,7 +3,7 @@
 // optional Meta payload keyring for the Instagram webhook fallback (social.read_comment_events → the API
 // decrypts, §2.4). This file must never import the page-token private keyring: the API only dials the
 // bridge and decrypts webhook payloads; the claims-worker owns the Page token.
-// Depends on: metareply.NewBridgeClient (bridge.go), meta.LoadPayloadKeyring, live.NewCommentStream (stream.go).
+// Depends on: metabridge.NewBridgeClient (client.go), meta.LoadPayloadKeyring, live.NewCommentStream (stream.go).
 // Variables: COMMERCE_CLAIMS_CONSOLE_BASE_URL (empty = console off), COMMERCE_CLAIMS_BRIDGE_TOKEN
 // (std base64, 32 bytes, shared with claims-worker), optional COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID +
 // COMMERCE_META_PAYLOAD_KEYS_JSON (the payload keyring; both-or-neither for the IG fallback).
@@ -15,7 +15,7 @@ import (
 	"errors"
 
 	"livecommerce/internal/integrations/meta"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/live"
 )
 
@@ -36,7 +36,7 @@ func buildCommentStream(getenv func(string) string) (*live.CommentStream, error)
 	if err != nil || len(token) != 32 {
 		return nil, errCommentStreamConfig
 	}
-	bridge, err := metareply.NewBridgeClient(baseURL, token)
+	bridge, err := metabridge.NewBridgeClient(baseURL, token)
 	if err != nil {
 		return nil, errCommentStreamConfig
 	}
