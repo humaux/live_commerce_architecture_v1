@@ -1,5 +1,5 @@
 // Purpose: runs the independent K3 adversarial corpus (kwc-v1-adversarial.json) against the
-// exported kwc-v1 grammar entry points (ParseContains, ParseForIngest, Parse).
+// exported kwc-v2 grammar entry points (ParseContainsV2, ParseForIngest, Parse; kwc-v1 stays frozen for replay).
 // Depends on: livecommerce/internal/claims/grammar (pure functions only); encoding/json, os.
 // Used by: go test ./tests/claims/... (DB-free; KCC01 adversarial extension).
 // Invariants: I18 (an empty corpus file is a failure, not a pass); I11 (no comment text is
@@ -60,8 +60,8 @@ func loadAdversarialCorpus(t *testing.T) adversarialCorpus {
 // is silent and the implementation takes the unsafe direction).
 func TestKwcV1AdversarialCorpus(t *testing.T) {
 	corpus := loadAdversarialCorpus(t)
-	if corpus.GrammarVersion != grammar.VersionContains {
-		t.Fatalf("corpus grammar %q != %q", corpus.GrammarVersion, grammar.VersionContains)
+	if corpus.GrammarVersion != grammar.VersionContainsV2 {
+		t.Fatalf("corpus grammar %q != %q", corpus.GrammarVersion, grammar.VersionContainsV2)
 	}
 	if len(corpus.Cases) < 120 {
 		t.Fatalf("adversarial corpus has %d cases (<120, I18: a shrunk corpus is not a pass)", len(corpus.Cases))
@@ -69,9 +69,9 @@ func TestKwcV1AdversarialCorpus(t *testing.T) {
 	byCategory := map[string]int{}
 	for _, c := range corpus.Cases {
 		byCategory[c.Category]++
-		got := grammar.ParseContains(c.Input)
+		got := grammar.ParseContainsV2(c.Input)
 		want := grammar.Result{
-			Version:  grammar.VersionContains,
+			Version:  grammar.VersionContainsV2,
 			Kind:     grammar.Kind(c.Expect.Kind),
 			Keyword:  c.Expect.Keyword,
 			Quantity: c.Expect.Quantity,
@@ -81,11 +81,11 @@ func TestKwcV1AdversarialCorpus(t *testing.T) {
 			continue
 		}
 		if c.Safety == "frozen" {
-			t.Errorf("FROZEN %s ParseContains(%q) = kind=%s keyword=%q qty=%d explicit=%t; want kind=%s keyword=%q qty=%d explicit=%t (%s)",
+			t.Errorf("FROZEN %s ParseContainsV2(%q) = kind=%s keyword=%q qty=%d explicit=%t; want kind=%s keyword=%q qty=%d explicit=%t (%s)",
 				c.ID, c.Input, got.Kind, got.Keyword, got.Quantity, got.Explicit,
 				want.Kind, want.Keyword, want.Quantity, want.Explicit, c.Note)
 		} else {
-			t.Errorf("FINDING %s ParseContains(%q) = kind=%s keyword=%q qty=%d explicit=%t; safe outcome is kind=%s (%s)",
+			t.Errorf("FINDING %s ParseContainsV2(%q) = kind=%s keyword=%q qty=%d explicit=%t; safe outcome is kind=%s (%s)",
 				c.ID, c.Input, got.Kind, got.Keyword, got.Quantity, got.Explicit,
 				want.Kind, c.Note)
 		}
@@ -120,8 +120,8 @@ func TestKwcV1AdversarialParseForIngest(t *testing.T) {
 		if entry.Version == grammar.Version && entry.Kind != grammar.NoMatch {
 			t.Errorf("%s ParseForIngest(%q) produced kw-v1 %s that Parse did not", c.ID, c.Input, entry.Kind)
 		}
-		if entry.Version != grammar.Version && entry.Version != grammar.VersionContains {
-			t.Errorf("%s ParseForIngest(%q) version %q is neither kw-v1 nor kwc-v1", c.ID, c.Input, entry.Version)
+		if entry.Version != grammar.Version && entry.Version != grammar.VersionContainsV2 {
+			t.Errorf("%s ParseForIngest(%q) version %q is neither kw-v1 nor kwc-v2", c.ID, c.Input, entry.Version)
 		}
 		if c.Expect.Kind == string(grammar.NoMatch) && entry.Kind != grammar.NoMatch {
 			t.Errorf("%s ParseForIngest(%q) = %s kw=%q qty=%d: a corpus NO_MATCH became an order candidate at the ingest entry",

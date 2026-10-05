@@ -105,7 +105,7 @@ func TestForIngestAdversarialCorpusCrossCheck(t *testing.T) {
 			}
 			continue
 		}
-		want := Result{Version: VersionContains, Kind: v.Expect.Kind, Keyword: v.Expect.Keyword, Quantity: v.Expect.Quantity, Explicit: v.Expect.Explicit}
+		want := Result{Version: VersionContainsV2, Kind: v.Expect.Kind, Keyword: v.Expect.Keyword, Quantity: v.Expect.Quantity, Explicit: v.Expect.Explicit}
 		if want.Kind == NoMatch {
 			if entry.Kind != NoMatch {
 				t.Errorf("%s ParseForIngest(%q) = %s kw=%q, spec vector says NO_MATCH", v.ID, input, entry.Kind, entry.Keyword)
@@ -180,7 +180,7 @@ func fuzzProperties(t *testing.T, text string) {
 	if exact.Kind == NoMatch && entry.Version == Version && entry.Kind != NoMatch {
 		t.Fatalf("ParseForIngest invented a kw-v1 %s that Parse did not produce", entry.Kind)
 	}
-	if entry.Version != Version && entry.Version != VersionContains {
+	if entry.Version != Version && !IsContainsVersion(entry.Version) {
 		t.Fatalf("unknown version %q", entry.Version)
 	}
 }

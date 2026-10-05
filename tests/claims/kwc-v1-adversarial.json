@@ -1,5 +1,5 @@
 {
-  "grammar_version": "kwc-v1",
+  "grammar_version": "kwc-v2",
   "source": "k3-a7-adversarial (Kimi K3, independent adversarial corpus for the kwc-v1 restricted contains grammar, contract live-keyword-claims-v1.md §2.5 and docs/delivery/units/live-a7-contains-match.md). Written without reading the implementation diff first; expectations derived from the frozen §2.1/§2.2 rules and the frozen §2.5 negation/question tables.",
   "consumers": ["tests/claims/kwc_adversarial_test.go"],
   "format": {

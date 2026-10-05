@@ -99,6 +99,9 @@ func TestLiveA7ContainsMode(t *testing.T) {
 	// 4. events: kwc-v1 only ever lands in a CONTAINS window (the new cross-check), and the
 	//    QUANTITY_REQUIRED reason now also covers CONTAINS (still explicit=false only).
 	probe("", "kwc-v1 CONTAINS QUANTITY_REQUIRED", nil)
+	probe("", "kwc-v2 CONTAINS QUANTITY_REQUIRED (migration 0120)", evRow{"grammar_version": "kwc-v2"})
+	probe("23514", "kwc-v2 in EXACT", evRow{"grammar_version": "kwc-v2", "match_mode": "EXACT"})
+	probe("23514", "kwc-v3 grammar", evRow{"grammar_version": "kwc-v3"})
 	probe("23514", "kwc-v1 in EXACT", evRow{"match_mode": "EXACT"})
 	probe("23514", "kwc-v1 in KEYWORD_QTY_ONLY", evRow{"match_mode": "KEYWORD_QTY_ONLY"})
 	probe("23514", "kwc-v1 QUANTITY_REQUIRED explicit", evRow{"explicit_quantity": true})
@@ -114,7 +117,7 @@ func TestLiveA7ContainsMode(t *testing.T) {
 		WHERE conrelid='claims.meta_intake'::regclass AND conname='meta_intake_grammar_version_check'`).Scan(&intakeCheck); err != nil {
 		t.Fatalf("read meta_intake grammar_version CHECK: %v", err)
 	}
-	if !strings.Contains(intakeCheck, "'kwc-v1'") {
+	if !strings.Contains(intakeCheck, "'kwc-v1'") || !strings.Contains(intakeCheck, "'kwc-v2'") {
 		t.Fatalf("meta_intake grammar_version CHECK not widened: %s", intakeCheck)
 	}
 
@@ -129,6 +132,9 @@ func TestLiveA7ContainsMode(t *testing.T) {
 	}
 	if err := callIntake("kwc-v1"); err != nil {
 		t.Fatalf("insert_meta_intake kwc-v1 (no source) returned error, want NULL: %v", err)
+	}
+	if err := callIntake("kwc-v2"); err != nil {
+		t.Fatalf("insert_meta_intake kwc-v2 (no source) returned error, want NULL: %v", err)
 	}
 	if err := callIntake("kw-v2"); sqlState(err) != "22023" {
 		t.Fatalf("insert_meta_intake kw-v2 sqlstate=%q (%v), want 22023", sqlState(err), err)
