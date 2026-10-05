@@ -121,7 +121,7 @@ export async function assertProductEditorReservedLayout(
     if (capture) await capture(id);
   }
   if (page.viewportSize()!.width > 900) {
-    const media = readiness.locator('[aria-controls="media"]').first();
+    const media = form.locator('.pe-readiness[aria-controls="media"]').first();
     await media.click();
     await expect(media).toHaveAttribute("aria-current", "location");
     await expect.poll(() => pane.locator("#media").evaluate((element) => element.contains(document.activeElement))).toBe(true);
