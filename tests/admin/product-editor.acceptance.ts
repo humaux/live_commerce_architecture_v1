@@ -421,7 +421,7 @@ export function registerProductEditorAcceptance() {
         .click();
       await expect(page.getByTestId("product-batch-results")).toBeVisible();
       await page.reload();
-      await expect(page.locator(".product-status-draft")).toHaveCount(3);
+      await expect(page.locator(".product-status").filter({ hasText: /^Draft$/ })).toHaveCount(3);
       await expect(page.getByTestId("products-tab-active")).toHaveText(
         "Active 0",
       );

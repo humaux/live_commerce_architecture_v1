@@ -185,6 +185,7 @@ export function registerProductReviewAcceptance() {
         exact: true,
       });
       await expect(retry).toBeVisible();
+      if (action !== "copy") await expect(retry).toBeInViewport();
       const fenceKey =
         action === "copy"
           ? `catalog-command-pending:${store()}`
@@ -209,12 +210,14 @@ export function registerProductReviewAcceptance() {
           ? productEditorCopy.en.listRecoveryRequired
           : productEditorCopy.en.recoveryRequired;
       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
+      if (action !== "copy") await expect(page.getByText(recovery, { exact: true })).toBeInViewport();
       await expect(retry).toHaveCount(0);
       expect(
         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),
       ).toBe(originalKey);
       await page.reload();
       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
+      if (action !== "copy") await expect(page.getByText(recovery, { exact: true })).toBeInViewport();
       await expect(trigger()).toBeDisabled();
       expect(
         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),
