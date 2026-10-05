@@ -1,10 +1,6 @@
-// Purpose: the API process entrypoint. run loads the per-surface configuration, opens the single shared
-// database pool, builds each handler and nil-able service (identity, buyer, meta, Stripe webhook, billing,
-// accounts, studio planner, refund jobs, ads, meta connect and the live-console inbox read side) and composes
-// the httpapi.Options the authenticated merchant/admin router is built from.
-// Depends on: the load*/build*/new* builders in this package and livecommerce/internal/httpapi.
-// Used by: the api binary (main).
-
+// Purpose: API process assembly — load each feature's config (identity, accounts, buyer/hosted payment, Meta/Stripe webhooks, Studio, claims, refunds, CVS, live-console inbox read side), open the scoped pools, build the handlers and mount them on one listener. Holds no business rule and never starts a worker or dispatches a provider call.
+// Depends on: platform.OpenPool, httpapi.NewHandler, the cmd/api feature builders (accounts/buyer/meta/stripe/studio/claims/merchant_refund/merchant_ads/merchant_meta_connect/cvs/tlsask/store_domain_nonce), payments.ProfileEnvironment.
+// Used by: the deployed API binary (LISTEN_ADDR), cmd/api *_test.go.
 package main
 
 import (
@@ -118,6 +114,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	liveFlowJobs, err := buildLiveFlowJobs(pool, studioConfig.enabled)
+	if err != nil {
+		return err
+	}
 	refundJobs, err := newMerchantRefundJobs(pool)
 	if err != nil {
 		return err
@@ -150,6 +150,7 @@ func run() error {
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
 		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Inbox: inboxService, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		LiveFlowJobs:    liveFlowJobs,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)
 	if err != nil {

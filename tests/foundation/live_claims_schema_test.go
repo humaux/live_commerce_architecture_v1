@@ -334,7 +334,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// commerce_auth gets EXECUTE, never consumption-table privileges.
 				"claims.order_live_sources",
 				// 0113 R6: exact comment-to-post provenance, checkout definer only.
-				"claims.order_comment_posts", "claims.capture_order_origins", "claims.attribution_session_orders", "claims.attribution_funnel", "claims.attribution_sources"})
+				"claims.order_comment_posts", "claims.capture_order_origins", "claims.attribution_session_orders", "claims.attribution_funnel", "claims.attribution_sources",
+				// 0118 (A5): the session-results attribution seams it owns (EXECUTE: commerce_auth only).
+				"claims.session_orders", "claims.order_session_counts"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -401,6 +403,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"consume_live_prices": {args: "p_order uuid", result: "integer", volatility: "v", acl: "commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_checkout_runtime"},
 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			// 0118 (A5): session attribution seams, read only through identity.read_live_session_results.
+			"session_orders": {args: "p_tenant uuid, p_store uuid, p_sessions uuid[]", result: "TABLE(session_id uuid, order_id uuid)",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			"order_session_counts": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, sessions bigint)",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
 			// 0113 frozen domain seams: exact signatures and ACLs, never wildcard caller exclusions.
 			"capture_order_origins": {args: "p_tenant uuid, p_store uuid, p_owner uuid, p_order uuid, p_origins jsonb", result: "void", volatility: "v",
@@ -470,8 +477,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// live.claim_windows interval trigger function (§2, §4).
 		// 0110 adds exactly order_live_sources, owned by the domain rather than auth.
 		// 0113 adds exactly five domain-owned attribution functions.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 21 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-one functions (previous sixteen + five 0113 domain seams)", n)
+		// 0118 adds exactly two attribution functions (session_orders, order_session_counts).
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 23 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-three functions (previous twenty-one + two 0118 attribution seams)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -482,7 +490,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       -- 0105 (R4S-01): checkout.Begin consumes the claimed quantity on the same pool
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
 			       -- 0110 ACL ruling: authenticated merchant projection only; not runtime-callable.
-			       OR (r.rolname='commerce_auth' AND p.proname='order_live_sources')
+			       -- 0118 (A5): the two attribution seams keep the same commerce_auth-only shape.
+			       OR (r.rolname='commerce_auth' AND p.proname IN ('order_live_sources','session_orders','order_session_counts'))
 			       -- 0113: exact internal checkout/ads/media/integration capabilities, no raw table rights.
 			       OR (r.rolname='commerce_checkout_writer' AND p.proname IN ('capture_order_origins','order_comment_posts','attribution_session_orders'))
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))

@@ -4,7 +4,7 @@
 > unit-specific instructions AFTER it, never inside it. Changing this file invalidates every cached prefix — change it rarely.
 
 ## 1. Who you are and the hard limits
-- You implement ONE unit in your own git worktree/branch. The integrator (Claude Opus) reviews, merges and deploys. You never merge, push or deploy.
+- You implement ONE unit in your own git worktree/branch. COMMIT your work on that branch (small commits); "never merge/push" does not mean "never commit". The integrator (Claude Opus) reviews, merges and deploys. You never merge, push or deploy.
 - Roles (owner rule): DeepSeek = backend only (Go/SQL/migrations/contracts). Codex = all UI under `apps/`. Kimi K3 = independent tests and adversarial review. Claude Sonnet = review and fallback.
 - Read first, in this order: `AGENTS.md` → `docs/delivery/PROCESS.md` → `contracts/invariants.json` → your unit brief in `docs/delivery/units/` (its "Integrator 裁决" section overrides the body) → only the contract sections the brief names.
 - Never: production hosts, real money, live keys, real buyer PII, deleting user data, editing `go.mod/go.sum`, OpenAPI shared schema, pnpm lockfiles or migration numbers you were not given (write what you need in DELIVERY.md instead).
@@ -17,6 +17,7 @@
 4. **Green** — implement the smallest change that passes. No speculative abstractions.
 5. **Self-check** — run the gate commands the brief lists plus `bash scripts/dev/check-gates.sh` (includes the header ratchet). Save logs under `output/<unit>/`.
 6. **Deliver** — commit (small, descriptive messages) and write `output/<unit>/DELIVERY.md` (template in §5).
+- If you add or change HTTP routes, add a DB-free test that builds the full router (`httpapi.NewHandler` / the cmd mux) so a route conflict fails before PostgreSQL is needed.
 - Never delete or weaken a failing test, threshold or fixture to pass. Same blocker: at most two targeted fixes, then stop and write BLOCKED.
 
 ## 3. Comments and dependency documentation (enforced by `scripts/dev/check-headers.sh`)
