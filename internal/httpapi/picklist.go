@@ -185,8 +185,14 @@ func picklistClassify(err error) (int, string) {
 // writeCarrierExport sends the CSV: attachment, non-cacheable, UTF-8 BOM already in Body. Nothing is
 // stored, logged or cached (MD9).
 func writeCarrierExport(w http.ResponseWriter, store, template string, export merchantorders.CarrierExportFile, now time.Time) {
+	// The scoped route already guarantees a canonical store id, but never slice past the bound on a
+	// short (or empty) value — the filename prefix is cosmetic and must not panic (P2-11).
+	prefix := store
+	if len(prefix) > 8 {
+		prefix = prefix[:8]
+	}
 	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-	w.Header().Set("Content-Disposition", `attachment; filename="`+template+`-`+store[:8]+`-`+now.UTC().Format("200601021504")+`.csv"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="`+template+`-`+prefix+`-`+now.UTC().Format("200601021504")+`.csv"`)
 	w.Header().Set("Cache-Control", "no-store, private")
 	w.Header().Set("Content-Length", strconv.Itoa(len(export.Body)))
 	w.WriteHeader(http.StatusOK)

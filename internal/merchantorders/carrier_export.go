@@ -49,7 +49,7 @@ func CarrierExport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	if err := validSelection(in); err != nil {
 		return CarrierExportFile{}, err
 	}
-	raw, err := readPickListJSON(ctx, tx, scope, token, in)
+	raw, err := readPickListJSON(ctx, tx, scope, token, in, true)
 	if err != nil {
 		return CarrierExportFile{}, err
 	}
@@ -57,7 +57,10 @@ func CarrierExport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	if err := platform.RequirePermission(ctx, tx, scope, token, "orders:export"); err != nil {
 		return CarrierExportFile{}, mapPickListError(err)
 	}
-	if err := command.Audit(ctx, tx, scope, "orders.carrier_export"); err != nil {
+	// P2-11: the audit records the template and row count so a bulk PII download is accountable beyond
+	// "who exported when"; the row count is the collection size before any client-side formatting.
+	if err := command.AuditDetails(ctx, tx, scope, "orders.carrier_export",
+		map[string]any{"template": template, "rows": len(raw.Orders)}); err != nil {
 		return CarrierExportFile{}, err
 	}
 	var b bytes.Buffer
@@ -110,9 +113,24 @@ func carrierCell(column string, row pickListRow) string {
 		}
 		return strings.Join(parts, "; ")
 	case "total_minor":
-		return strconv.FormatInt(row.TotalMinor, 10)
+		return formatCarrierTWD(row.Currency, row.TotalMinor)
 	case "collect_minor":
-		return strconv.FormatInt(row.CollectMinor, 10)
+		// The carrier CSV is TWD only and the collect column means "cash due on delivery": it is blank
+		// unless the order is cash_on_delivery (P1-1). The frozen collect minor never leaves the row.
+		if row.PaymentMode != "cash_on_delivery" {
+			return ""
+		}
+		return formatCarrierTWD(row.Currency, row.CollectMinor)
 	}
 	return ""
+}
+
+// formatCarrierTWD renders a frozen TWD minor amount as whole TWD for the carrier import formats; a
+// non-TWD (or negative) amount is impossible here (the reader already filtered on currency='TWD') and
+// renders blank as a defensive stop rather than a wrong figure.
+func formatCarrierTWD(currency string, minor int64) string {
+	if currency != "TWD" || minor < 0 {
+		return ""
+	}
+	return strconv.FormatInt(minor/100, 10)
 }

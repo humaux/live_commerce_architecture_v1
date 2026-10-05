@@ -83,7 +83,7 @@ func TestMerchantOrdersV2PickListReadAuthority(t *testing.T) {
 		exec             []string // explicit non-owner grantees (the owner holds the implicit grant)
 		stable           bool
 	}{
-		{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},
+		{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},
 		{"claims.pick_list_session_orders(uuid,uuid,uuid)", "commerce_claims_writer", []string{"commerce_checkout_writer"}, true},
 	} {
 		t.Run(helper.signature, func(t *testing.T) {

@@ -570,6 +570,61 @@ func (c *CVS) Request(ctx context.Context, token, storeID, key, orderID string, 
 	return out, mapCVSError(err)
 }
 
+// requestBatchEntry is the batch's per-order entry (P1-3): it reads the current attempt version, then
+// plans the request, in ONE READ COMMITTED transaction. The CAS expected_version is the live attempt's
+// version, so a FAILED/ABANDONED attempt retries as attempt N+1 instead of PT409 version_changed; a live
+// attempt is refused locally (errCVSAlreadyLive -> outcome already). The digest is version-independent
+// (it never includes the version), so a same-key partial replay still matches the stored command.
+func (c *CVS) requestBatchEntry(ctx context.Context, token, storeID, key, orderID string) (Requested, error) {
+	if !cvsKey.MatchString(key) || !command.ValidID(orderID) {
+		return Requested{}, command.ErrInvalid
+	}
+	if !c.cfg.ECPay.Enabled {
+		return Requested{}, &CVSError{Status: http.StatusUnprocessableEntity, Code: "connection_unavailable"}
+	}
+	digest, err := digestOf(struct {
+		Op      string `json:"op"`
+		OrderID string `json:"order_id"`
+	}{"cvs.batch.request", orderID})
+	if err != nil {
+		return Requested{}, err
+	}
+	operation, err := newUUIDv4()
+	if err != nil {
+		return Requested{}, ErrCVSProjection
+	}
+	var out Requested
+	err = c.scoped(ctx, token, storeID, "fulfillment:write", func(tx pgx.Tx, s platform.Scope) error {
+		hash := tokenHash(token)
+		var version int64
+		var state *string
+		if err := tx.QueryRow(ctx, `SELECT version, state FROM fulfillment.read_cvs_shipment_version($1,$2::uuid,$3::uuid)`,
+			hash[:], storeID, orderID).Scan(&version, &state); err != nil {
+			return mapCVSError(err)
+		}
+		if state != nil && *state != "FAILED" && *state != "ABANDONED" {
+			return errCVSAlreadyLive
+		}
+		var err error
+		out, err = c.requestOne(ctx, tx, s, token, storeID, orderID, key, version, operation, digest)
+		return err
+	})
+	if errors.Is(err, errCVSAlreadyLive) {
+		return Requested{}, errCVSAlreadyLive
+	}
+	if errors.Is(err, errCVSReplay) {
+		err = c.scoped(ctx, token, storeID, "fulfillment:write", func(tx pgx.Tx, s platform.Scope) error {
+			hash := tokenHash(token)
+			var raw []byte
+			if err := tx.QueryRow(ctx, `SELECT fulfillment.read_cvs_shipment_command($1,$2::uuid,$3,$4)`, hash[:], storeID, key, digest).Scan(&raw); err != nil {
+				return mapCVSError(err)
+			}
+			return decodeRequested(raw, &out)
+		})
+	}
+	return out, mapCVSError(err)
+}
+
 // requestOne is the per-order core of a single label request. It mints nothing: the caller supplies the
 // operation id, the idempotency key, the expected_version and the request digest. The River job is
 // inserted in the caller's transaction so a later refusal rolls it back with the same transaction

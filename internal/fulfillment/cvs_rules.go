@@ -70,4 +70,7 @@ var (
 	ErrECPayDisabled = errors.New("ecpay logistics disabled")
 	// errCVSReplay marks PT2RP: the idempotency key was already used, the caller must roll back and read the stored result.
 	errCVSReplay = errors.New("cvs replay")
+	// errCVSAlreadyLive is the batch's local sentinel for an order that already holds a live ECPay attempt
+	// (REQUESTED/UNKNOWN/CREATED/...): the batch answers outcome=already without planning a new request.
+	errCVSAlreadyLive = errors.New("cvs attempt already live")
 )

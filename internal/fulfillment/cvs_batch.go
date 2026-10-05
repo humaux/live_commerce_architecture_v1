@@ -44,9 +44,9 @@ type BatchInput struct {
 	OrderIDs []string `json:"order_ids"`
 }
 
-// BatchResultItem is one order's outcome. queued = the single-order entry planned the request and
-// queued the River job; failed carries the refusal code; already is reserved (the single-order SQL
-// refuses a live attempt as not_shippable, and the aggregate replay returns the stored result whole).
+// BatchResultItem is one order's outcome. queued = the request was planned and the River job queued;
+// already = the order already holds a live ECPay attempt (no new job); failed carries the refusal code
+// (not_cvs, version_changed, ...) or retry for a transient per-order error.
 type BatchResultItem struct {
 	OrderID string  `json:"order_id"`
 	Outcome string  `json:"outcome"` // queued | already | failed
@@ -90,25 +90,32 @@ func (c *CVS) Batch(ctx context.Context, token, storeID, key string, in BatchInp
 	return out, mapCVSError(err)
 }
 
-// batchOne runs one order through the existing single-order entry in its OWN top-level transaction
-// (see the file header for why a savepoint cannot work). A nil error is final (queued or a coded
-// failed); a non-nil error is fatal and aborts the whole batch.
+// batchOne runs one order through the batch's per-order entry in its OWN top-level transaction (see the
+// file header for why a savepoint cannot work). Every order is answered individually: queued, already
+// (a live attempt exists), or failed with a code; a fatal per-order error is answered failed:retry so
+// one transient order never aborts the rest of the batch.
 func (c *CVS) batchOne(ctx context.Context, token, storeID, key, orderID string) (BatchResultItem, error) {
 	// The per-order key is DERIVED from (batch key, order id), never random: a clean batch replay is
 	// answered by the aggregate command.Run above, but a partial replay (a fatal error mid-batch rolls
 	// the aggregate result back while some per-order transactions already committed) must not re-queue
 	// those orders. With a deterministic key, request_cvs_shipment recognises the stored per-order
-	// command and replays it instead of inserting a second River job (idempotent — P0). Expected
-	// version 0 = no CAS, the same shape the batch has no per-order version for.
+	// command and replays it instead of inserting a second River job (idempotent — P0).
 	perKey := batchPerKey(key, orderID)
-	if _, err := c.Request(ctx, token, storeID, perKey, orderID, RequestInput{ExpectedVersion: 0}); err != nil {
+	_, err := c.requestBatchEntry(ctx, token, storeID, perKey, orderID)
+	switch {
+	case errors.Is(err, errCVSAlreadyLive):
+		// A live ECPay attempt already covers this order: idempotent answer, never a second River job (P2-5).
+		return BatchResultItem{OrderID: orderID, Outcome: "already"}, nil
+	case err != nil:
 		code, ok := batchRefusalCode(err)
 		if !ok {
-			return BatchResultItem{}, err
+			retry := "retry"
+			return BatchResultItem{OrderID: orderID, Outcome: "failed", Code: &retry}, nil
 		}
 		return BatchResultItem{OrderID: orderID, Outcome: "failed", Code: &code}, nil
+	default:
+		return BatchResultItem{OrderID: orderID, Outcome: "queued"}, nil
 	}
-	return BatchResultItem{OrderID: orderID, Outcome: "queued"}, nil
 }
 
 // batchPerKey derives a stable, cvsKey-shaped idempotency key for one order inside a batch. Different

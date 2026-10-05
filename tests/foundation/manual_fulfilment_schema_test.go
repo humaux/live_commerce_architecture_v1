@@ -106,7 +106,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 			{"identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"fulfillment.read_manual_shipment_history(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"identity.export_unshipped_orders(bytea,uuid,integer)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
-			{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
 		} {
 			var owner string
 			var definer, fixed, publicExec, commented bool

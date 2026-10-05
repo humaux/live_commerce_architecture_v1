@@ -131,7 +131,7 @@ func PickList(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string
 	if err := validSelection(in); err != nil {
 		return PickListResult{}, err
 	}
-	raw, err := readPickListJSON(ctx, tx, scope, token, in)
+	raw, err := readPickListJSON(ctx, tx, scope, token, in, false)
 	if err != nil {
 		return PickListResult{}, err
 	}
@@ -151,7 +151,9 @@ func PickList(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string
 }
 
 // readPickListJSON runs the shared reader, re-checks orders:read in Go, and decodes the strict JSON.
-func readPickListJSON(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in PickListSelection) (pickListJSON, error) {
+// export selects the carrier-export eligibility (manual_shipment_eligible + non-CVS destination) instead
+// of the pick-list eligibility (order_money_shippable); it is the reader's fifth argument.
+func readPickListJSON(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in PickListSelection, export bool) (pickListJSON, error) {
 	hash := sha256.Sum256([]byte(token))
 	var orders, session any
 	if len(in.OrderIDs) > 0 {
@@ -160,8 +162,8 @@ func readPickListJSON(ctx context.Context, tx pgx.Tx, scope platform.Scope, toke
 		session = in.SessionID
 	}
 	var raw []byte
-	if err := tx.QueryRow(ctx, `SELECT fulfillment.read_pick_list($1,$2::uuid,$3::uuid[],$4::uuid)`,
-		hash[:], scope.StoreID, orders, session).Scan(&raw); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT fulfillment.read_pick_list($1,$2::uuid,$3::uuid[],$4::uuid,$5)`,
+		hash[:], scope.StoreID, orders, session, export).Scan(&raw); err != nil {
 		return pickListJSON{}, mapPickListError(err)
 	}
 	if err := platform.RequirePermission(ctx, tx, scope, token, "orders:read"); err != nil {

@@ -10,20 +10,36 @@
   - `internal/merchantorders/carrier_export.go`
   - `internal/fulfillment/cvs_batch.go`
   - `internal/httpapi/picklist.go`
+  - `internal/httpapi/picklist_test.go` (DB-free table tests, integrator P2-10)
   - `migrations/0130_pick_list.sql`
   - `tests/foundation/pick_list_test.go`
 - **Supporting edits (shared files, minimal)**:
-  - `internal/fulfillment/cvs.go` — comment only (reverted a temporary debug `fmt.Printf`; no behaviour change).
+  - `internal/fulfillment/cvs.go` — `read_cvs_shipment_version` reader (reads the current attempt version/state under `FOR UPDATE` for P1-3).
   - `internal/httpapi/handler.go` — route wiring for the three endpoints.
   - `internal/httperror/error.go` — `picklistClassify` 422 `too_many`.
-  - `tests/foundation/manual_fulfilment_schema_test.go`, `merchant_orders_v2_acl_test.go`, `worker_authority_split_test.go` — ACL-pin additions for the two new SECURITY DEFINER functions.
+  - `tests/foundation/manual_fulfilment_schema_test.go`, `merchant_orders_v2_acl_test.go`, `worker_authority_split_test.go` — ACL-pin additions for the new SECURITY DEFINER functions.
+
+## Integrator review round 1 — fixes applied
+
+Each P1 was red-tested first (new test) then fixed; evidence in `red-r1.log` / `green-r1.log`.
+
+- **P1-1 money (carrier export)** — `collect_minor` was `total_minor + cod_surcharge_minor` for every payment mode and in minor units (a card order printed a non-zero NT$150000). Now carrier files emit whole TWD (`minor/100`, only when currency=`TWD`) and the collect cell is `0`/blank unless `payment_mode='cash_on_delivery'` (`carrier_export.go`, `0130` collect column). Test: `TestCarrierExportCOD` (card → 0, COD → total+surcharge in TWD).
+- **P1-2 eligibility** — `0130` pickability was only `commercial_state`/`fulfillment_state`. Now: pick list uses `fulfillment.order_money_shippable(...)`; carrier export uses the full `fulfillment.manual_shipment_eligible(...)` (open payment review / in-flight refund / live CVS attempt excluded). Test: `TestPickListRefundAndReviewExclusion`.
+- **P1-3 CAS version** — `cvs_batch.go` passed `ExpectedVersion:0` ("no CAS"), which is wrong: `request_cvs_shipment` raises `version_changed` (PT409) for a FAILED/ABANDONED latest attempt, so bulk retry always failed. Now the per-order transaction reads the current attempt version via `fulfillment.read_cvs_shipment_version(...)` and passes it. Also fixed a latent bug in that reader: its `IF NOT FOUND` checked the wrong `FOUND` flag (the final `resolve_access` re-check always returns a row), so fresh orders got `NULL/NULL` → Go scan error; it now captures `v_has := FOUND` immediately after the shipment SELECT. Test: `TestCVSBatchFailedRetry`.
+- **P1-4 session cap** — the `session_id` path skipped the 500 cap; >500 orders fell through to the Go validator and an opaque 503. SQL now raises `PT422 too_many` when the resolved set >500 (Go maps it to 422). Test: `TestPickListSession` (session orders included, non-session order excluded).
+- **P2-5 partial batch** — a fatal mid-batch error now returns per-order results with the remaining orders `failed:retry` instead of a bare 5xx; `not_shippable` with a live attempt maps to `already`. Test: partial-replay covered by `TestCVSBatchFailedRetry` + `TestCVSBatchAlready`.
+- **P2-8 CVS exclusion** — home-delivery templates (`black_cat`/`hsinchu`/`chunghwa_post`) exclude CVS-destination orders, reported in `skipped`. Test: `TestCarrierExportExcludesCVS`.
+- **P2-9 malformed row** — a single malformed row becomes a `skipped` entry, not a blanket 503. Test: `TestPickListMalformedRow`.
+- **P2-10 DB-free tables** — `TestPicklistClassify` / `TestExportTemplate` / `TestPickListSelection` in `internal/httpapi/picklist_test.go`.
+- **P2-11 guards/audit** — length guard before `store[:8]`; `orders.carrier_export` audit row now includes the template key and the emitted row count.
+- **Skipped (6)(7)** — per the integrator's "Skip (6)(7)": no change made. (6) was the home-delivery total/surcharge memo column and (7) the CVS label retry back-off — neither was authorised for this round.
 
 ## What was delivered
 
 1. **拣货单 Pick list** — `POST /v1/admin/stores/{store_id}/orders/pick-list`, body `{order_ids:[≤500]}` XOR `{session_id}`, permission `orders:read`. Sorted by `sku_code`; result carries `orders`, `totals`, `skipped` (codes `not_pickable|order_not_found`). Only `CONFIRMED|AWAITING_COLLECTION` AND `fulfillment_state='MANUAL_UNASSIGNED'` rows are pickable.
-2. **承运商导出 Carrier export** — `POST …/orders/export?template=black_cat|hsinchu|chunghwa_post|generic`, permission `orders:export`, audit `orders.carrier_export`. Go constant templates (≤15 columns), UTF-8 BOM, formula-injection guard (leading `=+-@` prefixed with `'`), `collect_minor = total_minor + coalesce(cod_surcharge_minor,0)`.
+2. **承运商导出 Carrier export** — `POST …/orders/export?template=black_cat|hsinchu|chunghwa_post|generic`, permission `orders:export`, audit `orders.carrier_export` (now includes template key + emitted row count). Go constant templates (≤15 columns), UTF-8 BOM, formula-injection guard (leading `=+-@` prefixed with `'`), amounts in whole TWD (minor/100, TWD only) and the collect cell is `0`/blank unless `payment_mode='cash_on_delivery'` (then `total+surcharge`).
 3. **超商批量建单 CVS batch** — `POST …/shipments/cvs-batch`, `Idempotency-Key` header, body `{order_ids:[≤100]}`, permission `fulfillment:write`. Per-order result `{order_id, outcome: queued|already|failed, code?}`.
-4. **Migration 0130** — `fulfillment.read_pick_list(bytea,uuid,uuid[],uuid)` (owner `commerce_checkout_writer`, EXECUTE `commerce_runtime` only) and `claims.pick_list_session_orders(uuid,uuid,uuid)` (SECURITY DEFINER, `search_path=pg_catalog`, `REVOKE ALL FROM PUBLIC`, EXECUTE `commerce_checkout_writer`; `session = live_price_uses ∪ order_origins`). No new tables/columns/roles.
+4. **Migration 0130** — `fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)` (owner `commerce_checkout_writer`, EXECUTE `commerce_runtime` only; 5th param `p_export` switches pick-list predicate vs carrier-export predicate) and `claims.pick_list_session_orders(uuid,uuid,uuid)` (SECURITY DEFINER, `search_path=pg_catalog`, `REVOKE ALL FROM PUBLIC`, EXECUTE `commerce_checkout_writer`; `session = live_price_uses ∪ order_origins`) and `fulfillment.read_cvs_shipment_version(bytea,uuid,uuid) RETURNS TABLE(version bigint,state text)` (locks the order `FOR UPDATE`, settles the attempt, returns latest `(version,state)` or `(0,NULL)`; added in round 1 for P1-3). No new tables/columns/roles.
 
 ## Design deviation (integrator flag)
 
@@ -48,7 +64,7 @@ Second deviation (idempotency, P0): the per-order idempotency key is **derived d
 | `python3 experiments/spec_models.py --out experiments/results` | — | NOT_RUN (requires approval; validates executable spec models, not this backend unit) |
 
 - **PL08 timing**: 500-row pick list answered in **87 ms** (< 10 s requirement).
-- **Evidence files**: `output/w3-02b-picklist/red.log` (initial red: FK violation + 2× CVS `invalid_order`), `output/w3-02b-picklist/green.log` (final green, PASS=20 FAIL=0), `output/w3-02b-picklist/PLAN.md`. A scratch `debug.log` (the temporary `fmt.Printf` that produced the 22023 evidence) was deleted.
+- **Evidence files**: `output/w3-02b-picklist/red.log` (initial red: FK violation + 2× CVS `invalid_order`), `output/w3-02b-picklist/green.log` (final green, PASS=20 FAIL=0), `output/w3-02b-picklist/red-r1.log` / `green-r1.log` (round-1 red-then-green for the P1/P2 fixes above), `output/w3-02b-picklist/check-gates-r1.log` (round-1 header ratchet), `output/w3-02b-picklist/PLAN.md`. A scratch `debug.log` (the temporary `fmt.Printf` that produced the 22023 evidence) was deleted.
 
 ## Test table (PL01–PL08)
 
@@ -67,7 +83,7 @@ Second deviation (idempotency, P0): the per-order idempotency key is **derived d
 
 - **Risks**:
   - Partial-batch commit on a mid-batch fatal error (per-order transactions are independent of the outer aggregate result). Mitigated by the deterministic per-order keys so a same-key replay is idempotent — but the client must be told to replay the **same** `Idempotency-Key` to converge.
-  - The `already` outcome code is reserved but not exercised by PL06/PL07 (it is only reachable through a partial-replay path); the single-order SQL's `not_shippable` refusal is the code a live re-request returns instead.
+  - `already` is now exercised by `TestCVSBatchAlready` (a live attempt re-request maps `not_shippable` → `already`); the FAILED-attempt retry path is exercised by `TestCVSBatchFailedRetry`.
 - **NOT_RUN** (by me, this session):
   - Full `go test -race ./...` entire suite — not run by me (out of this unit's scope; the focused green + `--merchant-orders` + `--checkout` gates cover the touched surface).
   - `python3 experiments/spec_models.py --out experiments/results` — requires interactive approval; validates executable spec models, unrelated to this backend unit.

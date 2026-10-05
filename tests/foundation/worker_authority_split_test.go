@@ -168,7 +168,7 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 	// empty legacy role) may call either; the refusal is the SQL 42501, not just a catalog flag.
 	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
 		p := wasLogin(t, role)
-		if _, err := p.Exec(ctx, `SELECT fulfillment.read_pick_list($1::bytea,$2::uuid,NULL::uuid[],$3::uuid)`, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {
+		if _, err := p.Exec(ctx, `SELECT fulfillment.read_pick_list($1::bytea,$2::uuid,NULL::uuid[],$3::uuid,false)`, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {
 			t.Errorf("%s ran read_pick_list: %v (want 42501)", role, err)
 		}
 		if _, err := p.Exec(ctx, `SELECT claims.pick_list_session_orders($1::uuid,$2::uuid,$3::uuid)`, randomUUID(), randomUUID(), randomUUID()); sqlState(err) != "42501" {

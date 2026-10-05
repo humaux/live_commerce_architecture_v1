@@ -369,17 +369,29 @@ func TestCarrierExport(t *testing.T) {
 			if got := records[1][idx["recipient_name"]]; got != "'=1+1" {
 				t.Fatalf("recipient cell %q, want formula-guarded '=1+1", got)
 			}
-			want := strconv.FormatInt(total, 10)
-			if tc.hasCollect && records[1][idx["collect_minor"]] != want {
-				t.Fatalf("collect cell %q want %s", records[1][idx["collect_minor"]], want)
+			// P1-1: the carrier CSV is whole TWD (minor/100); a card order has no collect amount, so the
+			// collect column is blank. total_minor keeps its header but carries whole TWD.
+			wantTotal := strconv.FormatInt(total/100, 10)
+			if tc.hasCollect && records[1][idx["collect_minor"]] != "" {
+				t.Fatalf("collect cell %q, want blank for a card order", records[1][idx["collect_minor"]])
 			}
-			if tc.hasTotal && records[1][idx["total_minor"]] != want {
-				t.Fatalf("total cell %q want %s", records[1][idx["total_minor"]], want)
+			if tc.hasTotal && records[1][idx["total_minor"]] != wantTotal {
+				t.Fatalf("total cell %q want %s", records[1][idx["total_minor"]], wantTotal)
 			}
 		})
 	}
 	if n := e.mfxAudit(t, base, "orders.carrier_export"); n != 4 {
 		t.Fatalf("carrier_export audit rows=%d, want 4", n)
+	}
+	// P2-11: each audit row records the template and row count, not just the action.
+	var detailed int
+	if err := e.f.owner.QueryRow(context.Background(),
+		`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='orders.carrier_export' AND details ? 'template' AND details ? 'rows'`,
+		base.store()).Scan(&detailed); err != nil {
+		t.Fatal(err)
+	}
+	if detailed != 4 {
+		t.Fatalf("carrier_export audit with details=%d, want 4", detailed)
 	}
 }
 
@@ -478,4 +490,313 @@ func TestCVSBatchUnknown(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM fulfillment.cvs_shipments WHERE order_id=$1`, order); n != 1 {
 		t.Fatalf("shipment rows=%d, want 1 (no requeue)", n)
 	}
+}
+
+// TestCarrierExportCOD covers P1-1: a cash_on_delivery order's total_minor cell is whole TWD (minor/100)
+// and collect_minor is whole TWD of total + cod_surcharge; a card order's collect cell stays blank (the
+// TestCarrierExport templates already assert the card side). The COD order is AWAITING_COLLECTION, which
+// the 0107-widened manual_shipment_eligible admits to the export.
+func TestCarrierExportCOD(t *testing.T) {
+	e := tcvNew(t) // home-cod has no payment attempt: no Stripe environment needed
+	e.grantCreator("orders:read", "orders:export")
+	if st, out := e.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
+		t.Fatalf("cod settings: %d %v", st, out)
+	}
+	b := e.newBuyer()
+	res, err := e.hcodPlace(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _, total, surcharge := e.hcodRow(res.OrderID)
+
+	status, _, raw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/orders/export?template=generic", "", plPickBody([]string{res.OrderID}))
+	if status != 200 {
+		t.Fatalf("export answered %d: %s", status, raw)
+	}
+	if !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") {
+		t.Fatalf("missing UTF-8 BOM")
+	}
+	r := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(raw), "\xEF\xBB\xBF")))
+	records, err := r.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("export rows=%d, want header+1", len(records))
+	}
+	idx := map[string]int{}
+	for i, h := range records[0] {
+		idx[h] = i
+	}
+	if got := records[1][idx["total_minor"]]; got != strconv.FormatInt(total/100, 10) {
+		t.Fatalf("total cell %q, want whole TWD %d", got, total/100)
+	}
+	if got := records[1][idx["collect_minor"]]; got != strconv.FormatInt((total+surcharge)/100, 10) {
+		t.Fatalf("collect cell %q, want whole TWD %d (total+surcharge)", got, (total+surcharge)/100)
+	}
+}
+
+// TestPickListRefundAndReviewExclusion covers P1-2: order_money_shippable (and therefore both the pick
+// list and the carrier export) refuses a fully-refunded card order (a SUCCEEDED refund still holds the
+// captured amount) and a card order under a non-drift review case, while the plain paid order stays
+// pickable. The refund and the review case are produced through the real capture/refund seams, not
+// planted ledger rows.
+func TestPickListRefundAndReviewExclusion(t *testing.T) {
+	e := rfxNew(t)
+	e.startWorker(t)
+	base := e.payInStore(t, e.storeFor(t))
+
+	refunded := e.payMore(t, base)
+	rid := e.mustRefund(t, refunded, refunded.captured, "requested_by_customer")
+	e.awaitRefundFact(t, rid, refunded.attempt, "SUCCEEDED")
+
+	reviewed := e.payMore(t, base)
+	srqReview(t, e, reviewed.attempt, "REFUND_HISTORY")
+
+	status, body, raw := e.plPickList(t, base, base.token(), plPickBody([]string{base.order, refunded.order, reviewed.order}))
+	if status != 200 {
+		t.Fatalf("pick-list answered %d: %s", status, raw)
+	}
+	if len(body.Orders) != 1 || body.Orders[0].OrderID != base.order {
+		t.Fatalf("pickable orders=%v, want only the base order", body.Orders)
+	}
+	skipped := map[string]string{}
+	for _, s := range body.Skipped {
+		skipped[s.OrderID] = s.Code
+	}
+	if skipped[refunded.order] != "not_pickable" || skipped[reviewed.order] != "not_pickable" || len(body.Skipped) != 2 {
+		t.Fatalf("skipped: %v", skipped)
+	}
+
+	// The export uses the same money gate: exactly the base order survives to the CSV.
+	status, csvRaw, _ := e.plExport(t, base, base.token(), "generic", []string{base.order, refunded.order, reviewed.order})
+	if status != 200 {
+		t.Fatalf("export answered %d: %s", status, csvRaw)
+	}
+	r := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(csvRaw), "\xEF\xBB\xBF")))
+	records, err := r.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 2 {
+		t.Fatalf("export rows=%d, want header+1", len(records))
+	}
+}
+
+// TestCVSBatchFailedRetry covers P1-3: the batch reads the live attempt's version per order, so a FAILED
+// first attempt is retried as attempt 2 (new key) instead of answering PT409 version_changed, and a fresh
+// order (no shipment row) reads version 0 instead of a NULL scan error.
+func TestCVSBatchFailedRetry(t *testing.T) {
+	e := tcvNew(t)
+	e.startDispatcher()
+	e.routeNewJobs()
+	e.grantCreator("orders:read", "fulfillment:write", "integration:manage", "integration:read")
+	e.connect("C2C")
+	e.cvsSettings(tcvAllChains, true, "20000", 500)
+	code, _, _ := e.service("cvs_711", "API", 0)
+	order, _ := e.cvsOrder(tcvOrderSpec{kind: "cvs_711", code: code, paymentMode: "pay_at_pickup"})
+
+	e.fake.SetCreateMode(ecpaytest.CreateReject, "balance too low")
+	status, out, raw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/shipments/cvs-batch", t04Key("pl-batch-retry-1"), plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("first batch answered %d: %s", status, raw)
+	}
+	if results, _ := out["results"].([]any); len(results) != 1 || results[0].(map[string]any)["outcome"] != "queued" {
+		t.Fatalf("first batch results=%v", out["results"])
+	}
+	e.awaitShip(order, "FAILED")
+	if state, attempt, _ := e.shipState(order); state != "FAILED" || attempt != 1 {
+		t.Fatalf("first attempt state=%s attempt=%d, want FAILED/1", state, attempt)
+	}
+
+	e.fake.SetCreateMode(ecpaytest.CreateOK, "")
+	status, out, raw = e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/shipments/cvs-batch", t04Key("pl-batch-retry-2"), plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("second batch answered %d: %s", status, raw)
+	}
+	if results, _ := out["results"].([]any); len(results) != 1 || results[0].(map[string]any)["outcome"] != "queued" {
+		t.Fatalf("second batch results=%v", out["results"])
+	}
+	e.awaitShip(order, "CREATED")
+	if state, attempt, _ := e.shipState(order); state != "CREATED" || attempt != 2 {
+		t.Fatalf("second attempt state=%s attempt=%d, want CREATED/2", state, attempt)
+	}
+}
+
+// TestCVSBatchAlready covers P2-5: a live attempt is answered "already" (never a second River job), and a
+// partial replay — the aggregate command receipt deleted, so the batch re-runs its per-order entries — still
+// answers "already" because the deterministic per-order key resolves to the live attempt.
+func TestCVSBatchAlready(t *testing.T) {
+	e := tcvNew(t)
+	e.startDispatcher()
+	e.routeNewJobs()
+	e.grantCreator("orders:read", "fulfillment:write", "integration:manage", "integration:read")
+	e.connect("C2C")
+	e.cvsSettings(tcvAllChains, true, "20000", 500)
+	code, _, _ := e.service("cvs_711", "API", 0)
+	order, _ := e.cvsOrder(tcvOrderSpec{kind: "cvs_711", code: code, paymentMode: "pay_at_pickup"})
+	e.fake.SetCreateMode(ecpaytest.CreateOK, "")
+
+	key := t04Key("pl-batch-already")
+	path := "/v1/admin/stores/" + e.store() + "/shipments/cvs-batch"
+	status, out, raw := e.mcall(e.token(), "POST", path, key, plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("first batch answered %d: %s", status, raw)
+	}
+	if results, _ := out["results"].([]any); len(results) != 1 || results[0].(map[string]any)["outcome"] != "queued" {
+		t.Fatalf("first batch results=%v", out["results"])
+	}
+	e.awaitShip(order, "CREATED")
+	shipmentsBefore := e.count(`SELECT count(*) FROM fulfillment.cvs_shipments WHERE order_id=$1`, order)
+
+	// A different key still sees the live attempt and answers already, without a new job.
+	status, out, raw = e.mcall(e.token(), "POST", path, t04Key("pl-batch-already-2"), plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("second batch answered %d: %s", status, raw)
+	}
+	if results, _ := out["results"].([]any); len(results) != 1 || results[0].(map[string]any)["outcome"] != "already" {
+		t.Fatalf("second batch results=%v", out["results"])
+	}
+
+	// Drop the aggregate receipt: the same key re-runs per-order entries, and the deterministic per-order
+	// key still resolves to the live attempt (already), never a second job.
+	mustExec(t, e.p.f.owner, `DELETE FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='fulfillment.cvs_batch' AND idempotency_key=$3`, e.tenant(), e.store(), key)
+	status, out, raw = e.mcall(e.token(), "POST", path, key, plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("partial-replay batch answered %d: %s", status, raw)
+	}
+	if results, _ := out["results"].([]any); len(results) != 1 || results[0].(map[string]any)["outcome"] != "already" {
+		t.Fatalf("partial-replay results=%v", out["results"])
+	}
+	if n := e.count(`SELECT count(*) FROM fulfillment.cvs_shipments WHERE order_id=$1`, order); n != shipmentsBefore {
+		t.Fatalf("shipment rows %d -> %d, want unchanged (no requeue)", shipmentsBefore, n)
+	}
+}
+
+// TestCarrierExportExcludesCVS covers P2-8: a CVS-destination order is money-shippable (it stays in the
+// pick list), but the home-delivery templates exclude it from the export CSV (the reader's skipped array
+// is not part of the CSV body by design; the pick-list route below proves the id is not_pickable-by-rule
+// rather than order_not_found).
+func TestCarrierExportExcludesCVS(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "orders:export")
+	e.connect("C2C")
+	e.cvsSettings(tcvAllChains, true, "20000", 500)
+	code, _, _ := e.service("cvs_711", "API", 0)
+	order, _ := e.cvsOrder(tcvOrderSpec{kind: "cvs_711", code: code, paymentMode: "pay_at_pickup"})
+
+	// Pick list (money eligibility): the CVS order is present.
+	status, _, raw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/orders/pick-list", "", plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("pick-list answered %d: %s", status, raw)
+	}
+	var body plBody
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatal(err)
+	}
+	if len(body.Orders) != 1 || body.Orders[0].OrderID != order || len(body.Skipped) != 0 {
+		t.Fatalf("pick-list orders=%v skipped=%v", body.Orders, body.Skipped)
+	}
+
+	// Export (home-delivery eligibility): the CVS destination is excluded -> header only, no data row.
+	status, _, csvRaw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/orders/export?template=generic", "", plPickBody([]string{order}))
+	if status != 200 {
+		t.Fatalf("export answered %d: %s", status, csvRaw)
+	}
+	r := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(csvRaw), "\xEF\xBB\xBF")))
+	records, err := r.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(records) != 1 {
+		t.Fatalf("export rows=%d, want header only (CVS destination excluded)", len(records))
+	}
+}
+
+// TestPickListMalformedRow covers P2-9: one malformed snapshot row is reported not_pickable and the
+// whole list still answers 200, not a 503.
+func TestPickListMalformedRow(t *testing.T) {
+	e := rfxNew(t)
+	e.startWorker(t)
+	base := e.payInStore(t, e.storeFor(t))
+	mustExec(t, e.f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{quote,lines}','"not-an-array"') WHERE id=$1`, base.order)
+
+	status, body, raw := e.plPickList(t, base, base.token(), plPickBody([]string{base.order}))
+	if status != 200 {
+		t.Fatalf("pick-list answered %d: %s", status, raw)
+	}
+	if len(body.Orders) != 0 {
+		t.Fatalf("orders=%v, want none", body.Orders)
+	}
+	if len(body.Skipped) != 1 || body.Skipped[0].OrderID != base.order || body.Skipped[0].Code != "not_pickable" {
+		t.Fatalf("skipped=%v, want [%s not_pickable]", body.Skipped, base.order)
+	}
+}
+
+// TestPickListSession covers P1-4: {session_id} resolves only the session's orders through
+// claims.pick_list_session_orders (live_price_uses UNION order_origins), and a session resolving more
+// than 500 orders is refused 422 too_many. The order_origins rows are disclosed synthetic fixtures:
+// there is no product path that fabricates an attribution session in this harness.
+func TestPickListSession(t *testing.T) {
+	e := rfxNew(t)
+	e.startWorker(t)
+	base := e.payInStore(t, e.storeFor(t))
+	other := e.payMore(t, base)
+	_ = other // exists to prove the session does not fan out to the whole store
+
+	session := randomUUID()
+	mustExec(t, e.f.owner, `INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
+	 VALUES($1,$2,$3,gen_random_uuid(),gen_random_uuid(),1,$4,clock_timestamp())`, e.f.tenantA, base.store(), base.order, session)
+
+	t.Run("session selects only its own order", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{"session_id": session})
+		status, out, raw := e.plPickList(t, base, base.token(), string(body))
+		if status != 200 {
+			t.Fatalf("session pick-list answered %d: %s", status, raw)
+		}
+		if len(out.Orders) != 1 || out.Orders[0].OrderID != base.order || len(out.Skipped) != 0 {
+			t.Fatalf("session orders=%v skipped=%v", out.Orders, out.Skipped)
+		}
+	})
+
+	t.Run("501-order session -> 422 too_many", func(t *testing.T) {
+		// 500 immutable synthetic clones (a distinct job_id/cart_version range from TestPickList500)
+		// plus the base order = 501 orders mapped to the session.
+		mustExec(t, e.f.owner, `WITH gen AS MATERIALIZED (
+		  SELECT n, gen_random_uuid() AS id, 7200000000::bigint + n AS job FROM generate_series(1,500) AS n
+		), src AS MATERIALIZED (
+		  SELECT o.tenant_id,o.store_id,o.owner_id,o.creator_session_id,r.state AS r_state,r.generation AS r_generation
+		  FROM checkout.orders o JOIN inventory.reservations r
+		   ON r.tenant_id=o.tenant_id AND r.store_id=o.store_id AND r.id=o.id
+		  WHERE o.id=$1
+		), ins_res AS (
+		  INSERT INTO inventory.reservations(tenant_id,store_id,id,state,expires_at,created_at,checkout_id,buyer_owner_id,buyer_session_id,generation)
+		  SELECT s.tenant_id,s.store_id,g.id,s.r_state,clock_timestamp(),clock_timestamp(),g.id,s.owner_id,s.creator_session_id,s.r_generation
+		  FROM src s CROSS JOIN gen g
+		), ins_ord AS (
+		  INSERT INTO checkout.orders
+		  SELECT (jsonb_populate_record(NULL::checkout.orders, to_jsonb(o)||jsonb_build_object(
+		   'id',g.id,'job_id',g.job,'cart_version',2200000::bigint+g.n,
+		   'commercial_state','CONFIRMED','fulfillment_state','MANUAL_UNASSIGNED',
+		   'created_at','2026-01-01T00:00:00Z','updated_at','2026-01-01T00:00:00Z','expires_at','2026-01-01T00:15:00Z'
+		  ))).* FROM checkout.orders o CROSS JOIN gen g WHERE o.id=$1
+		)
+		SELECT count(*) FROM gen`, base.order)
+
+		session2 := randomUUID()
+		mustExec(t, e.f.owner, `INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
+		 SELECT tenant_id,store_id,id,gen_random_uuid(),gen_random_uuid(),1,$2,clock_timestamp()
+		 FROM checkout.orders WHERE store_id=$1 AND (id=$3 OR job_id BETWEEN 7200000000 AND 7200000500)`,
+			base.store(), session2, base.order)
+
+		body, _ := json.Marshal(map[string]string{"session_id": session2})
+		status, _, raw := e.plPickList(t, base, base.token(), string(body))
+		if status != http.StatusUnprocessableEntity {
+			t.Fatalf("501-order session answered %d: %s", status, raw)
+		}
+		var env plErr
+		if err := json.Unmarshal(raw, &env); err != nil || env.Code != "too_many" {
+			t.Fatalf("501-order session code=%q err=%v", env.Code, err)
+		}
+	})
 }
