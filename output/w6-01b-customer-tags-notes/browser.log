@@ -1,36 +1,36 @@
-✔ billing status accepts the frozen shape (incl. UNBILLED with no customer, plans []) (1.747291ms)
-✔ billing status rejects unknown keys, unknown enums, bad money and duplicate plans (1.734875ms)
-✔ standing endpoint is exactly {standing} (0.1035ms)
-✔ banner shows only for GRACE and RESTRICTED (U5) (0.576792ms)
-✔ live subscription rule mirrors 409 subscription_exists (0.149541ms)
-✔ redirect URL: https on the two hosted Stripe hosts only, no credentials/port, never echoed on failure (0.873917ms)
-✔ exactly the eleven contract §5 resources are admitted, each only under its own method (1.88725ms)
-✔ near misses are refused (no generic proxying) (0.454583ms)
-✔ customers list query: limit 1..100, opaque after, q 1..40, nothing else (1.519916ms)
-✔ finance query: from and to are required calendar dates, 0..91 days apart (0.418083ms)
-✔ every other resource takes no query at all (0.09575ms)
-✔ Idempotency-Key: required (and well-formed) on the three customer POSTs, forbidden everywhere else (13.564ms)
-✔ bodies: JSON content type where a body is read, none where it is not, never chunked (0.319583ms)
-✔ body content: the frozen shapes only (0.244583ms)
-✔ customer list and detail decode exactly the frozen Go DTOs (1.313333ms)
-✔ decoders refuse: unknown key, missing key, wrong type, impossible values, actor-level leakage (0.897333ms)
-✔ finance and erasure summaries decode; anything else is refused (0.508875ms)
-✔ billing status, standing and redirect decode exactly the frozen DTOs (B3, BD4) (0.967458ms)
-✔ a checkout/portal redirect is followed only to a hosted Stripe page (bearer links, I11) (0.257291ms)
-✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (4.5625ms)
-✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.235625ms)
-✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (8.561666ms)
-✔ erasure summary is four counts only (0.342459ms)
-✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.841375ms)
-✔ financeDay is the UTC+8 day (0.155042ms)
-✔ tags and notes are parsed strictly (W6-01B) (1.253458ms)
-✔ route table admits exactly the eleven contract resources (1.135875ms)
-✔ list query: limit/after/q grammar, no duplicates, no unknown keys (6.232167ms)
-✔ finance query: both dates required, real calendar days, 0..91 day range (0.400875ms)
-✔ exact resources refuse any query, even a bare question mark (0.138041ms)
-✔ key rules: required on the three customer POSTs, forbidden everywhere else (27.951208ms)
-✔ export and portal must declare an empty body (0.123791ms)
-✔ bodies are exact and closed (0.161042ms)
+✔ billing status accepts the frozen shape (incl. UNBILLED with no customer, plans []) (2.325708ms)
+✔ billing status rejects unknown keys, unknown enums, bad money and duplicate plans (0.862875ms)
+✔ standing endpoint is exactly {standing} (0.339ms)
+✔ banner shows only for GRACE and RESTRICTED (U5) (0.387209ms)
+✔ live subscription rule mirrors 409 subscription_exists (0.138833ms)
+✔ redirect URL: https on the two hosted Stripe hosts only, no credentials/port, never echoed on failure (0.243ms)
+✔ exactly the eleven contract §5 resources are admitted, each only under its own method (3.543667ms)
+✔ near misses are refused (no generic proxying) (0.344708ms)
+✔ customers list query: limit 1..100, opaque after, q 1..40, nothing else (1.503666ms)
+✔ finance query: from and to are required calendar dates, 0..91 days apart (0.397875ms)
+✔ every other resource takes no query at all (1.098291ms)
+✔ Idempotency-Key: required (and well-formed) on the three customer POSTs, forbidden everywhere else (18.936584ms)
+✔ bodies: JSON content type where a body is read, none where it is not, never chunked (0.4235ms)
+✔ body content: the frozen shapes only (0.386792ms)
+✔ customer list and detail decode exactly the frozen Go DTOs (1.553083ms)
+✔ decoders refuse: unknown key, missing key, wrong type, impossible values, actor-level leakage (1.157333ms)
+✔ finance and erasure summaries decode; anything else is refused (0.888208ms)
+✔ billing status, standing and redirect decode exactly the frozen DTOs (B3, BD4) (0.555959ms)
+✔ a checkout/portal redirect is followed only to a hosted Stripe page (bearer links, I11) (0.596667ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (9.036ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.293875ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (3.626041ms)
+✔ erasure summary is four counts only (0.086459ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.279666ms)
+✔ financeDay is the UTC+8 day (0.057667ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.491042ms)
+✔ route table admits exactly the eleven contract resources (0.72775ms)
+✔ list query: limit/after/q grammar, no duplicates, no unknown keys (0.816833ms)
+✔ finance query: both dates required, real calendar days, 0..91 day range (0.135125ms)
+✔ exact resources refuse any query, even a bare question mark (0.049958ms)
+✔ key rules: required on the three customer POSTs, forbidden everywhere else (26.502833ms)
+✔ export and portal must declare an empty body (0.160542ms)
+✔ bodies are exact and closed (0.191375ms)
 ℹ tests 33
 ℹ suites 0
 ℹ pass 33
@@ -38,7 +38,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 137.362625
+ℹ duration_ms 144.851333
 
 > live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-01b-customer-tags-notes
 > pnpm --filter @live-commerce/storefront build
@@ -48,15 +48,15 @@
 > next build
 
 ▲ Next.js 16.3.5 (Turbopack)
-✓ Running next.config.ts took 1462ms
+✓ Running next.config.ts took 141ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 4.1s
+✓ Compiled successfully in 934ms
   Running TypeScript ...
-  Finished TypeScript in 1035ms ...
+  Finished TypeScript in 418ms ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/2) ...
-✓ Generating static pages using 9 workers (2/2) in 62ms
+✓ Generating static pages using 9 workers (2/2) in 36ms
   Finalizing page optimization ...
 
 Route (app)
@@ -106,18 +106,18 @@ Route (app)
 > next build && node ../../scripts/dev/package-admin.mjs
 
 ▲ Next.js 16.3.5 (Turbopack)
-✓ Running next.config.ts took 17ms
+✓ Running next.config.ts took 21ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 2.8s
+✓ Compiled successfully in 861ms
   Running TypeScript ...
-  Finished TypeScript in 414ms ...
+  Finished TypeScript in 188ms ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/15) ...
   Generating static pages using 9 workers (3/15) 
   Generating static pages using 9 workers (7/15) 
   Generating static pages using 9 workers (11/15) 
-✓ Generating static pages using 9 workers (15/15) in 63ms
+✓ Generating static pages using 9 workers (15/15) in 102ms
   Finalizing page optimization ...
 
 Route (app)
@@ -174,10 +174,9 @@ Route (app)
 
 Packaged standalone admin server and static assets.
 === RUN   TestBrowserCustomersBilling
-    browser_customers_billing_test.go:335: CB11 BROWSER (MOCK Stripe): admin half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-01b-customer-tags-notes/output/playwright/customers-billing/20261005T233605.742910000
-    browser_customers_billing_test.go:340: storefront browser gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-01b-customer-tags-notes/output/playwright/customers-billing/20261005T233605.742910000
---- FAIL: TestBrowserCustomersBilling (43.21s)
-FAIL
-FAIL	livecommerce/tests/foundation	44.233s
-FAIL
-exit 1
+    browser_customers_billing_test.go:335: CB11 BROWSER (MOCK Stripe): admin half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-01b-customer-tags-notes/output/playwright/customers-billing/20261005T234447.895660000
+    browser_customers_billing_test.go:380: CB11 BROWSER buyer half passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-01b-customer-tags-notes/output/playwright/customers-billing/20261005T234447.895660000
+--- PASS: TestBrowserCustomersBilling (37.52s)
+PASS
+ok  	livecommerce/tests/foundation	39.297s
+PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.

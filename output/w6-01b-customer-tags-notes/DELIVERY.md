@@ -10,3 +10,12 @@
 - Risks: buyer export of 200 maximal notes (~600 KB) plus orders can hit the 1 MiB export cap (export_too_large); set_owner_tags vs delete_tag can deadlock in rare races (40P01 -> retry_later); list cap raised to 512 KiB; W5-02B must extend the body defined in 0139 (marker comments "W6-01B").
 - NOT_RUN / BLOCKED: `test-local.sh --browser-customers-billing`, `release-gate.sh --strict --only G07` (browser/gate runners not run; UI is W6-U1); full foundation suite (focused regexes only); K3 independent review.
 - Integrator to-do: migration number 0139 used as given (0128-0138 gap); tests/admin/auth-real.spec.ts mocked owner permission list is already stale (no customers:write/inbox:*); admin BFF/UI routes for tags/notes (W6-U1); decide live_operator bundle; docs/delivery GATES row if a dedicated gate mode is wanted.
+
+## Review round (integrator review of c59aa377; merged r3/integration df6be6ce)
+- P0 admin consumer: `apps/admin/lib/customers-model.ts` parses `tags` (rows), `tags_revision` + `notes` (detail); tests in tests/admin/customers-model.test.ts and customers-bff.test.ts (node exit 0). No UI rendering.
+- Extra P0 found by the browser gate: `apps/storefront/lib/privacy-contract.ts` validBuyerExport rejected the new export keys (buyer download 503); now accepts tags, notes, notes_omitted (+ privacy-contract.test.mjs).
+- P2(2) erasure deletes the customer's idempotency receipts (receipts of tag-set/note writes carry customer_id; privacy_writer got SELECT(operation,response)+DELETE on ops.command_results behind a policy limited to those 4 operations; pins extended). Test: CT06.
+- P2(4) tag uniqueness on lower(normalize(name,NFKC)); Cf characters refused by Go and a table CHECK; Go normalises to NFC. Test: CT02. (lower() is locale dependent for non-ASCII under C collation; noted in the migration.)
+- P2(6) buyer export notes capped at newest 60000 characters + `notes_omitted`. Test: CT07 (150 maximal notes).
+- P2(7) COMMENT ON POLICY privacy_audit_insert restored; customers-billing-v1.md signature updated. P2(5) merchant-identity-v1.md note added. P2(3) tag filter now driven by set-returning `customers.tn_owners_with_tag` inside active_owner.
+- Runs: `^TestCustomerTags` PASS; regression regex PASS=124 FAIL=0 (green.log); `--browser-customers-billing` PASS (browser.log); test-node.sh exit 0; check-gates exit 0; gofmt clean; R2 pin now 64 files (0139 on top of 0128/0130).
