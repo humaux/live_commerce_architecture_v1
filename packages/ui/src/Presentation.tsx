@@ -229,11 +229,13 @@ export function FilePicker({
   onChange,
   className = "",
   inputRef,
+  fileName,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   emptyLabel: string;
   inputRef?: Ref<HTMLInputElement>;
+  fileName?: string;
 }) {
   const [name, setName] = useState("");
   return (
@@ -255,7 +257,7 @@ export function FilePicker({
           }}
         />
       </label>
-      <span className={s.fileName}>{name || emptyLabel}</span>
+      <span className={s.fileName}>{(fileName ?? name) || emptyLabel}</span>
     </div>
   );
 }
