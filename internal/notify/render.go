@@ -13,7 +13,7 @@ import (
 	"livecommerce/internal/mail"
 )
 
-// Kinds are the notify.outbox.kind values (migration 0090).
+// Kinds are the notify.outbox.kind values (migration 0090) and notify.merchant_alerts.kind (migration 0125).
 const (
 	KindPlaced      = "placed"
 	KindPaid        = "paid"
@@ -21,6 +21,7 @@ const (
 	KindCancelled   = "cancelled"
 	KindRefunded    = "refunded"
 	KindMerchantNew = "merchant_new"
+	KindMetaHealth  = "meta_health"
 )
 
 // DefaultLocale is used when the order carries no known locale: merchant-created orders (never placed through buyer
@@ -49,6 +50,18 @@ type Payload struct {
 	CVS             *CVSInfo  `json:"cvs"`
 	Count           int       `json:"count"`
 	OrderIDs        []string  `json:"order_ids"`
+	// The meta connection-health merchant alert (KindMetaHealth, migration 0125) carries the stopped capabilities and the
+	// admin origin the reconnect CTA points at (injected by the worker; never a storefront or Meta URL, §10).
+	PageName string    `json:"page_name"`
+	Episode  int64     `json:"episode"`
+	MetaCaps []MetaCap `json:"meta_caps"`
+	AdminURL string    `json:"admin_url"`
+}
+
+// MetaCap is one stopped capability of a meta_health alert: the frozen §6 capability and its §3.3 reason.
+type MetaCap struct {
+	Capability string `json:"capability"`
+	Reason     string `json:"reason"`
 }
 
 // Bank is the order's own bank snapshot (checkout.bank_transfers), shown only in the buyer's own placed mail.
@@ -81,7 +94,7 @@ type CVSInfo struct {
 type copyText struct {
 	subject map[string]string // kind -> subject format; %s = store name
 	intro   map[string]string // kind -> first line
-	lbl     struct{ order, total, collect, bank, branch, account, number, deadline, pickup, carrier, tracking, link, view, auto, newOrders, orders string }
+	lbl     struct{ order, total, collect, bank, branch, account, number, deadline, pickup, carrier, tracking, link, view, auto, newOrders, orders, page, admin string }
 }
 
 var carrierNames = map[string]map[string]string{
@@ -93,36 +106,42 @@ var carrierNames = map[string]map[string]string{
 var copies = map[string]copyText{
 	"zh-TW": func() copyText {
 		c := copyText{
-			subject: map[string]string{KindPlaced: "【%s】訂單已成立", KindPaid: "【%s】已確認收到付款", KindShipped: "【%s】您的訂單已出貨", KindCancelled: "【%s】訂單已取消", KindRefunded: "【%s】訂單已退款"},
+			subject: map[string]string{KindPlaced: "【%s】訂單已成立", KindPaid: "【%s】已確認收到付款", KindShipped: "【%s】您的訂單已出貨", KindCancelled: "【%s】訂單已取消", KindRefunded: "【%s】訂單已退款", KindMetaHealth: "【%s】Facebook 連線需要重新連結"},
 			intro: map[string]string{KindPlaced: "感謝您的訂購，我們已收到您的訂單。", KindPaid: "我們已確認收到您的付款，將盡快為您安排出貨。",
-				KindShipped: "您的訂單已出貨。", KindCancelled: "您的訂單已取消（含逾期未付款），保留的商品已釋出。", KindRefunded: "您的訂單已完成退款，實際入帳時間依發卡行或銀行而定。"},
+				KindShipped: "您的訂單已出貨。", KindCancelled: "您的訂單已取消（含逾期未付款），保留的商品已釋出。", KindRefunded: "您的訂單已完成退款，實際入帳時間依發卡行或銀行而定。",
+				KindMetaHealth: "您的粉絲專頁連線部分功能已停止，請重新連結以恢復。"},
 		}
 		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "訂單編號", "訂單金額", "貨到付款金額", "匯款銀行", "分行", "戶名", "帳號"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "請於此時間前完成匯款", "取貨門市", "物流", "追蹤編號", "追蹤連結", "查看訂單"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "這是系統自動寄出的訂單通知，請勿直接回覆。", "新訂單通知", "訂單編號"
+		c.lbl.page, c.lbl.admin = "粉絲專頁", "管理後台"
 		return c
 	}(),
 	"zh-CN": func() copyText {
 		c := copyText{
-			subject: map[string]string{KindPlaced: "【%s】订单已成立", KindPaid: "【%s】已确认收到付款", KindShipped: "【%s】您的订单已发货", KindCancelled: "【%s】订单已取消", KindRefunded: "【%s】订单已退款"},
+			subject: map[string]string{KindPlaced: "【%s】订单已成立", KindPaid: "【%s】已确认收到付款", KindShipped: "【%s】您的订单已发货", KindCancelled: "【%s】订单已取消", KindRefunded: "【%s】订单已退款", KindMetaHealth: "【%s】Facebook 连接需要重新链接"},
 			intro: map[string]string{KindPlaced: "感谢您的订购，我们已收到您的订单。", KindPaid: "我们已确认收到您的付款，将尽快为您安排发货。",
-				KindShipped: "您的订单已发货。", KindCancelled: "您的订单已取消（含逾期未付款），保留的商品已释放。", KindRefunded: "您的订单已完成退款，实际到账时间取决于发卡行或银行。"},
+				KindShipped: "您的订单已发货。", KindCancelled: "您的订单已取消（含逾期未付款），保留的商品已释放。", KindRefunded: "您的订单已完成退款，实际到账时间取决于发卡行或银行。",
+				KindMetaHealth: "您的粉丝专页连接部分功能已停止，请重新链接以恢复。"},
 		}
 		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "订单编号", "订单金额", "货到付款金额", "汇款银行", "分行", "户名", "账号"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "请在此时间前完成汇款", "取货门店", "物流", "追踪编号", "追踪链接", "查看订单"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "这是系统自动发送的订单通知，请勿直接回复。", "新订单通知", "订单编号"
+		c.lbl.page, c.lbl.admin = "粉丝专页", "管理后台"
 		return c
 	}(),
 	"en": func() copyText {
 		c := copyText{
-			subject: map[string]string{KindPlaced: "[%s] Your order is placed", KindPaid: "[%s] Payment confirmed", KindShipped: "[%s] Your order has shipped", KindCancelled: "[%s] Your order was cancelled", KindRefunded: "[%s] Your order was refunded"},
+			subject: map[string]string{KindPlaced: "[%s] Your order is placed", KindPaid: "[%s] Payment confirmed", KindShipped: "[%s] Your order has shipped", KindCancelled: "[%s] Your order was cancelled", KindRefunded: "[%s] Your order was refunded", KindMetaHealth: "[%s] Facebook connection needs attention"},
 			intro: map[string]string{KindPlaced: "Thank you for your order. We have received it.", KindPaid: "We have confirmed your payment and will arrange shipping soon.",
 				KindShipped: "Your order has shipped.", KindCancelled: "Your order was cancelled (including a missed payment deadline) and the reserved items were released.",
-				KindRefunded: "Your order has been refunded. When the money arrives depends on your card issuer or bank."},
+				KindRefunded:   "Your order has been refunded. When the money arrives depends on your card issuer or bank.",
+				KindMetaHealth: "Some features of your Page connection have stopped. Reconnect to restore them."},
 		}
 		c.lbl.order, c.lbl.total, c.lbl.collect, c.lbl.bank, c.lbl.branch, c.lbl.account, c.lbl.number = "Order number", "Order total", "Cash on delivery", "Bank", "Branch", "Account name", "Account number"
 		c.lbl.deadline, c.lbl.pickup, c.lbl.carrier, c.lbl.tracking, c.lbl.link, c.lbl.view = "Please transfer before", "Pickup store", "Carrier", "Tracking number", "Tracking link", "View your order"
 		c.lbl.auto, c.lbl.newOrders, c.lbl.orders = "This is an automatic order notification; please do not reply.", "New orders", "Order numbers"
+		c.lbl.page, c.lbl.admin = "Page", "Admin"
 		return c
 	}(),
 }
@@ -205,6 +224,47 @@ func orderLink(p Payload, locale string) string {
 	return *p.Origin + "/" + locale + "/orders/" + p.OrderID
 }
 
+// capabilityCopy is the frozen live-console §6 capability vocabulary as a human label per locale (migration 0125 §5.2:
+// "which capabilities stopped"). An unknown value falls back to the raw code.
+var capabilityCopy = map[string]map[string]string{
+	"read_comment":  {"zh-TW": "留言讀取", "zh-CN": "评论读取", "en": "Comment reading"},
+	"private_reply": {"zh-TW": "私訊回覆", "zh-CN": "私信回复", "en": "Private reply"},
+	"dm_session":    {"zh-TW": "私訊會話", "zh-CN": "私信会话", "en": "DM session"},
+	"reply_public":  {"zh-TW": "公開回覆", "zh-CN": "公开回复", "en": "Public reply"},
+}
+
+// reasonCopy is the §3.3 reason code as a human "why" per locale (migration 0125 §5.2: "and why"). It never reveals a
+// permission the merchant was not already granted or a Graph body; an unknown code falls back to the raw code.
+var reasonCopy = map[string]map[string]string{
+	"token_expired":                  {"zh-TW": "存取權杖已過期", "zh-CN": "访问令牌已过期", "en": "Access token expired"},
+	"token_revoked":                  {"zh-TW": "存取權杖已失效", "zh-CN": "访问令牌已失效", "en": "Access token revoked"},
+	"token_invalid":                  {"zh-TW": "存取權杖無效", "zh-CN": "访问令牌无效", "en": "Access token invalid"},
+	"page_unavailable":               {"zh-TW": "粉絲專頁已無法存取", "zh-CN": "粉丝专页已无法访问", "en": "Page is no longer accessible"},
+	"not_probed":                     {"zh-TW": "尚未確認", "zh-CN": "尚未确认", "en": "Not confirmed yet"},
+	"perm_pages_read_engagement":     {"zh-TW": "缺少讀取貼文互動的權限", "zh-CN": "缺少读取贴文互动的权限", "en": "Missing permission to read engagement"},
+	"perm_pages_messaging":           {"zh-TW": "缺少傳送訊息的權限", "zh-CN": "缺少发送消息的权限", "en": "Missing permission to send messages"},
+	"perm_pages_manage_engagement":   {"zh-TW": "缺少管理互動的權限", "zh-CN": "缺少管理互动的权限", "en": "Missing permission to manage engagement"},
+	"perm_instagram_manage_comments": {"zh-TW": "缺少管理留言的權限", "zh-CN": "缺少管理评论的权限", "en": "Missing permission to manage comments"},
+	"perm_instagram_manage_messages": {"zh-TW": "缺少管理訊息的權限", "zh-CN": "缺少管理消息的权限", "en": "Missing permission to manage messages"},
+	"task_moderate":                  {"zh-TW": "缺少管理權限", "zh-CN": "缺少管理权限", "en": "Missing moderation task"},
+	"task_messaging":                 {"zh-TW": "缺少訊息權限", "zh-CN": "缺少消息权限", "en": "Missing messaging task"},
+	"sub_feed":                       {"zh-TW": "未訂閱貼文更新", "zh-CN": "未订阅贴文更新", "en": "Not subscribed to feed updates"},
+	"sub_messages":                   {"zh-TW": "未訂閱訊息更新", "zh-CN": "未订阅消息更新", "en": "Not subscribed to message updates"},
+	"sub_unread":                     {"zh-TW": "訂閱狀態無法確認", "zh-CN": "订阅状态无法确认", "en": "Subscription state unknown"},
+	"standard_access":                {"zh-TW": "等待進階存取審核", "zh-CN": "等待进阶访问审核", "en": "Awaiting Advanced Access review"},
+	"runtime_permission":             {"zh-TW": "權限已失效", "zh-CN": "权限已失效", "en": "Permission lapsed"},
+	"runtime_task":                   {"zh-TW": "工作已失效", "zh-CN": "工作已失效", "en": "Task lapsed"},
+}
+
+// adminLink is the platform admin origin the meta_health reconnect CTA points at (contract §10: the admin origin, never a
+// storefront or Meta URL); "" when it is not https or is shaped like a header injection.
+func adminLink(origin string) string {
+	if origin == "" || !strings.HasPrefix(origin, "https://") || strings.ContainsAny(origin, " \r\n\"<>") {
+		return ""
+	}
+	return origin
+}
+
 type line struct{ label, value string }
 
 // Render builds one message per recipient of p (a buyer mail has one; a merchant batch one per owner address). It returns nil for an
@@ -216,7 +276,30 @@ func Render(p Payload) []mail.Message {
 	var subject, intro string
 	var lines []line
 	var link, linkLabel string
-	if p.Kind == KindMerchantNew {
+	if p.Kind == KindMetaHealth {
+		if len(p.To) == 0 {
+			return nil
+		}
+		subject = strings.Replace(c.subject[KindMetaHealth], "%s", store, 1)
+		intro = c.intro[KindMetaHealth]
+		if pn := clean(p.PageName, 120); pn != "" {
+			lines = append(lines, line{c.lbl.page, pn})
+		}
+		for _, cap := range p.MetaCaps {
+			name := capabilityCopy[cap.Capability][loc]
+			if name == "" {
+				name = clean(cap.Capability, 40)
+			}
+			why := reasonCopy[cap.Reason][loc]
+			if why == "" {
+				why = clean(cap.Reason, 40)
+			}
+			lines = append(lines, line{name, why})
+		}
+		if l := adminLink(p.AdminURL); l != "" {
+			link, linkLabel = l, c.lbl.admin
+		}
+	} else if p.Kind == KindMerchantNew {
 		if p.Count < 1 || len(p.To) == 0 {
 			return nil
 		}

@@ -67,6 +67,9 @@ type Options struct {
 	// MetaConnect is the merchant Facebook Page / Instagram connect service (cmd/api newMetaConnect; contract meta-claims-intake-v1
 	// "Merchant connect (R4)"). nil leaves the meta-connect routes unmounted.
 	MetaConnect *metaconnect.Service
+	// MetaHealth is the meta connection-health banner service (contract meta-connection-health-v1 §9; cmd/api newMetaHealth).
+	// nil leaves the B1/B2 routes unmounted.
+	MetaHealth *metaconnect.Health
 	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
 	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
 	Billing *billing.Service
@@ -200,6 +203,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
+	registerMetaHealthRoutes(mux, pool, configured.MetaHealth)
 	registerCustomerRoutes(mux, pool)
 	registerFinanceRoutes(mux, pool)
 	registerBillingRoutes(mux, pool, configured.Billing)

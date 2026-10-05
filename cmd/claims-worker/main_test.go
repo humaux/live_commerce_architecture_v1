@@ -44,6 +44,7 @@ func testEnv() map[string]string {
 		"COMMERCE_META_PAGE_TOKEN_ACTIVE_KEY_ID": "pt-1",
 		"COMMERCE_META_PAGE_TOKEN_KEYS_JSON":     `{"keys":[{"id":"pt-1","key_base64":"` + b64(8) + `"}]}`,
 		"COMMERCE_META_GRAPH_VERSION":            "v23.0",
+		"COMMERCE_META_PAGE_APP_ID":              "4291253377792879",
 	}
 }
 
@@ -80,6 +81,8 @@ func TestOnlyDocumentedVariablesAreRead(t *testing.T) {
 		allowed[name] = true
 	}
 	allowed["COMMERCE_META_GRAPH_BASE_URL"], allowed["COMMERCE_META_GRAPH_AUTH_HEADER"] = true, true
+	// meta connection-health probe (§3.1): optional, default to no Advanced Access and DM not confirmed.
+	allowed["COMMERCE_META_ADVANCED_ACCESS"], allowed["COMMERCE_META_DM_RECEIVER_CONFIRMED"] = true, true
 	// meta-page-token-v2 private ring (merchant connect): probed for presence on every start, loaded only when set (optional).
 	allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS"], allowed["COMMERCE_META_PAGE_HPKE_PRIVATE_KEYS_FILE"] = true, true
 	// ECPay CVS switches (taiwan-cvs-logistics-v1 §12): read on every start; the profile and keyring only when enabled.
@@ -124,6 +127,8 @@ func TestConfigRejections(t *testing.T) {
 		"foreign graph host":  func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "https://graph.example.com" },
 		"non-loopback http":   func(v map[string]string) { v["COMMERCE_META_GRAPH_BASE_URL"] = "http://10.0.0.1:80" },
 		"bad auth header":     func(v map[string]string) { v["COMMERCE_META_GRAPH_AUTH_HEADER"] = "yes" },
+		"no page app id":      func(v map[string]string) { delete(v, "COMMERCE_META_PAGE_APP_ID") },
+		"bad page app id":     func(v map[string]string) { v["COMMERCE_META_PAGE_APP_ID"] = "not-a-number" },
 	}
 	for name, mutate := range bad {
 		v := testEnv()

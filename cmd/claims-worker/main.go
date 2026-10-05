@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"livecommerce/internal/integrations/shipping/ecpay"
 	"livecommerce/internal/integrations/shipping/ecpay/ecpayroute"
 	"livecommerce/internal/jobqueue"
+	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/retention"
 	"livecommerce/internal/storefrontdomains"
@@ -53,6 +55,10 @@ type workerConfig struct {
 	pageKeys              *metareply.PageTokenKeyring
 	pageOpen              *pageopen.Keyring // HPKE private ring of meta-page-token-v2 (merchant connect); nil = v2 credentials are denied
 	graph                 metareply.Config
+	// meta connection-health probe (§4): the Page app id P3 matches against, and the §3.1 reader config the probe
+	// shares with the API's snapshot reader (same Advanced Access / DM flags).
+	metaHealthPageAppID string
+	metaHealthRCfg      metaconnect.ReaderConfig
 	// ECPay CVS route (taiwan-cvs-logistics-v1 §7.4): registered only when ecpayCfg.Enabled.
 	ecpayCfg    ecpay.Config
 	ecpayKeys   *ecpay.Keyring
@@ -75,6 +81,9 @@ func main() {
 }
 
 func validDSN(s string) bool { return len(s) >= 1 && len(s) <= 8192 && strings.TrimSpace(s) != "" }
+
+// metaPageAppIDPattern is the Meta app id shape (COMMERCE_META_PAGE_APP_ID, §4.2 P3).
+var metaPageAppIDPattern = regexp.MustCompile(`^[0-9]{1,40}$`)
 
 // loadConfig reads only the variables listed in doc.go: never K_actor, the Meta payload keyring or a
 // Stripe variable (the env sentinel test records every name asked for; MCI10 greps this package for them).
@@ -134,6 +143,13 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	if c.graph.Validate() != nil {
 		return workerConfig{}, errWorkerConfig
 	}
+	// meta connection-health probe (§4.2 P3): our app id is required (a missing value would make every Page read as
+	// "not subscribed"); the Advanced Access / DM flags default to the safe pre-review values.
+	c.metaHealthPageAppID = getenv("COMMERCE_META_PAGE_APP_ID")
+	if !metaPageAppIDPattern.MatchString(c.metaHealthPageAppID) {
+		return workerConfig{}, errWorkerConfig
+	}
+	c.metaHealthRCfg = metaconnect.NewReaderConfig(getenv("COMMERCE_META_ADVANCED_ACCESS"), getenv("COMMERCE_META_DM_RECEIVER_CONFIRMED") == "1")
 	if c.ecpayCfg, err = ecpay.LoadConfig(getenv); err != nil {
 		return workerConfig{}, errWorkerConfig
 	}
@@ -244,6 +260,11 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return errWorkerRoutes
 	}
+	// meta connection-health probe sweep (§4): read-only Graph probe of due Pages, every 5 min + on start.
+	prober, err := metareply.NewProber(workerPool, c.pageKeys, c.pageOpen, c.graph.GraphBaseURL, c.graph.GraphVersion, c.metaHealthPageAppID, c.metaHealthRCfg)
+	if err != nil {
+		return errWorkerRoutes
+	}
 	poller, err := claimsintake.New(startup, intakePool, c.linkKey, claimsintake.Config{})
 	if err != nil {
 		return errWorkerDatabase
@@ -252,13 +273,15 @@ func run(ctx context.Context, getenv func(string) string) error {
 	river.AddWorker(workers, dispatcher)
 	river.AddWorker(workers, retentionWorker)
 	river.AddWorker(workers, storeVerifyWorker)
+	river.AddWorker(workers, prober)
 	// Default queue of the main river schema: the only queue external_operation_v1 jobs use. A stuck job
 	// (crash mid-dispatch) is rescued after one minute so a reply is not stranded for River's default hour.
 	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
 		Schema: "river", Workers: workers, RescueStuckJobsAfter: retention.RescueWindow,
 		// U08: hourly + on start, unique per hour (retention.JobArgs.InsertOpts); inserted by commerce_claims_worker (IR-4).
 		// R5 store-domains (P0-2): once a minute + on start (storefrontdomains.PeriodicJob).
-		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob()},
+		// W1-01B: the meta connection-health sweep every 5 min + on start (metareply.ProbePeriodicJob).
+		PeriodicJobs: []*river.PeriodicJob{retention.PeriodicJob(), storefrontdomains.PeriodicJob(), metareply.ProbePeriodicJob()},
 		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 4}},
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})

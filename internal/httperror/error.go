@@ -83,6 +83,7 @@ func write(w http.ResponseWriter, status int, code string, retryable bool) {
 		"missing_permission": "A required Facebook permission or Page access is missing.",
 		"cap_exceeded":       "This store has reached the limit of 10 connected Facebook Pages.",
 		"page_taken":         "That Facebook Page is already connected to another store.",
+		"recheck_too_soon":   "A re-check was already requested in the last minute.",
 		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
 		"refundable_changed":    "Refundable amount changed since it was loaded.",
 		"exceeds_refundable":    "Amount exceeds the refundable amount.",
