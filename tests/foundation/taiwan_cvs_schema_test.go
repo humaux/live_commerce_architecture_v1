@@ -233,6 +233,8 @@ func tcsFunctions() []tcsFn {
 		{"integration", "load_ecpay_key_for_selection", iw, true, []string{rt, cr}, false},
 		{"integration", "load_ecpay_key_for_merchant", iw, true, []string{rt}, false},
 		{"fulfillment", "read_cvs_shipment", cw, true, []string{rt}, false},
+		{"fulfillment", "read_cvs_shipment_version", cw, true, []string{rt}, false},
+		{"fulfillment", "pick_list_lines_ok", cw, false, nil, false},
 		{"fulfillment", "read_buyer_cvs_shipment", cw, true, []string{cr}, true},
 		{"fulfillment", "read_cvs_offer", cw, true, []string{cr}, true},
 		{"fulfillment", "record_buyer_cvs_store", cw, true, []string{cr}, false},
