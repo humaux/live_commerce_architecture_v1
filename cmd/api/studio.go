@@ -1,9 +1,13 @@
+// Purpose: Studio config split (R1 ruling G2: planning vs LiveKit media) and its API-side builders — the river_media-backed media planner and the insert-only main-schema river client for the A5 live-session flow reads. The API never starts a worker or queue; media-worker and claims-worker own those lifecycles.
+// Depends on: live.NewMediaPlanner, river (river_media / river schemas), COMMERCE_STUDIO_ENABLED / COMMERCE_STUDIO_MEDIA_ENABLED, live.media_plan_ready (migrations).
+// Used by: cmd/api main.go (studioPlanner + liveFlowJobs → httpapi.Options), cmd/api/studio_test.go.
 package main
 
 import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
@@ -63,4 +67,23 @@ func buildStudioPlanner(ctx context.Context, pool *pgxpool.Pool, config studioCo
 		return nil, errStudioDatabase
 	}
 	return planner, nil
+}
+
+// buildLiveFlowJobs returns the insert-only main-schema River client the A5 live-session flow routes
+// use to enqueue read-only external operations (meta.live_videos, migrations/0118). The claims-worker
+// owns the dispatch lifecycle; the API never starts a worker or queue on this client. nil when Studio
+// is off (the A5 routes are unmounted anyway). Unlike buildStudioPlanner this is the default "river"
+// schema, matching the ads/meta-connect/accounts builders — not river_media.
+func buildLiveFlowJobs(pool *pgxpool.Pool, enabled bool) (*river.Client[pgx.Tx], error) {
+	if !enabled {
+		return nil, nil
+	}
+	if pool == nil {
+		return nil, errStudioDatabase
+	}
+	jobs, err := river.NewClient[pgx.Tx](riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	if err != nil {
+		return nil, errStudioDatabase
+	}
+	return jobs, nil
 }

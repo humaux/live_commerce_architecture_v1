@@ -1,3 +1,6 @@
+// Purpose: claims-worker process — poll the claims intake, dispatch external operations (Meta reply/audience/live-videos, ECPay CVS) through the River default queue, and run the retention purge and store-domain verify sweeps. The only process holding the Meta Page private keyring and ECPay custody.
+// Depends on: platform worker pools, metareply routes, claimsintake, retention, storefrontdomains, ecpayroute, core.NewDispatcher, river (schema "river"), COMMERCE_CLAIMS_WORKER_ENABLED.
+// Used by: the deployed claims-worker binary; cmd/claims-worker/main_test.go.
 package main
 
 import (
@@ -213,6 +216,13 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return errWorkerRoutes
 	}
 	routes = append(routes, audienceRoutes...)
+	// A5-3 (MOCK): read-only Page "live videos" route reuses this process's private token custody
+	// (pages_read_engagement only); the merchant API never loads a Page token.
+	liveVideoRoutes, err := metareply.LiveVideoRoutes(workerPool, c.pageKeys, c.pageOpen, c.graph)
+	if err != nil {
+		return errWorkerRoutes
+	}
+	routes = append(routes, liveVideoRoutes...)
 	if c.ecpayCfg.Enabled {
 		ecpayRoutes, err := ecpayroute.Routes(workerPool, c.ecpayKeys, c.ecpayClient, c.ecpayCfg)
 		if err != nil {
