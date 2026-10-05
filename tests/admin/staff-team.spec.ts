@@ -131,6 +131,8 @@ async function unobscuredMemberRole(page: Page, testId: string) {
       return hit === element || (hit !== null && element.contains(hit));
     });
   }), { message: "member role must not be covered by the actions column" }).toBe(true);
+  await control.click();
+  await page.keyboard.press("Escape");
 }
 
 // Sign-up up to a session; `priorMails` = mails already sent to the address (the sign-up code is the next one).

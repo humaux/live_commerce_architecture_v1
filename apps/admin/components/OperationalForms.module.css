@@ -15,6 +15,7 @@
 .teamTable table { min-width: 720px; }
 .teamTable th { white-space: nowrap; }
 .teamTable td:last-child { min-width: 160px; }
+/* Keep actions in the same scroll plane: a pinned last column can cover the member role control on phones. */
 .teamTable td { vertical-align: middle; }
 .page :global(.studio-fields) { gap: 6px 16px; }
 .page :global(.studio-fields) label { display: block; }
@@ -26,5 +27,4 @@
 @media (max-width: 680px) {
   .inviteRow { grid-template-columns: minmax(0, 1fr); }
   .form > button { width: 100%; }
-  .teamTable td:last-child { position: sticky; right: 0; background: var(--ui-surface); }
 }
