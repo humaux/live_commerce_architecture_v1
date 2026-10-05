@@ -1,3 +1,6 @@
+// Purpose: Renders the merchant operational summary and attention links.
+// Depends on: next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/merchant-tools-client, @/lib/merchant-tools-copy, @/lib/orders-model, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./customers.css, ./merchant-tools.css
+// Used by: apps/admin/app/[locale]/page.tsx
 "use client";
 
 // Admin landing (/{locale}): what needs the merchant today. One guarded read of BFF GET /api/stores/{store}/tools/dashboard -> Go
@@ -27,6 +30,7 @@ const storeQuery = (store: Store | null, extra: Record<string, string> = {}) => 
   return params.size ? `?${params}` : "";
 };
 
+/** Renders the merchant operational summary and attention links. Loads dashboard results through merchant-tools-client. */
 export function Dashboard({
   locale, stores, store, initialError, renderKey,
 }: {

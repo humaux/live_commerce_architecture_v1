@@ -1,3 +1,8 @@
+/*
+ * Purpose: Owns ads page form, connection, draft and report layout styles.
+ * Depends on: Admin global CSS variables and the selectors used by importing components.
+ * Used by: apps/admin/components/Ads.tsx
+ */
 /* Ads uses frozen shared header, field, badge and table presentation; Go/PG own all domain state. */
 .ads-page {
   --ads-muted: #5c6e83;

@@ -1,3 +1,6 @@
+// Purpose: Renders inventory ledger rows and product-selection controls.
+// Depends on: @live-commerce/i18n, @live-commerce/ui, @/lib/copy, @/lib/model, @/lib/client, @/lib/images-client, @/lib/presentation-copy, ./ProductPhoto, ./Icon
+// Used by: apps/admin/components/Ledger.tsx
 "use client";
 
 // Pure inventory table display. Ledger owns catalog-ledger BFF data, selection, journals and Go inventory/adjustments commands.
@@ -12,6 +15,7 @@ import { presentationCopy } from "@/lib/presentation-copy";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 
+/** Describes LedgerTableProps values shared by this presentation module. */
 export type LedgerTableProps = {
   locale: Locale;
   c: Copy;
@@ -25,6 +29,7 @@ export type LedgerTableProps = {
   onRadioSelect: (skuID: string) => void;
 };
 
+/** Renders inventory rows and delegates selection/edit actions to supplied callbacks. */
 export function LedgerTable({
   locale,
   c,

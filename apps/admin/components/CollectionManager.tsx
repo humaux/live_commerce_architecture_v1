@@ -1,3 +1,6 @@
+// Purpose: Owns catalog collection management and ordered product selection.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/catalog-v2-write, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./ProductAdmin.css
+// Used by: apps/admin/app/[locale]/collections/page.tsx
 "use client";
 
 // Merchant collections page body (/{locale}/collections): a list of the store's collections beside one editor (create,
@@ -49,6 +52,7 @@ import "./ProductAdmin.css";
 
 const NEW = "new";
 
+/** Owns catalog collection management and ordered product selection. User actions submit collection writes through catalog-v2-client. */
 export function CollectionManager({
   locale,
   stores,

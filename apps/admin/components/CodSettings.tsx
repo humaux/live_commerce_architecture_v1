@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant cash-on-delivery settings card.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/logistics-client, @/lib/cod-model, @/lib/cod-copy, ./settings.css
+// Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
 // Settings -> cash on delivery card (mounted by SettingsWizard.tsx next to <BankTransferSettings>; home-cod R5, migration 0107): the
@@ -23,6 +26,7 @@ import "./settings.css";
 
 type Load = "loading" | "ready" | "hidden" | "error";
 
+/** Owns the merchant cash-on-delivery settings card. User actions submit settings through logistics-client. */
 export function CodSettings({
   store,
   locale,

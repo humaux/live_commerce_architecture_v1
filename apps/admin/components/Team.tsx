@@ -1,3 +1,6 @@
+// Purpose: Owns team member and pending invitation management controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/customers-client, @/lib/orders-model, @/lib/team-client, @/lib/team-model, @/lib/team-copy, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/team/page.tsx
 "use client";
 
 // Team page (/{locale}/team): members with role select + remove (confirm), pending invitations (send again / withdraw), and the
@@ -23,6 +26,7 @@ import "./customers.css";
 
 const errorText = (c: TeamCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns team member and pending invitation management controls. User actions submit invitation and member commands through team-client. */
 export function Team({
   locale, stores, store, initialError, renderKey,
 }: {

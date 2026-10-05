@@ -1,3 +1,6 @@
+// Purpose: Owns storefront design draft editing, publication and rollback controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/customers-client, @/lib/settings-client, @/lib/storefront-client, @/lib/design-client, @/lib/design-copy, @/lib/design-model, ./WorkspaceFrame, ./AdminPageHeader, ./DesignProfile, ./DesignNav, ./DesignSections, ./DesignPages, ./DesignMedia, ./orders.css, ./design.css
+// Used by: apps/admin/app/[locale]/design/page.tsx
 "use client";
 
 // Merchant store-design page (/{locale}/design): store profile, header/footer navigation, home sections, information
@@ -122,6 +125,7 @@ function useLoad(
   return { ...current, reload: () => setTick((value) => value + 1) };
 }
 
+/** Owns storefront design draft editing, publication and rollback controls. User actions submit draft, publication, rollback and media commands through design-client. */
 export function Design({
   locale,
   stores,

@@ -1,3 +1,6 @@
+// Purpose: Adapts design editor field labels and validation to the shared field component.
+// Depends on: react, @live-commerce/ui
+// Used by: apps/admin/components/DesignSections.tsx, apps/admin/components/DesignPages.tsx, apps/admin/components/DesignProfile.tsx, apps/admin/components/DesignNav.tsx
 // Labelled form field of the Design editor: label text, control, and the inline error line (role=alert) used for both
 // local "required" hints and the server's 422 path message. Presentational only.
 import {
@@ -9,6 +12,7 @@ import {
 } from "react";
 import { Field as SharedField } from "@live-commerce/ui";
 
+/** Wraps a design editor field in the shared accessible field presentation. */
 export function Field({
   label,
   error,

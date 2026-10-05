@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant subscription status and hosted billing entry controls.
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/billing-client, @/lib/customers-client, @/lib/billing-model, @/lib/orders-model, @/lib/billing-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/billing/page.tsx
 "use client";
 
 // Merchant billing page (/{locale}/billing): standing, plan choices -> Stripe Checkout redirect, "Manage payment &
@@ -27,6 +30,7 @@ import "./customers.css";
 type Phase = "idle" | "updating" | "slow";
 const errorText = (c: BillingCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns the merchant subscription status and hosted billing entry controls. User actions request hosted checkout or portal navigation through billing-client. */
 export function Billing({
   locale,
   stores,

@@ -1,3 +1,6 @@
+// Purpose: Owns storefront publication and merchant domain settings controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/storefront-client, @/lib/storefront-model, @/lib/storefront-command, @/lib/storefront-copy, ./settings.css
+// Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
 // Settings -> 网店发布 card (mounted by SettingsWizard.tsx below the setup steps): shows whether the store is published,
@@ -39,6 +42,7 @@ function hostOf(origin: string) {
   return origin.slice("https://".length);
 }
 
+/** Owns storefront publication and merchant domain settings controls. User actions submit publication and domain commands through storefront-client. */
 export function StorefrontSettings({
   store,
   locale,

@@ -1,3 +1,6 @@
+// Purpose: Renders design media selection, upload and removal controls.
+// Depends on: react, @live-commerce/ui, @/lib/design-client, @/lib/design-copy, @/lib/design-model
+// Used by: apps/admin/components/DesignSections.tsx, apps/admin/components/DesignProfile.tsx, apps/admin/components/Design.tsx
 "use client";
 
 // Image picker of the Design editor (store profile logo/favicon, hero and image-text sections).
@@ -12,12 +15,14 @@ import { mediaURL, MEDIA_ACCEPT } from "@/lib/design-client";
 import { fill, type DesignCopy } from "@/lib/design-copy";
 import type { MediaItem } from "@/lib/design-model";
 
+/** Describes MediaOps values shared by this presentation module. */
 export type MediaOps = {
   /** Resolves to the new image id, or null after showing its own message. */
   upload: (file: File) => Promise<string | null>;
   remove: (id: string) => Promise<void>;
 };
 
+/** Renders the media chooser and delegates upload/removal through supplied operations. */
 export function ImagePicker({
   store,
   label,

@@ -1,3 +1,6 @@
+// Purpose: Renders ads draft forms, details and status badges.
+// Depends on: @live-commerce/ui, @/lib/presentation-copy, react, @live-commerce/i18n, @/lib/ads-model, @/lib/ads-copy, @/lib/attribution-copy
+// Used by: apps/admin/components/Ads.tsx
 "use client";
 import { DateControl } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
@@ -29,11 +32,13 @@ import {
 import { errorText, type AdsCopy } from "@/lib/ads-copy";
 import { attributionCopy } from "@/lib/attribution-copy";
 
+/** Describes Mode values shared by this presentation module. */
 export type Mode =
   | { kind: "none" }
   | { kind: "new" | "copy"; form: FormState }
   | { kind: "edit"; form: FormState; draft: Draft };
 
+/** Renders the server-reported ads draft status. */
 export function Badge({ c, status }: { c: AdsCopy; status: Draft["status"] }) {
   const tone =
     status === "ACTIVE"
@@ -54,6 +59,7 @@ export function Badge({ c, status }: { c: AdsCopy; status: Draft["status"] }) {
   );
 }
 
+/** Renders draft fields and delegates edits to the supplied callbacks. */
 export function DraftFormPanel({
   c,
   locale,
@@ -293,6 +299,7 @@ export function DraftFormPanel({
 }
 
 // ---------- draft detail ----------
+/** Renders a loaded ads draft and delegates action requests to callbacks. */
 export function DraftDetail({
   c,
   locale,

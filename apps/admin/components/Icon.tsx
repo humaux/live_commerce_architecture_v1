@@ -1,3 +1,6 @@
+// Purpose: Renders the admin named SVG icon set.
+// Depends on: react
+// Used by: apps/admin/components/Customers.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/Ledger.tsx, apps/admin/components/Entry.tsx, apps/admin/components/LedgerTable.tsx, apps/admin/components/WorkspaceFrame.tsx, apps/admin/components/Ads.tsx, apps/admin/components/ProductList.tsx
 import type { CSSProperties } from "react";
 
 const paths: Record<string, string> = {
@@ -19,6 +22,7 @@ const paths: Record<string, string> = {
   chevron: "M9 5l7 7-7 7",
   refresh: "M20 11a8 8 0 1 0-2 5M20 4v7h-7",
 };
+/** Renders a named SVG icon without network or storage effects. */
 export function Icon({
   name,
   size = 21,

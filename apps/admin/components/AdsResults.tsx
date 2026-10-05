@@ -1,3 +1,6 @@
+// Purpose: Renders aggregate ads reports and CAPI configuration controls.
+// Depends on: @live-commerce/ui, @/lib/presentation-copy, react, @live-commerce/i18n, @live-commerce/format, @/lib/model, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy
+// Used by: apps/admin/components/Ads.tsx
 "use client";
 import { DateControl } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
@@ -20,6 +23,7 @@ import {
 } from "@/lib/ads-model";
 import { errorText, type AdsCopy } from "@/lib/ads-copy";
 
+/** Renders aggregate ads reports and CAPI configuration controls. Loads report aggregates through ads-client; CAPI writes are delegated to the supplied callback. */
 export function ReportSection({
   c,
   locale,
@@ -267,6 +271,7 @@ export function ReportSection({
 }
 
 // ---------- CAPI ----------
+/** Renders aggregate ads reports and CAPI configuration controls. Loads report aggregates through ads-client; CAPI writes are delegated to the supplied callback. */
 export function CapiSection({
   c,
   settings,

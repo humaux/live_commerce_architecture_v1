@@ -1,3 +1,6 @@
+// Purpose: Owns catalog product browsing, filtering and bulk-edit controls.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/orders-model, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./ProductQuickEdit, ./Icon, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
+// Used by: apps/admin/app/[locale]/products/page.tsx
 "use client";
 
 // Merchant product list (/{locale}/products): one dense table of every product with search, status filter, cover
@@ -63,9 +66,11 @@ const href = (
   if (after) params.set("after", after);
   return `/${locale}/products${params.size ? `?${params}` : ""}`;
 };
+/** Builds the localized product editor URL without a network request. */
 export const editHref = (locale: Locale, store: string, id: string) =>
   `/${locale}/products/${id}${store ? `?store=${store}` : ""}`;
 
+/** Owns catalog product browsing, filtering and bulk-edit controls. User actions submit catalog commands through catalog-v2-client. */
 export function ProductList({
   locale,
   store,

@@ -1,3 +1,8 @@
+/*
+ * Purpose: Owns shared product list, editor and import presentation styles.
+ * Depends on: Admin global CSS variables and the selectors used by importing components.
+ * Used by: apps/admin/components/ProductImport.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/CollectionManager.tsx, apps/admin/components/ProductEditor.tsx
+ */
 /* Products list, product editor and collections pages (unit catalog-core). Reuses orders.css (table, badge, pager,
    message, controls) and the global tokens; only what those cannot express lives here: the heading with actions, the
    cover cell, status badges, the stacked editor sections and the two-pane collections layout. No new colour tokens. */

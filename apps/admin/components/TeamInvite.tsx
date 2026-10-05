@@ -1,3 +1,6 @@
+// Purpose: Owns the invitation acceptance view and sign-in guidance.
+// Depends on: react, @live-commerce/i18n, @/lib/invite-next, @/lib/settings-client, @/lib/team-client, @/lib/team-copy, @/lib/company, ./OperatorFooter, ./orders.css, ./customers.css
+// Used by: apps/admin/app/[locale]/invite/[token]/page.tsx
 "use client";
 
 // Invitation page body (/{locale}/invite/{token}): signed out -> how to sign in or sign up with the invited address, then reopen
@@ -16,6 +19,7 @@ import { OperatorFooter } from "./OperatorFooter";
 import "./orders.css";
 import "./customers.css";
 
+/** Owns the invitation acceptance view and sign-in guidance. User acceptance submits the token through team-client. */
 export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale: Locale; token: string; signedIn: boolean; passwordLogin: boolean }) {
   const c = teamCopy[locale];
   const [phase, setPhase] = useState<"idle" | "busy" | "done">("idle");

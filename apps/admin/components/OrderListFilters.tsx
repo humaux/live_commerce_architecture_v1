@@ -1,3 +1,6 @@
+// Purpose: Owns the editable order filter controls and validated apply callback.
+// Depends on: react, @live-commerce/i18n, @/lib/orders-v2, @/lib/orders-v2-copy, @live-commerce/ui, @/lib/presentation-copy
+// Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
 // Read-only filters: private search remains memory-only; totals are server projections.
@@ -8,6 +11,7 @@ import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { DateControl } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 
+/** Owns the editable order filter controls and validated apply callback. */
 export function OrderListFilters({ locale, filters, sessions, disabled, onApply, children }: {
   locale: Locale; filters: OrderFilters; sessions: OrderSession[]; disabled: boolean;
   onApply: (next: OrderFilters) => void;

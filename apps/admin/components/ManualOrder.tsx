@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant manual-order entry workflow.
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
+// Used by: apps/admin/app/[locale]/orders/new/page.tsx
 "use client";
 
 // Create an order from the admin (/{locale}/orders/new): the merchant picks SKUs and quantities, types the customer and the delivery,
@@ -32,6 +35,7 @@ type Line = { sku_id: string; quantity: number; label: string; code: string; pri
 const blankHome = { region: "", city: "", postal_code: "", line1: "", line2: "" };
 const blankCVS = { store_code: "", store_name: "", store_address: "" };
 
+/** Owns the merchant manual-order entry workflow. User actions submit manual-order commands through merchant-tools-client. */
 export function ManualOrder({
   locale, stores, store, initialError, renderKey,
 }: {

@@ -1,3 +1,6 @@
+// Purpose: Owns studio claim controls, source binding and one-time cart-link presentation.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/client, @/lib/claims-client, @/lib/claim-source-model, @/lib/claims-request, @/lib/claims-model, @/lib/catalog-v2-model, @/lib/orders-model, @/lib/claims-copy, @/lib/studio-copy, @/lib/meta-connect-copy, @/lib/meta-connect-client, @/lib/orders-client, @/lib/meta-page-source, ./WorkspaceFrame, ./AdminPageHeader, ./claims.css
+// Used by: apps/admin/app/[locale]/studio/claims/page.tsx
 "use client";
 
 // Owns the Studio › Claims panel (contracts/live-keyword-claims-v1.md §11.1, T10b): claim
@@ -75,6 +78,7 @@ const sourceFormOf = (source: ClaimSource | null, locale: Locale): ClaimSourceFo
   : { input: "", private_reply: false, reply_locale: locale, active: true, platform: "" };
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
+/** Owns studio claim controls, source binding and one-time cart-link presentation. User actions submit claim and source-binding commands through claims-client. */
 export function StudioClaims({ locale, store, scene, initialError }: {
   locale: Locale; store: Store | null; scene: string; initialError: StudioErrorCode | null;
 }) {

@@ -1,3 +1,6 @@
+// Purpose: Renders draft and session aggregate attribution tables.
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @live-commerce/format, @/lib/attribution-copy, @/lib/attribution-format, @/src/routes, @/lib/attribution-model, ./AttributionAudienceRead
+// Used by: apps/admin/components/Attribution.tsx
 "use client";
 // Read-only attribution panels: frozen BFF aggregates -> Go /v1/admin/stores/{store}/ads/attribution.
 // Parent owns report navigation/loading; this module owns the complete report tables and their empty states.
@@ -62,6 +65,7 @@ const amount = (
   c: AttributionCopy,
 ) => (n === null ? c.unknown : money(locale, currency, n));
 
+/** Renders draft-level aggregate attribution without writing data. */
 export function DraftPanel({
   c,
   locale,
@@ -297,6 +301,7 @@ function BuyerPanel({
   );
 }
 
+/** Renders session-level aggregate attribution without writing data. */
 export function SessionPanel({
   c,
   locale,

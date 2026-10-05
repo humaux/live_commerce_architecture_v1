@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant setup sequence and composes integration settings cards.
+// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
+// Used by: apps/admin/app/[locale]/settings/page.tsx
 "use client";
 
 // Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/{provider-accounts,markets/...}
@@ -66,6 +69,7 @@ import {
 } from "@/lib/settings-draft";
 import "./settings.css";
 
+/** Owns the merchant setup sequence and composes integration settings cards. User actions submit setup changes through settings-client; nested cards own their commands. */
 export function SettingsWizard({
   locale,
   initial,

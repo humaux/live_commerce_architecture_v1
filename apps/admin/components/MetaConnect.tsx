@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant Facebook and Instagram connection controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/meta-connect-client, @/lib/meta-connect-model, @/lib/meta-connect-copy, ./settings.css
+// Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
 // Settings -> Facebook Page / Instagram card (mounted by SettingsWizard.tsx below the storefront card): the merchant connects their
@@ -33,6 +36,7 @@ const day = 86_400_000;
 const label = (c: MetaConnectCopy, code: string) =>
   code === "task_messaging" ? c.task_messaging : code === "task_moderate" ? c.task_moderate : code;
 
+/** Owns the merchant Facebook and Instagram connection controls. User actions submit connection-management requests through meta-connect-client. */
 export function MetaConnect({
   store,
   locale,

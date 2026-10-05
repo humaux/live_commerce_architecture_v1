@@ -1,3 +1,6 @@
+// Purpose: Owns the read-only merchant attribution report page.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, ./AdminPageHeader, @/lib/model, @/lib/ads-request, @/lib/attribution-client, @/lib/attribution-copy, @/lib/attribution-model, ./WorkspaceFrame, ./attribution.css, ./AttributionPanels
+// Used by: apps/admin/app/[locale]/ads/attribution/page.tsx
 "use client";
 // D7/D9 readonly page. BFF GET /api/stores/{store}/ads/attribution -> Go GET /v1/admin/stores/{store}/ads/attribution.
 // URL holds only report filters. PG/Go own amounts and order facts; audience-read queues guarded Meta GETs only.
@@ -26,6 +29,7 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import "./attribution.css";
 import { DraftPanel, SessionPanel } from "./AttributionPanels";
 
+/** Owns the read-only merchant attribution report page. */
 export function Attribution({
   locale,
   store,

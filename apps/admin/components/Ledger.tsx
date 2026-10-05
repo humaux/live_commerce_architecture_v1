@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant inventory ledger page and product inspection.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/copy, @/lib/model, @/lib/client, @/lib/images-client, ./ProductPhoto, ./Icon, ./WorkspaceFrame, ./AdminPageHeader, ./LedgerTable
+// Used by: apps/admin/app/[locale]/inventory/page.tsx
 "use client";
 
 // Stock ledger (/[locale]/inventory). BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
@@ -97,6 +100,7 @@ function purchaseReadError(error: unknown, c: Copy) {
   return c.purchaseFailed;
 }
 
+/** Owns the merchant inventory ledger page and product inspection. Reads the workspace through the BFF and submits journal commands through lib/client. */
 export function Ledger({
   locale,
   initial,

@@ -1,3 +1,6 @@
+// Purpose: Owns merchant ads settings, connection and draft workflows.
+// Depends on: react, next/navigation, @live-commerce/i18n, @live-commerce/ui, ./AdminPageHeader, @/lib/model, @/lib/settings-client, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy, ./WorkspaceFrame, ./Icon, ./ads.css, ./AdsConnection, ./AdsDraft, ./AdsResults, @/lib/attribution-copy
+// Used by: apps/admin/app/[locale]/ads/page.tsx
 "use client";
 
 // Merchant ads page: Meta connection, draft list + detail, draft form, report, CAPI setting (contracts/meta-ads-v1.md §2, §5, §7).
@@ -38,6 +41,7 @@ import { Badge, DraftFormPanel, DraftDetail, type Mode } from "./AdsDraft";
 import { ReportSection, CapiSection } from "./AdsResults";
 import { attributionCopy } from "@/lib/attribution-copy";
 
+/** Describes AdsInitialError values shared by this presentation module. */
 export type AdsInitialError = "signed-out" | "forbidden" | "unavailable";
 type Status = "loading" | "ready" | AdsInitialError;
 type Banner = { kind: "ok" | "bad"; text: string } | null;
@@ -53,6 +57,7 @@ function when(locale: Locale, iso: string | null, empty: string) {
 }
 const short = (id: string) => `${id.slice(0, 4)}…${id.slice(-4)}`;
 
+/** Owns merchant ads settings, connection and draft workflows. User actions submit settings, connection and draft commands through ads-client. */
 export function Ads({
   locale, stores, store, connect, connectError, draft: initialDraft, initialError,
 }: {

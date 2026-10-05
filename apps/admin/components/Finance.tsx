@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant finance summary and CSV download controls.
+// Depends on: react, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-client, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/finance/page.tsx
 "use client";
 
 // Merchant finance summary (/{locale}/finance): date range (native date inputs), daily table + totals row, CSV link,
@@ -31,6 +34,7 @@ function rangeOK(from: string, to: string) {
   return Number.isFinite(a) && Number.isFinite(b) && b >= a && (b - a) / DAY_MS <= 91;
 }
 
+/** Owns the merchant finance summary and CSV download controls. Loads finance data through customers-client and exposes the server CSV download. */
 export function Finance({
   locale,
   stores,

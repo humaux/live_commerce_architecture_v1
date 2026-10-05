@@ -1,3 +1,8 @@
+/*
+ * Purpose: Owns the admin global theme and shared page layout styles.
+ * Depends on: ../../../packages/ui/src/tokens.css
+ * Used by: apps/admin/app/[locale]/layout.tsx
+ */
 @import "../../../packages/ui/src/tokens.css";
 
 :root {

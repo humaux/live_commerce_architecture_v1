@@ -1,3 +1,6 @@
+// Purpose: Renders ads account connection controls and connection outcomes.
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy
+// Used by: apps/admin/components/Ads.tsx
 "use client";
 // Extracted ads panel: existing BFF ads-client calls -> Go /v1/admin/stores/{store}/ads; no command or DTO changes.
 import { useEffect, useState, type FormEvent } from "react";
@@ -18,6 +21,7 @@ import {
 } from "@/lib/ads-model";
 import type { AdsCopy } from "@/lib/ads-copy";
 
+/** Renders ads account connection controls and connection outcomes. User actions submit connection commands through ads-client. */
 export function ConnectionSection({
   c,
   locale,

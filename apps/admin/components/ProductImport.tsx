@@ -1,3 +1,6 @@
+// Purpose: Owns product CSV preview, import commit and export controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./customers.css, ./merchant-tools.css, ./ProductAdmin.css
+// Used by: apps/admin/app/[locale]/products/import/page.tsx
 "use client";
 
 // Product CSV import / export (/{locale}/products/import). BFF /api/stores/{store}/tools/products/{export.csv, import/preview, import/commit}
@@ -23,6 +26,7 @@ import "./ProductAdmin.css";
 
 type Phase = "idle" | "checking" | "checked" | "committing" | "done";
 
+/** Owns product CSV preview, import commit and export controls. User actions request server CSV preview, commit or export through merchant-tools-client. */
 export function ProductImport({
   locale,
   stores,

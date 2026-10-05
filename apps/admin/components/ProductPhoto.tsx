@@ -1,3 +1,6 @@
+// Purpose: Renders product thumbnails and server-backed photo management controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/copy, @/lib/model, @/lib/images-client
+// Used by: apps/admin/components/Ledger.tsx, apps/admin/components/ProductDocumentForm.tsx, apps/admin/components/LedgerTable.tsx, apps/admin/components/ProductList.tsx
 "use client";
 
 // Product photo thumbnail and the photo manager of the Ledger inspector (catalog-media CM5).
@@ -35,6 +38,7 @@ const cells: Record<string, number> = {
   "AC-006-GY": 7,
   "CL-007-BR": 8,
 };
+/** Renders a product cover image or its existing fallback. */
 export function ProductPhoto({
   code,
   name,
@@ -81,6 +85,7 @@ export function ProductPhoto({
 }
 
 // Photo manager for one product. `onChanged` runs after every committed change so the Ledger refreshes its cover.
+/** Lists product images and submits upload, deletion and ordering through images-client. */
 export function ProductPhotoManager({
   locale,
   store,

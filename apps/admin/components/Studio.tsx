@@ -1,3 +1,6 @@
+// Purpose: Owns studio draft editing and rehearsal controls.
+// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/studio-copy, @/lib/orders-model, @/lib/promotions-model, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css
+// Used by: apps/admin/app/[locale]/studio/page.tsx
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -92,6 +95,7 @@ function errorCode(error: unknown): StudioErrorCode {
   return error instanceof StudioError ? error.code : "unavailable";
 }
 
+/** Owns studio draft editing and rehearsal controls. User actions submit draft and rehearsal commands through studio-client. */
 export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   locale: Locale;
   stores: Store[];

@@ -1,3 +1,6 @@
+// Purpose: Renders order detail and composes the supplied action sections.
+// Depends on: @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, ./OrderRefunds, ./OrderShipment, ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection
+// Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
 // Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / transfer / CVS / COD / shipment
@@ -19,9 +22,11 @@ import { OrderCodCollection } from "./OrderCodCollection";
 // Refund section applies once money was captured (stripe-refund-v1 §4.3); earlier payment states have nothing to refund.
 const capturedPayment = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
 
+/** Formats a minor-unit order amount for display. */
 export function amount(locale: Locale, currency: string, minor: number) {
   return money(locale, currency, minor);
 }
+/** Renders the localized order-state badge. */
 export function badge(state: string, c: OrdersCopy) {
   return (
     <Badge
@@ -33,12 +38,14 @@ export function badge(state: string, c: OrdersCopy) {
     </Badge>
   );
 }
+/** Describes Sections values shared by this presentation module. */
 export type Sections = {
   store: string;
   actions: OrderActions;
   boundary: string;
   onChanged: () => Promise<boolean>;
 };
+/** Composes loaded order detail with the supplied action sections. */
 export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, sections: Sections) {
   const m = (value: number) => amount(locale, detail.currency, value);
   const dest = detail.destination;

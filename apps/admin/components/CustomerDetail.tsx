@@ -1,3 +1,6 @@
+// Purpose: Owns customer detail and merchant privacy-action controls.
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
 // Merchant customer detail (/{locale}/customers/{customer}): facts, orders, claims, consent with "Record withdrawal",
@@ -35,6 +38,7 @@ import "./customers.css";
 type Notice = { tone: "ok" | "bad"; text: string } | null;
 const errorText = (c: CustomersCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns customer detail and merchant privacy-action controls. User actions request consent withdrawal, export or erasure through customers-client. */
 export function CustomerDetail({
   locale,
   stores,

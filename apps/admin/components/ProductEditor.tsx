@@ -1,3 +1,6 @@
+// Purpose: Loads the selected catalog product and hosts its document editor.
+// Depends on: next/link, react, @live-commerce/i18n, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./WorkspaceFrame, ./AdminPageHeader, ./ProductDocumentForm, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
+// Used by: apps/admin/app/[locale]/products/[product]/page.tsx
 "use client";
 // Approved 03: one document form. The old PATCH/ProductVariants writer is retired.
 import Link from "next/link";
@@ -18,6 +21,7 @@ import { ProductDocumentForm } from "./ProductDocumentForm";
 import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
+/** Loads the selected catalog product and hosts its document editor. Loads the product through catalog-v2-client; ProductDocumentForm owns document writes. */
 export function ProductEditor({
   locale,
   store,

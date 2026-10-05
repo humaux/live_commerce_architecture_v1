@@ -1,3 +1,6 @@
+// Purpose: Owns merchant promotion creation, editing and pause/resume controls.
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css
+// Used by: apps/admin/app/[locale]/promotions/page.tsx
 "use client";
 
 // Discount codes page (/{locale}/promotions): list (code, discount, minimum, Taipei-time window, usage, per-buyer limit, status), create, edit
@@ -28,6 +31,7 @@ import "./promotions.css";
 
 const errorText = (c: PromotionsCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns merchant promotion creation, editing and pause/resume controls. User actions submit promotion writes through promotions-client. */
 export function Promotions({
   locale, stores, store, initialError, renderKey,
 }: {

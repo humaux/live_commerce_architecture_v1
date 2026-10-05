@@ -1,3 +1,6 @@
+// Purpose: Owns the paginated merchant customer search page.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
 
 // Merchant customers list (/{locale}/customers, U1 audit-first: one table, no card grid, orders table classes).
@@ -29,9 +32,11 @@ function url(locale: Locale, store: string, q: string, after: string) {
   if (after) params.set("after", after);
   return `/${locale}/customers${params.size ? `?${params}` : ""}`;
 }
+/** Owns the paginated merchant customer search page. Loads customer results through customers-client. */
 export const detailHref = (locale: Locale, store: string, id: string) =>
   `/${locale}/customers/${id}${store ? `?store=${store}` : ""}`;
 
+/** Owns the paginated merchant customer search page. Loads customer results through customers-client. */
 export function Customers({
   locale,
   stores,

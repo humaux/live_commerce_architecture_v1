@@ -1,3 +1,6 @@
+// Purpose: Owns sign-in and initial-store onboarding entry views.
+// Depends on: @/lib/storefront-handle, react, @live-commerce/i18n, @/lib/entry-copy, @/lib/company, ./OperatorFooter, @/lib/entry-state, ./Icon, @/lib/session-events, ./PasswordAuth
+// Used by: apps/admin/app/[locale]/page.tsx, apps/admin/app/[locale]/reset/page.tsx, apps/admin/app/[locale]/signup/page.tsx
 "use client";
 import { validStorefrontReceipt } from "@/lib/storefront-handle";
 // Signed-out / onboarding shell for /[locale]/ and (signed-out only) /[locale]/signup, /[locale]/reset.
@@ -48,6 +51,7 @@ async function sessionStorageKey(csrf: string) {
   return `commerce-onboarding:${namespace}`;
 }
 
+/** Owns sign-in and initial-store onboarding entry views. User actions submit authentication or onboarding requests to the BFF. */
 export function Entry({
   locale,
   status,
