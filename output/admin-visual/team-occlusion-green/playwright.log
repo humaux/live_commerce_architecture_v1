@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:57683) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/staff-team.spec.ts:195:3 › staff chains › staff chain zh-TW desktop: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke (3.4s)
+  ✓  2 tests/admin/staff-team.spec.ts:195:3 › staff chains › staff chain en mobile: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke (2.9s)
+  ✓  3 tests/admin/staff-team.spec.ts:195:3 › staff chains › staff chain en desktop: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke (2.5s)
+  ✓  4 tests/admin/staff-team.spec.ts:195:3 › staff chains › staff chain zh-TW mobile: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke (2.1s)
+  ✓  5 tests/admin/staff-team.spec.ts:416:1 › known gaps › @defect role-aware navigation: a fulfilment user is not offered Team or Billing (1.3s)
+  ✓  6 tests/admin/staff-team.spec.ts:445:1 › known gaps › @defect invite link token stays out of Referer headers of the page's own requests (585ms)
+
+  6 passed (13.1s)

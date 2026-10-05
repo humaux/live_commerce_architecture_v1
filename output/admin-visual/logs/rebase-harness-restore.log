@@ -1,0 +1,388 @@
+On branch unit/admin-visual
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   output/home-cod-ui/admin-settings-en-1366.png
+	modified:   output/home-cod-ui/admin-settings-en-1586.png
+	modified:   output/home-cod-ui/admin-settings-en-390.png
+	modified:   output/home-cod-ui/admin-settings-zh-CN-1366.png
+	modified:   output/home-cod-ui/admin-settings-zh-CN-1586.png
+	modified:   output/home-cod-ui/admin-settings-zh-CN-390.png
+	modified:   output/home-cod-ui/admin-settings-zh-TW-1366.png
+	modified:   output/home-cod-ui/admin-settings-zh-TW-1586.png
+	modified:   output/home-cod-ui/admin-settings-zh-TW-390.png
+	modified:   output/home-cod-ui/buyer-cancelled-mock-en-1586.png
+	modified:   output/home-cod-ui/buyer-cancelled-mock-en-390.png
+	modified:   output/home-cod-ui/buyer-cancelled-mock-zh-TW-1586.png
+	modified:   output/home-cod-ui/buyer-cancelled-mock-zh-TW-390.png
+	modified:   output/home-cod-ui/buyer-checkout-en-1366.png
+	modified:   output/home-cod-ui/buyer-checkout-en-1586.png
+	modified:   output/home-cod-ui/buyer-checkout-en-390.png
+	modified:   output/home-cod-ui/buyer-checkout-zh-TW-1366.png
+	modified:   output/home-cod-ui/buyer-checkout-zh-TW-1586.png
+	modified:   output/home-cod-ui/buyer-checkout-zh-TW-390.png
+	modified:   output/home-cod-ui/buyer-order-pending-en-1366.png
+	modified:   output/home-cod-ui/buyer-order-pending-en-1586.png
+	modified:   output/home-cod-ui/buyer-order-pending-en-390.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-CN-1366.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-CN-1586.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-CN-390.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-TW-1366.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-TW-1586.png
+	modified:   output/home-cod-ui/buyer-order-pending-zh-TW-390.png
+	modified:   output/home-cod-ui/buyer-refunded_offline-mock-en-1586.png
+	modified:   output/home-cod-ui/buyer-refunded_offline-mock-en-390.png
+	modified:   output/home-cod-ui/buyer-refunded_offline-mock-zh-TW-1586.png
+	modified:   output/home-cod-ui/buyer-refunded_offline-mock-zh-TW-390.png
+	modified:   output/home-cod-ui/buyer-returned-mock-en-1586.png
+	modified:   output/home-cod-ui/buyer-returned-mock-en-390.png
+	modified:   output/home-cod-ui/buyer-returned-mock-zh-TW-1586.png
+	modified:   output/home-cod-ui/buyer-returned-mock-zh-TW-390.png
+	modified:   output/orders-v2-fix/click-ledger.json
+	modified:   output/orders-v2-fix/ledger-en-1366x768.png
+	modified:   output/orders-v2-fix/ledger-en-1586x992.png
+	modified:   output/orders-v2-fix/ledger-en-390x844.png
+	modified:   output/orders-v2-fix/ledger-zh-CN-1366x768.png
+	modified:   output/orders-v2-fix/ledger-zh-CN-1586x992.png
+	modified:   output/orders-v2-fix/ledger-zh-CN-390x844.png
+	modified:   output/orders-v2-fix/ledger-zh-TW-1366x768.png
+	modified:   output/orders-v2-fix/ledger-zh-TW-1586x992.png
+	modified:   output/orders-v2-fix/ledger-zh-TW-390x844.png
+	modified:   output/orders-v2-fix/orders-en-1366x768.png
+	modified:   output/orders-v2-fix/orders-en-1586x992.png
+	modified:   output/orders-v2-fix/orders-en-390x844.png
+	modified:   output/orders-v2-fix/orders-zh-CN-1366x768.png
+	modified:   output/orders-v2-fix/orders-zh-CN-1586x992.png
+	modified:   output/orders-v2-fix/orders-zh-CN-390x844.png
+	modified:   output/orders-v2-fix/orders-zh-TW-1366x768.png
+	modified:   output/orders-v2-fix/orders-zh-TW-1586x992.png
+	modified:   output/orders-v2-fix/orders-zh-TW-390x844.png
+	modified:   output/orders-v2-fix/queue-scroll-en-390x844.png
+	modified:   output/orders-v2-fix/queue-scroll-zh-CN-390x844.png
+	modified:   output/orders-v2-fix/queue-scroll-zh-TW-390x844.png
+	modified:   output/platform-site/brand-browser/brand-reset-en-1586.png
+	modified:   output/platform-site/brand-browser/brand-reset-en-390.png
+	modified:   output/platform-site/brand-browser/brand-reset-zh-CN-1586.png
+	modified:   output/platform-site/brand-browser/brand-reset-zh-CN-390.png
+	modified:   output/platform-site/brand-browser/brand-reset-zh-TW-1586.png
+	modified:   output/platform-site/brand-browser/brand-reset-zh-TW-390.png
+	modified:   output/platform-site/brand-browser/brand-signin-en-1586.png
+	modified:   output/platform-site/brand-browser/brand-signin-en-390.png
+	modified:   output/platform-site/brand-browser/brand-signin-zh-CN-1586.png
+	modified:   output/platform-site/brand-browser/brand-signin-zh-CN-390.png
+	modified:   output/platform-site/brand-browser/brand-signin-zh-TW-1586.png
+	modified:   output/platform-site/brand-browser/brand-signin-zh-TW-390.png
+	modified:   output/platform-site/brand-browser/brand-signup-en-1586.png
+	modified:   output/platform-site/brand-browser/brand-signup-en-390.png
+	modified:   output/platform-site/brand-browser/brand-signup-zh-CN-1586.png
+	modified:   output/platform-site/brand-browser/brand-signup-zh-CN-390.png
+	modified:   output/platform-site/brand-browser/brand-signup-zh-TW-1586.png
+	modified:   output/platform-site/brand-browser/brand-signup-zh-TW-390.png
+	modified:   output/platform-site/build.log
+	modified:   output/platform-site/click-ledger.json
+	modified:   output/platform-site/data-deletion-zh-CN-1586.png
+	modified:   output/platform-site/data-deletion-zh-CN-390.png
+	modified:   output/platform-site/privacy-en-1586.png
+	modified:   output/platform-site/privacy-en-390.png
+	modified:   output/platform-site/privacy-zh-CN-1586.png
+	modified:   output/platform-site/privacy-zh-CN-390.png
+	modified:   output/platform-site/privacy-zh-TW-1586.png
+	modified:   output/platform-site/privacy-zh-TW-390.png
+	modified:   output/platform-site/ps-browser-result.json
+	modified:   output/platform-site/server-no-tag.log
+	modified:   output/platform-site/server-tag.log
+	modified:   output/platform-site/terms-en-1586.png
+	modified:   output/platform-site/terms-en-390.png
+	modified:   output/platform-site/terms-zh-CN-1586.png
+	modified:   output/platform-site/terms-zh-CN-390.png
+	modified:   output/platform-site/terms-zh-TW-1586.png
+	modified:   output/platform-site/terms-zh-TW-390.png
+	modified:   output/product-editor-visual/after/existing-empty-en-1586.png
+	modified:   output/product-editor-visual/after/existing-empty-en-390.png
+	modified:   output/product-editor-visual/after/existing-empty-zh-CN-1586.png
+	modified:   output/product-editor-visual/after/existing-empty-zh-CN-390.png
+	modified:   output/product-editor-visual/after/existing-empty-zh-TW-1586.png
+	modified:   output/product-editor-visual/after/existing-empty-zh-TW-390.png
+	modified:   output/product-editor-visual/after/existing-three-en-1586.png
+	modified:   output/product-editor-visual/after/existing-three-en-390.png
+	modified:   output/product-editor-visual/after/existing-three-zh-CN-1586.png
+	modified:   output/product-editor-visual/after/existing-three-zh-CN-390.png
+	modified:   output/product-editor-visual/after/existing-three-zh-TW-1586.png
+	modified:   output/product-editor-visual/after/existing-three-zh-TW-390.png
+	modified:   output/product-editor-visual/after/measurements.json
+	modified:   output/product-editor-visual/after/new-empty-en-1586.png
+	modified:   output/product-editor-visual/after/new-empty-en-390.png
+	modified:   output/product-editor-visual/after/new-empty-zh-CN-1586.png
+	modified:   output/product-editor-visual/after/new-empty-zh-CN-390.png
+	modified:   output/product-editor-visual/after/new-empty-zh-TW-1586.png
+	modified:   output/product-editor-visual/after/new-empty-zh-TW-390.png
+	modified:   output/product-editor-visual/after/new-three-en-1586.png
+	modified:   output/product-editor-visual/after/new-three-en-390.png
+	modified:   output/product-editor-visual/after/new-three-zh-CN-1586.png
+	modified:   output/product-editor-visual/after/new-three-zh-CN-390.png
+	modified:   output/product-editor-visual/after/new-three-zh-TW-1586.png
+	modified:   output/product-editor-visual/after/new-three-zh-TW-390.png
+	modified:   output/product-ui-v2-fix/archive-price.png
+	modified:   output/product-ui-v2-fix/receipt-copy-401.png
+	modified:   output/product-ui-v2-fix/receipt-copy-403.png
+	modified:   output/product-ui-v2-fix/receipt-copy-client.png
+	modified:   output/product-ui-v2-fix/receipt-create-401.png
+	modified:   output/product-ui-v2-fix/receipt-create-403.png
+	modified:   output/product-ui-v2-fix/receipt-create-client.png
+	modified:   output/product-ui-v2-fix/receipt-order-403.png
+	modified:   output/product-ui-v2-fix/receipt-publish-403.png
+	modified:   output/product-ui-v2/batch-result-en-1586.png
+	modified:   output/product-ui-v2/click-ledger.json
+	modified:   output/product-ui-v2/editor-bottom-en-375.png
+	modified:   output/product-ui-v2/editor-en-1366.png
+	modified:   output/product-ui-v2/editor-en-1586.png
+	modified:   output/product-ui-v2/editor-en-375.png
+	modified:   output/product-ui-v2/editor-zh-CN-1366.png
+	modified:   output/product-ui-v2/editor-zh-CN-1586.png
+	modified:   output/product-ui-v2/editor-zh-CN-375.png
+	modified:   output/product-ui-v2/editor-zh-TW-1366.png
+	modified:   output/product-ui-v2/editor-zh-TW-1586.png
+	modified:   output/product-ui-v2/editor-zh-TW-375.png
+	modified:   output/product-ui-v2/inventory-en-1366.png
+	modified:   output/product-ui-v2/inventory-en-1586.png
+	modified:   output/product-ui-v2/list-en-1366.png
+	modified:   output/product-ui-v2/list-en-1586.png
+	modified:   output/product-ui-v2/list-en-375.png
+	modified:   output/product-ui-v2/list-zh-CN-1366.png
+	modified:   output/product-ui-v2/list-zh-CN-1586.png
+	modified:   output/product-ui-v2/list-zh-CN-375.png
+	modified:   output/product-ui-v2/list-zh-TW-1366.png
+	modified:   output/product-ui-v2/list-zh-TW-1586.png
+	modified:   output/product-ui-v2/list-zh-TW-375.png
+	modified:   output/product-ui-v2/matrix-en-1586.png
+	modified:   output/product-ui-v2/screenshots.json
+	modified:   output/product-ui-v2/write-metadata.json
+	modified:   output/ui-click-sweep/journeys.json
+	modified:   output/ui-click-sweep/ledger.json
+	modified:   output/ui-click-sweep/ledger.md
+	modified:   output/ui-w0-shell/account-open-en-1586.png
+	modified:   output/ui-w0-shell/account-open-en-390.png
+	modified:   output/ui-w0-shell/account-open-zh-CN-1586.png
+	modified:   output/ui-w0-shell/account-open-zh-CN-390.png
+	modified:   output/ui-w0-shell/account-open-zh-TW-1586.png
+	modified:   output/ui-w0-shell/account-open-zh-TW-390.png
+	modified:   output/ui-w0-shell/build.log
+	modified:   output/ui-w0-shell/drawer-en-360x740.png
+	modified:   output/ui-w0-shell/drawer-en-375x812.png
+	modified:   output/ui-w0-shell/drawer-en-390x844.png
+	modified:   output/ui-w0-shell/drawer-en-768x1024.png
+	modified:   output/ui-w0-shell/drawer-zh-CN-360x740.png
+	modified:   output/ui-w0-shell/drawer-zh-CN-375x812.png
+	modified:   output/ui-w0-shell/drawer-zh-CN-390x844.png
+	modified:   output/ui-w0-shell/drawer-zh-CN-768x1024.png
+	modified:   output/ui-w0-shell/drawer-zh-TW-360x740.png
+	modified:   output/ui-w0-shell/drawer-zh-TW-375x812.png
+	modified:   output/ui-w0-shell/drawer-zh-TW-390x844.png
+	modified:   output/ui-w0-shell/drawer-zh-TW-768x1024.png
+	modified:   output/ui-w0-shell/forbidden-en-1586.png
+	modified:   output/ui-w0-shell/forbidden-en-390.png
+	modified:   output/ui-w0-shell/forbidden-zh-CN-1586.png
+	modified:   output/ui-w0-shell/forbidden-zh-CN-390.png
+	modified:   output/ui-w0-shell/forbidden-zh-TW-1586.png
+	modified:   output/ui-w0-shell/forbidden-zh-TW-390.png
+	modified:   output/ui-w0-shell/server.log
+	modified:   output/ui-w0-shell/session-expired-en.png
+	modified:   output/ui-w0-shell/shell-en-1024x768.png
+	modified:   output/ui-w0-shell/shell-en-1366x768.png
+	modified:   output/ui-w0-shell/shell-en-1586x992.png
+	modified:   output/ui-w0-shell/shell-en-2000x1100.png
+	modified:   output/ui-w0-shell/shell-en-360x740.png
+	modified:   output/ui-w0-shell/shell-en-375x812.png
+	modified:   output/ui-w0-shell/shell-en-390x844.png
+	modified:   output/ui-w0-shell/shell-en-768x1024.png
+	modified:   output/ui-w0-shell/shell-zh-CN-1024x768.png
+	modified:   output/ui-w0-shell/shell-zh-CN-1366x768.png
+	modified:   output/ui-w0-shell/shell-zh-CN-1586x992.png
+	modified:   output/ui-w0-shell/shell-zh-CN-2000x1100.png
+	modified:   output/ui-w0-shell/shell-zh-CN-360x740.png
+	modified:   output/ui-w0-shell/shell-zh-CN-375x812.png
+	modified:   output/ui-w0-shell/shell-zh-CN-390x844.png
+	modified:   output/ui-w0-shell/shell-zh-CN-768x1024.png
+	modified:   output/ui-w0-shell/shell-zh-TW-1024x768.png
+	modified:   output/ui-w0-shell/shell-zh-TW-1366x768.png
+	modified:   output/ui-w0-shell/shell-zh-TW-1586x992.png
+	modified:   output/ui-w0-shell/shell-zh-TW-2000x1100.png
+	modified:   output/ui-w0-shell/shell-zh-TW-360x740.png
+	modified:   output/ui-w0-shell/shell-zh-TW-375x812.png
+	modified:   output/ui-w0-shell/shell-zh-TW-390x844.png
+	modified:   output/ui-w0-shell/shell-zh-TW-768x1024.png
+	modified:   output/ui-w0-shell/subroute-expanded-en-1586.png
+	modified:   output/ui-w0-shell/subroute-expanded-en-390.png
+	modified:   output/ui-w0-shell/subroute-expanded-zh-CN-1586.png
+	modified:   output/ui-w0-shell/subroute-expanded-zh-CN-390.png
+	modified:   output/ui-w0-shell/subroute-expanded-zh-TW-1586.png
+	modified:   output/ui-w0-shell/subroute-expanded-zh-TW-390.png
+	modified:   output/ui-w0-shell/touch-targets-en-390-drawer.png
+	modified:   output/ui-w0-shell/touch-targets-en-390-topbar.json
+	modified:   output/ui-w0-shell/touch-targets-en-390-topbar.png
+	modified:   output/ui-w0-shell/touch-targets-zh-CN-390-drawer.png
+	modified:   output/ui-w0-shell/touch-targets-zh-CN-390-topbar.json
+	modified:   output/ui-w0-shell/touch-targets-zh-CN-390-topbar.png
+	modified:   output/ui-w0-shell/touch-targets-zh-TW-390-drawer.png
+	modified:   output/ui-w0-shell/touch-targets-zh-TW-390-topbar.json
+	modified:   output/ui-w0-shell/touch-targets-zh-TW-390-topbar.png
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	REBASE.md
+	gates-20261005T074219Z/
+	output/admin-ui-fixes/
+	output/admin-visual/R6-BLOCKER.md
+	output/admin-visual/SUMMARY.md
+	output/admin-visual/before-lint.json
+	output/admin-visual/before-source-map.json
+	output/admin-visual/before/
+	output/admin-visual/cvs-print/
+	output/admin-visual/evidence-map/
+	output/admin-visual/findings.json
+	output/admin-visual/gate-ledger.mjs
+	output/admin-visual/gates-20261005T063518Z/
+	output/admin-visual/gates-20261005T064617Z/
+	output/admin-visual/gates-20261005T064922Z/
+	output/admin-visual/gates-20261005T073028Z/
+	output/admin-visual/gates-20261005T074219Z/
+	output/admin-visual/gates-20261005T080801Z/
+	output/admin-visual/gates-20261005T085441Z/
+	output/admin-visual/gates-20261005T095112Z/
+	output/admin-visual/gates-20261005T095600Z/
+	output/admin-visual/headers-a/
+	output/admin-visual/headers-b/
+	output/admin-visual/logs/
+	output/admin-visual/rebase-harness-output-backup.patch
+	output/admin-visual/rebase-harness-output-paths.txt
+	output/admin-visual/rebase-output-backup.patch
+	output/admin-visual/rebase-output-paths.txt
+	output/admin-visual/reviews/
+	output/admin-visual/run-browser-gates.sh
+	output/admin-visual/sweep-focused-830b86f9/
+	output/admin-visual/sweep-red-a4b456b4/
+	output/admin-visual/worker-handoffs/
+	output/product-ui-v2/editor-en-1586-basics.png
+	output/product-ui-v2/editor-en-1586-collections.png
+	output/product-ui-v2/editor-en-1586-media.png
+	output/product-ui-v2/editor-en-1586-pricing.png
+	output/product-ui-v2/editor-en-1586-seo.png
+	output/product-ui-v2/editor-en-1586-shipping.png
+	output/product-ui-v2/editor-en-1586-variants.png
+	output/product-ui-v2/editor-en-390-basics.png
+	output/product-ui-v2/editor-en-390-collections.png
+	output/product-ui-v2/editor-en-390-media.png
+	output/product-ui-v2/editor-en-390-pricing.png
+	output/product-ui-v2/editor-en-390-seo.png
+	output/product-ui-v2/editor-en-390-shipping.png
+	output/product-ui-v2/editor-en-390-variants.png
+	output/product-ui-v2/editor-en-390.png
+	output/product-ui-v2/editor-zh-CN-1586-basics.png
+	output/product-ui-v2/editor-zh-CN-1586-collections.png
+	output/product-ui-v2/editor-zh-CN-1586-media.png
+	output/product-ui-v2/editor-zh-CN-1586-pricing.png
+	output/product-ui-v2/editor-zh-CN-1586-seo.png
+	output/product-ui-v2/editor-zh-CN-1586-shipping.png
+	output/product-ui-v2/editor-zh-CN-1586-variants.png
+	output/product-ui-v2/editor-zh-CN-390-basics.png
+	output/product-ui-v2/editor-zh-CN-390-collections.png
+	output/product-ui-v2/editor-zh-CN-390-media.png
+	output/product-ui-v2/editor-zh-CN-390-pricing.png
+	output/product-ui-v2/editor-zh-CN-390-seo.png
+	output/product-ui-v2/editor-zh-CN-390-shipping.png
+	output/product-ui-v2/editor-zh-CN-390-variants.png
+	output/product-ui-v2/editor-zh-CN-390.png
+	output/product-ui-v2/editor-zh-TW-1586-basics.png
+	output/product-ui-v2/editor-zh-TW-1586-collections.png
+	output/product-ui-v2/editor-zh-TW-1586-media.png
+	output/product-ui-v2/editor-zh-TW-1586-pricing.png
+	output/product-ui-v2/editor-zh-TW-1586-seo.png
+	output/product-ui-v2/editor-zh-TW-1586-shipping.png
+	output/product-ui-v2/editor-zh-TW-1586-variants.png
+	output/product-ui-v2/editor-zh-TW-390-basics.png
+	output/product-ui-v2/editor-zh-TW-390-collections.png
+	output/product-ui-v2/editor-zh-TW-390-media.png
+	output/product-ui-v2/editor-zh-TW-390-pricing.png
+	output/product-ui-v2/editor-zh-TW-390-seo.png
+	output/product-ui-v2/editor-zh-TW-390-shipping.png
+	output/product-ui-v2/editor-zh-TW-390-variants.png
+	output/product-ui-v2/editor-zh-TW-390.png
+	output/product-ui-v2/list-en-390.png
+	output/product-ui-v2/list-populated-en-1586.png
+	output/product-ui-v2/list-populated-en-390.png
+	output/product-ui-v2/list-populated-zh-CN-1586.png
+	output/product-ui-v2/list-populated-zh-CN-390.png
+	output/product-ui-v2/list-populated-zh-TW-1586.png
+	output/product-ui-v2/list-populated-zh-TW-390.png
+	output/product-ui-v2/list-zh-CN-390.png
+	output/product-ui-v2/list-zh-TW-390.png
+	output/ui-click-sweep/screenshots/r00089.png
+	output/ui-click-sweep/screenshots/r00347.png
+	output/ui-click-sweep/screenshots/r00351.png
+	output/ui-click-sweep/screenshots/r00372.png
+	output/ui-click-sweep/screenshots/r00409.png
+	output/ui-click-sweep/screenshots/r00413.png
+	output/ui-click-sweep/screenshots/r00433.png
+	output/ui-click-sweep/screenshots/r00469.png
+	output/ui-click-sweep/screenshots/r00474.png
+	output/ui-click-sweep/screenshots/r00475.png
+	output/ui-click-sweep/screenshots/r00476.png
+	output/ui-click-sweep/screenshots/r00477.png
+	output/ui-click-sweep/screenshots/r00478.png
+	output/ui-click-sweep/screenshots/r00480.png
+	output/ui-click-sweep/screenshots/r00481.png
+	output/ui-click-sweep/screenshots/r00482.png
+	output/ui-click-sweep/screenshots/r00484.png
+	output/ui-click-sweep/screenshots/r00485.png
+	output/ui-click-sweep/screenshots/r00486.png
+	output/ui-click-sweep/screenshots/r00487.png
+	output/ui-click-sweep/screenshots/r00488.png
+	output/ui-click-sweep/screenshots/r00489.png
+	output/ui-click-sweep/screenshots/r00490.png
+	output/ui-click-sweep/screenshots/r00491.png
+	output/ui-click-sweep/screenshots/r00492.png
+	output/ui-click-sweep/screenshots/r00493.png
+	output/ui-click-sweep/screenshots/r00494.png
+	output/ui-click-sweep/screenshots/r00495.png
+	output/ui-click-sweep/screenshots/r00496.png
+	output/ui-click-sweep/screenshots/r00497.png
+	output/ui-click-sweep/screenshots/r00498.png
+	output/ui-click-sweep/screenshots/r00499.png
+	output/ui-click-sweep/screenshots/r00500.png
+	output/ui-click-sweep/screenshots/r00501.png
+	output/ui-click-sweep/screenshots/r00502.png
+	output/ui-click-sweep/screenshots/r00503.png
+	output/ui-click-sweep/screenshots/r00504.png
+	output/ui-click-sweep/screenshots/r00505.png
+	output/ui-click-sweep/screenshots/r00506.png
+	output/ui-click-sweep/screenshots/r00507.png
+	output/ui-click-sweep/screenshots/r00508.png
+	output/ui-click-sweep/screenshots/r00509.png
+	output/ui-click-sweep/screenshots/r00510.png
+	output/ui-click-sweep/screenshots/r00511.png
+	output/ui-click-sweep/screenshots/r00512.png
+	output/ui-click-sweep/screenshots/r00513.png
+	output/ui-click-sweep/screenshots/r00514.png
+	output/ui-click-sweep/screenshots/r00515.png
+	output/ui-click-sweep/screenshots/r00516.png
+	output/ui-click-sweep/screenshots/r00517.png
+	output/ui-click-sweep/screenshots/r00518.png
+	output/ui-click-sweep/screenshots/r00519.png
+	output/ui-click-sweep/screenshots/r00520.png
+	output/ui-click-sweep/screenshots/r00521.png
+	output/ui-click-sweep/screenshots/r00522.png
+	output/ui-click-sweep/screenshots/r00523.png
+	output/ui-click-sweep/screenshots/r00524.png
+	output/ui-click-sweep/screenshots/r00533.png
+	output/ui-click-sweep/screenshots/r00536.png
+	output/ui-visual-audit/20261005T052825Z/
+	output/ui-visual-audit/20261005T055641Z/
+	output/ui-visual-audit/20261005T063819Z/
+	output/ui-visual-audit/20261005T074421Z/
+	output/ui-visual-audit/20261005T083757Z/
+	output/ui-visual-audit/20261005T090011Z/
+	output/ui-visual-audit/LATEST
+	output/ui-w0-shell/red/run-1791181839374/
+	output/ui-w0-shell/red/run-1791190248863/
+
+no changes added to commit (use "git add" and/or "git commit -a")

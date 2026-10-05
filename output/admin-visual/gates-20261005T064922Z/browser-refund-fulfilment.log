@@ -1,0 +1,162 @@
+✔ summary decodes refunded, partially refunded, shipped and reviewed orders (Go projection invariants) (2.30575ms)
+✔ summary keys are exact: the pre-0062 ten-key shape and extra keys are refused (0.249708ms)
+✔ summary refuses every state combination the amended contract forbids (0.317917ms)
+✔ detail carries `shipment` (null or the exact seven-key SHIPPED object) and refuses anything else (1.798375ms)
+✔ state filters admit shipped and unshipped and nothing else new (0.403042ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.065625
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 31ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 901ms
+  Running TypeScript ...
+  Finished TypeScript in 304ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 41ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 17ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1076ms
+  Running TypeScript ...
+  Finished TypeScript in 217ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 96ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserManualFulfilment
+2026/10/05 15:04:40 INFO orders.export_unshipped store_id=14af304d-95ed-49bd-91fb-0bb4e7fbf0d7 rows=1 truncated=false duration_ms=2
+    browser_refund_fulfilment_test.go:310: MF07 BROWSER (MOCK Stripe capture): admin + buyer halves passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/manual-fulfilment/20261005T070435.880039000
+--- PASS: TestBrowserManualFulfilment (18.68s)
+=== RUN   TestBrowserRefund
+=== RUN   TestBrowserRefund/MOCK:_refunds_through_the_fake_Stripe,_real_worker,_real_admin_and_storefront
+    browser_refund_fulfilment_test.go:384: RF11 BROWSER(MOCK): admin + buyer halves passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/refund/20261005T070451.798814000
+=== RUN   TestBrowserRefund/SANDBOX:_real_Stripe_test-mode_card_4242_through_the_SP18_harness
+    browser_refund_fulfilment_test.go:388: NOT_RUN: RF11(b) needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys
+--- PASS: TestBrowserRefund (25.34s)
+    --- PASS: TestBrowserRefund/MOCK:_refunds_through_the_fake_Stripe,_real_worker,_real_admin_and_storefront (25.34s)
+    --- SKIP: TestBrowserRefund/SANDBOX:_real_Stripe_test-mode_card_4242_through_the_SP18_harness (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	46.638s
+PASS: MF07 + RF11(a) isolated admin + storefront Next, Go, PG, real worker and the MOCK Stripe fake; RF11(b) SANDBOX is NOT_RUN unless it says otherwise above; not provider or deployment acceptance.

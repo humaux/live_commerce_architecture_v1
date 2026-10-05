@@ -1,0 +1,706 @@
+{
+  "source_snapshot": "f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf",
+  "current_delivery_source": "6126273bae5e1addbe4fc6a8afa2656074523b08",
+  "current_cvs_runtime": "NOT_RUN_AT_612",
+  "listed_ui_dependency_qualification": [
+    {
+      "path": "apps/admin/app/[locale]/orders/cvs-print/page.tsx",
+      "f1_sha256": "c6d450a18446e371413923369cde87acc9b7a6e7b516237a71172ec7e234ffe5",
+      "current_sha256": "c6d450a18446e371413923369cde87acc9b7a6e7b516237a71172ec7e234ffe5",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/app/[locale]/orders/cvs-print/CvsPrint.tsx",
+      "f1_sha256": "c26aaf52a7d2f679000f8d2080ab2988a95aa160ed19db3398e4b0edd2957a8e",
+      "current_sha256": "c26aaf52a7d2f679000f8d2080ab2988a95aa160ed19db3398e4b0edd2957a8e",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/WorkspaceFrame.tsx",
+      "f1_sha256": "8714502d920bad434ea6c3131c6e4ed88734e5a054511653fb6b75ce5cfba43a",
+      "current_sha256": "8714502d920bad434ea6c3131c6e4ed88734e5a054511653fb6b75ce5cfba43a",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/MerchantOrders.tsx",
+      "f1_sha256": "cfe74c6e5e005a94535f7976693cf77a8d8af78962962639af0c123e017440e0",
+      "current_sha256": "cfe74c6e5e005a94535f7976693cf77a8d8af78962962639af0c123e017440e0",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/OrderDetailPanel.tsx",
+      "f1_sha256": "71d1c100b5cff6bdb707c637cb5445cd84100c395a088e9677ae77920327963d",
+      "current_sha256": "71d1c100b5cff6bdb707c637cb5445cd84100c395a088e9677ae77920327963d",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/OrderCvsShipment.tsx",
+      "f1_sha256": "ecece364415940aa6858943b1fabb3d0aaca0a3cbb7687d321eb6f2328f6c899",
+      "current_sha256": "ecece364415940aa6858943b1fabb3d0aaca0a3cbb7687d321eb6f2328f6c899",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/orders-model.ts",
+      "f1_sha256": "1119e9c87b1c78608ad941a91488313b582f0136056ee292ef6658ed074a3043",
+      "current_sha256": "1119e9c87b1c78608ad941a91488313b582f0136056ee292ef6658ed074a3043",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/orders-client.ts",
+      "f1_sha256": "c0fe2cea16501eb3290dcca5046209932a85027873366b99235c4f207f108b2a",
+      "current_sha256": "c0fe2cea16501eb3290dcca5046209932a85027873366b99235c4f207f108b2a",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/logistics-request.ts",
+      "f1_sha256": "983e2b0b25238285b7f8804dce925c1842b98d167b0e4e66b69f7e827ea4be45",
+      "current_sha256": "983e2b0b25238285b7f8804dce925c1842b98d167b0e4e66b69f7e827ea4be45",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/logistics-copy.ts",
+      "f1_sha256": "89cc3f00d12e9b92ca9e9d7bb6f4656fd0f8ffe953b673b91bcb3820efdbed9c",
+      "current_sha256": "89cc3f00d12e9b92ca9e9d7bb6f4656fd0f8ffe953b673b91bcb3820efdbed9c",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/logistics-model.ts",
+      "f1_sha256": "d4a179bdb6060691fd5af7fabaea96eddd133661893cdf56f728f2dd1812447a",
+      "current_sha256": "d4a179bdb6060691fd5af7fabaea96eddd133661893cdf56f728f2dd1812447a",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/lib/logistics-client.ts",
+      "f1_sha256": "8bfcc43e448a3071270932d7cb964c941fcde7b0a033e12cb3fb0da7c28935d9",
+      "current_sha256": "8bfcc43e448a3071270932d7cb964c941fcde7b0a033e12cb3fb0da7c28935d9",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/settings.css",
+      "f1_sha256": "e97a996e02943c0bcfa38206bf1b021bb31c115309d3aea71517bf8cfcb9c38e",
+      "current_sha256": "e97a996e02943c0bcfa38206bf1b021bb31c115309d3aea71517bf8cfcb9c38e",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/orders.css",
+      "f1_sha256": "43e73be1220b7ec5d578cad74a51251cff550fd2cca9f0ea864f01eb3a802b83",
+      "current_sha256": "43e73be1220b7ec5d578cad74a51251cff550fd2cca9f0ea864f01eb3a802b83",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/components/orders-v2.css",
+      "f1_sha256": "3df13fbd1604b4c31d50547c20dcd09ed5447598bb4cf60ffe0760747a873e03",
+      "current_sha256": "3df13fbd1604b4c31d50547c20dcd09ed5447598bb4cf60ffe0760747a873e03",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/app/globals.css",
+      "f1_sha256": "42a5159aa1e28676f7cc4f4fd8c20f5ec7454fee9020d529532173ca4bf5974f",
+      "current_sha256": "42a5159aa1e28676f7cc4f4fd8c20f5ec7454fee9020d529532173ca4bf5974f",
+      "equal": true
+    },
+    {
+      "path": "apps/admin/app/[locale]/layout.tsx",
+      "f1_sha256": "2e411398c1a9024411d061395938a00f66af1312cf940223810472db79cd6525",
+      "current_sha256": "2e411398c1a9024411d061395938a00f66af1312cf940223810472db79cd6525",
+      "equal": true
+    },
+    {
+      "path": "tests/admin/taiwan-cvs.spec.ts",
+      "f1_sha256": "98d4f48346e8d195110362b401bad58da68bed39d973375ae8cbdad904a1cf1a",
+      "current_sha256": "98d4f48346e8d195110362b401bad58da68bed39d973375ae8cbdad904a1cf1a",
+      "equal": true
+    },
+    {
+      "path": "packages/ui/src/AppShell.tsx",
+      "f1_sha256": "c83b78c850c3a342cbefccf3037f3202fc88de0be53604c55ff4cef93215705f",
+      "current_sha256": "c83b78c850c3a342cbefccf3037f3202fc88de0be53604c55ff4cef93215705f",
+      "equal": true
+    },
+    {
+      "path": "packages/ui/src/AppShell.module.css",
+      "f1_sha256": "3336d9a4f4e78afbbe3516dfb6fcbaa18d1c786a4351ab59ba379c27c9afffe5",
+      "current_sha256": "3336d9a4f4e78afbbe3516dfb6fcbaa18d1c786a4351ab59ba379c27c9afffe5",
+      "equal": true
+    },
+    {
+      "path": "packages/ui/src/tokens.css",
+      "f1_sha256": "53ffe5fc59eac7ff8a1745f635ff503e9d032ab142be1da4a0702c588970c416",
+      "current_sha256": "53ffe5fc59eac7ff8a1745f635ff503e9d032ab142be1da4a0702c588970c416",
+      "equal": true
+    }
+  ],
+  "qualification_limit": "21 exact listed UI/route/client/styles/spec dependency files equal; not full backend/runtime or transitive closure acceptance. Team OperationalForms change is not included or claimed unchanged.",
+  "base_evidence_package": "../final-observed-6126273b",
+  "base_manifest_sha256": "2135f8d265eb50207454118c01e9caba3465d9ae9158f60c1c2b6da9a31ed09e",
+  "finding": "ADM-35",
+  "actual_capture_gap": "F1_MERCHANT_CREATED_AND_OPENING_ONLY_CAPTURED",
+  "independent_finding_retirement": "NOT_RUN",
+  "provider_layout": "NOT_RUN",
+  "manual_ready_layout": "NOT_RUN",
+  "sandbox": "SKIP_NOT_RUN",
+  "source_binding": "Exact f1 CVS source/exit0 results.tsv; captures not relabeled612; listed UI dependency equality qualified separately",
+  "results_receipt": {
+    "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/gates-20261005T164802Z/results.tsv",
+    "sha256": "87bf0595e3e30631dacedfb818709e5854886c74941d92af033283f22677a0d1",
+    "row": "f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf\t--browser-cvs\t0\t87\toutput/admin-visual/gates-20261005T164802Z/browser-cvs.log"
+  },
+  "manifests": [
+    {
+      "file": "Chromium/manifest.json",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/manifest.json",
+      "sha256": "8ce737d308bfac0904503ce4a54e499f081598401398049287852d90d6b8d125",
+      "engine": "Chromium",
+      "engine_binding": "Sequential MOCK then WebKit wrapper timestamp evidence; original manifest has no engine field",
+      "source_snapshot": "f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf",
+      "source_binding": "Exact f1 CVS results.tsv success and wrapper evidence time window; original manifest has no source SHA"
+    },
+    {
+      "file": "WebKit/manifest.json",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/manifest.json",
+      "sha256": "8d658347211d05f301a03c11aa6c8cd63da122f92dc026dceff98b813af00de3",
+      "engine": "WebKit",
+      "engine_binding": "Sequential MOCK then WebKit wrapper timestamp evidence; original manifest has no engine field",
+      "source_snapshot": "f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf",
+      "source_binding": "Exact f1 CVS results.tsv success and wrapper evidence time window; original manifest has no source SHA"
+    }
+  ],
+  "captures": [
+    {
+      "File": "merchant-created-zh-TW-1586x992.png",
+      "Sha256": "ab384d09e0f446d1d2ef4b04cfdd0af2d92a9b449e70ef10615ff5f572e2f8f6",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/zh-TW/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-zh-TW-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-zh-TW-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2226
+    },
+    {
+      "File": "opening-pre-response-zh-TW-1586x992.png",
+      "Sha256": "aa3895ecf1d97ef1f92f700c8db1763653e537adbb24c475d76241f0132e0dd2",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-TW/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-zh-TW-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-zh-TW-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-zh-CN-1586x992.png",
+      "Sha256": "652570f2b811f59941cf9cd8a6932f539374ac6919f15bf5fd1ca96602a66bad",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/zh-CN/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-zh-CN-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-zh-CN-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2226
+    },
+    {
+      "File": "opening-pre-response-zh-CN-1586x992.png",
+      "Sha256": "a44ed83c72e19f729895b7ef8d25228db48c1c96c3936bc0011c004a1b031a6f",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-CN/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-zh-CN-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-zh-CN-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-en-1586x992.png",
+      "Sha256": "67f87caf7f6e15b49aee1625cc5bc50ffcaf946432c6ad891ed08d1c13a03da9",
+      "Locale": "en",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/en/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-en-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-en-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2200
+    },
+    {
+      "File": "opening-pre-response-en-1586x992.png",
+      "Sha256": "0cacaf947ae0bac9f8d88efbec61fa91435365d56531e0b642a822705b5a7429",
+      "Locale": "en",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/en/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-en-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-en-1586x992.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-zh-TW-390x844.png",
+      "Sha256": "9cbb956747e5047de08406b5fbfdd72696b09ce094bd8a3152f2b776e3c1a63d",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/zh-TW/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-zh-TW-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-zh-TW-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4456
+    },
+    {
+      "File": "opening-pre-response-zh-TW-390x844.png",
+      "Sha256": "d9abe6727714d1e7ec68d7a5a0c8f14b6ad192593dd188131c5e455ef080b0ed",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-TW/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-zh-TW-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-zh-TW-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    },
+    {
+      "File": "merchant-created-zh-CN-390x844.png",
+      "Sha256": "dc9b8aef6381e8503a06b2e73819d7b6fe09d612dd8a9579065413912b75a45a",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/zh-CN/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-zh-CN-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-zh-CN-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4456
+    },
+    {
+      "File": "opening-pre-response-zh-CN-390x844.png",
+      "Sha256": "7ff4ab5b378f90502da4b88cca19d28da680fe6fdaf01468d6314dad091c376b",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-CN/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-zh-CN-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-zh-CN-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    },
+    {
+      "File": "merchant-created-en-390x844.png",
+      "Sha256": "67e51ce0cddffb7588ecabd2c7c9ceed0bef5ab96a37242e1e987531ffbc99ab",
+      "Locale": "en",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/en/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/merchant-created-en-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/merchant-created-en-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4448
+    },
+    {
+      "File": "opening-pre-response-en-390x844.png",
+      "Sha256": "eac8ee8594231ef0acaa4600cc14cdb9998827fd37028bd07bf315bcfab86c53",
+      "Locale": "en",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/en/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "Chromium/opening-pre-response-en-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-09-50-930Z/opening-pre-response-en-390x844.png",
+      "engine": "Chromium",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    },
+    {
+      "File": "merchant-created-zh-TW-1586x992.png",
+      "Sha256": "a0c22980289775eeb28d2d0a9b1d67f2b3485b088fd20333ba0ae52e8c803b03",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/zh-TW/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-zh-TW-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-zh-TW-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2225
+    },
+    {
+      "File": "opening-pre-response-zh-TW-1586x992.png",
+      "Sha256": "b3262569870b7e7f08d75e6688fb6af945f438408645babed02fe1baef18a7fc",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-TW/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-zh-TW-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-zh-TW-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-zh-CN-1586x992.png",
+      "Sha256": "4282aca04c30db90c5bf3fe31fcca815bc1169380741cf86a50706ffcbee190f",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/zh-CN/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-zh-CN-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-zh-CN-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2225
+    },
+    {
+      "File": "opening-pre-response-zh-CN-1586x992.png",
+      "Sha256": "042c8b54f013486deb61c155d9f1400cd2cce55ad48f3b8c100132bf777ef05c",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-CN/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-zh-CN-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-zh-CN-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-en-1586x992.png",
+      "Sha256": "b45753779931198a57005089b43264fce2f72482c0d3b3a2be0ec0e9aa705cfa",
+      "Locale": "en",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "merchant-created",
+      "Route": "/en/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-en-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-en-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 2200
+    },
+    {
+      "File": "opening-pre-response-en-1586x992.png",
+      "Sha256": "e1c92cc980632855bdc2bbe5bc655430bca66a605784a23ca4ed5c31c20a5ebe",
+      "Locale": "en",
+      "Viewport": {
+        "width": 1586,
+        "height": 992
+      },
+      "State": "opening-pre-response",
+      "Route": "/en/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-en-1586x992.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-en-1586x992.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 1586,
+      "pixel_height": 992
+    },
+    {
+      "File": "merchant-created-zh-TW-390x844.png",
+      "Sha256": "cfee04df231d83b6e1c1d6b8067d4a781b0a367338dedfd152bed66c201f99f2",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/zh-TW/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-zh-TW-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-zh-TW-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4455
+    },
+    {
+      "File": "opening-pre-response-zh-TW-390x844.png",
+      "Sha256": "d3ea37723945d5ab9b6fb90bfb2357b5f0962248cdf98fe3cf8cfeec69ea6458",
+      "Locale": "zh-TW",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-TW/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-zh-TW-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-zh-TW-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    },
+    {
+      "File": "merchant-created-zh-CN-390x844.png",
+      "Sha256": "bf4bf3b83bf41cc07ba185728cb8ee42f8f5803c75b18f8ef9b3b1b4fad96b29",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/zh-CN/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-zh-CN-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-zh-CN-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4455
+    },
+    {
+      "File": "opening-pre-response-zh-CN-390x844.png",
+      "Sha256": "17a6538b9e1fba3e6d9cbc1c7b37d47437036fe1bd5087023710e6eadd15a903",
+      "Locale": "zh-CN",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/zh-CN/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-zh-CN-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-zh-CN-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    },
+    {
+      "File": "merchant-created-en-390x844.png",
+      "Sha256": "f37ed28c5d2e17f7910132d2907bd8fbf1849b23003198f04553de28403f6d5c",
+      "Locale": "en",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "merchant-created",
+      "Route": "/en/orders",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/merchant-created-en-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/merchant-created-en-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 4448
+    },
+    {
+      "File": "opening-pre-response-en-390x844.png",
+      "Sha256": "3b5b0ce210f885abc1112ddd8e45cf0aa859e51faf214f3aea76ce0c7b4642e7",
+      "Locale": "en",
+      "Viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "State": "opening-pre-response",
+      "Route": "/en/orders/cvs-print",
+      "Evidence": "BROWSER actual admin DOM",
+      "ProviderResponse": "MOCK existing trapEcpay label HTML",
+      "ProviderLayout": "NOT_RUN",
+      "ManualReadyLayout": "NOT_RUN",
+      "SignedFields": "NOT_RECORDED",
+      "file": "WebKit/opening-pre-response-en-390x844.png",
+      "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/cvs-print/2026-10-05T19-10-29-730Z/opening-pre-response-en-390x844.png",
+      "engine": "WebKit",
+      "status": "OBSERVED_AFTER",
+      "pixel_width": 390,
+      "pixel_height": 844
+    }
+  ],
+  "wrapper": {
+    "file": "browser-cvs.log",
+    "source_file": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/gates-20261005T164802Z/browser-cvs.log",
+    "sha256": "1dc1098d7e693e23a57050ebad7b588acc87847e882fc8a54e4bba820033ae68",
+    "exit": 0,
+    "exit_binding": "Exact source-bound results.tsv exit0; MOCK/WebKit PASS and SANDBOX SKIP independently read from log"
+  },
+  "historical_base_manifest_sha256": "d0014416168de026caa7cab5773c3058601f951af361a575e8b921473e0e2468"
+}

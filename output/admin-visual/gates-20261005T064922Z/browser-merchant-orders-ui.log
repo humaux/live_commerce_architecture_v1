@@ -1,0 +1,131 @@
+✔ COD collect projection admits the server amount and rejects inconsistent money (2.909542ms)
+✔ MOU parser accepts exact frozen DTO and rejects malformed identity, money and state (0.744584ms)
+✔ MOU detail parser rejects spoofed recipient, pickup and mismatched money (0.35175ms)
+✔ summary admits the refunded and shipped states with the amended invariants (0.087583ms)
+✔ summary rejects the shipped/refunded combinations the contract forbids (0.781833ms)
+✔ order filter values and detail shipment stay in step with MERCHANT_SHIPPED (0.994625ms)
+✔ tracking url rules: https only, dotted host, no userinfo, port, fragment or control characters (0.112334ms)
+✔ shipment history carries merchant-only fields and stays consistent (0.237709ms)
+✔ refund list parser checks capacity arithmetic, closed enums and optional failure_reason (0.396ms)
+✔ order-actions is exactly three booleans (0.416583ms)
+✔ refund amount entry converts exactly and enforces the TWD whole-dollar step as a hint (11.629125ms)
+✔ CVSA01 pay-at-pickup summary: CONFIRMED without payment is valid only in that mode (0.495334ms)
+✔ CVSA02 detail: pickup_source must agree with the pickup verification kind; new chains and kinds parse (0.382917ms)
+✔ CVSA03 the cvs_pending list filter exists beside the older filters (0.059458ms)
+✔ BTA01 bank-transfer summary: valid states, and every card or pickup invariant it must not borrow (0.223042ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 126.042083
+✔ XFM01 settings parse: exact keys, ranges and the enabled-needs-details rule (3.664625ms)
+✔ XFM02 settings body builder: whole hours 6..168, trimmed fields, the exact frozen keys (0.750292ms)
+✔ XFM03 order transfer detail: closed shape and the state/field agreement (0.364ms)
+✔ XFM04 decisions: which button each state offers, and the reject body (0.143625ms)
+✔ XFM05 copy: the three locales carry every key, state and refusal text (0.195ms)
+✔ XFM06 finance rows: the 11-key shape parses, and a transfer pair without the pickup pair is refused (0.546791ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 103.340958
+✔ parses never-published, published and bound states (0.7635ms)
+✔ rejects anything outside the closed shape (0.277958ms)
+✔ parses the domain list and the one-time request instructions (0.234417ms)
+✔ rejects domain shapes outside the closed contract (0.230625ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.47
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 14ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1348ms
+  Running TypeScript ...
+  Finished TypeScript in 360ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 90ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMerchantOrdersUIRealChain
+    browser_merchant_orders_ui_test.go:335: MOU browser gate failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/merchant-orders-c-browser/20261005T070027.793351000
+--- FAIL: TestBrowserMerchantOrdersUIRealChain (93.43s)
+FAIL
+FAIL	livecommerce/tests/foundation	94.150s
+FAIL

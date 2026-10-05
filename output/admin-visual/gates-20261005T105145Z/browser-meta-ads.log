@@ -1,0 +1,187 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.711791ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.410667ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.277833ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.291042ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.860917ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.300416ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.209959ms)
+✔ money: whole units to minor with integer math; TWD must be whole (15.169ms)
+✔ draft input: exact 11-key body and every local rule (0.862292ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.152833ms)
+✔ settings parser: environment enum, connections, identities, capi (0.438417ms)
+✔ connect state parser: pick list kinds and id match (0.112042ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.337959ms)
+✔ capi body and validation (0.239042ms)
+✔ route grammar: exactly the frozen resources except meta/connect and meta/callback (0.87625ms)
+✔ query rule: only report has a query, from+to exactly once, real dates, at most 92 days (0.230333ms)
+✔ headers: If-Match is a bare revision, Idempotency-Key is the repo grammar (0.106291ms)
+✔ connect cookie: httpOnly, Secure, Lax, Path is the callback only, 10 minutes; cleared with Max-Age=0 (0.135333ms)
+✔ connect body: exactly {store: uuid} (0.103333ms)
+✔ dialog URL: only exactly https://www.facebook.com (0.104334ms)
+✔ callback parameters: bounded charset/length, duplicates rejected, Meta cancel is denied, extras ignored (1.944041ms)
+✔ callback redirect: only fixed codes and canonical uuids ever reach the URL (never code/state) (0.481584ms)
+✔ callback Go answers map to the fixed connect_error values (0.116416ms)
+✔ Go transport split: pause/end bodiless, approve keyless, nothing else (0.241291ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130.209292
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 13ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 901ms
+  Running TypeScript ...
+  Finished TypeScript in 251ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 43ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 14ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1275ms
+  Running TypeScript ...
+  Finished TypeScript in 180ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 116ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+AL1 PASS: /products/0b2f6f3e-3c4d-4a59-8f0e-1a2b3c4d5e6f -> 308 /zh-TW/products/0b2f6f3e-3c4d-4a59-8f0e-1a2b3c4d5e6f (second hop to the slug page: SF07)
+✔ /products/{uuid} redirects permanently to the zh-TW product page (10.067833ms)
+✔ non-uuid ids are 404, never redirected (0.920166ms)
+✔ AT1: the locale redirect preserves the ad-click query without allowing a redirect target (0.132541ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.895875
+=== RUN   TestBrowserMetaAds
+    browser_meta_ads_test.go:353: MA09a BROWSER (Meta = MOCK): admin half passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/meta-ads/20261005T111216.589203000
+--- PASS: TestBrowserMetaAds (20.94s)
+=== RUN   TestBrowserMetaAdsConsent
+    browser_meta_ads_test.go:445: MA09b BROWSER: buyer consent -> CAPI context passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/meta-ads-consent/20261005T111236.654138000
+--- PASS: TestBrowserMetaAdsConsent (3.67s)
+PASS
+ok  	livecommerce/tests/foundation	26.329s
+PASS: MA09a isolated admin Next, Go API + ads worker, PG; Meta = MOCK (fake Graph + the Facebook Login dialog answered by the browser route); not Meta, provider or deployment acceptance; MA09b buyer consent -> CAPI context runs against the production storefront Next build.

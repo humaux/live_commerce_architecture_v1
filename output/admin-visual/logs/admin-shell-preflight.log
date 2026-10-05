@@ -1,0 +1,41 @@
+✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (367.484375ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.549958ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.599584ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.974166ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.102584ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.199042ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (211.818667ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.272875ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 532.752875
+
+✖ failing tests:
+
+test at tests/admin/shell-architecture.test.mjs:10:1
+✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (367.484375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'apps/admin/components/Ledger.tsx: lines 850 > 849'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/shell-architecture.test.mjs:11:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'apps/admin/components/Ledger.tsx: lines 850 > 849' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
