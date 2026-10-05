@@ -1,3 +1,6 @@
+// Purpose: Merchant delivery-service revisions (SetService, SetServiceWithDefaultAllocation) and the package doc below.
+// Depends on: pgx tx; SQL fulfillment.services/heads; allocation.go (ensureDefaultAllocation in the same transaction); internal/command, internal/platform.
+// Used by: internal/httpapi/settings.go (PUT …/delivery-services/{code}); internal/checkout (options); tests/foundation.
 // Package fulfillment owns merchant delivery-service configuration revisions, per-market delivery
 // allocation (which warehouses serve a country), pickup attestation (buyer-scoped read and lock) and the
 // merchant side of Taiwan convenience-store shipping (taiwan-cvs-logistics-v1, cvs*.go): the ECPay logistics

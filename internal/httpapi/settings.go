@@ -1,3 +1,6 @@
+// Purpose: Merchant settings HTTP routes for delivery services; enabling a service also ensures its default warehouse allocation.
+// Depends on: internal/fulfillment (SetServiceWithDefaultAllocation); request scope from server-side auth (never a client tenant id).
+// Used by: cmd/api router (admin BFF → /v1/admin/stores/{store}/markets/{market}/countries/{country}/delivery-services/{code}); tests/foundation/delivery_allocation_auto_test.go, browser_promotions_test.go.
 package httpapi
 
 import (

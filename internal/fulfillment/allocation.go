@@ -1,3 +1,6 @@
+// Purpose: Per-market delivery allocation (which warehouses serve a delivery service, in priority order): explicit SetAllocation and the settings-path ensureDefaultAllocation (auto default warehouse, delivery-allocation P0).
+// Depends on: pgx tx; SQL fulfillment.allocation_heads/allocation_versions/allocation_warehouses, inventory.lock_warehouse(); internal/command (idempotency), internal/platform (scope).
+// Used by: SetServiceWithDefaultAllocation (service.go); internal/checkout (lockAllocation reads the heads); tests/foundation/delivery_allocation*_test.go.
 package fulfillment
 
 import (

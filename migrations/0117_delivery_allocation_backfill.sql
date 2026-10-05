@@ -1,3 +1,6 @@
+-- Purpose: One-time backfill of a default single-warehouse allocation for enabled delivery services that have none (delivery-allocation P0).
+-- Depends on: tables fulfillment.services/heads, fulfillment.allocation_*, inventory.warehouses (adds created_at IF NOT EXISTS).
+-- Used by: cmd/migrate (forward-only, checksummed); tests/foundation TestDeliveryAllocationBackfillMigration.
 -- delivery-allocation P0 backfill: a merchant who enabled a delivery service before this fix has no
 -- allocation row, so the buyer never saw the option (checkout.ListOptions INNER JOINs allocation_heads).
 -- Forward-only, checksummed, repeatable no-op: only enabled services that still lack an allocation head
