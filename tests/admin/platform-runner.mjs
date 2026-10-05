@@ -300,7 +300,9 @@ async function matrix(s) {
           assert.equal(await page.locator("main h1").count(), 1);
           if (dest === "privacy" || dest === "terms")
             assertPlatformMessagingCopy(
-              (await page.locator(".ps-legal-section").allTextContents()).join(" "),
+              (await page.locator(".ps-legal-section").allTextContents()).join(
+                " ",
+              ),
               locale,
               dest,
             );
@@ -492,14 +494,21 @@ try {
       2,
     ),
   );
+  // Read assertions are not user clicks; keep this new copy coverage separate.
+  const clicks = ledger.filter(
+    (r) => !["render", "reload", "messaging-copy"].includes(r.action),
+  ).length;
+  const messagingCopyCases = ledger.filter(
+    (r) => r.action === "messaging-copy",
+  ).length;
   await writeFile(
     `${output}/ps-browser-result.json`,
     JSON.stringify(
       {
         pass: 30,
         fail: 0,
-        clicks: ledger.filter((r) => !["render", "reload"].includes(r.action))
-          .length,
+        clicks,
+        messagingCopyCases,
         reloads: ledger.filter((r) => r.action === "reload").length,
         ssrCases: 15,
         tagCases: 16,
@@ -509,7 +518,7 @@ try {
     ),
   );
   console.log(
-    `PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, ${ledger.filter((r) => !["render", "reload"].includes(r.action)).length} real clicks and 30 reloads`,
+    `PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and 30 reloads`,
   );
 } finally {
   await browser?.close();
