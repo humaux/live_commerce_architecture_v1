@@ -4,7 +4,7 @@
 // found:false or was unreachable: the encrypted IG webhook copy via social.read_comment_facts, decrypted HERE
 // with the payload keyring (claims-worker never holds it), (c) neither → manual private reply is disabled for
 // that comment. The author id (from.id) is collapsed to is_page and never leaves memory.
-// Depends on: stream.go (resolveSource/marks/bridgeError), metareply.BridgeClient.CommentFacts,
+// Depends on: stream.go (resolveSource/marks/bridgeError), metabridge.BridgeClient.CommentFacts,
 //
 //	meta.PayloadKeyring.OpenComment, SQL social.read_comment_facts (0123).
 //
@@ -22,7 +22,7 @@ import (
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/meta"
-	"livecommerce/internal/integrations/metareply"
+	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/platform"
 )
 
@@ -103,7 +103,7 @@ func (cs *CommentStream) PrivateReplyMarks(ctx context.Context, tx pgx.Tx, scope
 
 func (cs *CommentStream) facts(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, src consoleSource, ref string) (CommentFacts, error) {
 	// (a) Calls the claims-worker bridge comment-facts (live-console-v1 §2.3): ring buffer, else one Graph read.
-	bf, bridgeErr := cs.bridge.CommentFacts(ctx, metareply.BridgeFactsRequest{
+	bf, bridgeErr := cs.bridge.CommentFacts(ctx, metabridge.BridgeFactsRequest{
 		TenantID: scope.TenantID, StoreID: scope.StoreID, SessionID: sessionID, SourceID: src.ID, CommentRef: ref})
 	if bridgeErr == nil && bf.Found && bf.CreatedAt != nil {
 		return CommentFacts{Found: true, CreatedAt: *bf.CreatedAt, IsPage: bf.IsPage, IsReply: bf.IsReply}, nil
@@ -125,7 +125,7 @@ func (cs *CommentStream) facts(ctx context.Context, tx pgx.Tx, scope platform.Sc
 		}
 	}
 	// A transient bridge failure is retryable (503); a clean "nobody has it" is (c): no guess, no default.
-	if bridgeErr != nil && !errors.Is(bridgeErr, metareply.ErrBridgeNotFound) {
+	if bridgeErr != nil && !errors.Is(bridgeErr, metabridge.ErrBridgeNotFound) {
 		return CommentFacts{}, bridgeError(bridgeErr)
 	}
 	return CommentFacts{}, ErrFactsUnavailable

@@ -126,8 +126,9 @@ BEGIN
     FOR r IN SELECT x.tenant_id,x.store_id,x.page_id FROM integration.meta_health_probes x
              WHERE x.next_due_at<=clock_timestamp() ORDER BY x.next_due_at,x.page_id LIMIT p_limit FOR UPDATE SKIP LOCKED LOOP
         v_until:=clock_timestamp()+interval '60 seconds';
+        -- 32 random bytes from two v4 uuids: pgcrypto's gen_random_bytes is not installed, and search_path=pg_catalog would hide it anyway.
         UPDATE integration.meta_health_probes x
-           SET generation=x.generation+1, lease_token=gen_random_bytes(32), lease_until=v_until, next_due_at=v_until
+           SET generation=x.generation+1, lease_token=uuid_send(gen_random_uuid())||uuid_send(gen_random_uuid()), lease_until=v_until, next_due_at=v_until
          WHERE x.tenant_id=r.tenant_id AND x.store_id=r.store_id AND x.page_id=r.page_id
          RETURNING x.generation,x.lease_token INTO v_gen,v_token;
         RETURN QUERY
@@ -486,7 +487,8 @@ GRANT SELECT (page_id, severity, last_checked_at, next_due_at, episode_opened_at
 
 -- definer owner = control (0095 pattern): the bodies decide every row.
 CREATE POLICY binding_capabilities_writer ON integration.binding_capabilities FOR ALL TO commerce_integration_writer USING (true) WITH CHECK (true);
-GRANT SELECT, INSERT, UPDATE(state,reason,evidence,checked_at) ON integration.binding_capabilities TO commerce_integration_writer;
+-- DELETE: the meta_health_on_connection trigger (definer, this role) clears a Page's probed rows on connect/reconnect (§4.1, §6.2).
+GRANT SELECT, INSERT, DELETE, UPDATE(state,reason,evidence,checked_at) ON integration.binding_capabilities TO commerce_integration_writer;
 CREATE POLICY meta_health_probes_writer ON integration.meta_health_probes FOR ALL TO commerce_integration_writer USING (true) WITH CHECK (true);
 GRANT SELECT, INSERT, UPDATE(next_due_at,lease_token,lease_until,generation,consecutive_failures,last_outcome,last_checked_at,perm_source,severity,episode,episode_opened_at,episode_closed_at,last_mail_at)
     ON integration.meta_health_probes TO commerce_integration_writer;
@@ -506,6 +508,10 @@ GRANT SELECT ON integration.binding_capabilities TO commerce_checkout_writer;
 -- notify.* owner + worker grants.
 GRANT SELECT, INSERT, UPDATE(state,attempts,next_attempt_at,batch_id,claimed_at,sent_at,recipient_hash,skip_reason) ON notify.merchant_alerts TO commerce_checkout_writer;
 CREATE POLICY merchant_alerts_writer ON notify.merchant_alerts FOR ALL TO commerce_checkout_writer USING (true) WITH CHECK (true);
+
+-- Schema USAGE for the callers of the notify.* definers: record_meta_health (owner commerce_integration_writer) enqueues the alert, the
+-- expiry worker claims/records it. 0090 granted USAGE only to commerce_worker/commerce_runtime, so without this both fail 42501.
+GRANT USAGE ON SCHEMA notify TO commerce_integration_writer, commerce_expiry_worker;
 
 DO $$
 DECLARE f text;

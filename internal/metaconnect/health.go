@@ -160,7 +160,7 @@ func (h Health) Recheck(ctx context.Context, tx pgx.Tx, scope platform.Scope, to
 	var next time.Time
 	if err := tx.QueryRow(ctx, `SELECT integration.request_meta_health_recheck($1, $2, $3)`,
 		hash, scope.StoreID, pageID).Scan(&next); err != nil {
-		return time.Time{}, err
+		return time.Time{}, mapError(err) // MC404 -> not_found 404, MC429 -> recheck_too_soon 429 (errors.go)
 	}
 	return next, nil
 }
