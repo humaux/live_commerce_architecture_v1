@@ -16,6 +16,8 @@ export async function assertProductEditorReservedLayout(
   const pane = form.getByTestId("product-fields");
   const footer = form.locator(".pe-savebar");
   const buttons = form.locator(".pe-index nav button[aria-controls]");
+  const readiness = form.locator(".pe-readiness");
+  const statusBefore = await readiness.locator("[data-ready]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-ready")));
   await expect(pane).toBeVisible();
   expect(await buttons.count()).toBeGreaterThanOrEqual(6);
   const assertReserved = async () => {
@@ -87,6 +89,12 @@ export async function assertProductEditorReservedLayout(
     const button = form.locator(`.pe-index nav button[aria-controls="${id}"]`);
     await button.click();
     await expect(button).toHaveAttribute("aria-current", "location");
+    for (const item of await readiness.all()) {
+      const targetID = await item.getAttribute("aria-controls");
+      expect(targetID).toBeTruthy();
+      if (targetID === id) await expect(item).toHaveAttribute("aria-current", "location");
+      else await expect(item).not.toHaveAttribute("aria-current");
+    }
     const section = pane.locator(`[id="${id}"]`);
     await expect
       .poll(
@@ -112,4 +120,28 @@ export async function assertProductEditorReservedLayout(
     await assertReserved();
     if (capture) await capture(id);
   }
+  if (page.viewportSize()!.width > 900) {
+    const media = readiness.locator('[aria-controls="media"]').first();
+    await media.click();
+    await expect(media).toHaveAttribute("aria-current", "location");
+    await expect.poll(() => pane.locator("#media").evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    await pane.hover();
+    const scrollDistance = await pane.locator("#media").evaluate((element) => Math.ceil(element.getBoundingClientRect().height + innerHeight));
+    await page.mouse.wheel(0, scrollDistance);
+    await expect(form.locator('.pe-index nav button[aria-current="location"]')).toHaveCount(1);
+    await expect.poll(() => form.locator('.pe-index nav button[aria-current="location"]').getAttribute("aria-controls")).not.toBe("media");
+    const currentSection = await form.locator('.pe-index nav button[aria-current="location"]').getAttribute("aria-controls");
+    expect(currentSection).not.toBe("media");
+    for (const item of await readiness.all()) {
+      if (await item.getAttribute("aria-controls") === currentSection) await expect(item).toHaveAttribute("aria-current", "location");
+      else await expect(item).not.toHaveAttribute("aria-current");
+    }
+    await media.click();
+    await expect(media).toHaveAttribute("aria-current", "location");
+    // A second click in the current section remains a real, idempotent focus jump.
+    await media.click();
+    await expect(media).toHaveAttribute("aria-current", "location");
+    await expect.poll(() => pane.locator("#media").evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  }
+  expect(await readiness.locator("[data-ready]").evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-ready")))).toEqual(statusBefore);
 }

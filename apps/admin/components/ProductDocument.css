@@ -80,6 +80,11 @@
   font-size: 12px;
   color: var(--pe-muted);
 }
+.pe-index .pe-readiness[aria-current="location"] {
+  background: var(--ui-page);
+  outline: 1px solid var(--ui-border);
+  outline-offset: -1px;
+}
 .pe-readiness-state[data-ready="true"] {
   color: var(--ui-success);
   font-weight: 600;

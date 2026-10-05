@@ -296,7 +296,7 @@ export function ProductDocumentForm({
         <section>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
-          <ProductReadiness c={c} items={requirements} focus={focus} />
+          <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} />
           <p>
             {c.missing}: {requirements.filter((r) => !r.ok).length}
           </p>
@@ -304,6 +304,7 @@ export function ProductDocumentForm({
           <ProductReadiness
             c={c}
             focus={focus}
+            activeSection={section}
             items={[
               { key: "media", label: c.recommendedImages, ok: photos.length >= 3 },
               { key: "basics", label: c.description, ok: !!draft.description },

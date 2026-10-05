@@ -17,6 +17,14 @@ import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy.ts";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy.ts";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy.ts";
 import { platformLegal } from "../../apps/admin/lib/platform-legal.ts";
+test("Readiness jump controls expose the actual active section, not a click flag", () => {
+  const readiness = readFileSync("apps/admin/components/ProductReadiness.tsx", "utf8");
+  const form = readFileSync("apps/admin/components/ProductDocumentForm.tsx", "utf8");
+  assert.match(readiness, /aria-controls=\{item\.key\}/);
+  assert.match(readiness, /aria-current=\{activeSection === item\.key \? "location" : undefined\}/);
+  assert.equal((form.match(/activeSection=\{section\}/g) ?? []).length, 2);
+  assert.match(readiness, /data-ready=\{item\.ok\}/);
+});
 test("Integrator P2: legal CN comment ordering and a distinct three-image recommendation", () => {
   assert.equal(JSON.stringify(platformLegal["zh-CN"]).includes("留言收单"), false);
   assert.equal(JSON.stringify(platformLegal["zh-CN"]).includes("评论收单"), true);
