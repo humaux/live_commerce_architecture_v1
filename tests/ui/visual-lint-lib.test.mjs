@@ -2,7 +2,7 @@
 // AND to stay quiet on the correct layout next to it, at and around its named threshold. Run by `test-local.sh --browser-visual-lint` before any build.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { T, BLOCKING, evaluate, inkRect, median, pathKey, r1Overflow, r2FormRows, r3Tables, r4SmallText, r5TapTargets, r6Overlap, r7Clipped, r8Duplicates, selectRecords, severityOf, stackedLines } from "./visual-lint-lib.mjs";
+import { T, BLOCKING, BLOCKING_KINDS, evaluate, inkRect, median, pathKey, r1Overflow, r2FormRows, r3Tables, r4SmallText, r5TapTargets, r6Overlap, r7Clipped, r8Duplicates, r9EdgePadding, r10Occlusion, r11NarrowControls, selectRecords, severityOf, stackedLines } from "./visual-lint-lib.mjs";
 
 const rc = (x, y, w, h) => ({ x, y, w, h });
 const snap = (extra = {}) => ({ viewport: { w: 1586, h: 992 }, doc: { scrollWidth: 1586, scrollHeight: 2000 }, ...extra });
@@ -16,8 +16,13 @@ const field = (x, labelY, controlY, { w = 300, h = 40, multiline = false, parent
 test("thresholds are the named constants of the brief", () => {
   assert.deepEqual([T.ROW_LABEL_TOP_DELTA_PX, T.ROW_CONTROL_TOP_DELTA_PX, T.ROW_CONTROL_HEIGHT_DELTA_PX, T.ROW_SAME_BAND_PX], [4, 4, 4, 8]);
   assert.deepEqual([T.TABLE_ROW_RATIO, T.MIN_FONT_PX, T.TAP_TARGET_MIN_PX, T.OVERLAP_MIN_PX, T.CLIP_MIN_BOX_PX], [1.6, 12, 40, 2, 8]);
-  assert.deepEqual([...BLOCKING], ["R1", "R2", "R3", "R6"]);
-  assert.equal(severityOf("R1"), "block"); assert.equal(severityOf("R4"), "warn"); assert.equal(severityOf("R8"), "warn");
+  assert.deepEqual([...BLOCKING], ["R1", "R2", "R3", "R6", "R9"]);
+  assert.deepEqual([...BLOCKING_KINDS], ["R7:clipped-control", "R7:text-overflows-control", "R7:select-value-clipped"]);
+  assert.deepEqual([T.EDGE_MIN_PX, T.CONTROL_MIN_WIDTH_DESKTOP_PX, T.CONTROL_MIN_WIDTH_MOBILE_PX, T.OCCLUSION_COVER], [8, 96, 64, 0.5]);
+  assert.equal(severityOf("R1"), "block"); assert.equal(severityOf("R4"), "warn"); assert.equal(severityOf("R8"), "warn"); assert.equal(severityOf("R9"), "block");
+  assert.equal(severityOf("R10"), "warn"); assert.equal(severityOf("R11"), "warn");
+  assert.equal(severityOf("R7", "clipped-control"), "block"); assert.equal(severityOf("R7", "select-value-clipped"), "block"); assert.equal(severityOf("R7", "clipped-text"), "warn");
+  assert.equal(severityOf("R7", "cut-by-scroll-frame"), "warn");
   assert.throws(() => { T.MIN_FONT_PX = 1; }, TypeError); // frozen: a rule cannot be loosened at run time
 });
 
@@ -151,14 +156,32 @@ test("R6: interactive elements and text boxes that overlap", () => {
   assert.deepEqual(inkRect(rc(0, 0, 10, 17), 14), rc(0, 1.5, 10, 14));
 });
 
-test("R7: clipped labels, buttons and links", () => {
-  const c = (id, scrollW, clientW) => ({ id, rect: rc(0, 0, clientW, 30), scrollW, clientW, text: "Save the whole configuration" });
-  const v = r7Clipped(snap({ clips: [c(1, 200, 120), c(2, 121, 120), c(3, 122, 120)] }));
-  assert.deepEqual(v.map((x) => x.ids[0]), [1, 3]);
-  assert.equal(v[0].measured.hiddenPx, 80);
-  // a visually-hidden (sr-only) label is a 1px box whose text is "wider" than it: not truncated text
-  assert.equal(r7Clipped(snap({ clips: [{ id: 9, rect: rc(0, 0, 1, 1), scrollW: 70, clientW: 1, text: "Language" }, { id: 10, rect: rc(0, 0, 7, 20), scrollW: 70, clientW: 7, text: "x" }] })).length, 0);
-  assert.equal(r7Clipped(snap({ clips: [{ id: 11, rect: rc(0, 0, 8, 20), scrollW: 70, clientW: 8, text: "Save all" }] })).length, 1);
+test("R7: text clipped inside a control or label (either side), and select values that do not fit", () => {
+  // 'Add offer' centred in a 60px button with overflow hidden: ~12px of text is cut off, split over both sides (scrollWidth cannot see the left half)
+  const clip = (id, hiddenPx, boxW = 60, control = true) => ({ id, control, hiddenPx, text: "Add offer", rect: rc(0, 0, boxW, 40), textRect: rc(-6, 10, boxW + hiddenPx, 20) });
+  const v = r7Clipped(snap({ textClips: [clip(1, 12), clip(2, 1), clip(3, 1.5), clip(4, 30, 60, false), clip(5, 40, 5)] }));
+  assert.deepEqual(v.map((x) => [x.ids[0], x.kind]), [[1, "clipped-control"], [3, "clipped-control"], [4, "clipped-text"]], "tolerance is 1px; a 5px box is a visually-hidden label");
+  assert.equal(v[0].measured.hiddenPx, 12); assert.equal(v[0].measured.boxWidth, 60);
+  assert.equal(evaluate(snap({ textClips: [clip(1, 12)] })).find((x) => x.rule === "R7").severity, "block");
+  assert.equal(evaluate(snap({ textClips: [clip(4, 12, 60, false)] })).find((x) => x.rule === "R7").severity, "warn");
+  // text cut only by an overflow:auto/scroll frame is reachable by scrolling it: its own kind, WARN even inside a control
+  const framed = r7Clipped(snap({ textClips: [{ ...clip(6, 36, 326), mode: "scroll" }] }));
+  assert.equal(framed[0].kind, "cut-by-scroll-frame");
+  assert.equal(evaluate(snap({ textClips: [{ ...clip(6, 36, 326), mode: "scroll" }] })).find((x) => x.rule === "R7").severity, "warn");
+  // the same button without overflow:hidden: the text runs out of the 46px box on both sides ('Add offer' reads 'dd offe' once the neighbours paint over it)
+  const spilled = r7Clipped(snap({ textClips: [{ ...clip(8, 16, 46), mode: "spill" }, { ...clip(9, 16, 46, false), mode: "spill" }] }));
+  assert.deepEqual(spilled.map((x) => x.kind), ["text-overflows-control", "text-overflows-label"]);
+  assert.equal(evaluate(snap({ textClips: [{ ...clip(8, 16, 46), mode: "spill" }] })).find((x) => x.rule === "R7").severity, "block");
+  assert.equal(evaluate(snap({ textClips: [{ ...clip(9, 16, 46, false), mode: "spill" }] })).find((x) => x.rule === "R7").severity, "warn");
+  // selects: 60px select, 8px paddings, native arrow (20px): 24px of room for "Sweep Wool Scarf" (90px)
+  const sel = (over = {}) => ({ id: 7, rect: rc(0, 0, 60, 40), clientW: 60, padL: 8, padR: 8, nativeArrow: true, textW: 90, text: "Sweep Wool Scarf", ...over });
+  const s1 = r7Clipped(snap({ selects: [sel()] }));
+  assert.equal(s1.length, 1); assert.equal(s1[0].kind, "select-value-clipped"); assert.equal(s1[0].measured.availableWidth, 24);
+  assert.equal(r7Clipped(snap({ selects: [sel({ clientW: 160, rect: rc(0, 0, 160, 40) })] })).length, 0, "160px shows 124px of room");
+  assert.equal(r7Clipped(snap({ selects: [sel({ nativeArrow: false, padR: 28, clientW: 140, textW: 100 })] })).length, 0, "a custom arrow lives in the padding");
+  assert.equal(r7Clipped(snap({ selects: [sel({ clientW: 60, textW: 25 })] })).length, 0, "25px of text fits 24px + 1px tolerance");
+  assert.equal(r7Clipped(snap({ selects: [sel({ clientW: 4, rect: rc(0, 0, 4, 4) })] })).length, 0);
+  assert.equal(evaluate(snap({ selects: [sel()] })).find((x) => x.rule === "R7").severity, "block");
 });
 
 test("R8: the same visible label twice in one list", () => {
@@ -179,4 +202,51 @@ test("evaluate() tags severity, selectRecords() keeps distinct groups first and 
   assert.equal(picked.filter((x) => x.rule === "R4").length, 1);
   assert.equal(v.filter((x) => x.rule === "R4").length, 20);
   assert.equal(pathKey("div.card:nth-of-type(3) > a[data-testid=\"order-12345\"]"), "div.card > a[data-testid=\"order-#\"]");
+});
+
+test("R9: text and controls flush to the screen edge at 390", () => {
+  const vp = { viewport: { w: 390, h: 844 }, doc: { scrollWidth: 390, scrollHeight: 2000 } };
+  const tx = (id, x, w, extra = {}) => ({ id, size: 16, icon: false, text: `t${id}`, rects: [rc(x, id * 30, w, 20)], ...extra });
+  const v = r9EdgePadding({ ...vp, texts: [tx(1, 0, 200), tx(2, 8, 200), tx(3, 7.9, 100), tx(4, 100, 285), tx(5, 100, 282), tx(6, -3, 100), tx(7, 360, 40), tx(8, 0, 10, { icon: true })] });
+  assert.deepEqual(v.map((x) => [x.ids[0], x.kind]), [[1, "text-flush"], [3, "text-flush"], [4, "text-flush"]], "8px is padding; right margin 5px is flush; negative margins are R1; icons are not text");
+  assert.deepEqual([v[0].measured.leftMargin, v[2].measured.rightMargin], [0, 5]);
+  const tg = (id, x, w, tag = "button") => ({ id, tag, rect: rc(x, 400 + id * 50, w, 44), inline: false, disabled: false, text: `c${id}`, parent: -1 });
+  const c = r9EdgePadding({ ...vp, targets: [tg(1, 0, 390), tg(2, 0, 390, "input"), tg(3, 4, 200), tg(4, 16, 358), tg(5, 0, 389, "a")] });
+  assert.deepEqual(c.map((x) => [x.ids[0], x.kind]), [[2, "control-flush"], [3, "control-flush"]], "a full-width bar button is full-bleed, a full-width input has no gutter, 4px is flush");
+  assert.equal(evaluate({ ...vp, texts: [tx(1, 0, 200)] }, { mobile: false }).some((x) => x.rule === "R9"), false);
+  assert.equal(evaluate({ ...vp, texts: [tx(1, 0, 200)] }, { mobile: true }).find((x) => x.rule === "R9").severity, "block");
+});
+
+test("R10: a fixed or sticky bar covering main content after scrolling", () => {
+  const vp = { viewport: { w: 1586, h: 992 }, scrollY: 2000, doc: { scrollWidth: 1586, scrollHeight: 3000 } };
+  const bottomBar = { id: 50, rect: rc(0, 2000 + 992 - 64, 1586, 64) }; // attached to the bottom viewport edge
+  const topBar = { id: 51, rect: rc(0, 2000, 1586, 64) };
+  const panel = { id: 52, rect: rc(1200, 2300, 300, 200) }; // floating side panel
+  const ctl = (id, y, x = 400, h = 40, extra = {}) => ({ id, tag: "button", rect: rc(x, y, 160, h), inline: false, disabled: false, pinned: false, text: `b${id}`, parent: -1, ...extra });
+  const txt = (id, y, x = 400, extra = {}) => ({ id, size: 16, icon: false, pinned: false, text: `t${id}`, rects: [rc(x, y, 300, 20)], ...extra });
+  // bottom: the last buttons sit under the savebar and scrolling cannot clear them
+  const hit = r10Occlusion({ ...vp, bars: [bottomBar, topBar], targets: [ctl(1, 2950 - 40), ctl(2, 2300)], texts: [txt(3, 2940)] }, "bottom");
+  assert.deepEqual(hit.map((x) => [x.kind, x.ids[1], x.measured.attached]), [["bar-covers-text", 3, "bottom"], ["bar-covers-control", 1, "bottom"]]);
+  assert.equal(hit[0].severity, "warn");
+  // middle: an edge-attached bar only passes over content while scrolling
+  assert.equal(r10Occlusion({ ...vp, bars: [bottomBar, topBar], targets: [ctl(1, 2950 - 40)] }, "middle").length, 0);
+  // a floating panel covers content wherever the page is scrolled
+  const side = r10Occlusion({ ...vp, bars: [panel], targets: [ctl(4, 2350, 1250)], texts: [txt(5, 2400, 1220)] }, "middle");
+  assert.deepEqual(side.map((x) => [x.kind, x.measured.attached]), [["bar-covers-text", "floating"], ["bar-covers-control", "floating"]]);
+  // under 50% covered, pinned content, content mostly outside the viewport, and a top bar at the bottom position are not findings
+  assert.equal(r10Occlusion({ ...vp, bars: [panel], targets: [ctl(6, 2300 + 200 - 12, 1250)] }, "middle").length, 0, "30% covered");
+  assert.equal(r10Occlusion({ ...vp, bars: [panel], targets: [ctl(7, 2350, 1250, 40, { pinned: true })] }, "middle").length, 0);
+  assert.equal(r10Occlusion({ ...vp, bars: [bottomBar], targets: [ctl(8, 2000 + 992 - 10)] }, "bottom").length, 0, "only 10px of a 40px control is in view");
+  assert.equal(r10Occlusion({ ...vp, bars: [topBar], targets: [ctl(9, 2010)] }, "bottom").length, 0);
+});
+
+test("R11: controls narrower than a usable width", () => {
+  const f = (id, w, extra = {}) => ({ id, tag: "select", type: "", multiline: false, rect: rc(0, id * 50, w, 40), label: { id: 900 + id, rect: rc(0, id * 50 - 20, w, 20), text: `L${id}` }, controlParent: 1, rowParent: 1, rowLayout: "block", ...extra });
+  const s = snap({ fields: [f(1, 60), f(2, 95.9), f(3, 96), f(4, 40, { tag: "input", type: "number" })] });
+  assert.deepEqual(r11NarrowControls(s).map((x) => x.ids[0]), [1, 2]);
+  assert.equal(r11NarrowControls(snap({ fields: [f(5, 48, { tag: "input", type: "text", inputmode: "numeric" })] })).length, 0, "a numeric quantity field is short by nature");
+  assert.equal(r11NarrowControls(s)[0].measured.minimum, 96);
+  assert.deepEqual(r11NarrowControls(s, { mobile: true }).map((x) => x.ids[0]), [1], "64px at 390");
+  assert.equal(evaluate(s).filter((x) => x.rule === "R11").length, 2);
+  assert.equal(evaluate(s).find((x) => x.rule === "R11").severity, "warn", "R11 is geometry only; the measured truncation (R7 select-value-clipped) is the blocking evidence");
 });

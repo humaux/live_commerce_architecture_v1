@@ -6,7 +6,7 @@
 //   evaluate()  pure Node: snapshot -> violations. Every threshold is a named constant in T below. tests/ui/visual-lint-lib.test.mjs feeds it synthetic
 //               rect fixtures; tests/ui/visual-lint-canary.mjs feeds a real known-bad and a known-good HTML page through collect() + evaluate().
 //
-// Rules (blocking = exit code of `--browser-visual-lint`; warn = reported, exit stays 0 in this first version):
+// Rules (blocking = exit code of `--browser-visual-lint`; warn = reported, exit stays 0 for now; severityOf() is per rule, R7 per kind):
 //   R1 block  horizontal overflow          document scrollWidth > viewport, or a visible element extending past the viewport edge
 //   R2 block  form-row misalignment        fields of one visual row: label tops / control tops / single-line control heights differ; a button off the row
 //   R3 block  table row consistency        a row > 1.6x the table's median row height because a cell stacks controls (row-tall), a row doubled by a stacked
@@ -14,8 +14,14 @@
 //   R4 warn   min text size                visible text under 12px (kind small-helper for helper/counter text)
 //   R5 warn   tap targets (390 only)       interactive element under 40x40 css px (inline text links inside a sentence excepted)
 //   R6 block  overlap                      two interactive elements, or two text boxes, intersecting by more than 2px
-//   R7 warn   clipped text                 overflow:hidden / ellipsis label, button or link whose content is wider than its box
+//   R7 block  clipped text in a control    text of a button / select / tab cut by an ancestor (clipped-control), spilling out of its own box (text-overflows-control: centred
+//                                          nowrap text runs out on BOTH sides, which scrollWidth cannot see) or a select that cannot show its value (select-value-clipped);
+//                                          labels and links (clipped-text, text-overflows-label) and text cut only by a scroll frame (cut-by-scroll-frame: reachable by
+//                                          scrolling that box, cut at rest) are WARN
 //   R8 warn   duplicate list labels        the same visible label twice inside one list / checklist container
+//   R9 block  edge padding (390 only)      visible text or a control whose left/right edge is under 8px from the viewport edge (content flush to the screen)
+//   R10 warn  fixed-bar occlusion          after scrolling to the middle and to the bottom, a fixed/sticky bar covers main content that scrolling cannot clear
+//   R11 warn  narrow control               input / select / textarea narrower than a usable minimum (96px at 1586, 64px at 390)
 
 // ---- thresholds: named, never tuned to make a finding disappear -----------------------------------------------------------------------------------------------
 export const T = Object.freeze({
@@ -34,14 +40,22 @@ export const T = Object.freeze({
   OVERLAP_MIN_PX: 2, // R6: both axes must intersect by more than this
   CLIP_TOLERANCE_PX: 1, // R7
   CLIP_MIN_BOX_PX: 8, // R7: a box narrower than this is a visually-hidden (sr-only) label, not truncated text
+  SELECT_ARROW_PX: 20, // R7: room a native <select> keeps for its arrow when appearance is not none (a custom arrow lives in the padding)
+  EDGE_MIN_PX: 8, // R9 (390): content closer to the left/right viewport edge than this is flush
+  FULL_BLEED_SLACK_PX: 2, // R9: a button / link this close to the full viewport width is a full-bleed bar, not content
+  OCCLUSION_COVER: 0.5, // R10: share of a visible text line / control a fixed bar must cover
+  EDGE_ATTACH_PX: 2, // R10: a bar this close to the top or bottom viewport edge is attached to it
+  CONTROL_MIN_WIDTH_DESKTOP_PX: 96, // R11 (1586)
+  CONTROL_MIN_WIDTH_MOBILE_PX: 64, // R11 (390)
   MAX_RECORDS_PER_RULE: 5, // reporting: instances recorded (with crop) per rule per page; counts always cover every instance
 });
 export const RULES = Object.freeze({
   R1: "horizontal overflow", R2: "form-row misalignment", R3: "table row consistency", R4: "min text size", R5: "tap target (390)", R6: "overlap",
-  R7: "clipped text", R8: "duplicate list label",
+  R7: "clipped text", R8: "duplicate list label", R9: "edge padding (390)", R10: "fixed-bar occlusion", R11: "narrow control",
 });
-export const BLOCKING = Object.freeze(["R1", "R2", "R3", "R6"]);
-export const severityOf = (rule) => (BLOCKING.includes(rule) ? "block" : "warn");
+export const BLOCKING = Object.freeze(["R1", "R2", "R3", "R6", "R9"]); // whole rules; R7 blocks per kind below
+export const BLOCKING_KINDS = Object.freeze(["R7:clipped-control", "R7:text-overflows-control", "R7:select-value-clipped"]);
+export const severityOf = (rule, kind = "") => (BLOCKING.includes(rule) || BLOCKING_KINDS.includes(`${rule}:${kind}`) ? "block" : "warn");
 
 // ---- geometry (pure) --------------------------------------------------------------------------------------------------------------------------------------------
 const right = (r) => r.x + r.w, bottom = (r) => r.y + r.h;
@@ -205,11 +219,22 @@ export function r6Overlap(s, t = T) {
   return out;
 }
 
-// ---- R7 clipped text -----------------------------------------------------------------------------------------------------------------------------------------------
+// ---- R7 clipped text in controls ---------------------------------------------------------------------------------------------------------------------------
+// textClips: a text line of a button / tab (control) or of a label / link / th (label) whose rendered box sticks out of the box that should hold it, either side
+// (hiddenPx = the part outside): mode "hidden" = an overflow hidden/clip ancestor cuts it, "spill" = it runs out of its own control/label box (neighbours then paint over
+// it: 'Add offer' reads 'dd offe'), "scroll" = only an overflow auto/scroll frame cuts it. selects: the selected option's text width against what the select can show.
 export function r7Clipped(s, t = T) {
   const out = [];
-  for (const c of s.clips ?? [])
-    if (c.clientW >= t.CLIP_MIN_BOX_PX && c.scrollW > c.clientW + t.CLIP_TOLERANCE_PX) out.push({ rule: "R7", kind: "clipped-text", ids: [c.id], rect: c.rect, measured: { scrollWidth: c.scrollW, clientWidth: c.clientW, hiddenPx: c.scrollW - c.clientW, text: c.text } });
+  for (const c of s.textClips ?? []) {
+    if (c.rect.w < t.CLIP_MIN_BOX_PX || c.hiddenPx <= t.CLIP_TOLERANCE_PX) continue; // a box under 8px is a visually-hidden label
+    const kind = c.mode === "scroll" ? "cut-by-scroll-frame" : c.mode === "spill" ? (c.control ? "text-overflows-control" : "text-overflows-label") : c.control ? "clipped-control" : "clipped-text";
+    out.push({ rule: "R7", kind, ids: [c.id], rect: c.textRect, measured: { hiddenPx: r1(c.hiddenPx), boxWidth: r1(c.rect.w), textWidth: r1(c.textRect.w), text: c.text } });
+  }
+  for (const x of s.selects ?? []) {
+    const available = x.clientW - x.padL - x.padR - (x.nativeArrow ? t.SELECT_ARROW_PX : 0);
+    if (x.clientW >= t.CLIP_MIN_BOX_PX && x.textW > available + t.CLIP_TOLERANCE_PX)
+      out.push({ rule: "R7", kind: "select-value-clipped", ids: [x.id], rect: x.rect, measured: { valueWidth: r1(x.textW), availableWidth: r1(Math.max(0, available)), selectWidth: r1(x.rect.w), text: x.text } });
+  }
   return out;
 }
 
@@ -225,10 +250,83 @@ export function r8Duplicates(s) {
   return out;
 }
 
+// ---- R9 edge padding (390 only: the caller applies it to the mobile viewport) -----------------------------------------------------------------------------
+// Text and controls flush to the left/right edge of the screen. A button / link that spans the whole width is a full-bleed bar, an image or a background is not
+// text: neither is content. A margin below zero is overflow (R1), not padding.
+export function r9EdgePadding(s, t = T) {
+  const out = [], vw = s.viewport.w, seen = new Set();
+  const margins = (r) => ({ left: r.x, right: vw - right(r) });
+  const flush = (m) => Math.min(m.left, m.right) < t.EDGE_MIN_PX && Math.min(m.left, m.right) >= -t.OVERFLOW_TOLERANCE_PX;
+  for (const x of s.texts ?? []) {
+    if (x.icon || seen.has(x.id)) continue;
+    const line = x.rects.find((r) => flush(margins(r)));
+    if (!line) continue;
+    seen.add(x.id);
+    const m = margins(line);
+    out.push({ rule: "R9", kind: "text-flush", ids: [x.id], rect: line, measured: { leftMargin: r1(m.left), rightMargin: r1(m.right), text: x.text } });
+  }
+  for (const x of s.targets ?? []) {
+    if (x.inline || x.disabled || seen.has(x.id)) continue;
+    const fullBleed = x.rect.w >= vw - t.FULL_BLEED_SLACK_PX;
+    if (fullBleed && !/^(input|select|textarea)$/.test(x.tag)) continue; // a full-width bar / button is full-bleed by design, a full-width field has no gutter
+    const m = margins(x.rect);
+    if (!flush(m)) continue;
+    seen.add(x.id);
+    out.push({ rule: "R9", kind: "control-flush", ids: [x.id], rect: x.rect, measured: { leftMargin: r1(m.left), rightMargin: r1(m.right), tag: x.tag, text: x.text } });
+  }
+  return out;
+}
+
+// ---- R10 fixed-bar occlusion ---------------------------------------------------------------------------------------------------------------------------------
+// s = a snapshot taken with the page scrolled to `position` ("middle" | "bottom"); s.bars = visible fixed/sticky boxes with an opaque background, s.scrollY.
+// A bar attached to the top or bottom viewport edge only passes over content while scrolling: at the middle it is not judged; at the bottom, where scrolling
+// can no longer clear it, a bar attached to the bottom edge is. A floating pinned box (a side panel, a widget) is judged at both. What is covered is main
+// content: text lines and controls that are not themselves pinned and are mostly inside the viewport.
+export function r10Occlusion(s, position, t = T) {
+  const out = [], sy = s.scrollY ?? 0, vh = s.viewport.h, view = { x: 0, y: sy, w: s.viewport.w, h: vh };
+  const area = (r) => Math.max(0, r.w) * Math.max(0, r.h);
+  const inter = (a, b) => { const o = overlap(a, b); return o.w > 0 && o.h > 0 ? { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y), w: o.w, h: o.h } : null; };
+  const content = [];
+  for (const x of s.texts ?? []) if (!x.icon && !x.pinned) for (const r of x.rects) content.push({ id: x.id, kind: "text", text: x.text, rect: r });
+  for (const x of s.targets ?? []) if (!x.pinned && !x.disabled) content.push({ id: x.id, kind: "control", text: x.text, rect: x.rect });
+  for (const bar of s.bars ?? []) {
+    const top = bar.rect.y - sy <= t.EDGE_ATTACH_PX, bot = sy + vh - bottom(bar.rect) <= t.EDGE_ATTACH_PX;
+    if (position === "middle" && (top || bot)) continue;
+    if (position === "bottom" && top && !bot) continue;
+    for (const c of content) {
+      const visible = inter(c.rect, view);
+      if (!visible || area(visible) < 0.5 * area(c.rect)) continue;
+      const hit = inter(visible, bar.rect);
+      if (hit && area(hit) >= t.OCCLUSION_COVER * area(visible))
+        out.push({ rule: "R10", kind: c.kind === "text" ? "bar-covers-text" : "bar-covers-control", ids: [bar.id, c.id], rect: hit, measured: { position, bar: bar.rect, covered: r1(area(hit) / area(visible)), what: c.text, attached: top ? "top" : bot ? "bottom" : "floating" } });
+    }
+  }
+  return out.map((v) => ({ ...v, severity: severityOf(v.rule, v.kind) }));
+}
+
+// ---- R11 narrow control --------------------------------------------------------------------------------------------------------------------------------------
+export function r11NarrowControls(s, { mobile = false } = {}, t = T) {
+  const min = mobile ? t.CONTROL_MIN_WIDTH_MOBILE_PX : t.CONTROL_MIN_WIDTH_DESKTOP_PX, out = [];
+  for (const f of s.fields ?? []) {
+    if (f.type === "number" || /^(numeric|decimal)$/.test(f.inputmode ?? "") || f.rect.w >= min) continue; // a quantity field is short by nature
+    out.push({ rule: "R11", kind: "control-too-narrow", ids: [f.id], rect: f.rect, measured: { width: r1(f.rect.w), minimum: min, tag: f.tag, type: f.type, label: f.label?.text ?? "" } });
+  }
+  return out;
+}
+
 // ---- all rules -------------------------------------------------------------------------------------------------------------------------------------------------------
 export function evaluate(snapshot, { mobile = false } = {}, t = T) {
-  return [...r1Overflow(snapshot, t), ...r2FormRows(snapshot, t), ...r3Tables(snapshot, t), ...r4SmallText(snapshot, t), ...(mobile ? r5TapTargets(snapshot, t) : []), ...r6Overlap(snapshot, t), ...r7Clipped(snapshot, t), ...r8Duplicates(snapshot)]
-    .map((v) => ({ ...v, severity: severityOf(v.rule) }));
+  return [...r1Overflow(snapshot, t), ...r2FormRows(snapshot, t), ...r3Tables(snapshot, t), ...r4SmallText(snapshot, t), ...(mobile ? r5TapTargets(snapshot, t) : []), ...r6Overlap(snapshot, t), ...r7Clipped(snapshot, t), ...r8Duplicates(snapshot), ...(mobile ? r9EdgePadding(snapshot, t) : []), ...r11NarrowControls(snapshot, { mobile }, t)]
+    .map((v) => ({ ...v, severity: severityOf(v.rule, v.kind) }));
+}
+
+// ---- scroll passes (Playwright side, shared by the runner and the canary) -------------------------------------------------------------------------------------
+export const SCROLL_POSITIONS = Object.freeze([["middle", 0.5], ["bottom", 1]]);
+// Scrolls the document to a fraction of its scrollable height and lets sticky/fixed boxes settle. false = the page does not scroll (nothing to judge).
+export async function scrollToFraction(page, fraction) {
+  const scrolls = await page.evaluate((f) => { const max = document.documentElement.scrollHeight - window.innerHeight; if (max <= 8) return false; window.scrollTo(0, Math.round(max * f)); return true; }, fraction); // [READ/MEASURE] scrolls only
+  if (scrolls) await page.waitForTimeout(150);
+  return scrolls;
 }
 
 // ---- reporting helpers (pure) -------------------------------------------------------------------------------------------------------------------------------------
@@ -264,29 +362,36 @@ export function collect() {
   const inter = (a, b) => { if (!a) return b; if (!b) return a; const l = Math.max(a.l, b.l), t = Math.max(a.t, b.t), r = Math.min(a.r, b.r), bt = Math.min(a.b, b.b); return r > l && bt > t ? { l, t, r, b: bt } : { l: 0, t: 0, r: 0, b: 0 }; };
   // clip a descendant is subject to: the padding boxes of its overflow-clipping ancestors, through its containing-block chain (an absolutely positioned
   // child escapes the clip of ancestors between it and its containing block, a fixed one escapes all). html/body overflow belongs to the viewport.
-  const selfClip = (el) => {
-    if (el === document.body || el === doc) return null;
-    const st = cs(el);
-    if (st.display === "inline" || (st.overflowX === "visible" && st.overflowY === "visible")) return null;
-    const r = el.getBoundingClientRect();
-    return { l: r.left + el.clientLeft, t: r.top + el.clientTop, r: r.left + el.clientLeft + el.clientWidth, b: r.top + el.clientTop + el.clientHeight };
+  // hard = only overflow hidden/clip counts (content past it is gone); soft also counts auto/scroll (content past it is reachable by scrolling that box).
+  const clipper = (hard) => {
+    const clips = (v) => (hard ? v === "hidden" || v === "clip" : v !== "visible");
+    const selfClip = (el) => {
+      if (el === document.body || el === doc) return null;
+      const st = cs(el);
+      const cx = clips(st.overflowX), cy = clips(st.overflowY);
+      if (st.display === "inline" || (!cx && !cy)) return null;
+      const r = el.getBoundingClientRect();
+      return { l: cx ? r.left + el.clientLeft : -Infinity, t: cy ? r.top + el.clientTop : -Infinity, r: cx ? r.left + el.clientLeft + el.clientWidth : Infinity, b: cy ? r.top + el.clientTop + el.clientHeight : Infinity };
+    };
+    const childMemo = new Map(), memo = new Map();
+    const childClip = (el) => {
+      if (!el) return null;
+      if (childMemo.has(el)) return childMemo.get(el);
+      const c = inter(clipOf(el), selfClip(el));
+      childMemo.set(el, c);
+      return c;
+    };
+    const clipOf = (el) => {
+      if (memo.has(el)) return memo.get(el);
+      const p = el.parentElement, pos = cs(el).position;
+      const c = !p ? null : pos === "fixed" ? null : pos === "absolute" ? childClip(el.offsetParent && el.offsetParent !== document.body ? el.offsetParent : null) : childClip(p);
+      memo.set(el, c);
+      return c;
+    };
+    return { clipOf, childClip };
   };
-  const childClipMemo = new Map();
-  const childClip = (el) => {
-    if (!el) return null;
-    if (childClipMemo.has(el)) return childClipMemo.get(el);
-    const c = inter(clipOf(el), selfClip(el));
-    childClipMemo.set(el, c);
-    return c;
-  };
-  const clipMemo = new Map();
-  const clipOf = (el) => {
-    if (clipMemo.has(el)) return clipMemo.get(el);
-    const p = el.parentElement, pos = cs(el).position;
-    const c = !p ? null : pos === "fixed" ? null : pos === "absolute" ? childClip(el.offsetParent && el.offsetParent !== document.body ? el.offsetParent : null) : childClip(p);
-    clipMemo.set(el, c);
-    return c;
-  };
+  const { clipOf, childClip } = clipper(false);
+  const hardClip = clipper(true).childClip;
   const pinnedMemo = new Map();
   const pinned = (el) => {
     if (!el || el === document.body) return false;
@@ -342,7 +447,7 @@ export function collect() {
     if (!rp) continue;
     const d = cs(rp).display, dir = cs(rp).flexDirection;
     fields.push({
-      id: reg(el), tag: el.tagName.toLowerCase(), type: el.getAttribute("type") || "", multiline: el.tagName === "TEXTAREA" || (el.tagName === "SELECT" && (el.multiple || el.size > 1)),
+      id: reg(el), tag: el.tagName.toLowerCase(), type: el.getAttribute("type") || "", inputmode: el.getAttribute("inputmode") || "", multiline: el.tagName === "TEXTAREA" || (el.tagName === "SELECT" && (el.multiple || el.size > 1)),
       rect: R(el.getBoundingClientRect()), label: label ? { id: reg(label), rect: R(label.getBoundingClientRect()), text: norm(label.textContent).slice(0, 40) } : null,
       controlParent: reg(el.parentElement), rowParent: reg(rp), rowLayout: d.includes("grid") ? "grid" : d.includes("flex") ? (dir.startsWith("column") ? "flex-col" : "flex") : "block",
     });
@@ -391,7 +496,9 @@ export function collect() {
   }
 
   // text nodes (R4, R6): per visible text node the rendered line rects and the computed font size
-  const texts = [];
+  const texts = [], textClips = [];
+  const CONTROLISH = 'button, select, input[type="button"], input[type="submit"], [role="button"], [role="tab"], [role="menuitem"], [role="switch"], summary';
+  const LABELISH = 'label, a, th, legend, [role="link"]';
   const HELPER = /help|hint|counter|caption|note|desc|muted|meta|sub(title|text)?\b/i;
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   const range = document.createRange();
@@ -400,7 +507,20 @@ export function collect() {
     if (!text || !p || SKIP.has(p.tagName) || p instanceof SVGElement || !vis(p)) continue;
     range.selectNodeContents(n);
     const clip = childClip(p); // what clips text inside p: p's own overflow plus everything above it
-    const rects = [...range.getClientRects()].map((r) => inter({ l: r.left, t: r.top, r: r.right, b: r.bottom }, clip)).filter((r) => r.r - r.l > 0.5 && r.b - r.t > 0.5);
+    const raw = [...range.getClientRects()].filter((r) => r.width > 0.5 && r.height > 0.5);
+    const rects = raw.map((r) => inter({ l: r.left, t: r.top, r: r.right, b: r.bottom }, clip)).filter((r) => r.r - r.l > 0.5 && r.b - r.t > 0.5);
+    // R7: the part of a text line of a control / label that lies outside the box that should hold it, on either side (scrollWidth cannot see the left side).
+    const control = p.closest(CONTROLISH) ? true : p.closest(LABELISH) ? false : null;
+    if (control !== null && raw.length) {
+      const cut = (c) => (c ? Math.max(...raw.map((r) => r.width - Math.max(0, Math.min(r.right, c.r) - Math.max(r.left, c.l)))) : 0);
+      const hardBox = hardClip(p), hidden = cut(hardBox), scrolled = cut(clip) - hidden;
+      const owner = p.closest(control ? CONTROLISH : LABELISH), ob = owner.getBoundingClientRect();
+      const floating = ["absolute", "fixed"].includes(cs(p).position); // a badge or popover text positioned outside its owner on purpose
+      const spill = floating ? 0 : Math.max(...raw.map((r) => Math.max(0, ob.left - r.left) + Math.max(0, r.right - ob.right)));
+      const [mode, px, box] = hidden > 0.5 ? ["hidden", hidden, hardBox] : spill > 0.5 ? ["spill", spill, { l: ob.left, t: ob.top, r: ob.right, b: ob.bottom }] : scrolled > 0.5 ? ["scroll", scrolled, clip] : [null, 0, null];
+      if (mode && box && Number.isFinite(box.l + box.r))
+        textClips.push({ id: reg(p), control, mode, hiddenPx: Math.round(px * 10) / 10, text: text.slice(0, 40), rect: R({ left: box.l, top: Number.isFinite(box.t) ? box.t : raw[0].top, width: box.r - box.l, height: Number.isFinite(box.b - box.t) ? box.b - box.t : raw[0].height }), textRect: R({ left: Math.min(...raw.map((r) => r.left)), top: Math.min(...raw.map((r) => r.top)), width: Math.max(...raw.map((r) => r.right)) - Math.min(...raw.map((r) => r.left)), height: Math.max(...raw.map((r) => r.bottom)) - Math.min(...raw.map((r) => r.top)) }) });
+    }
     if (!rects.length) continue;
     const size = Math.round(parseFloat(cs(p).fontSize) * 100) / 100;
     const cls = typeof p.className === "string" ? p.className : "";
@@ -428,14 +548,25 @@ export function collect() {
     targets.push({ id: reg(target), tag: target.tagName.toLowerCase(), type: target.getAttribute("type") || "", rect: R(target.getBoundingClientRect()), inline, pinned: pinned(target), parent: anc ? reg(anc) : -1, text: norm(target.textContent || target.getAttribute("aria-label") || target.value || target.getAttribute("name")).slice(0, 30) });
   }
 
-  // clipped labels / buttons / links (R7)
-  const LABELISH = 'button, label, a, summary, th, legend, [role="button"], [role="tab"], [role="menuitem"], [role="link"]';
-  const clips = [];
+  // selects (R7): the selected option's text against the room the select has for it; fixed/sticky bars (R10)
+  const selects = [];
+  const canvas = document.createElement("canvas").getContext("2d");
+  for (const el of document.body.querySelectorAll("select")) {
+    if (el.multiple || el.size > 1 || !vis(el)) continue;
+    const st = cs(el), text = norm(el.selectedOptions[0] ? el.selectedOptions[0].text : "");
+    if (!text) continue;
+    canvas.font = st.font || `${st.fontStyle} ${st.fontWeight} ${st.fontSize} ${st.fontFamily}`;
+    selects.push({ id: reg(el), rect: R(el.getBoundingClientRect()), clientW: el.clientWidth, padL: parseFloat(st.paddingLeft) || 0, padR: parseFloat(st.paddingRight) || 0, nativeArrow: (st.appearance || "auto") !== "none", textW: canvas.measureText(text).width, text: text.slice(0, 40) });
+  }
+  const bars = [];
   for (const el of all) {
     const st = cs(el);
-    if (st.display === "inline" || !(st.overflowX === "hidden" || st.overflowX === "clip" || st.textOverflow === "ellipsis")) continue;
-    if (el.scrollWidth <= el.clientWidth || el.clientWidth === 0 || !vis(el) || !norm(el.textContent) || !(el.matches(LABELISH) || el.closest(LABELISH))) continue;
-    clips.push({ id: reg(el), rect: R(el.getBoundingClientRect()), scrollW: el.scrollWidth, clientW: el.clientWidth, text: norm(el.textContent).slice(0, 40) });
+    if ((st.position !== "fixed" && st.position !== "sticky") || (el.parentElement && pinned(el.parentElement))) continue; // the outermost pinned box
+    const v = vis(el);
+    if (!v || v.clip.r - v.clip.l < 32 || v.clip.b - v.clip.t < 16) continue;
+    const alpha = (st.backgroundColor.match(/^rgba?\(([^)]*)\)/)?.[1].split(",")[3] ?? "1").trim();
+    if (!(parseFloat(alpha) >= 0.5) && st.backgroundImage === "none") continue; // a transparent wrapper covers nothing
+    bars.push({ id: reg(el), rect: R({ left: v.clip.l, top: v.clip.t, width: v.clip.r - v.clip.l, height: v.clip.b - v.clip.t }) });
   }
 
   // list / checklist containers (R8)
@@ -459,7 +590,7 @@ export function collect() {
     for (const k of c.children) { const g = sig(k); if (/\.\S/.test(g)) (groups.get(g) ?? groups.set(g, []).get(g)).push(k); }
     for (const g of groups.values()) if (g.length >= 3) take(c, g);
   }
-  return { viewport: { w: vw, h: vh, innerWidth: window.innerWidth }, doc: { scrollWidth: doc.scrollWidth, scrollHeight: doc.scrollHeight, clientWidth: vw }, boxes, fields, actions, tables, texts, targets, clips, lists };
+  return { viewport: { w: vw, h: vh, innerWidth: window.innerWidth }, doc: { scrollWidth: doc.scrollWidth, scrollHeight: doc.scrollHeight, clientWidth: vw }, scrollY: Math.round(sy), boxes, fields, actions, tables, texts, textClips, selects, bars, targets, lists };
 }
 
 // In-page: resolve element ids (window.__vaEls) to selector path, test id and visible text.

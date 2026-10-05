@@ -27,7 +27,7 @@ import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
-import { BLOCKING, RULES, T, collect, countByRule, describe, evaluate, selectRecords } from "./visual-lint-lib.mjs";
+import { BLOCKING, BLOCKING_KINDS, RULES, SCROLL_POSITIONS, T, collect, countByRule, describe, evaluate, r10Occlusion, scrollToFraction, selectRecords } from "./visual-lint-lib.mjs";
 
 export const LOCALES = ["zh-TW", "zh-CN", "en"];
 export const VIEWPORTS = [
@@ -154,7 +154,7 @@ export async function main() {
     await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(3);
   };
   const adminUnits = [];
-  for (const r of adminRoutes) if (wanted(r.path)) adminUnits.push({ id: routeId(r.path), route: r.path, state: "registry", url: (l) => adminURL(r, l), auth: !r.public });
+  for (const r of adminRoutes) if (wanted(r.path)) adminUnits.push({ id: routeId(r.path), route: r.path, state: "registry", url: (l) => adminURL(r, l), auth: !r.public, expectExternal: r.path === "/orders/cvs-print" ? "ECPay" : "" });
   if (wanted("/products/new")) {
     adminUnits.push({ id: "products-new", route: "/products/new", state: "create-empty", url: (l) => `${adminOrigin}/${l}/products/new${q()}`, auth: true });
     adminUnits.push({ id: "products-new-variants", route: "/products/new", state: "create-with-variants", url: (l) => `${adminOrigin}/${l}/products/new${q()}`, auth: true, prepare: variantsByClicks });
@@ -214,6 +214,18 @@ export async function main() {
         catch (e) { rec.stateFailed = true; rec.issues.push(`state-not-reached: ${String(e.message || e).replace(/\x1b\[[0-9;]*m/g, "").split("\n").filter((l) => l.trim())[0].slice(0, 160)}`); } // the shot is still taken, and flagged
       }
       await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 4000 }).catch(() => {});
+      if (unit.expectExternal) { // a route whose job is to hand the browser to another host: judged only if its own document is on screen
+        const body = await page.locator("body").innerText().catch(() => "");
+        const onOwnHost = new URL(page.url()).host === new URL(adminOrigin).host;
+        if (!onOwnHost || /external request blocked|blocked external/i.test(body) || body.trim().length < 20) {
+          rec.notRun = `NOT_RUN: this route hands the browser to ${unit.expectExternal} and the harness could not keep the page's own document on screen (url ${onOwnHost ? "unchanged" : "left the stack"}, body: ${JSON.stringify(body.trim().slice(0, 80))})`;
+          rec.issues.push(rec.notRun);
+          results.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], notRun: true });
+          log(`${unit.app} ${unit.id} ${unit.locale}/${unit.v.name} ${rec.notRun}`);
+          return;
+        }
+        rec.issues.push(`harness: the external ${unit.expectExternal} navigation is cancelled so the page's own state is shown`);
+      }
       await warm(page);
       await page.addStyleTag({ content: FREEZE }).catch(() => {}); // evidence stabilisation: no transition or animation frame is caught half way
       const degraded = unit.expectDegraded ? [] : await degradedMessages(page);
@@ -236,10 +248,29 @@ export async function main() {
         const c = await crop(page, v, path.join(out, "crops", unit.app, unit.id, `${unit.locale}-${sizeOf(unit.v)}-${v.rule}-${++n}.png`));
         records.push({ rule: v.rule, kind: v.kind, severity: v.severity, path: pathFor(v), tag: first.tag ?? "", testid: first.testid ?? "", text: first.text ?? "", rect: v.rect, measured: v.measured, group: v.group, crop: c });
       }
-      results.push({ ...rec, ms: Date.now() - started, counts: countByRule(violations), groups: groupCounts, violations: records });
+      const counts = countByRule(violations), groups = { ...groupCounts };
+      const blockingCounts = countByRule(violations.filter((x) => x.severity === "block"));
+      // R10: the same page scrolled to the middle and to the bottom; a fixed/sticky bar that covers main content there (each stage measured and cropped in its own scroll state)
+      for (const [position, fraction] of SCROLL_POSITIONS) {
+        if (!(await scrollToFraction(page, fraction))) break;
+        const occ = r10Occlusion(await page.evaluate(collect), position); // [READ/MEASURE]
+        if (!occ.length) continue;
+        const names = await page.evaluate(describe, [...new Set(occ.flatMap((x) => x.ids))]);
+        const covered = (x) => names[x.ids[1]]?.path ?? "";
+        const sel = selectRecords(occ, covered);
+        let m = 0;
+        for (const v of sel.picked) {
+          const first = names[v.ids[1]] ?? {};
+          const c = await crop(page, v, path.join(out, "crops", unit.app, unit.id, `${unit.locale}-${sizeOf(unit.v)}-R10-${position}-${++m}.png`));
+          records.push({ rule: v.rule, kind: v.kind, severity: v.severity, path: covered(v), tag: first.tag ?? "", testid: first.testid ?? "", text: first.text ?? "", rect: v.rect, measured: { ...v.measured, bar: names[v.ids[0]]?.path ?? "" }, group: v.group, crop: c });
+        }
+        counts.R10 = (counts.R10 ?? 0) + occ.length; groups.R10 = (groups.R10 ?? 0) + (sel.groupCounts.R10 ?? 0);
+      }
+      await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {}); // [READ/MEASURE]
+      results.push({ ...rec, ms: Date.now() - started, counts, groups, blocking: Object.values(blockingCounts).reduce((a, b) => a + b, 0), blockingCounts, violations: records });
     } catch (e) {
       rec.issues.push(`capture-error: ${String(e.message || e).split("\n")[0].slice(0, 200)}`);
-      results.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, violations: [], failed: true });
+      results.push({ ...rec, ms: Date.now() - started, counts: {}, groups: {}, blocking: 0, blockingCounts: {}, violations: [], failed: true });
     }
     const done = results[results.length - 1];
     log(`${unit.app} ${unit.id} ${unit.locale}/${unit.v.name} http ${rec.status}${rec.file ? "" : " NO SHOT"}${done.stateFailed ? " STATE NOT REACHED" : ""} ${JSON.stringify(done.counts)}`);
@@ -250,6 +281,9 @@ export async function main() {
     const c = await browser.newContext(ctxOptions(v, locale, extra));
     await c.addInitScript(INIT_SCRIPT);
     const mon = withMonitor ? monitor(c, { allowedHosts: new Set([new URL(adminOrigin).host, HOST]) }) : null;
+    // /orders/cvs-print auto-posts a signed form to ECPay top-level; the harness cancels that navigation (registered after the monitor, so it runs first) so the
+    // page's own document stays on screen instead of the monitor's "blocked external" stub. No request leaves the stack.
+    if (withMonitor) await c.route((u) => /(^|\.)ecpay\.com\.tw$/i.test(u.hostname), (route) => route.abort("aborted"));
     return { c, mon, page: await c.newPage() };
   };
   const loginState = async () => {
@@ -264,7 +298,7 @@ export async function main() {
   };
   const adminTask = (state, u, locale, v) => async () => {
     const s = await newContext(v, locale, u.auth ? { storageState: state } : {});
-    try { await capture(s, { app: "admin", id: u.id, route: u.route, state: u.state, url: u.url(locale), locale, v, prepare: u.prepare }); } finally { await s.c.close().catch(() => {}); }
+    try { await capture(s, { app: "admin", id: u.id, route: u.route, state: u.state, url: u.url(locale), locale, v, prepare: u.prepare, expectExternal: u.expectExternal }); } finally { await s.c.close().catch(() => {}); }
   };
   const bridge = async (context) => { // the platform site is served by Host: a context bridge keeps the real host names without DNS or TLS (tests/admin/platform-runner.mjs)
     await context.route("**/*", async (route) => {
@@ -344,45 +378,51 @@ export async function main() {
     }
     await pool(tasks, WORKERS);
 
-    // ---- coverage: every enumerated unit has a shot ---------------------------------------------------------------------------------------------------------
+    // ---- coverage: every enumerated unit has a shot, or is explicitly NOT_RUN with its reason ----------------------------------------------------------------
     const have = new Set(results.filter((r) => r.file).map((r) => `${r.app}|${r.id}|${r.locale}|${r.size}`));
-    const missing = expected.filter((e) => !have.has(key(e))).map(key);
+    const notRun = results.filter((r) => r.notRun).map((r) => ({ unit: `${r.app}|${r.id}|${r.locale}|${r.size}`, reason: r.notRun }));
+    const notRunKeys = new Set(notRun.map((n) => n.unit));
+    const missing = expected.filter((e) => !have.has(key(e)) && !notRunKeys.has(key(e))).map(key);
     const loadFailures = results.filter((r) => r.file && !r.ok).map((r) => `${r.app}|${r.id}|${r.locale}|${r.size} HTTP ${r.status}`);
     const stateFailures = results.filter((r) => r.stateFailed).map((r) => `${r.app}|${r.id}|${r.locale}|${r.size}`);
     assert.equal(new Set(expected.map(key)).size, expected.length, "route ids must be unique per app");
     results.sort((a, b) => `${a.app}|${a.id}|${a.locale}|${a.size}`.localeCompare(`${b.app}|${b.id}|${b.locale}|${b.size}`));
-    const blockingInstances = results.reduce((n, r) => n + BLOCKING.reduce((m, rule) => m + (r.counts[rule] ?? 0), 0), 0);
+    const blockingInstances = results.reduce((n, r) => n + (r.blocking ?? 0), 0);
     const totals = {};
     for (const rule of Object.keys(RULES)) {
       const units = results.filter((r) => r.counts[rule]);
-      totals[rule] = { name: RULES[rule], severity: BLOCKING.includes(rule) ? "block" : "warn", instances: units.reduce((n, r) => n + r.counts[rule], 0), groups: units.reduce((n, r) => n + (r.groups[rule] ?? 0), 0), units: units.length };
+      totals[rule] = {
+        name: RULES[rule], severity: BLOCKING.includes(rule) ? "block" : BLOCKING_KINDS.some((k) => k.startsWith(`${rule}:`)) ? "block for controls, warn for labels/links" : "warn",
+        instances: units.reduce((n, r) => n + r.counts[rule], 0), blocking: results.reduce((n, r) => n + (r.blockingCounts?.[rule] ?? 0), 0), groups: units.reduce((n, r) => n + (r.groups[rule] ?? 0), 0), units: units.length,
+      };
     }
     const byApp = {}, byRouteMap = new Map();
     for (const u of results) {
-      const a = (byApp[u.app] ??= {}), r = byRouteMap.get(`${u.app}|${u.id}`) ?? byRouteMap.set(`${u.app}|${u.id}`, { app: u.app, id: u.id, route: u.route, state: u.state, counts: {}, blocking: 0, warn: 0, total: 0 }).get(`${u.app}|${u.id}`);
-      for (const [rule, n] of Object.entries(u.counts)) { a[rule] = (a[rule] ?? 0) + n; r.counts[rule] = (r.counts[rule] ?? 0) + n; r[BLOCKING.includes(rule) ? "blocking" : "warn"] += n; r.total += n; }
+      const a = (byApp[u.app] ??= {}), r = byRouteMap.get(`${u.app}|${u.id}`) ?? byRouteMap.set(`${u.app}|${u.id}`, { app: u.app, id: u.id, route: u.route, state: u.state, counts: {}, blocking: 0, warn: 0, total: 0, notRun: 0 }).get(`${u.app}|${u.id}`);
+      for (const [rule, n] of Object.entries(u.counts)) { a[rule] = (a[rule] ?? 0) + n; r.counts[rule] = (r.counts[rule] ?? 0) + n; r.total += n; }
+      r.blocking += u.blocking ?? 0; r.warn = r.total - r.blocking; if (u.notRun) r.notRun += 1;
     }
     const byRoute = [...byRouteMap.values()].sort((x, y) => y.total - x.total || x.id.localeCompare(y.id));
     const reasons = [];
-    if (blockingInstances) reasons.push(`${blockingInstances} blocking violation instances (R1/R2/R3/R6)`);
+    if (blockingInstances) reasons.push(`${blockingInstances} blocking violation instances (${BLOCKING.join("/")} and R7 clipped controls)`);
     if (missing.length) reasons.push(`${missing.length} enumerated shots missing`);
     if (loadFailures.length) reasons.push(`${loadFailures.length} pages answered HTTP >= 400`);
     if (stateFailures.length) reasons.push(`${stateFailures.length} "create new" states were not reached`);
     exitCode = reasons.length ? 1 : 0;
     const report = {
-      generated: new Date().toISOString(), commit, out: path.relative(root, out), thresholds: T, rules: RULES, blocking: BLOCKING,
+      generated: new Date().toISOString(), commit, out: path.relative(root, out), thresholds: T, rules: RULES, blocking: BLOCKING, blockingKinds: BLOCKING_KINDS,
       matrix: { locales: LOCALES, viewports: VIEWPORTS.map((v) => ({ name: v.name, size: sizeOf(v) })), apps: { admin: adminUnits.length, storefront: storefrontUnits.length, platform: platformUnits.length } },
-      shots: { expected: expected.length, captured: have.size, missing, loadFailures, stateFailures }, totals, blockingInstances, verdict: { exit: exitCode, reasons },
+      shots: { expected: expected.length, captured: have.size, notRun, missing, loadFailures, stateFailures }, totals, blockingInstances, verdict: { exit: exitCode, reasons },
       units: results.map(({ file, sha256, bytes, ms, ...r }) => ({ ...r, shot: file })),
     };
     await writeFile(path.join(out, "index.json"), JSON.stringify({
-      generated: report.generated, commit, out: report.out, matrix: report.matrix, expected: expected.length, captured: have.size, missing,
+      generated: report.generated, commit, out: report.out, matrix: report.matrix, expected: expected.length, captured: have.size, notRun, missing,
       shots: results.filter((r) => r.file).map((r) => ({ app: r.app, route: r.route, id: r.id, state: r.state, url: r.url, locale: r.locale, viewport: r.viewport, size: r.size, file: r.file, sha256: r.sha256, bytes: r.bytes, status: r.status, pageHeight: r.pageHeight, issues: r.issues })),
     }, null, 1));
     await writeFile(path.join(out, "lint.json"), JSON.stringify(report, null, 1));
-    await writeFile(path.join(out, "counts.json"), JSON.stringify({ commit, generated: report.generated, shots: { expected: expected.length, captured: have.size }, blockingInstances, totals, byApp, byRoute }, null, 1));
+    await writeFile(path.join(out, "counts.json"), JSON.stringify({ commit, generated: report.generated, shots: { expected: expected.length, captured: have.size, notRun: notRun.length }, blockingInstances, totals, byApp, byRoute }, null, 1));
     await writeFile(path.join(out, "lint.md"), renderMarkdown(report));
-    log(`shots ${have.size}/${expected.length}; blocking instances ${blockingInstances}; ${Object.entries(totals).map(([k, v]) => `${k} ${v.instances}`).join(", ")}`);
+    log(`shots ${have.size}/${expected.length}${notRun.length ? ` (NOT_RUN ${notRun.length})` : ""}; blocking instances ${blockingInstances}; ${Object.entries(totals).map(([k, v]) => `${k} ${v.instances}`).join(", ")}`);
     console.log("top routes by violations: " + byRoute.slice(0, 10).map((r) => `${r.app}${r.route} (${r.id}) ${r.total} [block ${r.blocking}]`).join("; "));
     for (const r of reasons) console.log(`FAIL G-UI9: ${r}`);
     if (!reasons.length) console.log("PASS G-UI9 visual lint");
@@ -408,22 +448,24 @@ export function renderMarkdown(report) {
   const L = [];
   L.push(`# G-UI9 visual lint — ${report.commit} — ${report.generated}`, "");
   L.push(`Verdict: **${report.verdict.exit === 0 ? "PASS" : "FAIL"}**${report.verdict.reasons.length ? ` — ${report.verdict.reasons.join("; ")}` : ""}`, "");
-  L.push(`Shots: ${report.shots.captured} captured of ${report.shots.expected} enumerated (${report.matrix.apps.admin} admin + ${report.matrix.apps.storefront} storefront + ${report.matrix.apps.platform} platform pages x ${report.matrix.locales.length} locales x ${report.matrix.viewports.length} viewports ${report.matrix.viewports.map((v) => v.size).join(", ")}). Missing: ${report.shots.missing.length}. HTTP >= 400: ${report.shots.loadFailures.length}. States not reached: ${report.shots.stateFailures.length}.`, "");
-  if (report.shots.missing.length) L.push("Missing shots:", ...report.shots.missing.map((m) => `- ${m}`), "");
-  if (report.shots.loadFailures.length) L.push("Pages that answered HTTP >= 400:", ...report.shots.loadFailures.map((m) => `- ${m}`), "");
-  if (report.shots.stateFailures.length) L.push("States not reached:", ...report.shots.stateFailures.map((m) => `- ${m}`), "");
-  L.push("R1 R2 R3 R6 are blocking (exit 1); R4 R5 R7 R8 are WARN in this first version. Thresholds: `tests/ui/visual-lint-lib.mjs` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).", "");
-  L.push("## Counts per rule", "", "| rule | what | severity | instances | groups | page-variants affected |", "| --- | --- | --- | ---: | ---: | ---: |");
-  for (const r of rules) { const t = report.totals[r]; L.push(`| ${r} | ${t.name} | ${t.severity} | ${t.instances} | ${t.groups} | ${t.units} |`); }
-  L.push("", "## Counts per app (instances)", "", `| app | page-variants | ${rules.join(" | ")} |`, `| --- | ---: | ${rules.map(() => "---:").join(" | ")} |`);
+  const sh = report.shots;
+  L.push(`Shots: ${sh.captured} captured of ${sh.expected} enumerated (${report.matrix.apps.admin} admin + ${report.matrix.apps.storefront} storefront + ${report.matrix.apps.platform} platform pages x ${report.matrix.locales.length} locales x ${report.matrix.viewports.length} viewports ${report.matrix.viewports.map((v) => v.size).join(", ")}). NOT_RUN: ${sh.notRun.length}. Missing: ${sh.missing.length}. HTTP >= 400: ${sh.loadFailures.length}. States not reached: ${sh.stateFailures.length}.`, "");
+  if (sh.notRun.length) L.push("NOT_RUN (explicit, never reported as zero findings):", ...sh.notRun.map((m) => `- ${m.unit}: ${m.reason}`), "");
+  if (sh.missing.length) L.push("Missing shots:", ...sh.missing.map((m) => `- ${m}`), "");
+  if (sh.loadFailures.length) L.push("Pages that answered HTTP >= 400:", ...sh.loadFailures.map((m) => `- ${m}`), "");
+  if (sh.stateFailures.length) L.push("States not reached:", ...sh.stateFailures.map((m) => `- ${m}`), "");
+  L.push(`Blocking (exit 1): ${report.blocking.join(", ")} and ${report.blockingKinds.join(", ")}; every other finding is WARN for now. Thresholds: \`tests/ui/visual-lint-lib.mjs\` (T). Instances = every measured occurrence; groups = distinct (rule, kind, selector shape).`, "");
+  L.push("## Counts per rule", "", "| rule | what | severity | instances | of which blocking | groups | page-variants affected |", "| --- | --- | --- | ---: | ---: | ---: | ---: |");
+  for (const r of rules) { const t = report.totals[r]; L.push(`| ${r} | ${t.name} | ${t.severity} | ${t.instances} | ${t.blocking} | ${t.groups} | ${t.units} |`); }
+  L.push("", "## Counts per app (instances)", "", `| app | page-variants | ${rules.join(" | ")} | blocking |`, `| --- | ---: | ${rules.map(() => "---:").join(" | ")} | ---: |`);
   for (const app of [...new Set(units.map((u) => u.app))]) {
     const us = units.filter((u) => u.app === app);
-    L.push(`| ${app} | ${us.length} | ${rules.map((r) => us.reduce((n, u) => n + (u.counts[r] ?? 0), 0)).join(" | ")} |`);
+    L.push(`| ${app} | ${us.length} | ${rules.map((r) => us.reduce((n, u) => n + (u.counts[r] ?? 0), 0)).join(" | ")} | ${us.reduce((n, u) => n + (u.blocking ?? 0), 0)} |`);
   }
   const routes = new Map();
   for (const u of units) { const k = `${u.app}|${u.id}`; (routes.get(k) ?? routes.set(k, { app: u.app, id: u.id, route: u.route, state: u.state, units: [] }).get(k)).units.push(u); }
-  const tally = (r, rs) => rs.reduce((n, rule) => n + r.units.reduce((m, u) => m + (u.counts[rule] ?? 0), 0), 0);
-  const ranked = [...routes.values()].map((r) => ({ ...r, block: tally(r, BLOCKING), warn: tally(r, rules.filter((x) => !BLOCKING.includes(x))) })).map((r) => ({ ...r, total: r.block + r.warn }))
+  const sum = (r, f) => r.units.reduce((n, u) => n + f(u), 0);
+  const ranked = [...routes.values()].map((r) => ({ ...r, block: sum(r, (u) => u.blocking ?? 0), total: sum(r, (u) => Object.values(u.counts).reduce((a, b) => a + b, 0)) })).map((r) => ({ ...r, warn: r.total - r.block }))
     .sort((a, b) => b.total - a.total || a.id.localeCompare(b.id));
   L.push("", "## Top 15 routes by violations", "", "| # | app | route | state | blocking | warn | total |", "| ---: | --- | --- | --- | ---: | ---: | ---: |");
   ranked.slice(0, 15).forEach((r, i) => L.push(`| ${i + 1} | ${r.app} | \`${r.route}\` (${r.id}) | ${r.state} | ${r.block} | ${r.warn} | ${r.total} |`));
@@ -431,13 +473,14 @@ export function renderMarkdown(report) {
     L.push("", `## ${app}`);
     for (const r of ranked.filter((x) => x.app === app)) {
       L.push("", `### \`${r.route}\` (${r.id}, ${r.state}) — blocking ${r.block}, warn ${r.warn}`, "", `| variant | ${rules.join(" | ")} | shot |`, `| --- | ${rules.map(() => "---:").join(" | ")} | --- |`);
-      for (const u of [...r.units].sort((a, b) => `${a.locale}${a.size}`.localeCompare(`${b.locale}${b.size}`))) L.push(`| ${u.locale} ${u.size}${u.status && u.status >= 400 ? ` HTTP ${u.status}` : ""} | ${rules.map((x) => u.counts[x] ?? 0).join(" | ")} | ${u.shot ? `\`${u.shot}\`` : "**MISSING**"} |`);
-      const worst = (rule) => [...r.units].sort((a, b) => (b.counts[rule] ?? 0) - (a.counts[rule] ?? 0))[0];
-      for (const rule of BLOCKING) {
-        const u = worst(rule);
-        if (!u || !u.counts[rule]) continue;
-        L.push("", `${rule} ${RULES[rule]} — worst variant ${u.locale} ${u.size} (${u.counts[rule]} instances, ${u.groups[rule]} groups):`);
-        for (const v of u.violations.filter((x) => x.rule === rule).slice(0, 3)) L.push(`- ${v.kind} \`${v.path || "document"}\` rect ${[v.rect.x, v.rect.y, v.rect.w, v.rect.h].join(",")} measured ${JSON.stringify(v.measured).slice(0, 260)}${v.crop ? ` crop \`${v.crop}\`` : ""}`);
+      for (const u of [...r.units].sort((a, b) => `${a.locale}${a.size}`.localeCompare(`${b.locale}${b.size}`)))
+        L.push(`| ${u.locale} ${u.size}${u.status && u.status >= 400 ? ` HTTP ${u.status}` : ""} | ${rules.map((x) => u.counts[x] ?? 0).join(" | ")} | ${u.notRun ? "**NOT_RUN**" : u.shot ? `\`${u.shot}\`` : "**MISSING**"} |`);
+      for (const u of r.units.filter((x) => x.notRun).slice(0, 1)) L.push("", `NOT_RUN: ${u.notRun}`);
+      for (const rule of rules) {
+        const worst = [...r.units].sort((a, b) => (b.blockingCounts?.[rule] ?? 0) - (a.blockingCounts?.[rule] ?? 0))[0];
+        if (!worst || !worst.blockingCounts?.[rule]) continue;
+        L.push("", `${rule} ${RULES[rule]} (blocking) — worst variant ${worst.locale} ${worst.size} (${worst.blockingCounts[rule]} blocking of ${worst.counts[rule]} instances, ${worst.groups[rule]} groups):`);
+        for (const v of worst.violations.filter((x) => x.rule === rule && x.severity === "block").slice(0, 3)) L.push(`- ${v.kind} \`${v.path || "document"}\` rect ${[v.rect.x, v.rect.y, v.rect.w, v.rect.h].join(",")} measured ${JSON.stringify(v.measured).slice(0, 260)}${v.crop ? ` crop \`${v.crop}\`` : ""}`);
       }
     }
   }

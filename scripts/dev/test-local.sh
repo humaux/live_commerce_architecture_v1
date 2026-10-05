@@ -733,13 +733,13 @@ elif [[ "$test_mode" == --browser-visual-lint ]]; then
     printf 'FAIL: G-UI9 visual lint wrote no lint.json (the stack or the runner stopped early, go test exit %s; see output/playwright/click-sweep/*/click-sweep.mjs.log)\n' "$va_rc" >&2
     exit 1
   fi
-  va_verdict="$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(`shots ${r.shots.captured}/${r.shots.expected}; instances ${Object.entries(r.totals).map(([k,v])=>k+" "+v.instances).join(", ")}; blocking ${r.blockingInstances}; ${r.verdict.reasons.join("; ")||"no blocking finding"}`);process.exit(r.verdict.exit)' "$va_dir/lint.json")" && va_lint=0 || va_lint=$?
+  va_verdict="$(node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(`shots ${r.shots.captured}/${r.shots.expected} (NOT_RUN ${r.shots.notRun.length}); instances ${Object.entries(r.totals).map(([k,v])=>k+" "+v.instances).join(", ")}; blocking ${r.blockingInstances}; ${r.verdict.reasons.join("; ")||"no blocking finding"}`);process.exit(r.verdict.exit)' "$va_dir/lint.json")" && va_lint=0 || va_lint=$?
   printf 'G-UI9: %s\nG-UI9 evidence: %s (lint.md, lint.json, index.json, shots/, crops/)\n' "$va_verdict" "$va_dir"
   if [[ "$va_lint" != 0 || "$va_rc" != 0 ]]; then
-    printf 'FAIL: G-UI9 visual lint (lint verdict exit %s, go test exit %s): blocking R1/R2/R3/R6 violations, a missing shot or a page that did not load; R4/R5/R7/R8 are WARN.\n' "$va_lint" "$va_rc" >&2
+    printf 'FAIL: G-UI9 visual lint (lint verdict exit %s, go test exit %s): blocking violations (R1 R2 R3 R6 R9, R7 clipped controls), a missing shot or a page that did not load; R4 R5 R8 R10 R11 and clipped labels are WARN.\n' "$va_lint" "$va_rc" >&2
     exit 1
   fi
-  printf 'PASS: G-UI9 visual lint (every admin registry route, buyer storefront route and platform-site page at 1586x992 + 390x844 in zh-TW, zh-CN and en, shot and measured against R1-R8); signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
+  printf 'PASS: G-UI9 visual lint (every admin registry route, buyer storefront route and platform-site page at 1586x992 + 390x844 in zh-TW, zh-CN and en, shot and measured against R1-R11); signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-buyer-comms ]]; then
   LC_BROWSER_BUYER_COMMS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserBuyerComms$' -v ./tests/foundation
   printf 'PASS: buyer-comms browser gate (BROWSER, MOCK mailbox): bank_transfer order with e-mail in the storefront shell, placed mail captured by a loopback SMTP fake, fresh-browser guest lookup (view-only, identical refusals); zh-TW + en, desktop + 390px; no real mailbox.\n'
