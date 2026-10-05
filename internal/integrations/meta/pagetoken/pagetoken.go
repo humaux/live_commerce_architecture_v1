@@ -158,3 +158,36 @@ func (k *SealKeys) Seal(s Scope, token []byte) (keyID string, enc, ciphertext []
 	}
 	return k.activeID, append([]byte(nil), out[:EncSize]...), append([]byte(nil), out[EncSize:]...), nil
 }
+
+// SendInfoDomain is the first element of the HPKE info of a sealed send dispatch copy (live-console-v1 §3.4).
+const SendInfoDomain = "livecommerce/meta-send/v1"
+
+// MaxSendBytes bounds a dispatch-copy plaintext ({recipient psid, text}); the ciphertext then fits inbox.send_secrets (17..16384).
+const MaxSendBytes = 12288
+
+// SendInfo is the HPKE info of one sealed dispatch copy: ["livecommerce/meta-send/v1", tenant, store, operation]. pageopen calls
+// this same function so seal and open cannot drift. It binds the copy to one operation, so a copied row fails to open.
+func SendInfo(tenant, store, operation string) ([]byte, error) {
+	if !command.ValidID(tenant) || !command.ValidID(store) || !command.ValidID(operation) {
+		return nil, ErrSeal
+	}
+	return json.Marshal([]string{SendInfoDomain, tenant, store, operation})
+}
+
+// SealSend seals a send dispatch copy (arbitrary UTF-8 JSON, not a token) to the active HPKE public key. The API holds only the
+// public ring, so it can seal but never read the copy back; only claims-worker opens it in LoadSecret. Returns the encapsulated key
+// (inbox.send_secrets.enc) and the AEAD ciphertext (sealed).
+func (k *SealKeys) SealSend(tenant, store, operation string, plaintext []byte) (enc, ciphertext []byte, err error) {
+	if k == nil || len(plaintext) < 1 || len(plaintext) > MaxSendBytes {
+		return nil, nil, ErrSeal
+	}
+	info, err := SendInfo(tenant, store, operation)
+	if err != nil {
+		return nil, nil, err
+	}
+	out, err := hpke.Seal(k.keys[k.activeID], hpke.HKDFSHA256(), hpke.AES256GCM(), info, plaintext)
+	if err != nil || len(out) <= EncSize {
+		return nil, nil, ErrSeal
+	}
+	return append([]byte(nil), out[:EncSize]...), append([]byte(nil), out[EncSize:]...), nil
+}
