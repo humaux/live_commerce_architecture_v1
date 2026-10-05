@@ -162,7 +162,7 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 			Orders []string `json:"orders"`
 		}
 		raw, err := os.ReadFile(filepath.Join(evidence, "result.json"))
-		if err != nil || json.Unmarshal(raw, &result) != nil || result.Cases != 17 || len(result.Orders) != 6 {
+		if err != nil || json.Unmarshal(raw, &result) != nil || result.Cases != 19 || len(result.Orders) != 6 {
 			t.Fatalf("missing CDC cases/order result: %v", err)
 		}
 		for _, id := range result.Orders {
