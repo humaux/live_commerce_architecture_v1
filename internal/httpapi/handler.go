@@ -1,7 +1,6 @@
-// Package httpapi owns the composition layer for authenticated merchant/admin routes: routing,
-// bearer resolution, request bounds and error mapping. Domains do not import it; they receive only
-// the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its
-// own, and never trusts a tenant or store id from a request body.
+// Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping. Domains do not import it; they receive only the transaction and resolved Scope. It never implements a domain rule, never opens a pool of its own, and never trusts a tenant or store id from a request body.
+// Depends on: the mounted domain packages (ads, billing, catalog, claims, fulfillment, inventory, live, merchantorders, storefront*, ...), platform.WithScope/RequirePermission, httperror, river.
+// Used by: cmd/api (NewHandler); every route family registered here (studio/claims/ads/customers/finance/live_flow/...) and their *_test.go files.
 package httpapi
 
 import (
@@ -57,6 +56,9 @@ type Options struct {
 	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
 	// stripe-refund-v1 §7.1 refund routes unmounted.
 	RefundJobs *river.Client[pgx.Tx]
+	// LiveFlowJobs is the insert-only main-schema river client for the A5 page-live-videos read route
+	// (cmd/api buildLiveFlowJobs). nil leaves that one POST unmounted; the other A5 rows stay mounted.
+	LiveFlowJobs *river.Client[pgx.Tx]
 	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
 	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
 	Ads *ads.Service
@@ -179,6 +181,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerAccountRoutes(mux, pool, configured.Accounts)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
+	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {

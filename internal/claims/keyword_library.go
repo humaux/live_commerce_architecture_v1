@@ -1,11 +1,6 @@
-// keyword_library.go owns the store-level keyword library (one default kw-v1 keyword per SKU)
-// and the one-action seeding of a session's offers from it or from another session
-// (contracts/live-keyword-claims-v1.md, amendment "Live tools (R4)" rules 1-2).
-//
-// Non-goals: the library never claims anything by itself (ingest reads live.offers only);
-// seeding never overwrites or deactivates an existing offer, never copies a live price from
-// another session, never opens a window and never touches carts, stock or orders.
-
+// Purpose: the store-level keyword library (one default kw-v1 keyword per SKU) and the one-action seeding of a session's offers from it or from another session (contracts/live-keyword-claims-v1.md, amendment "Live tools (R4)" rules 1-2). The library never claims anything by itself and seeding never overwrites/deactivates an existing offer, never opens a window, never touches carts/stock/orders.
+// Depends on: live.offers, catalog SKUs, internal/claims/grammar; session_copy.go (importCandidates), the A5-2 copy path that keeps live_price_minor (ruling 1) while ImportOffers omits it (rule 2 preserved).
+// Used by: internal/claims merchant tools, internal/live copy.go (claims.CopyContent), tests/foundation/live_*_test.go.
 package claims
 
 import (
@@ -275,11 +270,14 @@ func ImportOffers(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, k
 	return out, nil
 }
 
-// importCandidate is one offer to create: keyword + SKU + limit.
+// importCandidate is one offer to create: keyword + SKU + limit. LivePriceMinor is carried only
+// for the whole-session copy path (internal/claims CopyContent, R5 A5); offer-import ignores it
+// (Live tools (R4) rule 2: a live price is never copied by the keyword-import action).
 type importCandidate struct {
-	Keyword     string
-	SKUID       string
-	MaxQuantity int64
+	Keyword        string
+	SKUID          string
+	MaxQuantity    int64
+	LivePriceMinor *int64
 }
 
 // existingOffer is one offer already in the target session (any active state).
@@ -338,13 +336,13 @@ func importCandidates(ctx context.Context, tx pgx.Tx, scope platform.Scope, sour
 	var rows pgx.Rows
 	var err error
 	if source == importSourceLibrary {
-		rows, err = tx.Query(ctx, `SELECT keyword,sku_id::text,$3::bigint FROM live.keyword_library WHERE tenant_id=$1 AND store_id=$2 ORDER BY keyword`,
+		rows, err = tx.Query(ctx, `SELECT keyword,sku_id::text,$3::bigint,NULL::bigint FROM live.keyword_library WHERE tenant_id=$1 AND store_id=$2 ORDER BY keyword`,
 			scope.TenantID, scope.StoreID, int64(defaultLibraryMaxQuantity))
 	} else {
 		if err = requireSession(ctx, tx, scope, fromSession); err != nil {
 			return nil, err
 		}
-		rows, err = tx.Query(ctx, `SELECT keyword,sku_id::text,max_quantity_per_claim FROM live.offers
+		rows, err = tx.Query(ctx, `SELECT keyword,sku_id::text,max_quantity_per_claim,live_price_minor FROM live.offers
 			WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND active ORDER BY keyword`, scope.TenantID, scope.StoreID, fromSession)
 	}
 	if err != nil {
@@ -354,7 +352,7 @@ func importCandidates(ctx context.Context, tx pgx.Tx, scope platform.Scope, sour
 	out := []importCandidate{}
 	for rows.Next() {
 		var c importCandidate
-		if err := rows.Scan(&c.Keyword, &c.SKUID, &c.MaxQuantity); err != nil {
+		if err := rows.Scan(&c.Keyword, &c.SKUID, &c.MaxQuantity, &c.LivePriceMinor); err != nil {
 			return nil, mapError(err)
 		}
 		out = append(out, c)

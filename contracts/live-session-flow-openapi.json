@@ -1,0 +1,1237 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Live Commerce live-session flow admin API",
+    "version": "0.1.0",
+    "description": "A5 live-session flow (docs/delivery/units/live-a5-session-flow.md): session results read model (A5-1, migrations/0114 identity.read_live_session_results), one-click copy of the previous session (A5-2, one live.session.copy transaction), and the Page live-video picker read/plan pair (A5-3, MOCK — the plan mints a read-only meta.live_videos operation, the Graph GET happens in cmd/claims-worker, never in the API process). Tenant and store come from the merchant session, never the request. Backend-only unit; no LIVE Meta call exists. Errors use the shared internal/httperror body {code,message,request_id,retryable,details}."
+  },
+  "paths": {
+    "/v1/admin/stores/{store_id}/live-sessions/results": {
+      "get": {
+        "operationId": "getLiveSessionResults",
+        "x-permission": "live:read+orders:read",
+        "description": "Requires live:read and orders:read (the read definer re-authenticates orders:read; a caller without it gets 403). Per-session order counts and money over the unified attribution union (live_price_uses⋈bundles ∪ claims.order_origins, integrator ruling 2), 1..50 distinct session_id query values; duplicate or malformed ids are 422, a session not visible in the current scope is 404. Items preserve request order.",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 50,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "description": "1..50 distinct session ids; repeat the parameter for each id (no other query keys allowed)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResults"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid merchant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "403": {
+            "description": "Visible store but orders:read not held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "A session id is not visible in the current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid query (empty, more than 50, duplicate, or non-canonical id)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "503": {
+            "description": "Projection unavailable or unconfirmed (retryable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/stores/{store_id}/live-sessions/{session_id}/copy": {
+      "post": {
+        "operationId": "copyLiveSession",
+        "x-permission": "live:manage",
+        "description": "Requires live:manage. Copies the source session's draft shape (its program's aspect ratio) and its claim configuration onto a brand-new session in one live.session.copy transaction: a CLOSED generation-0 window in the source's match mode, and every ACTIVE source offer WITH its live_price_minor. expected_version is a CAS over the source session's version (409 version_changed on mismatch). Receipt live.session.copy; audit live.session.copied.",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The SOURCE session to copy from."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "scheduled_at",
+                  "expected_version"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "The NEW session's title; must be trimmed and free of control characters."
+                  },
+                  "scheduled_at": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expected_version": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Version of the SOURCE session as the merchant last read it (CAS)."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The copy outcome (not wrapped): the new session draft, its seeded window, the offers created (empty array, never null), import conflicts, and the source version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CopyResult"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid merchant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "403": {
+            "description": "Visible store but operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Source session not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "409": {
+            "description": "version_changed (expected_version does not match the source session's current version) | conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "415": {
+            "description": "JSON content type required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request (bad title, scheduled_at out of year range 2000..2199, expected_version < 1, or a missing/invalid Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/stores/{store_id}/live-sessions/{session_id}/page-live-videos": {
+      "get": {
+        "operationId": "getPageLiveVideos",
+        "x-permission": "live:read",
+        "description": "Requires live:read. The picker snapshot for one bound Facebook Page: none until a read is requested, pending while one is in flight, then succeeded/failed from the latest snapshot; unknown for a terminal operation with an unrecognised state. items are only present on a terminal snapshot (≤25, LIVE first). Requires exactly one binding_id query value.",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "binding_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "The bound Facebook Page (integration.bindings) to list live videos for."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Picker snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageLiveVideos"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid merchant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "403": {
+            "description": "Visible store but operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Session or binding not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid query (missing, multiple, or non-canonical binding_id)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "503": {
+            "description": "Projection unavailable or unconfirmed (retryable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "readPageLiveVideos",
+        "x-permission": "live:manage",
+        "description": "Requires live:manage. Plans a read-only meta.live_videos operation for the bound Page (MOCK in this unit): mints one operation and a same-transaction default-lane River job, then returns the operation id and its raw ledger state (READY when freshly planned; a replay of an in-flight read returns the existing operation). The API process never loads a Page token; the Graph GET happens in cmd/claims-worker under pages_read_engagement only. Mounted only when the River jobs client is configured.",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "binding_id"
+                ],
+                "properties": {
+                  "binding_id": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The planned (or in-flight) operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageLiveVideosRead"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed JSON body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid merchant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "403": {
+            "description": "Visible store but operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "404": {
+            "description": "Binding not visible in current scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "415": {
+            "description": "JSON content type required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          },
+          "422": {
+            "description": "invalid_request (non-canonical binding_id or missing/invalid Idempotency-Key)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-ID": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Server-generated request correlation ID"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "merchantBearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Opaque short-lived merchant session; server stores hash only."
+      }
+    },
+    "schemas": {
+      "SessionResults": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "as_of",
+          "items"
+        ],
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 50,
+            "items": {
+              "$ref": "#/components/schemas/SessionResult"
+            },
+            "description": "One item per requested session id, in request order."
+          }
+        }
+      },
+      "SessionResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "orders",
+          "paid_orders",
+          "multi_session_orders",
+          "money"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "orders": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Count of non-CANCELLED orders attributed to the session."
+          },
+          "paid_orders": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "multi_session_orders": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Orders spanning more than one session; each is counted fully in every session it spans (ruling 3)."
+          },
+          "money": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "$ref": "#/components/schemas/MoneyBucket"
+            },
+            "description": "One bucket per currency present; never summed across currencies or environments."
+          }
+        }
+      },
+      "MoneyBucket": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "order_minor",
+          "paid_minor",
+          "sandbox_paid_minor"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "order_minor": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-CANCELLED order total (total_minor + cod_surcharge_minor)."
+          },
+          "paid_minor": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Live-environment collected money (I05 per-method口径)."
+          },
+          "sandbox_paid_minor": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sandbox-environment collected money (I05 per-method口径)."
+          }
+        }
+      },
+      "CopyResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session",
+          "window",
+          "created",
+          "conflicts",
+          "source_version"
+        ],
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/Draft"
+          },
+          "window": {
+            "$ref": "#/components/schemas/Window"
+          },
+          "created": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            },
+            "description": "Offers copied (empty array, never null)."
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportConflict"
+            }
+          },
+          "source_version": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The source session's version the copy was made from."
+          }
+        }
+      },
+      "Draft": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "program_id",
+          "title",
+          "scheduled_at",
+          "aspect_ratio",
+          "state",
+          "version",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "program_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "scheduled_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aspect_ratio": {
+            "type": "string",
+            "description": "Inherited from the source session's program."
+          },
+          "state": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Window": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "state",
+          "match_mode",
+          "generation",
+          "version",
+          "opened_at",
+          "closed_at"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ]
+          },
+          "match_mode": {
+            "type": "string",
+            "description": "The source session's match mode (EXACT when it never opened a window)."
+          },
+          "generation": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 for the seeded generation-0 window."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 = no row yet (reported CLOSED/EXACT)."
+          },
+          "opened_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "closed_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "Offer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "offer_id",
+          "session_id",
+          "keyword",
+          "sku_id",
+          "sku_code",
+          "product_name",
+          "max_quantity_per_claim",
+          "active",
+          "version",
+          "activated_at",
+          "updated_at",
+          "sku_price_minor",
+          "currency",
+          "live_price_minor"
+        ],
+        "properties": {
+          "offer_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "sku_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sku_code": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "max_quantity_per_claim": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "activated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sku_price_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}$"
+          },
+          "live_price_minor": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Copied from the source offer (rule 1); null when the source offer had none."
+          }
+        }
+      },
+      "ImportConflict": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "keyword",
+          "sku_id",
+          "reason"
+        ],
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "sku_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "PageLiveVideosRead": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "state"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "description": "Raw operation-ledger state (READY when freshly planned)."
+          }
+        }
+      },
+      "PageLiveVideos": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "binding_id",
+          "state",
+          "code",
+          "requested_at",
+          "fetched_at",
+          "items"
+        ],
+        "properties": {
+          "binding_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "none",
+              "pending",
+              "succeeded",
+              "failed",
+              "unknown"
+            ]
+          },
+          "code": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Failure code when state is failed."
+          },
+          "requested_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fetched_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 25,
+            "items": {
+              "$ref": "#/components/schemas/LiveVideoItem"
+            },
+            "description": "Terminal snapshots only; LIVE first; never a token, never viewer/buyer data."
+          }
+        }
+      },
+      "LiveVideoItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "video_id",
+          "post_id",
+          "title",
+          "status",
+          "started_at"
+        ],
+        "properties": {
+          "video_id": {
+            "type": "string",
+            "description": "Meta live video id."
+          },
+          "post_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "description": "Raw Meta creation_time (bounded by the worker; its +0000 offset is not RFC 3339)."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "retryable",
+          "details"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "message": {
+            "type": "string"
+          },
+          "request_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "retryable": {
+            "type": "boolean"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  }
+}
