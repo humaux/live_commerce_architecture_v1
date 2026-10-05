@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
 import { money, sendCommand, validJournalCommand, type PendingCommand } from "@/lib/client";
@@ -625,9 +626,12 @@ export function Ledger({
                   <p data-testid="tray-price">
                     {c.price}: {money(locale, selected.currency, selected.price_minor)}
                   </p>
-                  <span className={`status ${selected.status}`}>
+                  <Badge
+                    className={`status ${selected.status}`}
+                    tone={selected.status === "active" ? "success" : "neutral"}
+                  >
                     {selected.status === "active" ? c.active : c.archived}
-                  </span>
+                  </Badge>
                   <Link className="tray-edit" href={`/${locale}/products/${selected.product_id}${initial.storeID ? `?store=${initial.storeID}` : ""}`}>
                     {c.editProduct}
                   </Link>
