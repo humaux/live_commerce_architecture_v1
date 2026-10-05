@@ -307,6 +307,55 @@ func (w *crWorld) operationAs(t *testing.T, m crMeta, b crBundle, comment, state
 	return id
 }
 
+// operationC4 seeds one A1.4 send operation (meta.private_reply / meta.dm_send / meta.public_reply /
+// meta.offer_recommend) in the producer's request shape (contracts/live-console-v1 §4.1) and semantic-key class
+// (mpr/mdm/mpub/mrec). leaseExpr non-empty gives a UNKNOWN row a live reconcile lease (lease_mode='reconcile',
+// lease_until=<expr>, token); empty leaves it unleased. Non-UNKNOWN states are always unleased (0008 CHECK).
+func (w *crWorld) operationC4(t *testing.T, m crMeta, b crBundle, action, state, createdExpr, leaseExpr string) (string, string, map[string]any) {
+	t.Helper()
+	id := randomUUID()
+	conv, peer := randomUUID(), crHex64()
+	var req map[string]any
+	var prefix string
+	switch action {
+	case "meta.dm_send":
+		req = map[string]any{"v": 1, "kind": "dm", "origin": "human", "platform": m.platform, "asset_id": m.asset,
+			"conversation_id": conv, "conversation_known": true, "peer_key": peer, "outbound_id": randomUUID()}
+		prefix = "mdm:"
+	case "meta.public_reply":
+		req = map[string]any{"v": 1, "kind": "public_reply", "origin": "human", "platform": m.platform, "asset_id": m.asset,
+			"comment_ref": m.asset + "_" + crDigits(9), "outbound_id": randomUUID()}
+		prefix = "mpub:"
+	case "meta.offer_recommend":
+		req = map[string]any{"v": 1, "kind": "offer_recommend", "origin": "auto", "platform": m.platform, "asset_id": m.asset,
+			"session_id": m.sess.id, "offer_id": randomUUID(), "outbound_id": randomUUID()}
+		prefix = "mrec:"
+	default: // meta.private_reply
+		req = map[string]any{"v": 1, "kind": "private_reply", "platform": m.platform, "source_id": m.source, "asset_id": m.asset,
+			"comment_ref": m.asset + "_" + crDigits(9), "bundle_id": b.id, "session_id": m.sess.id, "message_type": "first_private_reply"}
+		prefix = "mpr:"
+	}
+	raw, _ := json.Marshal(req)
+	hash := sha256.Sum256(raw)
+	key := prefix + hex.EncodeToString(func() []byte { s := sha256.Sum256(raw); return s[:] }())[:48]
+	gen := 1
+	mode, untilExpr := "", "NULL"
+	var tok any
+	switch {
+	case state == "READY":
+		gen = 0
+	case state == "DISPATCHING":
+		mode, untilExpr, tok = "dispatch", `(clock_timestamp() + interval '1 hour')`, make([]byte, 32)
+	case state == "UNKNOWN" && leaseExpr != "":
+		mode, untilExpr, tok = "reconcile", leaseExpr, make([]byte, 32)
+	}
+	mustExec(t, w.owner, `INSERT INTO integration.operations(tenant_id,store_id,id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,lease_mode,lease_until,lease_token_hash,created_at,updated_at)
+		VALUES($1,$2,$3,$4,$5,1,$6,$7,'service',$8,$9,$10,$11::jsonb,$12,$13,$14,$15,`+untilExpr+`,$16,`+createdExpr+`,`+createdExpr+`)`,
+		w.tenant, m.sess.store, id, w.prin, m.binding, m.platform, m.asset, action, key, hash[:], string(raw), 1+int(time.Now().UnixNano()%1000000), state, gen, mode, tok)
+	w.operations = append(w.operations, id)
+	return id, key, req
+}
+
 // ---------------------------------------------------------------------------------------
 // Environment: retention pools + policy handling
 // ---------------------------------------------------------------------------------------
@@ -637,8 +686,10 @@ func crEligible(t *testing.T, pool *pgxpool.Pool, link, intake, claims, social i
 		"bundles": fmt.Sprintf(`SELECT count(*) FROM claims.bundles b JOIN live.claim_windows w ON (w.tenant_id,w.store_id,w.session_id)=(b.tenant_id,b.store_id,b.session_id)
 			WHERE b.purged_at IS NULL AND w.state='CLOSED' AND w.closed_at < clock_timestamp() - interval '%d days'`, claims),
 		"intake": fmt.Sprintf(`SELECT count(*) FROM claims.meta_intake WHERE state IN ('APPLIED','DROPPED','FAILED') AND received_at < clock_timestamp() - interval '%d days'`, intake),
-		"operations": fmt.Sprintf(`SELECT count(*) FROM integration.operations WHERE action='meta.private_reply'
-			AND state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING') AND created_at < clock_timestamp() - interval '%d days' AND request ? 'comment_ref'`, intake),
+		"operations": fmt.Sprintf(`SELECT count(*) FROM integration.operations WHERE action IN ('meta.private_reply','meta.dm_send','meta.public_reply','meta.offer_recommend')
+			AND created_at < clock_timestamp() - interval '%d days' AND request ?| array['comment_ref','conversation_id','peer_key']
+			AND (state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING')
+			  OR (state='UNKNOWN' AND (lease_until IS NULL OR lease_until < clock_timestamp())))`, intake),
 		"comment_events": fmt.Sprintf(`SELECT count(*) FROM social.comment_events WHERE received_at < clock_timestamp() - interval '%d days' AND meta_inbox.purgeable(event_id)`, social),
 		"messages":       fmt.Sprintf(`SELECT count(*) FROM social.messages WHERE received_at < clock_timestamp() - interval '%d days' AND meta_inbox.purgeable(event_id)`, social),
 		"conversations": fmt.Sprintf(`SELECT count(*) FROM social.conversations c WHERE c.created_at < clock_timestamp() - interval '%d days'
@@ -1067,7 +1118,10 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 			r2 := ref()
 			keepNew = append(keepNew, opSeed{w.operation(t, m, b, r2, st, crNew(30)), r2, st})
 		}
-		for _, st := range []string{"READY", "DISPATCHING", "UNKNOWN", "ACKNOWLEDGED"} {
+		// A1.4: an UNKNOWN operation older than intake_days with no live lease is now eligible (redacted, state kept).
+		rU := ref()
+		redact = append(redact, opSeed{w.operation(t, m, b, rU, "UNKNOWN", crAgo(120, 0)), rU, "UNKNOWN"})
+		for _, st := range []string{"READY", "DISPATCHING", "ACKNOWLEDGED"} {
 			r := ref()
 			keepOpen = append(keepOpen, opSeed{w.operation(t, m, b, r, st, crAgo(120, 0)), r, st})
 		}
@@ -1094,7 +1148,7 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 		}
 		e.markSeed()
 		c := e.run(500)
-		crWant(t, "C4", c, map[string]int64{"enforced": 1, "operations": 5, "intake": 0, "links": 0, "more": 0})
+		crWant(t, "C4", c, map[string]int64{"enforced": 1, "operations": 6, "intake": 0, "links": 0, "more": 0})
 		for _, o := range redact {
 			after, was := read(o.id), before[o.id]
 			if _, has := after.req["comment_ref"]; has || after.req["redacted"] != true {
@@ -1331,6 +1385,89 @@ func TestClaimsRetentionCRP04EnforcedPurge(t *testing.T) {
 }
 
 func regexpMatch(pattern, s string) bool { return regexp.MustCompile(pattern).MatchString(s) }
+
+// CRP13 + A1.4 (P1-4): run_retention C4 redacts UNKNOWN send operations older than intake_days whose lease has
+// expired (or is NULL) — the worker no longer holds them — across the four send actions, renaming the key to
+// <prefix>-purged:<id>. A leased (reconciling) UNKNOWN row is skipped, a younger one is untouched, and
+// offer_recommend (no person id) is never eligible. The redacted request keeps its state (UNKNOWN) and hash.
+func TestClaimsRetentionCRP13UnknownRedaction(t *testing.T) {
+	e := crSetup(t)
+	w := e.w
+	ctx := context.Background()
+
+	e.sub(t, "A1.4-unknown-redaction", func(t *testing.T) {
+		s := w.session(t, w.store)
+		w.closedAt(t, s, crAgo(1, 0))
+		m := w.source(t, s, "page")
+		b := w.bundle(t, s, "manual", "", "a14-"+t04Tag())
+
+		actions := []struct {
+			action, prefix string
+			ids            []string // the request ids the redaction must remove (empty = offer_recommend)
+		}{
+			{"meta.private_reply", "mpr", []string{"comment_ref"}},
+			{"meta.dm_send", "mdm", []string{"conversation_id", "peer_key"}},
+			{"meta.public_reply", "mpub", []string{"comment_ref"}},
+			{"meta.offer_recommend", "mrec", nil},
+		}
+		type opSeed struct {
+			id, key, prefix string
+			ids             []string
+		}
+		var redact, skip, keep []opSeed
+		for _, a := range actions {
+			id, key, _ := w.operationC4(t, m, b, a.action, "UNKNOWN", crAgo(120, 0), "")
+			redact = append(redact, opSeed{id, key, a.prefix, a.ids})
+			id2, key2, _ := w.operationC4(t, m, b, a.action, "UNKNOWN", crAgo(120, 0), `(clock_timestamp() + interval '1 hour')`)
+			skip = append(skip, opSeed{id2, key2, a.prefix, a.ids})
+			id3, key3, _ := w.operationC4(t, m, b, a.action, "UNKNOWN", crNew(30), "")
+			keep = append(keep, opSeed{id3, key3, a.prefix, a.ids})
+		}
+		read := func(id string) (key, state string, req map[string]any) {
+			var raw string
+			if err := w.owner.QueryRow(ctx, `SELECT semantic_key,state,request::text FROM integration.operations WHERE id=$1`, id).Scan(&key, &state, &raw); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal([]byte(raw), &req); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
+		e.markSeed()
+		c := e.run(500)
+		// Three of the four old unleased UNKNOWN ops hold an id; offer_recommend holds none and is never eligible.
+		crWant(t, "A1.4", c, map[string]int64{"enforced": 1, "operations": 3, "intake": 0, "links": 0, "bundles": 0, "more": 0})
+
+		for _, o := range redact {
+			key, state, req := read(o.id)
+			if len(o.ids) == 0 { // offer_recommend: never eligible, untouched
+				if req["redacted"] == true || key != o.key {
+					t.Errorf("%s op: redacted despite holding no id (key=%q)", o.id, key)
+				}
+				continue
+			}
+			if key != o.prefix+"-purged:"+o.id || state != "UNKNOWN" {
+				t.Errorf("%s op: key=%q state=%s, want %s-purged:<id> UNKNOWN", o.id, key, state, o.prefix)
+			}
+			if req["redacted"] != true {
+				t.Errorf("%s op: redacted flag missing: %v", o.id, req)
+			}
+			for _, k := range o.ids {
+				if _, has := req[k]; has {
+					t.Errorf("%s op: id %q survived redaction: %v", o.id, k, req)
+				}
+			}
+		}
+		for _, o := range append(append([]opSeed{}, skip...), keep...) {
+			key, state, req := read(o.id)
+			if req["redacted"] == true || key != o.key || state != "UNKNOWN" {
+				t.Errorf("%s op (leased/younger) was touched: key=%q state=%s redacted=%v", o.id, key, state, req["redacted"])
+			}
+		}
+		// redacted UNKNOWN rows stay eligible for nothing: a second run finds no further operations.
+		crWant(t, "A1.4 second", e.run(500), map[string]int64{"operations": 0})
+	})
+}
 
 // ---------------------------------------------------------------------------------------
 // CRP05 concurrency
@@ -2589,7 +2726,7 @@ func crWantMatrix() map[string]bool {
 	cols("claims.meta_intake", "UPDATE", "updated_at")
 	cols("live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state", "closed_at")
 	cols("live.claim_windows", "UPDATE", "updated_at")
-	cols("integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request", "created_at")
+	cols("integration.operations", "SELECT", "id", "tenant_id", "store_id", "action", "state", "request", "created_at", "lease_until")
 	cols("integration.operations", "UPDATE", "request", "semantic_key", "updated_at")
 	add(W, "table", "social.conversations", "SELECT", "DELETE")
 	add(W, "table", "social.messages", "SELECT", "DELETE")
@@ -2932,6 +3069,9 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 	opTerminal := w.operation(t, m, live, m.asset+"_"+crDigits(9), "SUCCEEDED", crAgo(40, 0))
 	opReady := w.operation(t, m, live, m.asset+"_"+crDigits(9), "READY", crAgo(40, 0))
 	opOther := w.operationAs(t, m, live, m.asset+"_"+crDigits(9), "SUCCEEDED", crAgo(40, 0), "meta.other_action")
+	opDM, _, _ := w.operationC4(t, m, live, "meta.dm_send", "SUCCEEDED", crAgo(40, 0), "")
+	opPub, _, _ := w.operationC4(t, m, live, "meta.public_reply", "SUCCEEDED", crAgo(40, 0), "")
+	opRec, _, _ := w.operationC4(t, m, live, "meta.offer_recommend", "SUCCEEDED", crAgo(40, 0), "")
 	lane := e.socialLane(w.store)
 	cmt := e.commentEvent(lane, lane.asset+"_"+crDigits(10), crDigits(9), "add", crAgo(40, 0), "completed", 0)
 	msg := e.message(lane, crHex64(), crAgo(40, 0), "completed")
@@ -2987,13 +3127,20 @@ func (e *crEnv) writerPolicyBehaviour(t *testing.T) {
 		{"windows: FOR SHARE lock works", `SELECT state,closed_at FROM live.claim_windows WHERE session_id=$1 FOR SHARE`, []any{s.id}, 1, ""},
 		{"windows: lock-only UPDATE", `UPDATE live.claim_windows SET updated_at=clock_timestamp() WHERE session_id=$1`, []any{s.id}, 0, "42501"},
 		{"windows: state not writable", `UPDATE live.claim_windows SET state='OPEN' WHERE session_id=$1`, []any{s.id}, 0, "42501"},
-		// integration.operations: read USING action='meta.private_reply'; update terminal-only with redaction WITH CHECK
+		// integration.operations: read USING the four send actions; update terminal-only (or UNKNOWN lease-expired/replay)
+		// with the redaction WITH CHECK (three ids gone, <prefix>-purged: key).
 		{"operations: private-reply ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opTerminal}, 1, ""},
-		{"operations: other actions invisible (USING action=meta.private_reply)", `UPDATE integration.operations SET updated_at=clock_timestamp() WHERE id=$1`, []any{opOther}, 0, ""},
+		{"operations: dm_send ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opDM}, 1, ""},
+		{"operations: public_reply ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opPub}, 1, ""},
+		{"operations: offer_recommend ledger readable", `SELECT id,request,state FROM integration.operations WHERE id=$1`, []any{opRec}, 1, ""},
+		{"operations: other actions invisible (USING the four actions)", `UPDATE integration.operations SET updated_at=clock_timestamp() WHERE id=$1`, []any{opOther}, 0, ""},
 		{"operations: other actions unreadable", `SELECT id FROM integration.operations WHERE id=$1`, []any{opOther}, 0, ""},
 		{"operations: redact a terminal op", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opTerminal}, 1, ""},
+		{"operations: redact a terminal dm_send op", `UPDATE integration.operations SET request=(request-'conversation_id'-'peer_key')||'{"redacted":true}'::jsonb,semantic_key='mdm-purged:'||id::text WHERE id=$1`, []any{opDM}, 1, ""},
+		{"operations: redact a terminal public_reply op", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpub-purged:'||id::text WHERE id=$1`, []any{opPub}, 1, ""},
 		{"operations: non-terminal op is not updatable", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opReady}, 0, ""},
 		{"operations: update that keeps comment_ref refused", `UPDATE integration.operations SET semantic_key='mpr-purged:'||id::text WHERE id=$1`, []any{opTerminal}, 0, "42501"},
+		{"operations: update that keeps peer_key refused", `UPDATE integration.operations SET semantic_key='mdm-purged:'||id::text WHERE id=$1`, []any{opDM}, 0, "42501"},
 		{"operations: update with a foreign semantic_key refused", `UPDATE integration.operations SET request=(request-'comment_ref')||'{"redacted":true}'::jsonb,semantic_key='other-key-'||id::text WHERE id=$1`, []any{opTerminal}, 0, "42501"},
 		{"operations: state not writable", `UPDATE integration.operations SET state='CANCELLED' WHERE id=$1`, []any{opTerminal}, 0, "42501"},
 		// social.*: delete true, lock-only update
@@ -3518,10 +3665,16 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := fmt.Sprintf("%x", sha256.Sum256(body))
+	r1Body, err := os.ReadFile("../../migrations/0127_lc_r1_retention.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r1Sum := fmt.Sprintf("%x", sha256.Sum256(r1Body))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
-	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum) // hold 0071 back
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)  // hold 0071 back
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum) // hold 0127 back (its 55000 precondition needs 0071)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071: %v", err)
+		t.Fatalf("apply every migration but 0071 and 0127: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -3595,11 +3748,13 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	if n := crCount(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0071_claims_retention.sql'`); n != 0 {
 		t.Error("a refused 0071 is recorded in the migration ledger")
 	}
-	// the operator renames the row (no auto-relabel of merchant data), the migration then applies
+	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
+	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version='0127_lc_r1_retention.sql'`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {
