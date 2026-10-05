@@ -1,0 +1,27 @@
+source=b9154104c6551acf3c7148fe4a8ff4f52f682970
+started=2026-10-05T04:15:43Z
+command=node --test --test-reporter=spec --experimental-strip-types tests/admin/platform-site.test.ts 
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.848375ms)
+✔ PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels (0.127125ms)
+✔ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.0815ms)
+✔ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.046ms)
+✔ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.047167ms)
+✔ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.039208ms)
+✔ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.159166ms)
+✔ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.089625ms)
+✔ PS1 legal identity is one untranslated source (0.135792ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.380708ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (1.031708ms)
+✔ PS4 optional Meta verification value never has a fake default (0.062ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.0485ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.992625ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.942041ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (1.340083ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 108.694666

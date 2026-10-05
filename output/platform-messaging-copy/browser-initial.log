@@ -1,0 +1,28 @@
+source=b9154104c6551acf3c7148fe4a8ff4f52f682970
+started=2026-10-05T04:15:45Z
+command=bash scripts/dev/test-local.sh --browser-platform-site 
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.545875ms)
+✔ PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels (0.104458ms)
+✔ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.072792ms)
+✔ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.0405ms)
+✔ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.039083ms)
+✔ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.029458ms)
+✔ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.048875ms)
+✔ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.029375ms)
+✔ PS1 legal identity is one untranslated source (0.062875ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.340917ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.381167ms)
+✔ PS4 optional Meta verification value never has a fake default (0.0495ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.043084ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.185709ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.26225ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.119292ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.10525
+PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, 402 real clicks and 30 reloads
