@@ -7,6 +7,7 @@
 // instead of trusting the response, and a revoked member stops authorizing on their next request (no session handling here).
 import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, Field, FormRow, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { displayTime } from "@/lib/orders-model";
@@ -14,6 +15,8 @@ import { inviteMember, readTeam, removeMember, revokeInvite, setMemberRole, type
 import { roles, isRole, type Role, type Team as TeamData } from "@/lib/team-model";
 import { teamCopy, type TeamCopy } from "@/lib/team-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import s from "./OperationalForms.module.css";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -35,11 +38,8 @@ export function Team({
     : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="team">
-      <div className="orders-page customers-page" data-testid="team-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+      <div className={`orders-page customers-page ${s.page}`} data-testid="team-page">
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         <div className="orders-controls">
           {stores.length > 1 && (
             <label>
@@ -103,28 +103,28 @@ function Sections({
         <h2>{c.inviteTitle}</h2>
         <p className="orders-hint">{c.inviteHint}</p>
         <form
-          className="orders-controls"
+          className={s.form}
           onSubmit={(event) => {
             event.preventDefault();
             if (email.trim() === "") return;
             void invite(email.trim(), role).then(() => setEmail(""));
           }}
         >
-          <label>
-            {c.inviteEmail}
-            <input data-testid="team-invite-email" type="email" required autoComplete="off" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} />
-          </label>
-          <label>
-            {c.inviteRole}
-            <select data-testid="team-invite-role" value={role} onChange={(event) => isRole(event.target.value) && setRole(event.target.value)}>
+          <FormRow className={s.inviteRow}>
+          <Field id="team-invite-email" label={c.inviteEmail} width="medium">
+            <input id="team-invite-email" data-testid="team-invite-email" type="email" required autoComplete="off" maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} />
+          </Field>
+          <Field id="team-invite-role" label={c.inviteRole} width="short" hint={<span data-testid="team-role-help">{c.roleHelp[role]}</span>}>
+            <select id="team-invite-role" data-testid="team-invite-role" aria-describedby="team-invite-role-hint" value={role} onChange={(event) => isRole(event.target.value) && setRole(event.target.value)}>
               {roles.map((item) => <option key={item} value={item}>{c.roleNames[item]}</option>)}
             </select>
-          </label>
+          </Field>
+          </FormRow>
           <button type="submit" className="primary" data-testid="team-invite-send" disabled={busy !== ""}>
             {busy.startsWith("invite:") ? c.inviteSending : c.inviteSend}
           </button>
         </form>
-        <p className="orders-hint" data-testid="team-role-help">{c.roleHelp[role]}</p>
+        {busy && <p className="orders-hint" role="status">{c.working}</p>}
         {notice && <p className="orders-hint" role="status" data-testid="team-notice">{notice}</p>}
         {problem && <p className="orders-bad" role="alert" data-testid="team-problem">{problem}</p>}
       </section>
@@ -134,7 +134,7 @@ function Sections({
         {team.invitations.length === 0 ? (
           <p className="orders-empty" data-testid="team-invites-none">{c.invitesNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame className={s.teamTable} label={c.invitesTitle} scrollHint={c.scrollHint}>
             <table className="orders-actions-table" data-testid="team-invites">
               <thead><tr><th>{c.colEmail}</th><th>{c.colRole}</th><th>{c.colStatus}</th><th>{c.colActions}</th></tr></thead>
               <tbody>
@@ -143,9 +143,9 @@ function Sections({
                     <td>{item.email}</td>
                     <td>{c.roleNames[item.role]}</td>
                     <td>
-                      <span className={`orders-badge ${item.expired ? "orders-tone-warning" : "orders-tone-neutral"}`}>
+                      <Badge tone={item.expired ? "warning" : "neutral"}>
                         {item.expired ? c.expired : c.mailState[item.mail_state]}
-                      </span>
+                      </Badge>
                       <small>{c.expires} {time(item.expires_at)}</small>
                     </td>
                     <td>
@@ -157,13 +157,13 @@ function Sections({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
 
       <section className="customers-section" aria-label={c.membersTitle}>
         <h2>{c.membersTitle}</h2>
-        <div className="orders-actions-scroll">
+        <TableFrame className={s.teamTable} label={c.membersTitle} scrollHint={c.scrollHint}>
           <table className="orders-actions-table" data-testid="team-members">
             <thead><tr><th>{c.colEmail}</th><th>{c.colRole}</th><th>{c.colJoined}</th><th>{c.colActions}</th></tr></thead>
             <tbody>
@@ -171,7 +171,7 @@ function Sections({
                 <tr key={member.principal_id} data-testid={`member-${member.principal_id}`}>
                   <td>
                     {member.email ?? c.noEmail}
-                    {member.is_me && <span className="orders-badge orders-tone-neutral">{c.you}</span>}
+                    {member.is_me && <Badge>{c.you}</Badge>}
                   </td>
                   <td>
                     <select aria-label={c.changeRole} data-testid={`member-role-${member.principal_id}`} value={member.role} disabled={busy !== ""}
@@ -199,7 +199,7 @@ function Sections({
               ))}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
       </section>
     </>
   );

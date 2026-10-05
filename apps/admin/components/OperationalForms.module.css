@@ -1,0 +1,25 @@
+/* Scoped presentation migration for Studio, Team and manual orders; domain state stays with Go. */
+.page button,
+.page input:not([type="checkbox"]):not([type="radio"]),
+.page select { min-height: 44px; }
+.page small { font-size: 12px; line-height: 1.5; }
+.page a { display: inline-flex; align-items: center; min-height: 44px; }
+.form { display: grid; gap: 16px; }
+.form > button { justify-self: start; }
+.inviteRow { grid-template-columns: minmax(0, 400px) minmax(0, 240px); max-width: 680px; }
+.teamTable table { min-width: 720px; }
+.teamTable th { white-space: nowrap; }
+.teamTable td:last-child { min-width: 160px; }
+.teamTable td { vertical-align: middle; }
+.page :global(.studio-fields) { gap: 6px 16px; }
+.page :global(.studio-fields) label { display: block; }
+.page :global(.studio-schedule-picker) { width: 44px; height: 44px; }
+.page :global(.studio-scene) > span { min-height: 0; padding: 3px 8px; border: 0; }
+.page :global(.mt-radio) { min-height: 44px; }
+.searchRow { max-width: 640px; }
+.searchActions { margin-top: 12px; }
+@media (max-width: 680px) {
+  .inviteRow { grid-template-columns: minmax(0, 1fr); }
+  .form > button { width: 100%; }
+  .teamTable td:last-child { position: sticky; right: 0; background: var(--ui-surface); }
+}

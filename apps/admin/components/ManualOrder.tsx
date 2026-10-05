@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, Field, FormRow } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -21,6 +22,8 @@ import { draftProblem, manualBody, type ManualDraft, type ManualOption, type Man
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import s from "./OperationalForms.module.css";
 import "./orders.css";
 import "./customers.css";
 import "./merchant-tools.css";
@@ -126,11 +129,8 @@ export function ManualOrder({
   const storeQuery = store ? `?store=${store.id}` : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
-      <div className="orders-page customers-page" data-testid="manual-order-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+      <div className={`orders-page customers-page ${s.page}`} data-testid="manual-order-page">
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         {stores.length > 1 && (
           <div className="orders-controls">
             <label>
@@ -146,7 +146,7 @@ export function ManualOrder({
         {placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
             <h2>{c.created}</h2>
-            <p className="mt-ok" role="status">{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</p>
+            <p role="status"><Badge tone={placed.commercial_state === "CONFIRMED" ? "success" : "warning"}>{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</Badge></p>
             <dl className="mt-stats">
               <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
               <div><dt>{c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
@@ -181,38 +181,38 @@ export function ManualOrder({
             <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
             <section className="mt-card">
               <h2>{c.customerTitle}</h2>
-              <div className="mt-row">
-                <label className="mt-field">{c.name}<input data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></label>
-                <label className="mt-field">{c.phone}<input data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></label>
-                <label className="mt-field">{c.email}<input data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></label>
-              </div>
+              <FormRow>
+                <Field id="mo-name" label={c.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
+                <Field id="mo-phone" label={c.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
+                <Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field>
+              </FormRow>
             </section>
             <section className="mt-card">
               <h2>{c.deliveryTitle}</h2>
-              <label className="mt-field">{c.delivery}
-                <select data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
+              <FormRow><Field id="mo-option" label={c.delivery} width="long">
+                <select id="mo-option" data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
                   <option value="">{c.choose}</option>
                   {available.map((o) => <option key={o.option_key} value={o.option_key}>{optionName(o)}</option>)}
                 </select>
-              </label>
+              </Field></FormRow>
               {mapOnly && <p className="mt-warn" role="status" style={{ marginTop: 12 }}>{c.mapOnly}</p>}
               {option?.delivery_kind === "home" && (
-                <div className="mt-row" style={{ marginTop: 12 }}>
-                  <label className="mt-field">{c.region}<input value={home.region} maxLength={100} onChange={(e) => setHome({ ...home, region: e.target.value })} /></label>
-                  <label className="mt-field">{c.city}<input data-testid="mo-city" value={home.city} maxLength={100} onChange={(e) => setHome({ ...home, city: e.target.value })} /></label>
-                  <label className="mt-field">{c.postal}<input value={home.postal_code} maxLength={20} onChange={(e) => setHome({ ...home, postal_code: e.target.value })} /></label>
-                  <label className="mt-field">{c.line1}<input data-testid="mo-line1" value={home.line1} maxLength={200} onChange={(e) => setHome({ ...home, line1: e.target.value })} /></label>
-                  <label className="mt-field">{c.line2}<input value={home.line2} maxLength={200} onChange={(e) => setHome({ ...home, line2: e.target.value })} /></label>
-                </div>
+                <FormRow style={{ marginTop: 12 }}>
+                  <Field id="mo-region" label={c.region}><input id="mo-region" value={home.region} maxLength={100} onChange={(e) => setHome({ ...home, region: e.target.value })} /></Field>
+                  <Field id="mo-city" label={c.city}><input id="mo-city" data-testid="mo-city" value={home.city} maxLength={100} onChange={(e) => setHome({ ...home, city: e.target.value })} /></Field>
+                  <Field id="mo-postal" label={c.postal} width="short"><input id="mo-postal" value={home.postal_code} maxLength={20} onChange={(e) => setHome({ ...home, postal_code: e.target.value })} /></Field>
+                  <Field id="mo-line1" label={c.line1} width="long"><input id="mo-line1" data-testid="mo-line1" value={home.line1} maxLength={200} onChange={(e) => setHome({ ...home, line1: e.target.value })} /></Field>
+                  <Field id="mo-line2" label={c.line2} width="long"><input id="mo-line2" value={home.line2} maxLength={200} onChange={(e) => setHome({ ...home, line2: e.target.value })} /></Field>
+                </FormRow>
               )}
               {option && option.delivery_kind !== "home" && !mapOnly && (
                 <>
                   <p className="mt-note">{c.cvsHint}</p>
-                  <div className="mt-row" style={{ marginTop: 8 }}>
-                    <label className="mt-field">{c.storeCode}<input data-testid="mo-store-code" value={cvs.store_code} maxLength={32} onChange={(e) => setCVS({ ...cvs, store_code: e.target.value })} /></label>
-                    <label className="mt-field">{c.storeName}<input data-testid="mo-store-name" value={cvs.store_name} maxLength={40} onChange={(e) => setCVS({ ...cvs, store_name: e.target.value })} /></label>
-                    <label className="mt-field">{c.storeAddress}<input data-testid="mo-store-address" value={cvs.store_address} maxLength={120} onChange={(e) => setCVS({ ...cvs, store_address: e.target.value })} /></label>
-                  </div>
+                  <FormRow style={{ marginTop: 8 }}>
+                    <Field id="mo-store-code" label={c.storeCode} width="short"><input id="mo-store-code" data-testid="mo-store-code" value={cvs.store_code} maxLength={32} onChange={(e) => setCVS({ ...cvs, store_code: e.target.value })} /></Field>
+                    <Field id="mo-store-name" label={c.storeName}><input id="mo-store-name" data-testid="mo-store-name" value={cvs.store_name} maxLength={40} onChange={(e) => setCVS({ ...cvs, store_name: e.target.value })} /></Field>
+                    <Field id="mo-store-address" label={c.storeAddress} width="long"><input id="mo-store-address" data-testid="mo-store-address" value={cvs.store_address} maxLength={120} onChange={(e) => setCVS({ ...cvs, store_address: e.target.value })} /></Field>
+                  </FormRow>
                 </>
               )}
             </section>
@@ -231,15 +231,14 @@ export function ManualOrder({
                 </p>
               )}
               <p className="mt-note">{c.noCard}</p>
-              <label className="mt-field" style={{ marginTop: 14, maxWidth: 260 }}>
-                {c.linkTitle}
-                <select value={buyerLocale} onChange={(e) => setBuyerLocale(e.target.value as Locale)}>
+              <FormRow style={{ marginTop: 14 }}><Field id="mo-buyer-locale" label={c.linkTitle} width="short">
+                <select id="mo-buyer-locale" value={buyerLocale} onChange={(e) => setBuyerLocale(e.target.value as Locale)}>
                   {(["zh-TW", "zh-CN", "en"] as const).map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
-              </label>
+              </Field></FormRow>
             </section>
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
-            {problem && lines.length + name.length + phone.length > 0 && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
+            {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
               <button type="submit" className="primary" data-testid="manual-order-submit" disabled={!!problem || mapOnly || busy || !boundary}>
                 {busy ? c.submitting : uncertain ? c.retryButton : c.submit}
@@ -296,13 +295,13 @@ function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store:
     <section className="mt-card" data-testid="mo-items">
       <h2>{c.itemsTitle}</h2>
       {/* Not a <form>: this picker lives inside the order form, and HTML forbids nested forms (the parser would drop the inner one). */}
-      <div className="mt-row">
-        <label className="mt-field">{c.search}
-          <input data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
+      <FormRow className={s.searchRow}>
+        <Field id="mo-search" label={c.search} width="long">
+          <input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} />
-        </label>
-        <div className="mt-actions" style={{ alignSelf: "end" }}><button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button></div>
-      </div>
+        </Field>
+      </FormRow>
+      <div className={`mt-actions ${s.searchActions}`}><button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button></div>
       {results && (results.length === 0 ? <p className="mt-note">{c.noResults}</p> : (
         <ul className="mt-results">
           {results.map((p) => (

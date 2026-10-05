@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, Field, FormRow } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import {
@@ -16,6 +17,8 @@ import { studioCopy } from "@/lib/studio-copy";
 import { displayTime } from "@/lib/orders-model";
 import { instantToTaipei, taipeiToInstant } from "@/lib/promotions-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import s from "./OperationalForms.module.css";
 
 type Status = "initial" | "loading" | "ready" | "hidden" | StudioErrorCode;
 type PageView = { scope: string; status: Status; data: StudioPage | null };
@@ -597,10 +600,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   </div>;
 
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
-    <div className="studio-page" data-testid="merchant-studio">
-      <header className="studio-heading">
-        <div><h1>{c.title}</h1><p>{c.subtitle}</p></div>
-        <div className="studio-heading-actions">
+    <div className={`studio-page ${s.page}`} data-testid="merchant-studio">
+      <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
           {stores.length > 1 && <label>{c.store}<select value={storeID} onChange={(event) => {
             previous.current = []; navigate(event.target.value, "", "");
           }}>{stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
@@ -608,8 +609,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/claims?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(shown.draft.session_id)}`); }}>
             {c.claims}</button>}
           <button type="button" className="studio-refresh" onClick={refresh}>{c.refresh}</button>
-        </div>
-      </header>
+        </>} />
       {recoveryElsewhere && historyRecovery && <p className="studio-note" role="status">
         {locale === "zh-CN" ? "另一场次有待处理的草稿或请求。请先返回该场次。" :
           locale === "zh-TW" ? "另一場次有待處理的草稿或請求。請先返回該場次。" :
@@ -629,7 +629,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 className={`studio-scene ${!newMode && selectedID === item.session_id ? "selected" : ""}`}
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
                 onClick={() => { navigate(storeID, cursor, item.session_id); }}>
-                <strong>{item.title}</strong><span>{c.state[item.state as keyof typeof c.state] ?? item.state}</span>
+                <strong>{item.title}</strong><Badge>{c.state[item.state as keyof typeof c.state] ?? item.state}</Badge>
                 <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
               </button>)}
             </div>
@@ -650,11 +650,10 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
         <section className="studio-editor" aria-label={c.editor}>
           <h2>{c.editor}</h2><p className="studio-muted">{c.editorHint}</p>
           {newMode || shown ? <>
-            <div className="studio-fields">
-              <label>{c.name}<input value={form.title} maxLength={400} disabled={!canEdit || busy}
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></label>
-              {locale === "en" ? <div className="studio-schedule-field">
-                <label htmlFor="studio-schedule-entry">{c.schedule}</label>
+            <FormRow className="studio-fields">
+              <Field id="studio-name" label={c.name}><input id="studio-name" value={form.title} maxLength={400} disabled={!canEdit || busy}
+                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></Field>
+              {locale === "en" ? <Field id="studio-schedule-entry" label={c.schedule}>
                 <div className="studio-schedule-control">
                   <input id="studio-schedule-entry" type="text" placeholder="YYYY-MM-DDTHH:mm" maxLength={16}
                     value={form.scheduled} disabled={!canEdit || busy}
@@ -668,14 +667,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                       onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
                   </span>
                 </div>
-              </div> : <label>{c.schedule}<input type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
+              </Field> : <Field id="studio-schedule-entry" label={c.schedule}><input id="studio-schedule-entry" type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
                 min="2000-01-01T00:00" max="2199-12-31T23:59"
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></label>}
-              <label>{c.aspect}<select value={form.aspect} disabled={!canEdit || busy}
+                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></Field>}
+              <Field id="studio-aspect" label={c.aspect} width="short"><select id="studio-aspect" value={form.aspect} disabled={!canEdit || busy}
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, aspect: event.target.value as AspectRatio }); }}>
                 <option value="9:16">{c.tall}</option><option value="16:9">{c.wide}</option>
-              </select></label>
-            </div>
+              </select></Field>
+            </FormRow>
             <div className="studio-version">
               <h3>{c.version}</h3>
               {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
@@ -686,13 +685,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             {formError && <p role="alert" className="studio-error">{formError}</p>}
             <button type="button" className="primary studio-save" disabled={!canEdit || busy || (!newMode && !formDirty) || actionError === "uncertain" || actionError === "conflict"}
               onClick={save}>{busy ? c.saving : newMode ? c.create : c.save}</button>
+            {canEdit && !busy && !newMode && !formDirty && !actionError && <p className="studio-note">{c.noChanges}</p>}
           </> : currentDetail.status === "loading" && currentPage.status === "ready" ?
             <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
             <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
           {!mediaOn && actionAlert}
         </section>
         {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
-          <div className="studio-status-title"><h2>{c.rehearsal}</h2><span>MOCK</span></div>
+          <div className="studio-status-title"><h2>{c.rehearsal}</h2><Badge tone="info">MOCK</Badge></div>
           <p className="studio-notice">{c.localOnly}</p>
           {shown ? <>
             <section className="studio-fact">

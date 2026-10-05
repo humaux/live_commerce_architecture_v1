@@ -23,6 +23,7 @@ const en = {
   mode: "Quantity rule", modeExact: "Keyword = 1 · keyword+N = N", modeQty: "Keyword+N only",
   modeLocked: "Close the window to change the quantity rule.",
   stats: "This round", accepted: "Recorded",
+  scrollHint: "Scroll horizontally to see every column and action.", sourceUnchanged: "No changes to save.", importEmpty: "Add keywords to the library before importing them.",
   reasons: {
     NO_MATCH: "Not understood", UNKNOWN_KEYWORD: "Unknown keyword", OFFER_INACTIVE: "Offer paused",
     INVALID_QUANTITY: "Invalid quantity", QUANTITY_REQUIRED: "Quantity missing",
@@ -157,6 +158,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     mode: "数量规则", modeExact: "口令 = 1 件 · 口令+N = N 件", modeQty: "只接受口令+数量",
     modeLocked: "关闭窗口后才能修改数量规则。",
     stats: "本轮", accepted: "已登记",
+    scrollHint: "横向滚动以查看全部列和操作。", sourceUnchanged: "没有待保存的更改。", importEmpty: "请先在口令库中添加口令，再导入。",
     reasons: {
       NO_MATCH: "无法识别", UNKNOWN_KEYWORD: "没有这个口令", OFFER_INACTIVE: "商品已暂停登记",
       INVALID_QUANTITY: "数量无效", QUANTITY_REQUIRED: "缺少数量",
@@ -286,6 +288,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     mode: "數量規則", modeExact: "關鍵字 = 1 件 · 關鍵字+N = N 件", modeQty: "只接受關鍵字+數量",
     modeLocked: "關閉窗口後才能修改數量規則。",
     stats: "本輪", accepted: "已登記",
+    scrollHint: "橫向捲動以查看全部欄位和操作。", sourceUnchanged: "沒有待儲存的變更。", importEmpty: "請先在關鍵字庫中新增關鍵字，再匯入。",
     reasons: {
       NO_MATCH: "無法辨識", UNKNOWN_KEYWORD: "沒有這個關鍵字", OFFER_INACTIVE: "商品已暫停登記",
       INVALID_QUANTITY: "數量無效", QUANTITY_REQUIRED: "缺少數量",

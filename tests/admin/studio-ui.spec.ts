@@ -33,7 +33,8 @@ async function signedLogin(page: Page) {
   await expect(page.getByTestId("nav-group-live")).toBeVisible();
   await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Live Studio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy.en.studio })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 }
 
 async function setSession(context: BrowserContext, token: string) {
@@ -92,6 +93,19 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
   await expect(page.getByLabel(/Scene name|场次名称|場次名稱/)).toBeVisible();
+  // ADM18/21 [READ/MEASURE]: inspect the real labelled controls; never change the DOM or product state.
+  const fields = await page.locator(".studio-fields").evaluate((element) =>
+    ["studio-name", "studio-schedule-entry", "studio-aspect"].map((id) => {
+      const control = element.querySelector(`#${id}`)!;
+      const box = control.getBoundingClientRect();
+      return { width: box.width, height: box.height };
+    }));
+  expect(fields).toHaveLength(3);
+  for (const field of fields) {
+    expect(field.width).toBeGreaterThan(0);
+    expect(field.width).toBeLessThanOrEqual(400);
+    expect(field.height).toBeGreaterThanOrEqual(44);
+  }
   if (width <= 680) {
     // A desktop-to-phone resize animates the fixed rail off-screen; capture
     // only its settled position, never a partially obscured first viewport.

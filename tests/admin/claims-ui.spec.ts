@@ -10,6 +10,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
 import { studioCopy } from "../../apps/admin/lib/studio-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -71,7 +72,7 @@ async function offerLayout(page: Page) {
   });
   expect(geometry.actions).toHaveLength(2);
   for (const field of geometry.fields) {
-    expect(field.control.height).toBeGreaterThan(0);
+    expect(field.control.height).toBeGreaterThanOrEqual(44);
     expect(field.control.width).toBeGreaterThanOrEqual(160);
     expect(field.control.left).toBeGreaterThanOrEqual(geometry.form.left - 1);
     expect(field.control.right).toBeLessThanOrEqual(geometry.form.right + 1);
@@ -84,7 +85,7 @@ async function offerLayout(page: Page) {
   }
   expect(geometry.hint.top).toBeGreaterThanOrEqual(Math.max(...geometry.fields.map((field) => field.control.bottom)));
   for (const action of geometry.actions) {
-    expect(action.height).toBeGreaterThan(0);
+    expect(action.height).toBeGreaterThanOrEqual(44);
     expect(action.top).toBeGreaterThanOrEqual(geometry.hint.bottom);
     expect(action.text.width).toBeGreaterThan(0);
     expect(action.text.left).toBeGreaterThanOrEqual(action.left);
@@ -308,7 +309,16 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   pass("planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)");
   await merchant.getByTestId("studio-open-claims").click();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: "Keyword claims" })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(merchant.locator(".claims-breadcrumb")).toHaveCount(0);
+  const stats = merchant.locator(".claims-stats");
+  await expect(stats).not.toHaveAttribute("open", "");
+  await stats.locator("summary").click();
+  await expect(merchant.getByTestId("claims-accepted")).toBeVisible();
+  await expect(merchant.getByTestId("claims-accepted")).toHaveText("0");
+  await stats.locator("summary").click();
+  await expect(merchant.getByTestId("claims-accepted")).not.toBeVisible();
   await expect(merchant.getByText(`Scene: ${scene}`)).toBeVisible();
   // Ruling t: the stale MOCK capture banner is gone; with no source bound it asks for one.
   await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedNone);
