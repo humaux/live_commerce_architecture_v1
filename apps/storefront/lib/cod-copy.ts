@@ -33,7 +33,7 @@ const en = {
     CANCELLED: "The seller canceled this order",
     RESTOCKED: "Not collected — returned to the seller",
   } as Record<CollectionState, string>,
-  orderNote: "Pay the carrier in cash when the parcel arrives. The seller records the result; refunds are made outside this site.",
+  orderNote: "Pay in cash. The seller records the result; refunds are made outside this site.",
 };
 
 const zhCN: typeof en = {
@@ -62,7 +62,7 @@ const zhCN: typeof en = {
     CANCELLED: "商家已取消此订单",
     RESTOCKED: "未取货 — 已退回商家",
   },
-  orderNote: "包裹送达时向货运公司支付现金。商家记录收款结果；退款在本站之外进行。",
+  orderNote: "请以现金付款。商家会记录收款结果；退款在本站之外进行。",
 };
 
 const zhTW: typeof en = {
@@ -91,7 +91,7 @@ const zhTW: typeof en = {
     CANCELLED: "商家已取消此訂單",
     RESTOCKED: "未取貨 — 已退回商家",
   },
-  orderNote: "包裹送達時向貨運公司支付現金。商家記錄收款結果；退款在本站之外進行。",
+  orderNote: "請以現金付款。商家會記錄收款結果；退款在本站之外進行。",
 };
 
 export const codCopy: Record<Locale, typeof en> = { en, "zh-CN": zhCN, "zh-TW": zhTW };

@@ -10,6 +10,7 @@
 // Non-goals: no local/session storage of privacy data, no third-party script, no merchant data.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import LocaleSelect from "./LocaleSelect";
 import {
   BuyerClientError,
   buyerRequest,
@@ -238,22 +239,16 @@ export default function PrivacyCenter({
     <>
       <header className="shop-header">
         <span>{copy.title}</span>
-        <label className="locale">
-          <span className="sr-only">{copy.language}</span>
-          <select
-            value={locale}
-            disabled={busy !== ""}
-            onChange={(event) => {
-              const next = event.target.value as Locale;
-              window.history.replaceState(window.history.state, "", `/${next}/privacy`);
-              setLocale(next);
-            }}
-          >
-            <option value="zh-CN">简体中文</option>
-            <option value="zh-TW">繁體中文</option>
-            <option value="en">English</option>
-          </select>
-        </label>
+        <LocaleSelect
+          locale={locale}
+          label={copy.language}
+          path="/privacy"
+          disabled={busy !== ""}
+          onSelect={(next) => {
+            window.history.replaceState(window.history.state, "", `/${next}/privacy`);
+            setLocale(next);
+          }}
+        />
       </header>
       <main className="purchase-main claim-main" aria-busy={view === "loading" || busy !== ""}>
         <h1>{copy.title}</h1>

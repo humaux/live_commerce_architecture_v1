@@ -131,7 +131,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-pagehead__intro { margin-top: 10px; color: var(--sf-ink-2); max-width: 62ch; }
 .sf-crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; font-size: 14px; color: var(--sf-mute); }
 .sf-crumbs li { display: inline-flex; align-items: center; }
-.sf-crumbs a { display: inline-flex; align-items: center; min-height: 44px; color: var(--sf-mute); text-decoration: none; }
+.sf-crumbs a { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 8px; color: var(--sf-mute); text-decoration: none; }
+.sf-crumbs li:first-child a { margin-inline-start: -8px; }
 .sf-crumbs a:hover { color: var(--sf-ink); text-decoration: underline; }
 .sf-crumbs svg { margin: 0 2px; opacity: .6; }
 .sf-crumbs [aria-current] { color: var(--sf-ink-2); max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -221,6 +222,20 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-prose ul { list-style: disc; padding-left: 1.3em; text-align: left; display: inline-block; }
 .sf-prose a { color: var(--accent-text); text-underline-offset: 3px; }
 .sf-wrap--narrow .sf-prose { text-align: left; }
+/* A merchant page (About, ...) with one sentence must not float above a 56vh void: the narrow page sizes to its content, reads at a comfortable
+   measure and starts a little lower, so the footer follows the text instead of leaving an empty screen. */
+.sf-main:has(> .sf-wrap--narrow) { min-height: 0; }
+.sf-wrap--narrow { padding-bottom: 72px; }
+.sf-wrap--narrow .sf-pagehead { padding-top: 28px; }
+.sf-wrap--narrow .sf-prose { font-size: 17px; max-width: 68ch; }
+/* The rich-text band on desktop: heading on the left (the same edge as the product sections above and below), text in the right column, instead of one
+   narrow centred stack floating in a full-width band. Phones keep the centred stack. */
+@media (min-width: 900px) {
+  .sf-section--prose { max-width: 1280px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 0 56px; align-items: start; text-align: left; }
+  .sf-section--prose h2 { margin-bottom: 0; }
+  .sf-section--prose .sf-prose { grid-column: 2; }
+  .sf-section--prose:not(:has(> h2)) .sf-prose { grid-column: 1 / -1; max-width: 720px; }
+}
 .sf-split { max-width: 1280px; margin: 0 auto; padding: 44px var(--sf-gutter) 12px; display: grid; gap: 20px; align-items: center; }
 .sf-split__media { border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; background: #efece5; }
 .sf-split__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -352,6 +367,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-line__body { min-width: 0; display: grid; gap: 4px; align-content: start; }
 .sf-line__head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .sf-line__title { font-size: 15px; font-weight: 600; line-height: 1.4; text-decoration: none; overflow-wrap: anywhere; }
+a.sf-line__title { padding-block: 10px; margin-block: -10px; }
 .sf-line__title--gone { color: var(--sf-mute); font-style: italic; }
 a.sf-line__title:hover { text-decoration: underline; }
 .sf-line__total { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -391,7 +407,8 @@ a.sf-line__title:hover { text-decoration: underline; }
 .sf-contact li { display: flex; align-items: center; gap: 10px; min-height: 44px; }
 .sf-contact svg { flex: none; color: var(--sf-ink-2); }
 .sf-footer a { text-underline-offset: 3px; }
-.sf-footer__nav li a, .sf-footer__legal li a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.sf-footer__nav li a, .sf-footer__legal li a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; text-decoration: none; }
+.sf-contact a { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
 .sf-footer__nav li a:hover, .sf-footer__legal li a:hover, .sf-contact a:hover { text-decoration: underline; color: var(--sf-ink); }
 .sf-footer__base { max-width: 1280px; margin: 0 auto; padding: 16px var(--sf-gutter) 28px; border-top: 1px solid var(--sf-line); display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; font-size: 13px; }
 .sf-locales { display: flex; flex-wrap: wrap; gap: 4px 6px; }
@@ -418,6 +435,9 @@ a.sf-line__title:hover { text-decoration: underline; }
 
 /* ---- checkout screens keep their own styles (globals.css); only the font and page rhythm follow the shell ---- */
 .purchase-main { padding-top: 24px; }
-/* The product page's phone buy bar (.sf-sticky) is position:fixed over the bottom ~70px: keep that room under the shell footer so the language
-   links and the copyright line are reachable at the end of the page. (The checkout bar is sticky in the flow and needs none: globals.css.) */
-@media (max-width: 899.98px) { body:has(.sf-sticky) .sf-footer { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); } }
+/* The product page's phone buy bar (.sf-sticky) is position:fixed over the bottom of the viewport. It mounts only once the inline buy buttons have
+   scrolled away, i.e. after the page was laid out, so the room under the shell footer is reserved for the whole product page (not for a bar that may
+   not exist yet): the last line of the footer stays reachable above it. --sf-sticky-h is the bar's height (10 + 48 + 10 + 1 border = 69px, rounded up).
+   (The checkout bar is sticky in the flow and needs none: globals.css.) */
+:root { --sf-sticky-h: 72px; }
+@media (max-width: 899.98px) { body:has([data-testid="product-page"]) .sf-footer { padding-bottom: calc(var(--sf-sticky-h) + env(safe-area-inset-bottom, 0px)); } }

@@ -6,12 +6,11 @@
 // Depends on: lib/privacy-copy.ts.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isLocale, type Locale } from "@live-commerce/i18n";
+import { isLocale } from "@live-commerce/i18n";
+import LocaleSelect from "../../../components/LocaleSelect";
 import { privacyCopy } from "../../../lib/privacy-copy";
 
 export const metadata: Metadata = { robots: { index: true, follow: true } };
-
-const names: Record<Locale, string> = { "zh-CN": "简体中文", "zh-TW": "繁體中文", en: "English" };
 
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -21,13 +20,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
     <>
       <header className="shop-header">
         <span>{copy.deletionTitle}</span>
-        <nav aria-label={copy.language}>
-          {(Object.keys(names) as Locale[]).map((item) => (
-            <a key={item} href={`/${item}/data-deletion`} lang={item} aria-current={item === locale ? "page" : undefined}>
-              {names[item]}{" "}
-            </a>
-          ))}
-        </nav>
+        <LocaleSelect locale={locale} label={copy.language} path="/data-deletion" />
       </header>
       <main className="purchase-main claim-main" data-testid="data-deletion">
         <h1>{copy.deletionTitle}</h1>
@@ -45,7 +38,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           <p>{copy.deletionStoreText}</p>
           <p className="claim-note">{copy.deletionKept}</p>
           <p>
-            <a href={`/${locale}/privacy`} data-testid="data-deletion-privacy-link">{copy.deletionLink}</a>
+            <a className="tap-link" href={`/${locale}/privacy`} data-testid="data-deletion-privacy-link">{copy.deletionLink}</a>
           </p>
         </section>
       </main>
