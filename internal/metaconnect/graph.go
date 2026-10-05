@@ -189,13 +189,14 @@ func validToken(t string) bool {
 	return true
 }
 
-// subscribe makes Meta deliver the Page's `feed` webhook field (comments) to the app: POST /{page_id}/subscribed_apps with the
-// Page token. Instagram comments / live_comments arrive through the app-level instagram subscription, not here.
+// subscribe makes Meta deliver the Page's `feed` webhook field (comments) and `messages` (inbox DMs, live-console-v1 §3.1)
+// to the app: POST /{page_id}/subscribed_apps with the Page token. Instagram comments / live_comments arrive through the
+// app-level instagram subscription, not here.
 // Source: https://developers.facebook.com/docs/graph-api/reference/page/subscribed_apps/ (retrieved 2026-10-01).
 // Retry rule: not retried here; the merchant retries the whole pick (the call is idempotent at Meta). A failure aborts the
 // bind before any database write, so the connect is never half-enabled.
 func (s *Service) subscribe(ctx context.Context, pageID string, pageToken []byte) error {
-	rep, err := s.graph.Do(ctx, http.MethodPost, pageID+"/subscribed_apps", url.Values{"subscribed_fields": {"feed"}}, pageToken, nil)
+	rep, err := s.graph.Do(ctx, http.MethodPost, pageID+"/subscribed_apps", url.Values{"subscribed_fields": {"feed,messages"}}, pageToken, nil)
 	if err != nil || !rep.OK() {
 		return ErrConnectFailed
 	}
