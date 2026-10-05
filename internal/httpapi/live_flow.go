@@ -61,8 +61,15 @@ func registerLiveFlowRoutes(mux *http.ServeMux, pool *pgxpool.Pool, enabled bool
 	}
 
 	// Methodless fallbacks keep wrong-method answers inside the same private response boundary.
-	for _, path := range []string{base + "/results", base + "/{session_id}/copy", base + "/{session_id}/page-live-videos"} {
+	// base+"/results" cannot be methodless: it is more path-specific than, but less method-specific
+	// than, studio's "GET base/{session_id}" (both three segments), which Go 1.22's ServeMux rejects
+	// as ambiguous. Register its wrong-method fallbacks with explicit methods instead; the longer
+	// copy/picker paths have no equal-length studio sibling, so they stay methodless.
+	for _, path := range []string{base + "/{session_id}/copy", base + "/{session_id}/page-live-videos"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
+	}
+	for _, m := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
+		mux.HandleFunc(m+" "+base+"/results", studioRoute("", false, nil))
 	}
 	if jobs != nil {
 		mux.HandleFunc(base+"/{session_id}/page-live-videos/read", studioRoute("", false, nil))

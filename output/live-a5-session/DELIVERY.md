@@ -185,3 +185,39 @@ integrator regenerates these post-merge, matching the delivery-allocation preced
 changes, no migration numbers I was not given. `docs/engineering/dependency-map.md` and
 `experiments/results/packet-check.json` were regenerated locally for the gates and left uncommitted
 (integrator pass).
+
+## Fix round 1 (integrator real-PG run)
+
+Renumbered to `migrations/0118_live_session_flow.sql` by the integrator (references updated; kept 0118).
+Three failures from `output/live-a5-session/integrator-pg-run1.log`, all fixed and re-run green on a real PG.
+
+1. **P0 route-conflict panic** (`internal/httpapi/live_flow.go`): the methodless
+   `…/live-sessions/results` fallback was more path-specific but less method-specific than studio's
+   `GET …/live-sessions/{session_id}`, which Go 1.22's ServeMux rejects. Fix: register the `results`
+   wrong-method fallbacks with explicit methods (POST/PUT/PATCH/DELETE); the longer copy/picker
+   fallbacks stay methodless (no equal-length studio sibling). Added `internal/httpapi/live_flow_test.go`
+   (`TestLiveFlowRouteRegistration`) which mounts studio + live-flow on one mux, with and without the
+   jobs client, so any future ambiguity fails DB-free.
+2. **`TestLiveClaimsKC03Schema` privilege-matrix/definers**: added the exact rows for the two functions
+   migration 0118 creates — `claims.session_orders(uuid,uuid,uuid[])` and
+   `claims.order_session_counts(uuid,uuid,uuid[])` (owner commerce_claims_writer, EXECUTE commerce_auth):
+   EXECUTE-list rows, `definers` want-map entries, the owned-object count 21→23, and the commerce_auth
+   denied-list exception (`order_live_sources` → the three-name set).
+3. **`TestT06WorkerAuthorityAndFunctionACL`** (`external_operation_authority_test.go`): added the four
+   `integration.*` functions migration 0118 creates — `plan_meta_live_videos(bytea,uuid,uuid,uuid,bigint)`
+   (runtime_execute), `check_meta_live_videos(uuid)`, `load_meta_live_videos_token(uuid,bigint,bytea)`,
+   `finish_meta_live_videos(uuid,bigint,bytea,text,jsonb)` (all commerce_claims_worker) — and the
+   approved-function count 70→74.
+4. **`TestLiveToolsGateConsumptionReorderAndExpiry`** was the same panic (ltgNew → NewHandler), not a
+   logic failure; green after (1).
+5. **Author-smoke fixes** (`tests/foundation/live_session_flow_test.go`, previously masked by the panic):
+   the copy test used an invalid keyword (`copy-keyword`, hyphens are outside `^[A-Z0-9]{1,16}$`) and a
+   TWD SKU in the USD store A1 fixture. Changed to `COPYKEYWORD` and `USD`.
+
+Evidence (real-PG, `bash scripts/dev/test-focused.sh
+'LiveSession|SessionFlow|LiveTools|TestLiveClaims|StudioSession|T06WorkerAuthority'`): **PASS=41 FAIL=0
+SKIP=0 exit=0**, including `TestLiveSessionCopy`, `TestLiveSessionResults`,
+`TestLiveClaimsKC03Schema` (privilege-matrix + definers), `TestT06WorkerAuthorityAndFunctionACL` and
+`TestLiveToolsGateConsumptionReorderAndExpiry`. DB-free gates re-run: `go build ./...`, `go vet ./...`,
+`go vet ./tests/foundation/`, `go test ./internal/httpapi/`, `go test ./internal/integrations/metareply/`
+all exit 0; `gofmt -l` clean.

@@ -276,6 +276,13 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.check_meta_audience(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_meta_audience_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.finish_meta_audience(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- A5-3 (migration 0118): the four live-videos read helpers mirror the audience quartet — the
+	 -- merchant plans a scoped read (runtime_execute), only the Page-token claims worker
+	 -- checks/loads/completes it. Exact signature contract, no new privilege shape.
+	 ('integration.plan_meta_live_videos(bytea,uuid,uuid,uuid,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.check_meta_live_videos(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.load_meta_live_videos_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_meta_live_videos(uuid,bigint,bytea,text,jsonb)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 -- R11: report definer-only current Page-grant boolean. Exact commerce_ads_writer
 	 -- EXECUTE is pinned by MA02; no runtime/worker/token-custody authority is added.
 	 ('integration.meta_audience_authorized(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
@@ -297,7 +304,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 70 || !safe {
+	if err != nil || functions != 74 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

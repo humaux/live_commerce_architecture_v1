@@ -26,10 +26,10 @@ func TestLiveSessionCopy(t *testing.T) {
 	if w := h.open(t, src, claims.MatchExact); w.State != claims.WindowOpen {
 		t.Fatalf("open window: %+v", w)
 	}
-	sku := lcSKUs(t, h.f, h.f.tenantA, h.f.storeA1, "TWD", 1)[0]
+	sku := lcSKUs(t, h.f, h.f.tenantA, h.f.storeA1, "USD", 1)[0]
 	price := int64(199)
 	o, err := h.createOffer(h.token, h.f.storeA1, t04Key("a5-offer"), src, claims.OfferInput{
-		Keyword: "copy-keyword", SKUID: sku, MaxQuantityPerClaim: 2, LivePriceMinor: &price,
+		Keyword: "COPYKEYWORD", SKUID: sku, MaxQuantityPerClaim: 2, LivePriceMinor: &price,
 	})
 	if err != nil {
 		t.Fatalf("CreateOffer with live price: %v", err)
@@ -71,7 +71,7 @@ func TestLiveSessionCopy(t *testing.T) {
 		t.Fatalf("created=%+v conflicts=%+v", out.Created, out.Conflicts)
 	}
 	created := out.Created[0]
-	if created.Keyword != "copy-keyword" || created.SKUID != sku || !created.Active ||
+	if created.Keyword != "COPYKEYWORD" || created.SKUID != sku || !created.Active ||
 		created.LivePriceMinor == nil || *created.LivePriceMinor != price {
 		t.Fatalf("copied offer: %+v", created)
 	}
