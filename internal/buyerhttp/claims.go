@@ -123,7 +123,7 @@ func projectClaimPreview(preview claims.Preview) claimPreviewResponse {
 	for _, line := range preview.Lines {
 		out.Lines = append(out.Lines, claimPreviewLineResponse{Keyword: line.Keyword, SKUID: line.SKUID,
 			SKUCode: line.SKUCode, ProductName: line.ProductName, Currency: line.Currency,
-			UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity, Pending: line.Pending, Available: line.Available})
+			UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity, Pending: line.Pending, Available: line.Available, SoldOut: line.SoldOut})
 	}
 	return out
 }

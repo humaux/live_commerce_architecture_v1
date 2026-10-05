@@ -30,7 +30,7 @@ async function fixture(name, action = "link") {
 async function newPage(mobile = false) {
   const context = await browser.newContext(ctxOpts({ ...(mobile ? phone : { viewport: { width: 1440, height: 900 } }), ignoreHTTPSErrors: true }));
   contexts.push(context);
-  const page = await context.newPage(), seen = { redeem: 0, cart: null, quote: null, errors: [], urls: [] };
+  const page = await context.newPage(), seen = { redeem: 0, cart: null, quote: null, preview: null, redeemed: null, errors: [], urls: [] };
   page.on("pageerror", (e) => { if (!isWebkitCancelledFetch(e)) seen.errors.push(e.message); });
   page.on("request", (r) => { seen.urls.push(r.url()); if (new URL(r.url()).pathname === "/api/buyer/claim-link/redeem") seen.redeem++; });
   page.on("response", async (r) => {
@@ -40,6 +40,8 @@ async function newPage(mobile = false) {
       const value = await r.json().catch(() => null);
       if (name === "/api/buyer/cart") seen.cart = value;
       if (name === "/api/buyer/quotes") seen.quote = value;
+      if (name === "/api/buyer/claim-link") seen.preview = value;
+      if (name === "/api/buyer/claim-link/redeem") seen.redeemed = value;
     }
     if (r.status() >= 500 && r.url().startsWith(origin)) seen.errors.push(`HTTP ${r.status()} ${new URL(r.url()).pathname}`);
   });
@@ -84,7 +86,7 @@ async function quote(page, locale = "zh-TW") {
   await action(page, "7-ELEVEN", () => page.locator("#delivery").selectOption({ label: "7-ELEVEN · TW" }), "7-ELEVEN selected", () => expect(page.getByRole("button", { name: copy[locale].quote, exact: true })).toBeEnabled());
   await action(page, "quote", () => page.getByRole("button", { name: copy[locale].quote, exact: true }).click(), "quote and pickup form visible", () => expect(page.getByTestId("address-section")).toBeVisible());
 }
-async function place(page, link, locale = "zh-TW", loseReply = false) {
+async function place(page, link, locale = "zh-TW", loseReply = false, deplete = null) {
   await quote(page, locale);
   await expect.poll(() => page.seen.quote?.lines.find((i) => i.sku_id === link.sku)?.unit_price_minor).toBe(20000);
   for (const [id, value] of [["cvs-recipient-name", "王小明"], ["cvs-recipient-phone", "0912345678"], ["cvs-entered-code", "131386"], ["cvs-entered-name", "合成測試門市"], ["cvs-entered-address", "合成測試地址"]]) {
@@ -93,6 +95,13 @@ async function place(page, link, locale = "zh-TW", loseReply = false) {
   await action(page, "pay-at-pickup", () => page.getByRole("radio", { name: copy[locale].pickup }).check(), "pay-at-pickup selected", () => expect(page.getByRole("radio", { name: copy[locale].pickup })).toBeChecked());
   await action(page, "confirm-address", () => page.getByTestId("confirm-address").click(), "order action enabled", () => expect(page.getByTestId("create-order")).toBeEnabled());
   await noLeaks(page, link);
+  if (deplete) {
+    await fixture(deplete, "deplete");
+    await page.getByTestId("create-order").click();
+    await expect(page.locator('[role="alert"]')).not.toHaveCount(0);
+    await expect(page.getByTestId("order-section")).toHaveCount(0);
+    return;
+  }
   if (loseReply) {
     // FAULT INJECTION: lose the real click's reply after server commit; retain the actual purchase recovery journal.
     await page.route("**/api/buyer/checkout", async (route) => { await route.fetch(); await route.abort("failed"); });
@@ -133,10 +142,14 @@ try {
 
   const partial = await newPage(engine === "webkit"), partialLink = await fixture("partial");
   await openClaim(partial, partialLink);
-  await expect(partial.getByTestId(`claim-line-${partialLink.sold_sku}`)).toContainText(/售完|售罄|Sold out/);
+  await expect(partial.getByTestId("claim-line-B2")).toContainText(/售完|售罄|Sold out/);
   await checkout(partial, partialLink, "zh-TW", true); pass("partial sold-out skip");
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
   await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
+  await fixture("sold", "replenish");
+  await sold.getByRole("button",{name:"重新讀取登記",exact:true}).click();
+  await expect(sold.getByTestId("claim-add")).toBeEnabled();
+  await checkout(sold,soldLink); pass("replenishment keeps pending and permits a fresh checkout click");
 
   const expired = await newPage(engine === "webkit"), expiredLink = await fixture("expired");
   await expired.goto(`${origin}/zh-TW/claim#t=${expiredLink.token}`); await expect(expired.getByTestId("claim-not-found")).toBeVisible(); await noLeaks(expired, expiredLink); pass("expired uniform 404");
@@ -145,11 +158,24 @@ try {
   await quote(repriced); await expect.poll(() => repriced.seen.quote?.lines.find((i) => i.sku_id === repriceLink.sku)?.unit_price_minor).toBe(30000); pass("expired origin uses catalog quote");
   const race = await newPage(engine === "webkit"), raceLink = await fixture("race");
   await openClaim(race, raceLink); await fixture("race", "deplete");
-  await race.getByTestId("claim-add").click(); await expect(race.getByTestId("claim-add")).toBeDisabled(); assert.equal(new URL(race.url()).pathname, "/zh-TW/claim"); pass("B1/B2 stock race stays on claim");
+  await race.getByTestId("claim-add").click();
+  await expect.poll(() => race.seen.preview?.lines.some((line) => line.sold_out)).toBe(true);
+  await expect(race.getByTestId("claim-add")).toHaveText("直接結帳");
+  await expect(race.getByTestId("claim-add")).toBeDisabled();
+  assert.equal(race.seen.redeemed.skipped[0].reason,"sold_out"); assert.deepEqual(race.seen.redeemed.cart.items,[]);
+  assert.equal(new URL(race.url()).pathname, "/zh-TW/claim"); pass("B1/B2 stock race settles sold-out without cart write/navigation");
   const repeat = await newPage(engine === "webkit"), repeatLink = await fixture("repeat");
   await openClaim(repeat, repeatLink); await repeat.getByTestId("claim-add").click({ clickCount: 2 });
   await expect(repeat).toHaveURL(/\/zh-TW\/checkout/); assert.equal(repeat.seen.redeem, 1); pass("double click sends one redeem");
-  await repeat.goBack(); assert.equal(new URL(repeat.url()).hash, ""); await noLeaks(repeat, repeatLink); pass("back navigation forgets token");
+  await repeat.goBack();
+  await expect(repeat.getByTestId("claim-not-found")).toBeVisible();
+  assert.equal(new URL(repeat.url()).hash, ""); await noLeaks(repeat, repeatLink); pass("back navigation forgets token and displays expired view");
+  repeat.seen.redeem=0;await openClaim(repeat,repeatLink);await checkout(repeat,repeatLink);await place(repeat,repeatLink);
+  pass("double-click journey yields exactly one persisted order");
+
+  const beginRace=await newPage(engine==="webkit"), beginLink=await fixture("begin-race");
+  await openClaim(beginRace,beginLink);await checkout(beginRace,beginLink);await place(beginRace,beginLink,"zh-TW",false,"begin-race");
+  pass("stock disappearing after quote is refused at Begin");
 
   const pending = await newPage(engine === "webkit"), pendingLink = await fixture("pending");
   await openClaim(pending, pendingLink); await checkout(pending, pendingLink); await place(pending, pendingLink, "zh-TW", true);
@@ -157,6 +183,16 @@ try {
   await openClaim(pending, recoveryLink); await pending.getByTestId("claim-add").click();
   await expect(pending).toHaveURL(/\/zh-TW\/checkout/); assert.equal(pending.seen.redeem, 0, "in-flight checkout never redeems a new link");
   await expect(pending.getByTestId("order-id")).toBeVisible(); orders.push((await pending.getByTestId("order-id").innerText()).trim()); pass("in-flight order recovers without B2");
+  // 409 from a pre-existing archived item: navigate to cart, really remove it, then reopen claim.
+  const bad=await newPage(engine==="webkit"), badLink=await fixture("archived");
+  await addToCart(bad,origin,"zh-TW",process.env.LC_CDC_PRODUCT,{sku:process.env.LC_CDC_OTHER_CODE});
+  await fixture("archived","archive-other");await openClaim(bad,badLink);await bad.getByTestId("claim-add").click();
+  await expect(bad.getByTestId("claim-conflict")).toBeVisible();
+  await bad.getByRole("link",{name:"檢查購物車",exact:true}).click();
+  await expect(bad).toHaveURL(/\/zh-TW\/cart/);
+  await bad.getByTestId("cart-line").getByRole("button",{name:/移除/}).click();
+  await expect(bad.getByTestId("cart-line")).toHaveCount(0);
+  bad.seen.redeem=0;await openClaim(bad,badLink);await checkout(bad,badLink);pass("409 cart recovery through actual remove click");
   assert.equal(new Set(orders).size, orders.length);
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({ cases, orders, engine }, null, 2));
 } catch (error) {

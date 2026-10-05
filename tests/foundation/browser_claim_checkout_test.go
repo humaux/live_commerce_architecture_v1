@@ -40,26 +40,32 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 850*time.Second)
 		defer cancel()
 		root, _ := filepath.Abs("../..")
-		evidence := brfEvidence(t, root, "claim-checkout")
+		main, _ := filepath.Abs(filepath.Join(root, "../.."))
+		evidence := brfEvidence(t, main, "claim-checkout")
 		e := ltgNew(t, tcvOpts{origin: sbOrigin})
 		e.cvsSettings(tcvAllChains, true, "20000", 500)
 		e.service("cvs_711", "MANUAL", 0)
 		fixtures := map[string]cdcLink{}
-		for _, name := range []string{"zh-TW", "zh-CN", "en", "merge", "second", "pending", "partial", "sold", "expired", "repriced", "race", "repeat", "conflict"} {
+		for _, name := range []string{"zh-TW", "zh-CN", "en", "merge", "second", "pending", "partial", "sold", "expired", "repriced", "race", "repeat", "conflict", "begin-race", "archived"} {
 			stock := int64(100)
 			if name == "sold" {
-				stock = 0
+				stock = 1
 			}
 			sku := e.sku(30000, stock)
+			if name == "sold" {
+				mustExec(t, e.p.f.owner, `UPDATE inventory.balances SET on_hand=0 WHERE sku_id=$1`, sku)
+			}
 			session := e.h.draft(t, e.store())
 			e.h.open(t, session, claims.MatchExact)
 			offer := e.h.livePriceOffer(t, session, "A1", sku, 5, 20000)
 			c := e.h.accepted(t, session, "", "synthetic CDC "+name, "A1+2")
 			sold := ""
 			if name == "partial" {
-				sold = e.sku(30000, 0)
+				sold = e.sku(30000, 1)
+				// Owner-only zero-stock fixture; the ledger command correctly rejects delta 0.
+				mustExec(t, e.p.f.owner, `UPDATE inventory.balances SET on_hand=0 WHERE sku_id=$1`, sold)
 				e.h.offer(t, session, "B2", sold, 5)
-				c = e.h.accepted(t, session, c.BundleID, "synthetic CDC "+name, "B2")
+				c = e.h.accepted(t, session, c.BundleID, "", "B2")
 			}
 			link := e.h.link(t, session, c.BundleID, 0, false)
 			e.h.closeWindow(t, session)
@@ -109,6 +115,18 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 					http.Error(w, "fixture failed", 500)
 					return
 				}
+			} else if in.Action == "replenish" {
+				_, err := e.p.f.owner.Exec(ctx, `UPDATE inventory.balances SET on_hand=reserved+allocated+unavailable+100 WHERE tenant_id=$1 AND store_id=$2 AND sku_id=$3`, e.tenant(), e.store(), link.SKU)
+				if err != nil {
+					http.Error(w, "fixture failed", 500)
+					return
+				}
+			} else if in.Action == "archive-other" {
+				_, err := e.p.f.owner.Exec(ctx, `UPDATE catalog.skus SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant(), e.store(), e.p.stock.skus[0].ID)
+				if err != nil {
+					http.Error(w, "fixture failed", 500)
+					return
+				}
 			} else if in.Action != "link" {
 				http.Error(w, "invalid", 400)
 				return
@@ -143,6 +161,10 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()); n != len(result.Orders) {
 			t.Fatalf("CDC duplicate order: persisted=%d browser=%d", n, len(result.Orders))
 		}
+		var doubleOrders int
+		if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders o JOIN storefront.quotes q ON q.tenant_id=o.tenant_id AND q.store_id=o.store_id AND q.id=o.quote_id WHERE o.store_id=$1 AND EXISTS(SELECT 1 FROM jsonb_array_elements(q.snapshot->'lines') l WHERE l->>'sku_id'=$2)`, e.store(), fixtures["repeat"].SKU).Scan(&doubleOrders); err != nil || doubleOrders != 1 {
+			t.Fatalf("double-click order count=%d %v", doubleOrders, err)
+		}
 		for _, f := range fixtures {
 			u, m, _ := transport.audit(f.Token)
 			if u != 0 || m != 0 {
@@ -150,7 +172,6 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 			}
 		}
 		// Persist a token-free pointer beside the authoritative main-checkout delivery logs.
-		main, _ := filepath.Abs(filepath.Join(root, "../.."))
 		dest := filepath.Join(main, "output", "claim-direct-checkout")
 		_ = os.MkdirAll(dest, 0755)
 		name := "chromium"

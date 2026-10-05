@@ -164,9 +164,10 @@ test("claim redeem shares the purchase lock, guards recovery and never persists 
   globalThis.window = { localStorage: storage };
   const ctx = "a".repeat(43);
   let locked = false;
-  Object.defineProperty(navigator, "locks", { configurable: true, value: { request: async (name, callback) => {
-    assert.equal(name, "commerce-purchase-write-v1"); locked = true;
-    try { return await callback(); } finally { locked = false; }
+  Object.defineProperty(navigator, "locks", { configurable: true, value: { request: async (name, ...args) => {
+    assert(["commerce-purchase-write-v1", "commerce-buyer-session-v1"].includes(name));
+    const previous = locked; if (name === "commerce-purchase-write-v1") locked = true;
+    try { return await args.at(-1)(); } finally { locked = previous; }
   } } });
   globalThis.fetch = async (url, init) => {
     assert.equal(locked, true, "session checks and redeem must be inside the lock");
@@ -184,11 +185,11 @@ test("claim redeem shares the purchase lock, guards recovery and never persists 
     await purchase.redeemClaimLink(ctx, token, 2);
     assert.equal(new Set(calls).size, 2, "fresh key for each explicit click");
     assert.equal(writes.length, 0, "no token or redeem journal in storage");
-    values.set(`commerce-purchase-order-v1:${ctx}`, sku);
+    values.set(`commerce-purchase-order-v1:${ctx}`, JSON.stringify({ v: 1, context: ctx, order_id: sku }));
     await assert.rejects(purchase.redeemClaimLink(ctx, token, 2), { code: "uncertain" });
     assert.equal(calls.length, 2, "known order must prevent any B2");
     values.clear();
-    values.set(`commerce-purchase-write-v1:${ctx}`, JSON.stringify({ v: 1, context: ctx, key: sku, kind: "next-cart", body: { expected_version: 3, items: [] } }));
+    values.set(`commerce-purchase-pending-v1:${ctx}`, JSON.stringify({ v: 1, context: ctx, key: sku, kind: "next-cart", body: { expected_version: 3, items: [] } }));
     await assert.rejects(purchase.redeemClaimLink(ctx, token, 2), { code: "uncertain" });
     assert.equal(calls.length, 2, "pending next-cart must prevent any B2");
     values.clear();

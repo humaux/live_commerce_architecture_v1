@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/buyer"
-	"livecommerce/internal/claims"
 )
 
 // TestClaimDirectCheckoutAvailability proves stock is hinted, never reserved by a claim.
@@ -68,7 +67,7 @@ func TestClaimDirectCheckoutDefiner(t *testing.T) {
 	h := lcSetup(t)
 	ctx := context.Background()
 	var allowed bool
-	for _, role := range []string{"commerce_buyer_runtime", "commerce_runtime", "public"} {
+	for _, role := range []string{"commerce_buyer_runtime", "commerce_runtime", "commerce_buyer_issuer"} {
 		err := h.f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,'inventory.buyer_sku_availability(uuid[])','EXECUTE')`, role).Scan(&allowed)
 		if err != nil {
 			t.Fatal(err)
@@ -76,6 +75,11 @@ func TestClaimDirectCheckoutDefiner(t *testing.T) {
 		if allowed != (role == "commerce_buyer_runtime") {
 			t.Fatalf("CDC02 unexpected EXECUTE %s=%v", role, allowed)
 		}
+	}
+	// PUBLIC is a pseudo-role, inspected through ACL expansion rather than role lookup.
+	err := h.f.owner.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM pg_proc p, LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid='inventory.buyer_sku_availability(uuid[])'::regprocedure AND a.grantee=0 AND a.privilege_type='EXECUTE')`).Scan(&allowed)
+	if err != nil || allowed {
+		t.Fatalf("CDC02 PUBLIC EXECUTE: %v %v", allowed, err)
 	}
 	tx, err := h.f.owner.Begin(ctx)
 	if err != nil {
@@ -97,7 +101,8 @@ func TestClaimDirectCheckoutDefiner(t *testing.T) {
 		return e
 	})
 	requirePGCode(t, err, "22023", "CDC02 >50 SKUs")
-	foreign := t04CreateStock(t, h.f, h.f.tokens["a"], h.f.storeA2, 1, 1)
+	_, foreignToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA2}, "store:read", "catalog:read", "catalog:write", "inventory:read", "inventory:write")
+	foreign := t04CreateStock(t, h.f, foreignToken, h.f.storeA2, 1, 1)
 	err = buyer.WithScope(ctx, h.a.runtime, h.cap.Token, h.cap.Scope.StoreID, func(ctx context.Context, tx pgx.Tx, _ buyer.Scope) error {
 		var n int
 		e := tx.QueryRow(ctx, `SELECT count(*) FROM inventory.buyer_sku_availability($1::uuid[])`, []string{h.stock.skus[0].ID, foreign.skus[0].ID}).Scan(&n)
@@ -115,6 +120,3 @@ func TestClaimDirectCheckoutDefiner(t *testing.T) {
 		t.Fatalf("CDC02 buyer raw data privilege: %v %v", allowed, err)
 	}
 }
-
-// Keep the accepted claim DTO in this gate's documented dependency set.
-var _ claims.Preview

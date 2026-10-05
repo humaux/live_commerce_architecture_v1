@@ -1,3 +1,6 @@
+// Purpose: buyer purchase transport, strict wire validation and crash-safe recovery.
+// Depends on: buyer-client BFF, purchase types, claim/CVS/promotion contracts and Web Locks.
+// Used by: storefront cart, ClaimLink, CheckoutFlow and order/payment components.
 import {
   buyerRequest,
   BuyerClientError,
@@ -13,6 +16,7 @@ import {
 } from "./cvs-contract.ts";
 import { validBuyerEmail } from "./bank-transfer-contract.ts";
 import { validPromotion } from "./promo-contract.ts";
+import { validClaimRedeemed, type ClaimRedeemed } from "./claim-contract.ts";
 
 // Buyer purchase transport + strict validators for the BFF /api/buyer/* routes (cart, catalog,
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
@@ -763,6 +767,30 @@ function assertNoOrder(context: string) {
   if (orderRecoveryRequired(context)) throw new BuyerClientError("uncertain");
 }
 
+/** Redeems a claim into the existing cart under the shared purchase lock (B2).
+ * One fresh key per explicit click; the token is never journaled or automatically retried.
+ */
+export async function redeemClaimLink(context: string, token: string, expectedBundleVersion: number): Promise<ClaimRedeemed> {
+  if (!Number.isSafeInteger(expectedBundleVersion) || expectedBundleVersion < 1)
+    throw new BuyerClientError("request_failed");
+  if (!navigator.locks) throw new BuyerClientError("unavailable");
+  return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    assertNoOrder(context);
+    // An unresolved cart/quote/address write must be recovered before a competing cart writer.
+    if (pendingPurchase(context)) throw new BuyerClientError("uncertain");
+    await assertPurchaseContext(context);
+    const response = await buyerRequest("POST", "claim-link/redeem", context,
+      { expected_bundle_version: expectedBundleVersion }, crypto.randomUUID(), token);
+    if (!response.ok) throw new BuyerClientError("request_failed", response.status);
+    let value: unknown;
+    try { value = await response.json(); } catch { throw new BuyerClientError("uncertain"); }
+    if (!validClaimRedeemed(value)) throw new BuyerClientError("uncertain");
+    await assertPurchaseContext(context);
+    assertNoOrder(context);
+    return value;
+  });
+}
+
 // Destination PII is deliberately absent from this persisted journal. Its
 // metadata marker and checkout IDs share the SAME lock with cart/quote writes.
 export async function writePurchase(
@@ -1005,9 +1033,12 @@ export async function readOrder(
 // Starting a new purchase never cancels the previous order/hold. The permanent
 // cart.set receipt and CAS are the existing server authority; local storage is
 // only a crash-safe intent journal. History is queried from the owned SQL list.
+// orderedCartOnly is used by claim handoff: check the exact old version INSIDE this lock,
+// retaining recovery if any competing writer advanced it rather than reordering old items.
 export async function continueShopping(
   context: string,
   expectedOrderID?: string,
+  orderedCartOnly = false,
 ): Promise<Cart> {
   if (!navigator.locks) throw new BuyerClientError("unavailable");
   return navigator.locks.request("commerce-purchase-write-v1", async () => {
@@ -1025,7 +1056,8 @@ export async function continueShopping(
       current = await readPurchase("cart", context, validCart);
       if (
         current.id !== previous.cart_id ||
-        current.version < previous.cart_version
+        current.version < previous.cart_version ||
+        (orderedCartOnly && current.version !== previous.cart_version)
       )
         throw new BuyerClientError("uncertain");
       // Never clear a cart already advanced by another authorized actor.
@@ -1053,6 +1085,8 @@ export async function continueShopping(
         !(response.status === 409 && (await definiteError(response.clone())))
       )
         throw new BuyerClientError("uncertain", response.status);
+      // Direct claim continuation must not erase recovery after a conflicting clear.
+      if (orderedCartOnly && !response.ok) throw new BuyerClientError("uncertain", response.status);
       if (response.ok) {
         let receipt: unknown;
         try {
@@ -1068,7 +1102,8 @@ export async function continueShopping(
           throw new BuyerClientError("uncertain");
       }
       current = await readPurchase("cart", context, validCart);
-      if (current.version <= pending.body.expected_version)
+      if (current.version <= pending.body.expected_version || (orderedCartOnly &&
+          (current.version !== pending.body.expected_version + 1 || current.items.length > 0)))
         throw new BuyerClientError("uncertain");
     }
     await assertPurchaseContext(context);
