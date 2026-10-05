@@ -13,6 +13,7 @@ import {
   type ProductNavigationState,
 } from "@/lib/use-product-leave-guard";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductDocumentForm } from "./ProductDocumentForm";
 import "./orders.css";
 import "./ProductAdmin.css";
@@ -72,18 +73,19 @@ export function ProductEditor({
         className="orders-page product-admin product-editor pe-page"
         data-testid="product-editor"
       >
-        <Link
-          className="product-back"
-          href={`/${locale}/products${store ? `?store=${store.id}` : ""}`}
-          data-testid="product-back"
-        >
-          ← {c.edit.back}
-        </Link>
-        <header className="orders-heading">
-          <h1>
-            {creating ? c.edit.newTitle : (read.data?.name ?? c.edit.loading)}
-          </h1>
-        </header>
+        <AdminPageHeader
+          locale={locale}
+          description={creating ? undefined : read.data?.name}
+          actions={
+            <Link
+              className="product-back"
+              href={`/${locale}/products${store ? `?store=${store.id}` : ""}`}
+              data-testid="product-back"
+            >
+              {c.edit.back}
+            </Link>
+          }
+        />
         {(read.status === "loading" || read.status === "hidden") && (
           <p role="status">{c.edit.loading}</p>
         )}

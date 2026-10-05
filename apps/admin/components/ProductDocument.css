@@ -1,10 +1,10 @@
 /* Approved comps 02/03, scoped to products. The existing outer shell is deliberately untouched. */
 .pe-page,
 .pe-catalog {
-  --pe-accent: #b84b00;
-  --pe-fill: #fff3e8;
-  --pe-rule: #dde5ee;
-  --pe-muted: #56677b;
+  --pe-accent: var(--ui-primary);
+  --pe-fill: var(--ui-primary-soft);
+  --pe-rule: var(--ui-border);
+  --pe-muted: var(--ui-muted);
 }
 .pe-document {
   display: grid;
@@ -13,7 +13,7 @@
   align-items: start;
   padding-bottom: 90px;
   max-width: 1280px;
-  --pe-accent: var(--teal);
+  --pe-accent: var(--ui-primary);
   --pe-fill: var(--ui-page);
   --pe-rule: var(--ui-border);
   --pe-muted: var(--ui-muted);
@@ -96,7 +96,7 @@
   border-radius: 8px;
 }
 .pe-document .product-section h2 {
-  font-size: 17px;
+  font-size: var(--ui-heading-section);
 }
 .pe-document .product-form input,
 .pe-document .product-form textarea {
@@ -506,15 +506,15 @@
   color: var(--pe-muted);
 }
 .pe-catalog .product-primary {
-  background: #b84b00;
-  border-color: #b84b00;
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
 }
 .pe-catalog .product-primary:hover:not(:disabled) {
-  background: #993e00;
+  background: var(--ui-primary-hover);
 }
 .pe-page .product-primary {
-  background: var(--teal);
-  border-color: var(--teal);
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
 }
 .pe-status-tabs {
   display: flex;
@@ -546,7 +546,7 @@
   color: var(--pe-accent);
 }
 .pe-batch {
-  border: 1px solid #efc296;
+  border: 1px solid var(--pe-rule);
   background: var(--pe-fill);
   border-radius: 8px;
   padding: 12px;
@@ -649,7 +649,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--focus);
+  color: var(--ui-link);
 }
 .pe-catalog .pe-edit-icon:hover:not(:disabled) {
   background: var(--pe-fill);

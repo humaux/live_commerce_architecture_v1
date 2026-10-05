@@ -7,6 +7,7 @@
 // whether a file is valid (the server sniffs the bytes; mediaFileProblem is just an early hint) and an image id is only
 // ever one of the library's ids.
 import { useState } from "react";
+import { FilePicker } from "@live-commerce/ui";
 import { mediaURL, MEDIA_ACCEPT } from "@/lib/design-client";
 import { fill, type DesignCopy } from "@/lib/design-copy";
 import type { MediaItem } from "@/lib/design-model";
@@ -18,10 +19,25 @@ export type MediaOps = {
 };
 
 export function ImagePicker({
-  store, label, value, media, ops, c, error, onChange, testId,
+  store,
+  label,
+  value,
+  media,
+  ops,
+  c,
+  error,
+  onChange,
+  testId,
 }: {
-  store: string; label: string; value: string | null; media: MediaItem[]; ops: MediaOps; c: DesignCopy; error?: string;
-  onChange: (id: string | null) => void; testId: string;
+  store: string;
+  label: string;
+  value: string | null;
+  media: MediaItem[];
+  ops: MediaOps;
+  c: DesignCopy;
+  error?: string;
+  onChange: (id: string | null) => void;
+  testId: string;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -42,38 +58,94 @@ export function ImagePicker({
       <div className="design-picker-row">
         <div className="design-thumb" aria-hidden={!current}>
           {/* eslint-disable-next-line @next/next/no-img-element -- same-origin BFF bytes behind the session cookie */}
-          {current ? <img src={mediaURL(store, current.id)} alt={c.media.alt} /> : null}
+          {current ? (
+            <img src={mediaURL(store, current.id)} alt={c.media.alt} />
+          ) : null}
         </div>
         <div className="design-picker-actions">
-          <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} data-testid={`${testId}-choose`}>
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            data-testid={`${testId}-choose`}
+          >
             {value ? c.media.change : c.media.choose}
           </button>
           {value && (
-            <button type="button" onClick={() => onChange(null)} data-testid={`${testId}-clear`}>{c.media.remove}</button>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              data-testid={`${testId}-clear`}
+            >
+              {c.media.remove}
+            </button>
           )}
         </div>
       </div>
-      {error && <small className="design-error" role="alert">{error}</small>}
+      {error && (
+        <small className="design-error" role="alert">
+          {error}
+        </small>
+      )}
       {open && (
-        <div className="design-library" role="group" aria-label={fill(c.media.library, { n: media.length })}>
-          <p className="design-muted">{fill(c.media.library, { n: media.length })}</p>
+        <div
+          className="design-library"
+          role="group"
+          aria-label={fill(c.media.library, { n: media.length })}
+        >
+          <p className="design-muted">
+            {fill(c.media.library, { n: media.length })}
+          </p>
           {media.length === 0 && <p className="design-muted">{c.media.none}</p>}
           <div className="design-grid">
             {media.map((item) => (
-              <div key={item.id} className={item.id === value ? "design-tile selected" : "design-tile"}>
-                <button type="button" aria-label={c.media.pick} aria-pressed={item.id === value} onClick={() => { onChange(item.id); setOpen(false); }}>
+              <div
+                key={item.id}
+                className={
+                  item.id === value ? "design-tile selected" : "design-tile"
+                }
+              >
+                <button
+                  type="button"
+                  aria-label={c.media.pick}
+                  aria-pressed={item.id === value}
+                  onClick={() => {
+                    onChange(item.id);
+                    setOpen(false);
+                  }}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element -- same-origin BFF bytes behind the session cookie */}
-                  <img src={mediaURL(store, item.id)} alt={c.media.alt} loading="lazy" />
+                  <img
+                    src={mediaURL(store, item.id)}
+                    alt={c.media.alt}
+                    loading="lazy"
+                  />
                 </button>
-                <button type="button" className="design-tile-delete" aria-label={c.media.delete} title={c.media.delete} onClick={() => void ops.remove(item.id)}>×</button>
+                <button
+                  type="button"
+                  className="design-tile-delete"
+                  aria-label={c.media.delete}
+                  title={c.media.delete}
+                  onClick={() => void ops.remove(item.id)}
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
-          <label className="design-upload">
-            <span>{busy ? c.media.uploading : c.media.upload}</span>
-            <input type="file" accept={MEDIA_ACCEPT} disabled={busy} data-testid={`${testId}-file`}
-              onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; void pickFile(file); }} />
-          </label>
+          <FilePicker
+            label={busy ? c.media.uploading : c.media.upload}
+            emptyLabel={c.media.noFile}
+            fileName=""
+            accept={MEDIA_ACCEPT}
+            disabled={busy}
+            data-testid={`${testId}-file`}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              void pickFile(file);
+            }}
+          />
         </div>
       )}
     </div>

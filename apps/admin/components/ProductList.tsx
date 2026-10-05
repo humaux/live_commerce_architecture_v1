@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -32,7 +33,7 @@ import {
   type ProductStatus,
   type Collection,
 } from "@/lib/catalog-v2-model";
-import { catalogCopy } from "@/lib/catalog-v2-copy";
+import { catalogCopy, catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { parseBulk, type BulkResult } from "@/lib/product-document";
 import { useWrite } from "@/lib/catalog-v2-write";
@@ -40,6 +41,7 @@ import { useProductLeaveGuard } from "@/lib/use-product-leave-guard";
 import { displayTime } from "@/lib/orders-model";
 import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductPhoto } from "./ProductPhoto";
 import { ProductQuickEdit } from "./ProductQuickEdit";
 import { Icon } from "./Icon";
@@ -240,32 +242,36 @@ export function ProductList({
         className="orders-page product-admin pe-catalog"
         data-testid="products-page"
       >
-        <header className="orders-heading product-heading">
-          <div>
-            <h1>{l.title}</h1>
-            <p>{l.subtitle}</p>
-          </div>
-          <div className="product-heading-actions">
-            <Link
-              className="product-link"
-              href={`/${locale}/inventory${sid ? `?store=${sid}` : ""}`}
-              data-testid="products-ledger-link"
-            >
-              {l.inventory}
-            </Link>
-            {store && (
+        <AdminPageHeader
+          locale={locale}
+          description={l.subtitle}
+          actions={
+            <>
               <Link
-                className="product-primary"
-                href={`/${locale}/products/new?store=${sid}`}
-                data-testid="product-new"
+                className="product-link"
+                href={`/${locale}/inventory${sid ? `?store=${sid}` : ""}`}
+                data-testid="products-ledger-link"
               >
-                <Icon name="product" size={18} />
-                {l.newProduct}
+                {l.inventory}
               </Link>
-            )}
-          </div>
-        </header>
-        <div className="pe-status-tabs" aria-label={l.status}>
+              {store && (
+                <Link
+                  className="product-primary"
+                  href={`/${locale}/products/new?store=${sid}`}
+                  data-testid="product-new"
+                >
+                  <Icon name="product" size={18} />
+                  {l.newProduct}
+                </Link>
+              )}
+            </>
+          }
+        />
+        <TabStrip
+          label={l.status}
+          previousLabel={catalogPresentationCopy[locale].previousTabs}
+          nextLabel={catalogPresentationCopy[locale].nextTabs}
+        >
           {productStatuses.map((s) => (
             <button
               key={s}
@@ -283,7 +289,7 @@ export function ProductList({
               {page ? (s === "all" ? page.total : page.status_counts[s]) : ""}
             </button>
           ))}
-        </div>
+        </TabStrip>
         <form className="orders-controls" role="search" onSubmit={search}>
           <label className="product-search">
             {l.search}
@@ -435,7 +441,10 @@ export function ProductList({
               </section>
             )}
             {rows.length > 0 && (
-              <div className="orders-table-scroll">
+              <TableFrame
+                label={l.title}
+                scrollHint={catalogPresentationCopy[locale].tableScroll}
+              >
                 <table
                   className="orders-table product-table"
                   data-testid="products-table"
@@ -528,7 +537,7 @@ export function ProductList({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableFrame>
             )}
             {rows.length === 0 && (
               <p className="orders-message" role="status" aria-live="polite">
@@ -656,11 +665,18 @@ function Row({
         </Link>
       </td>
       <td className="pe-status-cell" data-label={l.status}>
-        <span
-          className={`orders-badge product-status product-status-${row.status}`}
+        <Badge
+          className="product-status"
+          tone={
+            row.status === "active"
+              ? "success"
+              : row.status === "draft"
+                ? "warning"
+                : "neutral"
+          }
         >
           {c.status[row.status]}
-        </span>
+        </Badge>
       </td>
       <td className="pe-price-cell" data-label={l.price}>
         <div className="pe-number-edit">

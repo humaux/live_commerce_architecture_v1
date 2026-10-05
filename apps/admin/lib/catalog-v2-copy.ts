@@ -525,3 +525,31 @@ const zhTW: CatalogV2Copy = {
 
 export const catalogCopy: Record<Locale, CatalogV2Copy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
 export const errorText = (c: CatalogV2Copy, code: string) => c.errors[code] ?? c.errors.retry_later;
+
+// Presentation-only labels; never describe API capabilities or create business states.
+export const catalogPresentationCopy = {
+  en: {
+    previousTabs: "Previous tabs", nextTabs: "More tabs", noFile: "No file selected", chooseFile: "Choose file",
+    chooseCollection: "Select a collection", collectionHelp: "Choose a collection from the list to edit its details and products, or create a new collection.",
+    busy: "Wait for the current operation to finish.", noChanges: "There are no unsaved changes.", alreadyPublished: "This saved draft is already published.",
+    chooseFileFirst: "Choose a CSV file before checking it.", checkFileFirst: "Check the file before importing it.", fixFileFirst: "Fix the reported file errors before importing.",
+    importedAlready: "This file has already been imported.", sessionUnavailable: "A verified session is required. Reload the page or sign in again.",
+    tableScroll: "Scroll horizontally to view all columns.",
+  },
+  "zh-CN": {
+    previousTabs: "前面的页签", nextTabs: "更多页签", noFile: "未选择文件", chooseFile: "选择文件",
+    chooseCollection: "选择一个分类", collectionHelp: "从列表选择分类以编辑详情和商品，或新增分类。",
+    busy: "请等待当前操作完成。", noChanges: "没有尚未保存的变更。", alreadyPublished: "此已保存草稿已发布。",
+    chooseFileFirst: "请先选择 CSV 文件，再检查文件。", checkFileFirst: "请先检查文件，再导入。", fixFileFirst: "请先修正提示的文件错误，再导入。",
+    importedAlready: "此文件已导入。", sessionUnavailable: "需要已验证的登录会话，请重新加载页面或登录。",
+    tableScroll: "横向滚动可查看全部列。",
+  },
+  "zh-TW": {
+    previousTabs: "前面的頁籤", nextTabs: "更多頁籤", noFile: "未選擇檔案", chooseFile: "選擇檔案",
+    chooseCollection: "選擇一個分類", collectionHelp: "從清單選擇分類以編輯詳情和商品，或新增分類。",
+    busy: "請等待目前操作完成。", noChanges: "沒有尚未儲存的變更。", alreadyPublished: "此已儲存草稿已發佈。",
+    chooseFileFirst: "請先選擇 CSV 檔案，再檢查檔案。", checkFileFirst: "請先檢查檔案，再匯入。", fixFileFirst: "請先修正提示的檔案錯誤，再匯入。",
+    importedAlready: "此檔案已匯入。", sessionUnavailable: "需要已驗證的登入工作階段，請重新載入頁面或登入。",
+    tableScroll: "橫向捲動可查看全部欄位。",
+  },
+} satisfies Record<Locale, Record<string, string>>;
