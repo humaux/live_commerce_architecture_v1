@@ -164,7 +164,7 @@ func (s *Service) SendDM(ctx context.Context, tx pgx.Tx, scope platform.Scope, k
 // sourcePlatform is the platform of the session's active claim source (facebook | instagram); no source is a 404.
 func (s *Service) sourcePlatform(ctx context.Context, tx pgx.Tx, sessionID string) (string, error) {
 	var p string
-	err := tx.QueryRow(ctx, `SELECT platform FROM live.claim_sources WHERE session_id=$1::uuid AND active ORDER BY created_at DESC LIMIT 1`, sessionID).Scan(&p)
+	err := tx.QueryRow(ctx, `SELECT platform FROM live.claim_sources WHERE session_id=$1::uuid AND active ORDER BY updated_at DESC, id LIMIT 1`, sessionID).Scan(&p)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", command.ErrNotFound
 	}

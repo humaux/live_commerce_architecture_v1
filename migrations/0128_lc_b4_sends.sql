@@ -130,7 +130,7 @@ GRANT UPDATE(mode, assignee_principal, takeover_generation, human_until, last_hu
 CREATE POLICY conversation_state_send ON inbox.conversation_state FOR ALL TO commerce_integration_writer
     USING (inbox.lcn_in_scope(tenant_id, store_id)) WITH CHECK (inbox.lcn_in_scope(tenant_id, store_id));
 
-GRANT SELECT(source_object_id, created_at) ON live.claim_sources TO commerce_integration_writer;
+GRANT SELECT(source_object_id, updated_at) ON live.claim_sources TO commerce_integration_writer;
 CREATE POLICY source_send_read ON live.claim_sources FOR SELECT TO commerce_integration_writer
     USING (inbox.lcn_in_scope(tenant_id, store_id));
 GRANT SELECT(tenant_id, store_id, session_id, state) ON live.claim_windows TO commerce_integration_writer;
@@ -349,7 +349,7 @@ BEGIN
         RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403';
     END IF;
     SELECT s.id, s.platform, s.object, s.asset_id, s.binding_id, s.private_reply INTO src FROM live.claim_sources s
-     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.created_at DESC LIMIT 1;
+     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.updated_at DESC, s.id LIMIT 1;
     IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'PT404'; END IF;
     v_hmac := encode(p_body_hmac, 'hex');
     PERFORM pg_advisory_xact_lock(hashtextextended('lcn-dup|' || v_s::text || '|' || p_comment_ref || '|' || v_hmac, 0));
@@ -477,7 +477,7 @@ BEGIN
     END IF;
     IF NOT identity.principal_holds(v_t, v_s, v_p, ARRAY['inbox:reply']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403'; END IF;
     SELECT s.id, s.platform, s.object, s.asset_id, s.binding_id INTO src FROM live.claim_sources s
-     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.created_at DESC LIMIT 1;
+     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.updated_at DESC, s.id LIMIT 1;
     IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'PT404'; END IF;
     v_hmac := encode(p_body_hmac, 'hex');
     PERFORM pg_advisory_xact_lock(hashtextextended('lcn-dup|' || v_s::text || '|' || p_comment_ref || '|' || v_hmac, 0));
@@ -538,7 +538,7 @@ BEGIN
     IF NOT FOUND OR NOT o.active THEN RAISE EXCEPTION 'offer_unavailable' USING ERRCODE = 'PT409'; END IF;
     IF o.version <> p_expected_version THEN RAISE EXCEPTION 'version_conflict' USING ERRCODE = 'PT409'; END IF;
     SELECT s.id, s.platform, s.asset_id, s.binding_id, s.source_object_id INTO src FROM live.claim_sources s
-     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.created_at DESC LIMIT 1;
+     WHERE s.tenant_id = v_t AND s.store_id = v_s AND s.session_id = p_session AND s.active ORDER BY s.updated_at DESC, s.id LIMIT 1;
     IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'PT404'; END IF;
     IF src.platform = 'instagram' THEN RAISE EXCEPTION 'ig_live_unsupported' USING ERRCODE = 'PT422'; END IF;
     SELECT z.id, z.semantic_version INTO b FROM integration.bindings z
@@ -1050,3 +1050,26 @@ BEGIN
  UPDATE integration.meta_connections c SET status='reauth_required',updated_at=clock_timestamp()
   WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id AND c.status='active' AND o.binding_id IN (c.fb_binding,c.ig_binding);
 END $$;
+
+-- §3.4: the dispatch copy is wiped on SUCCEEDED, FAILED_FINAL, BLOCKED_POLICY, STALE_BINDING and UNKNOWN. The Finish hook does it inside the
+-- completion transaction; this trigger covers every other path into those states (claim_operation's STALE_BINDING, recovery, operator
+-- cancels), so no state transition can leave a sealed copy behind. Reconcile is query-only, so an UNKNOWN operation never needs it again.
+CREATE FUNCTION inbox.wipe_send_secret() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $$
+BEGIN
+    DELETE FROM inbox.send_secrets k WHERE k.operation_id = NEW.id;
+    RETURN NULL;
+END $$;
+ALTER FUNCTION inbox.wipe_send_secret() OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.wipe_send_secret() FROM PUBLIC;
+CREATE TRIGGER operations_wipe_send_secret AFTER UPDATE OF state ON integration.operations
+    FOR EACH ROW WHEN (NEW.state IN ('SUCCEEDED','FAILED_FINAL','CANCELLED','BLOCKED_POLICY','STALE_BINDING','UNKNOWN')
+        AND OLD.state IS DISTINCT FROM NEW.state
+        AND NEW.action IN ('meta.dm_send','meta.private_reply','meta.public_reply','meta.offer_recommend'))
+    EXECUTE FUNCTION inbox.wipe_send_secret();
+
+-- Defect of 0125 (W1-01B) found by the LC-B4 harness: integration.meta_health_on_connection (owner commerce_integration_writer) DELETEs the probed
+-- capability rows when a connection is created or reconnected, but the owner holds only SELECT/INSERT/UPDATE(cols) on the table, so EVERY insert into
+-- integration.meta_connections failed with 42501 (merchant connect included). The policy binding_capabilities_writer already allows FOR ALL; only the
+-- table grant was missing. Integrator: this line may move into 0125 itself.
+GRANT DELETE ON integration.binding_capabilities TO commerce_integration_writer;
