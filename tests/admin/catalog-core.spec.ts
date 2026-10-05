@@ -20,6 +20,7 @@ import { copy } from "../../apps/admin/lib/copy";
 import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 import { registerProductReviewAcceptance } from "./product-review.acceptance";
 import { registerProductVisualAcceptance } from "./product-visual.acceptance";
+import { registerProductFeedbackAcceptance } from "./product-feedback.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -95,6 +96,7 @@ const variants = [
 if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") {
   registerProductEditorAcceptance();
   registerProductReviewAcceptance();
+  registerProductFeedbackAcceptance();
   if (process.env.PRODUCT_VISUAL_PHASE) registerProductVisualAcceptance();
 }
 
