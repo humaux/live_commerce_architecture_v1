@@ -64,11 +64,12 @@ const (
 )
 
 // MatchMode is the claim window's quantity rule.
-type MatchMode string // "EXACT" | "KEYWORD_QTY_ONLY"
+type MatchMode string // "EXACT" | "KEYWORD_QTY_ONLY" | "KEYWORD_QTY_CONTAINS"
 
 const (
-	MatchExact          MatchMode = "EXACT"
-	MatchKeywordQtyOnly MatchMode = "KEYWORD_QTY_ONLY"
+	MatchExact              MatchMode = "EXACT"
+	MatchKeywordQtyOnly     MatchMode = "KEYWORD_QTY_ONLY"
+	MatchKeywordQtyContains MatchMode = "KEYWORD_QTY_CONTAINS"
 )
 
 // Reason explains a REJECTED command. All but WINDOW_CLOSED are persisted in claims.events;

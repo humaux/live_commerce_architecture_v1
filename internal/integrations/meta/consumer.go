@@ -211,9 +211,9 @@ func (w *ConsumerWorker) stageClaim(ctx context.Context, tx pgx.Tx, job *river.J
 	actor := ClaimActorKey(w.actor, *loaded.object, *loaded.assetID, candidate.FromID)
 	var staged *string
 	if err := tx.QueryRow(ctx, `SELECT meta_inbox.stage_claim_intake($1::uuid,$2::bigint,$3::integer,$4::text,$5::text,$6::text,
-		NULL::timestamptz,$7::text,$8::text,$9::integer,$10::boolean)::text`,
+		NULL::timestamptz,$7::text,$8::text,$9::integer,$10::boolean,$11::text)::text`,
 		job.Args.EventID, job.ID, job.Attempt, candidate.ObjectID, candidate.CommentRef, actor,
-		string(candidate.Parsed.Kind), keyword, quantity, explicit).Scan(&staged); err != nil {
+		string(candidate.Parsed.Kind), keyword, quantity, explicit, candidate.Parsed.Version).Scan(&staged); err != nil {
 		return ErrConsumerStorage
 	}
 	return nil

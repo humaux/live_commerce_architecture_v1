@@ -264,7 +264,9 @@ func readWindow(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID,
 	return out, nil
 }
 
-func validMode(mode MatchMode) bool { return mode == MatchExact || mode == MatchKeywordQtyOnly }
+func validMode(mode MatchMode) bool {
+	return mode == MatchExact || mode == MatchKeywordQtyOnly || mode == MatchKeywordQtyContains
+}
 
 // CreateOffer binds a canonical keyword to an active in-currency SKU of the store
 // (live:manage), with receipt live.claim.offer.create and audit live.claim.offer.created.

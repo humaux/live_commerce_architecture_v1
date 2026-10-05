@@ -1,0 +1,77 @@
+{
+  "grammar_version": "kwc-v1",
+  "source": "contracts/live-keyword-claims-v1.md §2.5 (kwc-v1, R5 A7): the §2.5 rules plus the seed table of docs/delivery/units/live-a7-contains-match.md; one entry per input",
+  "consumers": [
+    "internal/claims/grammar TestContainsKC01Vectors (ParseContains)",
+    "tests/foundation/live_claims_contains_test.go (author smoke, REAL_PG)"
+  ],
+  "format": {
+    "input": "JSON string passed to grammar.ParseContains unchanged",
+    "input_hex": "raw bytes (hex) when the input is not valid UTF-8 and cannot be a JSON string",
+    "pad_to_bytes/pad": "append pad until the input is exactly pad_to_bytes bytes long",
+    "expect": "kind, keyword ('' for NO_MATCH), quantity (0 unless MATCH), explicit (MATCH with '+N' only)"
+  },
+  "parse": [
+    {"id": "C01", "input": "我要H1+1", "expect": {"kind": "MATCH", "keyword": "H1", "quantity": 1, "explicit": true}},
+    {"id": "C02", "input": "H1+1謝謝", "expect": {"kind": "MATCH", "keyword": "H1", "quantity": 1, "explicit": true}},
+    {"id": "C03", "input": "h1+1", "expect": {"kind": "MATCH", "keyword": "H1", "quantity": 1, "explicit": true}},
+    {"id": "C04", "input": "ｈ１＋２ 感恩", "expect": {"kind": "MATCH", "keyword": "H1", "quantity": 2, "explicit": true}},
+    {"id": "C05", "input": "+++我要A1+3!!!", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C06", "input": "A1+2😍", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 2, "explicit": true}},
+
+    {"id": "C10", "input": "不要H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C11", "input": "H1+1不用了", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C12", "input": "取消H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C13", "input": "H1+1 算了", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C14", "input": "別幫我H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C15", "input": "沒有要H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C16", "input": "H1+1退掉", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+
+    {"id": "C20", "input": "H1+1多少錢?", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C21", "input": "H1+1？", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C22", "input": "H1+1嗎", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C23", "input": "H1+1是不是紅色", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C24", "input": "H1+1有幾個", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C25", "input": "哪個是H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+
+    {"id": "C30", "input": "H1+1 H2+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C31", "input": "H1+1\nH2+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C32", "input": "H1+1,H2+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C33", "input": "H1+1 和 B2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C34", "input": "H1+1 H1+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+
+    {"id": "C40", "input": "2H1+1", "expect": {"kind": "MATCH", "keyword": "2H1", "quantity": 1, "explicit": true}},
+    {"id": "C41", "input": "A01A02", "expect": {"kind": "MATCH", "keyword": "A01A02", "quantity": 1, "explicit": false}},
+    {"id": "C42", "input": "A01A02+1", "expect": {"kind": "MATCH", "keyword": "A01A02", "quantity": 1, "explicit": true}},
+    {"id": "C43", "input": "H1+1H2+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C44", "input": "H1+12+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C45", "input": "H1+1x2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+
+    {"id": "C50", "input": "A1+2 1000元", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C51", "input": "1000", "expect": {"kind": "MATCH", "keyword": "1000", "quantity": 1, "explicit": false}},
+    {"id": "C52", "input": "A1+1000", "expect": {"kind": "INVALID_QUANTITY", "keyword": "A1", "quantity": 0, "explicit": false}},
+    {"id": "C53", "input": "A1+02", "expect": {"kind": "INVALID_QUANTITY", "keyword": "A1", "quantity": 0, "explicit": false}},
+    {"id": "C54", "input": "0912345678", "expect": {"kind": "MATCH", "keyword": "0912345678", "quantity": 1, "explicit": false}},
+    {"id": "C55", "input": "A1+2 0912-345-678", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C56", "input": "A1+0", "expect": {"kind": "INVALID_QUANTITY", "keyword": "A1", "quantity": 0, "explicit": false}},
+
+    {"id": "C60", "input": "A1 +2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C61", "input": "A1+ 2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C62", "input": "Ａ１　＋２", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C63", "input": "a1+2", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 2, "explicit": true}},
+    {"id": "C64", "input": "\tA1+2\n", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 2, "explicit": true}},
+    {"id": "C65", "input": "A1​+2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+
+    {"id": "C70", "input": "我要A1", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 1, "explicit": false}},
+    {"id": "C71", "input": "A1", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 1, "explicit": false}},
+    {"id": "C72", "input": "A1好看", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 1, "explicit": false}},
+
+    {"id": "C80", "input": "A1➕2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C81", "input": "A1﹢2", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C82", "input": "ABCDEFGHIJKLMNOP+1", "expect": {"kind": "MATCH", "keyword": "ABCDEFGHIJKLMNOP", "quantity": 1, "explicit": true}},
+    {"id": "C83", "input": "ABCDEFGHIJKLMNOPQ+1", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C84", "input": "A1+2", "pad_to_bytes": 256, "pad": " ", "expect": {"kind": "MATCH", "keyword": "A1", "quantity": 2, "explicit": true}},
+    {"id": "C85", "input": "A1+2", "pad_to_bytes": 257, "pad": " ", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}},
+    {"id": "C86", "input_hex": "4131ff", "expect": {"kind": "NO_MATCH", "keyword": "", "quantity": 0, "explicit": false}}
+  ]
+}

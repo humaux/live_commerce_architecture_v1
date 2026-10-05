@@ -5,7 +5,7 @@
 // Non-goals: no SQL (consumer.go calls meta_inbox.stage_claim_intake with the result), no
 // network, no River, no claims/live table access, no storage of comment text, from.name or
 // username, and no Graph or private-reply code (internal/integrations/metareply).
-// It imports only claims/grammar (Parse, a pure function) from claims, never internal/claims itself.
+// It imports only claims/grammar (ParseForIngest, a pure function) from claims, never internal/claims itself.
 //
 // Facts (retrieved 2026-09-28, https://developers.facebook.com/docs/graph-api/webhooks/reference/page/
 // and .../reference/instagram/): Page feed comment value carries post_id, comment_id, parent_id,
@@ -174,5 +174,5 @@ func qualifyClaim(objectName, assetID, kind string, unit []byte) (claimCandidate
 	if len(text) > grammar.MaxTextBytes {
 		return none, false
 	}
-	return claimCandidate{ObjectID: objectID, CommentRef: commentRef, FromID: fromID, Parsed: grammar.Parse(text)}, true
+	return claimCandidate{ObjectID: objectID, CommentRef: commentRef, FromID: fromID, Parsed: grammar.ParseForIngest(text)}, true
 }
