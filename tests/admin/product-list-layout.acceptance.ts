@@ -1,8 +1,12 @@
+// Purpose: Reads populated product-table geometry and asserts layout without replacing merchant interactions.
+// Depends on: @playwright/test
+// Used by: tests/admin/product-editor.acceptance.ts
 // ADM23 additive geometry checks for the real catalog browser fixture.
 // Call after navigating/clicking to a populated product list at desktop/mobile widths;
 // evaluate only reads layout and never replaces merchant clicks or persisted readback.
 import { expect, type Page } from "@playwright/test";
 
+/** Reads browser geometry and asserts table layout without mutating products or styles. */
 export async function assertProductListLayout(page: Page) {
   const table = page.getByTestId("products-table");
   await expect(table).toBeVisible();

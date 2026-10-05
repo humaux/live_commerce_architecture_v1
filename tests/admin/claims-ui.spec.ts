@@ -1,3 +1,6 @@
+// Purpose: Exercises claims intake and buyer claim links through the packaged browser harness.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/studio-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_CLAIMS_BUYER_ORIGIN, LC_CLAIMS_STORE, LC_CLAIMS_SESSION, LC_CLAIMS_SCENE, LC_CLAIMS_PRODUCT, LC_CLAIMS_SKU_A, LC_CLAIMS_SKU_B, LC_CLAIMS_SKU_A_ID, LC_CLAIMS_SKU_B_ID, LC_CLAIMS_CONTROL, LC_CLAIMS_CONTROL_KEY, LC_CLAIMS_PROXY, LC_CLAIMS_FB_ASSET, LC_CLAIMS_IG_ASSET
+// Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_live_claims_test.go
 // KC16 browser gate (contracts/live-keyword-claims-v1.md §11.1): Studio › Claims in the
 // packaged admin, then the buyer claim link in the storefront production server, through
 // real BFFs, Go transports and PostgreSQL. Started only by browser_live_claims_test.go

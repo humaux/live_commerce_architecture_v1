@@ -1,3 +1,8 @@
+/*
+ * Purpose: Defines shared UI color, spacing, typography and control-size tokens.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: packages/ui/src/AppShell.tsx, apps/admin/app/globals.css
+ */
 :root {
   --ui-primary: #247965;
   --ui-primary-hover: #1c6554;

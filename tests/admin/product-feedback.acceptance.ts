@@ -1,8 +1,12 @@
+// Purpose: Registers repeated product validation checks through real merchant Publish clicks.
+// Depends on: @playwright/test, ../../apps/admin/lib/product-editor-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_STORE, LC_BROWSER_TAG
+// Used by: tests/admin/catalog-core.spec.ts
 // R6 repeated validation: actual signed merchant UI, no DOM/style injection.
 // Both Publish clicks must stop before any product-document mutation request.
 import { expect, test } from "@playwright/test";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
+/** Registers Playwright validation cases; execution clicks merchant controls. */
 export function registerProductFeedbackAcceptance() {
   for (const viewport of [
     { width: 1586, height: 992 },

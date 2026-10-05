@@ -1,3 +1,6 @@
+// Purpose: Exercises studio controls and access behavior through the isolated browser/API harness.
+// Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN
+// Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_studio_ui_test.go
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";

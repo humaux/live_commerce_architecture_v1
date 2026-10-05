@@ -1,3 +1,6 @@
+// Purpose: Exercises orders, filters and details with supplied isolated browser identities.
+// Depends on: @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
+// Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";

@@ -1,3 +1,6 @@
+// Purpose: Exercises manual shipment recording, correction, voiding, history and export.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_SHIP_ORDER, LC_BROWSER_RESHIP_ORDER, LC_BROWSER_DRAFT_ORDER, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_TRACKING
+// Used by: scripts/dev/test-local.sh, tests/foundation/browser_refund_fulfilment_test.go
 // MF07 admin half (contracts/manual-fulfilment-v1.md §5.1, §5.3, §5.4, §6). BFF routes exercised through the UI:
 // PUT /api/stores/{store}/orders/{id}/shipment, GET .../shipment/history, GET .../orders/unshipped.csv,
 // GET .../order-actions -> Go /v1/admin/stores/{store}/... (driven by tests/foundation/browser_refund_fulfilment_test.go).

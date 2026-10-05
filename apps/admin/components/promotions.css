@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles promotion lists and editing controls.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Promotions.tsx
+ */
 /* Discount codes page (storefront-v2 §F). Reuses orders.css / order-actions.css / customers.css classes and tokens; only the form grid lives here. */
 .promotions-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 18px; align-items: start; }
 .promotions-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }

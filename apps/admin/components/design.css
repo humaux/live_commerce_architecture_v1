@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles storefront design editing, media and preview.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Design.tsx
+ */
 /* Store design editor. Presentation uses the shared semantic tokens; merchant
    document values (including storefront accent colour) stay with the caller. */
 .design-page {

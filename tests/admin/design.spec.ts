@@ -1,3 +1,6 @@
+// Purpose: Exercises design draft, media, preview and publication controls through the browser harness.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/design-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_DESIGN_STORES, LC_BROWSER_BFF_STORE, LC_BROWSER_READONLY_STORE, LC_BROWSER_FOREIGN_STORES
+// Used by: apps/admin/src/features/storefront/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_store_design_test.go
 // SDB admin gate of unit store-design (contracts/storefront-v2.md section B; independent test author, evidence label BROWSER, IdP = MOCK).
 // BFF routes exercised through the UI: GET|PUT /api/stores/{store}/design/draft, POST design/publish|rollback|preview-token,
 // GET design/versions, GET|POST design/media, GET design/media/{id} -> Go /v1/admin/stores/{store}/design/* (integration:read /

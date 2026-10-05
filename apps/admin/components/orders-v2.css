@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles the merchant orders workspace, filters and details.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/MerchantOrders.tsx
+ */
 /* Seven-column ledger: use the existing shell and C inline expansion. */
 .orders-v2-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px 0; border-top: 1px solid var(--line); }
 .orders-v2-filters label { display: grid; align-content: start; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }

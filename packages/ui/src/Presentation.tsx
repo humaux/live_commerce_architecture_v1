@@ -1,3 +1,6 @@
+// Purpose: Owns reusable presentation controls with caller-supplied data, labels and command handlers.
+// Depends on: react, ./Presentation.module.css
+// Used by: packages/ui/src/AppShell.tsx
 "use client";
 
 // Presentational building blocks. Domain data, commands and translations stay with the caller.
@@ -16,6 +19,7 @@ export { s as presentationStyles };
 
 // Keep the browser's keyboard/calendar control and native value contract. The
 // resting label does not inherit the browser installation's English placeholder.
+/** Renders a native date input with a caller-provided resting label and forwards input handlers. */
 export function DateControl({ emptyLabel, value, ...props }: {
   emptyLabel: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
@@ -26,6 +30,7 @@ export function DateControl({ emptyLabel, value, ...props }: {
   </span>;
 }
 
+/** Renders a title, description and caller-owned actions without submitting commands. */
 export function PageHeader({
   title,
   description,
@@ -51,6 +56,7 @@ export function PageHeader({
   );
 }
 
+/** Groups caller-owned form controls without changing their values. */
 export function FormRow({
   children,
   className = "",
@@ -63,6 +69,7 @@ export function FormRow({
   );
 }
 
+/** Associates a supplied control with its label and hint without domain validation. */
 export function Field({
   label,
   children,
@@ -89,6 +96,7 @@ export function Field({
   );
 }
 
+/** Renders a caller-selected tone without deriving business state. */
 export function Badge({
   tone = "neutral",
   className = "",
@@ -132,6 +140,7 @@ function useScrollFrame() {
   return { ref, edges };
 }
 
+/** Observes tab layout and scrolls the selected tab into view. */
 export function TabStrip({
   children,
   label,
@@ -169,6 +178,7 @@ export function TabStrip({
   );
 }
 
+/** Observes table overflow and exposes an accessible scroll region with a localized hint. */
 export function TableFrame({
   children,
   label,
@@ -205,6 +215,7 @@ export function TableFrame({
   );
 }
 
+/** Shows native file selection names and calls the supplied change handler; does not upload. */
 export function FilePicker({
   label,
   emptyLabel,

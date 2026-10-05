@@ -1,3 +1,6 @@
+// Purpose: Owns localized shell navigation labels independently of domain status copy.
+// Depends on: Native JavaScript/static data; no imported runtime modules.
+// Used by: apps/admin/components/WorkspaceFrame.tsx, apps/admin/src/page-title.ts, apps/admin/src/route-metadata.ts, apps/admin/src/route-types.ts, tests/admin/claims-ui.spec.ts, tests/admin/customers-billing.spec.ts, tests/admin/design.spec.ts, tests/admin/entry.spec.ts, tests/admin/ledger.spec.ts, tests/admin/platform-brand-browser.mjs, tests/admin/shell-browser.mjs, tests/admin/shell-registry.test.ts, tests/admin/studio-ui.spec.ts
 // Shell-only copy; business status language stays inside its domain.
 const en = {
   overview: "Overview",

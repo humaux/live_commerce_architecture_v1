@@ -1,3 +1,6 @@
+// Purpose: Exercises merchant catalog, inventory, collections and shopper visibility in the browser harness.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ./catalog-document-driver, ../../apps/admin/lib/catalog-v2-copy, ../../apps/admin/lib/copy, ./product-editor.acceptance, ./product-review.acceptance, ./product-visual.acceptance, ./product-feedback.acceptance; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_TAG, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_DIAGNOSTIC, PRODUCT_EDITOR_ACCEPTANCE, PRODUCT_VISUAL_PHASE
+// Used by: apps/admin/src/features/catalog/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_catalog_core_test.go, tests/foundation/catalog_core_gate_test.go
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages, merchant side, in real Chromium.
 // BFF routes exercised through the UI: GET catalog-products, GET|POST|PATCH products*, POST skus, PATCH skus/{id}, POST skus/{id}/price,
 // POST skus/{id}/archive, GET warehouses, GET catalog-ledger, POST inventory/adjustments, products/{id}/images, GET|POST|PATCH collections*,

@@ -1,3 +1,6 @@
+// Purpose: Runs shell navigation, branding and responsive/access checks; writes local evidence.
+// Depends on: node:assert/strict, node:fs/promises, node:module, ./shell-fixture.mjs, ../../apps/admin/src/shell-copy.ts, ../../apps/admin/lib/company.ts
+// Used by: apps/admin/src/features/catalog/routes.ts, apps/admin/src/features/orders/routes.ts, apps/admin/src/features/overview/routes.ts, scripts/dev/release-gate.sh
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -15,6 +18,7 @@ const sizes = [
   [375, 812],
   [360, 740],
 ];
+/** Runs browser shell checks and writes evidence using the supplied isolated fixture. */
 export async function runShellGate({
   page,
   context,

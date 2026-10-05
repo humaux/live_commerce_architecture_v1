@@ -1,3 +1,6 @@
+// Purpose: Owns localized studio controls, destination labels and feedback.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Studio.tsx, apps/admin/components/StudioClaims.tsx, tests/admin/claims-ui.spec.ts, tests/admin/ops-polish-model.test.ts
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {

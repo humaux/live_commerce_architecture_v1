@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles order action forms and fulfilment feedback.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Billing.tsx, apps/admin/components/BillingBanner.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/Customers.tsx, apps/admin/components/Finance.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/OrderBankTransfer.tsx, apps/admin/components/OrderCodCollection.tsx, apps/admin/components/OrderCvsShipment.tsx, apps/admin/components/OrderRefunds.tsx, apps/admin/components/OrderShipment.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/Team.tsx
+ */
 /* Refund / shipment / export additions to the approved C inline order row (refund-fulfilment-ui Q1, Q4, Q5).
    Only existing tokens and colours from orders.css / globals.css are reused; no new colour values. */
 .orders-badge-merchant_shipped { background: var(--ui-success-soft); color: var(--ui-success); }

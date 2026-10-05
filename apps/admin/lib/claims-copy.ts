@@ -1,3 +1,6 @@
+// Purpose: Owns localized claims labels, host prompts and claim-link message templates.
+// Depends on: @live-commerce/i18n, ./claims-model
+// Used by: apps/admin/components/StudioClaims.tsx, tests/admin/claim-source.test.ts, tests/admin/claims-model.test.ts, tests/admin/claims-request.test.ts, tests/admin/claims-ui.spec.ts, tests/admin/customers-billing.spec.ts, tests/admin/meta-connect-gate.spec.ts, tests/admin/shell-registry.test.ts
 // Owns every Studio › Claims string in zh-CN, zh-TW and en, including the FROZEN host
 // prompt copy of contracts/live-keyword-claims-v1.md §11.1 (verbatim) and the buyer
 // message that accompanies a one-time claim link. Words shared with Studio (its title,
@@ -433,6 +436,7 @@ const hostPromptQtyOnlyClause: Record<Locale, string> = {
 };
 
 /** The host prompt for one language, window mode and canonical keyword. Pure. */
+/** Formats a localized keyword host prompt without sending it. */
 export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
   const exact = hostPromptExact[language];
   const text = mode === "EXACT" ? exact
@@ -441,6 +445,7 @@ export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
 }
 
 /** The private message sent with a one-time link, in the buyer's language. Pure. */
+/** Formats a supplied claim URL and expiry into a message without sending it. */
 export function claimLinkMessage(language: Locale, url: string, expires: string) {
   return language === "zh-TW" ? `你的留言登記已準備好。打開這個連結即可確認並加入購物車（有效至 ${expires} 台北時間）：${url}`
     : language === "zh-CN" ? `你的评论登记已准备好。打开这个链接即可确认并加入购物车（有效至 ${expires} 台北时间）：${url}`

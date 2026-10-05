@@ -1,3 +1,6 @@
+// Purpose: Checks MOCK attribution parsing, BFF request grammar and localized presentation.
+// Depends on: node:assert/strict, node:test, ../../apps/admin/lib/attribution-model.ts, ../../apps/admin/lib/attribution-copy.ts, ../../apps/admin/lib/ads-request.ts, ../../apps/admin/src/routes.ts, ./attribution.fixture.ts, node:fs, node:module, node:vm, typescript-api, ../../packages/format/src/index.ts, ../../apps/admin/lib/attribution-format.ts, ../../apps/admin/src/page-title.ts, ../../apps/admin/lib/presentation-copy.ts
+// Used by: scripts/dev/test-local.sh, scripts/dev/test-node.sh
 // MOCK parser / BFF grammar / route tests. Browser click coverage is attribution.spec.ts; these do not close AT4/AT5/AT9.
 import assert from "node:assert/strict";
 import { test } from "node:test";

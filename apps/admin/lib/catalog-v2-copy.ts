@@ -1,3 +1,6 @@
+// Purpose: Owns catalog labels, error text and presentation hints.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/CollectionManager.tsx, apps/admin/components/Design.tsx, apps/admin/components/ProductDocumentForm.tsx, apps/admin/components/ProductEditor.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/ProductPhoto.tsx, tests/admin/catalog-core.spec.ts, tests/admin/shell-registry.test.ts
 // Copy for the admin Products list, Product editor and Collections pages (unit catalog-core; BFF catalog-products,
 // products/{id}, collections* -> Go internal/httpapi/collections.go). Owns every string those pages show in zh-CN, zh-TW
 // and en, including the error map for the Go error codes. Merchant content (names, descriptions, option names) is
@@ -524,6 +527,7 @@ const zhTW: CatalogV2Copy = {
 };
 
 export const catalogCopy: Record<Locale, CatalogV2Copy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+/** Selects catalog error copy with a retry-later fallback. */
 export const errorText = (c: CatalogV2Copy, code: string) => c.errors[code] ?? c.errors.retry_later;
 
 // Presentation-only labels; never describe API capabilities or create business states.

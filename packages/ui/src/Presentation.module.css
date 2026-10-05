@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles shared headers, fields, badges, tabs, tables and native inputs.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: packages/ui/src/Presentation.tsx
+ */
 .header {
   display: flex;
   align-items: flex-start;

@@ -1,3 +1,6 @@
+// Purpose: Owns storefront design labels and template interpolation.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Design.tsx, apps/admin/components/DesignMedia.tsx, apps/admin/components/DesignNav.tsx, apps/admin/components/DesignPages.tsx, apps/admin/components/DesignProfile.tsx, apps/admin/components/DesignSections.tsx, tests/admin/design.spec.ts
 // Copy for the admin Design page (components/Design*.tsx; BFF design/* -> Go internal/httpapi/design.go), locales zh-CN /
 // zh-TW / en. Owns every UI string of the page and the error-code map; the merchant's own content (store name, headings,
 // page text) is single-language and never goes through here. `{n}` / `{path}` / `{reason}` are filled by `fill`.
@@ -231,4 +234,5 @@ const zhTW: DesignCopy = {
 };
 
 export const designCopy: Record<Locale, DesignCopy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+/** Interpolates supplied template values without external calls. */
 export const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ""));

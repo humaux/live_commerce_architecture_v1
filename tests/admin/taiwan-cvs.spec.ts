@@ -1,3 +1,6 @@
+// Purpose: Exercises CVS shipping, print and collection UI against the harness and MOCK ECPay provider.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CVS_CREATE_ORDER, LC_BROWSER_CVS_CANCEL_ORDER, LC_BROWSER_CVS_COLLECT_ORDER, LC_BROWSER_CVS_UNKNOWN_ORDER, LC_BROWSER_CVS_ENTERED_ORDER
+// Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_taiwan_cvs_test.go, tests/foundation/taiwan_cvs_buyer_entered_test.go
 // TCV08 merchant half (contracts/taiwan-cvs-logistics-v1.md §8, §6, §16.4, §16.8, §10 TCV08). BFF routes exercised through the UI:
 //   POST /api/stores/{store}/orders/{id}/cvs-shipment, GET .../cvs-shipment, POST .../cvs-shipment/print-form, POST .../cvs-shipment/abandon,
 //   POST .../orders/{id}/collection, POST .../orders/{id}/pay-at-pickup-release -> Go /v1/admin/stores/{store}/orders/{id}/...

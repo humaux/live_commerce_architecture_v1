@@ -1,3 +1,6 @@
+// Purpose: Owns localized team membership and invitation labels.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Team.tsx, apps/admin/components/TeamInvite.tsx, tests/admin/team-model.test.ts
 // Copy for the admin Team page (/{locale}/team) and the invitation page (/{locale}/invite/{token}); locales zh-CN / zh-TW / en
 // (BFF POST /api/team/* -> Go /v1/identity/staff/*, contract storefront-v2 §D). Owns every string of Team.tsx and TeamInvite.tsx,
 // the five role labels and what each role can do, and the error map for the staff codes of internal/identityhttp/staff.go.

@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles shared merchant forms and operational feedback.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Dashboard.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/ProductImport.tsx
+ */
 /* Merchant tools (dashboard, product import, manual order). Reuses the orders/customers page chrome; every class here is mt-* so it cannot
    leak into another page. 375 px first: one column, no horizontal page scroll (tables scroll inside their own frame). */
 .mt-grid { display: grid; align-items: start; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 16px; }

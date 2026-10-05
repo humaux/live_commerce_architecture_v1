@@ -1,3 +1,6 @@
+// Purpose: Exercises settings controls and client-storage disclosures against the supplied real harness origin.
+// Depends on: @playwright/test; harness env: LC_BROWSER_PUBLIC_ORIGIN
+// Used by: tests/foundation/browser_identity_chain_test.go
 import { expect, test, type Page } from "@playwright/test";
 
 const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN;

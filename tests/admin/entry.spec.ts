@@ -1,3 +1,6 @@
+// Purpose: Exercises entry/authentication UI with a local MOCK API server; writes browser evidence.
+// Depends on: @playwright/test, node:http, node:fs/promises, ../../apps/admin/src/shell-copy
+// Used by: tests/foundation/browser_admin_legacy_test.go
 import { expect, test } from "@playwright/test";
 import { createServer, type IncomingMessage } from "node:http";
 import { mkdir, writeFile } from "node:fs/promises";

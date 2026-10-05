@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles keyword claims controls and tables.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/StudioClaims.tsx
+ */
 /* Studio › Claims surface-local layout (T10b). Reuses the Studio workbench language from
    globals.css (joined white surface, 1px cool rules, 5px controls, teal primary, blue
    focus, words for every state) and DESIGN.md tokens; nothing here changes shared tokens,

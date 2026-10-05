@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles attribution reports and detail panels.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Attribution.tsx
+ */
 /* D7/D9 readonly ledger extension. Incumbent W0 shell and table palette; all wide tables scroll within the work area. */
 .attribution-page {
   width: 100%;

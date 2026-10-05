@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles merchant settings, team controls and setup forms.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/app/[locale]/orders/cvs-print/CvsPrint.tsx, apps/admin/components/BankTransferSettings.tsx, apps/admin/components/CodSettings.tsx, apps/admin/components/LogisticsSettings.tsx, apps/admin/components/MetaConnect.tsx, apps/admin/components/NotifySettings.tsx, apps/admin/components/SettingsWizard.tsx, apps/admin/components/StorefrontSettings.tsx
+ */
 .settings-page {
   /* Scoped contrast fix: inherited muted ink failed 4.5:1 on the canvas. */
   --muted: #5f7083;

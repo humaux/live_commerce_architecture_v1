@@ -1,3 +1,6 @@
+// Purpose: Checks inventory ledger interactions and responsive tables using the isolated identity fixture.
+// Depends on: ./fixtures/ledger-identity, node:fs/promises, ../../apps/admin/src/shell-copy; harness env: COMMERCE_FIXTURE_STORE_ID, COMMERCE_FIXTURE_TOKEN, UI_SHOT_PHASE
+// Used by: apps/admin/src/features/catalog/routes.ts, tests/foundation/browser_admin_legacy_test.go
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir } from "node:fs/promises";
 import { shellCopy } from "../../apps/admin/src/shell-copy";

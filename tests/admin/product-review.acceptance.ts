@@ -1,3 +1,6 @@
+// Purpose: Registers product editing regressions including lost receipts and authentication failures.
+// Depends on: @playwright/test, node:fs/promises, node:path, ../../apps/admin/lib/product-editor-copy; harness env: LC_BROWSER_STORE, LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_TAG
+// Used by: tests/admin/catalog-core.spec.ts, scripts/dev/test-local.sh
 // R5 review regressions: all merchant writes use real clicks on Next + Go + PG.
 // Routes/cookies below inject lost receipts/auth failures, never fake a success.
 import { expect, test, type Page } from "@playwright/test";
@@ -41,6 +44,7 @@ async function evidence(page: Page, name: string, row: object) {
     JSON.stringify({ ...row, status: "PASS" }, null, 2),
   );
 }
+/** Registers browser regressions with merchant clicks and receipt/auth failure injection. */
 export function registerProductReviewAcceptance() {
   test("review: bulk price 80 plus archive sends exclusive archive entry and persists", async ({
     page,

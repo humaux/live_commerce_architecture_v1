@@ -1,3 +1,6 @@
+// Purpose: Owns localized attribution labels and evidence-status explanations.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Ads.tsx, apps/admin/components/AdsDraft.tsx, apps/admin/components/Attribution.tsx, apps/admin/components/AttributionAudienceRead.tsx, apps/admin/components/AttributionPanels.tsx, tests/admin/attribution-audience.test.ts, tests/admin/attribution-checkout.spec.ts, tests/admin/attribution.spec.ts, tests/admin/attribution.test.ts
 // D7/D9 copy only; values and availability come from the frozen attribution read, not locale or client inference.
 import type { Locale } from "@live-commerce/i18n";
 const en = {

@@ -1,3 +1,6 @@
+// Purpose: Checks platform/operator branding by browser navigation; writes local evidence.
+// Depends on: node:assert/strict, node:fs/promises, ../../apps/admin/lib/company.ts, ../../apps/admin/lib/entry-copy.ts, ../../apps/admin/src/shell-copy.ts
+// Used by: Playwright spec discovery / configured browser harness
 // PS1 brand slice: real navigation on the packaged admin app + existing MOCK identity.
 // No form submission, external email, account creation, or provider operation.
 import assert from "node:assert/strict";
@@ -6,6 +9,7 @@ import { company, operatorSentence, brandedTitle } from "../../apps/admin/lib/co
 import { passwordCopy } from "../../apps/admin/lib/entry-copy.ts";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 
+/** Navigates browser branding checks and writes evidence to the supplied output path. */
 export async function runBrandGate({ browser, base, output }) {
   await mkdir(output, { recursive: true });
   const context = await browser.newContext();

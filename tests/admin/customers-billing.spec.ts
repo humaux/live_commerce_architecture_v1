@@ -1,3 +1,6 @@
+// Purpose: Exercises customer, finance and billing UI with the real harness and MOCK billing provider.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN
+// Used by: apps/admin/src/features/customers/routes.ts, apps/admin/src/features/finance/routes.ts, apps/admin/src/features/settings/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_customers_billing_test.go
 // CB11 admin half (contracts/customers-billing-v1.md §5 "Admin screens", §8 CB11; customers-billing-ui.md U1-U6, U9).
 // BFF routes exercised through the UI: GET|POST /api/stores/{store}/customers*, GET finance/summary[.csv],
 // GET billing[/standing], POST billing/checkout|portal -> Go /v1/admin/stores/{store}/{customers,finance,billing}*.

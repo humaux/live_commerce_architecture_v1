@@ -1,3 +1,6 @@
+// Purpose: Checks fixture-driven inventory visual states and long-SKU overflow; writes browser evidence.
+// Depends on: ./fixtures/ledger-identity, node:fs/promises, @playwright/test; harness env: COMMERCE_FIXTURE_STORE_ID
+// Used by: tests/foundation/browser_admin_legacy_test.go
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { APIRequestContext } from "@playwright/test";
