@@ -29,6 +29,10 @@ import {
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
 } from "./click-sweep-lib.mjs";
 
+// G-UI9 (unit ui-visual-audit): the same seeded stack, a different runner. `test-local.sh --browser-visual-lint` sets LC_SWEEP_ONLY=visual-audit, and the Go test
+// (browser_click_sweep_test.go) starts this file; the audit (screenshot corpus + layout lint) takes over before the click sweep reads anything.
+if (process.env.LC_SWEEP_ONLY === "visual-audit") process.exit(await (await import("./visual-audit.mjs")).main());
+
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const adminOrigin = env("LC_SWEEP_ADMIN_ORIGIN"), store = env("LC_SWEEP_STORE"), evidence = env("LC_SWEEP_EVIDENCE"), outDir = env("LC_SWEEP_OUT");
 const facts = JSON.parse(await readFile(env("LC_SWEEP_FACTS"), "utf8"));
