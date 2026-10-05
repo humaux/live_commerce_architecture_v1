@@ -1,10 +1,10 @@
-✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (241.801166ms)
-✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.394584ms)
-✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.848083ms)
-✔ G-UI1 copy key parity: no missing or extra key in any locale (0.098667ms)
-✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.264375ms)
-✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (134.365167ms)
-✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.189416ms)
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (244.25975ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.505625ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.831125ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.0955ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.267791ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (136.960583ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.208292ms)
 ℹ tests 7
 ℹ suites 0
 ℹ pass 7
@@ -12,7 +12,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 417.295
+ℹ duration_ms 393.080958
 WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
 WARN G-UI5 apps/admin/components/Attribution.tsx: >500 lines
 WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
@@ -30,5 +30,5 @@ WARN G-UI5 apps/storefront/components/CvsPickup.tsx: >500 lines
 WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
 WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
 PASS G-UI3/G-UI5
-check-gates: ok (68 modes, all documented; every tracked test file is run)
-check-headers: OK (base 35b27b33aa6cac08385b9ad2be92ddb7ea09096c)
+check-gates: ok (69 modes, all documented; every tracked test file is run)
+check-headers: OK (base df6be6cefd422749b0437337b0ffc552abef866e)

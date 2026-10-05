@@ -79,12 +79,15 @@ test("consent result and erasure summary validators", () => {
 
 test("buyer export envelope never carries customer_id", () => {
   const doc = { format: "lc.customer-export.v1", generated_at: "2026-09-30T00:00:00Z", store: { name: "Shop" },
-    orders: [], consents: [], claims: [], privacy_actions: [] };
+    orders: [], consents: [], claims: [], privacy_actions: [], tags: [], notes: [], notes_omitted: 0 };
   assert.equal(validBuyerExport(doc), true);
   assert.equal(validBuyerExport({ ...doc, customer_id: "11111111-1111-4111-8111-111111111111" }), false);
   assert.equal(validBuyerExport({ ...doc, format: "lc.customer-export.v2" }), false);
   assert.equal(validBuyerExport({ ...doc, orders: {} }), false);
   assert.equal(validBuyerExport(null), false);
+  const { tags: _t, ...noTags } = doc;
+  assert.equal(validBuyerExport(noTags), false); // W6-01B: tags, notes and notes_omitted are always sent
+  assert.equal(validBuyerExport({ ...doc, notes_omitted: -1 }), false);
 });
 
 test("failure classification: 410 and erased are the erased state", () => {
