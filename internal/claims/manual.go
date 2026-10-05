@@ -71,7 +71,7 @@ func RecordManualClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, lab
 	if label != "" {
 		mac = labelMAC(labels, scope.TenantID, scope.StoreID, sessionID, label)
 	}
-	p := grammar.Parse(in.Text)
+	p := grammar.ParseForIngest(in.Text)
 	// The offer id is resolved only for the canonical request (keywords are immutable);
 	// the ingest below re-reads and locks the offer itself.
 	offerID := ""

@@ -65,16 +65,17 @@ func IngestMetaIntake(ctx context.Context, tx pgx.Tx, intakeID string) (IngestRe
 	var (
 		in                        IngestInput
 		m                         metaIngest
-		kind                      string
+		version, kind             string
 		quantity                  *int32
 		explicit                  *bool
 		occurredAt, receivedAtRaw time.Time
 	)
 	err := tx.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,session_id::text,source_id::text,inbox_event_id::text,
-		platform,actor_key,occurred_at,received_at,grammar_kind,coalesce(offer_id::text,''),unknown_keyword,quantity,explicit_quantity
+		platform,actor_key,occurred_at,received_at,grammar_version,grammar_kind,coalesce(offer_id::text,''),unknown_keyword,
+		quantity,explicit_quantity
 		FROM claims.meta_intake WHERE id=$1 AND state='PENDING' AND lease_xid=pg_current_xact_id()`, intakeID).
 		Scan(&in.TenantID, &in.StoreID, &in.SessionID, &m.sourceID, &in.SourceEventID, &in.Platform, &in.ActorKey,
-			&occurredAt, &receivedAtRaw, &kind, &m.offerID, &m.unknownKeyword, &quantity, &explicit)
+			&occurredAt, &receivedAtRaw, &version, &kind, &m.offerID, &m.unknownKeyword, &quantity, &explicit)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return IngestResult{}, command.ErrInvalid // not leased in this transaction (RLS hides every other row)
 	}
@@ -85,7 +86,7 @@ func IngestMetaIntake(ctx context.Context, tx pgx.Tx, intakeID string) (IngestRe
 	in.OccurredAt = occurredAt.UTC()
 	m.receivedAt = receivedAtRaw.UTC()
 
-	p := grammar.Result{Version: grammar.Version, Kind: grammar.Kind(kind)}
+	p := grammar.Result{Version: version, Kind: grammar.Kind(kind)}
 	if p.Kind != grammar.NoMatch && !m.unknownKeyword {
 		// Offer keywords are immutable, so this plain read is stable; the core re-reads and locks
 		// the offer by id. Only the offer's own keyword is used (an unresolved head is never stored).
@@ -106,9 +107,9 @@ func IngestMetaIntake(ctx context.Context, tx pgx.Tx, intakeID string) (IngestRe
 // and select the interval with opened_at <= occurred_at and (still open, or occurred_at <
 // closed_at and received within 60 s after the close). ok=false is WINDOW_CLOSED: no window row,
 // inactive source, future occurred_at (>120 s), or no covering interval. The returned window
-// carries the matched interval's generation (the event's fence) and the window row's current
-// match_mode (intervals store no mode: a late webhook for an earlier generation uses the
-// current mode, documented limit).
+// carries the matched interval's generation (the event's fence) and the matched interval's
+// match_mode, so a late webhook is judged by the mode of the comment's own interval, not the
+// window's current mode (KEYWORD_QTY_CONTAINS needs comment-time fidelity).
 func matchMetaWindow(ctx context.Context, tx pgx.Tx, in IngestInput, m *metaIngest, inClock bool) (window, bool, error) {
 	var w window
 	err := tx.QueryRow(ctx, `SELECT match_mode FROM live.claim_windows WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 FOR SHARE`,
@@ -131,11 +132,11 @@ func matchMetaWindow(ctx context.Context, tx pgx.Tx, in IngestInput, m *metaInge
 	if !active || !inClock {
 		return window{}, false, nil
 	}
-	err = tx.QueryRow(ctx, `SELECT generation,opened_at FROM live.claim_window_intervals
+	err = tx.QueryRow(ctx, `SELECT generation,opened_at,match_mode FROM live.claim_window_intervals
 		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND opened_at<=$4
 		 AND (closed_at IS NULL OR ($4<closed_at AND $5<=closed_at+interval '60 seconds'))
 		ORDER BY generation DESC LIMIT 1`,
-		in.TenantID, in.StoreID, in.SessionID, in.OccurredAt, m.receivedAt).Scan(&w.generation, &w.openedAt)
+		in.TenantID, in.StoreID, in.SessionID, in.OccurredAt, m.receivedAt).Scan(&w.generation, &w.openedAt, &w.mode)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return window{}, false, nil
 	}

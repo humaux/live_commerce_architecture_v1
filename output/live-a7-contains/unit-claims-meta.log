@@ -1,0 +1,11 @@
+--- FAIL: TestMetaClaimsMCI01Qualification (0.00s)
+    --- FAIL: TestMetaClaimsMCI01Qualification/ig_non-keyword_text_still_qualifies (0.00s)
+        claim_intake_gate_test.go:168: parse mismatch: kind=MATCH keyword="NICE" qty=1 explicit=false; want kind=NO_MATCH keyword="" qty=0 explicit=false
+FAIL
+FAIL	livecommerce/internal/integrations/meta	1.359s
+ok  	livecommerce/internal/integrations/meta/oauth	(cached)
+?   	livecommerce/internal/integrations/meta/pagetoken	[no test files]
+ok  	livecommerce/internal/integrations/meta/pagetoken/pageopen	(cached)
+ok  	livecommerce/internal/claims	(cached)
+ok  	livecommerce/internal/claims/grammar	(cached)
+FAIL

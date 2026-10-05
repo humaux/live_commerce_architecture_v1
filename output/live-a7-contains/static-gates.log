@@ -1,0 +1,22 @@
+Static gates (unit acceptance, 2026-10-05) — all run from the worktree root
+(.worktrees/live-a7-contains, branch unit/live-a7-contains, base r3/integration 3a894ef2).
+
+  go build ./...                                    ok (no output, exit 0)
+  go vet ./...                                      ok (no output, exit 0)
+  gofmt -l internal/claims internal/integrations/meta tests/foundation/live_claims_contains_test.go
+                                                    ok (no files listed)
+  bash scripts/dev/check-pkgdocs.sh                 check-pkgdocs: ok
+  bash scripts/dev/depmap.sh --check                depmap: up to date
+  python3 scripts/check_packet.py                   PASS_PACKET_STRUCTURE_ONLY (packet structure valid;
+                                                    model_source_sha256 unchanged)
+  bash scripts/dev/check-gates.sh                   BLOCKED (environment): the Go gates in the script are not
+                                                    reached — tests/admin/shell-architecture.test.mjs fails to
+                                                    load "Cannot find module 'typescript-api'" because this
+                                                    worktree has no node_modules/ (UI/TS deps are gitignored and
+                                                    not installed here). Not caused by this unit's changes; this
+                                                    unit touches no apps/ or TS/JS files.
+  bash scripts/dev/test-node.sh                     NOT_RUN (same missing-node_modules environment limitation).
+  admin typecheck                                   NOT_RUN (UI/Codex scope; no apps/ files changed).
+
+Evidence labels: go build/vet/gofmt/pkgdocs/depmap/check-packet = UNIT (DESIGN-level, no DB).
+check-gates/test-node/admin typecheck = NOT_RUN / BLOCKED (environment, not this unit).

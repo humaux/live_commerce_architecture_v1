@@ -1,0 +1,228 @@
+=== RUN   TestClaimSourceCS01
+--- PASS: TestClaimSourceCS01 (6.77s)
+=== RUN   TestClaimSourceCS02ConcurrentPut
+--- PASS: TestClaimSourceCS02ConcurrentPut (1.46s)
+=== RUN   TestLiveClaimsKC06Ingest
+--- PASS: TestLiveClaimsKC06Ingest (0.84s)
+=== RUN   TestLiveClaimsKC07Concurrency
+=== RUN   TestLiveClaimsKC07Concurrency/duplicate-delivery-x20
+=== RUN   TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity
+=== RUN   TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave
+=== RUN   TestLiveClaimsKC07Concurrency/deactivate-vs-ingest
+=== RUN   TestLiveClaimsKC07Concurrency/owners-racing-to-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/release-vs-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/cart-lock-ordering
+=== RUN   TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks
+--- PASS: TestLiveClaimsKC07Concurrency (1.73s)
+    --- PASS: TestLiveClaimsKC07Concurrency/duplicate-delivery-x20 (0.07s)
+    --- PASS: TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity (0.10s)
+    --- PASS: TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave (0.11s)
+    --- PASS: TestLiveClaimsKC07Concurrency/deactivate-vs-ingest (0.09s)
+    --- PASS: TestLiveClaimsKC07Concurrency/owners-racing-to-redeem (0.18s)
+    --- PASS: TestLiveClaimsKC07Concurrency/release-vs-redeem (0.10s)
+    --- PASS: TestLiveClaimsKC07Concurrency/cart-lock-ordering (0.46s)
+    --- PASS: TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks (0.30s)
+=== RUN   TestLiveClaimsKC08ManualPrivacy
+--- PASS: TestLiveClaimsKC08ManualPrivacy (1.18s)
+=== RUN   TestLiveClaimsP2bLabelPrivacy
+--- PASS: TestLiveClaimsP2bLabelPrivacy (0.26s)
+=== RUN   TestLiveClaimsP2cDuplicateReconstructible
+--- PASS: TestLiveClaimsP2cDuplicateReconstructible (0.26s)
+=== RUN   TestLiveClaimsP2dLabelNormalization
+--- PASS: TestLiveClaimsP2dLabelNormalization (0.19s)
+=== RUN   TestLiveClaimsP2eModeTransitions
+--- PASS: TestLiveClaimsP2eModeTransitions (0.31s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+    live_claims_schema_test.go:458: claims.insert_meta_intake definer shape {name:insert_meta_intake args:p_tenant uuid, p_store uuid, p_event uuid, p_received timestamp with time zone, p_app text, p_object text, p_asset text, p_object_id text, p_comment_ref text, p_actor_key text, p_occurred timestamp with time zone, p_kind text, p_keyword text, p_quantity integer, p_explicit boolean, p_live_media boolean, p_version text result:uuid owner:commerce_claims_writer config:search_path=pg_catalog volatility:v comment:internal/claims; only caller meta_inbox.stage_claim_intake (owner commerce_meta_writer). Locks the active claim source, applies the 50000 staging bound, resolves the offer keyword (never stored) and inserts one text-free claims.meta_intake row carrying p_version (kw-v1 | kwc-v1), NULL when nothing is staged. acl:commerce_claims_writer:EXECUTE,commerce_meta_writer:EXECUTE caller:} (definer=true), want {name: args:p_tenant uuid, p_store uuid, p_event uuid, p_received timestamp with time zone, p_app text, p_object text, p_asset text, p_object_id text, p_comment_ref text, p_actor_key text, p_occurred timestamp with time zone, p_kind text, p_keyword text, p_quantity integer, p_explicit boolean, p_live_media boolean result:uuid owner: config: volatility:v comment: acl:commerce_claims_writer:EXECUTE,commerce_meta_writer:EXECUTE caller:commerce_meta_writer}
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- FAIL: TestLiveClaimsKC03Schema (5.97s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- FAIL: TestLiveClaimsKC03Schema/definers (0.00s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.25s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.88s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.13s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.27s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (4.08s)
+=== RUN   TestLiveClaimsKC12Isolation
+--- PASS: TestLiveClaimsKC12Isolation (1.29s)
+=== RUN   TestLiveClaimsP2aPolicyContexts
+--- PASS: TestLiveClaimsP2aPolicyContexts (0.27s)
+=== RUN   TestLiveClaimsP2gLinkTTLInDatabase
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.82s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.31s)
+=== RUN   TestLiveClaimsKC02Units
+--- PASS: TestLiveClaimsKC02Units (0.00s)
+=== RUN   TestLiveClaimsKC04Offers
+--- PASS: TestLiveClaimsKC04Offers (0.73s)
+=== RUN   TestLiveClaimsKC05Window
+--- PASS: TestLiveClaimsKC05Window (0.43s)
+=== RUN   TestLiveToolsGateConsumptionReorderAndExpiry
+--- PASS: TestLiveToolsGateConsumptionReorderAndExpiry (0.78s)
+=== RUN   TestLiveToolsGateConsumptionPartial
+--- PASS: TestLiveToolsGateConsumptionPartial (0.65s)
+=== RUN   TestLiveToolsGateConsumptionPickupCancel
+--- PASS: TestLiveToolsGateConsumptionPickupCancel (0.56s)
+=== RUN   TestLiveToolsGateConsumptionPaidKeeps
+--- PASS: TestLiveToolsGateConsumptionPaidKeeps (4.25s)
+=== RUN   TestLiveToolsGateConsumptionConcurrentBegins
+--- PASS: TestLiveToolsGateConsumptionConcurrentBegins (0.91s)
+=== RUN   TestLiveToolsGateConsumptionLedgerACL
+--- PASS: TestLiveToolsGateConsumptionLedgerACL (0.56s)
+=== RUN   TestLiveToolsGateLivePriceOnlyThroughClaim
+--- PASS: TestLiveToolsGateLivePriceOnlyThroughClaim (0.80s)
+=== RUN   TestLiveToolsGateCartReadLivePrice
+--- PASS: TestLiveToolsGateCartReadLivePrice (0.63s)
+=== RUN   TestLiveToolsGateRawCartForgery
+--- PASS: TestLiveToolsGateRawCartForgery (0.51s)
+=== RUN   TestLiveToolsGateForgedClaimQuantityAboveTheClaim
+--- PASS: TestLiveToolsGateForgedClaimQuantityAboveTheClaim (0.41s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+--- PASS: TestLiveToolsGateOfferLifecycleAndExpiry (0.63s)
+=== RUN   TestLiveToolsGateLinkExpiry
+--- PASS: TestLiveToolsGateLinkExpiry (5.28s)
+=== RUN   TestLiveToolsGateCheckoutPlacesClaimOriginCart
+--- PASS: TestLiveToolsGateCheckoutPlacesClaimOriginCart (2.39s)
+=== RUN   TestLiveToolsGateSnapshotsAndOrders
+--- PASS: TestLiveToolsGateSnapshotsAndOrders (1.10s)
+=== RUN   TestLiveToolsGateLibraryImportCopy
+--- PASS: TestLiveToolsGateLibraryImportCopy (8.24s)
+=== RUN   TestLiveToolsGateConcurrentOfferCreation
+--- PASS: TestLiveToolsGateConcurrentOfferCreation (2.81s)
+=== RUN   TestLiveToolsGateRoleBoundaries
+--- PASS: TestLiveToolsGateRoleBoundaries (2.14s)
+=== RUN   TestLiveToolsGatePromotionOnLivePrice
+--- PASS: TestLiveToolsGatePromotionOnLivePrice (5.62s)
+=== RUN   TestLiveToolsGateRefundsCappedAtPaid
+--- PASS: TestLiveToolsGateRefundsCappedAtPaid (8.62s)
+=== RUN   TestLiveToolsLivePriceOnlyThroughClaimOrigin
+--- PASS: TestLiveToolsLivePriceOnlyThroughClaimOrigin (2.15s)
+=== RUN   TestLiveToolsExpiryOffersAndForgedOrigin
+    live_tools_test.go:213: raw UPDATE refused (ERROR: permission denied for table cart_lines (SQLSTATE 42501)); forging through DELETE+INSERT instead
+--- PASS: TestLiveToolsExpiryOffersAndForgedOrigin (1.15s)
+=== RUN   TestLiveToolsLibraryImportAndCopy
+--- PASS: TestLiveToolsLibraryImportAndCopy (0.91s)
+=== RUN   TestLiveToolsVolatility
+--- PASS: TestLiveToolsVolatility (0.44s)
+=== RUN   TestMetaClaimsMCI04SignedReplayToAcceptedClaim
+--- PASS: TestMetaClaimsMCI04SignedReplayToAcceptedClaim (8.55s)
+=== RUN   TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly
+--- PASS: TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly (3.03s)
+=== RUN   TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes
+--- PASS: TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes (1.68s)
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/social_fact
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/stage
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/processed_mark
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/COMMIT
+--- PASS: TestMetaClaimsMCI04ConsumerAtomicity (18.12s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/social_fact (2.71s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/stage (2.43s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/processed_mark (2.42s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/COMMIT (2.88s)
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/23514_check
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row
+--- PASS: TestMetaClaimsMCI04ApplyFailurePaths (4.63s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid (0.59s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/23514_check (0.21s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies (0.54s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row (1.20s)
+=== RUN   TestMetaClaimsMCI04IngestPreconditions
+--- PASS: TestMetaClaimsMCI04IngestPreconditions (1.68s)
+=== RUN   TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce
+--- PASS: TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce (4.15s)
+=== RUN   TestMetaClaimsMCI04RiverGuards
+--- PASS: TestMetaClaimsMCI04RiverGuards (7.47s)
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment
+--- PASS: TestMetaClaimsMCI05OneIntakePerComment (3.82s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate (0.32s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3 (0.53s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments (0.48s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset (0.51s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment (1.57s)
+=== RUN   TestMetaClaimsMCI05ImmutableFactsAndDuplicates
+--- PASS: TestMetaClaimsMCI05ImmutableFactsAndDuplicates (0.95s)
+=== RUN   TestMetaClaimsMCI05StagingCap
+--- PASS: TestMetaClaimsMCI05StagingCap (0.92s)
+=== RUN   TestMetaClaimsMCI06IntervalsGraceAndGenerations
+--- PASS: TestMetaClaimsMCI06IntervalsGraceAndGenerations (1.99s)
+=== RUN   TestMetaClaimsMCI06CloseWhileApplyWaits
+--- PASS: TestMetaClaimsMCI06CloseWhileApplyWaits (7.67s)
+=== RUN   TestMetaClaimsMCI06InstagramUsesDeliveryTime
+--- PASS: TestMetaClaimsMCI06InstagramUsesDeliveryTime (1.08s)
+=== RUN   TestMetaClaimsMCI06RateBounds
+=== RUN   TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies
+=== RUN   TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited
+=== RUN   TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies
+--- PASS: TestMetaClaimsMCI06RateBounds (21.27s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies (4.34s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited (3.71s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies (3.18s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (5.79s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.05s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.01s)
+=== RUN   TestMetaClaimsMCI02PoolValidator
+--- PASS: TestMetaClaimsMCI02PoolValidator (0.75s)
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only
+--- PASS: TestMetaClaimsMCI02PolicyBehaviour (8.65s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs (0.03s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction (0.03s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal (0.07s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation (0.04s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window (0.05s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only (0.01s)
+=== RUN   TestMetaClaimsMCI03PutClaimSource
+=== RUN   TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping
+=== RUN   TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict
+=== RUN   TestMetaClaimsMCI03PutClaimSource/validation
+=== RUN   TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute
+=== RUN   TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential
+=== RUN   TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object
+=== RUN   TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency
+--- PASS: TestMetaClaimsMCI03PutClaimSource (2.57s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping (0.02s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict (0.12s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/validation (0.19s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute (0.15s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential (0.02s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object (0.05s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency (0.36s)
+FAIL
+FAIL	livecommerce/tests/foundation	181.746s
+FAIL
+test-focused: top-level PASS=58 FAIL=1 SKIP=0 exit=1
