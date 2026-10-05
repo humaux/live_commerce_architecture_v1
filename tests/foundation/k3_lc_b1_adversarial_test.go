@@ -384,24 +384,26 @@ func TestK3LcB1StaleVersionHasNoSideEffect(t *testing.T) {
 func TestK3LcB1DraftWindowViaM2(t *testing.T) {
 	h := lcSetup(t)
 	s := h.draft(t, h.f.storeA1)
-	_, err := h.setWindow(h.token, h.f.storeA1, s, claims.WindowInput{State: claims.WindowOpen, MatchMode: claims.MatchExact})
-	if err == nil {
-		lc, _ := k3LifecycleRow(t, h, s)
-		w := h.board(t, s).Window
-		t.Errorf("FINDING F-M2-DRAFT: M2 opened a window on a draft session (lifecycle=%s, window=%s generation=%d); "+
-			"§2.2 never polls draft sessions, so this dead window still occupies one of the %d cap slots",
-			lc, w.State, w.Generation, claims.MaxOpenWindowsPerStore)
-		// Demonstrate the cap-slot cost: only 4 real starts fit now.
-		for i := 0; i < claims.MaxOpenWindowsPerStore-1; i++ {
-			h.mustLifecycle(t, h.draft(t, h.f.storeA1), "start", 1)
-		}
-		lcIs(t, lcErr(h.lifecycle(h.token, h.f.storeA1, h.draft(t, h.f.storeA1), "start", 1, nil)),
-			claims.ErrTooManyOpenWindows, "cap consumed by a draft session's dead window")
-		return
+	// Integrator ruling 2026-10-05 (F-M2-DRAFT): the claims board opens windows directly, so M2 open on a draft session
+	// atomically starts it (lifecycle draft -> live, lifecycle_version+1, audit live.session.started) instead of being
+	// refused. Only this block changed vs K3's original assertion (which expected invalid_transition).
+	w, err := h.setWindow(h.token, h.f.storeA1, s, claims.WindowInput{State: claims.WindowOpen, MatchMode: claims.MatchExact})
+	if err != nil {
+		t.Fatalf("M2 open on draft session must auto-start it (ruling 2026-10-05): %v", err)
 	}
-	lcIs(t, err, claims.ErrInvalidTransition, "M2 open on draft session")
-	if lc, v := k3LifecycleRow(t, h, s); lc != "draft" || v != 1 {
-		t.Fatalf("refused M2 open changed lifecycle: %s v%d", lc, v)
+	if w.State != claims.WindowOpen || w.Generation != 1 {
+		t.Fatalf("window after auto-start: %+v, want OPEN generation 1", w)
+	}
+	if lc, v := k3LifecycleRow(t, h, s); lc != "live" || v != 2 {
+		t.Fatalf("auto-started session: %s v%d, want live v2", lc, v)
+	}
+	if n := k3AuditCount(t, h, "live.session.started"); n < 1 {
+		t.Fatalf("auto-start wrote no live.session.started audit row")
+	}
+	// The session is a real live session: a later lifecycle end (expected_version 2) closes the window.
+	h.mustLifecycle(t, s, "end", 2)
+	if w := h.board(t, s).Window; w.State != claims.WindowClosed {
+		t.Fatalf("window after end: %+v", w)
 	}
 }
 
