@@ -1,0 +1,2546 @@
+[
+  {
+    "file": "new-empty-zh-TW-1586.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 557.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱○",
+        "售價○",
+        "庫存○",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-zh-TW-1586.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 557.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 889.78125,
+        "width": 321.65625,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 825.65625,
+        "y": 835.78125,
+        "width": 643.34375,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1479,
+        "y": 889.78125,
+        "width": 62,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1188.96875,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1144.96875,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1134.96875,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗號、換行分隔，最多 50 個不重複值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱○",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [
+        "售價 · 批量填入",
+        "原價 · 批量填入",
+        "數量 · 批量填入",
+        "貨號 · 批量填入",
+        "直播關鍵字 · 批量填入"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1156.96875,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-zh-TW-1586.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 614.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱✓",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-zh-TW-1586.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "zh-TW",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 614.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 946.578125,
+        "width": 321.65625,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 825.65625,
+        "y": 892.578125,
+        "width": 643.34375,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1479,
+        "y": 946.578125,
+        "width": 62,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1245.765625,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1201.765625,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1191.765625,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗號、換行分隔，最多 50 個不重複值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱✓",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [
+        "售價 · 批量填入",
+        "原價 · 批量填入",
+        "數量 · 批量填入",
+        "貨號 · 批量填入",
+        "直播關鍵字 · 批量填入"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1213.765625,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "new-empty-zh-TW-390.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 727.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱○",
+        "售價○",
+        "庫存○",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-zh-TW-390.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "zh-TW",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 727.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 997.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1073.5625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1181.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1754.75,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1693.75,
+        "width": 306,
+        "height": 105,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1488.75,
+        "width": 332,
+        "height": 525,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "最多 12 張 · JPG／PNG／WebP · 每張 2 MB。建議 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗號、換行分隔，最多 50 個不重複值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱○",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [
+        "售價 · 批量填入",
+        "原價 · 批量填入",
+        "數量 · 批量填入",
+        "貨號 · 批量填入",
+        "直播關鍵字 · 批量填入"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 1968.75,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-zh-TW-390.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "zh-TW",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 799.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "選填 · 英文及數字，每個規格一個關鍵字，店內不可重複。",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱✓",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-zh-TW-390.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "zh-TW",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 799.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 1069.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1145.765625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1253.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1826.953125,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1765.953125,
+        "width": 306,
+        "height": 105,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1560.953125,
+        "width": 332,
+        "height": 525,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗號、換行分隔，最多 50 個不重複值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "既有",
+          "font": "10px"
+        },
+        {
+          "text": "選填，套用至所有規格。不代表已串接物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品圖片",
+        "基本資訊",
+        "價格與庫存",
+        "規格",
+        "分類",
+        "物流",
+        "搜尋引擎最佳化"
+      ],
+      "readiness": [
+        "圖片○",
+        "商品名稱✓",
+        "售價✓",
+        "庫存✓",
+        "圖片○",
+        "描述○",
+        "分類○",
+        "直播關鍵字○",
+        "搜尋引擎最佳化○"
+      ],
+      "bulk": [
+        "售價 · 批量填入",
+        "原價 · 批量填入",
+        "數量 · 批量填入",
+        "貨號 · 批量填入",
+        "直播關鍵字 · 批量填入"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 2040.953125,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "new-empty-zh-CN-1586.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "zh-CN",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 557.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "最多 12 张 · JPG／PNG／WebP · 每张 2 MB。建议 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "选填 · 英文及数字，每个规格一个关键字，店内不可重复。",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称○",
+        "售价○",
+        "库存○",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-zh-CN-1586.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "zh-CN",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 557.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 889.78125,
+        "width": 321.65625,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 825.65625,
+        "y": 835.78125,
+        "width": 643.34375,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1479,
+        "y": 889.78125,
+        "width": 62,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1188.96875,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1144.96875,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1134.96875,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "最多 12 张 · JPG／PNG／WebP · 每张 2 MB。建议 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗号、换行分隔，最多 50 个不重复值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称○",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [
+        "售价 · 批量填充",
+        "原价 · 批量填充",
+        "数量 · 批量填充",
+        "货号 · 批量填充",
+        "直播关键字 · 批量填充"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1156.96875,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-zh-CN-1586.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "zh-CN",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 614.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "选填 · 英文及数字，每个规格一个关键字，店内不可重复。",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称✓",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-zh-CN-1586.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "zh-CN",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 614.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 946.578125,
+        "width": 321.65625,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 825.65625,
+        "y": 892.578125,
+        "width": 643.34375,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1479,
+        "y": 946.578125,
+        "width": 62,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1245.765625,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1201.765625,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1191.765625,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗号、换行分隔，最多 50 个不重复值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称✓",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [
+        "售价 · 批量填充",
+        "原价 · 批量填充",
+        "数量 · 批量填充",
+        "货号 · 批量填充",
+        "直播关键字 · 批量填充"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1213.765625,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "new-empty-zh-CN-390.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "zh-CN",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 727.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "最多 12 张 · JPG／PNG／WebP · 每张 2 MB。建议 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "选填 · 英文及数字，每个规格一个关键字，店内不可重复。",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称○",
+        "售价○",
+        "库存○",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-zh-CN-390.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "zh-CN",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 727.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 997.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1073.5625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1181.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1754.75,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1693.75,
+        "width": 306,
+        "height": 105,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1488.75,
+        "width": 332,
+        "height": 525,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "最多 12 张 · JPG／PNG／WebP · 每张 2 MB。建议 800 px 以上。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗号、换行分隔，最多 50 个不重复值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "新增",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称○",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [
+        "售价 · 批量填充",
+        "原价 · 批量填充",
+        "数量 · 批量填充",
+        "货号 · 批量填充",
+        "直播关键字 · 批量填充"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 1968.75,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-zh-CN-390.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "zh-CN",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 799.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "选填 · 英文及数字，每个规格一个关键字，店内不可重复。",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称✓",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-zh-CN-390.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "zh-CN",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 799.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 1069.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1145.765625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1253.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1826.953125,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1765.953125,
+        "width": 306,
+        "height": 105,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1560.953125,
+        "width": 332,
+        "height": 525,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "按 Enter 或用逗号、换行分隔，最多 50 个不重复值。",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "已有",
+          "font": "10px"
+        },
+        {
+          "text": "选填，应用于所有规格。不代表已接入物流商。",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "商品图片",
+        "基本信息",
+        "价格与库存",
+        "规格",
+        "分类",
+        "物流",
+        "搜索引擎优化"
+      ],
+      "readiness": [
+        "图片○",
+        "商品名称✓",
+        "售价✓",
+        "库存✓",
+        "图片○",
+        "描述○",
+        "分类○",
+        "直播关键字○",
+        "搜索引擎优化○"
+      ],
+      "bulk": [
+        "售价 · 批量填充",
+        "原价 · 批量填充",
+        "数量 · 批量填充",
+        "货号 · 批量填充",
+        "直播关键字 · 批量填充"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 2040.953125,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "new-empty-en-1586.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "en",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 539.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "Up to 12 images · JPG / PNG / WebP · 2 MB each. 800 px or larger recommended.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Optional · letters and numbers, unique within this store. One keyword per variant.",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name○",
+        "Price○",
+        "Inventory○",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-en-1586.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "en",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 539.78125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 858.78125,
+        "width": 312.84375,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 816.84375,
+        "y": 807.78125,
+        "width": 625.6875,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1452.53125,
+        "y": 858.78125,
+        "width": 88.46875,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1154.96875,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1110.96875,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1100.96875,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "Up to 12 images · JPG / PNG / WebP · 2 MB each. 800 px or larger recommended.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Press Enter or use commas / newlines. Up to 50 unique values.",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name○",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [
+        "Price · Bulk fill",
+        "Compare-at price · Bulk fill",
+        "Quantity · Bulk fill",
+        "SKU code · Bulk fill",
+        "Live keyword · Bulk fill"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1122.96875,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-en-1586.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "en",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 587.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Optional · letters and numbers, unique within this store. One keyword per variant.",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name✓",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-en-1586.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "en",
+    "width": 1586,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 494,
+        "y": 587.578125,
+        "width": 1047,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 494,
+        "y": 906.578125,
+        "width": 312.84375,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 816.84375,
+        "y": 855.578125,
+        "width": 625.6875,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 1452.53125,
+        "y": 906.578125,
+        "width": 88.46875,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 983.3125,
+        "y": 1202.765625,
+        "width": 186.609375,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 983.3125,
+        "y": 1158.765625,
+        "width": 186.609375,
+        "height": 88,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 494,
+        "y": 1148.765625,
+        "width": 1047,
+        "height": 109,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Press Enter or use commas / newlines. Up to 50 unique values.",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name✓",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [
+        "Price · Bulk fill",
+        "Compare-at price · Bulk fill",
+        "Quantity · Bulk fill",
+        "SKU code · Bulk fill",
+        "Live keyword · Bulk fill"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 1485,
+        "y": 1170.765625,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "new-empty-en-390.png",
+    "mode": "new",
+    "variants": false,
+    "locale": "en",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 757.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "Up to 12 images · JPG / PNG / WebP · 2 MB each. 800 px or larger recommended.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Optional · letters and numbers, unique within this store. One keyword per variant.",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name○",
+        "Price○",
+        "Inventory○",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "new-three-en-390.png",
+    "mode": "new",
+    "variants": true,
+    "locale": "en",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 757.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 1017.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1090.5625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1195.5625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1756.75,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1698.75,
+        "width": 306,
+        "height": 102,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1502.75,
+        "width": 332,
+        "height": 507,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "Up to 12 images · JPG / PNG / WebP · 2 MB each. 800 px or larger recommended.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Press Enter or use commas / newlines. Up to 50 unique values.",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "New",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name○",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [
+        "Price · Bulk fill",
+        "Compare-at price · Bulk fill",
+        "Quantity · Bulk fill",
+        "SKU code · Bulk fill",
+        "Live keyword · Bulk fill"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 1964.75,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  },
+  {
+    "file": "existing-empty-en-390.png",
+    "mode": "existing",
+    "variants": false,
+    "locale": "en",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 820.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": null,
+      "values": null,
+      "remove": null,
+      "quantity": null,
+      "stock": null,
+      "row": null,
+      "helpers": [
+        {
+          "text": "27 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Optional · letters and numbers, unique within this store. One keyword per variant.",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name✓",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [],
+      "active": null
+    }
+  },
+  {
+    "file": "existing-three-en-390.png",
+    "mode": "existing",
+    "variants": true,
+    "locale": "en",
+    "width": 390,
+    "metrics": {
+      "overflow": 0,
+      "name": {
+        "x": 29,
+        "y": 820.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "axis": {
+        "x": 29,
+        "y": 1080.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "values": {
+        "x": 29,
+        "y": 1153.765625,
+        "width": 332,
+        "height": 50,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "remove": {
+        "x": 29,
+        "y": 1258.765625,
+        "width": 332,
+        "height": 44,
+        "font": "14px",
+        "accent": "auto"
+      },
+      "quantity": {
+        "x": 42,
+        "y": 1819.953125,
+        "width": 306,
+        "height": 44,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "stock": {
+        "x": 42,
+        "y": 1761.953125,
+        "width": 306,
+        "height": 102,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "row": {
+        "x": 29,
+        "y": 1565.953125,
+        "width": 332,
+        "height": 507,
+        "font": "12px",
+        "accent": "auto"
+      },
+      "helpers": [
+        {
+          "text": "26 / 120",
+          "font": "10px"
+        },
+        {
+          "text": "Press Enter or use commas / newlines. Up to 50 unique values.",
+          "font": "10px"
+        },
+        {
+          "text": "3 / 100",
+          "font": "12px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Existing",
+          "font": "10px"
+        },
+        {
+          "text": "Optional defaults for all variants. No carrier connection is implied.",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 70",
+          "font": "12px"
+        },
+        {
+          "text": "0 / 160",
+          "font": "12px"
+        }
+      ],
+      "nav": [
+        "Product images",
+        "Basic information",
+        "Price & inventory",
+        "Variants",
+        "Collections",
+        "Shipping",
+        "Search engine listing"
+      ],
+      "readiness": [
+        "Images○",
+        "Product name✓",
+        "Price✓",
+        "Inventory✓",
+        "Images○",
+        "Description○",
+        "Collections○",
+        "Live keyword○",
+        "Search engine listing○"
+      ],
+      "bulk": [
+        "Price · Bulk fill",
+        "Compare-at price · Bulk fill",
+        "Quantity · Bulk fill",
+        "SKU code · Bulk fill",
+        "Live keyword · Bulk fill"
+      ],
+      "firstVariant": "White",
+      "active": {
+        "x": 46,
+        "y": 2027.953125,
+        "width": 20,
+        "height": 20,
+        "font": "11px",
+        "accent": "rgb(184, 75, 0)"
+      }
+    }
+  }
+]
