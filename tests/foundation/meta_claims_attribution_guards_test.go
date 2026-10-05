@@ -71,6 +71,11 @@ func mciFencedProjection(s mciSrc, fn *ast.FuncDecl) bool {
 	case s.path == "internal/integrations/metareply/audience.go" && fn.Name.Name == "finishAudience":
 		sqls["SELECT integration.finish_meta_audience($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)"] = []string{"raw"}
 		pure = adsSet("json.Marshal(snapshot)")
+	case s.path == "internal/integrations/metareply/live_videos.go" && fn.Name.Name == "finishLiveVideos":
+		// 0118 (A5-3): the live-videos Finish hook, same fenced-projection shape as finishAudience (one lease-fenced
+		// definer call in the completion transaction); its other calls are pure JSON building.
+		sqls["SELECT integration.finish_meta_live_videos($1::uuid,$2::bigint,$3::bytea,$4::text,$5::jsonb)"] = []string{"raw"}
+		pure = adsSet("json.Marshal(items)", "json.Marshal(result)", `json.RawMessage("[]")`)
 	default:
 		return false
 	}
@@ -206,7 +211,10 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 				r, ok := parents[call].(*ast.ReturnStmt)
 				valid = valid && ok && len(r.Results) == 1 && r.Results[0] == call && len(owner.Body.List) == 1 && parents[r] == owner.Body
 				args, loader = []string{"a.keys", "a.v2", "provider", "requiredScopes[provider]"}, "integration.load_meta_page_token"
-			case s.path == "internal/integrations/metareply/audience.go" && owner.Name.Name == "newAudienceRoute":
+			case (s.path == "internal/integrations/metareply/audience.go" && owner.Name.Name == "newAudienceRoute") ||
+				(s.path == "internal/integrations/metareply/live_videos.go" && owner.Name.Name == "newLiveVideoRoute"):
+				// 0118 (A5-3, live-console-v1 §6.2) adds the live-videos route as the third constant LoadSecret callsite, the same
+				// return-DispatchRoute shape as the audience route; only its loader, scope and result differ.
 				kv, ok := parents[call].(*ast.KeyValueExpr)
 				if !ok || mciExpr(kv.Key) != "LoadSecret" || kv.Value != call {
 					valid = false
@@ -219,7 +227,11 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 				}
 				r, ok := parents[lit].(*ast.ReturnStmt)
 				valid = valid && ok && len(r.Results) == 2 && r.Results[0] == lit && parents[r] == owner.Body
-				args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"read_insights", "pages_read_engagement"}`}, "integration.load_meta_audience_token"
+				if owner.Name.Name == "newLiveVideoRoute" {
+					args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"pages_read_engagement"}`}, "integration.load_meta_live_videos_token"
+				} else {
+					args, loader = []string{"keys", "v2", `"facebook"`, `[]string{"read_insights", "pages_read_engagement"}`}, "integration.load_meta_audience_token"
+				}
 			default:
 				valid = false
 			}
@@ -231,9 +243,10 @@ func mciPageLoaderReferences(srcs []mciSrc) bool {
 			return true
 		})
 	}
-	return valid && decls == 1 && calls == 2 &&
+	return valid && decls == 1 && calls == 3 &&
 		owners["internal/integrations/metareply/routes.go:loadSecretFor"] == 1 &&
-		owners["internal/integrations/metareply/audience.go:newAudienceRoute"] == 1
+		owners["internal/integrations/metareply/audience.go:newAudienceRoute"] == 1 &&
+		owners["internal/integrations/metareply/live_videos.go:newLiveVideoRoute"] == 1
 }
 
 func mciMutatedSource(t *testing.T, path, source string) mciSrc {
