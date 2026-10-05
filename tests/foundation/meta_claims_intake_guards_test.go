@@ -407,7 +407,13 @@ func TestMetaClaimsMCI10NoRiverKindsAndOneInsertPath(t *testing.T) {
 			if !ok {
 				continue
 			}
-			if fn.Name.Name == "Kind" && fn.Recv != nil && fn.Type.Params.NumFields() == 0 && !consumer {
+			// meta-connection-health-v1 §4.1/§10 sanctions exactly one scoped River kind: the claims-worker's own periodic
+			// health sweep (meta_health_sweep_v1, args {}) in metareply/probe.go. It is neither a claims nor an intake job,
+			// is enqueued by River's periodic enqueuer on the worker pool, never by the commerce_claims_intake login the
+			// §5.4 guard confines, and carries no operation.
+			healthSweep := s.path == "internal/integrations/metareply/probe.go" && fn.Name.Name == "Kind" && fn.Recv != nil &&
+				len(fn.Recv.List) == 1 && exprText(fn.Recv.List[0].Type) == "ProbeJobArgs"
+			if fn.Name.Name == "Kind" && fn.Recv != nil && fn.Type.Params.NumFields() == 0 && !consumer && !healthSweep {
 				t.Errorf("%s defines a River job kind (%s.Kind); claims and the intake worker own none", s.path, s.dir)
 			}
 			if fn.Body == nil {

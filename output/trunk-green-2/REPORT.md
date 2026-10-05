@@ -1,0 +1,12 @@
+# trunk-green-2 report (failure -> root cause -> fix)
+- MetaConnect* (16) + MetaHealth setup: 0125 trigger meta_health_on_connection (definer commerce_integration_writer) DELETEs binding_capabilities; role lacked DELETE -> 42501 inside connect tx -> 503. Fix: GRANT DELETE in 0125.
+- MetaHealth probe sweep: claim_meta_health_probes called pgcrypto gen_random_bytes (absent; search_path=pg_catalog). Fix: two uuid_send(gen_random_uuid()).
+- MetaHealth alert path: record_meta_health -> notify.enqueue_merchant_alert needs USAGE on schema notify. Fix: GRANT USAGE to integration_writer + expiry_worker.
+- MetaHealth fallback/ReaderSwap: SnapshotReader unsorted vs TableReader sorted. Fix: sort in SnapshotReader.
+- MetaHealth B2 503 instead of 429: Health.Recheck returned raw PgError. Fix: mapError.
+- MetaHealth tests (test bugs): IG dm_session expectation ok_app_level_assumed (contract rule 6); to_jsonb(<schema.table>) invalid -> alias; mcn tests leave a connected Page -> cleanup added.
+- MetaConnectAPIHoldsNoPagePrivateKey / GateAPICannotOpen: LC-B2 made cmd/api link metareply (BridgeClient) which links the Page-token opener. Fix: new internal/integrations/metabridge (client + wire types); metareply aliases them; API imports metabridge only. Guard untouched.
+- MCI10NoRiverKinds: probe.go Kind() is the contract-sanctioned sweep (meta-connection-health-v1 s4.1/s10; claims-worker worker pool, not the intake login the s5.4 guard confines). Narrow allowlist: exact file + ProbeJobArgs receiver. MCI10PackageComments: probe.go header cites developers.facebook.com docs + retrieval date 2026-10-06.
+- R2IntegrationUpgradeFromReleaseHead: pin 56 -> 60 (0123,0124,0125,0126).
+- T06: passes (verified).
+- depmap regenerated (was already stale from inbox/msgtemplates; plus metabridge).
