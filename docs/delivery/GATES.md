@@ -104,6 +104,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--buyer-http` | private buyer HTTP subset only; not public BFF/browser or provider proof | T2 subset | `bash scripts/dev/test-local.sh --buyer-http` |
 | `--purchase-entry` | merchant purchase-entry real PG/HTTP subset only; not buyer UI or provider checkout | T2 subset | `bash scripts/dev/test-local.sh --purchase-entry` |
 | `--merchant-orders` | isolated merchant order read subset; no merchant UI/provider/deployment claim | T2 subset | `bash scripts/dev/test-local.sh --merchant-orders` |
+| `--inbox` | isolated live-console inbox read-side subset (LCN03 permission split, LCN10 takeover CAS + lazy 6h expiry, customer-link CAS + audit, cross-store RLS, migration 0119 exact grants/definers); no UI/send (LC-B4) or LIVE Meta traffic claim | T2 subset | `bash scripts/dev/test-local.sh --inbox` |
 | `--meta-inbox` | isolated Meta inbox subset only; no public mount/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-inbox` |
 | `--meta-consumer` | isolated Meta social consumer subset only; no public mount/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-consumer` |
 | `--meta-runtime` | isolated Meta API/worker runtime subset only; no public deployment/provider qualification claim | T2 subset | `bash scripts/dev/test-local.sh --meta-runtime` |

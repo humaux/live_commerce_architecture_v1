@@ -1,4 +1,4 @@
-// Purpose: API process assembly — load each feature's config (identity, accounts, buyer/hosted payment, Meta/Stripe webhooks, Studio, claims, refunds, CVS), open the scoped pools, build the handlers and mount them on one listener. Holds no business rule and never starts a worker or dispatches a provider call.
+// Purpose: API process assembly — load each feature's config (identity, accounts, buyer/hosted payment, Meta/Stripe webhooks, Studio, claims, refunds, CVS, live-console inbox read side), open the scoped pools, build the handlers and mount them on one listener. Holds no business rule and never starts a worker or dispatches a provider call.
 // Depends on: platform.OpenPool, httpapi.NewHandler, the cmd/api feature builders (accounts/buyer/meta/stripe/studio/claims/merchant_refund/merchant_ads/merchant_meta_connect/cvs/tlsask/store_domain_nonce), payments.ProfileEnvironment.
 // Used by: the deployed API binary (LISTEN_ADDR), cmd/api *_test.go.
 package main
@@ -132,6 +132,12 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// inbox read side (live-console-v1 §11 A8-A11/A13/A14): nil when the payload keyring is absent (surface off), so the
+	// routes stay unmounted. The API process opens sealed message bodies only; it never holds the private page-token ring.
+	inboxService, err := newInbox(os.Getenv)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -143,7 +149,7 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, Inbox: inboxService, Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
 		LiveFlowJobs:    liveFlowJobs,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)
