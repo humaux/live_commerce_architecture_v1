@@ -1,3 +1,6 @@
+// Purpose: buyer claim preview and delta redemption into the existing cart.
+// Depends on: buyer scope/commands, claims definers, storefront cart and inventory availability.
+// Used by: buyerhttp B1/B2 handlers and claims acceptance tests.
 // buyer.go owns the buyer side of a claim link: PreviewLink (read-only) and RedeemLink
 // (bind, then apply pending claim lines to the buyer's own cart) (contract §4.4, §6).
 //
@@ -41,6 +44,7 @@ type PreviewLine struct {
 	Quantity              int64  `json:"quantity"`
 	Pending               bool   `json:"pending"`
 	Available             bool   `json:"available"`
+	SoldOut               bool   `json:"sold_out"`
 }
 type Preview struct {
 	BundleVersion int64         `json:"bundle_version"`
