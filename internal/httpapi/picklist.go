@@ -1,9 +1,11 @@
-// picklist.go owns the W3-02B HTTP adapter: the pick-list projection, the carrier-template CSV export and
-// the CVS batch label request. Each route is a thin transport gate around one internal/merchantorders or
-// internal/fulfillment method; every collection rule, permission and refusal stays in the SQL definers.
-//
-// Non-goals: no business rule, no provider call, no recipient field in a response or log, no carrier API
-// (the CSV is for the merchant to upload), and no body, token or filename ever stored.
+// Purpose: the W3-02B HTTP adapter — the pick-list projection, the carrier-template CSV export and the CVS
+//   batch label request. Each route is a thin transport gate over one internal/merchantorders or
+//   internal/fulfillment method; every collection rule, permission and refusal stays in the SQL definers.
+// Depends on: merchantorders.PickList/Export, fulfillment.CVS.Batch, platform.WithScope/WithScopeBudget,
+//   identity.resolve_access (orders:read / orders:export / fulfillment:write via the SQL definers).
+// Used by: cmd/api route registration (internal/httpapi/handler.go). Tests: TestPickList*/TestCarrierExport/TestCVSBatch.
+// Invariants: no business rule, no provider call, no recipient field in a response or log, no carrier API
+//   (the CSV is for the merchant to upload), no body/token/filename stored; 501 ids -> 422 too_many (PL03).
 
 package httpapi
 

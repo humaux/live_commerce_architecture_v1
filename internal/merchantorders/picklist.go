@@ -1,8 +1,11 @@
-// picklist.go owns the pick list (contract amendment W3-02B §1): one read-only projection over
-// fulfillment.read_pick_list that summarises SKU quantities and per-order lines for browser printing.
-// It never writes, never changes state and never logs recipient data. The same SQL reader feeds
-// carrier_export.go (the carrier CSV), so the row decoder here keeps the full frozen destination/PII/
-// money fields even though the pick-list response only projects order_id/order_number/lines.
+// Purpose: the pick list (contract amendment W3-02B §1) — one read-only projection over
+//   fulfillment.read_pick_list that summarises SKU quantities and per-order lines for browser printing.
+//   It never writes, never changes state and never logs recipient data.
+// Depends on: fulfillment.read_pick_list + claims.pick_list_session_orders (0130), identity.resolve_access
+//   (orders:read), platform.WithScope, command (id validation), the shared row decoder also used by carrier_export.go.
+// Used by: internal/httpapi/picklist.go (pick-list route). Tests: TestPickList/TestPickList500.
+// Invariants: collection rule CONFIRMED|AWAITING_COLLECTION AND MANUAL_UNASSIGNED (0130); skipped codes
+//   not_pickable|order_not_found; <=500 ids (501 -> 422 too_many); rows sorted by sku_code.
 
 package merchantorders
 

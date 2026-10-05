@@ -1,13 +1,17 @@
--- W3-02B (unit w3-02b-picklist): pick list and carrier export read path.
---
--- One read-only definer fulfillment.read_pick_list is shared by the pick-list projection and the carrier
--- export (Go adds orders:export + the audit event). Session selection (PL-OPEN-1) resolves the
--- live_price_uses UNION order_origins attribution through claims.pick_list_session_orders so the
--- checkout-owned reader never needs a claim-table grant. No tables, columns or roles.
---
--- Collection rule (brief §1/§2): commercial_state IN (CONFIRMED, AWAITING_COLLECTION) AND
--- fulfillment_state = MANUAL_UNASSIGNED. Other-store and non-existent ids are indistinguishable
--- (order_not_found); a present but non-pickable id is not_pickable.
+-- 0130_pick_list.sql — W3-02B (unit w3-02b-picklist): pick list and carrier export read path.
+-- Purpose: one read-only definer fulfillment.read_pick_list shared by the pick-list projection and the carrier
+--   export (Go adds orders:export + the audit event), plus claims.pick_list_session_orders so the checkout-owned
+--   reader resolves a session's orders (live_price_uses UNION order_origins) without a claim-table grant.
+-- Depends on: 0001 (ops.audit_events, control.stores), 0003 (identity.resolve_access), 0064/0073 (claims.live_price_uses,
+--   claims.bundles, claims.order_origins), the checkout order/fulfillment state vocabulary (CONFIRMED,
+--   AWAITING_COLLECTION, MANUAL_UNASSIGNED).
+-- Used by: internal/merchantorders/picklist.go + carrier_export.go (read_pick_list), the session branch of the pick-list
+--   route (pick_list_session_orders). Tests: TestPickList/TestPickList500/TestCarrierExport,
+--   TestMerchantOrdersV2PickListReadAuthority, TestWAS02.
+-- Invariants: SECURITY DEFINER SET search_path=pg_catalog, REVOKE ALL FROM PUBLIC, EXECUTE commerce_runtime only
+--   (read_pick_list) / commerce_checkout_writer (pick_list_session_orders); collection rule commercial_state IN
+--   (CONFIRMED, AWAITING_COLLECTION) AND fulfillment_state = MANUAL_UNASSIGNED; other-store and non-existent ids are
+--   indistinguishable (order_not_found); a present but non-pickable id is not_pickable. No tables, columns or roles.
 
 -- ---------------------------------------------------------------------------------------------------
 -- claims.pick_list_session_orders: session -> order ids (PL-OPEN-1). Owned by the claims writer so RLS

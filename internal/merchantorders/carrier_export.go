@@ -1,12 +1,12 @@
-// carrier_export.go owns the carrier CSV (contract amendment W3-02B §2): the same order collection as
-// the pick list (fulfillment.read_pick_list), one fixed column set per carrier template (Go constants,
-// <= 15 columns), RFC 4180 with UTF-8 BOM via the shared writeCSVLine/guardFormula, and the COD collect
-// amount taken from the reader's collect_minor (= total + cod_surcharge, never recomputed here). Go adds
-// orders:export on top of the reader's orders:read and writes one orders.carrier_export audit row.
-//
-// The per-template columns are provisional until an owner-provided sample (PL-OPEN-2): black_cat/hsinchu
-// follow the usual Taiwan B2C import shape, chunghwa_post carries the postal fields, generic exposes the
-// full frozen export row. No carrier API is called; this is a file for the merchant to upload.
+// Purpose: the carrier CSV (contract amendment W3-02B §2) — the same order collection as the pick list
+//   (fulfillment.read_pick_list), one fixed column set per carrier template (Go constants, <=15 columns),
+//   RFC 4180 with UTF-8 BOM via the shared writeCSVLine/guardFormula, and the COD collect amount taken from
+//   the reader's collect_minor (= total + cod_surcharge, never recomputed here).
+// Depends on: fulfillment.read_pick_list (0130), identity.resolve_access (orders:read + orders:export),
+//   ops.audit_events (orders.carrier_export), platform.WithScope, shared writeCSVLine/guardFormula.
+// Used by: internal/httpapi/picklist.go (export route). Tests: TestCarrierExport.
+// Invariants: collect_minor = total_minor + coalesce(cod_surcharge_minor,0); formula guard on a leading
+//   =+-@; no carrier API call (a file for the merchant to upload); templates provisional (PL-OPEN-2).
 
 package merchantorders
 
