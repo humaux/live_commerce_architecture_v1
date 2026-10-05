@@ -1,5 +1,5 @@
-// Purpose: kwc-v1 restricted contains grammar (ParseContains) and the mode-independent ingest parse entry (ParseForIngest: kw-v1 first, kwc-v1 fallback).
-// Depends on: pure Go (no I/O); grammar.go width map and §2.2 head rules; frozen negation/question word lists in this file.
+// Purpose: kwc-v1 restricted contains grammar (ParseContains, frozen) and the mode-independent ingest parse entry (ParseForIngest: kw-v1 first, then the current contains grammar kwc-v2).
+// Depends on: pure Go (no I/O); grammar.go width map and §2.2 head rules; frozen negation/question word lists in this file; contains_v2.go (ParseContainsV2).
 // Used by: internal/claims (ingest.go, manual.go), internal/integrations/meta/claim_intake.go (qualifyClaim); tests/claims/kwc-v1-vectors.json.
 // contains.go owns kwc-v1 (VersionContains), the one restricted contains grammar (§2.5):
 // ParseContains finds a single maximal [A-Z0-9+] fragment of a comment and applies the
@@ -59,13 +59,15 @@ func ParseContains(text string) Result {
 }
 
 // ParseForIngest is the single mode-independent entry (§2.5 property): exact kw-v1 wins;
-// only a kw-v1 NO_MATCH falls through to kwc-v1, and only a non-NO_MATCH contains result
-// is returned (so a kwc-v1 miss stays the kw-v1 NO_MATCH). Deterministic and identical for
-// every window mode; package claims decides whether a kwc-v1 result applies via effective.
+// only a kw-v1 NO_MATCH falls through to the contains grammar, and only a non-NO_MATCH
+// contains result is returned (so a miss stays the kw-v1 NO_MATCH). NEW parses use kwc-v2
+// (ParseContainsV2); kwc-v1 events already stored keep their recorded version and are never
+// re-parsed here. Deterministic and identical for every window mode; package claims
+// decides whether a contains result applies via effective.
 func ParseForIngest(text string) Result {
 	p := Parse(text)
 	if p.Kind == NoMatch {
-		if c := ParseContains(text); c.Kind != NoMatch {
+		if c := ParseContainsV2(text); c.Kind != NoMatch {
 			return c
 		}
 	}
@@ -87,7 +89,18 @@ func containsAny(s string, subs []string) bool {
 // boundary; a multi-byte CJK/emoji/trap rune is therefore a boundary byte for byte, which
 // is all a fragment scan needs (it never has to decode them).
 func keywordFragments(s string) []string {
-	var out []string
+	spans := keywordSpans(s)
+	out := make([]string, len(spans))
+	for i, sp := range spans {
+		out[i] = s[sp[0]:sp[1]]
+	}
+	return out
+}
+
+// keywordSpans is keywordFragments returning [start,end) byte offsets (kwc-v2 needs the
+// neighbouring runes of the fragment).
+func keywordSpans(s string) [][2]int {
+	var out [][2]int
 	start := -1
 	for i := 0; i < len(s); i++ {
 		if isFragmentByte(s[i]) {
@@ -95,12 +108,12 @@ func keywordFragments(s string) []string {
 				start = i
 			}
 		} else if start >= 0 {
-			out = append(out, s[start:i])
+			out = append(out, [2]int{start, i})
 			start = -1
 		}
 	}
 	if start >= 0 {
-		out = append(out, s[start:])
+		out = append(out, [2]int{start, len(s)})
 	}
 	return out
 }
