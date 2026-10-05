@@ -1,9 +1,13 @@
+// Purpose: Verify real editor navigation, visible field focus and reserved savebar geometry without synthetic DOM changes.
+// Depends on: Playwright Page/expect and the production ProductDocumentForm markup; caller-owned browser/PG fixture.
+// Used by: product-editor.acceptance.ts under --browser-product-editor; reads geometry and performs real nav clicks.
 import { expect, type Page } from "@playwright/test";
 
 // Runtime acceptance, not a style/threshold test. evaluate only reads geometry
 // and focus; section opening and scrolling are driven by actual nav clicks.
 // Nested scroll panes require a viewport capture per section: a full-page image
 // cannot reveal content outside the pane's current scroll position.
+/** Clicks every available section and checks that focus remains inside its visible scroll pane. */
 export async function assertProductEditorReservedLayout(
   page: Page,
   capture?: (section: string) => Promise<void>,

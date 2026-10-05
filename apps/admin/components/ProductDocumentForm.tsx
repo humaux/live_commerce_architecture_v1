@@ -1,7 +1,7 @@
-"use client";
 // Purpose: Product create/edit form — the single writer of the product document (details, media, variants, price, stock, live keyword, visibility) and its save flow.
-// Depends on: lib/use-product-document (load/save of the product document through the admin BFF → Go catalog v2 API); lib/catalog-v2-client (readCollections, readWarehouses); lib/product-document (draft model, money toMinor/fromMinor); ProductDocumentVariants, ProductBulkFill, ProductReadiness; lib/product-editor-copy.
+// Depends on: React/Next; use-product-document and catalog-v2/images clients (admin BFF → Go catalog); product-document draft/money helpers; ProductDocumentVariants, ProductBulkFill, ProductReadiness, useProductEditorLayout and product-editor-copy.
 // Used by: ProductEditor (routes /[locale]/products/new and /[locale]/products/[product]).
+"use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
@@ -38,6 +38,7 @@ function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
   return draftFromDetail(detail);
 }
+/** Edits one catalog document; save/image writes remain delegated to the existing catalog command clients. */
 export function ProductDocumentForm({
   locale,
   store,
@@ -304,6 +305,7 @@ export function ProductDocumentForm({
             c={c}
             focus={focus}
             items={[
+              { key: "media", label: c.recommendedImages, ok: photos.length >= 3 },
               { key: "basics", label: c.description, ok: !!draft.description },
               {
                 key: "collections",

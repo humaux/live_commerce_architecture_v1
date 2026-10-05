@@ -1,3 +1,6 @@
+// Purpose: Guard shell route permissions, navigation vocabulary and review-driven presentation copy.
+// Depends on: node:test/assert/fs; admin route registry, shell/catalog/claims/editor/legal copy and source wiring.
+// Used by: scripts/dev/test-node.sh and G-UI architecture checks; no browser or external service calls.
 import assert from "node:assert/strict";
 import { readdirSync, existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -12,6 +15,20 @@ import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 import { pageTitle } from "../../apps/admin/src/page-title.ts";
 import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy.ts";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy.ts";
+import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy.ts";
+import { platformLegal } from "../../apps/admin/lib/platform-legal.ts";
+test("Integrator P2: legal CN comment ordering and a distinct three-image recommendation", () => {
+  assert.equal(JSON.stringify(platformLegal["zh-CN"]).includes("留言收单"), false);
+  assert.equal(JSON.stringify(platformLegal["zh-CN"]).includes("评论收单"), true);
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const copy = productEditorCopy[locale];
+    assert.match(copy.recommendedImages, /3/);
+    assert.notEqual(copy.recommendedImages, copy.images);
+  }
+  const form = readFileSync("apps/admin/components/ProductDocumentForm.tsx", "utf8");
+  assert.match(form, /label: c\.recommendedImages, ok: photos\.length >= 3/);
+  assert.match(form, /label: c\.images, ok: photos\.length > 0/);
+});
 test("ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent", () => {
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     const c = claimsCopy[locale];

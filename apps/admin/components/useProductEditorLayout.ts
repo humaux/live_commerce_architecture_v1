@@ -1,3 +1,6 @@
+// Purpose: Reserve editor scroll/footer space and reveal focused sections or command feedback without moving the shell.
+// Depends on: React hooks; browser ResizeObserver, IntersectionObserver and visualViewport; ProductDocumentForm element refs.
+// Used by: ProductDocumentForm; presentation only, with no draft, API, receipt or persistence ownership.
 "use client";
 import {
   useCallback,
@@ -9,6 +12,7 @@ import {
 
 // Presentation only: the editor owns a viewport-sized scroll pane and a real
 // footer row. No drafts, command state, catalog DTOs or persistence belong here.
+/** Owns DOM measurement, pane scrolling and observer cleanup; never sends a command. */
 export function useProductEditorLayout(
   sections: readonly string[],
   onSection: (id: string) => void,

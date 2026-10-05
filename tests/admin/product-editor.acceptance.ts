@@ -1,3 +1,6 @@
+// Purpose: Exercise product-document create/edit, SKU matrix, inventory and publishing through real admin interactions.
+// Depends on: Playwright, catalog acceptance fixtures, Node evidence I/O and the caller's production Next/Go/isolated PG stack.
+// Used by: catalog-core browser mode PE12–PE17 and --browser-product-editor; provider writes remain MOCK.
 // PE12–PE17: real merchant clicks through the production BFF/Go/isolated PG fixture.
 // evaluate is read-only geometry; control HTTP is buyer readback, never a substitute for UI writes.
 import { expect, test, type Page } from "@playwright/test";
@@ -8,6 +11,7 @@ import axe from "axe-core";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { assertProductEditorReservedLayout } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
+/** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
   test("PE12-17 document workflow, matrix, list actions and click ledger", async ({
     page,

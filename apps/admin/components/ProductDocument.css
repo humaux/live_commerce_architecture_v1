@@ -1,4 +1,7 @@
-/* Approved comps 02/03, scoped to products. The existing outer shell is deliberately untouched. */
+/* Purpose: Product editor, matrix and quick-edit layout using the shared admin visual tokens.
+ * Depends on: packages/ui tokens; ProductDocumentForm/Variants/BulkFill/Readiness and useProductEditorLayout markup/height.
+ * Used by: ProductEditor and product list quick edits; styles only, no command or data ownership.
+ */
 .pe-page,
 .pe-catalog {
   --pe-accent: var(--ui-primary);
