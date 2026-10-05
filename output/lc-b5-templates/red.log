@@ -1,0 +1,28 @@
+# red.log — unit lc-b5-templates (Red-phase failures, recorded before each targeted fix)
+
+Model: DeepSeek V4-Pro. Base: 8669637c47b110fe9dae038f7ca23221f4de2015 (LC-B3 merge).
+Each entry is a genuine Red-phase run against the then-current code; every failure below was fixed
+in the Green phase (no test, threshold or fixture was weakened to pass).
+
+## Unit (DB-free) red
+- `go test ./internal/msgtemplates/ -count=1` (exit 1)
+  - TestValidatePublicSafe/email FAIL: "聯絡 email@example.com" classified as "domain", expected
+    "email" — bareDomain matched "example.com" before the email check ran. Fix: check email BEFORE the
+    www./bare-domain branch in ValidatePublicSafe.
+- `go test ./internal/httpapi/ -count=1` (exit 1)
+  - TestTemplateRouteTransportRules FAIL: GET without Idempotency-Key returned 422 not 401 — the helper
+    passed strings.NewReader("") as the body, giving GET a non-http.NoBody body that tripped studioRoute's
+    GET-body rule. Fix: use a nil reader for empty bodies (added the io import).
+
+## Foundation (real-PG) red
+- `bash scripts/dev/test-focused.sh 'TestLiveConsoleTemplates' ./tests/foundation` (exit 1, run 1)
+  - publish/resolve returned "msgtemplates: database unavailable"; definer gate returned
+    "permission denied for schema inbox (SQLSTATE 42501)". Root cause: commerce_msgtemplates_writer had
+    EXECUTE on inbox.principal_holds but no USAGE ON SCHEMA inbox. Fix: GRANT USAGE ON SCHEMA inbox TO
+    commerce_msgtemplates_writer in migration 0124.
+- `bash scripts/dev/test-focused.sh 'TestLiveConsoleTemplates' ./tests/foundation` (exit 1, run 2)
+  - public_safe_template_with_a_URL_is_refused_§3.5 FAIL: "refused template still stored: rows=2" — the
+    assertion counted the whole msgtemplates.templates table (already holding welcome-msg v1+v2 from the
+    shared fixture), not just the refused id. Fix: scope the count to template_id='bad-url'.
+
+Result after fixes: `bash scripts/dev/test-local.sh --msg-templates` → PASS 4/4 (see evidence-test.log).

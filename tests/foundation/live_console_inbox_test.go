@@ -177,7 +177,7 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 		grantees                 []string
 	}{
 		{"inbox.principal_holds(text[])", "commerce_auth", "boolean", true,
-			[]string{"commerce_auth", "commerce_inbox_writer", "commerce_meta_writer"}},
+			[]string{"commerce_auth", "commerce_inbox_writer", "commerce_meta_writer", "commerce_msgtemplates_writer"}},
 		{"inbox.advance_conversation_state()", "commerce_meta_writer", "trigger", false,
 			[]string{"commerce_meta_writer"}},
 		{"inbox.dm_window(uuid,uuid,uuid)", "commerce_meta_writer",
