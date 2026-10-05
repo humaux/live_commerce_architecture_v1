@@ -160,12 +160,17 @@ func TestK3LcB1ConcurrentEndArchiveRaces(t *testing.T) {
 		_, err := h.lifecycle(h.token, h.f.storeA1, b, action, 2, nil)
 		return err
 	})
-	if !errors.Is(errs[1], claims.ErrInvalidTransition) {
-		t.Fatalf("archive raced against end from live: err=%v, want invalid_transition", errs[1])
+	// Integrator ruling 2026-10-05: both refusals are safe. If end commits first the archive loses its CAS
+	// (version_conflict); if archive is evaluated first it is an invalid live→archived transition. Either way the
+	// archive must NOT land: proven below by end having succeeded and the session still being archivable from
+	// ended at version 3 (it would be version_conflict/invalid_transition if the racing archive had landed).
+	if !errors.Is(errs[1], claims.ErrInvalidTransition) && !errors.Is(errs[1], command.ErrConflict) {
+		t.Fatalf("archive raced against end from live: err=%v, want invalid_transition or version_conflict", errs[1])
 	}
 	if errs[0] != nil {
 		t.Fatalf("end raced against archive: %v", errs[0])
 	}
+	h.mustLifecycle(t, b, "archive", 3)
 
 	// (c) start vs archive from ended, same expected_version: exactly one transition lands.
 	c := h.draft(t, h.f.storeA1)
