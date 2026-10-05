@@ -18,7 +18,8 @@ import { displayTime } from "@/lib/orders-model";
 import { billingCopy, type BillingCopy } from "@/lib/billing-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
-import { Badge } from "@live-commerce/ui";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -162,7 +163,7 @@ function Sections({
         {status.payment_pending && <p className="orders-hint" role="status" data-testid="billing-pending">{c.paymentPending}</p>}
         {status.subscriptions.length > 0 && (<>
         <h2>{c.subscriptionsTitle}</h2>
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.subscriptionsTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="billing-subscriptions">
               <thead><tr><th>{c.plan}</th><th>{c.status}</th><th>{c.period}</th></tr></thead>
               <tbody>
@@ -172,9 +173,9 @@ function Sections({
                     <tr key={`${item.price_id}-${item.retrieved_at}`}>
                       <td>{plan?.name ?? item.price_id}</td>
                       <td>
-                        <span className={`orders-badge ${item.status === "active" || item.status === "trialing" ? "orders-tone-success" : item.status === "canceled" || item.status === "incomplete_expired" ? "orders-tone-neutral" : "orders-tone-warning"}`}>
+                        <Badge tone={item.status === "active" || item.status === "trialing" ? "success" : item.status === "canceled" || item.status === "incomplete_expired" ? "neutral" : "warning"}>
                           {c.subStatus[item.status]}
-                        </span>
+                        </Badge>
                         {item.cancel_at_period_end && <small>{c.endsAtPeriodEnd}</small>}
                       </td>
                       <td>{time(item.current_period_start)} → {time(item.current_period_end)}</td>
@@ -183,7 +184,7 @@ function Sections({
                 })}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         </>)}
         {status.customer_pinned && (
           <>
@@ -224,7 +225,7 @@ function Sections({
 
       <section className="customers-section" aria-label={c.usageTitle}>
         <h2>{c.usageTitle}</h2>
-        <div className="orders-actions-scroll">
+        <TableFrame label={c.usageTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
           <table className="orders-actions-table orders-kv-table" data-testid="billing-usage">
             <tbody>
               <tr><th scope="row">{c.usagePeriod}</th><td>{status.usage.period_start.slice(0, 10)} → {status.usage.period_end.slice(0, 10)}</td></tr>
@@ -234,7 +235,7 @@ function Sections({
               <tr><th scope="row">{c.members}</th><td>{status.usage.members}</td></tr>
             </tbody>
           </table>
-        </div>
+        </TableFrame>
       </section>
     </>
   );

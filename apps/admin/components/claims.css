@@ -13,8 +13,8 @@
 .claims-work { min-width: 0; }
 .claims-section { min-width: 0; padding: 24px 26px 28px; }
 .claims-work > .claims-section + .claims-section { border-top: 1px solid var(--line); }
-.claims-section h2, .claims-rail h2 { font-size: 19px; line-height: 1.4; }
-.claims-rail h3 { margin: 0 0 12px; font-size: 16px; line-height: 1.4; }
+.claims-section h2, .claims-rail h2 { font-size: var(--ui-heading-section); line-height: 1.4; }
+.claims-rail h3 { margin: 0 0 12px; font-size: var(--ui-heading-subsection); line-height: 1.4; }
 .claims-window-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .claims-facts { display: grid; gap: 9px; margin: 16px 0 0; }
 .claims-facts > div { display: flex; justify-content: space-between; gap: 14px; }
@@ -72,7 +72,7 @@ table.claims-table { min-width: 680px; table-layout: auto; font-variant-numeric:
 .claims-dialog { width: min(560px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); }
 .claims-dialog::backdrop { background: rgba(20, 41, 66, .45); }
 .claims-dialog-body { display: grid; gap: 14px; padding: 22px; }
-.claims-dialog-body h2 { font-size: 18px; line-height: 1.4; }
+.claims-dialog-body h2 { font-size: var(--ui-heading-section); line-height: 1.4; }
 .claims-mock-inline { color: #174b7c; font-size: 13px; }
 .claims-alert-text { color: #8e2732; }
 .claims-link-value { display: block; padding: 11px 12px; border: 1px solid var(--line); border-radius: 5px; background: #f4f7fa; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }

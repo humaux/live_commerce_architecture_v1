@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
-import { Badge, Field, FormRow } from "@live-commerce/ui";
+import { Badge, DateControl, Field, FormRow } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import {
@@ -667,7 +668,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                       onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
                   </span>
                 </div>
-              </Field> : <Field id="studio-schedule-entry" label={c.schedule}><input id="studio-schedule-entry" type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
+              </Field> : <Field id="studio-schedule-entry" label={c.schedule}><DateControl emptyLabel={presentationCopy[locale].dateTime} id="studio-schedule-entry" type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
                 min="2000-01-01T00:00" max="2199-12-31T23:59"
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></Field>}
               <Field id="studio-aspect" label={c.aspect} width="short"><select id="studio-aspect" value={form.aspect} disabled={!canEdit || busy}

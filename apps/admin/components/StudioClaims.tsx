@@ -478,10 +478,6 @@ export function StudioClaims({ locale, store, scene, initialError }: {
               <Badge tone={claimWindow.state === "OPEN" ? "success" : "neutral"} data-testid="claims-window-state">
                 {claimWindow.state === "OPEN" ? c.open : c.closed}</Badge>
             </div>
-            <dl className="claims-facts">
-              <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
-              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
-            </dl>
             <Field id="claims-mode" label={c.mode}>
               <select id="claims-mode" value={claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft} disabled={blocked || claimWindow.state === "OPEN"}
                 onChange={(event) => changeMode(event.target.value as MatchMode)}>
@@ -491,6 +487,10 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             {claimWindow.state === "OPEN" && <p className="claims-muted">{c.modeLocked}</p>}
             <button type="button" className="primary claims-window-action" disabled={blocked} onClick={toggleWindow}>
               {busy === "window" ? c.working : claimWindow.state === "OPEN" ? c.closeWindow : c.openWindow}</button>
+            <dl className="claims-facts">
+              <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
+              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
+            </dl>
             {alert("window")}
             <details className="claims-stats" open={board.stats.accepted > 0 || persistedReasons.some((reason) => board.stats.rejected[reason] > 0)}>
               <summary id="claims-stats-title">{c.stats}</summary>

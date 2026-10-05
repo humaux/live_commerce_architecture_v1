@@ -38,7 +38,7 @@
 .studio-pager button { font-size: 12px; min-height: 34px; padding: 6px 9px; }
 .studio-surface.studio-planning-only { grid-template-columns: 300px minmax(0, 1fr); } /* media off (G2): no rehearsal column */
 .studio-editor { min-width: 0; padding: 27px 28px 32px; }
-.studio-editor h2, .studio-status h2 { font-size: 19px; line-height: 1.4; }
+.studio-editor h2, .studio-status h2 { font-size: var(--ui-heading-section); line-height: 1.4; }
 .studio-editor > .studio-muted { margin: 8px 0 32px; }
 .studio-muted { color: var(--muted); }
 .studio-fields { display: grid; gap: 26px; }
@@ -54,7 +54,7 @@
 .studio-schedule-picker:focus-within { outline: 3px solid var(--focus); outline-offset: 3px; }
 .studio-schedule-picker:has(input:disabled) { opacity: .55; }
 .studio-version { margin-top: 36px; padding-top: 26px; border-top: 1px solid var(--line); }
-.studio-version h3, .studio-fact h3 { margin: 0 0 15px; font-size: 17px; line-height: 1.4; }
+.studio-version h3, .studio-fact h3 { margin: 0 0 15px; font-size: var(--ui-heading-subsection); line-height: 1.4; }
 .studio-version > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 16px; background: #f4f7fa; border: 1px solid var(--line); border-radius: 5px; }
 .studio-version span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .studio-version p { color: var(--muted); }
@@ -268,7 +268,9 @@ fieldset {
   text-decoration: none;
 }
 .create-button[aria-disabled="true"] {
-  opacity: 0.55;
+  opacity: 1;
+  color: var(--ui-muted);
+  background: var(--ui-page);
   cursor: not-allowed;
 }
 .section-bar {
@@ -284,7 +286,7 @@ fieldset {
   align-self: stretch;
   display: flex;
   align-items: center;
-  border-bottom: 3px solid #245c8a;
+  border-bottom: 0;
   font-weight: 700;
 }
 .section-bar small {
@@ -391,6 +393,8 @@ tbody tr.selected:hover {
   margin: 0;
   accent-color: var(--ui-primary);
 }
+.sku-select { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+.selection-col:has(.sku-select) { padding-inline: 0; }
 .product-cell {
   display: flex;
   align-items: center;
@@ -412,7 +416,7 @@ tbody tr.selected:hover {
 }
 .product-name {
   padding: 0;
-  min-height: 22px;
+  min-height: 44px;
   background: none;
   border: 0;
   font-size: 13px;
@@ -823,8 +827,8 @@ code {
   .create-button {
     font-size: 12px;
     padding: 8px 10px;
-    height: 38px;
-    min-height: 38px;
+    height: 44px;
+    min-height: 44px;
     gap: 5px;
   }
   .section-bar {

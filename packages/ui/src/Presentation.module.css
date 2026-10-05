@@ -110,7 +110,8 @@
   color: var(--ui-info);
 }
 .tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   align-items: stretch;
   border-bottom: 1px solid var(--ui-border);
@@ -145,17 +146,6 @@
   border-bottom-color: var(--ui-primary);
   background: var(--ui-primary-soft);
 }
-.scrollButton {
-  display: grid;
-  place-items: center;
-  flex: 0 0 var(--ui-target);
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  color: var(--ui-link);
-  background: var(--ui-surface);
-}
-.scrollButton[aria-disabled="true"] { color: var(--ui-muted); cursor: default; }
 .tableContainer {
   min-width: 0;
 }

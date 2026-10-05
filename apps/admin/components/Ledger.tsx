@@ -18,6 +18,8 @@ import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -558,7 +560,7 @@ export function Ledger({
                 {c.refresh}
               </button>
             </form>
-            <div className="table-scroll">
+            <TableFrame label={c.inventory} scrollHint={presentationCopy[locale].scroll} scrollClassName="table-scroll">
               <table>
                 <thead>
                   <tr>
@@ -582,6 +584,7 @@ export function Ledger({
                       className={row.sku_id === selectedID ? "selected" : ""}
                     >
                       <td className="selection-col">
+                        <label className="sku-select">
                         <input
                           type="radio"
                           name="sku"
@@ -595,6 +598,7 @@ export function Ledger({
                             setError(null);
                           }}
                         />
+                        </label>
                       </td>
                       <th scope="row">
                         <div className="product-cell">
@@ -621,9 +625,9 @@ export function Ledger({
                               {row.code}
                               {/* status-col is display:none ≤680px; this badge is
                                   the only mobile-visible active/archived signal */}
-                              <span className={`status mobile-status ${row.status}`}>
+                              <Badge className="mobile-status" tone={row.status === "active" ? "success" : "neutral"}>
                                 {row.status === "active" ? c.active : c.archived}
-                              </span>
+                              </Badge>
                             </small>
                           </div>
                         </div>
@@ -640,9 +644,9 @@ export function Ledger({
                         {row.available}
                       </td>
                       <td className="status-col">
-                        <span className={`status ${row.status}`}>
+                        <Badge tone={row.status === "active" ? "success" : "neutral"}>
                           {row.status === "active" ? c.active : c.archived}
-                        </span>
+                        </Badge>
                       </td>
                       <td className="action-col">
                         <button
@@ -664,7 +668,7 @@ export function Ledger({
                   <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
                 </div>
               )}
-            </div>
+            </TableFrame>
             {(initial.rows.next_cursor || search.get("cursor")) && (
               <div className="pagination">
                 <button

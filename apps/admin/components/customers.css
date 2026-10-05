@@ -5,6 +5,9 @@
 .customers-search { flex: 1 1 280px; max-width: 420px; }
 .customers-search input, .customers-page input[type="date"] { height: 45px; min-height: 45px; box-sizing: border-box; color: var(--ink); font-size: 14px; }
 .customers-table > thead > tr > th, .customers-table > tbody > tr > td { width: auto; }
+@media (min-width: 681px) {
+  .customers-table tr > :nth-child(2), .customers-table tr > :nth-child(3), .customers-table tr > :nth-child(4) { text-align: right; }
+}
 .orders-table.customers-table > thead > tr > th:nth-child(n), .orders-table.customers-table > tbody > tr > td:nth-child(n) { width: auto; }
 .orders-table.customers-table > thead > tr > th:first-child, .orders-table.customers-table > tbody > tr > td:first-child { width: 24%; }
 .customers-table td small { display: block; margin-top: 2px; color: var(--orders-muted); font-size: 12px; }

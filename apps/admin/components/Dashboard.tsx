@@ -105,7 +105,7 @@ export function Dashboard({
                 <h2>{c.gmvTitle}</h2>
                 {d.gmv.length === 0 && <p className="mt-note">{c.noSales}</p>}
                 {d.gmv.map((g) => (
-                  <div key={`${g.currency}|${g.environment}`} className="mt-table-frame" style={{ marginTop: 10 }}>
+                  <TableFrame key={`${g.currency}|${g.environment}`} label={c.gmvTitle} scrollHint={presentationCopy[locale].scroll}>
                     <table className="mt-table">
                       <caption className="mt-note" style={{ textAlign: "left", padding: "8px 14px 0" }}>
                         {g.currency} · {g.environment === "LIVE" ? c.live : c.sandbox}
@@ -121,7 +121,7 @@ export function Dashboard({
                         ))}
                       </tbody>
                     </table>
-                  </div>
+                  </TableFrame>
                 ))}
               </section>
             </div>

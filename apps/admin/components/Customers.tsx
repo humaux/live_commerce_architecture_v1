@@ -8,6 +8,7 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readCustomers, useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -201,7 +202,7 @@ function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCop
           <strong>{name}</strong>
           {row.phone_last3 && <small>{c.phoneEnding} {row.phone_last3}</small>}
         </Link>
-        {!row.active && <span className="orders-badge orders-tone-neutral">{c.erased}</span>}
+        {!row.active && <Badge tone="neutral">{c.erased}</Badge>}
       </td>
       <td data-label={c.orders}>{c.ordersPaid(row.orders_count, row.paid_orders_count)}</td>
       <td data-label={c.spent}>
@@ -222,12 +223,12 @@ function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCop
 // Text + tone, never colour alone; the full purpose name is the accessible label.
 function ConsentChip({ label, short, on, c }: { label: string; short: string; on: boolean; c: CustomersCopy }) {
   return (
-    <span
-      className={`orders-badge ${on ? "orders-tone-success" : "orders-tone-neutral"}`}
+    <Badge
+      tone={on ? "success" : "neutral"}
       title={label}
       aria-label={`${label}: ${on ? c.consentGranted : c.consentNone}`}
     >
       {short}: {on ? c.consentGranted : c.consentNone}
-    </span>
+    </Badge>
   );
 }

@@ -9,6 +9,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import {
@@ -171,7 +173,7 @@ function Body({
         {detail.orders.length === 0 ? (
           <p className="orders-empty">{c.ordersNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.ordersSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="customer-orders">
               <thead>
                 <tr><th>{c.orderId}</th><th>{c.created}</th><th>{c.total}</th><th>{c.payment}</th><th>{c.status}</th></tr>
@@ -193,7 +195,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
         <p className="orders-hint">{c.ordersNewest}</p>
       </section>
@@ -203,7 +205,7 @@ function Body({
         {detail.claims.length === 0 ? (
           <p className="orders-empty">{c.claimsNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.claimsSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="customer-claims">
               <thead><tr><th>{c.platform}</th><th>{c.boundAt}</th><th>{c.lines}</th></tr></thead>
               <tbody>
@@ -216,7 +218,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
 
@@ -228,9 +230,9 @@ function Body({
             return (
               <li key={purpose} data-testid={`consent-${purpose}`}>
                 <span>{label(purpose)}</span>
-                <span className={`orders-badge ${on ? "orders-tone-success" : "orders-tone-neutral"}`}>
+                <Badge tone={on ? "success" : "neutral"}>
                   {on ? c.consentGranted : c.consentNone}
-                </span>
+                </Badge>
                 {on && detail.active && (
                   <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== ""}
                     onClick={() => void withdraw(purpose, channel)}>
@@ -246,7 +248,7 @@ function Body({
         {detail.consent_history.length === 0 ? (
           <p className="orders-empty">{c.consentHistoryNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.consentSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="consent-history">
               <thead>
                 <tr><th>{c.when}</th><th>{c.consentSection}</th><th>{c.source}</th><th>{c.policy}</th></tr>
@@ -257,9 +259,9 @@ function Body({
                     <td>{displayTime(locale, event.occurred_at)}</td>
                     <td>
                       {label(event.purpose)}:{" "}
-                      <span className={`orders-badge ${event.granted ? "orders-tone-success" : "orders-tone-neutral"}`}>
+                      <Badge tone={event.granted ? "success" : "neutral"}>
                         {event.granted ? c.consentGranted : c.consentNone}
-                      </span>
+                      </Badge>
                     </td>
                     <td>{c.sources[event.source] ?? event.source}</td>
                     <td>{event.policy_version}</td>
@@ -267,7 +269,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
 
@@ -297,7 +299,7 @@ function Body({
         {detail.privacy_actions.length === 0 ? (
           <p className="orders-empty">{c.actionsNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.privacySection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="privacy-actions">
               <thead><tr><th>{c.when}</th><th>{c.actionCol}</th><th>{c.source}</th></tr></thead>
               <tbody>
@@ -310,7 +312,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
     </>

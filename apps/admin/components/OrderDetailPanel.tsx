@@ -4,7 +4,8 @@
 // sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). A plain render function with no state of its own: MerchantOrders
 // owns the list, polling and selection and passes the loaded detail in; the BFF routes are listed in the section components.
 import type { Locale } from "@live-commerce/i18n";
-import { Badge } from "@live-commerce/ui";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import { money } from "@/lib/client";
 import type { OrderActions, OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
@@ -60,7 +61,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
     >
       <div className="orders-items">
         <h2>{c.items}</h2>
-        <div className="orders-items-scroll">
+        <TableFrame label={c.items} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-items-scroll">
           <table>
             <thead>
               <tr>
@@ -84,7 +85,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
               ))}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
         <dl className="orders-totals">
           <div>
             <dt>{c.subtotal}</dt>

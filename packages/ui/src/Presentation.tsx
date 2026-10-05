@@ -159,48 +159,13 @@ export function TabStrip({
   }, [children, ref]);
   return (
     <div className={s.tabs}>
-      {(edges.before || edges.after) && (
-        <button
-          type="button"
-          className={s.scrollButton}
-          aria-label={previousLabel}
-          aria-disabled={!edges.before}
-          onClick={() => edges.before && ref.current?.scrollBy({ left: -240 })}
-        >
-          <Chevron reverse />
-        </button>
-      )}
       <div role="group" {...props} aria-label={props["aria-label"] ?? label} ref={ref} className={`${s.tabStrip} ${props.className ?? ""}`}>
         {children}
       </div>
       {(edges.before || edges.after) && (
-        <button
-          type="button"
-          className={s.scrollButton}
-          aria-label={nextLabel}
-          aria-disabled={!edges.after}
-          onClick={() => edges.after && ref.current?.scrollBy({ left: 240 })}
-        >
-          <Chevron />
-        </button>
+        <p className={s.scrollHint}>{previousLabel} · {nextLabel}</p>
       )}
     </div>
-  );
-}
-
-function Chevron({ reverse = false }: { reverse?: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <path d={reverse ? "m15 5-7 7 7 7" : "m9 5 7 7-7 7"} />
-    </svg>
   );
 }
 
@@ -209,11 +174,13 @@ export function TableFrame({
   label,
   scrollHint,
   className = "",
+  scrollClassName = "",
 }: {
   children: ReactNode;
   label: string;
   scrollHint: string;
   className?: string;
+  scrollClassName?: string;
 }) {
   const { ref, edges } = useScrollFrame();
   const hintId = useId();
@@ -221,7 +188,7 @@ export function TableFrame({
     <div className={`${s.tableContainer} ${className}`}>
       <div
         ref={ref}
-        className={s.tableFrame}
+        className={`${s.tableFrame} ${scrollClassName}`}
         role="region"
         aria-label={label}
         tabIndex={edges.before || edges.after ? 0 : undefined}
