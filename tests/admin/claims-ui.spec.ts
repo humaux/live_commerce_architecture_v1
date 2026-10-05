@@ -221,6 +221,9 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
     const box = merchant.getByTestId("claims-source");
     await expect(box.getByTestId("claims-source-status")).toBeVisible();
     await expect(merchant.getByTestId("claims-feed")).toHaveText(words.feedNone);
+    // The English phase reuses the earlier offer form: establish the prerequisite
+    // through the real control before checking the disabled-state explanation.
+    await merchant.locator("#claims-offer-product").selectOption("");
     await expect(merchant.locator("#claims-offer-sku")).toBeDisabled();
     await expect(merchant.locator("#claims-offer-sku")).toHaveAccessibleDescription(words.skuChooseProduct);
     await expect(merchant.locator("#claims-offer-sku-hint")).toHaveText(words.skuChooseProduct);
