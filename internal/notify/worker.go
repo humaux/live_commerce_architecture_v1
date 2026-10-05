@@ -40,11 +40,15 @@ type queue interface {
 	Record(ctx context.Context, batch, state string, recipientHash []byte) error
 }
 
-// Worker drains notify.outbox. Construct with NewWorker; Run until the context ends.
+// Worker drains notify.outbox (buyer/merchant-new) or notify.merchant_alerts (meta health). Construct with NewWorker or
+// NewMerchantWorker; Run until the context ends.
 type Worker struct {
 	q     queue
 	m     Mailer
 	every time.Duration
+	// adminOrigin is the platform admin origin the meta_health CTA links to (contract meta-connection-health-v1 §10: the
+	// admin origin, never a storefront or Meta URL). Empty for the buyer worker.
+	adminOrigin string
 }
 
 // NewWorker binds the commerce_expiry_worker pool and the SMTP sender. dailyCap is COMMERCE_MAIL_DAILY_CAP: notify mail may use 60% of it (§E3).
@@ -53,6 +57,46 @@ func NewWorker(pool *pgxpool.Pool, m Mailer, dailyCap int) (*Worker, error) {
 		return nil, errors.New("notify: pool, mailer and a daily cap of 20..100000 required")
 	}
 	return &Worker{q: pgQueue{pool: pool, budget: dailyCap * 60 / 100}, m: m, every: DefaultEvery}, nil
+}
+
+// NewMerchantWorker drains notify.merchant_alerts (the meta connection-health owner mail, migration 0125 §5.2) through
+// notify.claim_merchant_alerts / notify.record_merchant_alert, sharing the 60% notify budget. adminOrigin is the admin
+// origin the reconnect CTA points at (https only, §10); it is injected into every meta_health payload, never read from SQL.
+func NewMerchantWorker(pool *pgxpool.Pool, m Mailer, dailyCap int, adminOrigin string) (*Worker, error) {
+	if pool == nil || m == nil || dailyCap < 20 || dailyCap > 100000 {
+		return nil, errors.New("notify: pool, mailer and a daily cap of 20..100000 required")
+	}
+	if adminOrigin == "" || !strings.HasPrefix(adminOrigin, "https://") || strings.ContainsAny(adminOrigin, " \r\n\"<>") {
+		return nil, errors.New("notify: admin origin must be an https origin")
+	}
+	return &Worker{q: merchantQueue{pool: pool, budget: dailyCap * 60 / 100}, m: m, every: DefaultEvery, adminOrigin: adminOrigin}, nil
+}
+
+// merchantQueue is the merchant_alerts side of the loop (the meta_health owner mail); the record key is the alert id.
+type merchantQueue struct {
+	pool   *pgxpool.Pool
+	budget int
+}
+
+// Claim calls notify.claim_merchant_alerts (commerce_expiry_worker): housekeeping, then up to limit PENDING alerts under the 60% budget.
+func (q merchantQueue) Claim(ctx context.Context, limit int) ([]Payload, error) {
+	var raw []byte
+	if err := q.pool.QueryRow(ctx, `SELECT notify.claim_merchant_alerts($1::integer,$2::integer)`, limit, q.budget).Scan(&raw); err != nil {
+		return nil, err
+	}
+	var out []Payload
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Record calls notify.record_merchant_alert (commerce_expiry_worker) on a context that survives shutdown, so a send that happened is always written down.
+func (q merchantQueue) Record(ctx context.Context, batch, state string, recipientHash []byte) error {
+	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), recordTimeout)
+	defer cancel()
+	_, err := q.pool.Exec(rctx, `SELECT notify.record_merchant_alert($1::uuid,$2,$3)`, batch, state, recipientHash)
+	return err
 }
 
 type pgQueue struct {
@@ -119,6 +163,9 @@ func (w *Worker) Once(ctx context.Context) (int, error) {
 // deliver makes the one attempt per recipient and records the aggregate: any UNKNOWN wins (never re-sent, I06), else any SENT (the others
 // are not retried, so nobody gets a duplicate), else FAILED (every recipient certainly refused: the queue retries with backoff).
 func (w *Worker) deliver(ctx context.Context, p Payload) {
+	if p.Kind == KindMetaHealth && p.AdminURL == "" {
+		p.AdminURL = w.adminOrigin // §10: the admin origin, injected here, never read from SQL
+	}
 	msgs := Render(p)
 	var sent, unknown int
 	for _, msg := range msgs {
@@ -152,13 +199,14 @@ func (w *Worker) deliver(ctx context.Context, p Payload) {
 	}
 }
 
-// recipientHash is sha256("order id : lowercase address") of the buyer address (§E7); a merchant batch hashes its sorted owner list.
+// recipientHash is sha256("order id : lowercase address") of the buyer address (§E7); a merchant batch (or the meta_health
+// owner mail, migration 0125 §5.2) hashes its sorted owner list.
 func recipientHash(p Payload) []byte {
 	if len(p.To) == 0 {
 		return nil
 	}
 	var key string
-	if p.Kind == KindMerchantNew {
+	if p.Kind == KindMerchantNew || p.Kind == KindMetaHealth {
 		to := make([]string, len(p.To))
 		for i, a := range p.To {
 			to[i] = strings.ToLower(a)

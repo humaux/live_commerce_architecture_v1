@@ -1,0 +1,32 @@
+# Static checks — unit w1-01b-meta-health (backend, DeepSeek V4-Pro)
+# Base SHA: 1a6a9177  worktree: .worktrees/w1-01b-meta-health  branch: unit/w1-01b-meta-health
+
+== go build ./... ==
+exit 0 (no output)
+
+== go vet (touched packages) ==
+$ go vet ./cmd/api ./cmd/claims-worker ./cmd/expiry-worker ./internal/httpapi ./internal/httperror ./internal/metaconnect ./internal/notify ./internal/integrations/metareply ./tests/foundation
+exit 0 (no output)
+
+== gofmt -l (touched Go files) ==
+$ gofmt -l cmd/api cmd/claims-worker cmd/expiry-worker internal/httpapi internal/httperror internal/metaconnect internal/notify internal/integrations/metareply tests/foundation/meta_health_test.go
+(empty = clean)
+
+== header ratchet (manual, mirroring scripts/dev/check-headers.sh) ==
+Added files all carry Purpose: / Depends on: / Used by: labelled lines within their first 25 lines:
+  cmd/api/merchant_meta_health.go, internal/httpapi/meta_health.go, internal/integrations/metareply/probe.go,
+  internal/metaconnect/{capability,derive,health}.go, migrations/0125_meta_connection_health.sql
+Modified pre-existing files carry a leading doc comment (repo convention). *_test.go, tests/*, docs/*, output/* are skipped by the ratchet.
+
+== check-gates.sh registry (mode <-> GATES.md) ==
+--meta-health present in scripts/dev/test-local.sh usage line (line 16) AND documented as a T2-subset row in
+docs/delivery/GATES.md (line 112). No duplicated elif branch (grep for `^elif \[\[ "\$test_mode" == --` shows each mode once).
+0125 grants use the split authorities only: commerce_integration_writer (tables + enqueue_merchant_alert), commerce_checkout_writer
+(notify.merchant_alerts table), commerce_claims_worker (claim/record/report_capability_failure/mark_capability_evidence/binding_capability_state),
+commerce_expiry_worker (notify.claim/record_merchant_alert), commerce_runtime (snapshot/recheck + SELECT). No grant to the retired bare
+`commerce_worker`: the contract §8 lists it beside commerce_claims_worker for the three demotion/reader functions, but 0096 retired that
+role (empty, no login may join it), so 0125 grants those three to commerce_claims_worker only (see the migration header + DELIVERY.md MCH10).
+
+BLOCKED (environment, unrelated to this Go/SQL/shell/docs change): `bash scripts/dev/check-gates.sh` exits before its
+registry/header sections because the node leg needs `node_modules/typescript-api` (package.json aliases
+`typescript-api: npm:typescript@6.0.3`), which is not installed in this worktree. The static legs above were verified by hand.

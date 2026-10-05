@@ -269,6 +269,10 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 -- meta-connect D2 (migration 0100): the claims-worker's disconnect unsubscribe job (the only holder of the private HPKE ring);
 	 ('integration.claim_meta_unsubscribe()'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.finish_meta_unsubscribe(uuid,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 -- LC-B3 (migration 0119, live-console-v1 §3.1): the one-shot meta_resubscribe_v1 job pair, same shape as the
+	 -- 0100 unsubscribe pair above (claims worker only; the merchant runtime never reaches it).
+	 ('integration.claim_meta_resubscribe()'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
+	 ('integration.finish_meta_resubscribe(uuid,text,text)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 -- AT9 (migration 0113): explicitly enumerate the four new aggregate-only live-audience read helpers.
 	 -- The merchant plans a scoped read; only the Page-token claims worker checks/loads/completes it.
 	 -- This extends the exact signature contract, not the privilege set of any existing function.
@@ -304,7 +308,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 74 || !safe {
+	if err != nil || functions != 76 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

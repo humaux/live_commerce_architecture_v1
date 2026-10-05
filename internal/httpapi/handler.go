@@ -61,12 +61,18 @@ type Options struct {
 	// LiveFlowJobs is the insert-only main-schema river client for the A5 page-live-videos read route
 	// (cmd/api buildLiveFlowJobs). nil leaves that one POST unmounted; the other A5 rows stay mounted.
 	LiveFlowJobs *river.Client[pgx.Tx]
+	// CommentStream is the live-console comment read-through (unit LC-B2: bridge client + payload keyring,
+	// built by cmd/api). nil leaves the A2/A3 console-comment routes unmounted.
+	CommentStream *live.CommentStream
 	// Ads is the meta-ads-v1 merchant service (cmd/api builds it with the insert-only river client, the FLfB dialog
 	// config and the metaads OAuth exchange). nil leaves the ads routes unmounted; mount only after 0080 (contract 4.3).
 	Ads *ads.Service
 	// MetaConnect is the merchant Facebook Page / Instagram connect service (cmd/api newMetaConnect; contract meta-claims-intake-v1
 	// "Merchant connect (R4)"). nil leaves the meta-connect routes unmounted.
 	MetaConnect *metaconnect.Service
+	// MetaHealth is the meta connection-health banner service (contract meta-connection-health-v1 §9; cmd/api newMetaHealth).
+	// nil leaves the B1/B2 routes unmounted.
+	MetaHealth *metaconnect.Health
 	// Billing is the platform-fee service (cmd/api buildPlatformBilling). nil (LC_BILLING_ENABLED unset)
 	// still mounts the billing GET routes; the POSTs answer 503 billing_unavailable.
 	Billing *billing.Service
@@ -191,6 +197,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
 	registerLiveLifecycleRoutes(mux, pool, configured.Studio || configured.Live != nil) // LC-B1 A7
+	registerLiveStreamRoutes(mux, pool, configured.CommentStream)
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {
@@ -200,6 +207,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
+	registerMetaHealthRoutes(mux, pool, configured.MetaHealth)
 	registerCustomerRoutes(mux, pool)
 	registerFinanceRoutes(mux, pool)
 	registerBillingRoutes(mux, pool, configured.Billing)

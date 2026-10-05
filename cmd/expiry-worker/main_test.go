@@ -79,6 +79,9 @@ func TestBuyerMailConfig(t *testing.T) {
 	if err != nil || config.mail == nil || config.mail.dailyCap != 200 {
 		t.Fatalf("valid mail configuration rejected: %v", err)
 	}
+	if config.mail.adminOrigin != "" {
+		t.Fatal("unset admin origin must leave the merchant-alert loop off")
+	}
 	off := map[string]string{}
 	for k, v := range base {
 		off[k] = v
@@ -86,6 +89,15 @@ func TestBuyerMailConfig(t *testing.T) {
 	off["COMMERCE_BUYER_MAIL_ENABLED"] = "0"
 	if config, err = loadConfig(read(off)); err != nil || config.mail != nil {
 		t.Fatal("flag 0 must leave the loop off without reading SMTP variables")
+	}
+	// meta connection-health owner mail (0125 §10): a valid admin origin turns the merchant-alert loop on.
+	withAdmin := map[string]string{}
+	for k, v := range base {
+		withAdmin[k] = v
+	}
+	withAdmin["COMMERCE_ADMIN_ORIGIN"] = "https://admin.example.test"
+	if config, err = loadConfig(read(withAdmin)); err != nil || config.mail.adminOrigin != "https://admin.example.test" {
+		t.Fatalf("valid admin origin rejected: %v", err)
 	}
 	for _, tc := range []struct{ field, value string }{
 		{"COMMERCE_BUYER_MAIL_ENABLED", "yes"},
@@ -97,6 +109,9 @@ func TestBuyerMailConfig(t *testing.T) {
 		{"COMMERCE_MAIL_DAILY_CAP", "19"},
 		{"COMMERCE_MAIL_DAILY_CAP", "100001"},
 		{"COMMERCE_MAIL_DAILY_CAP", "many"},
+		{"COMMERCE_ADMIN_ORIGIN", "http://admin.example.test"},       // §10: https only
+		{"COMMERCE_ADMIN_ORIGIN", "https://admin.example.test\r\nx"}, // header injection
+		{"COMMERCE_ADMIN_ORIGIN", "https://admin.example.test/a b"},  // whitespace
 	} {
 		values := map[string]string{}
 		for k, v := range base {

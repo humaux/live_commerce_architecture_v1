@@ -102,7 +102,7 @@ read only as the IG live fallback of OPEN-4.
 - The poller lives in `cmd/claims-worker` (the only process that can open a Page token). One poller per active
   `live.claim_sources` row, held under a lease row `live.comment_poll_leases(tenant_id, store_id, source_id PK,
   generation bigint, holder_id text, poll_epoch bigint, lease_token_hash bytea, lease_until timestamptz,
-  demand_until timestamptz)` (0121, FORCE RLS,
+  demand_until timestamptz)` (0123, FORCE RLS,
   writer `commerce_integration_writer` through definers only). Lease 30 s, renewed every 10 s; a second worker replica
   finds the lease held and does not poll (I23: at most one Graph poller per source fleet-wide).
 - Token: new loader `integration.load_meta_page_token_for_poll(p_source uuid, p_generation bigint, p_lease_token
@@ -588,7 +588,7 @@ v1 (claims never touch stock, arch §11.2; the buyer sees sold-out at checkout, 
 
 `POST …/live-sessions/{sid}/comments/{comment_ref}/print` (`live:manage`, idempotent per key) → `live.comment_prints
 (tenant_id, store_id, session_id, comment_ref, print_count, first_printed_at, last_printed_at, last_principal_id)`
-(0121, FORCE RLS, upsert by definer). The label content (display name, keyword, quantity, time) is rendered by the
+(0123, FORCE RLS, upsert by definer). The label content (display name, keyword, quantity, time) is rendered by the
 browser from the in-memory comment it already holds (W3-U3); the server stores only the fact of printing. Retention
 class C3 (`intake_days`).
 
@@ -852,7 +852,7 @@ Order respects 2 writing units / 4 agents; upstream interfaces frozen before dow
 | Unit | Owner | Covers | Write paths | Migration (placeholder) | Gate | Depends |
 | --- | --- | --- | --- | --- | --- | --- |
 | LC-B1 = W2-01B lifecycle + multi-window | DeepSeek | §8, §9, §7.3 timeline (`live.offer_timeline`), A7 | `internal/live/lifecycle.go`, `internal/httpapi/live_lifecycle.go`, `internal/claims/merchant.go` (window cap only) | 0120 | `--studio-backend`, `test-focused.sh 'LiveLifecycle'`, LCN09, G07 | A5, A7 merged |
-| LC-B2 = W2-02B comment read-through | DeepSeek | §2 (poller, leases, caps, bridge incl. `comment-facts`, cursors, deletion eviction, `social.read_comment_events`), §2.5 marks, §7.4 prints, A2, A3 | `internal/integrations/metareply/comment_poll.go`, `internal/integrations/metareply/bridge.go`, `internal/live/stream.go`, `internal/httpapi/live_stream.go`, `cmd/claims-worker/main.go` (wiring), `deploy/compose.yml` + `secrets.manifest.tsv` (bridge token, `replicas=1`; integrator-merged) | 0121 | `--live-console` LCN01/02/04/05 | A5-3, W1-01B |
+| LC-B2 = W2-02B comment read-through | DeepSeek | §2 (poller, leases, caps, bridge incl. `comment-facts`, cursors, deletion eviction, `social.read_comment_events`), §2.5 marks, §7.4 prints, A2, A3 | `internal/integrations/metareply/comment_poll.go`, `internal/integrations/metareply/bridge.go`, `internal/live/stream.go`, `internal/httpapi/live_stream.go`, `cmd/claims-worker/main.go` (wiring), `deploy/compose.yml` + `secrets.manifest.tsv` (bridge token, `replicas=1`; integrator-merged) | 0123 | `--live-console` LCN01/02/04/05 | A5-3, W1-01B |
 | LC-B3 = W2-03B inbox read + subscription + roles | DeepSeek | §3.1 (incl. resubscribe job), §3.2, §3.6 state/window/`dm_window`/read/takeover expiry, §3.7 customer link, A8–A11, A13, A14, permissions `inbox:read`/`inbox:reply`/`inventory:live_adjust` and role bundles (§14.8) | `internal/inbox/**` (read side), `internal/httpapi/inbox.go`, `internal/metaconnect/graph.go` (fields), `internal/integrations/metareply/resubscribe.go` | 0122 | `--inbox` LCN03, LCN10 (read/expiry part), G07 | W1-01B |
 | LC-B4 = W2-04B sends + takeover | DeepSeek | §3.3–3.5, §3.6 takeover checks, §4 (planners, quota with intake row lock, `link_pending_manual`, `:m1`, rate caps, adapter routes, Finish hook, `bundle_peers`), A4, A5, A6 comment, A12; §14.1 clauses 2–3 | `internal/inbox/send*.go`, `internal/integrations/metareply/{send_dm.go,public_reply.go,manual_reply.go}`, `internal/integrations/metareply/routes.go` (takeover re-check only), `internal/claims/meta_intake.go` (reply_used skip only) | 0123 | `--inbox-send` LCN06–08, 10, 11, 13; Claude final review | LC-B2 (`comment-facts`), LC-B3 |
 | LC-B5 = W2-05B templates | DeepSeek | template ids/versions, `public_safe`, `order-pay-link/v1`, `offer-recommend/v1` | `internal/msgtemplates/**`, `internal/httpapi/templates.go` | 0124 | `--msg-templates` | contract frozen (parallel with LC-B4) |
@@ -896,7 +896,7 @@ Source: K3 adversarial re-review `output/live-console-review-k3b/REVIEW.md` (bra
 `d231cc23`; FREEZE_AFTER_FIXES, 0 P0 / 4 P1 / 10 P2). Append-only: the frozen text above is not edited; where a clause
 below conflicts with it, **this amendment wins** for the clause it names, and every other clause stays frozen.
 Integrator-delegated (Opus); evidence label DESIGN; every added gate case NOT_RUN. Migration numbers are assigned by
-the integrator at merge (real numbers already differ from the §16 placeholders: LC-B3 = 0119, LC-B5 = 0121).
+the integrator at merge (real numbers already differ from the §16 placeholders: LC-B3 = 0119, LC-B5 = 0121, LC-B2 = 0123; 0122 reserved for LC-B1).
 
 ### A1.1 P1-1 — `link_pending_manual` remediation (amends §4.2 bullet 2, §11 A4/A8/A13, §14.1 clause 2)
 
@@ -1044,9 +1044,9 @@ Skipped:
 
 ### A1.6 Unit deltas
 
-- **LC-B2 (in progress)** must add: the platform-branched IG Graph read in bridge `comment-facts` (A1.2 1a) with
+- **LC-B2 (implemented in 0123, MOCK; integrator-completed 2026-10-05)** adds: the platform-branched IG Graph read in bridge `comment-facts` (A1.2 1a) with
   `is_page`/`is_reply`/`created_at` derivation and `{found:false}` when neither buffer nor Graph has the comment; the
-  definer `social.read_comment_facts` (A1.2 1b, in its own migration beside `social.read_comment_events`) and the API
+  definer `social.read_comment_facts` (A1.2 1b, in 0123 beside `social.read_comment_events`) and the API
   fallback path that calls it; reason `facts_unavailable` in `live.console_marks`; LCN02/LCN07 IG facts cases.
 - **LC-B4**: A1.1 (120 s confirm gate, `confirm_preempt_auto`, audit, `link_pending_manual` in A13 and A8), A1.2's
   `comment_facts_unavailable` refusal in A4, A1.3 advisory locks in all four producers, A1.4.4 adapters return UNKNOWN

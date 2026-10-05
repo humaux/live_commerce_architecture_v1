@@ -77,7 +77,9 @@ func TestOwnerProvisioningOP01(t *testing.T) {
 	}
 	// 0089 (staff-team, integrator ruling D1): a trigger makes the creator the first owner with the full owner bundle, which
 	// adds the ads:* permissions create_initial_store's own list predates.
-	want := op01Sorted(op01Base, op01New, []string{"ads:read", "ads:manage", "ads:approve"})
+	// 0119 (live-console-v1 §3.1/§14.8, LC-B3): the owner bundle is the whole catalogue, which now also holds the inbox and
+	// bounded live-stock permissions.
+	want := op01Sorted(op01Base, op01New, []string{"ads:read", "ads:manage", "ads:approve", "inbox:read", "inbox:reply", "inventory:live_adjust"})
 	if got := grantsOf(first.TenantID, first.StoreID, session.PrincipalID); strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("creator grants\n got  %v\n want %v", got, want)
 	}
