@@ -3,6 +3,8 @@ Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source c743b465, CI 
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
 # LC-U1 — CI repairs submitted; privacy ruling blocks acceptance
 
+Latest D3 follow-up: [D3-DELIVERY.md](D3-DELIVERY.md) records the shared Claims/Console Go/SQL enum, third mode picker, zh-TW/en/ja host prompts, red→green parity and **477/477** Node result. It merges integration `8c3851e4` and requires the additional GitHub `--browser-e2e` real-click matrix. The source hashes there bind the final D3 commit; the older SHA and CI receipts below remain historical.
+
 Current source **`c743b465472a657f7652cc80934055d9e1b9577d`** includes trunk **`685d465c`**, the Next proxy repair, settings scene selector, updated leaf/title drivers and CI display/serial-fixture configuration. Local Node **465/465**, scoped **25/25**, both typechecks and check-gates exit 0. **TCV09 is still RED**, pending the explicit Facebook-preview/CSP ruling; it has not been weakened. Full per-failure attribution, command exits and rerun modes: [CI-37443892071.md](CI-37443892071.md).
 
 The earlier LC-B7 alignment and initial candidate receipts below remain historical evidence. No current browser PASS is claimed.

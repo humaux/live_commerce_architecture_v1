@@ -3,12 +3,12 @@
 // Used by: console-client.ts, LiveConsole and LiveWorkspace; the stores BFF validates these same public shapes.
 // Invariants: I03/I05/I10/I11/I14; no client amount/stock truth or guessed external state; LC-B7 owns the real read model.
 import { parseDraft, type Draft } from "../../../lib/studio-model.ts";
-import { parseImportResult, type ImportResult } from "../../../lib/claims-model.ts";
+import { matchModes, parseImportResult, type ImportResult, type MatchMode } from "../../../lib/claims-model.ts";
 
 /** Session lifecycle, separate from media programme/operation state. */
 export type Lifecycle = "draft" | "live" | "ended" | "archived";
 /** Wire values returned by claims.MatchMode in A1, A5 and A7. */
-export type ConsoleMatchMode = "EXACT" | "KEYWORD_QTY_ONLY" | "KEYWORD_QTY_CONTAINS";
+export type ConsoleMatchMode = MatchMode;
 /** Full claims.Window returned by A7 and A5 copy. */
 export type ConsoleClaimWindow = {
   session_id: string; state: "OPEN" | "CLOSED"; match_mode: ConsoleMatchMode; generation: number;
@@ -75,7 +75,7 @@ function exact(v: unknown, fields: string[], optional: string[] = []): Record<st
   if (fields.some((k) => !Object.hasOwn(r, k)) || Object.keys(r).some((k) => !fields.includes(k) && !optional.includes(k))) fail();
   return r;
 }
-const modes = ["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"];
+const modes = matchModes;
 const lifecycle = ["draft", "live", "ended", "archived"];
 function window(v: unknown, sid: string): ConsoleClaimWindow {
   const r = exact(v, ["session_id", "state", "match_mode", "generation", "version", "opened_at", "closed_at"]);
