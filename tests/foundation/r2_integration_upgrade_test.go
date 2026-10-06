@@ -63,8 +63,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0152 (W5-02B customer import) adds one more: 76 -> 77.
 	// 0153 (OPS-02B support grants) adds one more: 77 -> 78.
 	// 0150 (W4-S2 platform settlement ledger) adds one more: 78 -> 79.
-	if len(r2) != 79 {
-		t.Fatalf("R2 migration set = %d files %v, want 79", len(r2), r2)
+	// 0155 (W3-08B returns + merchant cancel) adds one more: 79 -> 80.
+	if len(r2) != 80 {
+		t.Fatalf("R2 migration set = %d files %v, want 80", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

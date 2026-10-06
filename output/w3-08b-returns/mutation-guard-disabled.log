@@ -1,0 +1,14 @@
+    returns_test.go:505: forged ADJUST with the restock operation: SQLSTATE "", want 42501
+--- FAIL: TestReturns (16.20s)
+    --- PASS: TestReturns/RT01_register_2,_receive_2,_1_sellable_+_1_scrap:_one_DEALLOCATE_row,_stock_back_once,_payments_untouched (0.07s)
+    --- PASS: TestReturns/RT02_refusals:_unshipped,_over_the_shipped_quantity_(closed_RMAs_count),_unknown_line,_cross-store (2.01s)
+    --- PASS: TestReturns/RT03_inspect_and_close_need_inventory:write_on_top_of_fulfillment:write;_state_unchanged (1.04s)
+    --- PASS: TestReturns/RT07_a_refund_neither_restocks_nor_moves_the_order;_the_RMA_only_links_it,_a_foreign_refund_is_refused (1.04s)
+    --- PASS: TestReturns/RT09_replay_returns_the_original,_other_body_on_the_same_key_conflicts,_stale_version_drifts (1.01s)
+    --- PASS: TestReturns/two_concurrent_closes_of_one_RMA_restock_exactly_once (0.96s)
+    --- PASS: TestReturns/two_RMAs_of_one_line_closed_concurrently_each_restock_their_own_units,_never_more_than_shipped (0.95s)
+    --- FAIL: TestReturns/the_ledger_refuses_forged_rows_with_the_reserved_operations (0.94s)
+FAIL
+FAIL	livecommerce/tests/foundation	18.236s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

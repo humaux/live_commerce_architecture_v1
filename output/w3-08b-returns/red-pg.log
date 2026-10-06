@@ -1,0 +1,33 @@
+    returns_test.go:153: register: got 404 map[code:not_found details:map[] message:Resource not found. request_id:b2078ccfb8aa0d0317fe4894a4c34068 retryable:false], want 201 
+    returns_test.go:234: unshipped order: got 404 map[code:not_found details:map[] message:Resource not found. request_id:8ae741af8843ba2bf0bf5bdeb6479111 retryable:false], want 409 not_shipped
+    returns_test.go:300: register: got 404 map[code:not_found details:map[] message:Resource not found. request_id:a5f0d12653c28e6bcbb6004919f69f7c retryable:false], want 201 
+    returns_test.go:352: register: 404 map[code:not_found details:map[] message:Resource not found. request_id:29e29f1192b89b3fce26f4ee85e24078 retryable:false]
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestReturns (9.92s)
+    --- FAIL: TestReturns/RT01_register_2,_receive_2,_1_sellable_+_1_scrap:_one_DEALLOCATE_row,_stock_back_once,_payments_untouched (0.02s)
+    --- FAIL: TestReturns/RT02_refusals:_unshipped,_over_the_shipped_quantity_(closed_RMAs_count),_unknown_line,_cross-store (1.00s)
+    --- FAIL: TestReturns/RT03_inspect_and_close_need_inventory:write_on_top_of_fulfillment:write;_state_unchanged (0.96s)
+    --- FAIL: TestReturns/RT07_a_refund_neither_restocks_nor_moves_the_order;_the_RMA_only_links_it,_a_foreign_refund_is_refused (0.99s)
+    returns_test.go:550: wrong expected state: got 404 map[code:not_found details:map[] message:Resource not found. request_id:2db92997e8c42939aa90b01b6463c1e3 retryable:false], want 409 state_changed
+    returns_test.go:585: cancel AWAITING_PAYMENT: got 404 map[code:not_found details:map[] message:Resource not found. request_id:27e0f2613965fc52211a1ad5f26fddf6 retryable:false], want 409 payment_in_flight
+    returns_test.go:601: cancel, nothing refunded: got 404 map[code:not_found details:map[] message:Resource not found. request_id:57cbfe6e288168340847c8e7f4460d32 retryable:false], want 409 refund_first
+    returns_test.go:650: cancel a shipped order: got 404 map[code:not_found details:map[] message:Resource not found. request_id:fc0c65cae47a8f8e941357acebf1a20b retryable:false], want 409 already_shipped
+    returns_test.go:675: concurrent cancels answered [404 404]
+    returns_test.go:703: cancel member 1 of 3: got 404 map[code:not_found details:map[] message:Resource not found. request_id:52276d8ff325540e02161577fcad3bc6 retryable:false], want 200 
+    returns_test.go:746: cancel, nothing refunded: got 404 map[code:not_found details:map[] message:Resource not found. request_id:f76b09838d689df9c0d35471361175de retryable:false], want 409 refund_first
+    returns_test.go:788: not exactly one winner: cancel 404, payment start error <nil> (order AWAITING_PAYMENT PAYMENT_PENDING)
+    returns_test.go:802: cancel a COD order: got 404 map[code:not_found details:map[] message:Resource not found. request_id:e00edc84fc80a0c6294381e471bda567 retryable:false], want 200 
+--- FAIL: TestMerchantCancel (11.64s)
+    --- FAIL: TestMerchantCancel/RT04_an_unpaid_hold_is_cancelled:_reservation_released,_sellable_quantity_restored,_replay_safe (0.05s)
+    --- FAIL: TestMerchantCancel/RT05_a_payment_in_progress_cannot_be_cancelled_by_the_merchant (0.49s)
+    --- FAIL: TestMerchantCancel/RT06_a_paid_order_needs_refunds_covering_the_capture_first_(409_refund_first);_never_an_automatic_refund;_then_it_cancels (1.11s)
+    --- FAIL: TestMerchantCancel/a_shipped_order_is_not_cancellable_(returns_path);_permissions_are_enforced (0.98s)
+    --- FAIL: TestMerchantCancel/concurrent_cancels_of_one_refunded_order:_one_wins,_stock_released_once (0.93s)
+    --- FAIL: TestMerchantCancel/RT08_cancelling_a_member_of_an_OPEN_parcel_group_removes_it;_the_last_survivor_dissolves_the_group (2.69s)
+    --- FAIL: TestMerchantCancel/a_refused_cancel_leaves_its_parcel_group_untouched (1.82s)
+    --- FAIL: TestMerchantCancel/RT10_cancelling_a_hold_while_its_payment_starts:_exactly_one_wins,_stock_stays_consistent (0.06s)
+    --- FAIL: TestMerchantCancel/a_pay-at-pickup_order_cancels_through_the_same_command_(existing_§16.8_release) (0.08s)
+FAIL
+FAIL	livecommerce/tests/foundation	24.629s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1
