@@ -1,0 +1,171 @@
+/* Purpose: compact responsive order actions and A4 browser-print projection.
+ * Depends on: existing admin tokens and native dialog/print media.
+ * Used by: PickList, CarrierExport, CvsBatch and row-selection controls. */
+.pick-toolbar {
+  border-block: 1px solid var(--border, #ddd);
+  padding-block: 12px;
+  margin-block: 12px;
+}
+.pick-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.pick-controls p {
+  margin: 0;
+}
+.pick-controls label,
+.pick-export label {
+  display: grid;
+  gap: 4px;
+}
+.pick-controls details {
+  position: relative;
+}
+.pick-controls summary {
+  cursor: pointer;
+  padding: 10px;
+}
+.pick-export {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin: 8px 0;
+  min-width: 0;
+}
+.pick-export small,
+.pick-cvs small {
+  display: block;
+  flex-basis: 100%;
+  color: var(--text-muted, #555);
+}
+.pick-cvs {
+  margin-top: 12px;
+}
+.pick-confirm {
+  border: 1px solid var(--border, #ddd);
+  padding: 8px 12px;
+  margin-top: 8px;
+}
+.pick-confirm button {
+  margin-inline-end: 8px;
+}
+.pick-toolbar button,
+.pick-toolbar select,
+.pick-dialog button {
+  min-height: 44px;
+  max-width: 100%;
+}
+.pick-toolbar ul {
+  padding-inline-start: 20px;
+  overflow-wrap: anywhere;
+}
+.pick-row-check {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.pick-row-check input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+.pick-dialog {
+  width: min(820px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 24px;
+  box-sizing: border-box;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 12px;
+  color: var(--text, #222);
+  background: var(--surface, white);
+}
+.pick-dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+.pick-dialog-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.pick-lines {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.pick-lines th,
+.pick-lines td {
+  text-align: start;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+  overflow-wrap: anywhere;
+}
+.pick-lines th:last-child,
+.pick-lines td:last-child {
+  width: 64px;
+  text-align: end;
+}
+.pick-order h4 {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .pick-controls {
+    align-items: stretch;
+  }
+  .pick-controls label {
+    flex-basis: 100%;
+  }
+  .pick-dialog {
+    padding: 12px;
+  }
+  .pick-export {
+    display: grid;
+  }
+}
+@page {
+  size: A4 portrait;
+  margin: 15mm;
+}
+@media print {
+  body:has(.pick-print-root dialog[open]) > :not(.pick-print-root) {
+    display: none !important;
+  }
+  .pick-print-root,
+  .pick-print-root dialog[open] {
+    display: block !important;
+    position: static !important;
+    width: auto;
+    height: auto;
+    max-height: none;
+    max-width: none;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: white;
+    color: black;
+  }
+  .pick-dialog::backdrop {
+    display: none;
+  }
+  .pick-dialog-controls {
+    display: none !important;
+  }
+  .pick-lines tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .pick-lines thead {
+    display: table-header-group;
+  }
+  .pick-order h4 {
+    break-after: avoid;
+  }
+}

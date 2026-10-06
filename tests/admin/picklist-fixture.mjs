@@ -1,0 +1,235 @@
+// Purpose: isolated W3-U1b MOCK backend with observable selection/export/batch effects.
+// Depends on: node HTTP/crypto; contract DTOs from merged W3-02B, no PG/provider.
+// Used by: picklist.spec.ts real-click CI gate; synthetic IDs and identities only.
+import { createServer } from "node:http";
+import { randomBytes } from "node:crypto";
+export const storeID = "11111111-1111-4111-8111-111111111111";
+export const sessionID = "22222222-2222-4222-8222-222222222222";
+export const orderID = (n) =>
+  `33333333-3333-4333-8333-${String(n).padStart(12, "0")}`;
+const sku = "44444444-4444-4444-8444-444444444444";
+const line = {
+  sku_id: sku,
+  sku_code: "SYNTHETIC-ONE",
+  title: "合成測試商品 Synthetic item",
+  option_label: null,
+  qty: 2,
+};
+const stamp = "2026-10-06T06:00:00.000000Z";
+const number = (id) => `LC-${id.replaceAll("-", "").toUpperCase()}`;
+const columns = {
+  black_cat:
+    "order_id,recipient_name,phone,region,city,line1,line2,items,collect_minor",
+  hsinchu:
+    "order_id,order_number,recipient_name,phone,region,city,line1,line2,items,collect_minor",
+  chunghwa_post:
+    "order_id,recipient_name,phone,country,region,city,postal_code,line1,line2,items,total_minor",
+  generic:
+    "order_id,order_number,created_at_utc,destination_kind,recipient_name,phone,region,city,line1,line2,pickup_code,items,total_minor,collect_minor",
+};
+/** Start one synthetic server with test-owned faults; no production authority accepted. */
+export async function pickFixture() {
+  const token = randomBytes(32).toString("base64url"),
+    key = randomBytes(32).toString("base64url");
+  const state = {
+    count: 20,
+    canShip: true,
+    canExport: true,
+    unknown: false,
+    retry: false,
+    pickMalformed: process.env.LC_PICKLIST_INJECT_FAULT === "missing_totals",
+    requests: [],
+    batches: [],
+    exports: [],
+  };
+  const server = createServer(async (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store, private");
+    const json = (value, status = 200) => {
+      res.statusCode = status;
+      res.end(JSON.stringify(value));
+    };
+    const url = new URL(req.url, "http://localhost");
+    const path = url.pathname;
+    if (
+      path.startsWith("/v1/identity/")
+        ? req.headers["x-commerce-bff-key"] !== key
+        : req.headers.authorization !== `Bearer ${token}`
+    )
+      return json({ code: "unauthorized" }, 401);
+    if (path === "/v1/admin/stores")
+      return json({
+        items: [
+          {
+            id: storeID,
+            name: "合成撿貨測試店 Synthetic pick store",
+            currency: "TWD",
+            role: "owner",
+            permissions: [
+              "orders:read",
+              "live:read",
+              ...(state.canShip ? ["fulfillment:write"] : []),
+              ...(state.canExport ? ["orders:export"] : []),
+            ],
+          },
+        ],
+      });
+    if (!path.startsWith(`/v1/admin/stores/${storeID}/`))
+      return json({ code: "not_found" }, 404);
+    const route = path.slice(`/v1/admin/stores/${storeID}/`.length);
+    if (route === "order-actions")
+      return json({
+        refund: false,
+        fulfillment_write: state.canShip,
+        orders_export: state.canExport,
+      });
+    if (route === "orders" && req.method === "GET") {
+      const offset = url.searchParams.has("cursor")
+        ? Number(
+            Buffer.from(url.searchParams.get("cursor"), "base64url").toString(),
+          )
+        : 0;
+      const items = Array.from(
+        { length: Math.min(10, state.count - offset) },
+        (_, i) => {
+          const n = offset + i + 1,
+            id = orderID(n);
+          return {
+            order_id: id,
+            order_number: number(id),
+            created_at: stamp,
+            updated_at: stamp,
+            currency: "TWD",
+            total_minor: 2500,
+            commercial_state: "CONFIRMED",
+            fulfillment_state: "MANUAL_UNASSIGNED",
+            payment_state: "NOT_STARTED",
+            test_mode: false,
+            work_state: "NONE",
+            refunded_minor: 0,
+            refund_pending_minor: 0,
+            source: "storefront",
+            pickup_source: n % 2 ? "merchant_attested" : null,
+            payment_mode: "bank_transfer",
+            collection_state: null,
+            cod_surcharge_minor: null,
+            cod_collect_minor: null,
+            recipient_masked: "—",
+            delivery_kind: n % 2 ? "cvs_711" : "home",
+            live_sessions: [{ id: sessionID, name: "合成場次 Synthetic live" }],
+          };
+        },
+      );
+      return json({
+        items,
+        next_cursor:
+          offset + 10 < state.count
+            ? Buffer.from(String(offset + 10)).toString("base64url")
+            : "",
+        total: state.count,
+        counts: {
+          all: state.count,
+          unpaid: 0,
+          transfer_review: 0,
+          ready_to_ship: state.count,
+          ready_to_consign: 0,
+          shipped: 0,
+          completed: 0,
+          cancelled: 0,
+        },
+        sessions: [{ id: sessionID, name: "合成場次 Synthetic live" }],
+      });
+    }
+    if (
+      ["orders/pick-list", "orders/export", "shipments/cvs-batch"].includes(
+        route,
+      )
+    ) {
+      let text = "";
+      for await (const chunk of req) text += chunk;
+      const body = JSON.parse(text);
+      state.requests.push({
+        route,
+        body,
+        key: req.headers["idempotency-key"] ?? null,
+      });
+      const ids = body.order_ids ?? [orderID(1), orderID(2)];
+      if (route !== "shipments/cvs-batch" && req.headers["idempotency-key"])
+        return json({ code: "invalid_request" }, 422);
+      if (route === "orders/pick-list")
+        return json(
+          state.pickMalformed
+            ? { orders: [] }
+            : {
+                generated_at: "2026-10-06T06:00:00Z",
+                orders: ids
+                  .slice(0, -1)
+                  .map((id) => ({
+                    order_id: id,
+                    order_number: number(id),
+                    lines: [line],
+                  })),
+                totals:
+                  ids.length > 1
+                    ? [{ ...line, qty: 2 * (ids.length - 1) }]
+                    : [],
+                skipped: [{ order_id: ids.at(-1), code: "not_pickable" }],
+              },
+        );
+      if (route === "orders/export") {
+        if (!state.canExport) return json({ code: "forbidden" }, 403);
+        const template = url.searchParams.get("template");
+        if (!columns[template]) return json({ code: "invalid_request" }, 422);
+        const csv =
+          "\ufeff" +
+          columns[template] +
+          "\r\n" +
+          ids
+            .map((id) =>
+              columns[template]
+                .split(",")
+                .map((col) =>
+                  col === "order_id"
+                    ? id
+                    : col === "order_number"
+                      ? number(id)
+                      : col === "collect_minor"
+                        ? "25"
+                        : "synthetic",
+                )
+                .join(","),
+            )
+            .join("\r\n") +
+          "\r\n";
+        state.exports.push({ template, csv });
+        res.setHeader("Content-Type", "text/csv; charset=utf-8");
+        res.setHeader(
+          "Content-Disposition",
+          `attachment; filename="${template}-11111111-202610060600.csv"`,
+        );
+        return res.end(csv);
+      }
+      if (!state.canShip) return json({ code: "forbidden" }, 403);
+      if (!req.headers["idempotency-key"] || ids.length > 100)
+        return json({ code: "invalid_request" }, 422);
+      state.batches.push({ ids, key: req.headers["idempotency-key"] });
+      if (state.unknown) return json({ code: "unavailable" }, 503);
+      return json({
+        results: ids.map((id, i) => ({
+          order_id: id,
+          outcome: i === 0 ? "queued" : i === 1 ? "already" : "failed",
+          ...(i > 1 ? { code: state.retry ? "retry" : "not_cvs" } : {}),
+        })),
+      });
+    }
+    return json({ code: "not_found" }, 404);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return {
+    state,
+    token,
+    key,
+    origin: `http://127.0.0.1:${server.address().port}`,
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+}

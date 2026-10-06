@@ -328,3 +328,4 @@ NOT_RUN: MCH04 lease/stale two-worker gate (claims are lease-fenced with `FOR UP
 Stripe login fails its privilege validation); see `output/promotions/tests/DEFECTS.md`.
 
 | `--browser-tracking-backfill` | `TestBrowserTrackingBackfill` | BROWSER MOCK + REAL_PG | Three locales, desktop/390px; actual upload/paste, preview, confirmation, failure CSV, stale and unknown-result recovery. `tests/admin/tracking-backfill.spec.ts`, `tests/foundation/browser_tracking_backfill_test.go`; pure properties `tests/admin/tracking-backfill-model.test.ts` via `test-node.sh`. No LIVE shipment/mail acceptance. |
+| `--browser-picklist` | W3-U1b pick list, carrier CSV and CVS batches | MOCK HTTP + real Chromium; 3 locales/390px, cross-page 500 cap, print A4, four downloads, confirmation and UNKNOWN no-resend | GitHub only; `tests/admin/picklist.spec.ts` |
