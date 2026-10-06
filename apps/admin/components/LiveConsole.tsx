@@ -11,7 +11,7 @@ import { readStudioDetail } from "@/lib/studio-client";
 import { readClaimSource } from "@/lib/claims-client";
 import { readConsole, readOfferControls, changeLifecycle, copySession, recommendOffer, toggleOffer, adjustLiveStock } from "@/src/features/live/console-client";
 import type { ConsoleOffer } from "@/src/features/live/console-model";
-import { primaryAction, stockDelta, facebookEmbed, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
+import { primaryAction, stockDelta, facebookPostLink, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
 import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
 
@@ -31,11 +31,10 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
     return () => { navigationGuard.current = () => true; };
   }, [navigationGuard, command.busy, command.canRetry, c.leavePending, command.invalidate]);
   const [copying, setCopying] = useState(false), [title, setTitle] = useState(""), [copyConflict, setCopyConflict] = useState("");
-  const [embedLoaded, setEmbedLoaded] = useState(false);
   const can = (permission: string) => store.role === "owner" || store.permissions?.includes(permission) === true;
   const data = view.data?.console, detail = view.data?.detail;
   const source = view.data?.source.source;
-  const embed = data?.stream.video_embeddable && source?.active && source.verified ? facebookEmbed(source.platform, source.source_object_id) : null;
+  const facebookLink = source?.active && source.verified ? facebookPostLink(source.platform, source.source_object_id) : null;
   const action = data ? primaryAction(data.session.lifecycle) : null;
   const manage = can("live:manage") && detail?.can_manage === true;
   const sessionEditable = !!data && ["draft", "live"].includes(data.session.lifecycle) && !command.blocked;
@@ -89,7 +88,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
       </form>}
       <div className="live-console-columns">
         <section className="live-preview"><h3>{c.facebook}</h3>
-          {embed ? <><p className="live-helper">{c.embedNotice}</p>{embedLoaded ? <iframe title={c.facebook} src={embed} width="500" height="360" loading="lazy" referrerPolicy="no-referrer" allow="encrypted-media; picture-in-picture" allowFullScreen /> : <button type="button" onClick={() => setEmbedLoaded(true)}>{c.loadEmbed}</button>}</> : <p>{c.noEmbed}</p>}
+          {facebookLink ? <><p className="live-helper">{c.facebookLinkNotice}</p><a href={facebookLink} target="_blank" rel="noopener noreferrer">{c.openFacebook}</a></> : <p>{c.noFacebookLink}</p>}
           <p className="live-instagram-notice">{c.instagram}</p>
           <a href={`/${locale}/studio/claims?store=${store.id}&scene=${sessionID}`}>{c.configure}</a>
         </section>

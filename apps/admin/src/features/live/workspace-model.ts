@@ -32,12 +32,11 @@ export function stockDelta(target: string, sellable: number): number | null {
   const quantity = Number(target), delta = quantity - sellable;
   return Number.isSafeInteger(quantity) && Math.abs(delta) <= 1000 ? delta : null;
 }
-/** Builds an official public-post embed only from the server-verified Page/post pair, not arbitrary URLs. */
-export function facebookEmbed(platform: string, objectID: string): string | null {
+/** Builds a Facebook post link only from the server-verified Page/post pair, not arbitrary URLs. */
+export function facebookPostLink(platform: string, objectID: string): string | null {
   const pair = /^(\d{1,30})_(\d{1,30})$/.exec(objectID);
   if (platform !== "facebook" || !pair) return null;
-  const query = new URLSearchParams({ href: `https://www.facebook.com/${pair[1]}/posts/${pair[2]}`, show_text: "false", width: "500" });
-  return `https://www.facebook.com/plugins/post.php?${query}`;
+  return `https://www.facebook.com/${pair[1]}/posts/${pair[2]}`;
 }
 /** Applies a completed command only while its original mounted session/store scope remains current. */
 export async function settleLiveCommand<T>(execute: () => Promise<T>, isCurrent: () => boolean, complete: (value: T) => void): Promise<boolean> {

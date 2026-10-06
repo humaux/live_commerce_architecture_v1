@@ -2,7 +2,7 @@
 
 // Purpose: LC-U1 real-browser contract gate with an explicitly MOCK Console upstream.
 // Depends on: lcSetup/newBrowserIDP, real identity/PG scope, packaged Next BFF and Playwright;
-// LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE, LC_TEST_DATABASE_ALLOWED, LC_BROWSER_EVIDENCE_ROOT.
+// LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE, LC_TEST_DATABASE_ALLOWED, LC_BROWSER_EVIDENCE_ROOT, optional LC_BROWSER_CONSOLE_GREP.
 // Used by: scripts/dev/test-local.sh --browser-live-console; no provider or SQL Console acceptance.
 // Invariants: I01/I02/I06/I11/I14/I18; browser writes cross actual session/Origin/CSRF checks.
 package foundation_test
@@ -45,6 +45,7 @@ type consoleMockScene struct {
 	Reads                                          []int64
 	Fault                                          string
 	ListUnavailable                                bool
+	FacebookSource                                 bool
 }
 type consoleMockReceipt struct {
 	Scene    string         `json:"scene"`
@@ -173,8 +174,14 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		consoleJSON(w, 200, map[string]any{"window": s.window(), "offers": []any{s.offerReceipt()}, "stats": map[string]any{"generation": s.Generation, "accepted": 0, "rejected": rejected}})
 		return true
 	}
-	if s != nil && s.Copied && len(parts) == 7 && parts[6] == "claim-source" && r.Method == http.MethodGet {
-		consoleJSON(w, 200, map[string]any{"source": nil, "platforms": []any{}})
+	if s != nil && (s.Copied || s.FacebookSource) && len(parts) == 7 && parts[6] == "claim-source" && r.Method == http.MethodGet {
+		var source any
+		platforms := []any{}
+		if s.FacebookSource {
+			source = map[string]any{"id": s.Offer, "platform": "facebook", "object": "page", "asset_id": "123", "source_object_id": "123_456", "private_reply": false, "reply_locale": "en", "active": true, "version": 1, "verified": true, "intake_count": 0, "intake_capped": 0, "updated_at": "2030-01-01T00:00:00Z"}
+			platforms = []any{"facebook"}
+		}
+		consoleJSON(w, 200, map[string]any{"source": source, "platforms": platforms})
 		return true
 	}
 	if r.Method != http.MethodPost && r.Method != http.MethodPatch {
@@ -290,6 +297,7 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		copy.Fault = ""
 		copy.Recommended = nil
 		copy.Copied = true
+		copy.FacebookSource = false // A5 copies products/window settings, never a provider source binding.
 		m.scenes[copy.ID] = &copy
 		window := copy.window()
 		window["generation"] = int64(0)
@@ -375,7 +383,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &h.labels}))
-	mock := &consoleMock{scenes: map[string]*consoleMockScene{}, responses: map[string]any{}}
+	mock := &consoleMock{scenes: map[string]*consoleMockScene{}, responses: map[string]any{}, receipts: []consoleMockReceipt{}}
 	ids := []string{}
 	lateScenes := []string{}
 	for i := 0; i < 8; i++ {
@@ -407,11 +415,13 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 					Scene string `json:"scene"`
 					Mode  string `json:"mode"`
 				}
-				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore" && in.Mode != "delay_copy" && in.Mode != "list_unavailable" && in.Mode != "list_restore" && in.Mode != "below_reserved") {
+				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore" && in.Mode != "delay_copy" && in.Mode != "list_unavailable" && in.Mode != "list_restore" && in.Mode != "below_reserved" && in.Mode != "facebook_source") {
 					consoleJSON(w, 400, map[string]any{"code": "invalid_request"})
 					return
 				}
-				if in.Mode == "list_unavailable" || in.Mode == "list_restore" {
+				if in.Mode == "facebook_source" {
+					mock.scenes[in.Scene].FacebookSource = true
+				} else if in.Mode == "list_unavailable" || in.Mode == "list_restore" {
 					mock.scenes[in.Scene].ListUnavailable = in.Mode == "list_unavailable"
 				} else if in.Mode == "missing" || in.Mode == "restore" {
 					mock.scenes[in.Scene].Missing = in.Mode == "missing"
@@ -527,6 +537,11 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	sceneJSON, _ := json.Marshal(ids)
 	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/live-console.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	if grep := os.Getenv("LC_BROWSER_CONSOLE_GREP"); grep != "" {
+		// Optional local focused-spec run; a filtered success is not acceptance of the full mode.
+		cmd.Args = append(cmd.Args, "--grep", grep)
+		t.Logf("FOCUSED_SPEC_ONLY: live-console grep=%q; full-mode acceptance remains NOT_RUN", grep)
+	}
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken})
 	cmd.Stdout, cmd.Stderr = log, log
