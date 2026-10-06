@@ -1,0 +1,45 @@
+# w3-08b-returns delivery
+- Branch/commit: see `git log -1` on `unit/w3-08b-returns`   Base: 71235fc4 (trunk with W3-07B 0146)   Model: Claude Sonnet 5.5
+- Summary: merchant returns (RMA) + merchant cancel, backend only.
+  - `migrations/0155_returns.sql` (number per integrator override): schema `returns` (rmas, rma_lines, RLS FORCE, no runtime grant), definers
+    `returns.register_rma/receive_rma/inspect_rma/close_rma/cancel_rma/read_order_returns/list_returns` and `fulfillment.merchant_cancel_order`
+    (all SECURITY DEFINER, search_path=pg_catalog, owner commerce_checkout_writer, EXECUTE commerce_runtime only), helper functions without grants,
+    ledger guard `inventory.guard_returns_ledger` (+ trigger `zz_returns_ledger_guard`), new ledger row shapes (constraint branches, one RLS policy),
+    relaxed unique index `ledger_pay_at_pickup_release_once` (RMA restocks excluded), two guard bodies patched with an exactly-once anchor check
+    (guard_checkout_ledger, guard_pay_at_pickup_ledger; same technique as 0088).
+  - Go: `internal/returns/returns.go` (wrappers, closed refusal map), `internal/fulfillment/cancel.go`, `internal/httpapi/returns.go` (8 routes,
+    registered in `handler.go:224`), 19 messages in `internal/httperror/error.go`.
+  - Contract: `contracts/returns-v1.md` (new), `stripe-refund-v1.md` R-3 RESOLVED, `manual-fulfilment-v1.md` M-8 RESOLVED + W3-08B amendment (resolves PG-OPEN-1).
+  - Stock model (decision for review, contracts/returns-v1.md §5): sellable return = `DEALLOCATE` of `allocated` (on_hand unchanged), NOT an on_hand credit, because
+    shipping never lowers on_hand/allocated here (a credit would count the unit twice); same model as the existing pay-at-pickup restock (§16.8).
+    Reason strings: `rma_restock`, `merchant_cancel`; operations `returns.rma.restock`, `checkout.merchant_cancel`.
+- Contract/interface changes: new routes (contracts/returns-v1.md §6): POST /orders/{id}/cancel, POST|GET /orders/{id}/returns, GET /returns, POST /returns/{id}/receive|inspect|close|cancel.
+  Deviations from the brief (all written in the migration header and the contract): cancel definer is `fulfillment.merchant_cancel_order` (commerce_runtime has no USAGE on schema checkout);
+  CAS is `expected_state` (orders have no version column; code `state_changed`); RMA lines keyed (warehouse_id, sku_id) (no order-line id table); no runtime SELECT on returns.* (reads via definers, parcel pattern);
+  no "has returns" filter on the order list (GET /returns is the list; touching the order-list definers was out of scope and path list); the inspect step records the decision, close writes stock.
+- Behaviour of cancel: DRAFT hold released (RELEASE rows); AWAITING_PAYMENT always `409 payment_in_flight` (an attempt always exists; the payment worker closes it); paid CONFIRMED card order unshipped needs
+  succeeded+in-flight refunds >= CAPTURED else `409 refund_first` (never auto-refund), then DEALLOCATE of the whole allocation, leaves its OPEN parcel group (survivor of a 2-order group dissolves it);
+  pay-at-pickup/COD delegate to `inventory.release_pay_at_pickup(cancel)`; shipped `409 already_shipped`; bank transfer / AWAITING_TRANSFER `422 not_cancellable`. Buyer notice reuses the existing notify `cancelled` trigger.
+- Tests: `bash scripts/dev/test-focused.sh '^TestReturns$|^TestMerchantCancel$|^TestTaiwanCvsSchema$|^TestCvsPayAtPickupRelease$|^TestBankTransferK302RefundRestock$|^TestHomeCodReviewLedgerGuard$|^TestHomeCodReviewACLInventory$|^TestHomeCodReleaseAndACL$|^TestManualFulfilmentMF02Schema$|^TestMerchantOrdersV2PickListReadAuthority$|^TestWAS02|^TestWAS06|^TestParcelGroup|^TestStripeRF12Guards$|^TestBuyerCheckoutExpiryRuntimeAdmission$'` -> exit 0, 16 top-level PASS
+  (output/w3-08b-returns/green.log). Upgrade batch `^TestR2IntegrationUpgradeFromReleaseHead$|^TestCatalogCoreCC01PopulatedUpgrade$|^TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger$|^TestMerchantOrdersUpgradeDoesNotBackfillOldMembership$|^TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta$|^TestStorefrontPublishSPW02UpgradeAfter0080$|^TestLegacyRuntimeIsolationPopulatedUpgrade$` -> exit 0, 7 PASS (green-upgrades.log).
+  DB-free: `go test ./internal/returns ./internal/fulfillment ./internal/httpapi ./internal/httperror` -> exit 0 (unit.log); `go build ./... && go vet ./internal/... ./tests/...` clean.
+  Red evidence: red.log (DB-free router, routes absent: 404s) and red-pg.log (PG tests with migration and routes removed: 404s on every step). Mutation: guard trigger disabled -> "forged ADJUST with the restock operation" test FAILS (mutation-guard-disabled.log), restored -> green.
+  RT map: RT01 lifecycle + exactly one DEALLOCATE row (allocated -1, on_hand/reserved unchanged, payments/refunds untouched); RT02 not_shipped / exceeds_shipped (closed RMAs count) / unknown_line / cross-store 404 (register, read, receive, cancel);
+  RT03 inventory:write needed on inspect+close (403, state and ledger unchanged); RT04 hold cancel + replay; RT05 payment_in_flight; RT06 refund_first (none, partial) then cancel after full refund (no auto refund, notify row, allocated -2, order not shippable);
+  RT07 refund writes no ledger/state, refund_id link + foreign refund `refund_mismatch`; RT08 group shrink (version bump, stale dissolve 409) then dissolve; RT09 replays, same key other body 409 conflict, stale version; RT10 cancel vs payment start exactly one winner;
+  plus concurrent double close (one 200 one 409, one row), concurrent partial RMAs, concurrent cancels, forged ledger rows (3 shapes -> 42501), COD delegation, refused cancel keeps group.
+- Gates run: `bash scripts/dev/check-headers.sh` OK; `bash scripts/dev/check-gates.sh` ok (71 modes); `bash scripts/dev/check-pkgdocs.sh` clean for internal/returns (3 pre-existing offenders on trunk: csvguard, msgtemplates, tests/claims).
+- Pins updated honestly (never weakened): `r2_integration_upgrade_test.go` 76 -> 77; ACL pins of the 8 new definers in `merchant_orders_v2_acl_test.go` and `manual_fulfilment_schema_test.go` (owner, SECURITY DEFINER, path, no PUBLIC, EXECUTE runtime only, denied to every worker/legacy role); WAS02 now also proves workers cannot call them (42501).
+- Evidence class: REAL_PG (tests) with MOCK Stripe fakes; no SANDBOX/LIVE. Design/contract: IMPLEMENTED.
+- Risks (for the Opus money/inventory review):
+  1. The DEALLOCATE-vs-on_hand decision above: if the owner wants on_hand credited, the guard, constraint branch and tests change together.
+  2. `inventory.guard_checkout_ledger` / `guard_pay_at_pickup_ledger` are patched by anchor replacement at migration time (fails loudly with "unexpected shape" if an earlier migration changed them); `ledger_pay_at_pickup_release_once` loses its "one per line" strictness ONLY for returns.rma.restock (bounded by the guard's remaining-allocation check).
+  3. Cancel releases stock while a refund may still be IN FLIGHT (brief rule: succeeded + in flight >= captured); if that refund later fails the order stays CANCELLED with the money held (existing refund review path), nothing auto-refunds.
+  4. Lock order group -> order -> reservation -> balances matches `begin_parcel_group_shipment`; the one reversed case (order joined a group between the unlocked membership read and the order lock) can deadlock and answers 503 retry_later (documented in the SQL).
+  5. Known edge: offline bank-transfer refund WITH restock after an RMA restock of the same line fails loudly on the balance CHECK (never double counts).
+  6. AWAITING_PAYMENT is never cancellable by the merchant (always an attempt row); bank transfer / AWAITING_TRANSFER unsupported (expiry or offline refund path).
+- NOT_RUN / BLOCKED: no `--browser-*`/UI (UI is W3-U5); not run locally: full foundation suite, `--merchant-orders`, `--expiry-worker`, `--payment-worker`, `--browser-refund-fulfilment`, `release-gate.sh --strict --only G07`, `test-local.sh --returns` (mode not created, integrator adds);
+  cancel/RMA of CVS-destination card orders (PICKED_UP return, `cvs_attempt_in_flight`) and RMA of a collected COD order are implemented but have no test; order-list "has returns" filter not built; no buyer mail for RMA steps (non-goal).
+- CI gates (push the branch, `.github/workflows/gates.yml`): full foundation suite (includes TestReturns, TestMerchantCancel, all pins), `--merchant-orders`, `--expiry-worker`, `--payment-worker`, `--browser-refund-fulfilment`, `release-gate.sh --strict --only G07`, `check-gates.sh`.
+- Integrator to-do: add `--returns` mode (`test-local.sh` + `docs/delivery/GATES.md` row: `^TestReturns|^TestMerchantCancel`); regenerate `docs/architecture/DEPENDENCIES.md` (new package internal/returns, not regenerated here to avoid merge noise);
+  OpenAPI/shared schema for the 8 routes if the admin BFF needs them (none edited here); decide the stock model (risk 1); parcel/orders UI buttons are W3-U5.

@@ -60,8 +60,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0149 (product-media-v2: image roles, option-value images) adds one more: 73 -> 74.
 	// 0146 (W3-07B parcel groups) adds one more: 74 -> 75.
 	// 0151 (W3-04B sold-out reply) adds one more: 75 -> 76.
-	if len(r2) != 76 {
-		t.Fatalf("R2 migration set = %d files %v, want 76", len(r2), r2)
+	// 0155 (W3-08B merchant returns + merchant cancel) adds one more: 76 -> 77.
+	if len(r2) != 77 {
+		t.Fatalf("R2 migration set = %d files %v, want 77", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
