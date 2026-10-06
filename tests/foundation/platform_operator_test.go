@@ -349,8 +349,11 @@ func TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned(t *testing.T) {
 
 // OP03 (mail half): notify.claim_batch claims nothing for a suspended store (buyer and merchant mail rows stay PENDING,
 // and do not starve another store), and claims them again after resume. The worker login is a real expiry-worker login.
+// Runs on an ISOLATED database: claim_batch's window is the oldest eligible rows of the WHOLE table (D1, 0098), so on the shared
+// fixture other tests' PENDING outbox rows decide whether this test's rows are reached in one call (the CI failure of run
+// 37426435291). The last block pins that mechanism, so a future reader can tell fixture noise from a real starvation.
 func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
-	b := fixture(t)
+	b := pwIsolatedFixture(t)
 	p := poSetup(t, b)
 	worker := miPool(t, b, "commerce_expiry_worker")
 	ctx := context.Background()
@@ -364,10 +367,21 @@ func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
 		_, _ = b.owner.Exec(ctx, `DELETE FROM control.tenants WHERE id=$1`, tenant)
 	})
 	// Oldest rows first: the suspended store's rows would fill the claim window if the predicate sat in the loop.
+	// 12 old 'placed' rows of the suspended store (more than the claim window of 10), then its other kinds, then the serving store's.
 	susBuyer, susMerchant, okBuyer, susPaid, susRefunded := randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()
-	for _, r := range []struct{ store, order, kind string }{{sus, susBuyer, "placed"}, {sus, susMerchant, "merchant_new"}, {sus, susPaid, "paid"}, {sus, susRefunded, "refunded"}, {ok, okBuyer, "placed"}} {
+	susPlaced := []string{susBuyer}
+	for i := 0; i < 11; i++ {
+		susPlaced = append(susPlaced, randomUUID())
+	}
+	type outboxRow struct{ store, order, kind string }
+	var rows []outboxRow
+	for _, o := range susPlaced {
+		rows = append(rows, outboxRow{sus, o, "placed"})
+	}
+	rows = append(rows, outboxRow{sus, susMerchant, "merchant_new"}, outboxRow{sus, susPaid, "paid"}, outboxRow{sus, susRefunded, "refunded"}, outboxRow{ok, okBuyer, "placed"})
+	for _, r := range rows {
 		mustExec(t, b.owner, `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind) VALUES($1,$2,$3,$4)`, tenant, r.store, r.order, r.kind)
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(2 * time.Millisecond)
 	}
 	state := func(order string) string {
 		var s string
@@ -401,24 +415,48 @@ func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
 	if got := state(okBuyer); got != "SKIPPED:no_order" {
 		t.Fatalf("serving store's row = %s, want SKIPPED:no_order (starved by the suspended store?)", got)
 	}
-	if state(susBuyer) != "PENDING:" || state(susMerchant) != "PENDING:" || alertState() != "PENDING:" {
-		t.Fatalf("suspended store's mail rows = %s / %s / alert %s, want PENDING (untouched)", state(susBuyer), state(susMerchant), alertState())
+	for _, o := range susPlaced {
+		if state(o) != "PENDING:" {
+			t.Fatalf("a suspended store's placed row = %s, want PENDING (untouched)", state(o))
+		}
+	}
+	if state(susMerchant) != "PENDING:" || alertState() != "PENDING:" {
+		t.Fatalf("suspended store's merchant mail = %s / alert %s, want PENDING (untouched)", state(susMerchant), alertState())
 	}
 	// Money already in flight is still confirmed to the buyer: paid / refunded mail is claimed (here: considered, no order behind it).
 	if state(susPaid) != "SKIPPED:no_order" || state(susRefunded) != "SKIPPED:no_order" {
 		t.Fatalf("paid/refunded confirmations of a suspended store = %s / %s, want them considered (SKIPPED:no_order)", state(susPaid), state(susRefunded))
 	}
 	p.must(p.setStore(sus, true, nil))
-	claim()
-	claim()
-	if got := state(susBuyer); got != "SKIPPED:no_order" {
-		t.Fatalf("after resume the buyer row = %s, want it considered again (SKIPPED:no_order)", got)
+	for i := 0; i < 4; i++ { // 12 rows, window of 10
+		claim()
+	}
+	for _, o := range susPlaced {
+		if got := state(o); got != "SKIPPED:no_order" {
+			t.Fatalf("after resume a placed row = %s, want it considered again (SKIPPED:no_order)", got)
+		}
 	}
 	if got := alertState(); got != "SKIPPED:no_owner" {
 		t.Fatalf("after resume the merchant alert = %s, want it considered again (SKIPPED:no_owner)", got)
 	}
 	if got := state(susMerchant); got != "SKIPPED:no_owner" {
 		t.Fatalf("after resume the merchant row = %s, want it considered again (SKIPPED:no_owner)", got)
+	}
+	// Mechanism pin (the shared-DB CI failure): the claim window is the oldest eligible rows of the whole table, so 12 older
+	// PENDING rows of a SERVING store (what other tests leave behind) push a newer serving row past one call; the next call reaches it.
+	// This is the pre-existing D1 behaviour, unrelated to suspension, and why this test owns its database.
+	for i := 0; i < 12; i++ {
+		mustExec(t, b.owner, `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind,created_at) VALUES($1,$2,$3,'placed',clock_timestamp()-interval '1 hour')`, tenant, ok, randomUUID())
+	}
+	late := randomUUID()
+	mustExec(t, b.owner, `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind) VALUES($1,$2,$3,'placed')`, tenant, ok, late)
+	claim()
+	if got := state(late); got != "PENDING:" {
+		t.Fatalf("window mechanism: newer serving row = %s after one call behind 12 older serving rows, want PENDING", got)
+	}
+	claim()
+	if got := state(late); got != "SKIPPED:no_order" {
+		t.Fatalf("window mechanism: newer serving row = %s after the second call, want SKIPPED:no_order", got)
 	}
 }
 
