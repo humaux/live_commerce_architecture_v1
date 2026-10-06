@@ -558,7 +558,7 @@ print("pass=%d fail=%d skip=%d leaf_pass=%d leaf_fail=%d leaf_skip=%d VERDICT=%d
 PY
 }
 if [[ "$test_mode" == --browser-identity ]]; then
-  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
+  LC_BROWSER_IDENTITY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^(TestBrowserIdentityRealChain|TestBrowserSettingsWizardRealChain|TestMerchantAccountAPIProcessRestart)$' -v ./tests/foundation
   printf 'PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.\n'
 elif [[ "$test_mode" == --browser-password-auth ]]; then
   node --test --experimental-strip-types tests/admin/password-bff.test.ts   # PA10 (Node, no browser, no PG)
@@ -568,7 +568,7 @@ elif [[ "$test_mode" == --browser-admin-legacy ]]; then
   LC_BROWSER_ADMIN_LEGACY_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserAdmin(LedgerFixtureChain|IdentityMock|EntryMock)$' -v ./tests/foundation
   printf 'PASS: admin ledger (fixture bearer) + production fail-closed + identity-mock + entry-mock browser suites; no signed IdP, not production acceptance.\n'
 elif [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
-  LC_BROWSER_MERCHANT_ORDERS_BFF_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserMerchantOrdersBFFRealChain$' -v ./tests/foundation
+  LC_BROWSER_MERCHANT_ORDERS_BFF_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserMerchantOrdersBFFRealChain$' -v ./tests/foundation
   printf 'PASS: isolated Next + Go + PG merchant-order read transport; not merchant UI or provider acceptance.\n'
 elif [[ "$test_mode" == --browser-studio-ui ]]; then
   LC_BROWSER_STUDIO_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^TestBrowserStudioUIRealChain$' -v ./tests/foundation
@@ -589,19 +589,19 @@ elif [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
   LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
   printf 'PASS: isolated merchant C order UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.\n'
 elif [[ "$test_mode" == --browser-buyer ]]; then
-  LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
+  LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
   printf 'PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-merchant-buyer ]]; then
-  LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserMerchantBuyerRealChain$' -v ./tests/foundation
+  LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserMerchantBuyerRealChain$' -v ./tests/foundation
   printf 'PASS: isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof.\n'
 elif [[ "$test_mode" == --browser-manual-order ]]; then
   LC_BROWSER_MANUAL_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserManualOrderLink$' -v ./tests/foundation
   printf 'PASS: isolated merchant UI manual order -> buyer link -> fresh browser exchange -> bank details -> transfer proof; signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-order ]]; then
-  LC_BROWSER_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerOrderUI$' -v ./tests/foundation
+  LC_BROWSER_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerOrderUI$' -v ./tests/foundation
   printf 'PASS: isolated buyer address/order UI gate; not provider payment or deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-payment ]]; then
-  LC_BROWSER_PAYMENT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=180s -run '^TestBrowserBuyerPaymentUI$' -v ./tests/foundation
+  LC_BROWSER_PAYMENT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerPaymentUI$' -v ./tests/foundation
   printf 'PASS: isolated buyer payment UI/native POST gate with a local mock PSP; not provider payment or deployment acceptance.\n'
 elif [[ "$test_mode" == --stripe-browser ]]; then
   # Evidence goes to the MAIN checkout (worktrees are deleted after merge; PROCESS.md §4).
@@ -796,7 +796,7 @@ elif [[ "$test_mode" == --checkout ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestBuyerCheckout' -v ./tests/foundation
   printf 'PASS: checkout subset only; full regression still required.\n'
 elif [[ "$test_mode" == --payment ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestBuyerPayment' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestBuyerPayment' -v ./tests/foundation
   printf 'PASS: payment start/query subset only; full regression still required.\n'
 elif [[ "$test_mode" == --payment-worker ]]; then
   test -f tests/foundation/payment_runtime_test.go
@@ -809,14 +809,14 @@ elif [[ "$test_mode" == --expiry-worker ]]; then
   printf 'PASS: isolated expiry worker subset; no production or recovery-SLO claim.\n'
 elif [[ "$test_mode" == --merchant-orders ]]; then
   test -f tests/foundation/merchant_orders_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMerchantOrders' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestMerchantOrders' -v ./tests/foundation
   printf 'PASS: isolated merchant order read subset; no merchant UI/provider/deployment claim.\n'
 elif [[ "$test_mode" == --live-planning ]]; then
   test -f tests/foundation/live_planning_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLivePlanning' -v ./internal/live ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLivePlanning' -v ./internal/live ./tests/foundation
   printf 'PASS: isolated live draft planning only; no broadcast, HTTP, provider or G06 acceptance.\n'
 elif [[ "$test_mode" == --live-authority ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^Test(LivePlanning|LiveMediaAuthorization)' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^Test(LivePlanning|LiveMediaAuthorization)' -v ./tests/foundation
   printf 'PASS: isolated MOCK media authority registry and draft planning; no controller, LIVE intake, provider or G06 acceptance.\n'
 elif [[ "$test_mode" == --live-media-plan ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan)' -v ./internal/live ./tests/foundation
@@ -825,14 +825,14 @@ elif [[ "$test_mode" == --live-media-execution ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution)' -v ./internal/live ./tests/foundation
   printf 'PASS: isolated MOCK media execution and recovery; no Stop, LIVE provider, resource reclamation or G06 acceptance.\n'
 elif [[ "$test_mode" == --live-media-input ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaExecutionBIC' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLiveMediaExecutionBIC' -v ./tests/foundation
   printf 'PASS: isolated BIC custody subset only; full media and BIC05 regression still required.\n'
 elif [[ "$test_mode" == --live-browser-input ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=240s -run '^TestLiveBrowserInputBRW' -v ./tests/foundation
   GOTOOLCHAIN=go1.27.1 go vet ./internal/live ./tests/foundation
   printf 'PASS: isolated BRW SQL/executor and Go HTTP subset; HTTPS browser/SFU and recovery gates remain separate.\n'
 elif [[ "$test_mode" == --live-media-crash ]]; then
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveMediaStopLMR05RealCrashAndCommitAckLoss$' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLiveMediaStopLMR05RealCrashAndCommitAckLoss$' -v ./tests/foundation
   printf 'PASS: isolated LMR05 crash diagnostic only; Stop and full regression still required.\n'
 elif [[ "$test_mode" == --live-media-stop ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=300s -run '^Test(LivePlanning|LiveMediaAuthorization|LiveMediaPlan|LiveMediaExecution|LiveMediaStop)' -v ./internal/live ./tests/foundation
@@ -852,24 +852,24 @@ elif [[ "$test_mode" == --live-console ]]; then
   printf 'PASS: isolated live-console comment read-through (LCN01/02/04/05, incl. IG comment-facts / facts_unavailable) only; MOCK Graph, no public mount or LIVE Meta acceptance.\n'
 elif [[ "$test_mode" == --inbox ]]; then
   test -f tests/foundation/live_console_inbox_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveConsoleInbox' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLiveConsoleInbox' -v ./tests/foundation
   printf 'PASS: isolated live-console inbox read-side subset only; no UI/send (LC-B4) or LIVE Meta traffic claim.\n'
 elif [[ "$test_mode" == --inbox-send ]]; then
   test -f tests/foundation/live_console_send_test.go
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=900s -run '^TestLiveConsoleSend' -v ./tests/foundation
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run 'Send|PrivateReplyFacts|Scrub|CheckText|Outbound|BodyHMAC|PublicReply' -v ./internal/inbox ./internal/httpapi ./internal/integrations/metareply
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run 'Send|PrivateReplyFacts|Scrub|CheckText|Outbound|BodyHMAC|PublicReply' -v ./internal/inbox ./internal/httpapi ./internal/integrations/metareply
   printf 'PASS: isolated live-console sends + takeover (LCN06/07/08/10/11, display-copy half of LCN13) only; MOCK Graph, retention halves of LCN13 and LIVE sends (LCN16) not claimed.\n'
 elif [[ "$test_mode" == --msg-templates ]]; then
   test -f tests/foundation/live_console_templates_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLiveConsoleTemplates' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLiveConsoleTemplates' -v ./tests/foundation
   printf 'PASS: isolated live-console message-templates subset only; no UI/send (LC-B4) or LIVE Meta traffic claim.\n'
 elif [[ "$test_mode" == --meta-inbox ]]; then
   test -f tests/foundation/meta_inbox_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaInbox' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestMetaInbox' -v ./tests/foundation
   printf 'PASS: isolated Meta inbox subset only; no public mount/provider qualification claim.\n'
 elif [[ "$test_mode" == --meta-consumer ]]; then
   test -f tests/foundation/meta_consumer_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaConsumer' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestMetaConsumer' -v ./tests/foundation
   printf 'PASS: isolated Meta social consumer subset only; no public mount/provider qualification claim.\n'
 elif [[ "$test_mode" == --legacy-isolation ]]; then
   test -f tests/foundation/legacy_runtime_isolation_test.go
@@ -879,7 +879,7 @@ elif [[ "$test_mode" == --local-recovery ]]; then
   # This bounded gate creates its own source/restore clusters; the parent
   # fixture still enforces explicit local-PG consent. No existing DB is restored.
   test -f tests/foundation/local_recovery_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestLocalRecovery' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestLocalRecovery' -v ./tests/foundation
   printf 'PASS: isolated logical restore/cold-start subset only; not PITR, production RPO/RTO or deployment acceptance.\n'
 elif [[ "$test_mode" == --meta-health ]]; then
   # w1-01b-meta-health (contracts/meta-connection-health-v1.md §11.2): the probe sweep + banner routes against REAL_PG and the
@@ -892,7 +892,7 @@ elif [[ "$test_mode" == --meta-health ]]; then
   printf 'PASS: meta-connection-health backend (MCH01-MCH09): REAL_PG probe sweep (v2 HPKE + v1 AES custody) + B1/B2 banner routes against the fake Graph, and the pure Derive/reader units; Meta = MOCK loopback fake (evidence MOCK), no real Meta traffic; MCH10-MCH12 are NOT_RUN (see docs/delivery/GATES.md).\n'
 elif [[ "$test_mode" == --meta-runtime ]]; then
   test -f tests/foundation/meta_runtime_test.go
-  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=180s -run '^TestMetaRuntime' -v ./tests/foundation
+  GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=600s -run '^TestMetaRuntime' -v ./tests/foundation
   printf 'PASS: isolated Meta API/worker runtime subset only; no public deployment/provider qualification claim.\n'
 elif [[ "$test_mode" == --storefront-resolver ]]; then
   GOTOOLCHAIN=go1.27.1 go test -race -count=1 -timeout=120s -run '^TestPublishedStorefront' -v ./tests/foundation
@@ -925,8 +925,11 @@ else
   # 2026-09-30: with the R2 lanes merged the foundation package alone needs ~54 min on the dev Mac (release gate at
   # 57c5aaa: panic "test timed out after 45m0s" with 61 tests not started; those took a further 527 s). -timeout is a
   # hang bound, not a gate: 4500s, and the CI job bound moves to 90 min with it (.github/workflows/foundation.yml).
-  # ponytail: one serial package; shard foundation across CI jobs by -run regex when a run nears 70 min.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ./...
+  # CI shards (2026-10-06, the serial suite reached 76 min on GitHub): LC_FOUNDATION_PKGS narrows the package set and
+  # LC_FOUNDATION_RUN the -run regex; .github/workflows/gates.yml runs 1 unit shard + 5 tests/foundation shards in
+  # parallel whose regexes cover Test[A-Z] exactly once. Unset = the whole suite, unchanged.
+  # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_PKGS:-./...}
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi

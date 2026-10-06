@@ -1,0 +1,19 @@
+=== RUN   TestPlatformStripePF03Fanout
+    platform_stripe_test.go:541: exec test setup: mismatched param and argument count
+--- FAIL: TestPlatformStripePF03Fanout (5.22s)
+=== RUN   TestPlatformStripePF04Start
+--- PASS: TestPlatformStripePF04Start (5.42s)
+=== RUN   TestPlatformStripePF05Webhook
+    platform_stripe_test.go:697: unknown session: ACCEPTED accepted
+--- FAIL: TestPlatformStripePF05Webhook (5.90s)
+=== RUN   TestPlatformStripePF06Refund
+--- PASS: TestPlatformStripePF06Refund (8.59s)
+=== RUN   TestPlatformStripePF07Kill
+--- PASS: TestPlatformStripePF07Kill (4.57s)
+=== RUN   TestPlatformStripePF08Routes
+    platform_stripe_test.go:850: GET without a token: 422
+--- FAIL: TestPlatformStripePF08Routes (3.29s)
+FAIL
+FAIL	livecommerce/tests/foundation	33.678s
+FAIL
+test-focused: top-level PASS=3 FAIL=3 SKIP=0 exit=1

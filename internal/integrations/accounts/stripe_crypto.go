@@ -1,3 +1,4 @@
+// stripe_crypto.go: Stripe API/webhook envelope sealing and opening (AEAD with scope-bound AAD), incl. derived platform credentials (aad_*).
 package accounts
 
 import (
@@ -23,6 +24,14 @@ var stripeScopeUUID = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[
 type StripeAPIScope struct {
 	TenantID, StoreID, ConnectionID, Environment, AccountID string
 	CredentialVersion                                       int64
+}
+
+// StripeAADScope is the scope an API envelope was SEALED under (contracts/stripe-platform-account-v1.md §3.4). For a store's
+// own connection it equals the row's scope and version; for a platform-derived row it names the platform connection and
+// sealed_version, because the derived credential is a byte copy of the platform envelope (never re-encrypted).
+type StripeAADScope struct {
+	TenantID, StoreID, ConnectionID string
+	Version                         int64
 }
 
 type StripeWebhookScope struct {
@@ -179,6 +188,15 @@ func (k *Keyring) OpenStripeAPI(scope StripeAPIScope, keyID string, nonce, ciphe
 		return StripeAPICredentials{}, errStripeMaterial
 	}
 	return result, nil
+}
+
+// OpenStripeAPIFor opens the envelope of a (possibly derived) credential row. own is the row's own scope (environment and
+// account are the row's, and must equal the sealed ones: they are part of the AAD, so a derived row can only open when its
+// account matches the platform account); aad names the scope it was sealed under. No I/O, no plaintext outside the result.
+func (k *Keyring) OpenStripeAPIFor(own StripeAPIScope, aad StripeAADScope, keyID string, nonce, ciphertext []byte) (StripeAPICredentials, error) {
+	sealed := StripeAPIScope{TenantID: aad.TenantID, StoreID: aad.StoreID, ConnectionID: aad.ConnectionID,
+		Environment: own.Environment, AccountID: own.AccountID, CredentialVersion: aad.Version}
+	return k.OpenStripeAPI(sealed, keyID, nonce, ciphertext)
 }
 
 func (k *Keyring) SealStripeWebhook(scope StripeWebhookScope, secrets StripeWebhookSecrets) (string, []byte, []byte, error) {

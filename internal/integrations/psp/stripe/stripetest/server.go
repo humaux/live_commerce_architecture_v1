@@ -265,6 +265,7 @@ func SignWebhook(secret string, body []byte, at time.Time) string {
 // well-formed, livemode=false checkout.session.completed event.
 type EventOpts struct {
 	ID, Type, ObjectType, SessionID, ClientRef, Attempt string
+	Store                                               string // metadata.lc_store (platform Stripe cross-check); empty = absent
 	Created                                             int64
 	Livemode, Connect, Probe                            bool
 	PendingWebhooks                                     int
@@ -285,6 +286,9 @@ func EventBody(o EventOpts) []byte {
 		o.Created = time.Now().Unix()
 	}
 	md := map[string]any{"lc_attempt": o.Attempt}
+	if o.Store != "" {
+		md["lc_store"] = o.Store
+	}
 	if o.Probe {
 		md["lc_probe"] = "1"
 	}

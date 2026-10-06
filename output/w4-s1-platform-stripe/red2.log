@@ -1,0 +1,21 @@
+=== RUN   TestPlatformStripePF03Fanout
+    platform_stripe_test.go:510: blocked store credential must follow the rotation: 1 1
+--- FAIL: TestPlatformStripePF03Fanout (6.74s)
+=== RUN   TestPlatformStripePF11DisallowBlocks
+    platform_stripe_test.go:920: disallow on a selling store: {PlatformState:OPEN StoreState:ENABLED Allowed:false TermsVersion:0xc0003d7870 AcceptedTermsVersion:0xc0003d7890 DisplayName:0xc0003d7860 DescriptorPreview:0xc0003d7880 Currency:0xc0003d7850 MinMinor:0xc001056e28 MaxMinor:0xc001056e18 Version:1}
+--- FAIL: TestPlatformStripePF11DisallowBlocks (4.18s)
+=== RUN   TestPlatformStripePF09LiveRevokeRace
+=== RUN   TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification
+    platform_stripe_test.go:1038: live-revoke finished while the other transaction still held its locks (err=<nil>)
+=== RUN   TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked
+    platform_stripe_test.go:1065: enable finished while the other transaction still held its locks (err=<nil>)
+--- FAIL: TestPlatformStripePF09LiveRevokeRace (8.53s)
+    --- FAIL: TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification (5.11s)
+    --- FAIL: TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked (3.42s)
+=== RUN   TestPlatformStripePF07LivePostRevoke
+    platform_stripe_test.go:1098: a store was re-armed before the new canary was verified: 1 derived qualifications
+--- FAIL: TestPlatformStripePF07LivePostRevoke (3.11s)
+FAIL
+FAIL	livecommerce/tests/foundation	24.495s
+FAIL
+test-focused: top-level PASS=0 FAIL=4 SKIP=0 exit=1

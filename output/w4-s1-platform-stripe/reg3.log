@@ -1,0 +1,18 @@
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3
+    stripe_live_schema_test.go:864: privileges gained beyond contract §3.3:
+          commerce_integration_writer|column|river_payment.river_job.scheduled_at|UPDATE
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves
+--- FAIL: TestStripeSL02Schema (9.94s)
+    --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database (4.48s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL (0.00s)
+        --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3 (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.155s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
