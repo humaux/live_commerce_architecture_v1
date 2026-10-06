@@ -1,0 +1,118 @@
+# green run of the W4-S2 fix round; base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + uncommitted fix; command: test-focused.sh '^(TestPlatformSettlement|TestPlatformStripe|TestStripeSL02)'; 2026-10-06T13:41:31Z
+=== RUN   TestPlatformSettlement
+=== RUN   TestPlatformSettlement/PF09_schema
+=== RUN   TestPlatformSettlement/PF10_sync
+=== RUN   TestPlatformSettlement/PF10_platform_connection_assertion
+=== RUN   TestPlatformSettlement/PF10_recheck_transient_mismatch
+=== RUN   TestPlatformSettlement/PF11_close
+=== RUN   TestPlatformSettlement/PF12_payout
+=== RUN   TestPlatformSettlement/PF12_ticket_in_audit
+=== RUN   TestPlatformSettlement/PF13_merchant_read_and_csv
+--- PASS: TestPlatformSettlement (19.77s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.16s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.04s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- PASS: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.04s)
+    --- PASS: TestPlatformSettlement/PF11_close (0.04s)
+    --- PASS: TestPlatformSettlement/PF12_payout (0.01s)
+    --- PASS: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- PASS: TestPlatformSettlement/PF13_merchant_read_and_csv (0.04s)
+=== RUN   TestPlatformStripePF01Schema
+=== RUN   TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection
+=== RUN   TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused
+=== RUN   TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded
+=== RUN   TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link
+=== RUN   TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8)
+=== RUN   TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix
+--- PASS: TestPlatformStripePF01Schema (5.01s)
+    --- PASS: TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection (0.01s)
+    --- PASS: TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8) (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix (0.00s)
+=== RUN   TestPlatformStripePF02Enable
+--- PASS: TestPlatformStripePF02Enable (3.79s)
+=== RUN   TestPlatformStripePF03Fanout
+--- PASS: TestPlatformStripePF03Fanout (4.85s)
+=== RUN   TestPlatformStripePF04Start
+--- PASS: TestPlatformStripePF04Start (5.33s)
+=== RUN   TestPlatformStripePF05Webhook
+--- PASS: TestPlatformStripePF05Webhook (6.67s)
+=== RUN   TestPlatformStripePF06Refund
+--- PASS: TestPlatformStripePF06Refund (8.96s)
+=== RUN   TestPlatformStripePF07Kill
+--- PASS: TestPlatformStripePF07Kill (5.05s)
+=== RUN   TestPlatformStripePF08Routes
+--- PASS: TestPlatformStripePF08Routes (3.06s)
+=== RUN   TestPlatformStripePF11DisallowBlocks
+--- PASS: TestPlatformStripePF11DisallowBlocks (5.53s)
+=== RUN   TestPlatformStripePF09LiveRevokeRace
+=== RUN   TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification
+=== RUN   TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked
+--- PASS: TestPlatformStripePF09LiveRevokeRace (9.78s)
+    --- PASS: TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification (4.80s)
+    --- PASS: TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked (4.98s)
+=== RUN   TestPlatformStripePF07LivePostRevoke
+--- PASS: TestPlatformStripePF07LivePostRevoke (4.03s)
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/ledger_checksum_and_repeat
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19)
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused
+=== RUN   TestStripeSL02Schema/approval_table_rls_privileges_and_definers
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves
+--- PASS: TestStripeSL02Schema (11.28s)
+    --- PASS: TestStripeSL02Schema/ledger_checksum_and_repeat (0.19s)
+    --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table (0.05s)
+    --- PASS: TestStripeSL02Schema/approval_table_rls_privileges_and_definers (0.31s)
+    --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active (1.81s)
+    --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger (1.53s)
+    --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database (4.29s)
+PASS
+ok  	livecommerce/tests/foundation	97.369s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+exit=0

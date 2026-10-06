@@ -1,0 +1,21 @@
+# red: TestStripeSP12MoneyChecks on 70c9c8dfc3c478709baffcd6bae075c8932ebc26 (UNIQUE stripe_sessions_payment_intent_idx); root cause: the test forges the same PI id pi_test_patch on several sessions -> unique_violation in recording -> stripe_record_failed loop
+    stripe_flow_test.go:1158: timeout waiting for PROVIDER_AMOUNT_MISMATCH review: op state=UNKNOWN generation=7 last codes=[stripe_record_failed reconcile_claimed stripe_record_failed reconcile_claimed] fake requests=170
+--- FAIL: TestStripeSP12MoneyChecks (144.31s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_amount_total_records_review_not_a_fact (7.87s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_currency_records_review_not_a_fact (6.03s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_subtotal_records_review_not_a_fact (6.41s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_discount_records_review_not_a_fact (6.07s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_tax_records_review_not_a_fact (6.39s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_shipping_records_review_not_a_fact (6.27s)
+    --- PASS: TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_amount_records_review_not_a_fact (6.15s)
+    --- FAIL: TestStripeSP12MoneyChecks/amount_mismatch_payment_intent_currency_records_review_not_a_fact (31.16s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_presentment_currency_captures_with_review_work_and_no_allocation (5.85s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_presentment_amount_captures_with_review_work_and_no_allocation (6.15s)
+    --- PASS: TestStripeSP12MoneyChecks/presentment_drift_legacy_currency_conversion_captures_with_review_work_and_no_allocation (6.14s)
+    --- PASS: TestStripeSP12MoneyChecks/identity_mismatch_is_not_recorded (6.16s)
+    --- PASS: TestStripeSP12MoneyChecks/duplicate_session_reviews_never_captures_or_closes (1.36s)
+    --- PASS: TestStripeSP12MoneyChecks/no_payment_required_is_conflicting_report (6.12s)
+    --- PASS: TestStripeSP12MoneyChecks/webhook_is_a_wake_up_never_financial_authority (2.46s)
+    --- PASS: TestStripeSP12MoneyChecks/complete_unpaid_escalates_after_60_minutes (6.99s)
+    --- PASS: TestStripeSP12MoneyChecks/late_paid_after_closure_is_one_manual_refund_obligation_and_replay_converges (7.18s)
+exit=1

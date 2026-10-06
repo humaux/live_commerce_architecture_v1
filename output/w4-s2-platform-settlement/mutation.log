@@ -1,0 +1,11 @@
+    platform_settlement_test.go:323: SQL {fee:1046 store:100000 settle:25640 want:-4100} = -4000 (<nil>), want -4100
+    platform_settlement_test.go:398: A2 dispute line: DISPUTE -2500 -5800 <nil>
+    platform_settlement_test.go:492: A week 1 net = -6700, want -6800 (negative)
+    platform_settlement_test.go:596: list body: {"statements":[{"statement_id":"e0aebc59-65ae-4bb1-95ed-a6b193b13da4","period_start":"2026-09-14","period_end":"2026-09-21","currency":"TWD","captured_m
+--- FAIL: TestPlatformSettlement (14.82s)
+    --- FAIL: TestPlatformSettlement/PF09_schema (0.07s)
+    --- FAIL: TestPlatformSettlement/PF10_sync (0.04s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.04s)
+    --- PASS: TestPlatformSettlement/PF12_payout (0.01s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.01s)
+exit=1
