@@ -88,6 +88,43 @@ func (c *ohEnv) moneySnapshot() map[string]int {
 	return out
 }
 
+// holders returns every base table of the whole database that holds needle in some row of THIS test's tenant (tables without a
+// tenant_id column are scanned in full). The scan keeps its breadth (all schemas) but is scoped to our tenant, and every needle is a
+// unique token, so another test's synthetic data in the shared CI database (a common buyer name or street) can never match.
+func (c *ohEnv) holders(needle string) []string {
+	c.t.Helper()
+	rows, err := c.f.owner.Query(context.Background(), `SELECT quote_ident(t.table_schema)||'.'||quote_ident(t.table_name),
+	 EXISTS(SELECT 1 FROM information_schema.columns k WHERE k.table_schema=t.table_schema AND k.table_name=t.table_name AND k.column_name='tenant_id')
+	 FROM information_schema.tables t WHERE t.table_type='BASE TABLE' AND t.table_schema NOT IN ('pg_catalog','information_schema')`)
+	if err != nil {
+		c.t.Fatal(err)
+	}
+	type tbl struct {
+		name      string
+		hasTenant bool
+	}
+	var tables []tbl
+	for rows.Next() {
+		var x tbl
+		if err := rows.Scan(&x.name, &x.hasTenant); err != nil {
+			c.t.Fatal(err)
+		}
+		tables = append(tables, x)
+	}
+	rows.Close()
+	var out []string
+	for _, x := range tables {
+		q, args := `SELECT count(*) FROM `+x.name+` t WHERE strpos(t::text,$1)>0`, []any{needle}
+		if x.hasTenant {
+			q, args = q+` AND t.tenant_id::text=$2`, append(args, c.f.tenantA)
+		}
+		if c.n(q, args...) != 0 {
+			out = append(out, x.name)
+		}
+	}
+	return out
+}
+
 func TestOrderHistoryImport(t *testing.T) {
 	c := ohSetup(t)
 	f := c.f
@@ -210,22 +247,8 @@ func TestOrderHistoryImport(t *testing.T) {
 	})
 
 	t.Run("OH04 the full address never reaches the database; only the city does", func(t *testing.T) {
-		rows, err := f.owner.Query(context.Background(), `SELECT quote_ident(table_schema)||'.'||quote_ident(table_name) FROM information_schema.tables
-		 WHERE table_type='BASE TABLE' AND table_schema NOT IN ('pg_catalog','information_schema')`)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var tables []string
-		for rows.Next() {
-			var n string
-			_ = rows.Scan(&n)
-			tables = append(tables, n)
-		}
-		rows.Close()
-		for _, table := range tables {
-			if got := c.n(`SELECT count(*) FROM ` + table + ` t WHERE t::text LIKE '%` + addrSecret + `%' OR t::text LIKE '%中山路%' OR t::text LIKE '%文化路%'`); got != 0 {
-				t.Errorf("%s holds the address text (%d rows)", table, got)
-			}
+		if got := c.holders(addrSecret); len(got) != 0 {
+			t.Errorf("the address text (unique token %s) is stored in %v", addrSecret, got)
 		}
 		if c.n(`SELECT count(*) FROM information_schema.columns WHERE table_schema='customers' AND table_name='historical_orders' AND column_name ~ '(addr|street|line1|line2|phone|email|card|bank|payment|account)'`) != 0 {
 			t.Error("the archive table has an address / contact / payment column")
@@ -388,7 +411,9 @@ func TestOrderHistoryImport(t *testing.T) {
 	})
 
 	t.Run("OH13 only the 22 cities are archived as a city; anything else is dropped, counted and never stored", func(t *testing.T) {
-		const samples = "臺北市中正區重慶南路一段一二二號|王小明|amy@mail.tw|台北市大安區忠孝東路四段"
+		// Unique, improbable cells (a common name or street would also match other tests' synthetic buyers in the shared database).
+		tag := strings.ReplaceAll(randomUUID(), "-", "")[:12]
+		samples := strings.Join([]string{"臺北市中正區重慶南路一段一二二號-OH13-" + tag, "王小明-OH13-" + tag, "amy-oh13-" + tag + "@mail.tw", "台北市大安區忠孝東路四段-OH13-" + tag}, "|")
 		var b strings.Builder
 		b.WriteString("訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額,城市\n")
 		for i, cell := range append(strings.Split(samples, "|"), "台中市") {
@@ -410,22 +435,8 @@ func TestOrderHistoryImport(t *testing.T) {
 			t.Fatal("a refused city must be stored as NULL and 台中市 as 臺中市")
 		}
 		for _, cell := range strings.Split(samples, "|") {
-			rows, err := f.owner.Query(context.Background(), `SELECT quote_ident(table_schema)||'.'||quote_ident(table_name) FROM information_schema.tables
-			 WHERE table_type='BASE TABLE' AND table_schema NOT IN ('pg_catalog','information_schema')`)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var tables []string
-			for rows.Next() {
-				var n string
-				_ = rows.Scan(&n)
-				tables = append(tables, n)
-			}
-			rows.Close()
-			for _, table := range tables {
-				if got := c.n(`SELECT count(*) FROM `+table+` t WHERE t::text LIKE '%'||$1||'%'`, cell); got != 0 {
-					t.Errorf("%s holds the refused city cell %q", table, cell)
-				}
+			if got := c.holders(cell); len(got) != 0 {
+				t.Errorf("the refused city cell %q is stored in %v", cell, got)
 			}
 		}
 		// Backstop: the table itself refuses anything outside the allowlist, whoever writes it.
