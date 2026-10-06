@@ -665,6 +665,8 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 	apply(tx, post, "post_river/", skipPost)
 	for _, stmt := range []string{
 		`GRANT UPDATE(kind) ON river_payment.river_job TO commerce_stripe_ingress`,
+		// mirrors migrations/migrate.go (W4-01B, 0136): the PAYUNi notify wake reschedules the existing query job only.
+		`GRANT UPDATE(scheduled_at) ON river_payment.river_job TO commerce_integration_writer`,
 		`GRANT USAGE ON SCHEMA river_meta TO commerce_meta_worker; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA river_meta TO commerce_meta_worker;
 		 REVOKE ALL ON river_meta.river_migration FROM commerce_meta_worker; GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA river_meta TO commerce_meta_worker`,
 		`REVOKE ALL ON river.river_job FROM commerce_checkout_runtime,commerce_checkout_writer; REVOKE UPDATE(kind) ON river.river_job FROM commerce_checkout_runtime;

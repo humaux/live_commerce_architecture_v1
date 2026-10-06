@@ -11,10 +11,16 @@ import { writeFile } from "node:fs/promises";
 // ---- classification (pure; unit tested in click-sweep-lib.test.mjs) ----------------------------------------------------------------------------------
 // Destructive or irreversible: exercised only up to the confirmation step, then cancelled (owner list: delete, archive, void, disconnect, refund,
 // cancel order, publish, sign out; extended with the obvious siblings revoke / remove / unpublish / deactivate / erase). Matching is on the accessible name,
-// test id, title and aria-label of the control.
+// test id, title and aria-label of the control. zh "移出" (storefront "將 X 移出購物車") is the remove of a cart line: unlisted, the zh-TW sweep really removed the
+// cart and raced its own checkout/order steps (CI run 37424335236).
 const DESTRUCTIVE_EN = /\b(delete|remove|archive|void|disconnect|refund|cancel (the )?order|revoke|unpublish|publish|deactivate|erase|discard|suspend|detach|unbind|unlink|terminate)\b/i;
-const DESTRUCTIVE_ZH = /刪除|删除|封存|作廢|作废|斷開|断开|中斷連接|中断连接|退款|取消訂單|取消订单|撤銷|撤销|下架|上架|發布|发布|發佈|取消發佈|取消发布|停用|移除|清除|抹除|丟棄|丢弃|解除|終止|终止|停止/;
-export const isDestructive = (text) => DESTRUCTIVE_EN.test(text) || DESTRUCTIVE_ZH.test(text);
+const DESTRUCTIVE_ZH = /刪除|删除|封存|作廢|作废|斷開|断开|中斷連接|中断连接|退款|取消訂單|取消订单|撤銷|撤销|下架|上架|發布|发布|發佈|取消發佈|取消发布|停用|移除|移出|清除|抹除|丟棄|丢弃|解除|終止|终止|停止/;
+// A storefront cart line's Remove is reversible (add it again) and is a plain cart write, not a confirmed destructive action. It must NOT be guarded: the
+// guard aborts the PUT after the cart journalled it, which leaves an UNKNOWN-outcome "check the previous attempt" notice in the buyer's session (the cart
+// then no longer renders), and un-guarding right after the first DOM change races the PUT (slow CI runners let it through after the guard was gone).
+// The sweep clicks it for real, LAST in its scope (see sweepPage), and the storefront walk re-fills the cart by clicks afterwards.
+export const isCartLineRemoval = (text) => /\bfrom the cart\b|移出(購物車|购物车)/i.test(text);
+export const isDestructive = (text) => !isCartLineRemoval(text) && (DESTRUCTIVE_EN.test(text) || DESTRUCTIVE_ZH.test(text));
 // Sign out ends the session the sweep itself runs in: it is exercised once, last, in a throwaway context (journey J5), never inside the sweep.
 const SIGN_OUT = /\b(sign ?out|log ?out)\b|登出|退出登录|退出登錄/i;
 export const isSignOut = (text) => SIGN_OUT.test(text);
@@ -376,6 +382,10 @@ export async function cancelLayer(page, mon) {
 // Back to the page state before the control: leave a layer by its cancel path, otherwise reload the unit URL ("reload if needed").
 export async function restore(page, mon, url, row) {
   if (row.layer && !row.urlChanged) { if (await cancelLayer(page, mon)) { const st = await pageState(page); if (st.url === url) return "layer closed"; } }
+  // Let the click's own requests finish first: the effect loop above stops at the first DOM change, which for the storefront cart is the optimistic busy
+  // state while the CAS write is still in flight. Reloading then aborts the write, the cart journals an UNKNOWN outcome ("check the previous attempt"), and
+  // the next steps meet a recovery notice instead of the cart (slow CI runners; CI run 37426264136). Bounded by settle's own max.
+  await settle(page, mon);
   await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => {});
   await settle(page, mon);
   return "reloaded";
