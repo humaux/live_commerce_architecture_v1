@@ -3,6 +3,8 @@ Depends on: contracts/live-console-v1.md section 16 and source at 3a7181155a0119
 Used by: The integrator allocating LC-U1 frontend paths and the LC-B7/backend dependency owners. -->
 # LC-U1 preflight — not a delivery
 
+**Historical checkpoint at `8e24761a`.** The integrator's 09:08 restart instruction resumed implementation. B4's A6 recommendation route is now integrated; necessary frontend/BFF/test wiring has been implemented. This document is not the current task status or an outstanding generic permission request. A1 and narrow stock integration remain separately tracked backend gaps. See the final DELIVERY when produced.
+
 - Branch: `unit/lc-u1-shell`; base: `3a7181155a01194608abe4faf16c16a97daf153c`.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell`.
 - Status: dependency/scope checkpoint; no application implementation or acceptance claim.
