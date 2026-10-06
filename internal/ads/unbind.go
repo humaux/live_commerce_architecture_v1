@@ -49,9 +49,8 @@ type unbindDefinerResult struct {
 		Action      string `json:"action"`
 		State       string `json:"state"`
 	} `json:"operations"`
-	Unbound        bool `json:"unbound"`
-	AlreadyUnbound bool `json:"already_unbound"`
-	Bindings       []struct {
+	Unbound  bool `json:"unbound"`
+	Bindings []struct {
 		BindingID            string `json:"binding_id"`
 		BindingVersion       int64  `json:"binding_version"`
 		CredentialsDestroyed int    `json:"credentials_destroyed"`
@@ -78,6 +77,7 @@ func (s *Service) Unbind(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 		AdAccountID string `json:"ad_account_id"`
 	}{scope.PrincipalID, in.AdAccountID}, &out, func() error {
 		var res unbindDefinerResult
+		// Calls integration.meta_ads_unbind (migration 0160, meta-ads-v1 Amendment W6-06B §A): auth + lock + in-flight check + token destruction.
 		if e := tx.QueryRow(ctx, `SELECT integration.meta_ads_unbind($1,$2,$3)`, hash, scope.StoreID, in.AdAccountID).Scan(&res); e != nil {
 			return e
 		}
@@ -92,9 +92,10 @@ func (s *Service) Unbind(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 				Details: map[string]any{"operations": ops, "operations_total": res.OperationsTotal}}
 		}
 		if !res.Unbound {
-			out.AlreadyUnbound = true // idempotent no-op: nothing written, nothing audited
+			out.AlreadyUnbound = true // idempotent no-op: nothing destroyed or audited (only the command receipt is stored)
 			return nil
 		}
+		destroyed := 0
 		for _, b := range res.Bindings {
 			// Detach as commerce_runtime, CAS on the version the definer locked (0008:115 grant). The frozen
 			// 0074 guard may raise PT409 binding_in_use here (R2-ADS-PAUSE-1); mapError turns it into the
@@ -112,9 +113,12 @@ func (s *Service) Unbind(ctx context.Context, tx pgx.Tx, scope platform.Scope, t
 				return e
 			}
 			out.BindingIDs = append(out.BindingIDs, b.BindingID)
+			destroyed += b.CredentialsDestroyed
 		}
 		out.Unbound = true
-		return command.Audit(ctx, tx, scope, "ads.account_unbound")
+		// Audit details: the public ad-account id and counts only, never a token or ciphertext (AD2, no PII).
+		return command.AuditDetails(ctx, tx, scope, "ads.account_unbound",
+			map[string]any{"ad_account_id": in.AdAccountID, "bindings": len(res.Bindings), "credentials_destroyed": destroyed})
 	})
 	return out, mapError(err)
 }
@@ -127,5 +131,6 @@ func (s *Service) CatalogFeed(ctx context.Context, tx pgx.Tx, scope platform.Sco
 	if err != nil {
 		return nil, err
 	}
+	// Calls ads.catalog_feed_url (migration 0160, meta-ads-v1 Amendment W6-06B §B): pure read, ads:read.
 	return queryJSON(ctx, tx, `SELECT ads.catalog_feed_url($1,$2)`, hash, scope.StoreID)
 }

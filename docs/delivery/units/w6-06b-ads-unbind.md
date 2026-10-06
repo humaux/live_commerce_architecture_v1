@@ -61,14 +61,14 @@ Lane close amendments（R2-ADS-PAUSE-1）与本单元 Amendment；`contracts/ext
      跨店 no-op（不解他店绑定）；无 `ads:manage` 拒绝；feed URL 只含本店 ACTIVE 域名、跨店不可见。
    - DB-free（`internal/httpapi/ads_test.go` 追加 transport 用例）：unbind 需 key/body 校验、catalog-feed 拒
      query/key、405 fallback。
-   - 钉子：`tests/foundation/r2_integration_upgrade_test.go` 迁移数 81→82（诚实更新，不放宽）。
+   - 钉子：`tests/foundation/r2_integration_upgrade_test.go` 迁移数 83→84（诚实更新，不放宽）。
 5. 收尾：`output/w6-06b-ads-unbind/DELIVERY.md`、小步 commit；不 merge/push。
 
 ## Non-goals
 - 不动 `meta_dataset` 绑定与 CAPI（CAPI 开关仍是 `PUT capi {enabled:false}`）；不解绑 Page/IG（0108 已有）。
 - 不调用 Meta（本地销毁密封 token ≠ 在 Meta 侧撤销授权；商家可自行在 Facebook 设置撤销——文案归 UI 单元）。
 - 不做 UI（`apps/` 禁改）；不改 OpenAPI/共享 schema（integrator 合并时补 `contracts/ads-openapi.json`）。
-- 不新增授权/策略/角色；不触碰 §4.4 privilege delta、MA02/ACL 钉子（两个新函数均复用既有授权）。
+- 不新增授权/策略/角色；不触碰 §4.4 privilege delta、MA02 钉子（两个新函数均复用既有授权）；T06 `integration.*` 函数钉子 89→90 与 R2 迁移数 83→84 须诚实更新（修复轮已更新）。
 - 不改冻结的 `bindings_ads_disable_guard` 行为；卡死草稿仍走 deploy.md §6.4 运维路径。
 
 ## 完成标准

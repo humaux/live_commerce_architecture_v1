@@ -6,6 +6,7 @@ package httpapi
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -226,5 +227,47 @@ func TestAdsClassify(t *testing.T) {
 		if status, code := adsClassify(tc.err); status != tc.status || code != tc.code {
 			t.Fatalf("%v -> %d %s", tc.err, status, code)
 		}
+	}
+}
+
+// TestAdsUnbindRefusalEnvelope pins the wire envelope of the two W6-06B 409s: adsScope = adsClassify + respondErrorDetails,
+// so a Refusal must reach the merchant under its OWN code (a code missing from httperror's message table is rewritten to
+// "internal", the P1 of the W6-06B review), with the operation list in details for operations_in_flight.
+func TestAdsUnbindRefusalEnvelope(t *testing.T) {
+	inflight := &ads.Refusal{Status: http.StatusConflict, Code: "operations_in_flight", Details: map[string]any{
+		"operations":       []map[string]any{{"operation_id": adsDraft, "action": "meta.ads.pause", "state": "DISPATCHING"}},
+		"operations_total": 1}}
+	cases := []struct {
+		name       string
+		err        error
+		code       string
+		wantDetail bool
+	}{
+		{"operations_in_flight", inflight, "operations_in_flight", true},
+		{"binding_in_use", &ads.Refusal{Status: http.StatusConflict, Code: "binding_in_use"}, "binding_in_use", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			status, code := adsClassify(tc.err)
+			w := httptest.NewRecorder()
+			respondErrorDetails(w, tc.err, status, code)
+			var body struct {
+				Code    string         `json:"code"`
+				Message string         `json:"message"`
+				Details map[string]any `json:"details"`
+			}
+			if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+				t.Fatalf("body: %v %s", err, w.Body.String())
+			}
+			if w.Code != http.StatusConflict || body.Code != tc.code || body.Message == "" || body.Message == "Request could not be completed." {
+				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+			}
+			if _, has := body.Details["operations"]; has != tc.wantDetail {
+				t.Fatalf("details=%v want operations=%v", body.Details, tc.wantDetail)
+			}
+			if tc.wantDetail && body.Details["operations_total"] != float64(1) {
+				t.Fatalf("details=%v", body.Details)
+			}
+		})
 	}
 }

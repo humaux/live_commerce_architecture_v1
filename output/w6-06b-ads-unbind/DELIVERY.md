@@ -15,7 +15,7 @@
 6. `internal/httpapi/ads.go` — `POST …/ads/meta/unbind` (:85, keyed, exact body `{ad_account_id}`), `GET …/ads/catalog-feed` (:207, ads:read, no query/key), 405 fallbacks (:53), `adsScope` answers via `respondErrorDetails` (:288; envelope of every other route unchanged).
 7. History kept (proved): drafts, remote objects, `ads.connections`, oauth states, operation ledger; READY ops go `STALE_BINDING` at next claim (rule 5); re-bind = new binding via the frozen connect flow, disabled binding never re-used.
 8. Feed URL = lexicographically-first ACTIVE origin (C collation) of the published store + `/feeds/meta.csv` (public unsigned feed, `internal/attribution/feed.go`); no secret ⇒ `ads:read` suffices (amendment §B).
-9. Pin honestly updated: `tests/foundation/r2_integration_upgrade_test.go` migration count 81→82 (+comment line).
+9. Pin honestly updated: `tests/foundation/r2_integration_upgrade_test.go` migration count 83→84 (+comment line).
 10. Tests red→green: `output/w6-06b-ads-unbind/red.log` (404s + SQLSTATE 42883 before implementation), `green.log` (all runs below, exit 0).
 
 ## Contract changes
@@ -62,3 +62,13 @@ New tests: `TestAdsUnbindRealPG` (feed scoping/permission, in-flight 409 list + 
 ## Cleanup
 
 - No long-lived processes started by this unit remain (test-focused.sh manages its own containers/locks); fixture rows live only in the throwaway test databases created by the harness. No ports held, no shared caches touched, no other task directories modified.
+
+## Fix round (REVIEW-opus.md, MERGE-AFTER-FIX) — Claude Sonnet 5.5
+
+Corrects the original claims "no ACL pin delta" and "all green" (E0): the name-filtered runs missed two reds.
+- P1-1: `operations_in_flight` / `binding_in_use` added to the `internal/httperror` message table (`error.go`); wire-envelope test `TestAdsUnbindRefusalEnvelope` (httpapi), service-level `binding_in_use` + UNKNOWN/ACKNOWLEDGED in-flight cases (`internal/ads/unbind_guards_pg_test.go`). Red: `red-fix.log`.
+- P1-2: T06 pin row `integration.meta_ads_unbind(bytea,uuid,text)` + count 89 -> 90 (trunk `f8f01b74` = 89, one new function in 0160). R2 migration count is 83 -> 84 (earlier text said 81 -> 82; corrected in the brief, contract and 0160 header).
+- P2-2: 0160 now also `CREATE OR REPLACE`s `ads.advance_candidates` / `ads.insights_candidates` (one extra AND: skip a draft whose ad binding is not enabled unless `ads.draft_counts`), so an unbind raises no false pause-retry alerts. Spend safety kept: a draft that counts behind a disabled binding (activate planned during the unbind) stays a candidate; mutation red M1/M3 in `red-fix.log`. No ACL/owner change.
+- P2: audit `ads.account_unbound` details `{ad_account_id, bindings, credentials_destroyed}`; dead fixture fields/decoded fields removed; stale comment fixed; callee comments added; feed filters test (`TestAdsCatalogFeedFiltersRealPG`, also the name the brief's regex expects); contract text fixed (BFF mirror is a later unit, dataset-token note, sweeper bullet).
+- Verification: `green-fix.log` (SHA at top; unfiltered `go test` of the three packages, `go vet`, check-gates, focused PG on the committed tree).
+- Left as is: P2-1 (list the counting draft ids in `binding_in_use`; needs an ads-owned read definer or a ruling on `ads.draft_counts`), approve/publish-blocked test, BFF allowlist, `green.log` provenance headers.

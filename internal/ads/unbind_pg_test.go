@@ -17,20 +17,23 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// unbind_pg_test.go is the W6-06B implementer's REAL_PG flow check (not the independent MA gates): ad-account unbind
-// (Amendment W6-06B §A, migration 0160) and the catalog feed URL entry (§B). It runs on its OWN store (never the
-// shared fixture store, whose binding state other tests of this package depend on) and skips unless
-// LC_TEST_DATABASE_ALLOWED=1 (scripts/dev/test-focused.sh sets it). Evidence tier: REAL_PG, no Meta (fake ConnectFunc).
+// Purpose: the W6-06B implementer's REAL_PG flow check (not the independent MA gates): ad-account unbind (Amendment
+//   W6-06B §A, migration 0160) and the catalog feed URL entry (§B). It runs on its OWN store (never the shared fixture
+//   store, whose binding state other tests of this package depend on).
+// Depends on: pg_flow_test.go fixture (sharedAdsFx, must/str/scoped), internal/platform (WithScope), migration 0160 definers
+//   integration.meta_ads_unbind / ads.catalog_feed_url; skips unless LC_TEST_DATABASE_ALLOWED=1 (scripts/dev/test-focused.sh).
+// Used by: `go test ./internal/ads` (TestAdsUnbind*); the guard/sweeper/feed-filter cases live in unbind_guards_pg_test.go.
+// Status: REAL_PG, no Meta (fake ConnectFunc).
 
 // unbindFx carries the second store's identities; the pools and migrations come from sharedAdsFx.
 type unbindFx struct {
-	f                                  *adsFx
-	store                              string
-	adBinding                          string // the enabled meta_ads binding of asset 9002 (store2)
-	token2, token3, token4             string
-	hash2, hash3, hash4                []byte
-	principal2, principal3, principal4 string
-	svc                                *Service
+	f                      *adsFx
+	store                  string
+	adBinding              string // the enabled meta_ads binding of asset 9002 (store2)
+	token2, token3, token4 string
+	hash2, hash3, hash4    []byte
+	principal2             string
+	svc                    *Service
 }
 
 // setupUnbindFx provisions store2 + three principals on the shared fixture database:
@@ -131,7 +134,8 @@ func (u *unbindFx) credentialCount(binding string) (creds, heads string) {
 }
 
 // insertOp directly inserts one operation row on a binding of store2 (owner pool; test fixture only, mimics the
-// ledger states: DISPATCHING carries a live dispatch lease, READY carries none — 0008 CHECKs).
+// ledger states: DISPATCHING carries a live dispatch lease; READY is generation 0; UNKNOWN/ACKNOWLEDGED/BLOCKED_POLICY
+// carry generation 1 and no lease — 0008 CHECKs).
 func (u *unbindFx) insertOp(t *testing.T, binding, action, state, key string) string {
 	t.Helper()
 	op := newUUID(u.f)
@@ -139,8 +143,11 @@ func (u *unbindFx) insertOp(t *testing.T, binding, action, state, key string) st
 	var leaseUntil *time.Time
 	var leaseHash []byte
 	gen := 0
+	if state != "READY" {
+		gen = 1 // 0008 CHECK: only a READY row may sit at generation 0
+	}
 	if state == "DISPATCHING" {
-		leaseMode, leaseUntil, leaseHash, gen = "dispatch", timePtr(time.Now().UTC().Add(time.Minute)), []byte(strings.Repeat("ab", 16)), 1
+		leaseMode, leaseUntil, leaseHash = "dispatch", timePtr(time.Now().UTC().Add(time.Minute)), []byte(strings.Repeat("ab", 16))
 	}
 	u.f.must(`INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,
 		external_asset_id,purpose,action,semantic_key,request_hash,request,job_id,state,generation,lease_mode,lease_until,lease_token_hash)
