@@ -76,6 +76,13 @@ func bruSeedOrders(t *testing.T, e *tcvEnv) bruSeed {
 	if items, _ := out["items"].([]any); st != 200 || len(items) != 1 {
 		t.Fatalf("gap list before the browser run: %d %s", st, raw)
 	}
+	// The cancelled gap order (CANCELLED, payment CAPTURED, work READY) must not make the store list or its own detail unavailable
+	// (merchantorders.validSummary used to 503 both: W3-U5 CI run 37512707012).
+	for _, path := range []string{"/orders?view=v2&limit=10&state=all", "/orders/" + s.gap} {
+		if st, _, raw := e.mcall(e.token(), "GET", e.rtPath(path), "", ""); st != 200 {
+			t.Fatalf("GET %s with the refund-gap order present: %d %s", path, st, raw)
+		}
+	}
 	return s
 }
 

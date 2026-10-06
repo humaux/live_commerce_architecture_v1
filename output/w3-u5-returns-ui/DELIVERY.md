@@ -114,3 +114,19 @@ zh-TW + en at 1586px and 390px with no-horizontal-overflow assertion. **Executio
   post-login `getByTestId("nav-orders")` found nothing (returns-ui, MF07, MOU, refund-fulfilment, click-sweep).
 - Fix: `returns` is `nav: false` (the page stays reachable from the orders list link "退貨與取消"; its `shellCopy.returns` label still titles the page).
 - Guard: `tests/admin/shell-registry.test.ts` "Every browser spec clicks nav-orders..." (red before: `['orders','returns']`, green after).
+
+### CI regression 2 (run 37512707012 on 8148ad67): every returns-ui test failed at `order-detail`
+
+- Symptom: the orders page showed 「訂單暫時無法讀取」; trace network: `GET /orders?view=v2&limit=10&state=all` -> 503 `unavailable`. Not a nav/spec problem.
+- Root cause (backend, W3-08B gap): `internal/merchantorders/orders.go` `validSummary` rejected `work_state=READY` on any order that is not CONFIRMED. Nothing ever closes
+  `fulfillment.payment_work_items` (only READY/REVIEW_REQUIRED exist), so a merchant-cancelled paid order (cancel after a full refund, or a cancel whose in-flight
+  refund later FAILED = the cancel-refund gap the spec seeds) is CANCELLED + payment CAPTURED/REFUNDED + work READY. One such row 503'd the whole store order list
+  and that order's detail. Found by bisecting the list per `bucket` on real PG (only `cancelled` failed) and dumping the raw `identity.read_merchant_orders_v2` row.
+- Fix (3 lines, validator only, no SQL/migration): READY is valid for CONFIRMED + live fulfilment (as before) OR CANCELLED/CANCELLED with captured money. Still rejected:
+  READY on CANCELLED commercial with live fulfilment, READY on a cancelled order that never captured, CONFIRMED + CANCELLED fulfilment.
+- Tests: `internal/merchantorders/orders_test.go` TestProjectionInvariantsRefundAndShipment 2 accept + 2 reject cases (red before: both accepts failed; green after);
+  `bruSeedOrders` now asserts list (state=all) and the gap order's detail answer 200 before Playwright; focused PG
+  `TestMerchantOrders*`, `TestMerchantCancel`, `TestMerchantCancelRefundGap` PASS.
+- Integrator to-do: this touches backend code (DeepSeek's domain) from a UI branch; review it. The cleaner long-term fix is SQL (project work_state NONE for cancelled orders, new
+  migration number needed), which would let the validator go back to the strict rule.
+- Still NOT_RUN locally: the Playwright spec (selectors/ordering after the list loads can only be checked on CI).
