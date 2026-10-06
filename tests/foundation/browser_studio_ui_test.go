@@ -246,7 +246,9 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if focused {
 		// A single known main case preserves its real chain while giving exact
 		// cohort totals below. Arbitrary subsets cannot bypass full readbacks.
-		browser.Args = append(browser.Args, "--grep", grep)
+		// Playwright applies grep to file + test title, not the bare title. The
+		// validated input stays exact; omit its leading anchor for the CLI prefix.
+		browser.Args = append(browser.Args, "--grep", strings.TrimPrefix(grep, "^"))
 		t.Log("FOCUSED_SPEC_ONLY: STU04 main case; full-mode acceptance remains NOT_RUN")
 	}
 	browser.Dir = root

@@ -7,3 +7,4 @@ ci2-artifacts/
 ci2-failed.log
 ci3-artifacts/
 ci3-failed.log
+ci4-console-*/
