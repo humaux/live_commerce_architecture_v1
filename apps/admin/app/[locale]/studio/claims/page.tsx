@@ -1,3 +1,5 @@
+// Purpose: Resolve the live-settings scene picker and validated store/scene deep links using the signed session.
+// Used by: W0 live-settings navigation and Studio/Console settings links.
 // Owns the /{locale}/studio/claims?store=&scene= route: server-side locale/query
 // validation and signed-session store resolution for Studio › Claims (T10b).
 // Non-goals: no claims data on the server (the client reads M1–M7 through the BFF after
@@ -14,10 +16,12 @@ import {
   safeError, SESSION_COOKIE,
 } from "@/lib/auth";
 import type { Store } from "@/lib/model";
-import { studioUUID } from "@/lib/studio-model";
 import type { StudioErrorCode } from "@/lib/studio-client";
 import { StudioClaims } from "@/components/StudioClaims";
+import { LiveSettingsEntry } from "@/components/LiveSettingsEntry";
+import { liveSettingsSelection } from "@/src/features/live/workspace-model";
 
+/** Validates contextual links; a global entry offers explicit scene selection after server-side store resolution. */
 export default async function StudioClaimsPage({
   params, searchParams,
 }: {
@@ -27,9 +31,9 @@ export default async function StudioClaimsPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
-  if (Object.keys(query).some((key) => key !== "store" && key !== "scene")) notFound();
-  const store = query.store, scene = query.scene;
-  if (typeof store !== "string" || typeof scene !== "string" || !studioUUID.test(store) || !studioUUID.test(scene)) notFound();
+  const selection = liveSettingsSelection(query);
+  if (!selection) notFound();
+  const { store, scene } = selection;
 
   let selected: Store | null = null;
   let error: StudioErrorCode | null = null;
@@ -43,10 +47,11 @@ export default async function StudioClaimsPage({
         const safe = await safeError(listed.response);
         error = safe.status === 401 ? "signed-out" : safe.status === 403 ? "forbidden" : "unavailable";
       } else {
-        selected = listed.stores.find((item) => item.id === store) ?? null;
-        if (!selected) notFound();
+        selected = store ? listed.stores.find((item) => item.id === store) ?? null : [...listed.stores].sort((a, b) => a.id.localeCompare(b.id))[0] ?? null;
+        if (store && !selected) notFound();
       }
     }
   }
-  return <StudioClaims locale={locale} store={selected} scene={scene} initialError={error} />;
+  return scene ? <StudioClaims locale={locale} store={selected} scene={scene} initialError={error} /> :
+    <LiveSettingsEntry key={selected?.id ?? "signed-out"} locale={locale} store={selected} initialError={error} />;
 }

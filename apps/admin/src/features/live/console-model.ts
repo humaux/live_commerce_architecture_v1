@@ -1,7 +1,7 @@
 // Purpose: Closed DTO parsers for LC-U1 console A1, lifecycle A7, recommend A6 and A5 session results/copy.
 // Depends on: studio-model.ts draft parser and claims-model.ts offer/import parsers; frozen live-console-v1 §§6–9/11.
 // Used by: console-client.ts, LiveConsole and LiveWorkspace; the stores BFF validates these same public shapes.
-// Invariants: I03/I05/I10/I11/I14; no client amount/stock truth or guessed external state. A1 is MOCK until LC-B7 exists.
+// Invariants: I03/I05/I10/I11/I14; no client amount/stock truth or guessed external state; LC-B7 owns the real read model.
 import { parseDraft, type Draft } from "../../../lib/studio-model.ts";
 import { parseImportResult, type ImportResult } from "../../../lib/claims-model.ts";
 

@@ -1,7 +1,7 @@
 // Purpose: LC-U1 browser requests through /api/stores/{store}/live-sessions → Go A1/A7/A6 and A5 flow endpoints.
 // Depends on: existing studio-client.ts authenticated read/write; catalog-v2-client.ts inventory transport; closed DTO parsers.
 // Used by: LiveWorkspace and LiveConsole; each user submit owns its supplied idempotency key.
-// Invariants: I01/I02/I03/I05/I06/I11/I14; no automatic retries, secret storage or client inventory truth. A1 backend is currently absent.
+// Invariants: I01/I02/I03/I05/I06/I11/I14; no automatic retries, secret storage or client inventory truth.
 import { read, write, StudioError } from "../../../lib/studio-client";
 import { parseOffer, type Offer } from "../../../lib/claims-model.ts";
 import { send } from "../../../lib/catalog-v2-client";

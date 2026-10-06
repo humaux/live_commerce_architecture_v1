@@ -6,6 +6,7 @@ const en = {
   leavePending: "A request is still pending. Leave this session? Its receipt will still require reconciliation.",
   feed: "Comment feed", stream: { live: "Receiving", throttled: "Temporarily rate-limited", reauth_required: "Reconnect the account", unavailable: "Not available", not_started: "Not started" },
   title: "Live console", sessions: "Live sessions", settings: "Session settings", choose: "Choose a session",
+  settingsChoose: "Choose a session to configure its products and comment ordering.", emptySessions: "No sessions yet. Create one in Live sessions.",
   before: "Before going live", during: "Live session", after: "After the session", archived: "Archived",
   start: "Start live session", end: "End live session", copy: "Copy to next session", copyLast: "Copy previous session",
   lifecycleHint: "These controls open or close comment ordering. They do not start or stop your Facebook or Instagram broadcast.",
@@ -34,6 +35,7 @@ const en = {
 };
 export type WorkspaceCopy = typeof en;
 const tw: WorkspaceCopy = {
+  settingsChoose: "請先選擇場次，再設定商品與留言收單。", emptySessions: "尚無場次，請先到直播場次建立。",
   refusals: { too_many_open_windows: "已有 5 場開放收單，請先關閉其中一場。", billing_restricted: "帳務限制暫時阻止開播，請核對訂閱狀態。", below_reserved: "庫存不可低於已保留、已分配與不可售數量，請重新整理並提高目標數量。" },
   leavePending: "尚有待確認請求。仍要離開場次嗎？離開後仍須核對回執。",
   feed: "留言接收", stream: { live: "接收中", throttled: "暫時限流", reauth_required: "請重新連接帳號", unavailable: "暫時無法接收", not_started: "尚未開始" },
@@ -65,6 +67,7 @@ const tw: WorkspaceCopy = {
 };
 const cn: WorkspaceCopy = {
   ...tw, title: "直播控台", sessions: "直播场次", settings: "场次设置", choose: "选择场次", before: "开播前准备", during: "直播中", after: "直播后", archived: "已归档",
+  settingsChoose: "请先选择场次，再设置商品与评论收单。", emptySessions: "尚无场次，请先到直播场次创建。",
   start: "开始直播", end: "结束直播", copy: "复制成下一场", copyLast: "复制上一场", lifecycleHint: "此处控制本场评论收单，不会启动或停止 Facebook、Instagram 的实际直播。",
   feed: "评论接收", stream: { live: "接收中", throttled: "暂时限流", reauth_required: "请重新连接账号", unavailable: "暂时无法接收", not_started: "尚未开始" },
   leavePending: "仍有待确认请求。仍要离开场次吗？离开后仍须核对回执。",

@@ -6,6 +6,15 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { primaryAction, stockDelta, facebookEmbed, settleLiveCommand } from "../../apps/admin/src/features/live/workspace-model.ts";
 import * as workspace from "../../apps/admin/src/features/live/workspace-model.ts";
+test("Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link", () => {
+  const store = "11111111-1111-4111-8111-111111111111", scene = "22222222-2222-4222-8222-222222222222";
+  assert.deepEqual(workspace.liveSettingsSelection({}), { store: "", scene: "" });
+  assert.deepEqual(workspace.liveSettingsSelection({ store }), { store, scene: "" });
+  assert.deepEqual(workspace.liveSettingsSelection({ store, scene }), { store, scene });
+  for (const query of [{ scene }, { store: [store] }, { store, scene: [scene] }, { store: "" }, { store, scene: "" },
+    { store: "foreign" }, { store, scene: "foreign" }, { store, tenant_id: scene }])
+    assert.equal(workspace.liveSettingsSelection(query), null);
+});
 test("LC-B7 stock permission admits live_adjust without inventory:write, not unrelated grants", () => {
   for (const permissions of [["inventory:live_adjust"], ["inventory:write"], ["live:read", "inventory:live_adjust"]])
     assert.equal(workspace.liveStockAllowed({ role: "live_operator", permissions }), true);

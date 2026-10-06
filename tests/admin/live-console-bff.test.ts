@@ -10,6 +10,7 @@ import { consoleAny, consoleRoutes, validConsoleBody, validConsoleQuery } from "
 const adminRoot = fileURLToPath(new URL("../../apps/admin/", import.meta.url));
 registerHooks({ resolve(specifier, context, next) {
   if (specifier === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
+  if (specifier === "next/server") return next("next/server.js", context);
   if (specifier === "next/headers") return { url: "data:text/javascript,export function headers(){throw Error('not a page fixture')}", shortCircuit: true };
   if (specifier.startsWith("@/")) return { url: pathToFileURL(adminRoot + specifier.slice(2) + ".ts").href, shortCircuit: true };
   if (context.parentURL?.includes("/apps/admin/") && specifier.startsWith(".") && !specifier.endsWith(".ts")) return next(`${specifier}.ts`, context);
@@ -81,6 +82,31 @@ test("console BFF admits exactly A1/A7/A6 and A5 read/copy methods", () => {
   }
   assert.equal(consoleAny.test(`live-sessions/${sid}/comments`), false);
   assert.equal(consoleAny.test(`live-sessions/${sid}/console%2f`), false);
+});
+
+test("Next proxy admits the exact console family and results query before the BFF", async () => {
+  const { NextRequest } = await import("../../apps/admin/node_modules/next/server.js");
+  const { proxy } = await import("../../apps/admin/proxy.ts");
+  const invoke = (path: string, method = "GET", query = "") => {
+    const raw = `https://admin.example.test/api/stores/${store}/${path}${query}`;
+    const request = new NextRequest(raw, { method });
+    // Production skipProxyUrlNormalize preserves raw '?' for this guard; the standalone constructor normalizes it.
+    Object.defineProperty(request, "url", { value: raw });
+    return proxy(request);
+  };
+  for (const [method, path, query] of [["GET", `${root}/console`, ""], ["GET", "live-sessions/results", `?session_id=${sid}`],
+    ["POST", `${root}/copy`, ""], ["POST", `${root}/lifecycle`, ""], ["POST", `${root}/claims/offers/${oid}/recommend`, ""],
+    ["GET", "live-sessions", "?limit=20"], ["GET", `${root}/claims`, ""], ["POST", "inventory/adjustments", ""]]) {
+    const response = invoke(path, method, query);
+    assert.equal(response.status, 200, `${method} ${path}${query}`);
+    assert.equal(response.headers.get("x-middleware-next"), "1");
+  }
+  for (const path of [`${root}/console/extra`, `${root}/%63onsole`, `${root}/console%2f`, `live-sessions/${sid}/unknown`])
+    assert.equal(invoke(path).status, 404, path);
+  for (const [path, query] of [[`${root}/console`, "?"], [`${root}/copy`, "?tenant_id=forbidden"],
+    ["live-sessions/results", ""], ["live-sessions/results", `?session_id=${sid}&session_id=${sid}`],
+    ["live-sessions/results", `?session_id=${sid}&limit=1`]])
+    assert.equal(invoke(path, "GET", query).status, 422, path + query);
 });
 
 test("results query is canonical repeated session_id 1..50, everything else queryless", () => {
