@@ -1,3 +1,6 @@
+// Purpose: deterministic buyer purchase recovery and ordered-cart continuation regressions.
+// Depends on: purchase/buyer-client helpers, synthetic storage, locks and HTTP responses.
+// Used by: test-node.sh and claim-direct-checkout CDC03 strict-continuation gate.
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -822,4 +825,28 @@ test("order locator readback mismatch and no-op journal removal both retain chec
       f.requests.filter((x) => x.method === "POST").map((x) => x.key),
       [original.key, original.key, original.key],
     );
+  }));
+
+// CDC03 adversarial red: an authorized writer advances the ordered cart before continuation acquires its lock.
+test("direct claim continuation refuses a newer ordered cart inside the purchase lock", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    const newer = { ...cart, version: cart.version + 2 };
+    f.route(async (r) => {
+      assert.equal(r.method, "GET", "strict continuation must not mutate an advanced cart");
+      return Response.json(r.path.startsWith("orders/") ? order() : newer);
+    });
+    await assert.rejects(continueShopping(context, uid(6), true), { code: "uncertain" });
+    assert.equal(knownOrderID(context), uid(6), "recovery marker retained");
+  }));
+
+test("direct claim continuation keeps next-cart recovery after a conflicting clear", async () =>
+  browserFixture(async (f) => {
+    locateOrder();
+    const pending = { v: 1, context, key: uid(90), kind: "next-cart", body: { expected_version: cart.version, items: [] } };
+    localStorage.setItem(`commerce-purchase-pending-v1:${context}`, JSON.stringify(pending));
+    f.route(async (r) => r.method === "PUT" ? Response.json({ code: "conflict" }, { status: 409 }) : Response.json({ ...cart, version: cart.version + 2 }));
+    await assert.rejects(continueShopping(context, uid(6), true), { code: "uncertain" });
+    assert.equal(knownOrderID(context), uid(6));
+    assert.equal(pendingPurchase(context).key, pending.key);
   }));

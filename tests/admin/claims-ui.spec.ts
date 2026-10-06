@@ -1,3 +1,6 @@
+// Purpose: KC16 real-click merchant claim lifecycle and buyer direct-checkout regression.
+// Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG.
+// Used by: --browser-live-claims; no provider sends or payment placement in this gate.
 // KC16 browser gate (contracts/live-keyword-claims-v1.md §11.1): Studio › Claims in the
 // packaged admin, then the buyer claim link in the storefront production server, through
 // real BFFs, Go transports and PostgreSQL. Started only by browser_live_claims_test.go
@@ -370,9 +373,9 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   buyer.on("request", (request) => buyerRequests.push(`${request.url()} ${request.headers()["referer"] ?? ""}`));
   buyer.on("pageerror", (error) => pageErrors.push(error.message));
   const copies = {
-    en: { title: "Your claimed items", quantity: "Quantity", price: "Current price, final at checkout", add: "Add to cart" },
-    "zh-CN": { title: "你登记的商品", quantity: "数量", price: "当前价格，以结账时为准", add: "加入购物车" },
-    "zh-TW": { title: "你登記的商品", quantity: "數量", price: "目前價格，以結帳時為準", add: "加入購物車" },
+    en: { title: "Your claimed items", quantity: "Quantity", price: "Current price, final at checkout", add: "Check out now" },
+    "zh-CN": { title: "你登记的商品", quantity: "数量", price: "当前价格，以结账时为准", add: "直接结账" },
+    "zh-TW": { title: "你登記的商品", quantity: "數量", price: "目前價格，以結帳時為準", add: "直接結帳" },
   } as const;
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     const response = await buyer.goto(firstURL.replace("/en/claim", `/${locale}/claim`));
@@ -397,14 +400,16 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await buyer.getByRole("button", { name: copies["zh-TW"].add }).click();
   const conflict = buyer.getByTestId("claim-conflict");
   await expect(conflict).toContainText("你的購物車中有商品已無法購買，或登記內容已變更。請先檢查購物車，然後再試一次。");
-  await expect(conflict.getByRole("link", { name: "檢查購物車" })).toHaveAttribute("href", "#claim-cart");
+  await expect(conflict.getByRole("link", { name: "檢查購物車" })).toHaveAttribute("href", "/zh-TW/cart");
   await shot(buyer, "buyer-claim-409-zh-TW-390");
   await conflict.getByRole("button", { name: "重新讀取登記" }).click();
   await expect(buyer.getByTestId("claim-line-A1")).toContainText("數量 3");
   await buyer.getByRole("button", { name: copies["zh-TW"].add }).click();
-  await expect(buyer.getByTestId("claim-added")).toHaveText("已加入購物車。");
-  await expect(buyer.getByTestId(`claim-cart-${skuAID}`)).toContainText("× 3");
-  await expect(buyer.getByTestId(`claim-cart-${skuBID}`)).toContainText("× 1");
+  await expect(buyer).toHaveURL(/\/zh-TW\/checkout(?:\?|$)/);
+  await expect(buyer.getByTestId("claim-checkout-notice")).toContainText("其他商品也會一起結帳");
+  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${skuAID}"]`)).toBeVisible();
+  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${skuBID}"]`)).toBeVisible();
+  // READBACK ONLY: verify the cart created by the preceding real checkout click.
   const cart = await buyer.evaluate(async () => {
     const state = await (await fetch("/api/buyer/session")).json();
     return (await fetch("/api/buyer/cart", { headers: { "X-Buyer-Context": state.context } })).json();
@@ -415,7 +420,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 
   await buyer.goto(firstURL);
   await expect(buyer.getByTestId("claim-line-A1")).toContainText("Already in your cart");
-  await expect(buyer.getByTestId("claim-add")).toBeDisabled();
+  await expect(buyer.getByTestId("claim-add")).toBeEnabled();
   await merchant.getByRole("button", { name: "Refresh facts" }).click();
   await expect(bundle).toContainText("Opened by a buyer");
   await expect(bundle).toContainText("A1 × 3");
@@ -424,14 +429,14 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 
   // 404: unknown token, no token, and the old token after a rotation.
   await buyer.goto(`${buyerOrigin}/en/claim#t=${randomBytes(32).toString("base64url")}`);
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("This link expired or was replaced — ask the seller for a new link");
+  await expect(buyer.getByTestId("claim-not-found")).toHaveText("This link expired or was replaced. Message the seller for a new link.");
   await buyer.goto(`${buyerOrigin}/zh-CN/claim`);
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("此链接已过期或已被替换——请向卖家索取新链接");
+  await expect(buyer.getByTestId("claim-not-found")).toHaveText("链接已失效或已更换，请私信商家重新取得");
   const secondURL = await issueLink("Replace link");
   const secondToken = secondURL.split("#t=")[1];
   expect(secondToken).not.toBe(firstToken);
   await buyer.goto(firstURL.replace("/en/claim", "/zh-TW/claim"));
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("此連結已過期或已被替換——請向賣家索取新連結");
+  await expect(buyer.getByTestId("claim-not-found")).toHaveText("連結已失效或已更換，請私訊商家重新取得");
   await shot(buyer, "buyer-claim-404-zh-TW-390");
   await buyer.goto(secondURL);
   await expect(buyer.getByTestId("claim-line-B2")).toContainText("Already in your cart");

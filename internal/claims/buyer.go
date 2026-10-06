@@ -1,3 +1,6 @@
+// Purpose: buyer claim preview and delta redemption into the existing cart.
+// Depends on: buyer scope/commands, claims definers, storefront cart and inventory availability.
+// Used by: buyerhttp B1/B2 handlers and claims acceptance tests.
 // buyer.go owns the buyer side of a claim link: PreviewLink (read-only) and RedeemLink
 // (bind, then apply pending claim lines to the buyer's own cart) (contract §4.4, §6).
 //
@@ -27,7 +30,7 @@ import (
 	"livecommerce/internal/storefront"
 )
 
-// Frozen buyer DTOs (contract §4.4, §7.2 B1–B2): no title, label, actor, platform, owner or principal.
+// PreviewLine is the buyer-safe claim projection; amounts and stock hints never authorize checkout.
 type PreviewLine struct {
 	Keyword        string `json:"keyword"`
 	SKUID          string `json:"sku_id"`
@@ -41,20 +44,29 @@ type PreviewLine struct {
 	Quantity              int64  `json:"quantity"`
 	Pending               bool   `json:"pending"`
 	Available             bool   `json:"available"`
+	SoldOut               bool   `json:"sold_out"`
 }
+
+// Preview describes a live claim link without identity, locks or stock reservation.
 type Preview struct {
 	BundleVersion int64         `json:"bundle_version"`
 	Bound         bool          `json:"bound"`
 	ExpiresAt     time.Time     `json:"expires_at"`
 	Lines         []PreviewLine `json:"lines"` // ORDER BY keyword
 }
+
+// RedeemInput pins the observed bundle version for the explicit buyer command.
 type RedeemInput struct {
 	ExpectedBundleVersion int64 `json:"expected_bundle_version"`
 }
+
+// Skipped reports a pending line that B2 did not apply; it remains available to retry later.
 type Skipped struct {
 	SKUID  string `json:"sku_id"`
-	Reason string `json:"reason"` // unavailable | offer_inactive
+	Reason string `json:"reason"` // unavailable | offer_inactive | sold_out
 }
+
+// Redeemed reports the same-transaction cart merge, applied lines and pending skips.
 type Redeemed struct {
 	BundleVersion int64             `json:"bundle_version"`
 	Cart          storefront.Cart   `json:"cart"`
@@ -66,6 +78,7 @@ type Redeemed struct {
 const (
 	skipUnavailable   = "unavailable"
 	skipOfferInactive = "offer_inactive"
+	skipSoldOut       = "sold_out"
 )
 
 // redeemKeyPrefix is the derived nested cart.set key prefix. buyerhttp rejects client
@@ -115,6 +128,18 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 	}
 	if len(out.Lines) == 0 {
 		return Preview{}, command.ErrNotFound
+	}
+	// inventory.buyer_sku_availability: read-only stock hint, Direct checkout amendment (I03).
+	lines := make([]claimLine, 0, len(out.Lines))
+	for _, line := range out.Lines {
+		lines = append(lines, claimLine{skuID: line.SKUID})
+	}
+	availability, err := availableSKUs(ctx, tx, s, lines)
+	if err != nil {
+		return Preview{}, err
+	}
+	for i := range out.Lines {
+		out.Lines[i].SoldOut = availability[out.Lines[i].SKUID].soldOut(out.Lines[i].Quantity)
 	}
 	return out, overlayPreviewPrices(ctx, tx, token, &out)
 }
@@ -269,22 +294,29 @@ func redeemLines(ctx context.Context, tx pgx.Tx, hash []byte, expected int64) (i
 	return bundleVersion, lines, nil
 }
 
-// availableSKUs reports, for the SKUs of pending lines, whether SKU and product are active
-// and priced in the store currency. It reads catalog.skus/products and control.stores
-// with the buyer's own grants and takes no lock (SetCart locks what it writes).
-func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimLine) (map[string]bool, error) {
+// skuAvailability combines the unchanged catalog rule with a read-only stock snapshot.
+type skuAvailability struct {
+	available, tracked bool
+	quantity           int64
+}
+
+func (a skuAvailability) soldOut(quantity int64) bool { return a.tracked && a.quantity < quantity }
+
+// availableSKUs reads catalog availability and inventory.buyer_sku_availability in one
+// bounded query. No locks/writes: Begin is the only stock authority (Direct checkout).
+func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimLine) (map[string]skuAvailability, error) {
 	var skus []string
 	for _, line := range lines {
-		if line.pending {
-			skus = append(skus, line.skuID)
-		}
+		skus = append(skus, line.skuID)
 	}
-	available := map[string]bool{}
+	available := map[string]skuAvailability{}
 	if len(skus) == 0 {
 		return available, nil
 	}
-	rows, err := tx.Query(ctx, `SELECT s.id::text,s.status='active' AND p.status='active' AND s.currency=st.currency
-		FROM catalog.skus s
+	// Calls inventory.buyer_sku_availability: Direct checkout scoped hint, no raw stock grant.
+	rows, err := tx.Query(ctx, `SELECT s.id::text,s.status='active' AND p.status='active' AND s.currency=st.currency,a.tracked,a.available
+		FROM inventory.buyer_sku_availability($3::uuid[]) a
+		JOIN catalog.skus s ON s.id=a.sku_id
 		JOIN catalog.products p ON p.tenant_id=s.tenant_id AND p.store_id=s.store_id AND p.id=s.product_id
 		JOIN control.stores st ON st.tenant_id=s.tenant_id AND st.id=s.store_id
 		WHERE s.tenant_id=$1 AND s.store_id=$2 AND s.id=ANY($3::uuid[])`, s.TenantID, s.StoreID, skus)
@@ -294,11 +326,11 @@ func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimL
 	defer rows.Close()
 	for rows.Next() {
 		var sku string
-		var ok bool
-		if err := rows.Scan(&sku, &ok); err != nil {
+		var state skuAvailability
+		if err := rows.Scan(&sku, &state.available, &state.tracked, &state.quantity); err != nil {
 			return nil, mapError(err)
 		}
-		available[sku] = ok
+		available[sku] = state
 	}
 	if err := rows.Err(); err != nil {
 		return nil, mapError(err)
@@ -310,7 +342,7 @@ func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimL
 // unavailable); skipped lines stay pending. live_offer_active_sku leaves at most one
 // applicable line per SKU, which is asserted here (a second one is ErrConflict). Output
 // is ordered by SKU. Pure.
-func splitPending(lines []claimLine, available map[string]bool) ([]claimLine, []Skipped, error) {
+func splitPending(lines []claimLine, available map[string]skuAvailability) ([]claimLine, []Skipped, error) {
 	apply, skipped := []claimLine{}, []Skipped{}
 	seen := map[string]bool{}
 	for _, line := range lines {
@@ -318,8 +350,10 @@ func splitPending(lines []claimLine, available map[string]bool) ([]claimLine, []
 		case !line.pending:
 		case !line.offerActive:
 			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipOfferInactive})
-		case !available[line.skuID]:
+		case !available[line.skuID].available:
 			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipUnavailable})
+		case available[line.skuID].soldOut(line.quantity):
+			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipSoldOut})
 		case seen[line.skuID]:
 			return nil, nil, command.ErrConflict
 		default:

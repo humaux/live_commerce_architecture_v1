@@ -1,9 +1,13 @@
 "use client";
 
+// Purpose: explicit claim preview -> cart merge -> direct checkout with order recovery first.
+// Depends on: buyer BFF B1/B2, purchase Web Lock/recovery, claim copy/contract and checkout routes.
+// Used by: /{locale}/claim; the token remains only in this mounted component.
+
 // Owns the buyer claim page UI (/{locale}/claim, live-keyword-claims-v1 §11.1): read the
 // one-time link token from `#t=`, remove it from the address bar and history at once, keep
 // it only in this component's memory, preview the claimed lines (B1), and on an explicit
-// click add them to the buyer's own cart (B2, one Idempotency-Key per click, no automatic
+// click merge them into the buyer's cart then open checkout (B2, one Idempotency-Key per click, no automatic
 // retry). Shows the current cart so a 409 can be resolved by removing an item.
 // Non-goals: no Quote, checkout or stock hold (claims never reserve stock), no storage of
 // the token or preview (no local/session storage, no cache), no third-party script, and
@@ -22,12 +26,12 @@ import {
   readBuyerSession,
   resetBuyerSession,
 } from "../lib/buyer-client";
-import { orderRecoveryRequired } from "../lib/purchase";
+import { cartWithQuantity, continueShopping, knownOrderID, orderRecoveryRequired, pendingPurchase, redeemClaimLink, writePurchase } from "../lib/purchase";
+import { cartPath, checkoutPath } from "../lib/routes";
 import {
   claimFragment,
   validClaimCart,
   validClaimPreview,
-  validClaimRedeemed,
   type ClaimCart,
   type ClaimPreview,
 } from "../lib/claim-contract";
@@ -48,6 +52,7 @@ async function json<T>(response: Response, valid: (value: unknown) => value is T
   return value;
 }
 
+/** Renders B1; only the explicit checkout button may redeem B2 and navigate. */
 export default function ClaimLink({
   locale: initialLocale,
   demonstration = false,
@@ -62,11 +67,12 @@ export default function ClaimLink({
   const [preview, setPreview] = useState<ClaimPreview | null>(null);
   const [cart, setCart] = useState<ClaimCart | null>(null);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<"added" | "nothing" | "cart-failed" | null>(null);
+  const [notice, setNotice] = useState<"added" | "nothing" | "cart-failed" | "recovery" | "unavailable" | "reopen" | null>(null);
   const [skipped, setSkipped] = useState(false);
   const token = useRef<string | null>(null);
   const fragmentRead = useRef(false);
   const epoch = useRef(0);
+  const redeeming = useRef(false);
 
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
@@ -95,17 +101,20 @@ export default function ClaimLink({
     setSkipped(false);
     const link = token.current;
     if (!link) {
+      setNotice("reopen");
       setView("not-found");
       return;
     }
     try {
       const session = await initializeBuyerSession();
       if (!session.context) throw new BuyerClientError("requires_reset");
-      const [claimed, current] = await Promise.all([readClaim(session.context, link), readCart(session.context)]);
+      const [claimed, current] = await Promise.allSettled([readClaim(session.context, link), readCart(session.context)]);
       if (version !== epoch.current) return;
       setContext(session.context);
-      setPreview(claimed);
-      setCart(current);
+      if (current.status === "fulfilled") setCart(current.value);
+      if (claimed.status === "rejected") throw claimed.reason;
+      if (current.status === "rejected") throw current.reason;
+      setPreview(claimed.value);
       setView("ready");
     } catch (reason) {
       if (version === epoch.current) fail(reason);
@@ -135,10 +144,18 @@ export default function ClaimLink({
       setCart(null);
       void load();
     };
+    const onShow = (event: PageTransitionEvent) => {
+      // BFCache may restore the old component, but pagehide already discarded its token.
+      if (event.persisted && !token.current) {
+        setPreview(null); setNotice("reopen"); setView("not-found"); setBusy(false); redeeming.current = false;
+      }
+    };
+    window.addEventListener("pageshow", onShow);
     window.addEventListener("pagehide", forget);
     window.addEventListener("hashchange", onHash);
     return () => {
       epoch.current++;
+      window.removeEventListener("pageshow", onShow);
       window.removeEventListener("pagehide", forget);
       window.removeEventListener("hashchange", onHash);
     };
@@ -150,32 +167,47 @@ export default function ClaimLink({
 
   async function redeem() {
     const link = token.current;
-    if (!preview || !link || busy) return;
+    if (!preview || !link || redeeming.current) return;
+    // A ref blocks the second click even before React commits the disabled button.
+    redeeming.current = true;
     const version = epoch.current;
     setBusy(true);
     setNotice(null);
     try {
-      // One fresh key per explicit click; a lost answer is resolved by reloading the claim.
-      const result = await json(
-        await buyerRequest(
-          "POST",
-          "claim-link/redeem",
-          context,
-          { expected_bundle_version: preview.bundle_version },
-          crypto.randomUUID(),
-          link,
-        ),
-        validClaimRedeemed,
-      );
+      const pending = pendingPurchase(context), orderID = knownOrderID(context);
+      if (pending?.kind === "checkout") {
+        setNotice("recovery");
+        window.location.assign(checkoutPath(locale) + "?from=claim-recovery");
+        return;
+      }
+      if (orderID || pending?.kind === "next-cart") {
+        await continueShopping(context, orderID ?? undefined, true);
+      }
+      const result = await redeemClaimLink(context, link, preview.bundle_version);
       if (version !== epoch.current) return;
       setCart(result.cart);
       setSkipped(result.skipped.length > 0);
-      setNotice(result.applied.length ? "added" : "nothing");
-      const claimed = await readClaim(context, link);
-      if (version === epoch.current) setPreview(claimed);
+      // Another tab may have applied the claim after this preview. Read B1 again on
+      // nothing; sold-out/unavailable pending lines must not trap the buyable lines.
+      const claimed = result.applied.length ? preview : await readClaim(context, link);
+      if (version !== epoch.current) return;
+      const buyable = claimed.lines.filter((line) => line.available && !line.sold_out);
+      if (result.applied.length || (buyable.length && buyable.every((line) => !line.pending &&
+          result.cart.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity)))) {
+        token.current = null;
+        window.location.assign(checkoutPath(locale) + "?from=claim");
+        return;
+      }
+      setPreview(claimed);
+      setNotice(null);
     } catch (reason) {
-      if (version === epoch.current) fail(reason);
+      if (version !== epoch.current) return;
+      if (reason instanceof BuyerClientError && reason.code === "uncertain") {
+        setNotice("recovery"); window.location.assign(checkoutPath(locale) + "?from=claim-recovery");
+      } else if (reason instanceof BuyerClientError && reason.code === "unavailable") setNotice("unavailable");
+      else fail(reason);
     } finally {
+      redeeming.current = false;
       setBusy(false);
     }
   }
@@ -185,17 +217,8 @@ export default function ClaimLink({
     setBusy(true);
     setNotice(null);
     try {
-      const next = await json(
-        await buyerRequest(
-          "PUT",
-          "cart",
-          context,
-          { expected_version: cart.version, items: cart.items.filter((item) => item.sku_id !== sku) },
-          crypto.randomUUID(),
-        ),
-        validClaimCart,
-      );
-      setCart(next);
+      const next = await writePurchase(context, { kind: "cart", body: cartWithQuantity(cart, sku, 0) });
+      if (next.kind === "cart") setCart(next.value);
     } catch (reason) {
       if (reason instanceof BuyerClientError && (reason.code !== "request_failed" || reason.status === 401)) fail(reason);
       else setNotice("cart-failed");
@@ -221,8 +244,18 @@ export default function ClaimLink({
   }
 
   const names = new Map(preview?.lines.map((line) => [line.sku_id, `${line.product_name} · ${line.sku_code}`]) ?? []);
-  const applicable = !!preview?.lines.some((line) => line.pending && line.available);
+  const buyable = preview?.lines.filter((line) => line.available && !line.sold_out && (line.pending ||
+    cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity))) ?? [];
+  const applicable = buyable.length > 0;
+  const partial = preview?.lines.some((line) => line.pending && (!line.available || line.sold_out));
   const cartVisible = (view === "ready" || view === "conflict") && cart;
+  let previousOrder = false;
+  try {
+    previousOrder = !!context && !!(knownOrderID(context) || pendingPurchase(context)?.kind === "next-cart");
+  } catch {
+    // This optional notice must not crash rendering when storage is unavailable.
+    // The explicit checkout handler still fails closed on unreadable recovery state.
+  }
 
   return (
     <>
@@ -252,7 +285,7 @@ export default function ClaimLink({
         {view === "loading" && <p role="status">{copy.loading}</p>}
         {view === "not-found" && (
           <p role="alert" className="purchase-error claim-alert" data-testid="claim-not-found">
-            {copy.notFound}
+            {notice === "reopen" ? copy.reopen : copy.notFound}
           </p>
         )}
         {view === "failed" && (
@@ -271,7 +304,7 @@ export default function ClaimLink({
           <div role="alert" className="purchase-error" data-testid="claim-conflict">
             <p>{copy.conflict}</p>
             <div className="claim-actions">
-              <a href="#claim-cart">{copy.reviewCart}</a>
+              <a href={cartPath(locale)}>{copy.reviewCart}</a>
               <button disabled={busy} onClick={() => void load()}>{copy.reload}</button>
             </div>
           </div>
@@ -288,7 +321,9 @@ export default function ClaimLink({
                     <span>{line.sku_code} · {copy.keyword} {line.keyword}</span>
                     {!line.available ? (
                       <small className="claim-flag">{copy.unavailable}</small>
-                    ) : !line.pending ? (
+                    ) : line.sold_out ? (
+                      <small className="claim-flag">{copy.soldOut}</small>
+                    ) : !line.pending && cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity) ? (
                       <small className="claim-flag done">{copy.inCart}</small>
                     ) : null}
                   </div>
@@ -305,18 +340,24 @@ export default function ClaimLink({
               {copy.expires(new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(preview.expires_at)))}
             </p>
             {notice === "added" && <p role="status" className="claim-success" data-testid="claim-added">{copy.added}</p>}
+            {notice === "recovery" && <p role="status">{copy.recovery}</p>}
+            {notice === "unavailable" && <a href={cartPath(locale)}>{copy.cartLink}</a>}
             {notice === "nothing" && <p role="status" className="claim-success">{copy.nothing}</p>}
             {skipped && <p role="status" className="claim-note">{copy.skipped}</p>}
+            {cart?.items.some((item) => !names.has(item.sku_id)) && <p className="claim-note" data-testid="claim-merge-notice">{copy.mergeNotice}</p>}
+            {previousOrder &&
+              <p className="claim-note" data-testid="claim-previous-order">{copy.previousOrder}</p>}
             <button
               className="primary claim-add"
               data-testid="claim-add"
               disabled={busy || !applicable}
               onClick={() => void redeem()}
             >
-              {busy ? copy.adding : preview.bound ? copy.addAgain : copy.add}
+              {busy ? copy.adding : partial && applicable ? copy.partial(buyable.reduce((n, line) => n + line.quantity, 0)) : copy.add}
             </button>
           </section>
         )}
+        {view === "not-found" && !!cart?.items.length && <a href={cartPath(locale)}>{copy.cartLink}</a>}
         {cartVisible && (
           <section id="claim-cart" className="claim-cart" aria-labelledby="claim-cart-title" data-testid="claim-cart">
             <h2 id="claim-cart-title">{copy.cart}</h2>

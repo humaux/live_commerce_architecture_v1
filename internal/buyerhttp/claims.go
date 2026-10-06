@@ -1,3 +1,6 @@
+// Purpose: closed B1/B2 buyer claim-link HTTP projections and handlers.
+// Depends on: claims, buyer scopes, storefront projections and authenticated BFF transport.
+// Used by: buyerhttp handler mounted by cmd/api and browser acceptance gates.
 // claims.go owns the buyer claim-link transport B1–B2 (contract
 // contracts/live-keyword-claims-v1.md §7.2): GET /v1/buyer/claim-link previews a bundle
 // and POST /v1/buyer/claim-link/redeem binds it and prefills the caller's own cart.
@@ -45,6 +48,7 @@ type claimPreviewLineResponse struct {
 	Quantity       int64  `json:"quantity"`
 	Pending        bool   `json:"pending"`
 	Available      bool   `json:"available"`
+	SoldOut        bool   `json:"sold_out"`
 }
 
 type claimPreviewResponse struct {
@@ -119,7 +123,7 @@ func projectClaimPreview(preview claims.Preview) claimPreviewResponse {
 	for _, line := range preview.Lines {
 		out.Lines = append(out.Lines, claimPreviewLineResponse{Keyword: line.Keyword, SKUID: line.SKUID,
 			SKUCode: line.SKUCode, ProductName: line.ProductName, Currency: line.Currency,
-			UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity, Pending: line.Pending, Available: line.Available})
+			UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity, Pending: line.Pending, Available: line.Available, SoldOut: line.SoldOut})
 	}
 	return out
 }
