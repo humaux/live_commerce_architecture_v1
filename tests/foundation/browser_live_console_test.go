@@ -125,7 +125,12 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		items := []any{}
 		for _, id := range r.URL.Query()["session_id"] {
 			if scene := m.scenes[id]; scene != nil && scene.Store == store {
-				items = append(items, map[string]any{"session_id": id, "orders": 0, "paid_orders": 0, "multi_session_orders": 0, "money": []any{}})
+				orders, paid := int64(3), int64(1)
+				money := []any{map[string]any{"currency": "TWD", "order_minor": int64(60000), "paid_minor": int64(20000), "sandbox_paid_minor": int64(10000)}}
+				if scene.Copied {
+					orders, paid, money = 0, 0, []any{}
+				}
+				items = append(items, map[string]any{"session_id": id, "orders": orders, "paid_orders": paid, "multi_session_orders": 0, "money": money})
 			}
 		}
 		consoleJSON(w, 200, map[string]any{"as_of": "2030-01-01T00:00:00Z", "items": items})
