@@ -46,19 +46,20 @@ func registerShipmentRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
-		in, raw, ok := studioDecodeRaw[merchantorders.ShipmentInput](w, r, shipmentBodyFields)
+		in, ok := decodeShipmentBody(w, r)
 		if !ok {
 			return
 		}
-		var present map[string]json.RawMessage
-		if json.Unmarshal(raw, &present) != nil || len(present) != len(shipmentBodyFields) ||
-			string(present["expected_version"]) == "null" || string(present["status"]) == "null" {
-			// Explicit null is the only way to omit a nullable field; a missing key or a null
-			// expected_version/status must never decode to a silent zero value.
-			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
-			return
-		}
 		result, ok := shipmentScope(w, r, pool, "fulfillment:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			// W3-07B: an order in an OPEN parcel group ships only through the group (409 in_parcel_group); the guard also locks
+			// the order so a group cannot be created between this check and the write.
+			grouped, err := merchantorders.GuardNotGrouped(ctx, tx, s, bearerToken(r), []string{r.PathValue("order_id")})
+			if err != nil {
+				return nil, err
+			}
+			if len(grouped) != 0 {
+				return nil, merchantorders.ErrInParcelGroup
+			}
 			return merchantorders.RecordShipment(ctx, tx, s, bearerToken(r), keys[0], r.PathValue("order_id"), in)
 		})
 		if ok {
@@ -96,6 +97,22 @@ func registerShipmentRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respond(w, http.StatusOK, result)
 		}
 	}))
+}
+
+// decodeShipmentBody decodes the eight-key ShipmentInput body shared by the single PUT and the group PUT: explicit null is the only
+// way to omit a nullable field, and a missing key or a null expected_version/status is a 422, never a silent zero value.
+func decodeShipmentBody(w http.ResponseWriter, r *http.Request) (merchantorders.ShipmentInput, bool) {
+	in, raw, ok := studioDecodeRaw[merchantorders.ShipmentInput](w, r, shipmentBodyFields)
+	if !ok {
+		return in, false
+	}
+	var present map[string]json.RawMessage
+	if json.Unmarshal(raw, &present) != nil || len(present) != len(shipmentBodyFields) ||
+		string(present["expected_version"]) == "null" || string(present["status"]) == "null" {
+		respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+		return in, false
+	}
+	return in, true
 }
 
 // writeExport sends the CSV of contract §5.1: attachment, non-cacheable, truncation flag. The body
@@ -165,7 +182,10 @@ func shipmentScope(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, p
 // shipmentClassify maps the frozen §5.1 errors, then the claims table (deadlock → 503 retry_later,
 // unclassified → 503 unavailable). No driver message or detail is ever returned.
 func shipmentClassify(err error) (int, string) {
+	var parcel *merchantorders.ParcelError
 	switch {
+	case errors.As(err, &parcel):
+		return http.StatusConflict, parcel.Code // W3-07B parcel-group refusals (in_parcel_group, cod_not_mergeable, ...)
 	case errors.Is(err, merchantorders.ErrVersionChanged):
 		return http.StatusConflict, "version_changed"
 	case errors.Is(err, merchantorders.ErrNotShippable):

@@ -26,6 +26,8 @@ export type Product = {
   price_minor: number;
   // catalog-media CM4: the product's photos in display order ([] when none). Optional so older fixtures still parse.
   images?: ProductImageMeta[];
+  // product-media-v2: this variant's thumbnail (option-value image, else the cover); null when none. Optional for older fixtures.
+  image_id?: string | null;
 };
 export type ProductImageMeta = { id: string; width: number | null; height: number | null };
 export type Option = {

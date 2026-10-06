@@ -302,7 +302,7 @@ func readCollectionDetail(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 		return d, err
 	}
 	rows, err := tx.Query(ctx, `SELECT p.id::text,p.name,p.slug,p.status,m.position,
-		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id ORDER BY i.position LIMIT 1)
+		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1)
 		FROM catalog.collection_products m JOIN catalog.products p ON p.tenant_id=m.tenant_id AND p.store_id=m.store_id AND p.id=m.product_id
 		WHERE m.tenant_id=$1 AND m.store_id=$2 AND m.collection_id=$3 ORDER BY m.position`, scope.TenantID, scope.StoreID, id)
 	if err != nil {

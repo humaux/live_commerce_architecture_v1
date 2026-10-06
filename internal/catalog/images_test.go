@@ -104,21 +104,78 @@ func TestImageCommandsRejectBeforeSQL(t *testing.T) {
 	scope := platform.Scope{TenantID: "00000000-0000-0000-0000-000000000001", StoreID: "00000000-0000-0000-0000-000000000002", PrincipalID: "00000000-0000-0000-0000-000000000003"}
 	ctx := context.Background()
 	good := "00000000-0000-0000-0000-0000000000aa"
-	if _, err := UploadImage(ctx, nil, scope, "key-12345678", "not-a-uuid", pngBytes(t, 2, 2), nil); !errors.Is(err, command.ErrInvalid) {
+	if _, err := UploadImage(ctx, nil, scope, "key-12345678", "not-a-uuid", RoleMain, "", pngBytes(t, 2, 2), nil); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("upload bad product: %v", err)
 	}
-	if _, err := UploadImage(ctx, nil, scope, "key-12345678", good, []byte("GIF89a"), nil); !errors.Is(err, command.ErrInvalid) {
+	if _, err := UploadImage(ctx, nil, scope, "key-12345678", good, RoleMain, "", []byte("GIF89a"), nil); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("upload non-image: %v", err)
 	}
 	if _, err := DeleteImage(ctx, nil, scope, "key-12345678", good, "x"); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("delete bad image: %v", err)
 	}
-	for name, ids := range map[string][]string{"empty": nil, "bad id": {"x"}, "nine": make([]string, 9)} {
+	for name, ids := range map[string][]string{"empty": nil, "bad id": {"x"}, "five main": make([]string, 5)} {
 		if _, err := ReorderImages(ctx, nil, scope, "key-12345678", good, ReorderInput{IDs: ids}); !errors.Is(err, command.ErrInvalid) {
 			t.Errorf("reorder %s: %v", name, err)
 		}
 	}
+	// product-media-v2: role/option_value pairing and the detail ratio are refused before any SQL.
+	for name, c := range map[string]struct {
+		role, value string
+		data        []byte
+	}{
+		"unknown role":        {"gallery", "", pngBytes(t, 2, 2)},
+		"sku without a value": {RoleSKU, "", pngBytes(t, 2, 2)},
+		"main with a value":   {RoleMain, "Red", pngBytes(t, 2, 2)},
+		"detail over 6x":      {RoleDetail, "", pngBytes(t, 10, 61)},
+	} {
+		if _, err := UploadImage(ctx, nil, scope, "key-12345678", good, c.role, c.value, c.data, nil); !errors.Is(err, command.ErrInvalid) {
+			t.Errorf("upload %s: %v", name, err)
+		}
+	}
+	if _, err := ReorderImages(ctx, nil, scope, "key-12345678", good, ReorderInput{Role: RoleSKU, IDs: []string{good}}); !errors.Is(err, command.ErrInvalid) {
+		t.Errorf("reorder of the sku role: %v", err)
+	}
+	for _, role := range []string{"", RoleSKU, "x"} {
+		if _, err := MoveImage(ctx, nil, scope, "key-12345678", good, good, MoveInput{Role: role}); !errors.Is(err, command.ErrInvalid) {
+			t.Errorf("move to %q: %v", role, err)
+		}
+	}
 	if _, err := GetImage(ctx, nil, scope, good, good); !errors.Is(err, command.ErrInvalid) {
 		t.Errorf("get with nil tx: %v", err)
+	}
+}
+
+// Parity: the per-role caps are part of the contract (migration 0149 CHECKs and the frontend parsers repeat them).
+func TestRoleCaps(t *testing.T) {
+	if roleCap(RoleMain) != 4 || roleCap(RoleDetail) != 20 || roleCap(RoleSKU) != 50 || roleCap("x") != 0 {
+		t.Fatalf("caps %d %d %d", roleCap(RoleMain), roleCap(RoleDetail), roleCap(RoleSKU))
+	}
+	w, h := 750, 4000
+	if tooTall(&w, &h) || tooTall(nil, nil) {
+		t.Error("750x4000 and WebP (no dimensions) must pass the detail ratio")
+	}
+	h = 4501
+	if !tooTall(&w, &h) {
+		t.Error("750x4501 is taller than 6x")
+	}
+}
+
+func TestEffectiveAxis(t *testing.T) {
+	axes := []OptionAxis{{Name: "Color", Values: []string{"Red", "Blue"}}, {Name: "Size", Values: []string{"S"}}}
+	size, gone := "Size", "Material"
+	for name, c := range map[string]struct {
+		stored *string
+		want   string
+		ok     bool
+	}{"default is the first axis": {nil, "Color", true}, "stored axis": {&size, "Size", true}, "stale stored axis falls back": {&gone, "Color", true}} {
+		if got, ok := effectiveAxis(axes, c.stored); got != c.want || ok != c.ok {
+			t.Errorf("%s: %q %v", name, got, ok)
+		}
+	}
+	if _, ok := effectiveAxis(nil, nil); ok {
+		t.Error("a product without options has no image axis")
+	}
+	if !axisHasValue(axes, "Color", "Blue") || axisHasValue(axes, "Color", "S") || axisHasValue(axes, "Material", "Red") {
+		t.Error("axisHasValue")
 	}
 }

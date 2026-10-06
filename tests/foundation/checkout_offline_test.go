@@ -62,9 +62,14 @@ func (b *tcvBuyer) cofView(order string) bhResponse {
 	return b.req("GET", "/v1/buyer/orders/"+order+"/bank-transfer", "", nil, nil)
 }
 
+// cofPaidAt is fixed once per process: a per-call time.Now() made a same-key replay differ whenever the two calls straddled a
+// second boundary, and the server rightly answered 409 idempotency_conflict (flaky proof subtest in CI 37469542106/37460952362).
+// One hour before process start stays inside 0088's window (>= order created_at - 1 day, <= now + 1 hour) for any test run.
+var cofPaidAt = time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)
+
 func (b *tcvBuyer) cofProof(order, key, last5 string, minor int64) bhResponse {
 	return b.req("PUT", "/v1/buyer/orders/"+order+"/bank-transfer/proof", key, map[string]any{
-		"last5": last5, "amount_minor": minor, "paid_at": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339)}, nil)
+		"last5": last5, "amount_minor": minor, "paid_at": cofPaidAt}, nil)
 }
 
 func (e *tcvEnv) cofDecide(token, order, action, key, body string) (int, map[string]any) {

@@ -121,7 +121,7 @@ func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 	}
 	args = append(args, limit+1)
 	rows, err := tx.Query(ctx, `SELECT p.id::text,p.slug,p.name,p.status,p.version,
-		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id ORDER BY i.position LIMIT 1),
+		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1),
 		a.pmin,a.pmax,coalesce(a.currency,''),coalesce(a.n,0),coalesce(a.avail,0),
 		coalesce(k.keyword,''),coalesce(a.tracked,false),
 		to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
