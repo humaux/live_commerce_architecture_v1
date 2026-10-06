@@ -58,6 +58,8 @@ func (r fakeRow) Scan(dest ...any) error {
 				*d = row[i].(string)
 			case *[]byte:
 				*d = row[i].([]byte)
+			case *int64:
+				*d = row[i].(int64)
 			}
 		}
 		return nil
@@ -359,7 +361,7 @@ func storedCredential(t *testing.T, api *accounts.Keyring, account string, versi
 	if err != nil {
 		t.Fatal(err)
 	}
-	return []any{account, keyID, nonce, ciphertext}
+	return []any{account, keyID, nonce, ciphertext, tenant, store, conn, version} // + aad_* (own scope for a primary row)
 }
 
 func wrote(db *fakeDB, fn string) bool {

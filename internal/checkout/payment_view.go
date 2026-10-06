@@ -1,3 +1,4 @@
+// payment_view.go: the buyer-safe hosted payment projection (checkout.hosted_payment_view[_v2]) and its strict validation.
 package checkout
 
 import (
@@ -28,6 +29,14 @@ type OrderRefund struct {
 	PendingMinor  int64 `json:"pending_minor"`
 }
 
+// OrderCollector is the buyer disclosure of the platform Stripe account (stripe-platform-account-v1 §5): who collects the
+// card payment and what the card statement shows. Present only for orders on a derived (platform) connection; it carries no
+// account id, key or other identifier.
+type OrderCollector struct {
+	DisplayName       string `json:"display_name"`
+	DescriptorPreview string `json:"descriptor_preview"`
+}
+
 // OrderPayment is already buyer-safe. The SQL projection deliberately excludes
 // attempt/account IDs, credentials, stored form bytes and provider references.
 type OrderPayment struct {
@@ -46,6 +55,9 @@ type OrderPayment struct {
 	// Refund is emitted only for Stripe-attempt orders with refund activity (view_v2, D8); an absent
 	// field is the same as null, so PAYUNi and refund-free responses keep byte-identical output.
 	Refund *OrderRefund `json:"refund,omitempty"`
+	// Collector is emitted only for derived-connection (platform Stripe) orders; the view SQL answers JSON null for primary
+	// connections, and an absent field is the same as null (the Refund convention), so existing responses stay byte-identical.
+	Collector *OrderCollector `json:"collector,omitempty"`
 }
 
 // PaymentView is an informational snapshot. BeginHosted and TakeHosted retain
@@ -110,7 +122,7 @@ func (s *HostedPaymentStarter) PaymentView(ctx context.Context, token, storeID, 
 func dropCancelUnlessStripe(out *OrderPayment, isStripe bool) {
 	if !isStripe {
 		out.CancelRequested = nil
-		out.Refund = nil
+		out.Refund = nil // Collector is NOT cleared: the pre-start disclosure belongs to the view, SQL answers null where none applies
 	}
 }
 
@@ -157,6 +169,9 @@ func validPaymentViewFor(out OrderPayment, orderID string, v2 bool) bool {
 			return false
 		}
 	default:
+		return false
+	}
+	if out.Collector != nil && (!v2 || out.Collector.DisplayName == "" || out.Collector.DescriptorPreview == "") {
 		return false
 	}
 	if out.Refund != nil && (!v2 || out.Refund.RefundedMinor < 0 || out.Refund.PendingMinor < 0 ||

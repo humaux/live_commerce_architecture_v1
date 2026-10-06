@@ -55,6 +55,8 @@ case "$tool:$sub" in
 # §5.2: the three live-* subcommands take no secret input, so none gets a `need` arm below.
 stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:method) ;;
 stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke) ;;
+# stripe-platform-account-v1: platform-* take no secret input (kill switches need no LIVE pair).
+stripe-admin:platform-designate | stripe-admin:platform-open | stripe-admin:platform-close | stripe-admin:platform-allow | stripe-admin:platform-disallow | stripe-admin:platform-block | stripe-admin:platform-unblock) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
 store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set) ;;
 *) usage ;;
@@ -76,7 +78,7 @@ unset COMMERCE_STRIPE_LIVE_ENABLED COMMERCE_STRIPE_LIVE_APPROVAL_REF
 live_needed=0
 case "$tool:$sub" in
 stripe-admin:live-approve | stripe-admin:live-canary) live_needed=1 ;;
-stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify)
+stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:platform-open)
   for ((i = 0; i < ${#args[@]}; i++)); do
     case "${args[$i]^^}" in
     --PROFILE=LIVE | -PROFILE=LIVE | --ENVIRONMENT=LIVE | -ENVIRONMENT=LIVE) live_needed=1 ;;

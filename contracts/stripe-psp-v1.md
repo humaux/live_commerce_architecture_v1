@@ -1439,3 +1439,11 @@ these stage-B functions: `stripe_webhook_prepare`, `stripe_webhook_commit`,
 `guard_stripe_receipt_link`, `load_stripe_signal`, `consume_stripe_signal`, `payment_job_queue`,
 `apply_stripe_observation`. The refund contract's §4.4/§4.6 text governs their new bodies; this
 file's SP gates remain required and must stay green.
+
+## Amendment pointer (2026-10-06, owner decision: platform Stripe for all stores)
+
+[stripe-platform-account-v1](stripe-platform-account-v1.md) supersedes, for stores enrolled on the platform account:
+the §0.2 rule "one provider account cannot silently become the common collection account" (the shared account is now
+explicit, through derived connections), the per-account webhook endpoint (one platform endpoint maps attempts of every
+derived store server-side), and the §5.4 key set (+`lc_store` metadata, +optional `statement_descriptor_suffix`).
+Everything else here is unchanged.
