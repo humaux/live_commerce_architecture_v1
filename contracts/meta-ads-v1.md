@@ -686,3 +686,80 @@ Recorded from the unit hooks; implemented in 0074/0075/post_river 0015 and asser
 - **Known, tracked as NOT_RUN/BLOCKED until MA-S1 (tasks.json T15):** auto-pause (AD7) covers budget reached and DISAPPROVED/WITH_ISSUES only,
   not an ad account that is no longer ACTIVE; the min-daily-budget x days check of §5.2 is not enforced locally (Meta rejects the ad set,
   the attempt FAILS and can be re-published).
+
+## Amendment W6-06B (2026-10-07): Meta ad account unbind + catalog feed URL entry
+
+Owner decision 2026-10-07 「广告解绑：可以做」. Additive; unit `docs/delivery/units/w6-06b-ads-unbind.md`,
+migration `0160_ads_unbind.sql`. No table, GRANT, POLICY or §4.4 privilege-delta change; both new definers reuse
+existing grants (0008 SELECT/`UPDATE(id)` bindings+operations for `commerce_integration_writer`, 0095 DELETE on the
+credential tables, 0074 GAP-2 domain/publication reads for `commerce_ads_writer`).
+
+### A. Unbind (detach, never delete)
+
+- **Route (D1 convention):** `POST /v1/admin/stores/{store_id}/ads/meta/unbind`, permission **`ads:manage`**
+  (server-auth tenant/store only, as every §7 route), `Idempotency-Key` required (command receipt
+  `ads.meta.unbind`), exact body `{ad_account_id}` (digits, 1–40, the asset of the `meta_ads` binding). 200 body:
+  `{unbound:bool, ad_account_id, binding_ids:[…], already_unbound:bool}`. Admin BFF mirrors it unchanged.
+- **Semantics.** For EVERY enabled `meta_ads` binding of the store with `external_asset_id = ad_account_id`
+  (normally one; `bindOne` re-uses enabled same-asset bindings): the definer locks the binding rows `FOR UPDATE`
+  (serializing with `integration.claim_operation`, which locks the binding first, so no op can enter DISPATCHING
+  mid-unbind), then in ONE transaction with the Go caller:
+  1. **In-flight refusal:** any operation on those bindings in state `DISPATCHING`, `UNKNOWN` or `ACKNOWLEDGED`
+     refuses with **409 `operations_in_flight`** and lists them in the response `details`
+     (`{operations:[{operation_id,action,state}] capped at 50, operations_total:n}`). Nothing is cancelled
+     (external-operation-v1 rules 4–5: never blind-retry or cancel; "ACKNOWLEDGED is not success"). Zero writes.
+  2. **Token destruction:** the sealed BISU token copies of those bindings are destroyed through the existing
+     credential path (heads first, then versions — the `integration.meta_connect_disconnect` pattern, 0108); no
+     plaintext ever exists, nothing token-shaped is logged or returned.
+  3. **Detach:** the Go caller disables each binding (`enabled=false`, `semantic_version+1`, CAS on the version the
+     definer returned). The frozen trigger `bindings_ads_disable_guard` (0074) still applies: while any draft on the
+     binding counts by the AD6 test the unbind is refused **409 `binding_in_use`** and the transaction rolls back
+     (credentials survive). This is R2-ADS-PAUSE-1 ("pause first, then disconnect"); the lane-close note said the
+     merchant copy ships with the first disconnect route — this is that route.
+  4. **Audit:** `ads.account_unbound` in the same transaction (plus the command receipt).
+- **Definer:** `integration.meta_ads_unbind(p_hash bytea,p_store uuid,p_ad_account text) RETURNS jsonb`, OWNER
+  `commerce_integration_writer`, EXECUTE `commerce_runtime`. Authenticates `ads:manage` via `identity.resolve_access`
+  + GUC scope equality (no caller-supplied principal); refusals raise the ads ADnnn codes (`unauthorized` AD401,
+  `forbidden` AD403, `not_found` AD404, `invalid_request` AD422); the in-flight refusal is a RETURN value (it carries
+  the op list), not an exception.
+- **History is kept.** Drafts, approvals, remote objects, insights, CAPI facts/events, `ads.connections` rows
+  (`get_settings` shows them with `enabled:false`), oauth states and audit rows all survive; only the sealed token
+  material is destroyed. READY ops at unbind time become terminal `STALE_BINDING` at their next claim
+  (external-operation-v1 rule 5) — allowed, they never dispatched.
+- **Idempotent:** unbinding an already-unbound (or never-bound) store/asset = **200 no-op**
+  `{unbound:false, already_unbound:true}`; replay of the same `Idempotency-Key` returns the stored receipt.
+- **Re-bind:** through the existing connect flow (§2). A disabled binding is never re-used (`bindOne` selects
+  enabled only), so a rebind registers a NEW binding + new credential version + new `ads.connections` row; the
+  pick-list, `client_business_changed` and scope rules are unchanged.
+- **New frozen codes** (added to the `internal/ads` refusal table): `operations_in_flight` 409, `binding_in_use` 409.
+- **Non-goals:** `meta_dataset` bindings and CAPI are untouched (the CAPI kill switch stays `PUT capi
+  {enabled:false}`; a dataset rebind rides the next connect); NO Meta call is made — destroying the local sealed
+  copy does not revoke the grant on Meta's side (the merchant can revoke in their own Facebook settings; UI copy
+  belongs to the later UI unit); Page/IG disconnect stays 0108; a stuck counting draft still has only the operator
+  path (deploy.md §6.4 items 6–7).
+
+### B. Catalog feed URL entry
+
+- **Route:** `GET /v1/admin/stores/{store_id}/ads/catalog-feed`, permission **`ads:read`**, no query, no body, no
+  key. 200 body `{feed_url: string|null, domains:[{origin,feed_url}], path:"/feeds/meta.csv"}`.
+- `feed_url` = lexicographically first ACTIVE `control.storefront_domains.origin` of the store (only while the store
+  is published, `control.storefront_publications.published`) + `/feeds/meta.csv` — the absolute URL of the public
+  feed of §7 / catalog-inventory-v1 "Meta catalog feed" that the merchant pastes into Meta Commerce Manager as a
+  scheduled data feed URL; `null` + `domains:[]` when the store has no ACTIVE domain or is not published (the UI
+  tells the merchant to publish first).
+- **No secret is involved:** the feed itself is public, unsigned and carries only published catalog data (§7), so
+  nothing token-shaped is returned or logged and `ads:read` suffices (the unit brief's "token ⇒ `ads:manage` only"
+  clause does not trigger).
+- **Definer:** `ads.catalog_feed_url(p_hash bytea,p_store uuid) RETURNS jsonb`, OWNER `commerce_ads_writer`,
+  EXECUTE `commerce_runtime` (first argument `p_hash bytea`, per the §4.4 merchant-definer rule); `ads.auth` with
+  `ads:read`. Serving caveat: whether the URL actually resolves at fetch time remains governed by
+  `buyer.resolve_published_store` (domain validity window); this entry lists ACTIVE domains only and adds no grant
+  (the `valid_until` column is not in the 0074 GAP-2 grant and stays out).
+
+### C. Tests (this unit; independent MA-style gates stay with the test unit)
+
+REAL_PG: unbind detaches (binding disabled, credential heads+versions gone), history kept (connection row,
+drafts, audit), new plans blocked (`binding_disabled` on create/approve/publish), 409 `operations_in_flight`
+with a non-empty list and credentials intact, 409 `binding_in_use` via the frozen trigger while a draft counts,
+idempotent replay + no-op re-unbind, cross-store no-op, permission refused, feed URL scoped to the store's own
+ACTIVE domains. DB-free: transport rules of both routes + router build. Pin: r2 upgrade migration count 81→82.
