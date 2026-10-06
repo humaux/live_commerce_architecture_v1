@@ -1,5 +1,5 @@
 // reports.go owns the W6-02B merchant report HTTP adapter (contracts/reporting-v2.md): GET reports/{products|channels|funnel|manual-orders}
-// ?from&to[&session_id] (orders:read; funnel also live:read) and the same paths with a .csv suffix (orders:export, audited reports.exported).
+// ?from&to[&session_id] (orders:read; funnel also live:read) and the same paths with a .csv suffix (orders:export, audited reports.export.<report>).
 // The admin BFF mirrors them under /api/admin/.
 //
 // Purpose: transport rules only (method, exact query, range, ids) before any database work, then one commerce_runtime READ COMMITTED transaction
@@ -29,8 +29,9 @@ import (
 // reportBudget is the whole-transaction budget of one report read (W6-02B brief: 60 s).
 const reportBudget = 60 * time.Second
 
-// registerReportRoutes mounts the eight report rows; NewHandler calls it unconditionally (pool only, no worker or provider).
-func registerReportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
+// registerReportRoutes mounts the eight report rows; NewHandler calls it unconditionally (pool only, no worker or provider). environment is the deployment
+// payment environment (Options.PaymentEnvironment, SANDBOX by default): the order counts of the reports follow it, money stays split per environment.
+func registerReportRoutes(mux *http.ServeMux, pool *pgxpool.Pool, environment string) {
 	const base = "/v1/admin/stores/{store_id}/reports/"
 	type page struct {
 		slug    string
@@ -48,24 +49,24 @@ func registerReportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			}},
 		{"channels", false,
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, _ string) (any, error) {
-				return reporting.ChannelsReport(ctx, tx, s, token, from, to)
+				return reporting.ChannelsReport(ctx, tx, s, token, from, to, environment)
 			},
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, _ string) ([]byte, error) {
-				return reporting.ChannelsCSV(ctx, tx, s, token, from, to)
+				return reporting.ChannelsCSV(ctx, tx, s, token, from, to, environment)
 			}},
 		{"funnel", true,
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, session string) (any, error) {
-				return reporting.Funnel(ctx, tx, s, token, from, to, session)
+				return reporting.Funnel(ctx, tx, s, token, from, to, session, environment)
 			},
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, session string) ([]byte, error) {
-				return reporting.FunnelCSV(ctx, tx, s, token, from, to, session)
+				return reporting.FunnelCSV(ctx, tx, s, token, from, to, session, environment)
 			}},
 		{"manual-orders", false,
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, _ string) (any, error) {
-				return reporting.ManualOrders(ctx, tx, s, token, from, to)
+				return reporting.ManualOrders(ctx, tx, s, token, from, to, environment)
 			},
 			func(ctx context.Context, tx pgx.Tx, s platform.Scope, token, from, to, _ string) ([]byte, error) {
-				return reporting.ManualOrdersCSV(ctx, tx, s, token, from, to)
+				return reporting.ManualOrdersCSV(ctx, tx, s, token, from, to, environment)
 			}},
 	} {
 		mux.HandleFunc("GET "+base+p.slug, customerRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {

@@ -48,7 +48,7 @@ func Products(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from,
 	return productsFetch(ctx, tx, scope, token, from, to, false)
 }
 
-// ProductsCSV is Products as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.exported).
+// ProductsCSV is Products as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.export.<report>).
 func ProductsCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) ([]byte, error) {
 	rep, err := productsFetch(ctx, tx, scope, token, from, to, true)
 	if err != nil {
@@ -64,7 +64,7 @@ func ProductsCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, fr
 }
 
 func productsFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string, export bool) (ProductReport, error) {
-	raw, err := fetch(ctx, tx, scope, token, reportProducts, from, to, "", export)
+	raw, err := fetch(ctx, tx, scope, token, reportProducts, from, to, "", "", export)
 	if err != nil {
 		return ProductReport{}, err
 	}

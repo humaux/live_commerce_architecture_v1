@@ -898,7 +898,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text,uuid)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
 				"claims.order_live_sources(uuid,uuid,uuid[])",
 				// 0147 (W6-02B): the channel report reads the platform of consumed origin bundles (commerce_auth holds SELECT(platform), 0078); read-only, no binding write.
-				"identity.read_report_channels(bytea,uuid,date,date)",
+				"identity.read_report_channels(bytea,uuid,date,date,text)",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).

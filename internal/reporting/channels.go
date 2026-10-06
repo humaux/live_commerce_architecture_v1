@@ -36,15 +36,15 @@ type ChannelReport struct {
 	Rows     []ChannelRow `json:"rows"`
 }
 
-// ChannelsReport reads the channel report (orders:read, no write).
-func ChannelsReport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (ChannelReport, error) {
-	return channelsFetch(ctx, tx, scope, token, from, to, false)
+// ChannelsReport reads the channel report (orders:read, no write); environment is the deployment payment environment (SANDBOX or LIVE) the order counts follow.
+func ChannelsReport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string) (ChannelReport, error) {
+	return channelsFetch(ctx, tx, scope, token, from, to, environment, false)
 }
 
-// ChannelsCSV is ChannelsReport as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.exported); one CSV row
+// ChannelsCSV is ChannelsReport as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.export.<report>); one CSV row
 // per (channel, currency, environment).
-func ChannelsCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) ([]byte, error) {
-	rep, err := channelsFetch(ctx, tx, scope, token, from, to, true)
+func ChannelsCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string) ([]byte, error) {
+	rep, err := channelsFetch(ctx, tx, scope, token, from, to, environment, true)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func ChannelsCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, fr
 		"refunded_minor", "net_minor", "offline_count", "offline_minor"}, rows)
 }
 
-func channelsFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string, export bool) (ChannelReport, error) {
-	raw, err := fetch(ctx, tx, scope, token, reportChannels, from, to, "", export)
+func channelsFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string, export bool) (ChannelReport, error) {
+	raw, err := fetch(ctx, tx, scope, token, reportChannels, from, to, "", environment, export)
 	if err != nil {
 		return ChannelReport{}, err
 	}

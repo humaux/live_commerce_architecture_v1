@@ -110,12 +110,32 @@ func TestReportsRefuseBadInputBeforeDatabase(t *testing.T) {
 	good := platform.Scope{TenantID: rSKU, StoreID: rProd, PrincipalID: rSess, Revision: 1}
 	tok := strings.Repeat("a", 43)
 	for name, fn := range map[string]func() error{
-		"nil tx":      func() error { _, err := Products(ctx, nil, good, tok, "2026-09-01", "2026-09-02"); return err },
-		"93 days":     func() error { _, err := ManualOrders(ctx, nil, good, tok, "2026-01-01", "2026-04-03"); return err },
-		"reversed":    func() error { _, err := ChannelsReport(ctx, nil, good, tok, "2026-09-02", "2026-09-01"); return err },
-		"short token": func() error { _, err := Funnel(ctx, nil, good, "x", "2026-09-01", "2026-09-02", ""); return err },
-		"bad session": func() error { _, err := Funnel(ctx, nil, good, tok, "2026-09-01", "2026-09-02", "nope"); return err },
-		"nil tx csv":  func() error { _, err := ProductsCSV(ctx, nil, good, tok, "2026-09-01", "2026-09-02"); return err },
+		"nil tx": func() error { _, err := Products(ctx, nil, good, tok, "2026-09-01", "2026-09-02"); return err },
+		"93 days": func() error {
+			_, err := ManualOrders(ctx, nil, good, tok, "2026-01-01", "2026-04-03", "LIVE")
+			return err
+		},
+		"reversed": func() error {
+			_, err := ChannelsReport(ctx, nil, good, tok, "2026-09-02", "2026-09-01", "LIVE")
+			return err
+		},
+		"short token": func() error {
+			_, err := Funnel(ctx, nil, good, "x", "2026-09-01", "2026-09-02", "", "LIVE")
+			return err
+		},
+		"bad session": func() error {
+			_, err := Funnel(ctx, nil, good, tok, "2026-09-01", "2026-09-02", "nope", "LIVE")
+			return err
+		},
+		"no environment": func() error {
+			_, err := ChannelsReport(ctx, nil, good, tok, "2026-09-01", "2026-09-02", "")
+			return err
+		},
+		"bad environment": func() error {
+			_, err := ManualOrdersCSV(ctx, nil, good, tok, "2026-09-01", "2026-09-02", "TEST")
+			return err
+		},
+		"nil tx csv": func() error { _, err := ProductsCSV(ctx, nil, good, tok, "2026-09-01", "2026-09-02"); return err },
 	} {
 		if err := fn(); err != command.ErrInvalid {
 			t.Errorf("%s: %v want ErrInvalid", name, err)

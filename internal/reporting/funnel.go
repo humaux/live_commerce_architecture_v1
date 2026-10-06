@@ -30,14 +30,14 @@ type FunnelReport struct {
 	OrderedWithoutLink int64   `json:"ordered_without_link"`
 }
 
-// Funnel reads the funnel (orders:read AND live:read, no write); session "" = whole store.
-func Funnel(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session string) (FunnelReport, error) {
-	return funnelFetch(ctx, tx, scope, token, from, to, session, false)
+// Funnel reads the funnel (orders:read AND live:read, no write); environment is the deployment payment environment (SANDBOX or LIVE) the paid count follows; session "" = whole store.
+func Funnel(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session, environment string) (FunnelReport, error) {
+	return funnelFetch(ctx, tx, scope, token, from, to, session, environment, false)
 }
 
-// FunnelCSV is Funnel as a one-row CSV through identity.export_report (orders:export AND orders:read AND live:read, one audit row reports.exported).
-func FunnelCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session string) ([]byte, error) {
-	rep, err := funnelFetch(ctx, tx, scope, token, from, to, session, true)
+// FunnelCSV is Funnel as a one-row CSV through identity.export_report (orders:export AND orders:read AND live:read, one audit row reports.export.<report>).
+func FunnelCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session, environment string) ([]byte, error) {
+	rep, err := funnelFetch(ctx, tx, scope, token, from, to, session, environment, true)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func FunnelCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from
 		[][]string{{deref(rep.SessionID), i64(rep.Claimed), i64(rep.LinkSent), i64(rep.Ordered), i64(rep.Paid), i64(rep.OrderedWithoutLink)}})
 }
 
-func funnelFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session string, export bool) (FunnelReport, error) {
-	raw, err := fetch(ctx, tx, scope, token, reportFunnel, from, to, session, export)
+func funnelFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, session, environment string, export bool) (FunnelReport, error) {
+	raw, err := fetch(ctx, tx, scope, token, reportFunnel, from, to, session, environment, export)
 	if err != nil {
 		return FunnelReport{}, err
 	}

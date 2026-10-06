@@ -1,2 +1,4 @@
-ok  	livecommerce/internal/reporting	1.116s
-ok  	livecommerce/internal/httpapi	1.827s
+ok  	livecommerce/internal/reporting	1.131s
+ok  	livecommerce/internal/httpapi	0.627s
+ok  	livecommerce/internal/merchantorders	(cached)
+?   	livecommerce/internal/csvguard	[no test files]

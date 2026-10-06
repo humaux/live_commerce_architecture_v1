@@ -20,10 +20,10 @@ import (
 	"errors"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/command"
+	"livecommerce/internal/csvguard"
 	"livecommerce/internal/platform"
 )
 
@@ -33,21 +33,24 @@ const MaxProductRows = 1000
 // report names the database side of one report: the read definer's SQL and the name identity.export_report dispatches on.
 type report struct {
 	name  string // products | channels | funnel | manual_orders (export_report's p_report)
-	query string // the read definer call; $5 only for the funnel
+	query string // the read definer call; $5 is the session for the funnel, the environment otherwise (products has none)
+	env   bool   // the report counts orders and so needs the deployment payment environment
 }
 
 var (
-	reportProducts = report{"products", `SELECT identity.read_report_products($1,$2::uuid,$3::date,$4::date)`}
-	reportChannels = report{"channels", `SELECT identity.read_report_channels($1,$2::uuid,$3::date,$4::date)`}
-	reportManual   = report{"manual_orders", `SELECT identity.read_report_manual_orders($1,$2::uuid,$3::date,$4::date)`}
-	reportFunnel   = report{"funnel", `SELECT identity.read_report_funnel($1,$2::uuid,$3::date,$4::date,$5::uuid)`}
+	reportProducts = report{"products", `SELECT identity.read_report_products($1,$2::uuid,$3::date,$4::date)`, false}
+	reportChannels = report{"channels", `SELECT identity.read_report_channels($1,$2::uuid,$3::date,$4::date,$5)`, true}
+	reportManual   = report{"manual_orders", `SELECT identity.read_report_manual_orders($1,$2::uuid,$3::date,$4::date,$5)`, true}
+	reportFunnel   = report{"funnel", `SELECT identity.read_report_funnel($1,$2::uuid,$3::date,$4::date,$5::uuid,$6)`, true}
 )
 
-// fetch runs one report (read: orders:read; export: orders:export + one audit row reports.exported) and returns the raw jsonb. session is only
-// meaningful for the funnel ("" = whole store).
-func fetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, r report, from, to, session string, export bool) ([]byte, error) {
+// fetch runs one report (read: orders:read; export: orders:export + one audit row reports.export.<report>) and returns the raw jsonb. session is only
+// meaningful for the funnel ("" = whole store). environment is the deployment payment environment (SANDBOX or LIVE) the counts follow; the product
+// report has no count and ignores it.
+func fetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, r report, from, to, session, environment string, export bool) ([]byte, error) {
 	if tx == nil || !command.ValidID(scope.TenantID) || !command.ValidID(scope.StoreID) || !command.ValidID(scope.PrincipalID) ||
-		scope.Revision < 1 || len(token) < 32 || len(token) > 512 || (session != "" && (r.name != "funnel" || !command.ValidID(session))) {
+		scope.Revision < 1 || len(token) < 32 || len(token) > 512 || (session != "" && (r.name != "funnel" || !command.ValidID(session))) ||
+		(r.env && !validEnv(environment)) || (!r.env && environment != "") {
 		return nil, command.ErrInvalid
 	}
 	if _, _, err := ParseRange(from, to); err != nil {
@@ -57,16 +60,22 @@ func fetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, r
 	if session != "" {
 		sess = session
 	}
+	var envArg any // NULL for the product report
+	if environment != "" {
+		envArg = environment
+	}
 	hash := sha256.Sum256([]byte(token))
 	permission := "orders:read"
 	var args []any
 	query := r.query
 	if export {
-		// identity.export_report: same jsonb as the read definer, orders:export + orders:read, audit row reports.exported.
-		permission, query = "orders:export", `SELECT identity.export_report($1,$2::uuid,$3,$4::date,$5::date,$6::uuid)`
-		args = []any{hash[:], scope.StoreID, r.name, from, to, sess}
+		// identity.export_report: same jsonb as the read definer, orders:export + orders:read, audit row reports.export.<report>.
+		permission, query = "orders:export", `SELECT identity.export_report($1,$2::uuid,$3,$4::date,$5::date,$6::uuid,$7)`
+		args = []any{hash[:], scope.StoreID, r.name, from, to, sess, envArg}
 	} else if r.name == "funnel" {
-		args = []any{hash[:], scope.StoreID, from, to, sess}
+		args = []any{hash[:], scope.StoreID, from, to, sess, envArg}
+	} else if r.env {
+		args = []any{hash[:], scope.StoreID, from, to, envArg}
 	} else {
 		args = []any{hash[:], scope.StoreID, from, to}
 	}
@@ -126,13 +135,7 @@ func validMoney(ms []Money) bool {
 
 func i64(v int64) string { return strconv.FormatInt(v, 10) }
 
-// cell guards a merchant-supplied text cell against spreadsheet formulas (first non-space char = + - @, or a first TAB/CR/LF).
-func cell(s string) string {
-	if t := strings.TrimLeft(s, " \t\r\n"); s != "" && (s[0] == '\t' || s[0] == '\r' || s[0] == '\n' || (t != "" && strings.IndexByte("=+-@", t[0]) >= 0)) {
-		return "'" + s
-	}
-	return s
-}
+func cell(s string) string { return csvguard.Cell(s) }
 
 // writeCSV renders a header and rows; every text field passed through cell() by the caller.
 func writeCSV(header []string, rows [][]string) ([]byte, error) {

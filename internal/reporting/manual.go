@@ -37,14 +37,14 @@ type ManualReport struct {
 	Rows     []ManualRow `json:"rows"`
 }
 
-// ManualOrders reads the manual-order report (orders:read, no write).
-func ManualOrders(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) (ManualReport, error) {
-	return manualFetch(ctx, tx, scope, token, from, to, false)
+// ManualOrders reads the manual-order report (orders:read, no write); environment is the deployment payment environment (SANDBOX or LIVE) the order counts follow.
+func ManualOrders(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string) (ManualReport, error) {
+	return manualFetch(ctx, tx, scope, token, from, to, environment, false)
 }
 
-// ManualOrdersCSV is ManualOrders as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.exported).
-func ManualOrdersCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string) ([]byte, error) {
-	rep, err := manualFetch(ctx, tx, scope, token, from, to, true)
+// ManualOrdersCSV is ManualOrders as CSV through identity.export_report (orders:export AND orders:read, one audit row reports.export.<report>).
+func ManualOrdersCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string) ([]byte, error) {
+	rep, err := manualFetch(ctx, tx, scope, token, from, to, environment, true)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func ManualOrdersCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token
 		"captured_minor", "refunded_minor", "net_minor", "offline_count", "offline_minor"}, rows)
 }
 
-func manualFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to string, export bool) (ManualReport, error) {
-	raw, err := fetch(ctx, tx, scope, token, reportManual, from, to, "", export)
+func manualFetch(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, to, environment string, export bool) (ManualReport, error) {
+	raw, err := fetch(ctx, tx, scope, token, reportManual, from, to, "", environment, export)
 	if err != nil {
 		return ManualReport{}, err
 	}

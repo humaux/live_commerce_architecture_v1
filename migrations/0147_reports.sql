@@ -1,6 +1,6 @@
 -- 0147_reports.sql — W6-02B: read-only merchant reports (products, channels, funnel, manual orders) and one audited export.
 -- Purpose: the four report definers (identity.read_report_products / _channels / _funnel / _manual_orders) and identity.export_report
---   (orders:export + audit row reports.exported). Pure read model: no table, no column, no role, no cache, no materialized view; every
+--   (orders:export + audit row reports.export.<report>). Pure read model: no table, no column, no role, no cache, no materialized view; every
 --   number is computed per request over at most 92 Asia/Taipei days (contracts/reporting-v2.md).
 -- Depends on: identity.resolve_access (0003), identity.merchant_access_denied (0063), identity.principal_holds (0064),
 --   payments.facts / payments.refund_facts / payments.stripe_refunds (0018/0062), checkout.orders (0013, snapshot + source 0094 + COD 0107),
@@ -15,12 +15,19 @@
 -- ACL ruling (0110/0118): the reporting reads run as commerce_auth (no new table or column grant) and reach claims / checkout-private data only
 -- through three domain-owned definers whose EXECUTE goes to commerce_auth alone. identity.report_open and identity.report_money_events are
 -- internal helpers (no SECURITY DEFINER, no grant to any other role): they run only inside the definers below.
+-- Deployment environment (LC-B7 A1): counts (funnel paid, channel / manual-order orders and cancelled_orders) follow p_environment, the deployment payment
+--   environment passed by the Go caller (LIVE on a LIVE deployment, else SANDBOX): an order is in an environment by its payment attempt, or by the deployment when it has
+--   none (offline modes, unpaid). Money stays split per (currency, environment).
+-- Indexes (no new table or column): claims.order_origins(tenant_id,store_id,bundle_id), claims.events(tenant_id,store_id,occurred_at).
 -- Deviation from the brief: one dispatcher identity.export_report(report name) instead of four export_report_* twins; it re-runs the matching
 -- read definer and writes the single audit row, so the export can never diverge from the read.
 
 -- ---------------------------------------------------------------------------------------
 -- Domain definers (claims: owner commerce_claims_writer; checkout: owner commerce_checkout_writer)
 -- ---------------------------------------------------------------------------------------
+-- The funnel probes origins by bundle and claim events by day: without these two the funnel scans every origin / event of the table.
+CREATE INDEX order_origins_by_bundle ON claims.order_origins(tenant_id,store_id,bundle_id);
+CREATE INDEX events_by_occurred ON claims.events(tenant_id,store_id,occurred_at);
 -- Distinct (order, bundle, session) provenance of the requested orders: consumed order origins UNION live-price uses (same union as 0118
 -- claims.session_orders, but keeping the bundle so the caller can read the bundle platform).
 CREATE FUNCTION claims.report_order_bundles(p_tenant uuid,p_store uuid,p_orders uuid[])
@@ -42,7 +49,7 @@ COMMENT ON FUNCTION claims.report_order_bundles(uuid,uuid,uuid[]) IS
  'internal/claims (SQL definer for internal/reporting; only caller: identity.read_report_channels / read_report_manual_orders on commerce_auth); EXECUTE commerce_auth. Distinct (order, bundle, session) of the requested orders from order_origins UNION live_price_uses; no buyer identity, no comment text.';
 
 -- One row per bundle with an ACCEPTED claim event in [t0,t1): was a private-reply link SUCCEEDED for it, and which orders came out of it.
--- Only meta.private_reply operations are readable by this owner (policy claim_reply_operation_read, 0064); meta.dm_send links are not counted.
+-- Only meta.private_reply operations are readable by this owner (policy claim_reply_operation_read, 0064); meta.dm_send links are not counted. Operations are read only for created_at in [t0, t1 + 7 days).
 CREATE FUNCTION claims.report_funnel_bundles(p_tenant uuid,p_store uuid,p_t0 timestamptz,p_t1 timestamptz,p_session uuid)
 RETURNS TABLE(bundle_id uuid,link_sent boolean,order_ids uuid[])
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -53,6 +60,8 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
  ), snt AS MATERIALIZED (
   SELECT DISTINCT o.request->>'bundle_id' AS bundle_id FROM integration.operations o
   WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.action='meta.private_reply' AND o.state='SUCCEEDED'
+   -- a link is sent right after the claim (Meta's reply window is 7 days): bound the scan to the report window plus that window
+   AND o.created_at>=p_t0 AND o.created_at<p_t1+interval '7 days'
    AND o.request->>'bundle_id' IN (SELECT x.bundle_id::text FROM b x)
  ), ord AS MATERIALIZED (
   SELECT y.bundle_id,array_agg(DISTINCT y.order_id) AS order_ids FROM (
@@ -96,14 +105,15 @@ COMMENT ON FUNCTION checkout.report_manual_creators(uuid,uuid,timestamptz,timest
 -- Internal helpers (owner commerce_auth, invoker rights, no EXECUTE for anyone else)
 -- ---------------------------------------------------------------------------------------
 -- Scope + range gate shared by every report: range 0..91 days, READ COMMITTED, resolve_access(permission), GUCs equal the resolved scope.
--- Returns the tenant, principal, authz revision and the [t0,t1) instants of the Asia/Taipei days.
-CREATE FUNCTION identity.report_open(p_hash bytea,p_store uuid,p_from date,p_to date,p_permission text)
+-- p_environment (NULL for the product report, which has no count) must be SANDBOX or LIVE. Returns the tenant, principal, authz revision and the [t0,t1) instants of the Asia/Taipei days.
+CREATE FUNCTION identity.report_open(p_hash bytea,p_store uuid,p_from date,p_to date,p_permission text,p_environment text)
 RETURNS TABLE(tenant_id uuid,principal_id uuid,revision bigint,t0 timestamptz,t1 timestamptz)
 LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
 DECLARE s record;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_from IS NULL OR p_to IS NULL
   OR NOT isfinite(p_from) OR NOT isfinite(p_to) OR p_to-p_from NOT BETWEEN 0 AND 91
+  OR (p_environment IS NOT NULL AND p_environment NOT IN ('SANDBOX','LIVE'))
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid report read' USING ERRCODE='PT400'; END IF;
  SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,p_permission);
@@ -117,9 +127,9 @@ BEGIN
  RETURN QUERY SELECT s.tenant_id,s.principal_id,s.authz_revision,
   (p_from::timestamp AT TIME ZONE 'Asia/Taipei'),((p_to+1)::timestamp AT TIME ZONE 'Asia/Taipei');
 END $$;
-ALTER FUNCTION identity.report_open(bytea,uuid,date,date,text) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.report_open(bytea,uuid,date,date,text) FROM PUBLIC;
-COMMENT ON FUNCTION identity.report_open(bytea,uuid,date,date,text) IS
+ALTER FUNCTION identity.report_open(bytea,uuid,date,date,text,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.report_open(bytea,uuid,date,date,text,text) FROM PUBLIC;
+COMMENT ON FUNCTION identity.report_open(bytea,uuid,date,date,text,text) IS
  'internal/reporting helper, no EXECUTE for any role but its owner commerce_auth; called only inside the report definers. Range 0..91 days, READ COMMITTED, resolve_access(permission), GUC scope check; returns the Asia/Taipei day bounds.';
 
 -- Money events of the store inside [t0,t1): the exact rows identity.read_finance_summary (0107) sums, one row per fact, keyed to the order.
@@ -171,7 +181,7 @@ CREATE FUNCTION identity.read_report_products(p_hash bytea,p_store uuid,p_from d
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_rows jsonb; v_trunc boolean; v_result jsonb; v_auth_error text;
 BEGIN
- SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read');
+ SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read',NULL);
  WITH ev AS MATERIALIZED (
   SELECT row_number() OVER () AS eid,m.order_id,m.currency,m.environment,m.kind,m.minor
   FROM identity.report_money_events(s.tenant_id,p_store,s.t0,s.t1) m
@@ -238,15 +248,17 @@ COMMENT ON FUNCTION identity.read_report_products(bytea,uuid,date,date) IS
 -- Channel of an order (exactly one): a facebook bundle origin -> facebook_live; else instagram -> instagram_live; else source
 -- merchant_manual -> manual; else storefront. Orders = non-CANCELLED orders created in the range; money = facts dated in the range.
 -- ---------------------------------------------------------------------------------------
-CREATE FUNCTION identity.read_report_channels(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb
+CREATE FUNCTION identity.read_report_channels(p_hash bytea,p_store uuid,p_from date,p_to date,p_environment text) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_rows jsonb; v_result jsonb; v_auth_error text;
 BEGIN
- SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read');
+ IF p_environment IS NULL THEN RAISE EXCEPTION 'invalid report read' USING ERRCODE='PT400'; END IF;
+ SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read',p_environment);
  WITH ev AS MATERIALIZED (
   SELECT m.order_id,m.currency,m.environment,m.kind,m.minor FROM identity.report_money_events(s.tenant_id,p_store,s.t0,s.t1) m
  ), ord AS MATERIALIZED (
-  SELECT o.id,o.currency,o.commercial_state,o.source,(o.created_at>=s.t0 AND o.created_at<s.t1) AS created_in
+  SELECT o.id,o.currency,o.commercial_state,o.source,(o.created_at>=s.t0 AND o.created_at<s.t1) AS created_in,
+   coalesce((SELECT min(a.environment) FROM checkout.payment_attempts a WHERE a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.order_id=o.id),p_environment) AS env
   FROM checkout.orders o
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store
    AND ((o.created_at>=s.t0 AND o.created_at<s.t1) OR o.id IN (SELECT e.order_id FROM ev e))
@@ -256,12 +268,12 @@ BEGIN
   JOIN claims.bundles b ON b.tenant_id=s.tenant_id AND b.store_id=p_store AND b.id=rb.bundle_id
   GROUP BY rb.order_id
  ), cls AS MATERIALIZED (
-  SELECT o.id,o.currency,o.commercial_state,o.created_in,
+  SELECT o.id,o.currency,o.commercial_state,o.created_in,o.env,
    CASE WHEN bun.fb THEN 'facebook_live' WHEN bun.ig THEN 'instagram_live' WHEN o.source='merchant_manual' THEN 'manual' ELSE 'storefront' END AS channel
   FROM ord o LEFT JOIN bun ON bun.order_id=o.id
  ), cnt AS (
-  SELECT c.channel,c.currency,count(*) FILTER (WHERE c.created_in AND c.commercial_state<>'CANCELLED') AS orders,
-   count(*) FILTER (WHERE c.created_in AND c.commercial_state='CANCELLED') AS cancelled
+  SELECT c.channel,c.currency,count(*) FILTER (WHERE c.created_in AND c.env=p_environment AND c.commercial_state<>'CANCELLED') AS orders,
+   count(*) FILTER (WHERE c.created_in AND c.env=p_environment AND c.commercial_state='CANCELLED') AS cancelled
   FROM cls c GROUP BY c.channel,c.currency
  ), mny AS (
   SELECT c.channel,e.currency,e.environment,
@@ -288,17 +300,18 @@ BEGIN
  IF octet_length(v_result::text)>1048576 THEN RAISE EXCEPTION 'channel report unavailable' USING ERRCODE='PT503'; END IF;
  RETURN v_result;
 END $$;
-ALTER FUNCTION identity.read_report_channels(bytea,uuid,date,date) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.read_report_channels(bytea,uuid,date,date) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.read_report_channels(bytea,uuid,date,date) TO commerce_runtime;
-COMMENT ON FUNCTION identity.read_report_channels(bytea,uuid,date,date) IS
- 'internal/reporting only; EXECUTE commerce_runtime. orders:read; per channel (facebook_live, instagram_live, storefront, manual) and currency: non-cancelled orders created in range plus per-environment captured/refunded/net and offline money of facts dated in range; every order is in exactly one channel; sums equal read_finance_summary.';
+ALTER FUNCTION identity.read_report_channels(bytea,uuid,date,date,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.read_report_channels(bytea,uuid,date,date,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.read_report_channels(bytea,uuid,date,date,text) TO commerce_runtime;
+COMMENT ON FUNCTION identity.read_report_channels(bytea,uuid,date,date,text) IS
+ 'internal/reporting only; EXECUTE commerce_runtime. orders:read; p_environment = the deployment payment environment; per channel (facebook_live, instagram_live, storefront, manual) and currency: non-cancelled orders of that environment created in range plus per-environment captured/refunded/net and offline money of facts dated in range; every order is in exactly one channel; sums equal read_finance_summary.';
 
-CREATE FUNCTION identity.read_report_manual_orders(p_hash bytea,p_store uuid,p_from date,p_to date) RETURNS jsonb
+CREATE FUNCTION identity.read_report_manual_orders(p_hash bytea,p_store uuid,p_from date,p_to date,p_environment text) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_rows jsonb; v_result jsonb; v_auth_error text;
 BEGIN
- SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read');
+ IF p_environment IS NULL THEN RAISE EXCEPTION 'invalid report read' USING ERRCODE='PT400'; END IF;
+ SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read',p_environment);
  WITH mo AS MATERIALIZED (
   SELECT c.order_id,c.principal_id FROM checkout.report_manual_creators(s.tenant_id,p_store,s.t0,s.t1) c
  ), ses AS MATERIALIZED (
@@ -306,12 +319,13 @@ BEGIN
   SELECT rb.order_id,(array_agg(rb.session_id ORDER BY rb.session_id))[1] AS session_id
   FROM claims.report_order_bundles(s.tenant_id,p_store,ARRAY(SELECT x.order_id FROM mo x)) rb GROUP BY rb.order_id
  ), base AS MATERIALIZED (
-  SELECT mo.principal_id,ses.session_id,o.currency,o.id AS order_id,o.commercial_state
+  SELECT mo.principal_id,ses.session_id,o.currency,o.id AS order_id,o.commercial_state,
+   coalesce((SELECT min(a.environment) FROM checkout.payment_attempts a WHERE a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.order_id=o.id),p_environment) AS env
   FROM mo JOIN checkout.orders o ON o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id=mo.order_id
   LEFT JOIN ses ON ses.order_id=mo.order_id
  ), cnt AS (
-  SELECT b.principal_id,b.session_id,b.currency,count(*) FILTER (WHERE b.commercial_state<>'CANCELLED') AS orders,
-   count(*) FILTER (WHERE b.commercial_state='CANCELLED') AS cancelled
+  SELECT b.principal_id,b.session_id,b.currency,count(*) FILTER (WHERE b.env=p_environment AND b.commercial_state<>'CANCELLED') AS orders,
+   count(*) FILTER (WHERE b.env=p_environment AND b.commercial_state='CANCELLED') AS cancelled
   FROM base b GROUP BY b.principal_id,b.session_id,b.currency
  ), mny AS (
   SELECT b.principal_id,b.session_id,e.currency,e.environment,
@@ -341,11 +355,11 @@ BEGIN
  IF octet_length(v_result::text)>1048576 THEN RAISE EXCEPTION 'manual order report unavailable' USING ERRCODE='PT503'; END IF;
  RETURN v_result;
 END $$;
-ALTER FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date) TO commerce_runtime;
-COMMENT ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date) IS
- 'internal/reporting only; EXECUTE commerce_runtime. orders:read; merchant-created (source=merchant_manual) orders created in range per creating staff principal (NULL = receipt missing), live session (NULL = none) and currency, with order counts and per-environment money of facts dated in range; returns principal ids, never names or buyer data.';
+ALTER FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date,text) TO commerce_runtime;
+COMMENT ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date,text) IS
+ 'internal/reporting only; EXECUTE commerce_runtime. orders:read; p_environment = the deployment payment environment (counts only); merchant-created (source=merchant_manual) orders created in range per creating staff principal (NULL = receipt missing), live session (NULL = none) and currency, with order counts and per-environment money of facts dated in range; returns principal ids, never names or buyer data.';
 
 -- ---------------------------------------------------------------------------------------
 -- Report 3: funnel claim -> link sent -> order -> paid, per session or whole store. Cohort = bundles with an ACCEPTED claim event in range;
@@ -353,11 +367,12 @@ COMMENT ON FUNCTION identity.read_report_manual_orders(bytea,uuid,date,date) IS
 -- link_sent = claimed with a SUCCEEDED private-reply link; ordered = link_sent with a non-CANCELLED order; paid = ordered with a CAPTURED fact
 -- or a COLLECTED COD/pay-at-pickup or a CONFIRMED bank transfer. ordered_without_link = ordered bundles whose link was not sent by the system.
 -- ---------------------------------------------------------------------------------------
-CREATE FUNCTION identity.read_report_funnel(p_hash bytea,p_store uuid,p_from date,p_to date,p_session uuid) RETURNS jsonb
+CREATE FUNCTION identity.read_report_funnel(p_hash bytea,p_store uuid,p_from date,p_to date,p_session uuid,p_environment text) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_counts jsonb; v_result jsonb; v_auth_error text;
 BEGIN
- SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read');
+ IF p_environment IS NULL THEN RAISE EXCEPTION 'invalid report read' USING ERRCODE='PT400'; END IF;
+ SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:read',p_environment);
  IF NOT identity.principal_holds(s.tenant_id,p_store,s.principal_id,ARRAY['live:read']) THEN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  -- I01: the requested session must be this store's (domain definer; commerce_auth has no live.sessions grant).
@@ -371,7 +386,7 @@ BEGIN
    AND o.id IN (SELECT unnest(f.order_ids) FROM fb f)
  ), paid AS MATERIALIZED (
   SELECT a.order_id AS id FROM payments.facts f JOIN checkout.payment_attempts a ON a.tenant_id=f.tenant_id AND a.store_id=f.store_id AND a.id=f.attempt_id
-   WHERE f.tenant_id=s.tenant_id AND f.store_id=p_store AND f.kind='CAPTURED' AND a.order_id IN (SELECT x.id FROM live_orders x)
+   WHERE f.tenant_id=s.tenant_id AND f.store_id=p_store AND f.kind='CAPTURED' AND f.environment=p_environment AND a.order_id IN (SELECT x.id FROM live_orders x)
   UNION
   SELECT o.id FROM checkout.orders o
    WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.collection_state='COLLECTED' AND o.payment_mode IN ('pay_at_pickup','cash_on_delivery')
@@ -394,43 +409,44 @@ BEGIN
  IF v_auth_error IS NOT NULL THEN RAISE EXCEPTION 'funnel report access denied' USING ERRCODE=v_auth_error; END IF;
  RETURN v_result;
 END $$;
-ALTER FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid) TO commerce_runtime;
-COMMENT ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid) IS
- 'internal/reporting only; EXECUTE commerce_runtime. orders:read AND live:read; nested counts claimed >= link_sent >= ordered >= paid of the bundles with an ACCEPTED claim in range (optional session of this store, else 404) plus ordered_without_link; no actor key, no buyer data.';
+ALTER FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION identity.read_report_funnel(bytea,uuid,date,date,uuid,text) IS
+ 'internal/reporting only; EXECUTE commerce_runtime. orders:read AND live:read; p_environment = the deployment payment environment (a CAPTURED fact of another environment does not make a bundle paid); nested counts claimed >= link_sent >= ordered >= paid of the bundles with an ACCEPTED claim in range (optional session of this store, else 404) plus ordered_without_link; no actor key, no buyer data.';
 
 -- ---------------------------------------------------------------------------------------
--- Audited export: orders:export AND orders:read, the same jsonb as the matching read definer, one audit row reports.exported.
--- p_report: products | channels | funnel | manual_orders (p_session only for funnel).
+-- Audited export: orders:export AND orders:read, the same jsonb as the matching read definer, one audit row reports.export.<report>.
+-- p_report: products | channels | funnel | manual_orders (p_session only for funnel); p_environment as the read definers. The audit action names the report:
+-- reports.export.products | channels | funnel | manual_orders.
 -- ---------------------------------------------------------------------------------------
 CREATE POLICY auth_report_export_audit ON ops.audit_events FOR INSERT TO commerce_auth
- WITH CHECK (action='reports.exported'
+ WITH CHECK (action IN ('reports.export.products','reports.export.channels','reports.export.funnel','reports.export.manual_orders')
   AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
   AND principal_id=nullif(current_setting('app.principal_id',true),'')::uuid);
 
-CREATE FUNCTION identity.export_report(p_hash bytea,p_store uuid,p_report text,p_from date,p_to date,p_session uuid) RETURNS jsonb
+CREATE FUNCTION identity.export_report(p_hash bytea,p_store uuid,p_report text,p_from date,p_to date,p_session uuid,p_environment text) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_result jsonb; v_auth_error text;
 BEGIN
  IF p_report IS NULL OR p_report NOT IN ('products','channels','funnel','manual_orders') OR (p_session IS NOT NULL AND p_report<>'funnel') THEN
   RAISE EXCEPTION 'invalid report export' USING ERRCODE='PT400'; END IF;
- SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:export');
+ SELECT * INTO s FROM identity.report_open(p_hash,p_store,p_from,p_to,'orders:export',p_environment);
  -- The read definers re-authorize orders:read (and live:read for the funnel) and validate the range; same owner commerce_auth.
  v_result:=CASE p_report
   WHEN 'products' THEN identity.read_report_products(p_hash,p_store,p_from,p_to)
-  WHEN 'channels' THEN identity.read_report_channels(p_hash,p_store,p_from,p_to)
-  WHEN 'funnel' THEN identity.read_report_funnel(p_hash,p_store,p_from,p_to,p_session)
-  ELSE identity.read_report_manual_orders(p_hash,p_store,p_from,p_to) END;
+  WHEN 'channels' THEN identity.read_report_channels(p_hash,p_store,p_from,p_to,p_environment)
+  WHEN 'funnel' THEN identity.read_report_funnel(p_hash,p_store,p_from,p_to,p_session,p_environment)
+  ELSE identity.read_report_manual_orders(p_hash,p_store,p_from,p_to,p_environment) END;
  v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['orders:export','orders:read'],s.tenant_id,s.principal_id,s.revision);
  IF v_auth_error IS NOT NULL THEN RAISE EXCEPTION 'report export access denied' USING ERRCODE=v_auth_error; END IF;
- INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'reports.exported');
+ INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'reports.export.'||p_report);
  RETURN v_result;
 END $$;
-ALTER FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid) TO commerce_runtime;
-COMMENT ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid) IS
- 'internal/reporting only; EXECUTE commerce_runtime. orders:export AND orders:read; the same jsonb as read_report_<report>, plus one ops.audit_events row reports.exported (policy auth_report_export_audit).';
-COMMENT ON POLICY auth_report_export_audit ON ops.audit_events IS 'commerce_auth may insert only the reports.exported audit row, scoped to the GUCs identity.export_report verified.';
+ALTER FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION identity.export_report(bytea,uuid,text,date,date,uuid,text) IS
+ 'internal/reporting only; EXECUTE commerce_runtime. orders:export AND orders:read; the same jsonb as read_report_<report>, plus one ops.audit_events row reports.export.<report> (policy auth_report_export_audit); p_environment is the deployment payment environment.';
+COMMENT ON POLICY auth_report_export_audit ON ops.audit_events IS 'commerce_auth may insert only the four reports.export.<report> audit rows, scoped to the GUCs identity.export_report verified.';

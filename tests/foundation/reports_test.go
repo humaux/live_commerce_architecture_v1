@@ -37,7 +37,7 @@ func init() { rpJob.Store(6_100_000_000) }
 type rpWorld struct {
 	t                   *testing.T
 	f                   *testFixture
-	store               string
+	tenant, store       string
 	h                   http.Handler
 	reader, exporter    string // tokens: orders:read+live:read ; +orders:export
 	ordersOnly, noOrder string // orders:read only ; live:read only
@@ -51,16 +51,24 @@ type rpLine struct {
 
 type rpOrder struct{ id, owner, attempt string }
 
-func rpNew(t *testing.T) *rpWorld {
+// rpNew is a LIVE-deployment store of the fixture's tenant A.
+func rpNew(t *testing.T) *rpWorld { return rpNewIn(t, "A", "LIVE") }
+
+// rpNewIn makes a fresh store of tenant "A" or "B" served by a deployment whose payment environment is env (httpapi Options.PaymentEnvironment).
+func rpNewIn(t *testing.T, which, env string) *rpWorld {
 	t.Helper()
 	f := fixture(t)
-	w := &rpWorld{t: t, f: f, store: randomUUID(), h: httpapi.NewHandler(f.runtime)}
-	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'rp store','TWD')`, f.tenantA, w.store)
-	_, w.reader = lcPrincipal(t, f, f.tenantA, []string{w.store}, "store:read", "orders:read", "live:read")
-	_, w.exporter = lcPrincipal(t, f, f.tenantA, []string{w.store}, "store:read", "orders:read", "orders:export", "live:read")
-	_, w.ordersOnly = lcPrincipal(t, f, f.tenantA, []string{w.store}, "store:read", "orders:read")
-	_, w.noOrder = lcPrincipal(t, f, f.tenantA, []string{w.store}, "store:read", "live:read")
-	w.staff, _ = lcPrincipal(t, f, f.tenantA, []string{w.store}, "inventory:reserve")
+	tenant := f.tenantA
+	if which == "B" {
+		tenant = f.tenantB
+	}
+	w := &rpWorld{t: t, f: f, tenant: tenant, store: randomUUID(), h: httpapi.NewHandler(f.runtime, httpapi.Options{PaymentEnvironment: env})}
+	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'rp store','TWD')`, tenant, w.store)
+	_, w.reader = lcPrincipal(t, f, tenant, []string{w.store}, "store:read", "orders:read", "live:read")
+	_, w.exporter = lcPrincipal(t, f, tenant, []string{w.store}, "store:read", "orders:read", "orders:export", "live:read")
+	_, w.ordersOnly = lcPrincipal(t, f, tenant, []string{w.store}, "store:read", "orders:read")
+	_, w.noOrder = lcPrincipal(t, f, tenant, []string{w.store}, "store:read", "live:read")
+	w.staff, _ = lcPrincipal(t, f, tenant, []string{w.store}, "inventory:reserve")
 	return w
 }
 
@@ -111,7 +119,7 @@ func (w *rpWorld) order(at time.Time, state, source, mode string, lines ...rpLin
 	  service_version,allocation_version,currency,total_minor,commercial_state,fulfillment_state,generation,expires_at,job_id,snapshot,created_at,updated_at,payment_mode,source,
 	  collection_state,cod_carrier,cod_surcharge_minor)
 	 VALUES($1,$2,$3,$4,gen_random_uuid(),gen_random_uuid(),1,gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'TW','std',1,1,'TWD',$5,$6,$7,1,$8,$9,$10::jsonb,$11,$11,$12,$13,$14,$15,$16)`,
-		w.f.tenantA, w.store, o.owner, o.id, total, state, fulfil, at.Add(10*time.Minute), rpJob.Add(1), snap, at, mode, source, collection, carrier, surcharge)
+		w.tenant, w.store, o.owner, o.id, total, state, fulfil, at.Add(10*time.Minute), rpJob.Add(1), snap, at, mode, source, collection, carrier, surcharge)
 	return o
 }
 
@@ -123,7 +131,7 @@ func (w *rpWorld) capture(o rpOrder, minor int64, env string, at time.Time) {
 	  substr(replace($4::text,'-',''),1,25),'PAYMENT_PENDING',2,$7) RETURNING 1)
 	 INSERT INTO payments.facts(tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash,received_at)
 	 VALUES($1,$2,$4::uuid,'CAPTURED',$8,'TWD','ref_'||substr(replace($4::text,'-',''),1,20),gen_random_uuid(),'PROVIDER_MOCK',$6,sha256('x'::bytea),$9)`,
-		w.f.tenantA, w.store, o.owner, o.attempt, o.id, env, rpJob.Add(1), minor, at)
+		w.tenant, w.store, o.owner, o.attempt, o.id, env, rpJob.Add(1), minor, at)
 }
 
 // refund adds a requested refund of the order's attempt and its SUCCEEDED fact at the instant at.
@@ -133,31 +141,31 @@ func (w *rpWorld) refund(o rpOrder, minor int64, env string, at time.Time) {
 	  amount_minor,reason,create_params,requested_at,resend_until) VALUES($1,$2,$3,$4::uuid,$5,$6,$7,$8,'acct_x1',1,'pi_x1','TWD',$9,'requested_by_customer','{}',$10,$10::timestamptz+interval '20 hours') RETURNING 1)
 	 INSERT INTO payments.refund_facts(tenant_id,store_id,refund_id,attempt_id,kind,amount_minor,currency,stripe_refund_id,source_report_hash,received_at)
 	 VALUES($1,$2,$3,$4,'SUCCEEDED',$9,'TWD','re_x1',sha256('x'::bytea),$10)`,
-		w.f.tenantA, w.store, id, o.attempt, o.id, o.owner, w.staff, env, minor, at)
+		w.tenant, w.store, id, o.attempt, o.id, o.owner, w.staff, env, minor, at)
 }
 
 // collect marks a COD order COLLECTED at the instant at (money = total + the 5000 surcharge).
 func (w *rpWorld) collect(o rpOrder, at time.Time) {
-	w.exec(`UPDATE checkout.orders SET collection_state='COLLECTED',collected_at=$3 WHERE tenant_id=$1 AND id=$2`, w.f.tenantA, o.id, at)
+	w.exec(`UPDATE checkout.orders SET collection_state='COLLECTED',collected_at=$3 WHERE tenant_id=$1 AND id=$2`, w.tenant, o.id, at)
 }
 
 // transfer confirms a bank-transfer order for minor at the instant at.
 func (w *rpWorld) transfer(o rpOrder, minor int64, at time.Time) {
 	w.exec(`INSERT INTO checkout.bank_transfers(tenant_id,store_id,owner_id,order_id,state,bank_name,branch,account_name,account_number,window_hours,currency,created_at,updated_at,
 	  confirmed_at,confirmed_by,confirmed_amount_minor) VALUES($1,$2,$3,$4,'CONFIRMED','b','b','a','1',24,'TWD',$6,$6,$6,$5,$7)`,
-		w.f.tenantA, w.store, o.owner, o.id, w.staff, at, minor)
+		w.tenant, w.store, o.owner, o.id, w.staff, at, minor)
 }
 
 // manual records the staff receipt of a merchant-created order (the creator the manual report names).
 func (w *rpWorld) manual(o rpOrder, principal string) {
 	w.exec(`INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)
 	 VALUES($1,$2,'merchanttools.order.manual',$3,sha256('x'::bytea),jsonb_build_object('order_id',$4::text),$5)`,
-		w.f.tenantA, w.store, "rp-key-"+o.id[:12], o.id, principal)
+		w.tenant, w.store, "rp-key-"+o.id[:12], o.id, principal)
 }
 
 func (w *rpWorld) session(title string) string {
 	id := randomUUID()
-	w.exec(`INSERT INTO live.sessions(tenant_id,store_id,id,principal_id,title) VALUES($1,$2,$3,$4,$5)`, w.f.tenantA, w.store, id, w.staff, title)
+	w.exec(`INSERT INTO live.sessions(tenant_id,store_id,id,principal_id,title) VALUES($1,$2,$3,$4,$5)`, w.tenant, w.store, id, w.staff, title)
 	return id
 }
 
@@ -165,23 +173,23 @@ func (w *rpWorld) session(title string) string {
 // orders adds one order_origins row per order.
 func (w *rpWorld) bundle(session, platform string, at time.Time, accepted, sent bool, orders ...rpOrder) string {
 	id := randomUUID()
-	w.exec(`INSERT INTO claims.bundles(tenant_id,store_id,id,session_id,platform,actor_key) VALUES($1,$2,$3::uuid,$4,$5,md5($3::uuid::text)||md5($3::uuid::text||'x'))`, w.f.tenantA, w.store, id, session, platform)
+	w.exec(`INSERT INTO claims.bundles(tenant_id,store_id,id,session_id,platform,actor_key) VALUES($1,$2,$3::uuid,$4,$5,md5($3::uuid::text)||md5($3::uuid::text||'x'))`, w.tenant, w.store, id, session, platform)
 	if accepted {
 		w.exec(`INSERT INTO claims.events(tenant_id,store_id,session_id,window_generation,source_kind,source_event_id,platform,occurred_at,grammar_version,grammar_kind,match_mode,
 		  outcome,offer_id,quantity,explicit_quantity,bundle_id,line_version,bundle_version) VALUES($1,$2,$4,1,'meta',gen_random_uuid(),$5,$6,'kw-v1','MATCH','EXACT','ACCEPTED',gen_random_uuid(),1,true,$3::uuid,1,1)`,
-			w.f.tenantA, w.store, id, session, platform, at)
+			w.tenant, w.store, id, session, platform, at)
 	} else { // a REJECTED event never counts
 		w.exec(`INSERT INTO claims.events(tenant_id,store_id,session_id,window_generation,source_kind,source_event_id,platform,occurred_at,grammar_version,grammar_kind,match_mode,
-		  outcome,reason) VALUES($1,$2,$3,1,'meta',gen_random_uuid(),$4,$5,'kw-v1','NO_MATCH','EXACT','REJECTED','NO_MATCH')`, w.f.tenantA, w.store, session, platform, at)
+		  outcome,reason) VALUES($1,$2,$3,1,'meta',gen_random_uuid(),$4,$5,'kw-v1','NO_MATCH','EXACT','REJECTED','NO_MATCH')`, w.tenant, w.store, session, platform, at)
 	}
 	if sent {
 		w.exec(`INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,
 		  job_id,state,generation) VALUES(gen_random_uuid(),$1,$2,$3,gen_random_uuid(),1,'facebook','page','service','meta.private_reply','mpr:'||replace($4::uuid::text,'-',''),sha256('x'::bytea),
-		  jsonb_build_object('bundle_id',$4::uuid::text),$5,'SUCCEEDED',1)`, w.f.tenantA, w.store, w.staff, id, rpJob.Add(1))
+		  jsonb_build_object('bundle_id',$4::uuid::text),$5,'SUCCEEDED',1)`, w.tenant, w.store, w.staff, id, rpJob.Add(1))
 	}
 	for _, o := range orders {
 		w.exec(`INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at) VALUES($1,$2,$3,$4,gen_random_uuid(),1,$5,$6)`,
-			w.f.tenantA, w.store, o.id, id, session, at)
+			w.tenant, w.store, o.id, id, session, at)
 	}
 	return id
 }
@@ -316,8 +324,8 @@ func TestReportRP01ProductsChannelsMatchHandNumbersAndFinance(t *testing.T) {
 	}{
 		// facebook_live: O2 + O5 (manual order with a facebook origin goes to the origin channel) and the cancelled O6 (its bundle F6 is a facebook origin). Money: O2 captured 10001 LIVE; O5 offline transfer 8000.
 		{"facebook_live", chWant{2, 1, []reporting.Money{{Environment: "LIVE", CapturedCount: 1, CapturedMinor: 10001, NetMinor: 10001, OfflineCount: 1, OfflineMinor: 8000}}}},
-		// instagram_live: O3 only, SANDBOX card 30000.
-		{"instagram_live", chWant{1, 0, []reporting.Money{{Environment: "SANDBOX", CapturedCount: 1, CapturedMinor: 30000, NetMinor: 30000}}}},
+		// instagram_live: O3 only, SANDBOX card 30000. The deployment is LIVE, so the SANDBOX-paid order is not counted (orders 0); its money still shows, split by environment.
+		{"instagram_live", chWant{0, 0, []reporting.Money{{Environment: "SANDBOX", CapturedCount: 1, CapturedMinor: 30000, NetMinor: 30000}}}},
 		// storefront: orders created in range = O1, O8, O9 (O7 predates the range) -> 3 orders, none cancelled. Money in range: O1 30000 + O7 5000 + O8 100,
 		// refund 9000 -> captured 35100 over 3 facts, net 26100 (O9 captured Oct 1 Taipei: out).
 		{"storefront", chWant{3, 0, []reporting.Money{{Environment: "LIVE", CapturedCount: 3, CapturedMinor: 35100, RefundedMinor: 9000, NetMinor: 26100}}}},
@@ -481,13 +489,13 @@ func TestReportRP05RangeAndShape(t *testing.T) {
 	}
 }
 
-// TestReportRP06ExportPermissionAuditAndCSV proves RP06: no orders:export -> 403 and no audit row; with it one reports.exported row per
+// TestReportRP06ExportPermissionAuditAndCSV proves RP06: no orders:export -> 403 and no audit row; with it one reports.export.<report> row per
 // export, the CSV carries the same rows with the formula guard, a read writes no audit row.
 func TestReportRP06ExportPermissionAuditAndCSV(t *testing.T) {
 	w := rpNew(t)
 	rpSeedMain(w)
 	audits := func() int {
-		return countRows(t, w.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='reports.exported'`, w.store)
+		return countRows(t, w.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action LIKE 'reports.export.%'`, w.store)
 	}
 	for _, slug := range []string{"products", "channels", "funnel", "manual-orders"} {
 		if status, _, _ := w.get(w.ordersOnly, slug+".csv"+rpQ); status != 403 {
@@ -510,6 +518,10 @@ func TestReportRP06ExportPermissionAuditAndCSV(t *testing.T) {
 		if got := audits(); got != i+1 {
 			t.Errorf("after %s export: %d audit rows, want %d", slug, got, i+1)
 		}
+		// the audit action names the report (manual-orders -> reports.export.manual_orders)
+		if n := countRows(t, w.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action=$2`, w.store, "reports.export."+strings.ReplaceAll(slug, "-", "_")); n != 1 {
+			t.Errorf("%s: %d audit rows with its own action, want 1", slug, n)
+		}
 		rows, err := csv.NewReader(strings.NewReader(string(body))).ReadAll()
 		if err != nil || len(rows) < 2 {
 			t.Fatalf("%s csv: %v %q", slug, err, body)
@@ -524,7 +536,7 @@ func TestReportRP06ExportPermissionAuditAndCSV(t *testing.T) {
 		}
 	}
 	// the audit row names the exporting principal in this store
-	if n := countRows(t, w.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='reports.exported' AND tenant_id=$2`, w.store, w.f.tenantA); n != 4 {
+	if n := countRows(t, w.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action LIKE 'reports.export.%' AND tenant_id=$2`, w.store, w.tenant); n != 4 {
 		t.Errorf("audit rows %d", n)
 	}
 }
@@ -563,6 +575,17 @@ func TestReportRP07CrossStoreNoLeak(t *testing.T) {
 // 92-day window) with a captured fact each, a third with a facebook origin; every report must answer in under 5 s. The measured times are logged.
 func TestReportRP08TimingTenThousandOrders(t *testing.T) {
 	w := rpNew(t)
+	// A second tenant's store with the same volume: the reports must stay selective with other tenants' rows in the same tables.
+	noise := rpNewIn(t, "B", "LIVE")
+	for _, x := range []*rpWorld{noise, w} {
+		x.perfSeed()
+	}
+	const q = "?from=2026-06-01&to=2026-08-31" // 92 days
+	rpPerfMeasure(t, w, q)
+}
+
+// perfSeed writes 10,000 synthetic orders over 200 days with a captured fact each and a facebook origin on every third.
+func (w *rpWorld) perfSeed() {
 	w.exec(`WITH g AS MATERIALIZED (
 	  SELECT n,gen_random_uuid() AS oid,gen_random_uuid() AS aid,gen_random_uuid() AS bid,gen_random_uuid() AS owner,
 	   timestamptz '2026-03-01 10:00:00+08' + (n % 200) * interval '1 day' + (n % 600) * interval '1 minute' AS at
@@ -571,7 +594,7 @@ func TestReportRP08TimingTenThousandOrders(t *testing.T) {
 	 o AS (INSERT INTO checkout.orders(tenant_id,store_id,owner_id,id,creator_session_id,cart_id,cart_version,quote_id,destination_id,market_id,country,service_code,service_version,
 	   allocation_version,currency,total_minor,commercial_state,fulfillment_state,generation,expires_at,job_id,snapshot,created_at,updated_at,payment_mode,source,collection_state)
 	  SELECT $1,$2,g.owner,g.oid,gen_random_uuid(),gen_random_uuid(),1,gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'TW','std',1,1,'TWD',30000,'CONFIRMED','MANUAL_UNASSIGNED',1,
-	   g.at+interval '10 minutes',7000000000::bigint+g.n,
+	   g.at+interval '10 minutes',$4::bigint+g.n,
 	   jsonb_build_object('quote',jsonb_build_object('lines',jsonb_build_array(
 	    jsonb_build_object('sku_id',(SELECT id FROM sku WHERE i=g.n%40),'product_id',gen_random_uuid(),'code','C','name','N','quantity',1,'amount',jsonb_build_object('total_minor',10000)),
 	    jsonb_build_object('sku_id',(SELECT id FROM sku WHERE i=(g.n+7)%40),'product_id',gen_random_uuid(),'code','C','name','N','quantity',2,'amount',jsonb_build_object('total_minor',20000))))),
@@ -579,7 +602,7 @@ func TestReportRP08TimingTenThousandOrders(t *testing.T) {
 	 a AS (INSERT INTO checkout.payment_attempts(tenant_id,store_id,owner_id,id,session_id,order_id,market_id,country,method_code,method_version,connection_id,credential_version,
 	   qualification_id,environment,execution_profile,binding_id,binding_version,currency,amount_minor,merchant_trade_no,state,generation,job_id)
 	  SELECT $1,$2,g.owner,g.aid,gen_random_uuid(),g.oid,gen_random_uuid(),'TW','payuni_credit',1,gen_random_uuid(),1,gen_random_uuid(),'LIVE','PROVIDER_MOCK',gen_random_uuid(),1,'TWD',100,
-	   substr(replace(g.aid::text,'-',''),1,25),'PAYMENT_PENDING',2,7100000000::bigint+g.n FROM g RETURNING id),
+	   substr(replace(g.aid::text,'-',''),1,25),'PAYMENT_PENDING',2,$4::bigint+g.n FROM g RETURNING id),
 	 f AS (INSERT INTO payments.facts(tenant_id,store_id,attempt_id,kind,amount_minor,currency,provider_reference,connection_id,execution_profile,environment,source_report_hash,received_at)
 	  SELECT $1,$2,g.aid,'CAPTURED',30000,'TWD','ref_'||substr(replace(g.aid::text,'-',''),1,20),gen_random_uuid(),'PROVIDER_MOCK','LIVE',sha256('x'::bytea),g.at+interval '1 minute' FROM g RETURNING 1),
 	 b AS (INSERT INTO claims.bundles(tenant_id,store_id,id,session_id,platform,actor_key)
@@ -588,10 +611,15 @@ func TestReportRP08TimingTenThousandOrders(t *testing.T) {
 	   outcome,offer_id,quantity,explicit_quantity,bundle_id,line_version,bundle_version)
 	  SELECT $1,$2,$3,1,'meta',gen_random_uuid(),'facebook',g.at,'kw-v1','MATCH','EXACT','ACCEPTED',gen_random_uuid(),1,true,g.bid,1,1 FROM g WHERE g.n%3=0 RETURNING 1)
 	 INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
-	  SELECT $1,$2,g.oid,g.bid,gen_random_uuid(),1,$3,g.at FROM g WHERE g.n%3=0`, w.f.tenantA, w.store, w.session("perf"))
+	  SELECT $1,$2,g.oid,g.bid,gen_random_uuid(),1,$3,g.at FROM g WHERE g.n%3=0`, w.tenant, w.store, w.session("perf"), rpJob.Add(20000)-19999) // reserves job ids [base, base+10000] for this seed
 	w.exec(`ANALYZE checkout.orders`)
 	w.exec(`ANALYZE payments.facts`)
-	const q = "?from=2026-06-01&to=2026-08-31" // 92 days
+	w.exec(`ANALYZE claims.order_origins`)
+	w.exec(`ANALYZE claims.events`)
+}
+
+func rpPerfMeasure(t *testing.T, w *rpWorld, q string) {
+	t.Helper()
 	for _, slug := range []string{"products", "channels", "funnel", "manual-orders"} {
 		start := time.Now()
 		status, body, _ := w.get(w.reader, slug+q)
@@ -609,5 +637,105 @@ func TestReportRP08TimingTenThousandOrders(t *testing.T) {
 	}
 	if orders < 4000 || orders > 5200 { // 10000 orders * 92/200 days
 		t.Errorf("orders in the window: %d", orders)
+	}
+}
+
+// TestReportEnvironmentProfiles proves the deployment-environment rule (LC-B7 A1): counts (funnel paid, channel / manual-order orders and
+// cancelled_orders) follow the deployment payment environment, money stays split per (currency, environment) and is the same under both profiles.
+func TestReportEnvironmentProfiles(t *testing.T) {
+	for _, env := range []string{"LIVE", "SANDBOX"} {
+		t.Run(env, func(t *testing.T) {
+			w := rpNewIn(t, "A", env)
+			s1, _, _ := rpSeedMain(w)
+			var ch reporting.ChannelReport
+			w.must(w.reader, "channels"+rpQ, &ch)
+			got := map[string][2]int64{}
+			for _, r := range ch.Rows {
+				got[r.Channel] = [2]int64{r.Orders, r.CancelledOrders}
+			}
+			// An order is in the environment of its payment attempt, else in the deployment's (offline modes, unpaid).
+			// LIVE: facebook O2 (LIVE) + O5 (no attempt) = 2 and the cancelled O6 = 1; instagram O3 is SANDBOX = 0; storefront O1,O8,O9 = 3; manual O4 = 1.
+			// SANDBOX: facebook only O5 = 1 and O6 cancelled = 1; instagram O3 = 1; storefront 0 (O1,O8,O9 are LIVE); manual O4 = 1.
+			want := map[string][2]int64{"facebook_live": {2, 1}, "instagram_live": {0, 0}, "storefront": {3, 0}, "manual": {1, 0}}
+			if env == "SANDBOX" {
+				want = map[string][2]int64{"facebook_live": {1, 1}, "instagram_live": {1, 0}, "storefront": {0, 0}, "manual": {1, 0}}
+			}
+			for ch, wv := range want {
+				if got[ch] != wv {
+					t.Errorf("%s deployment, channel %s orders/cancelled = %v, want %v", env, ch, got[ch], wv)
+				}
+			}
+			// Money is identical under both profiles: LIVE 45101 captured over the LIVE rows, 30000 SANDBOX.
+			var live, sandbox int64
+			for _, r := range ch.Rows {
+				for _, m := range r.Money {
+					if m.Environment == "LIVE" {
+						live += m.CapturedMinor
+					} else {
+						sandbox += m.CapturedMinor
+					}
+				}
+			}
+			if live != 45101 || sandbox != 30000 {
+				t.Errorf("%s deployment money split: LIVE %d SANDBOX %d", env, live, sandbox)
+			}
+			// Funnel paid: F1's order O2 is paid by a LIVE capture (counts only on a LIVE deployment), F2's O5 by a bank transfer (always).
+			var f reporting.FunnelReport
+			w.must(w.reader, "funnel"+rpQ+"&session_id="+s1, &f)
+			wantPaid := int64(2)
+			if env == "SANDBOX" {
+				wantPaid = 1
+			}
+			if f.Claimed != 5 || f.LinkSent != 3 || f.Ordered != 2 || f.Paid != wantPaid {
+				t.Errorf("%s deployment funnel: %+v want paid %d", env, f, wantPaid)
+			}
+		})
+	}
+	// Manual orders: a LIVE-paid and a SANDBOX-paid merchant-created order; only the deployment's one is counted, both money rows show.
+	for _, env := range []string{"LIVE", "SANDBOX"} {
+		w := rpNewIn(t, "A", env)
+		sku := randomUUID()
+		for _, e := range []string{"LIVE", "SANDBOX"} {
+			o := w.order(rpAt(20, 9), "CONFIRMED", "merchant_manual", "card", rpLine{sku, randomUUID(), "M", "M", 1, 100})
+			w.manual(o, w.staff)
+			w.capture(o, 1000, e, rpAt(20, 10))
+		}
+		var man reporting.ManualReport
+		w.must(w.reader, "manual-orders"+rpQ, &man)
+		if len(man.Rows) != 1 || man.Rows[0].Orders != 1 || len(man.Rows[0].Money) != 2 {
+			t.Errorf("%s deployment manual orders: %+v", env, man.Rows)
+		}
+	}
+}
+
+// TestReportInternalHelpersAreNotCallable pins identity.report_open / report_money_events: not SECURITY DEFINER, owned by commerce_auth, no
+// EXECUTE for PUBLIC or any other role (they run only inside the report definers), while the five report definers are SECURITY DEFINER with
+// EXECUTE for commerce_runtime only.
+func TestReportInternalHelpersAreNotCallable(t *testing.T) {
+	f := fixture(t)
+	for _, sig := range []string{"identity.report_open(bytea,uuid,date,date,text,text)", "identity.report_money_events(uuid,uuid,timestamp with time zone,timestamp with time zone)"} {
+		var owner string
+		var definer bool
+		if err := f.owner.QueryRow(context.Background(), `SELECT pg_get_userbyid(proowner),prosecdef FROM pg_proc WHERE oid=$1::regprocedure`, sig).Scan(&owner, &definer); err != nil {
+			t.Fatalf("%s: %v", sig, err)
+		}
+		if owner != "commerce_auth" || definer {
+			t.Errorf("%s owner=%s definer=%v, want commerce_auth and invoker rights", sig, owner, definer)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_proc p, aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE p.oid=$1::regprocedure AND a.privilege_type='EXECUTE' AND a.grantee<>p.proowner`, sig); n != 0 {
+			t.Errorf("%s has %d EXECUTE grantees besides its owner (PUBLIC included)", sig, n)
+		}
+		for _, role := range []string{"commerce_runtime", "commerce_buyer_runtime", "commerce_claims_writer", "commerce_checkout_writer"} {
+			if countRows(t, f.owner, `SELECT CASE WHEN has_function_privilege($1,$2::regprocedure,'EXECUTE') THEN 1 ELSE 0 END`, role, sig) != 0 {
+				t.Errorf("%s can execute %s", role, sig)
+			}
+		}
+	}
+	for _, sig := range []string{"identity.read_report_products(bytea,uuid,date,date)", "identity.read_report_channels(bytea,uuid,date,date,text)",
+		"identity.read_report_manual_orders(bytea,uuid,date,date,text)", "identity.read_report_funnel(bytea,uuid,date,date,uuid,text)",
+		"identity.export_report(bytea,uuid,text,date,date,uuid,text)"} {
+		if countRows(t, f.owner, `SELECT CASE WHEN has_function_privilege('commerce_runtime',$1::regprocedure,'EXECUTE') AND (SELECT prosecdef FROM pg_proc WHERE oid=$1::regprocedure) THEN 1 ELSE 0 END`, sig) != 1 {
+			t.Errorf("%s is not a SECURITY DEFINER callable by commerce_runtime", sig)
+		}
 	}
 }

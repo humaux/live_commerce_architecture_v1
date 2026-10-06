@@ -1,14 +1,14 @@
-✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (225.63175ms)
-✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.411667ms)
-✔ Readiness jump controls expose the actual active section, not a click flag (0.496875ms)
-✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.142875ms)
-✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.212458ms)
-✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.279083ms)
-✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.012917ms)
-✔ G-UI1 copy key parity: no missing or extra key in any locale (0.066125ms)
-✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.119917ms)
-✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (20.444458ms)
-✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.172042ms)
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (254.863125ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.431375ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.519875ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.156666ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.228166ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.299375ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.862042ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.093083ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.138375ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (78.880584ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.206ms)
 ℹ tests 11
 ℹ suites 0
 ℹ pass 11
@@ -16,7 +16,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 359.144917
+ℹ duration_ms 402.232125
 WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
 WARN G-UI5 apps/admin/components/AdsDraft.tsx: >500 lines
 WARN G-UI5 apps/admin/components/AttributionPanels.tsx: >500 lines
@@ -41,4 +41,4 @@ WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
 WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
 PASS G-UI3/G-UI5
 check-gates: ok (71 modes, all documented; every tracked test file is run)
-check-headers: OK (base e883b9e77621caa9e5b4131a27729800a52a5771)
+check-headers: OK (base 3504152b9fbc042cb2cd667178bc70ac789e48a7)
