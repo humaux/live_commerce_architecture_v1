@@ -1,3 +1,7 @@
+// Purpose: exact authenticated admin resource proxy, including PM-v2 role-aware media commands.
+// Depends on: auth/CSRF/store scope, frozen request grammars and Go /v1/admin/stores endpoints.
+// Used by: admin settings/product/media clients; private data is never cached.
+import { validMediaQuery } from "@/lib/product-media-model";
 import { callBackend, fixtureSession } from "@/lib/backend";
 import {
   orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
@@ -39,7 +43,7 @@ const purchaseEntry = `products/${uuid}/purchase-entry`;
 // catalog-media CM3: product photos -> Go internal/httpapi/images.go. Exactly these five resources, nothing generic.
 const imagesRoot = `products/${uuid}/images`;
 const imageItem = `${imagesRoot}/${uuid}`;
-const imageWrites = `${imagesRoot}|${imageItem}/delete|${imagesRoot}/order`;
+const imageWrites = `${imagesRoot}|${imageItem}/delete|${imagesRoot}/order|${imageItem}/move|products/${uuid}/(?:option-images|image-axis)`;
 const MAX_UPLOAD = 2.5 * 1024 * 1024; // CM3: BFF body cap; Go re-checks 2 MiB for the file itself and is the authority
 // catalog-core (storefront-v2 A, unit catalog-core): product list/detail + collections -> Go internal/httpapi/collections.go.
 // Exactly these resources: GET catalog-products (q,status,cursor,limit), GET products/{id}, collections CRUD, ordered
@@ -92,7 +96,7 @@ const collectionImageRoute = new RegExp(`^${collectionImage}$`);
 const catalogQueryRoute = new RegExp(`^(?:${catalogProducts}|${collectionsRoot})$`);
 const catalogQueryKeys = new Set(["q", "status", "cursor", "limit"]);
 const catalogV2Any = new RegExp(`^(?:${catalogProducts}|${productCommands}|products/${uuid}/document|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionItem}/(?:delete|products|image|image/delete))$`);
-const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/delete|${imagesRoot}/order)$`);
+const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/(?:delete|move)|${imagesRoot}/order|products/${uuid}/(?:option-images|image-axis))$`);
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
@@ -186,7 +190,8 @@ async function route(request: Request, context: Context) {
   const imageUpload = (request.method === "POST" && (imagesRootRoute.test(path) || collectionImageRoute.test(path))) || isDesignUpload(request.method, path);
   const imageBytes = (request.method === "GET" && (imageItemRoute.test(path) || collectionImageRoute.test(path))) || isDesignImageBytes(request.method, path);
   if (imagesAny.test(path)) {
-    if (request.url.includes("?")) return error(422, "invalid_request");
+    const search = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
+    if (!validMediaQuery(search, request.method === "POST" && imagesRootRoute.test(path))) return error(422, "invalid_request");
     if (
       request.method === "GET" &&
       (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||

@@ -1,3 +1,6 @@
+// Purpose: display details and server-selected SKU thumbnails for buyer cart lines (drawer, cart page, checkout summary).
+// Depends on: /api/buyer/catalog, /api/shop/product/{id}, checkout-options, purchase validators and product-media.ts.
+// Used by: CartProvider, CartLines and checkout summary; display prices never replace the quote authority (I05).
 // Display details for the lines of the buyer's cart (drawer, cart page, checkout summary). Browser only.
 // A cart line is just {sku_id, quantity}; to show a name, variant, photo and listed price this reads:
 //   BFF GET /api/buyer/catalog?limit=100[&cursor=]  -> Go /v1/buyer/catalog  (active SKUs: product_id, name, price, images)
@@ -10,7 +13,9 @@ import type { Cart, Product } from "./purchase.ts";
 import { parseProductDetail } from "./shop-contract.ts";
 import type { ProductDetail, StockHint } from "./shop-contract.ts";
 import { linePrice } from "./line-price.ts";
+import { cartLineImage } from "./product-media.ts";
 
+/** Display-only line projection; SKU/photo metadata is read from the scoped buyer catalog. */
 export type LineView = {
   sku_id: string;
   quantity: number;
@@ -27,6 +32,7 @@ export type LineView = {
   compareAtMinor: number | null;
   stock: StockHint | null;
 };
+/** Display-only cart projection, never an authoritative checkout amount. */
 export type CartDetails = { lines: LineView[]; subtotal: number; currency: string; threshold: number | null };
 
 const MAX_PAGES = 10;
@@ -47,8 +53,10 @@ function productDetail(productID: string): Promise<ProductDetail | null> {
 }
 
 // Stock and compare-at move; drop the memo whenever the cart changes so the hint is never older than the last edit.
+/** Forget cached public product metadata before the next cart display read. */
 export const forgetDetails = () => details.clear();
 
+/** Read scoped catalog/detail metadata for the cart; only optional delivery hints may fail independently. */
 export async function loadCartDetails(context: string, cart: Cart): Promise<CartDetails> {
   const wanted = new Set(cart.items.map((i) => i.sku_id));
   const rows = new Map<string, Product>();
@@ -81,7 +89,7 @@ export async function loadCartDetails(context: string, cart: Cart): Promise<Cart
       variantTitle: variant && variant.option_values.length > 0 ? variant.title : null,
       slug: detail?.slug ?? null,
       productID: row.product_id,
-      imageID: detail?.images[0]?.id ?? row.images?.[0]?.id ?? null,
+      imageID: cartLineImage(variant, row, detail?.images ?? []),
       unitMinor: priced.unitMinor,
       liveUnitMinor: priced.liveUnitMinor,
       compareAtMinor: priced.compareAtMinor,
@@ -106,6 +114,7 @@ export async function loadCartDetails(context: string, cart: Cart): Promise<Cart
 // One load per cart identity+version, shared by every component that shows lines (drawer, page, summary), so the catalog
 // and detail reads are not repeated per component. A failed load is forgotten so the next render retries.
 let memo: { key: string; promise: Promise<CartDetails> } | null = null;
+/** Share one metadata read per buyer context/cart version; failed reads are forgotten. */
 export function cartDetails(context: string, cart: Cart): Promise<CartDetails> {
   const key = `${context}:${cart.id}:${cart.version}`;
   if (memo?.key === key) return memo.promise;

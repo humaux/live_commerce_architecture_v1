@@ -1,3 +1,6 @@
+// Purpose: staged product document/media save with exact receipt replay and canonical publication checks.
+// Depends on: catalog document commands, role media uploads, session storage and authenticated Go readback.
+// Used by: ProductDocumentForm; UNKNOWN keeps the original payload/key and blocks fresh creation.
 "use client";
 // One staged user action. Committed stages never repeat; an UNKNOWN stage retains exact bytes/key.
 import { useEffect, useRef, useState } from "react";
@@ -19,6 +22,7 @@ import {
 import { uploadDocumentImage } from "./product-media-client";
 import type { ProductEditorCopy } from "./product-editor-copy";
 import type { DraftPhoto } from "../components/ProductDocumentMedia";
+import { effectiveMediaAxis, optionImageMatches } from "./product-media-model";
 type Workflow = {
   edit?: boolean;
   expectedStatus?: string;
@@ -27,17 +31,22 @@ type Workflow = {
   publish: boolean;
   id?: string;
   uploaded: string[];
-  order?: Command;
-  ordered?: boolean;
+  orders?: Partial<Record<"main" | "detail", Command>>;
+  orderedRoles?: ("main" | "detail")[];
+  imageAxis?: string | null;
+  axisCommand?: Command;
+  axisSet?: boolean;
   publication?: Command;
   published?: boolean;
 };
+/** Save one staged document action; uncertain writes keep their exact command and durable recovery fence. */
 export function useProductDocument(
   store: string,
   currency: string,
   boundary: string,
   c: ProductEditorCopy,
   detail?: ProductDetail | null,
+  axisChanged = c.recoveryRequired,
 ) {
   const [savedDetail, setSavedDetail] = useState<ProductDetail | null>(null);
   const baseline = savedDetail ?? detail;
@@ -80,6 +89,39 @@ export function useProductDocument(
     setBusy(true);
     setMessage("");
     try {
+      async function checkOption(
+        photo: DraftPhoto,
+        imageID?: string,
+      ): Promise<boolean> {
+        const product = await readProduct(
+          store,
+          op!.id!,
+          new AbortController().signal,
+        );
+        const media = await listImages(store, op!.id!);
+        const expected = photo.optionName?.trim();
+        const actual = media.list
+          ? effectiveMediaAxis(product.options, media.list.image_axis)?.name
+          : null;
+        if (
+          !media.list ||
+          !expected ||
+          actual !== expected ||
+          (imageID &&
+            !optionImageMatches(
+              actual ?? null,
+              media.list.option_images,
+              expected,
+              photo.optionValue ?? "",
+              imageID,
+            ))
+        ) {
+          setRecoveryBlocked(true);
+          setMessage(axisChanged);
+          return false;
+        }
+        return true;
+      }
       if (!op.id) {
         const result = await send(store, op.create, boundary, parseCreated);
         if (!result.ok) {
@@ -93,26 +135,52 @@ export function useProductDocument(
         }
         op.id = result.value.id;
       }
+      if (!op.edit && !op.axisSet && op.imageAxis !== undefined) {
+        op.axisCommand ??= command("POST", `products/${op.id}/image-axis`, {
+          axis: op.imageAxis,
+        });
+        const axisResult = await send(store, op.axisCommand, boundary, (v) => {
+          if (!validImageList(v)) throw new Error("invalid");
+          return v;
+        });
+        if (!axisResult.ok) {
+          failOutcome(axisResult);
+          return;
+        }
+        op.axisSet = true;
+      }
       while (op.uploaded.length < op.photos.length) {
         const p = op.photos[op.uploaded.length];
+        if (p.role === "sku" && !(await checkOption(p))) return;
         const result = await uploadDocumentImage(
           store,
           op.id,
           p.file!,
           p.key,
           boundary,
+          p.role ?? "main",
+          p.optionValue,
         );
         if (!result.ok) {
           failOutcome(result);
           return;
         }
+        if (p.role === "sku" && !(await checkOption(p, result.value.id)))
+          return;
         op.uploaded.push(result.value.id);
       }
-      if (op.photos.length && !op.ordered) {
-        op.order ??= command("POST", `products/${op.id}/images/order`, {
-          ids: op.uploaded,
+      op.orders ??= {};
+      op.orderedRoles ??= [];
+      for (const role of ["main", "detail"] as const) {
+        const ids = op.uploaded.filter(
+          (_, i) => (op.photos[i].role ?? "main") === role,
+        );
+        if (!ids.length || op.orderedRoles.includes(role)) continue;
+        op.orders[role] ??= command("POST", `products/${op.id}/images/order`, {
+          role,
+          ids,
         });
-        const result = await send(store, op.order, boundary, (v) => {
+        const result = await send(store, op.orders[role]!, boundary, (v) => {
           if (!validImageList(v)) throw new Error("invalid");
           return v;
         });
@@ -120,9 +188,15 @@ export function useProductDocument(
           failOutcome(result);
           return;
         }
-        op.ordered = true;
+        op.orderedRoles.push(role);
       }
       if (op.publish && !op.published) {
+        for (let i = 0; i < op.photos.length; i++)
+          if (
+            op.photos[i].role === "sku" &&
+            !(await checkOption(op.photos[i], op.uploaded[i]))
+          )
+            return;
         const media = await listImages(store, op.id);
         if (!media.items?.length) {
           setMessage(c.imageRequired);
@@ -179,6 +253,7 @@ export function useProductDocument(
     photos: DraftPhoto[],
     publish: boolean,
     status?: "draft" | "active",
+    imageAxis?: string | null,
   ) {
     if (
       !fenceReady ||
@@ -189,7 +264,11 @@ export function useProductDocument(
       running.current
     )
       return;
-    if (publish && baseline?.status !== "active" && !photos.length) {
+    if (
+      publish &&
+      baseline?.status !== "active" &&
+      !photos.some((p) => (p.role ?? "main") === "main")
+    ) {
       setMessage(c.imageRequired);
       return;
     }
@@ -215,6 +294,7 @@ export function useProductDocument(
         photos: baseline ? [] : [...photos],
         publish: baseline ? false : publish,
         uploaded: [],
+        imageAxis: baseline ? undefined : imageAxis,
       };
       sessionStorage.setItem(fenceKey, workflow.current.create.key);
       setPending(true);

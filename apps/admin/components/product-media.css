@@ -1,0 +1,169 @@
+/* Purpose: role-separated product image editing with visible tall previews and mobile keyboard controls.
+ * Depends on: incumbent product editor --ink/--line/--muted/--focus tokens.
+ * Used by: ProductDocumentMedia, ProductMediaManager and ProductMediaTiles. */
+.pm-media {
+  display: grid;
+  gap: 28px;
+}
+.pm-media section {
+  min-width: 0;
+}
+.pm-media h2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  margin: 0 0 8px;
+}
+.pm-media h2 small {
+  color: var(--muted);
+  font-size: 14px;
+}
+.pm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 12px;
+  margin-block: 12px;
+}
+.pm-photo {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  min-width: 0;
+}
+.pm-photo > img {
+  display: block;
+  width: 100%;
+  height: 145px;
+  object-fit: contain;
+  background: #f5f6f8;
+}
+.pm-detail .pm-photo > img {
+  height: 260px;
+}
+.pm-cover {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 7px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.pm-photo-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px;
+  gap: 4px;
+}
+.pm-media button {
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  min-height: 44px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.pm-photo-actions button {
+  min-width: 40px;
+  padding: 4px 8px;
+}
+.pm-media button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pm-role-move {
+  width: calc(100% - 8px);
+  margin: 0 4px 4px;
+  font-size: 13px !important;
+}
+.pm-field {
+  display: grid;
+  gap: 6px;
+  max-width: 380px;
+  margin-block: 12px;
+}
+.pm-field select {
+  width: 100%;
+  min-height: 44px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 9px 12px;
+  background: #fff;
+  font: inherit;
+}
+.pm-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+  margin-block: 12px;
+}
+.pm-option {
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 6px;
+  min-width: 0;
+}
+.pm-option h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.pm-option .pm-grid {
+  grid-template-columns: 1fr;
+}
+.pm-upload {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px dashed var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink);
+  background: #fff;
+  font-weight: 600;
+  overflow: hidden;
+}
+.pm-upload input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.pm-upload:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pm-media :is(button, select):focus-visible,
+.pm-upload:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.pm-recovery {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.pm-recovery button {
+  margin: 6px 6px 0 0;
+}
+@media (max-width: 600px) {
+  .pm-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pm-options {
+    grid-template-columns: 1fr;
+  }
+}

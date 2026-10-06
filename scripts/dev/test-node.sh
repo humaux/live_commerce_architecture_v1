@@ -26,3 +26,6 @@ else
   echo "NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)" >&2
   [[ "${1:-}" != --require-r04 ]] || exit 2
 fi
+
+# PM-U pure resize/query/request contract (no browser).
+node --test --experimental-strip-types tests/admin/product-media-ui-model.test.ts

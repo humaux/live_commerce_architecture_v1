@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
-import type { Store } from "@/lib/model";
+import type { Store, ProductImage } from "@/lib/model";
 import { currencySign } from "@/lib/client";
 import { readCollections, readWarehouses } from "@/lib/catalog-v2-client";
 import {
@@ -30,7 +30,9 @@ import type { ProductNavigationState } from "@/lib/use-product-leave-guard";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
-import { ProductPhotoManager } from "./ProductPhoto";
+import { ProductMediaManager } from "./ProductMediaManager";
+import { effectiveMediaAxis, mainPhotoCount } from "@/lib/product-media-model";
+import { productMediaCopy } from "@/lib/product-media-copy";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
 import { useProductEditorLayout } from "./useProductEditorLayout";
@@ -56,7 +58,7 @@ export function ProductDocumentForm({
 }) {
   const c = productEditorCopy[locale],
     sign = currencySign(store.currency),
-    write = useProductDocument(store.id, store.currency, boundary, c, detail);
+    write = useProductDocument(store.id, store.currency, boundary, c, detail, productMediaCopy[locale].axisChanged);
   const [draft, setDraft] = useState<ProductDraft>(() => initialDraft(detail)),
     [photos, setPhotos] = useState<DraftPhoto[]>([]),
     [collections, setCollections] = useState<Collection[]>([]),
@@ -67,11 +69,14 @@ export function ProductDocumentForm({
       detail?.status ?? "draft",
     ),
     [section, setSection] = useState("media"),
-    [axisError, setAxisError] = useState("");
+    [axisError, setAxisError] = useState(""),
+    [imageAxis, setImageAxis] = useState<string|null>(null),
+    [mediaBusy, setMediaBusy] = useState(false);
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
   const disabled =
+    mediaBusy ||
     !referencesReady ||
     !write.fenceReady ||
     write.recoveryBlocked ||
@@ -82,6 +87,7 @@ export function ProductDocumentForm({
     !write.done &&
     (JSON.stringify(draft) !== initial.current ||
       (!!detail && targetStatus !== (write.savedDetail ?? detail).status) ||
+      imageAxis !== null ||
       photos.some((p) => !!p.file) ||
       write.pending);
   const singleVariant = draft.rows.length <= 1 && !draft.axes.length;
@@ -110,17 +116,12 @@ export function ProductDocumentForm({
       rowArchive.current = [];
     }
   }, [write.savedDetail]);
+  const photoRows = (images:ProductImage[], id:string):DraftPhoto[] => images.map(p=>({key:p.id,id:p.id,role:p.role,width:p.width,height:p.height,url:imageURL(store.id,id,p.id)}));
   const refreshPhotos = () => {
     if (detail)
       void listImages(store.id, detail.id).then((r) => {
         if (r.items)
-          setPhotos(
-            r.items.map((p) => ({
-              key: p.id,
-              id: p.id,
-              url: imageURL(store.id, detail.id, p.id),
-            })),
-          );
+          setPhotos(photoRows(r.items, detail.id));
       });
   };
   useEffect(() => {
@@ -154,24 +155,19 @@ export function ProductDocumentForm({
     if (detail)
       void listImages(store.id, detail.id, abort.signal).then((result) => {
         if (!abort.signal.aborted && result.items)
-          setPhotos(
-            result.items.map((p) => ({
-              key: p.id,
-              id: p.id,
-              url: imageURL(store.id, detail.id, p.id),
-            })),
-          );
+          setPhotos(photoRows(result.items, detail.id));
       });
     return () => abort.abort();
   }, [store.id, detail, c.failed]);
   useEffect(() => {
     onNavigationChange({
       dirty,
-      locked: write.busy || write.pending || write.recoveryBlocked,
+      locked: mediaBusy || write.busy || write.pending || write.recoveryBlocked,
     });
     return () => onNavigationChange({ dirty: false, locked: false });
   }, [
     dirty,
+    mediaBusy,
     write.busy,
     write.pending,
     write.recoveryBlocked,
@@ -208,7 +204,7 @@ export function ProductDocumentForm({
       }),
     row = draft.rows[0] ?? newRow([]);
   const requirements = [
-    { key: "media", label: c.images, ok: photos.length > 0 },
+    { key: "media", label: c.images, ok: mainPhotoCount(photos) > 0 },
     { key: "basics", label: c.name, ok: !!draft.name.trim() },
     {
       key: singleVariant ? "pricing" : "variants",
@@ -228,6 +224,10 @@ export function ProductDocumentForm({
     },
   ];
   const save = (publish: boolean, requestedStatus = targetStatus) => {
+    const mediaAxis = effectiveMediaAxis(draft.axes, imageAxis);
+    if (mode === "create" && photos.some(p=>p.role === "sku" && (!mediaAxis || p.optionName !== mediaAxis.name || !mediaAxis.values.includes(p.optionValue ?? "")))) {
+      write.setMessage(productMediaCopy[locale].staleOption); focus("media"); noteSaveAttempt(); return;
+    }
     if (disabled) return;
     if (axisError) {
       write.setMessage(axisError);
@@ -266,6 +266,7 @@ export function ProductDocumentForm({
       mode === "edit" && requestedStatus !== "archived"
         ? requestedStatus
         : undefined,
+      draft.axes.some(axis=>axis.name===imageAxis) ? imageAxis : null,
     );
     noteSaveAttempt();
   };
@@ -306,7 +307,7 @@ export function ProductDocumentForm({
             focus={focus}
             activeSection={section}
             items={[
-              { key: "media", label: c.recommendedImages, ok: photos.length >= 3 },
+              { key: "media", label: c.recommendedImages, ok: mainPhotoCount(photos) >= 3 },
               { key: "basics", label: c.description, ok: !!draft.description },
               {
                 key: "collections",
@@ -326,13 +327,15 @@ export function ProductDocumentForm({
       <div className="pe-fields" ref={fields} data-testid="product-fields">
         {detail ? (
           <section id="media" className="product-section pe-media">
-            <ProductPhotoManager
+            <ProductMediaManager
+              key={`${store.id}:${detail.id}:${boundary}`}
               locale={locale}
               store={store.id}
               productID={detail.id}
-              productName={draft.name}
-              code={draft.rows[0]?.code ?? ""}
+              boundary={boundary}
+              axes={(write.savedDetail ?? detail).options}
               disabled={disabled}
+              onLocked={setMediaBusy}
               onChanged={refreshPhotos}
             />
           </section>
@@ -341,7 +344,11 @@ export function ProductDocumentForm({
             photos={photos}
             setPhotos={setPhotos}
             disabled={disabled}
-            c={c}
+            locale={locale}
+            axes={draft.axes}
+            imageAxis={imageAxis}
+            setImageAxis={setImageAxis}
+            onProcessingChange={setMediaBusy}
             fail={write.setMessage}
           />
         )}
