@@ -3,6 +3,7 @@
 // Used by: draft/server media editors and local refusal rendering.
 const en = {
   title: "Product images",
+  empty: "No images yet.",
   activeMainMissing:
     "This published product needs a main image. Add one, or unpublish it to save as a draft.",
   main: "Main images",
@@ -60,6 +61,7 @@ const en = {
 type Copy = typeof en;
 const tw: Copy = {
   title: "商品圖片",
+  empty: "尚未新增圖片。",
   activeMainMissing:
     "已上架商品需要至少 1 張主圖。請新增主圖，或先下架為草稿。",
   main: "主圖",
@@ -109,6 +111,7 @@ const tw: Copy = {
 };
 const ja: Copy = {
   title: "商品画像",
+  empty: "画像はまだありません。",
   activeMainMissing:
     "公開中の商品にはメイン画像が必要です。画像を追加するか、非公開にして下書きに戻してください。",
   main: "メイン画像",
@@ -170,6 +173,7 @@ const ja: Copy = {
 const cn: Copy = {
   ...tw,
   title: "商品图片",
+  empty: "尚未新增图片。",
   activeMainMissing:
     "已上架商品需要至少 1 张主图。请新增主图，或先下架为草稿。",
   main: "主图",

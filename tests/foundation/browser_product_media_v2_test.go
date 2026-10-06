@@ -27,7 +27,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"image/jpeg"
+	"image"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -52,8 +52,8 @@ import (
 )
 
 // pmv2File is one generated upload source: name on disk, source pixel dimensions, content hash and size. The stored
-// row must either be these exact bytes (small passthrough) or the client-normalized JPEG (always, once the editor
-// preprocesses); the EXIF photo may ONLY arrive normalized, and that is asserted strictly.
+// row must preserve these exact bytes for fitting originals or contain a resized JPEG/PNG for oversized sources.
+// The >2 MiB EXIF photo may ONLY arrive normalized, and that is asserted strictly.
 type pmv2File struct {
 	Name    string `json:"name"`
 	Width   int    `json:"width"`
@@ -191,9 +191,9 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 	}
 	manifest.Files.Main = []pmv2File{
 		write("main-1.jpg", cmiJPEG(t, 800, 800, 21), 800, 800, 800, 800, false),
-		write("main-2.png", cmiPNG(t, 640, 640, 22), 640, 640, 640, 640, false),
+		write("main-2.png", pmv2TransparentPNG(t, 640, 640), 640, 640, 640, 640, false),
 		write("main-3.jpg", cmiJPEG(t, 700, 900, 23), 700, 900, 700, 900, false),
-		write("main-4.png", cmiPNG(t, 900, 600, 24), 900, 600, 900, 600, false),
+		write("main-4.png", pmv2TransparentPNG(t, 3000, 2000), 3000, 2000, 3000, 2000, false),
 	}
 	photo := pmv2NoisyPhoto(t, 3200, 2400, 31) // buffer 3200x2400, EXIF 6 => displayed 2400x3200 portrait
 	manifest.Files.Detail = []pmv2File{
@@ -408,21 +408,44 @@ func TestBrowserProductMediaV2RealUpload(t *testing.T) {
 			t.Errorf("stored %s image %s was never seen in a browser upload response", r.role, r.id)
 			continue
 		}
-		if r.size == mf.Bytes && !mf.EXIF {
-			if r.sha != mf.SHA256 {
-				t.Errorf("%s: passthrough bytes but sha256 differs", mf.Name)
+		if mf.Bytes <= 2<<20 && max(mf.Width, mf.Height) <= 2000 {
+			if r.size != mf.Bytes || r.sha != mf.SHA256 {
+				t.Errorf("%s: fitting original bytes/format were changed", mf.Name)
 			}
-			continue
+			wantType := "image/jpeg"
+			if strings.HasSuffix(mf.Name, ".png") {
+				wantType = "image/png"
+			}
+			if r.contentType != wantType {
+				t.Errorf("%s: content type %s, want preserved %s", mf.Name, r.contentType, wantType)
+			}
 		}
 		// Normalized by the client: the stored bytes must decode to the dims the browser reported.
 		var data []byte
 		if err := f.owner.QueryRow(ctx, `SELECT bytes FROM catalog.product_images WHERE id=$1`, r.id).Scan(&data); err != nil {
 			t.Fatal(err)
 		}
-		cfg, err := jpeg.DecodeConfig(bytes.NewReader(data))
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
 		if err != nil {
-			t.Errorf("%s: stored bytes are not a decodable JPEG: %v", mf.Name, err)
+			t.Errorf("%s: stored bytes are not a decodable raster: %v", mf.Name, err)
 			continue
+		}
+		if r.contentType != "image/"+format {
+			t.Errorf("%s: declared format differs from decoded %s", mf.Name, format)
+		}
+		if mf.Name == "main-2.png" || mf.Name == "main-4.png" {
+			decoded, _, decodeErr := image.Decode(bytes.NewReader(data))
+			if decodeErr != nil {
+				t.Fatal(decodeErr)
+			}
+			_, _, _, alpha := decoded.At(0, 0).RGBA()
+			if alpha != 0 {
+				t.Errorf("%s: transparent PNG corner was flattened", mf.Name)
+			}
+			_, _, _, centerAlpha := decoded.At(cfg.Width/2, cfg.Height/2).RGBA()
+			if centerAlpha < 127*257 || centerAlpha > 129*257 {
+				t.Errorf("%s: half-transparent center alpha %d was changed", mf.Name, centerAlpha)
+			}
 		}
 		if r.width == nil || r.height == nil || *r.width != cfg.Width || *r.height != cfg.Height {
 			t.Errorf("%s: width/height columns %v x %v disagree with the decoded %d x %d", mf.Name, r.width, r.height, cfg.Width, cfg.Height)

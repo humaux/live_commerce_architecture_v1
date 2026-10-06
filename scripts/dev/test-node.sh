@@ -29,3 +29,4 @@ fi
 
 # PM-U pure resize/query/request contract (no browser).
 node --test --experimental-strip-types tests/admin/product-media-ui-model.test.ts
+node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts

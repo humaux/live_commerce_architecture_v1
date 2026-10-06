@@ -1,10 +1,13 @@
 // Purpose: PM-U role/query and camera resize contracts, including hostile query variants.
-// Depends on: Node test/assert and product-media-model plus backend cap constants.
+// Depends on: Node test/assert/vm, React server rendering, typescript-api and product-media-model plus backend caps.
 // Used by: local focused Node gate and media UI acceptance; no browser/provider.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
 import { productMediaCopy } from "../../apps/admin/lib/product-media-copy.ts";
 import {
   fitPhoto,
@@ -113,11 +116,14 @@ test("real-upload mode builds both Next applications on a clean CI checkout", ()
     "utf8",
   );
   for (const app of ["admin", "storefront"]) {
-    const block = source.match(
-      new RegExp(
-        "if (\\[\\[ [^\\n]+ \\]\\]); then\\n(?:(?!\\nfi)[\\s\\S])*?pnpm run build:" +
-          app,
+    const block = [
+      ...source.matchAll(
+        /if (\[\[ [^\n]+ \]\]); then\n((?:(?!\nfi)[\s\S])*?)\nfi/g,
       ),
+    ].find(
+      (match) =>
+        match[2].includes("pnpm run build:" + app) &&
+        !/\bexit 0\b/.test(match[2]),
     );
     assert.ok(block, app + " build predicate exists");
     const answer = execFileSync(
@@ -211,4 +217,97 @@ test("an active product needs a main image after canonical media is known; repai
     "unpublish can repair an empty active product",
   );
   assert.equal(needsMainImage("archived", []), false);
+});
+
+const mediaRequire = createRequire(
+  new URL("../../apps/admin/package.json", import.meta.url),
+);
+const mediaReact = mediaRequire("react"),
+  mediaRenderer = mediaRequire("react-dom/server");
+const mediaModule = { exports: {} as { ProductMediaTiles: unknown } };
+runInNewContext(
+  ts.transpileModule(
+    readFileSync(
+      new URL(
+        "../../apps/admin/components/ProductMediaTiles.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+    {
+      compilerOptions: {
+        module: ts.ModuleKind.CommonJS,
+        jsx: ts.JsxEmit.ReactJSX,
+      },
+    },
+  ).outputText,
+  { module: mediaModule, exports: mediaModule.exports, require: mediaRequire },
+);
+test("empty media sections render a readable localized placeholder until photos are present", () => {
+  for (const c of Object.values(productMediaCopy)) {
+    for (const role of ["main", "detail"] as const) {
+      const props = {
+        role,
+        photos: [],
+        disabled: false,
+        c,
+        onMove() {},
+        onDelete() {},
+      };
+      const empty = mediaRenderer.renderToStaticMarkup(
+        mediaReact.createElement(mediaModule.exports.ProductMediaTiles, props),
+      );
+      assert.match(empty, /class="pm-empty"/);
+      assert.match(empty, /<p[^>]*>[^<]+<\/p>/);
+      const populated = mediaRenderer.renderToStaticMarkup(
+        mediaReact.createElement(mediaModule.exports.ProductMediaTiles, {
+          ...props,
+          photos: [
+            {
+              key: "photo",
+              url: "https://example.invalid/photo.png",
+              width: 640,
+              height: 640,
+            },
+          ],
+        }),
+      );
+      assert.doesNotMatch(populated, /class="pm-empty"/);
+      assert.match(populated, /data-image-id="photo"/);
+    }
+  }
+});
+
+test("real-upload mode never exits through the storefront MOCK shortcut", () => {
+  const source = readFileSync(
+    new URL("../../scripts/dev/test-local.sh", import.meta.url),
+    "utf8",
+  );
+  const shortcut = source.match(
+    /if (\[\[ [^\n]+ \]\]); then\n  # LC_SHOP_MOCK=1:/,
+  );
+  assert.ok(shortcut, "incumbent MOCK storefront branch exists");
+  for (const [mode, mock, expected] of [
+    ["--browser-product-media-v2", "0", "no"],
+    ["--browser-product-media-v2", "1", "no"],
+    ["--browser-storefront", "0", "no"],
+    ["--browser-storefront", "1", "yes"],
+  ]) {
+    const actual: string = execFileSync(
+      "bash",
+      [
+        "-c",
+        `test_mode="$1"; LC_SHOP_MOCK="$2"; if ${shortcut[1]}; then printf yes; else printf no; fi`,
+        "--",
+        mode,
+        mock,
+      ],
+      { encoding: "utf8" },
+    );
+    assert.equal(
+      actual,
+      expected,
+      `${mode} MOCK=${mock}: only the explicit storefront shortcut may exit before PG`,
+    );
+  }
 });

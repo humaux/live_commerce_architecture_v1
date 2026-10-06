@@ -58,7 +58,7 @@ if [[ "$test_mode" == --browser-admin-shell ]]; then
   node tests/admin/shell-runner.mjs
   exit 0
 fi
-if [[ "$test_mode" == --browser-product-media-v2 || "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
+if [[ "$test_mode" == --browser-storefront && "${LC_SHOP_MOCK:-0}" == 1 ]]; then
   # LC_SHOP_MOCK=1: the fast MOCK variant (no PG, no Docker). The default --browser-storefront is the REAL stack (below, unit storefront-integration).
   # SF gate (unit storefront-shell, MOCK tier): the buyer storefront shell on the production Next build against a contract-shaped FAKE of the
   # Go buyer API (tests/storefront/shop-fake-api.mjs). No PG/Go/Docker is started, so it needs no machine-wide PG lock. Not real-stack acceptance:
@@ -445,7 +445,7 @@ if [[ "$test_mode" == --browser-buyer-comms ]]; then
   grep -q '^func TestBrowserBuyerComms' tests/foundation/browser_buyer_comms_test.go
   test -f tests/storefront/buyer-comms-gate.mjs
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-ads-attribution || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-store-domains || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-claim-checkout || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline || "$test_mode" == --browser-buyer-comms || "$test_mode" == --browser-home-cod || "$test_mode" == --browser-click-sweep || "$test_mode" == --browser-visual-lint ]]; then
+if [[ "$test_mode" == --browser-product-media-v2 || "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-ads-attribution || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-store-domains || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-claim-checkout || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline || "$test_mode" == --browser-buyer-comms || "$test_mode" == --browser-home-cod || "$test_mode" == --browser-click-sweep || "$test_mode" == --browser-visual-lint ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront

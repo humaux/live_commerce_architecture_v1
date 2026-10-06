@@ -183,6 +183,14 @@ async function upload(
       body.size_bytes,
       `upload ${f.name} fits the 2 MiB cap`,
     ).toBeLessThanOrEqual(2 * 1024 * 1024);
+    if (f.bytes <= 2 * 1024 * 1024 && Math.max(f.width, f.height) <= 2000) {
+      expect(body.content_type, `${f.name} keeps its original format`).toBe(
+        f.name.endsWith(".png") ? "image/png" : "image/jpeg",
+      );
+      expect(body.size_bytes, `${f.name} keeps its original bytes`).toBe(
+        f.bytes,
+      );
+    }
     if (f.exif) {
       // The > 2 MiB EXIF-orientation-6 photo is downsized before upload, never refused: JPEG, portrait (rotation
       // applied), longest side <= 2000. First-fit stops at exactly 1500x2000 for this fixture's entropy.
