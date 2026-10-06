@@ -145,6 +145,18 @@ func TestAdsTransportRules(t *testing.T) {
 		{"bindings with dataset", "POST", "/meta/bindings", `{"state_id":"` + adsDraft + `","ad_account_id":"9001","dataset_id":"7001"}`, adsKey, admitted},
 		{"bindings missing account", "POST", "/meta/bindings", `{"state_id":"` + adsDraft + `"}`, adsKey, 422},
 		{"bindings unknown field", "POST", "/meta/bindings", `{"state_id":"x","ad_account_id":"1","token":"t"}`, adsKey, 400},
+		// W6-06B (Amendment meta-ads-v1 §A/§B): ad-account unbind + catalog feed URL entry.
+		{"unbind ok", "POST", "/meta/unbind", `{"ad_account_id":"9001"}`, adsKey, admitted},
+		{"unbind needs key", "POST", "/meta/unbind", `{"ad_account_id":"9001"}`, nil, 422},
+		{"unbind missing account", "POST", "/meta/unbind", `{}`, adsKey, 422},
+		{"unbind null account", "POST", "/meta/unbind", `{"ad_account_id":null}`, adsKey, 400},
+		{"unbind unknown field", "POST", "/meta/unbind", `{"ad_account_id":"9001","force":true}`, adsKey, 400},
+		{"unbind rejects query", "POST", "/meta/unbind?x=1", `{"ad_account_id":"9001"}`, adsKey, 422},
+		{"unbind wrong method", "GET", "/meta/unbind", "", nil, 405},
+		{"catalog-feed ok", "GET", "/catalog-feed", "", nil, admitted},
+		{"catalog-feed rejects query", "GET", "/catalog-feed?x=1", "", nil, 422},
+		{"catalog-feed rejects key", "GET", "/catalog-feed", "", adsKey, 422},
+		{"catalog-feed wrong method", "POST", "/catalog-feed", "", adsKey, 405},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
