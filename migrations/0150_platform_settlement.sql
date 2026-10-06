@@ -115,8 +115,10 @@ CREATE TABLE payments.settlement_sync_runs (
 );
 
 -- A helper index for the cross-store attribution lookups below (a payment intent id maps to exactly one Stripe session).
--- UNIQUE: the attribution lookup assumes one session per payment intent (a Stripe PaymentIntent belongs to exactly one Checkout Session).
-CREATE UNIQUE INDEX stripe_sessions_payment_intent_idx ON payments.stripe_sessions(environment,payment_intent_id) WHERE payment_intent_id IS NOT NULL;
+-- NOT unique on purpose (CI regression, TestStripeSP12MoneyChecks): payments.stripe_sessions belongs to the payments unit and its recording path
+-- must never start failing on a provider anomaly (a repeated PI id would make stripe_record_failed loop forever). The attribution lookup below
+-- therefore treats a payment intent shared by more than one session as AMBIGUOUS: unmapped_source (blocks close, escalate), never a guess.
+CREATE INDEX stripe_sessions_payment_intent_idx ON payments.stripe_sessions(environment,payment_intent_id) WHERE payment_intent_id IS NOT NULL;
 
 DO $$ DECLARE v_table text; v_col record; BEGIN
  FOREACH v_table IN ARRAY ARRAY['settlement_statements','settlement_lines','settlement_unattributed','settlement_sync_runs'] LOOP
@@ -277,7 +279,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE
  sp payments.stripe_platform%ROWTYPE; l jsonb; v_pass integer;
  v_inserted integer:=0; v_dup integer:=0; v_unattr integer:=0; v_mismatch integer:=0; v_rechecked integer:=0;
- v_recheck boolean; v_old_statement uuid; v_old_mismatch text; v_old_tenant uuid; v_old_store uuid; v_old_attempt uuid; v_kinds text[];
+ v_n integer; v_recheck boolean; v_old_statement uuid; v_old_mismatch text; v_old_tenant uuid; v_old_store uuid; v_old_attempt uuid; v_kinds text[];
  v_keys constant text[]:=ARRAY['amount','charge_amount','charge_currency','charge_payment_intent','created','currency','dispute_amount',
   'dispute_currency','dispute_id','dispute_payment_intent','exchange_rate','fee','id','net','refund_amount','refund_currency',
   'refund_id','reporting_category','source_id','source_object','type'];
@@ -380,10 +382,13 @@ BEGIN
       FROM payments.stripe_refunds x WHERE x.stripe_refund_id=v_refund AND x.environment=p_environment;
      IF NOT FOUND THEN v_reason:='unmapped_source'; END IF;
     ELSE
-     -- §4.4: payment intent -> payments.stripe_sessions
-     SELECT x.tenant_id,x.store_id,x.attempt_id,x.account_id INTO v_tenant,v_target,v_attempt,v_acct
-      FROM payments.stripe_sessions x WHERE x.payment_intent_id=v_pi AND x.environment=p_environment LIMIT 1;
-     IF NOT FOUND OR v_pi IS NULL THEN v_reason:='unmapped_source'; END IF;
+     -- §4.4: payment intent -> payments.stripe_sessions. Exactly ONE session may carry the payment intent; zero (unknown) or several
+     -- (ambiguous: the index is not unique) is unmapped_source, which blocks close until an operator resolves it. Never LIMIT 1.
+     SELECT count(*) INTO v_n FROM payments.stripe_sessions x WHERE x.payment_intent_id=v_pi AND x.environment=p_environment;
+     IF v_pi IS NULL OR v_n<>1 THEN v_reason:='unmapped_source'; ELSE
+      SELECT x.tenant_id,x.store_id,x.attempt_id,x.account_id INTO v_tenant,v_target,v_attempt,v_acct
+       FROM payments.stripe_sessions x WHERE x.payment_intent_id=v_pi AND x.environment=p_environment;
+     END IF;
     END IF;
     IF v_reason IS NULL THEN
      IF v_acct IS DISTINCT FROM sp.account_id THEN

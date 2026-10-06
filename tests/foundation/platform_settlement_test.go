@@ -372,9 +372,11 @@ func TestPlatformSettlement(t *testing.T) {
 				t.Fatalf("an unassigned line accepted a change of %s: %v", bad, err)
 			}
 		}
+		// the payment-intent index is a plain lookup index, NOT unique (a unique index would make the payments recording path fail on a repeated
+		// provider id, TestStripeSP12MoneyChecks); ambiguity is handled in the attribution (PF10_ambiguous_payment_intent)
 		var unique bool
-		if err := o.QueryRow(ctx, `SELECT indisunique FROM pg_index WHERE indexrelid='payments.stripe_sessions_payment_intent_idx'::regclass`).Scan(&unique); err != nil || !unique {
-			t.Fatalf("one session per payment intent must be a UNIQUE index: %v %v", unique, err)
+		if err := o.QueryRow(ctx, `SELECT indisunique FROM pg_index WHERE indexrelid='payments.stripe_sessions_payment_intent_idx'::regclass`).Scan(&unique); err != nil || unique {
+			t.Fatalf("stripe_sessions_payment_intent_idx must exist and must not be UNIQUE: %v %v", unique, err)
 		}
 		mustExec(t, o, `UPDATE payments.settlement_lines SET statement_id=$1 WHERE balance_txn_id LIKE 'txn_Fixture%'`, stmt)
 		if _, err := o.Exec(ctx, `UPDATE payments.settlement_lines SET statement_id=NULL WHERE balance_txn_id LIKE 'txn_Fixture%'`); sqlState(err) != "PT409" {
@@ -514,6 +516,20 @@ func TestPlatformSettlement(t *testing.T) {
 		bad.Currency = "hkd"
 		if err := e.syncErr(w1, w2, bad); err == nil {
 			t.Fatal("a lower-case currency was accepted")
+		}
+	})
+
+	// A payment intent shared by two sessions (a provider anomaly the payments recording path tolerates) is ambiguous: never attributed by guess.
+	t.Run("PF10_ambiguous_payment_intent", func(t *testing.T) {
+		var original string
+		if err := e.f.owner.QueryRow(ctx, `SELECT payment_intent_id FROM payments.stripe_sessions WHERE attempt_id=$1`, e.oa3.attempt).Scan(&original); err != nil {
+			t.Fatal(err)
+		}
+		e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id=$2 WHERE attempt_id=$1`, e.oa3.attempt, e.oa1.pi) // disclosed fixture: a repeated PI id
+		defer e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id=$2 WHERE attempt_id=$1`, e.oa3.attempt, original)
+		rep := e.sync(t, w4, w4.Add(7*24*time.Hour), pslCharge("txn_Ambiguous", e.oa1.pi, cap1(e.oa1), settleOf(cap1(e.oa1)), 31, d(w4, 2)))
+		if rep.Unattributed != 1 || rep.Inserted != 0 || e.unattributed(t, "txn_Ambiguous") != "unmapped_source" {
+			t.Fatalf("ambiguous payment intent: %+v", rep)
 		}
 	})
 
