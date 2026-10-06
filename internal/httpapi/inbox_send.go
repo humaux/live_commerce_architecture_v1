@@ -30,6 +30,7 @@ var sendDenyCodes = map[string]bool{
 	"window_closed": true, "takeover_changed": true, "capability": true, "conversation_gone": true, "duplicate_recent": true,
 	"used": true, "auto_pending": true, "auto_pending_confirm": true, "expired_7d": true, "ig_live_ended": true,
 	"offer_unavailable": true, "version_conflict": true, "ig_live_unsupported": true,
+	"human_takeover": true, "already_reminded": true, "not_remindable": true, // W3-03B reminder planner (0144)
 }
 
 // registerInboxSendRoutes mounts A12 (conversation DM), A4/A5 (comment replies; need the comment stream for the facts lookup) and A6.
