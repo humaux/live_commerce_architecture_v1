@@ -922,8 +922,11 @@ else
   # 2026-09-30: with the R2 lanes merged the foundation package alone needs ~54 min on the dev Mac (release gate at
   # 57c5aaa: panic "test timed out after 45m0s" with 61 tests not started; those took a further 527 s). -timeout is a
   # hang bound, not a gate: 4500s, and the CI job bound moves to 90 min with it (.github/workflows/foundation.yml).
-  # ponytail: one serial package; shard foundation across CI jobs by -run regex when a run nears 70 min.
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ./...
+  # CI shards (2026-10-06, the serial suite reached 76 min on GitHub): LC_FOUNDATION_PKGS narrows the package set and
+  # LC_FOUNDATION_RUN the -run regex; .github/workflows/gates.yml runs 1 unit shard + 5 tests/foundation shards in
+  # parallel whose regexes cover Test[A-Z] exactly once. Unset = the whole suite, unchanged.
+  # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_PKGS:-./...}
   GOTOOLCHAIN=go1.27.1 go vet ./...
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
