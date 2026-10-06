@@ -98,7 +98,7 @@ semantic key, ACKNOWLEDGED is not success, cancellation never claims remote reve
 
 ### Scope and visibility
 The ledger lists the caller's store's operations with `actor_kind='MERCHANT'` and `integration.operation_lane` in (`default`, `ads`), through the existing `operation_read` RLS policy and
-fixed definers. The `ads` lane (providers `meta_ads`, `meta_dataset`) is read + cancel only: `query` and `retry` answer `409 lane_unsupported` there, because post_river/0015
+fixed definers. The `ads` lane (providers `meta_ads`, `meta_dataset`) is read + cancel only (cancel never for a protective operation, see below): `query` and `retry` answer `409 lane_unsupported` there, because post_river/0015
 `guard_ads_job_link` admits exactly one job per ads operation (the one in the immutable `operations.job_id`), so a follow-up job could not commit; opening the lane needs a reviewed
 amendment of that guard. Payment (`BUYER_PAYMENT_QUERY`, `PAYMENT_REFUND`) and media (`MEDIA_ATTEMPT`) operations are not in the ledger (RLS hides them from the merchant; refunds keep their own
 state machine). The store comes from the server-side authenticated scope, never from a request field. Reads need `integration:read`; the three actions need `integration:execute`
@@ -110,7 +110,7 @@ only from internal ids already frozen in the request: `ecpay.cvs_create` -> `ord
 `inbox.outbound_messages.conversation_id`) else `claim_bundle` (`request.bundle_id`); `meta.ads.*` -> `ad_draft`; `meta.capi.purchase` -> `payment_attempt`; `meta.live_videos` -> `binding`;
 `meta.live_insights` -> `live_session`; anything else, a missing key or a non-UUID value -> `null`. `actions` is `{query,cancel,retry}`, each `{available: bool, reason: <code>}`
 (`reason` is `""` when available). The detail adds `events` (newest 50: `generation, state, reason_code, created_at`). Never exposed: request, semantic_key, request_hash, external_asset_id,
-provider_reference, principal_id, binding ids, lease token/digest/mode, provider bodies, comment or message text, buyer names/addresses.
+provider_reference, principal_id, binding ids (the single exception: the object id of a `meta.live_videos` operation is the Page binding the merchant asked to read, `request.binding_id`), lease token/digest/mode, provider bodies, comment or message text, buyer names/addresses.
 List order is `(created_at DESC, id DESC)`; `state` filter: `attention` (default: FAILED_FINAL, UNKNOWN, ACKNOWLEDGED, BLOCKED_POLICY, STALE_BINDING, READY), or exactly one of
 `FAILED|FAILED_FINAL|UNKNOWN|ACKNOWLEDGED|BLOCKED_POLICY|STALE_BINDING|READY` (`FAILED` is `FAILED_FINAL`). The detail read works for any state of the store's visible operations.
 
@@ -123,20 +123,28 @@ verified by SQL (`xmin = current transaction`, exact args/queue/priority); any r
 
 | Action | From state | Extra guard | Result | Event reason |
 |---|---|---|---|---|
-| `query` | UNKNOWN, ACKNOWLEDGED, DISPATCHING with expired lease | no active lease; binding enabled at the frozen version/provider/asset; no other live job; last `query_requested` event older than 60 s | state unchanged; `generation_floor := generation`; one new job | `query_requested` |
-| `cancel` | READY | none (READY means no dispatch claim exists since the last READY) | CANCELLED, generation + 1 (the table CHECK needs generation > 0 outside READY, as claim_operation's READY -> STALE_BINDING), result_code `cancelled_by_merchant`; the existing job, if any, finishes as a terminal no-op | `cancelled_by_merchant` |
+| `query` | UNKNOWN, ACKNOWLEDGED, DISPATCHING with expired lease | no active lease; binding enabled at the frozen version/provider/asset; no other live job; at most 5 `query_requested` events per operation in the rolling 24 h; last one older than 60 s | state unchanged; `generation_floor := generation`; one new job | `query_requested` |
+| `cancel` | READY | not a protective operation (below); READY means no dispatch claim exists since the last READY | CANCELLED, generation + 1 (the table CHECK needs generation > 0 outside READY, as claim_operation's READY -> STALE_BINDING), result_code `cancelled_by_merchant`; the existing job, if any, finishes as a terminal no-op | `cancelled_by_merchant` |
 | `retry` (re-open) | FAILED_FINAL | kind is in the retry registry below; binding unchanged | READY, generation kept, `generation_floor := generation`, result_code `retry_authorized`; one new job | `retry_authorized` |
 | `retry` (re-queue) | READY | no live job for the operation | state unchanged; one new job | `requeue_authorized` |
 
 Refusals (`409` unless noted; `reason` is the machine code): an operation of a payment/media lane or a non-MERCHANT row is invisible (`404 not_found`, like another store's id); `query`/`retry` of an ads-lane operation -> `lane_unsupported`; `query` on READY or a terminal state -> `not_in_doubt`;
-`query` with a lease -> `lease_active`; binding disabled/changed (including a stored `binding_changed`) -> `binding_changed`; `query` with a live job -> `query_in_progress`; second query
-within 60 s -> `query_too_soon`; `cancel` on DISPATCHING/UNKNOWN/ACKNOWLEDGED -> `already_dispatched`, on a terminal state -> `operation_closed`; `retry` on UNKNOWN, ACKNOWLEDGED or expired
+`query` with a lease -> `lease_active`; binding disabled/changed (including a stored `binding_changed`) -> `binding_changed`; `query` with a live job -> `query_in_progress`; a 6th query within 24 h -> `429 query_limit` with a `Retry-After` of the seconds until the oldest counted query leaves the window; a second query
+within 60 s -> `query_too_soon`; `cancel` of a protective operation (any state) -> `protective_operation`; `cancel` on DISPATCHING/UNKNOWN/ACKNOWLEDGED -> `already_dispatched`, on a terminal state -> `operation_closed`; `retry` on UNKNOWN, ACKNOWLEDGED or expired
 DISPATCHING -> `reconcile_first`, on an active DISPATCHING lease -> `lease_active`, on SUCCEEDED -> `already_succeeded`, on CANCELLED/BLOCKED_POLICY/STALE_BINDING -> `operation_closed`, on FAILED_FINAL of an
 unregistered kind -> `retry_not_supported`, on READY with a live job -> `already_queued`; unknown id or another store's id -> `404 not_found`; missing/insufficient permission -> `403`.
 
+### Protective operations (never cancellable)
+An operation whose action has a segment starting with `pause`, `stop`, `disable`, `revoke` or `unsubscribe` (today `meta.ads.pause`; `livekit.egress.stop` is outside the ledger lanes) is a protective, stop-class
+operation. `cancel` answers `409 protective_operation` for it in every state, decided in SQL (`ledger_capability`), because cancelling a pending stop is not "a local fact that never reached the provider": its effect is that
+a remote action keeps running. The case that matters is the ads budget guard: the advance sweeper plans `meta.ads.pause` when spend reaches the approved `lifetime_budget_minor`, when the ad is disapproved or the draft
+ended (0074), re-plans a pause that did not succeed only after 15 minutes, and the approved budget is an `ads:approve` control that the generic `integration:execute` ledger must not bypass. The rule is by name and fail-safe:
+a stop-class kind added later must follow the naming or be listed here.
+
 ### Retry registry (policy, not a mechanism: extending it needs a reviewed row)
-A FAILED_FINAL operation may be re-opened only for a kind (provider, action) listed here, because re-opening reuses the same operation, semantic key and `lc:<operation_id>` provider
-idempotency key and must be unable to duplicate an effect or resurrect deleted custody:
+A FAILED_FINAL operation may be re-opened only for a kind (provider, action) listed here. What makes that safe is not the provider idempotency key (the dispatcher always sends `lc:<operation_id>`, but Meta adapters
+ignore it and only ECPay has natural provider dedupe through its trade number): the registered kinds perform no remote effect at all (read-only Graph calls with idempotent latest-wins Finish), and the only SQL that ever
+writes READY after a dispatch is this re-open, so an effect kind can never become dispatchable again. The re-open reuses the same operation id and semantic key and must also be unable to resurrect deleted custody:
 
 | provider | action | basis |
 |---|---|---|

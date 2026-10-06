@@ -99,9 +99,14 @@ func TestOperationRoutesQueryRetryNeedJobClient(t *testing.T) {
 }
 
 func TestOperationsClassify(t *testing.T) {
-	for _, code := range []string{"reconcile_first", "retry_not_supported", "already_dispatched", "operation_changed"} {
+	for _, code := range []string{"reconcile_first", "retry_not_supported", "already_dispatched", "operation_changed", "protective_operation"} {
 		if status, got := operationsClassify(&core.OperationRefusal{Code: code}); status != http.StatusConflict || got != code {
 			t.Errorf("%s -> %d %s", code, status, got)
 		}
+	}
+	// The query cap is a 429 and carries its wait; scopedAs turns RetryAfterSeconds into the Retry-After header.
+	refusal := &core.OperationRefusal{Code: "query_limit", RetryAfter: 3600}
+	if status, got := operationsClassify(refusal); status != http.StatusTooManyRequests || got != "query_limit" || refusal.RetryAfterSeconds() != 3600 {
+		t.Errorf("query_limit -> %d %s after=%d", status, got, refusal.RetryAfterSeconds())
 	}
 }

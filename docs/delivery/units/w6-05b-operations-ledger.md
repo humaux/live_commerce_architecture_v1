@@ -34,7 +34,9 @@ Owner 裁决 2026-10-07：「失败台账：需要做」。来源：`output/arch
   CAPI 的 fbc/fbp/IP 在终态被清除，CVS 出货单 `settle_cvs_attempt` 已把旧尝试标 FAILED 并允许新尝试，重开旧操作会造成重复）。
   `READY` 且无存活 job（River 有限重试耗尽后停在 READY）的「重新入队」对所有种类开放：它从未派发，首次派发不可能重复。
   重试复用同一 operation id / semantic key / `lc:<operation_id>` 幂等键；generation 单调递增。
-- ads 车道（`meta_ads`、`meta_dataset`）只读 + 取消：post_river/0015 `guard_ads_job_link` 要求每个 ads 操作只有 `operations.job_id` 那一个 job，query/retry 的后续 job 无法提交 → `409 lane_unsupported`（开放需另行评审该 guard）。
+- 保护性（停止类）操作永不可取消：action 任一段以 pause/stop/disable/revoke/unsubscribe 开头（`meta.ads.pause` 等）→ `409 protective_operation`（SQL 权威）；取消待发的暂停会让广告继续花钱（Opus 复核 P1-1）。
+- `query` 硬上限：每个操作滚动 24 h 内最多 5 次，第 6 次 `429 query_limit` + `Retry-After`。
+- ads 车道（`meta_ads`、`meta_dataset`）只读 + 取消（保护性除外）：post_river/0015 `guard_ads_job_link` 要求每个 ads 操作只有 `operations.job_id` 那一个 job，query/retry 的后续 job 无法提交 → `409 lane_unsupported`（开放需另行评审该 guard）。
 - 范围外：payment / media 车道（actor_kind BUYER_PAYMENT_QUERY / PAYMENT_REFUND / MEDIA_ATTEMPT 被既有 RLS 对商家隐藏，退款有自己的状态机）。
 
 ## 写入路径

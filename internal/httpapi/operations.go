@@ -120,6 +120,9 @@ func operationsListQuery(u *url.URL) (string, pagination.Request, error) {
 func operationsClassify(err error) (int, string) {
 	var refusal *core.OperationRefusal
 	if errors.As(err, &refusal) {
+		if refusal.RetryAfterSeconds() > 0 { // the per-operation query cap: 429 + Retry-After (set by scopedAs)
+			return http.StatusTooManyRequests, refusal.Code
+		}
 		return http.StatusConflict, refusal.Code
 	}
 	return classify(err)

@@ -122,6 +122,14 @@ func (e *oqEnv) lane(t *testing.T, provider, action, purpose, request string) oq
 	return o
 }
 
+// relabel changes the action of an operation (owner-level fixture), to exercise action-name rules on the default lane.
+func (e *oqEnv) relabel(t *testing.T, id, action string) {
+	t.Helper()
+	if _, err := e.base.owner.Exec(context.Background(), `UPDATE integration.operations SET action=$2 WHERE id=$1`, id, action); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // mock plans a mock_provider/payment.authorize operation (an unregistered, effect-class kind).
 func (e *oqEnv) mock(t *testing.T) oqOp {
 	t.Helper()
@@ -213,6 +221,7 @@ func (e *oqEnv) audits(t *testing.T, action string) int {
 
 type oqResp struct {
 	Status int
+	Header http.Header
 	Body   []byte
 	M      map[string]any
 }
@@ -241,7 +250,7 @@ func (e *oqEnv) call(t *testing.T, method, store, path, token, key, body string)
 	}
 	rec := httptest.NewRecorder()
 	e.handler.ServeHTTP(rec, req)
-	out := oqResp{Status: rec.Code, Body: rec.Body.Bytes()}
+	out := oqResp{Status: rec.Code, Header: rec.Header(), Body: rec.Body.Bytes()}
 	_ = json.Unmarshal(out.Body, &out.M)
 	return out
 }

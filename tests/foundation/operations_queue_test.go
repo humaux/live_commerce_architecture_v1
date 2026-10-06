@@ -11,6 +11,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -193,6 +194,8 @@ func TestOperationsQueueObjectMapping(t *testing.T) {
 	ad := e.lane(t, "meta_ads", "meta.ads.pause", "marketing", `{"v":1,"draft_id":"`+draft+`","attempt":1}`)
 	capi := e.lane(t, "meta_dataset", "meta.capi.purchase", "marketing", `{"v":1,"attempt_id":"`+attempt+`"}`)
 	insights := e.op(t, "facebook", "meta.live_insights", "service", `{"v":1,"session_id":"`+session+`"}`)
+	pageBinding := randomUUID() // the Page binding the merchant asked to read (request.binding_id), not the operation's own binding row
+	videos := e.op(t, "facebook", "meta.live_videos", "service", `{"v":1,"binding_id":"`+pageBinding+`","asset_id":"p1"}`)
 	broken := e.op(t, "ecpay_logistics", "ecpay.cvs_create", "transactional", `{"order_id":"not-a-uuid","attempt":1}`)
 	plain := e.mock(t)
 	// The DM resolves its conversation through the send projection, not the request.
@@ -201,12 +204,12 @@ func TestOperationsQueueObjectMapping(t *testing.T) {
 		e.tenant, e.store, randomUUID(), conv, dm.ID, e.principal); err != nil {
 		t.Fatal(err)
 	}
-	all := []oqOp{reply, dm, ad, capi, insights, broken, plain}
+	all := []oqOp{reply, dm, ad, capi, insights, videos, broken, plain}
 	for _, o := range all {
 		e.set(t, o.ID, "FAILED_FINAL", 1, "", "x")
 	}
 	want := map[string][2]string{reply.ID: {"claim_bundle", bundle}, dm.ID: {"conversation", conv}, ad.ID: {"ad_draft", draft}, capi.ID: {"payment_attempt", attempt},
-		insights.ID: {"live_session", session}}
+		insights.ID: {"live_session", session}, videos.ID: {"binding", pageBinding}}
 	for _, i := range oqItems(t, e.call(t, "GET", e.store, "", e.token, "", "")) {
 		id := i["operation_id"].(string)
 		if w, ok := want[id]; ok {
@@ -389,10 +392,144 @@ func TestOperationsQueueAdsLaneIsReadAndCancelOnly(t *testing.T) {
 			}
 		}
 		y := e.lane(t, tc.provider, tc.action, "marketing", `{"v":1}`)
+		if tc.action == "meta.ads.pause" {
+			// A pending pause is what stops spend: cancelling it would leave the ad running past its approved budget (P1-1 of the review).
+			if r := e.post(t, y.ID, "cancel", 0); r.Status != 409 || r.code() != "protective_operation" {
+				t.Errorf("cancel of a READY pause: %d %s, want 409 protective_operation", r.Status, r.Body)
+			}
+			if st, _, gen, _ := e.row(t, y.ID); st != "READY" || gen != 0 {
+				t.Errorf("a refused pause cancel changed the row to %s gen=%d", st, gen)
+			}
+			if ok, why := oqAction(e.call(t, "GET", e.store, "/"+y.ID, e.token, "", "").M, "cancel"); ok || why != "protective_operation" {
+				t.Errorf("READY pause DTO cancel = %v %q, want unavailable protective_operation", ok, why)
+			}
+			continue
+		}
 		if r := e.post(t, y.ID, "cancel", 0); r.Status != 200 || r.M["state"] != "CANCELLED" {
 			t.Errorf("%s cancel of a READY ads operation: %d %s", tc.action, r.Status, r.Body)
 		}
 	}
+}
+
+// Stop-class (protective) operations are never cancellable from the ledger, in any state and in any lane, fail-safe by action name; ordinary kinds still are.
+func TestOperationsQueueProtectiveOperationsCannotBeCancelled(t *testing.T) {
+	e := newOQEnv(t)
+	for _, action := range []string{"payment.pause", "campaign.pause_all", "egress.stop", "meta.ads.disable", "stripe.revoke", "meta.unsubscribe"} {
+		for _, st := range []struct {
+			state string
+			gen   int64
+		}{{"READY", 0}, {"UNKNOWN", 2}, {"FAILED_FINAL", 1}} {
+			x := e.mock(t)
+			e.relabel(t, x.ID, action)
+			e.set(t, x.ID, st.state, st.gen, "", "x")
+			if r := e.post(t, x.ID, "cancel", st.gen); r.Status != 409 || r.code() != "protective_operation" {
+				t.Errorf("cancel %s/%s: %d %s, want 409 protective_operation", action, st.state, r.Status, r.Body)
+			}
+			if got, _, _, _ := e.row(t, x.ID); got != st.state {
+				t.Errorf("refused cancel moved %s/%s to %s", action, st.state, got)
+			}
+		}
+	}
+	for _, action := range []string{"payment.authorize", "payment.restart", "meta.dm_send", "ecpay.cvs_create"} {
+		x := e.mock(t)
+		e.relabel(t, x.ID, action)
+		if r := e.post(t, x.ID, "cancel", 0); r.Status != 200 {
+			t.Errorf("cancel of an ordinary %s: %d %s", action, r.Status, r.Body)
+		}
+	}
+}
+
+// The per-operation hard cap on `query`: five per rolling 24 h, then 429 query_limit with Retry-After; the oldest query leaving the window lifts it.
+func TestOperationsQueueQueryHardCap(t *testing.T) {
+	e := newOQEnv(t)
+	o := e.mock(t)
+	e.set(t, o.ID, "UNKNOWN", 3, "", "reconcile_budget_exhausted")
+	e.killJobs(t, o.ID)
+	ctx := context.Background()
+	// Four earlier queries, spaced well beyond 60 s (1..4 h ago). Events are append-only for every login but the owner, so the fixture inserts them as the owner.
+	for h := 1; h <= 4; h++ {
+		if _, err := e.base.owner.Exec(ctx, `INSERT INTO integration.operation_events(tenant_id,store_id,operation_id,generation,state,mode,reason_code,created_at)
+			VALUES($1,$2,$3,3,'UNKNOWN','','query_requested',clock_timestamp()-make_interval(hours=>$4))`, e.tenant, e.store, o.ID, h); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if r := e.post(t, o.ID, "query", 3); r.Status != 200 {
+		t.Fatalf("5th query inside the cap: %d %s", r.Status, r.Body)
+	}
+	e.killJobs(t, o.ID)
+	jobs := len(e.jobRows(t, o.ID))
+	r := e.post(t, o.ID, "query", 3)
+	if r.Status != 429 || r.code() != "query_limit" {
+		t.Fatalf("6th query: %d %s, want 429 query_limit (the cap wins over the 60 s spacing)", r.Status, r.Body)
+	}
+	after, err := strconv.Atoi(r.Header.Get("Retry-After"))
+	if err != nil || after < 71900 || after > 72000 { // the oldest counted query is 4 h old: 20 h left
+		t.Fatalf("Retry-After = %q (%v), want about 72000 s", r.Header.Get("Retry-After"), err)
+	}
+	if len(e.jobRows(t, o.ID)) != jobs || e.events(t, o.ID, "query_requested") != 5 {
+		t.Errorf("a capped query left a job or event behind (jobs %d->%d, events %d)", jobs, len(e.jobRows(t, o.ID)), e.events(t, o.ID, "query_requested"))
+	}
+	if ok, why := oqAction(e.call(t, "GET", e.store, "/"+o.ID, e.token, "", "").M, "query"); ok || why != "query_limit" {
+		t.Errorf("DTO query = %v %q, want unavailable query_limit", ok, why)
+	}
+	// Age the oldest query and the real one out of the window/spacing: the cap lifts and the next query is allowed again.
+	if _, err := e.base.owner.Exec(ctx, `UPDATE integration.operation_events SET created_at=created_at-interval '21 hours' WHERE operation_id=$1::uuid AND reason_code='query_requested'`, o.ID); err != nil {
+		t.Fatal(err)
+	}
+	if r := e.post(t, o.ID, "query", 3); r.Status != 200 {
+		t.Fatalf("query after the window moved on: %d %s", r.Status, r.Body)
+	}
+}
+
+// The read definer itself is the privacy boundary: called straight on the runtime login (inside a scoped transaction) it returns exactly the documented keys,
+// whatever the Go DTO struct later filters. A column added to the SQL object would turn this red even though the HTTP response would not change.
+func TestOperationsQueueSQLDTOHasExactKeys(t *testing.T) {
+	e := newOQEnv(t)
+	ctx := context.Background()
+	canary := "CANARY-SQL-DTO-SECRET"
+	o := e.op(t, "ecpay_logistics", "ecpay.cvs_create", "transactional", `{"order_id":"`+randomUUID()+`","attempt":1,"access_token":"`+canary+`","phone":"`+canary+`"}`)
+	e.set(t, o.ID, "FAILED_FINAL", 2, "", "ecpay.rejected")
+	h := sha256.Sum256([]byte(e.readOnly))
+	read := func(id any) map[string]any {
+		var raw []byte
+		if err := e.scoped(ctx, e.readOnly, e.store, func(tx pgx.Tx, scope platform.Scope) error {
+			if id == nil {
+				return tx.QueryRow(ctx, `SELECT integration.read_operation_ledger($1,$2::uuid,'attention',NULL,NULL,NULL,50)`, h[:], e.store).Scan(&raw)
+			}
+			return tx.QueryRow(ctx, `SELECT integration.read_operation_ledger($1,$2::uuid,'attention',$3::uuid,NULL,NULL,1)`, h[:], e.store, id).Scan(&raw)
+		}); err != nil {
+			t.Fatalf("read definer: %v", err)
+		}
+		if strings.Contains(string(raw), canary) {
+			t.Fatalf("the SQL object carries the request canary: %s", raw)
+		}
+		var m map[string]any
+		if err := json.Unmarshal(raw, &m); err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	itemKeys := []string{"operation_id", "provider", "action", "purpose", "state", "reason_code", "attempts", "created_at", "updated_at", "object", "actions"}
+	for name, m := range map[string]map[string]any{"list": read(nil), "detail": read(o.ID)} {
+		oqSame(t, name+" envelope", oqKeys(m), []string{"items", "has_more", "events"})
+		items := m["items"].([]any)
+		if len(items) != 1 {
+			t.Fatalf("%s: %d items", name, len(items))
+		}
+		item := items[0].(map[string]any)
+		oqSame(t, name+" item", oqKeys(item), append([]string(nil), itemKeys...))
+		oqSame(t, name+" object", oqKeys(item["object"].(map[string]any)), []string{"kind", "id"})
+		oqSame(t, name+" actions", oqKeys(item["actions"].(map[string]any)), []string{"query", "cancel", "retry"})
+		for _, a := range []string{"query", "cancel", "retry"} {
+			oqSame(t, name+" action "+a, oqKeys(item["actions"].(map[string]any)[a].(map[string]any)), []string{"available", "reason"})
+		}
+	}
+	detail := read(o.ID)
+	events := detail["events"].([]any)
+	if len(events) == 0 {
+		t.Fatal("detail has no events")
+	}
+	oqSame(t, "event", oqKeys(events[0].(map[string]any)), []string{"generation", "state", "reason_code", "created_at"})
 }
 
 // Retry: never UNKNOWN; FAILED_FINAL only for the registered read-only kinds; READY only when it has no live job.

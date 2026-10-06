@@ -16,6 +16,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -90,17 +91,24 @@ type LedgerActionResult struct {
 // insert-only River client to enqueue the follow-up job).
 func NewLedgerService(jobs *river.Client[pgx.Tx]) *Service { return &Service{jobs: jobs} }
 
-// OperationRefusal is a coded 409 of a ledger action: the operation exists but the action is not allowed in its current state. Code is one of refusalCodes.
-type OperationRefusal struct{ Code string }
+// OperationRefusal is a coded refusal of a ledger action: the operation exists but the action is not allowed in its current state (409), or the per-operation query
+// cap is reached (429 query_limit, with RetryAfter seconds). Code is one of refusalCodes.
+type OperationRefusal struct {
+	Code       string
+	RetryAfter int // seconds; only the query_limit refusal carries one
+}
 
 // Error implements error with the machine code only.
 func (r *OperationRefusal) Error() string { return "operation action refused: " + r.Code }
+
+// RetryAfterSeconds is the Retry-After the transport should send (0 = none); httpapi's scoped helper reads it through an interface.
+func (r *OperationRefusal) RetryAfterSeconds() int { return r.RetryAfter }
 
 // refusalCodes are the PT409 messages integration.ledger_capability / ledger_open may raise; anything else maps to a plain command.ErrConflict.
 var refusalCodes = map[string]bool{
 	"lane_unsupported": true, "not_in_doubt": true, "lease_active": true, "binding_changed": true, "query_in_progress": true, "query_too_soon": true,
 	"already_dispatched": true, "operation_closed": true, "already_succeeded": true, "reconcile_first": true, "retry_not_supported": true,
-	"already_queued": true, "operation_changed": true,
+	"already_queued": true, "operation_changed": true, "protective_operation": true, "query_limit": true,
 }
 
 // normalizeLedgerState maps the request's state parameter to the closed filter set ("" -> attention, FAILED -> FAILED_FINAL); ok is false for anything else.
@@ -288,6 +296,12 @@ func mapLedgerError(err error) error {
 				return &OperationRefusal{Code: pg.Message}
 			}
 			return command.ErrConflict
+		case "PT429": // the 24 h query cap; DETAIL is the Retry-After seconds
+			after, err := strconv.Atoi(pg.Detail)
+			if err != nil || after < 1 || after > 86400 {
+				after = 60
+			}
+			return &OperationRefusal{Code: "query_limit", RetryAfter: after}
 		}
 	}
 	return mapError(err)

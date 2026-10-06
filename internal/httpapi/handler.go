@@ -397,6 +397,10 @@ func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int
 			if errors.Is(err, errAccountRateLimited) {
 				w.Header().Set("Retry-After", "60")
 			}
+			var timed interface{ RetryAfterSeconds() int } // a domain refusal that knows its own wait (operations ledger query cap)
+			if errors.As(err, &timed) && timed.RetryAfterSeconds() > 0 {
+				w.Header().Set("Retry-After", strconv.Itoa(timed.RetryAfterSeconds()))
+			}
 			status, code := classifier(err)
 			respondErrorDetails(w, err, status, code)
 			return

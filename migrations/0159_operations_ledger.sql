@@ -47,10 +47,14 @@ COMMENT ON FUNCTION integration.ledger_auth(bytea,uuid,text) IS
 -- and the action refusals (contract Amendment W6-05B "Actions"). p_exclude_job is the job the caller just inserted in this transaction.
 CREATE FUNCTION integration.ledger_capability(o integration.operations,p_kind text,p_exclude_job bigint) RETURNS text
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v_now timestamptz:=clock_timestamp(); b integration.bindings%ROWTYPE; v_changed boolean; v_active boolean;
+DECLARE v_now timestamptz:=clock_timestamp(); b integration.bindings%ROWTYPE; v_changed boolean; v_active boolean; v_n24 integer; v_n60 integer;
 BEGIN
  IF o.actor_kind<>'MERCHANT' OR integration.operation_lane(o.provider,o.actor_kind) NOT IN ('default','ads') THEN RETURN 'lane_unsupported'; END IF;
  IF p_kind='cancel' THEN
+  -- Protective (stop-class) operations are never cancellable from the ledger: cancelling a READY pause leaves the ad spending (the sweeper only re-plans a pause
+  -- after 15 minutes, 0074), and the approved budget is an ads:approve control the generic integration:execute screen must not bypass. Fail-safe by name: any
+  -- action whose segment starts with pause|stop|disable|revoke|unsubscribe (meta.ads.pause, livekit.egress.stop, ...) is protective.
+  IF o.action ~ '(^|[._])(pause|stop|disable|revoke|unsubscribe)' THEN RETURN 'protective_operation'; END IF;
   -- READY = no dispatch claim since it last became READY; DISPATCHING/UNKNOWN/ACKNOWLEDGED may already have an effect upstream.
   IF o.state='READY' THEN RETURN ''; END IF;
   RETURN CASE WHEN o.state IN ('DISPATCHING','UNKNOWN','ACKNOWLEDGED') THEN 'already_dispatched' ELSE 'operation_closed' END;
@@ -68,8 +72,11 @@ BEGIN
   -- Another live external_operation_v1 job of this operation (River keeps snoozed/retrying jobs in these states).
   IF EXISTS(SELECT 1 FROM river.river_job j WHERE j.kind='external_operation_v1' AND j.args @> jsonb_build_object('operation_id',o.id::text)
    AND j.state IN ('available','scheduled','retryable','pending','running') AND j.id IS DISTINCT FROM p_exclude_job) THEN RETURN 'query_in_progress'; END IF;
-  IF EXISTS(SELECT 1 FROM integration.operation_events e WHERE e.tenant_id=o.tenant_id AND e.store_id=o.store_id AND e.operation_id=o.id
-   AND e.reason_code='query_requested' AND e.created_at>v_now-interval '60 seconds') THEN RETURN 'query_too_soon'; END IF;
+  -- Hard cap: at most 5 query actions per operation per rolling 24 h (each one grants a full reconcile budget), then the 60 s spacing.
+  SELECT count(*),count(*) FILTER (WHERE e.created_at>v_now-interval '60 seconds') INTO v_n24,v_n60 FROM integration.operation_events e
+   WHERE e.tenant_id=o.tenant_id AND e.store_id=o.store_id AND e.operation_id=o.id AND e.reason_code='query_requested' AND e.created_at>v_now-interval '24 hours';
+  IF v_n24>=5 THEN RETURN 'query_limit'; END IF;
+  IF v_n60>0 THEN RETURN 'query_too_soon'; END IF;
   RETURN '';
  END IF;
  -- p_kind='retry'
@@ -97,7 +104,7 @@ COMMENT ON FUNCTION integration.ledger_capability(integration.operations,text,bi
 -- the row locks outlive this call inside the caller's transaction, so the public definers decide on exactly this state.
 CREATE FUNCTION integration.ledger_open(p_hash bytea,p_store uuid,p_id uuid,p_expected bigint,p_kind text,p_job bigint) RETURNS integration.operations
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v_tenant uuid; v_binding uuid; b integration.bindings%ROWTYPE; o integration.operations; v_why text;
+DECLARE v_tenant uuid; v_binding uuid; b integration.bindings%ROWTYPE; o integration.operations; v_why text; v_after integer;
 BEGIN
  IF p_id IS NULL OR p_expected IS NULL OR p_expected<0 OR p_kind IS NULL OR p_kind NOT IN ('query','cancel','retry')
   OR (p_kind='cancel')<>(p_job IS NULL) OR (p_job IS NOT NULL AND p_job<=0) THEN
@@ -112,6 +119,12 @@ BEGIN
  IF NOT FOUND OR o.binding_id<>b.id THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404'; END IF;
  IF o.generation<>p_expected THEN RAISE EXCEPTION 'operation_changed' USING ERRCODE='PT409'; END IF;
  v_why:=integration.ledger_capability(o,p_kind,p_job);
+ IF v_why='query_limit' THEN
+  -- PT429 with the seconds until the oldest counted query leaves the 24 h window (Retry-After).
+  SELECT greatest(1,least(86400,ceil(extract(epoch FROM (min(e.created_at)+interval '24 hours'-clock_timestamp())))::integer)) INTO v_after FROM integration.operation_events e
+   WHERE e.tenant_id=o.tenant_id AND e.store_id=o.store_id AND e.operation_id=o.id AND e.reason_code='query_requested' AND e.created_at>clock_timestamp()-interval '24 hours';
+  RAISE EXCEPTION 'query_limit' USING ERRCODE='PT429',DETAIL=coalesce(v_after,60)::text;
+ END IF;
  IF v_why<>'' THEN RAISE EXCEPTION '%',v_why USING ERRCODE='PT409'; END IF;
  IF p_kind<>'cancel' THEN
   -- The follow-up job rides the default lane exactly as Plan creates it (queue default, River default priority 1); the ads lane never reaches here (ledger_capability).
@@ -208,7 +221,7 @@ ALTER FUNCTION integration.request_operation_query(bytea,uuid,uuid,bigint,bigint
 REVOKE ALL ON FUNCTION integration.request_operation_query(bytea,uuid,uuid,bigint,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.request_operation_query(bytea,uuid,uuid,bigint,bigint) TO commerce_runtime;
 COMMENT ON FUNCTION integration.request_operation_query(bytea,uuid,uuid,bigint,bigint) IS
- 'internal/integrations/core ledger query (W6-05B): integration:execute, UNKNOWN/ACKNOWLEDGED/expired-DISPATCHING only, no active lease or other live job, 60 s spacing; raises generation_floor and records query_requested. The same-transaction job (checked by ledger_open) can only be claimed in reconcile mode. No state change.';
+ 'internal/integrations/core ledger query (W6-05B): integration:execute, UNKNOWN/ACKNOWLEDGED/expired-DISPATCHING only, no active lease or other live job, at most 5 per operation per rolling 24 h (PT429 query_limit with Retry-After seconds), 60 s spacing; raises generation_floor and records query_requested. The same-transaction job (checked by ledger_open) can only be claimed in reconcile mode. No state change.';
 
 CREATE FUNCTION integration.cancel_operation(p_hash bytea,p_store uuid,p_id uuid,p_expected bigint) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -226,7 +239,7 @@ ALTER FUNCTION integration.cancel_operation(bytea,uuid,uuid,bigint) OWNER TO com
 REVOKE ALL ON FUNCTION integration.cancel_operation(bytea,uuid,uuid,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION integration.cancel_operation(bytea,uuid,uuid,bigint) TO commerce_runtime;
 COMMENT ON FUNCTION integration.cancel_operation(bytea,uuid,uuid,bigint) IS
- 'internal/integrations/core ledger cancel (W6-05B): integration:execute, READY -> CANCELLED under binding FOR SHARE -> operation FOR UPDATE, so a concurrent dispatch claim and a cancel cannot both win. Refused for DISPATCHING/UNKNOWN/ACKNOWLEDGED (already_dispatched) and terminal states.';
+ 'internal/integrations/core ledger cancel (W6-05B): integration:execute, READY -> CANCELLED under binding FOR SHARE -> operation FOR UPDATE, so a concurrent dispatch claim and a cancel cannot both win. Refused for DISPATCHING/UNKNOWN/ACKNOWLEDGED (already_dispatched), terminal states and every protective stop-class action such as meta.ads.pause (protective_operation).';
 
 CREATE FUNCTION integration.retry_operation(p_hash bytea,p_store uuid,p_id uuid,p_expected bigint,p_job bigint) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$

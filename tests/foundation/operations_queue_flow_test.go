@@ -331,51 +331,73 @@ func TestOperationsQueueConcurrentActionsYieldOneEffect(t *testing.T) {
 	}
 }
 
-// Cancel racing a dispatch claim: exactly one wins, and a cancelled operation can never also have been claimed for dispatch.
+// Cancel racing a dispatch claim, made deterministic with a row lock: the test holds the operation row FOR UPDATE, starts the first contender and waits until it is
+// really blocked on that lock, starts the second and waits until it is blocked too, then releases. PostgreSQL grants the lock in arrival order, so each order is
+// forced exactly once and never both (or neither) win.
 func TestOperationsQueueCancelRacesDispatchClaim(t *testing.T) {
 	e := newOQEnv(t)
-	cancelled, claimed := 0, 0
-	for i := 0; i < 20; i++ {
-		o := e.mock(t)
-		var cancelResp oqResp
-		var disposition string
-		var claimErr error
-		var wg sync.WaitGroup
-		start := make(chan struct{})
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
-			<-start
-			cancelResp = e.post(t, o.ID, "cancel", 0)
-		}()
-		go func() {
-			defer wg.Done()
-			<-start
-			time.Sleep(time.Duration(i%8) * time.Millisecond) // sweep the interleaving so each side wins sometimes
-			var gen int64
-			var mode string
-			claimErr = e.worker.QueryRow(context.Background(), `SELECT disposition,generation,mode FROM integration.claim_operation($1,30,$2)`, o.ID, randomBytes(32)).Scan(&disposition, &gen, &mode)
-		}()
-		close(start)
-		wg.Wait()
-		if claimErr != nil {
-			t.Fatalf("claim: %v", claimErr)
+	ctx := context.Background()
+	blocked := func(want int) {
+		t.Helper()
+		deadline := time.Now().Add(10 * time.Second)
+		for time.Now().Before(deadline) {
+			if e.count(t, `SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND datname=current_database()`) == want {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
-		st, _, _, _ := e.row(t, o.ID)
-		switch {
-		case cancelResp.Status == 200 && disposition == "terminal" && st == "CANCELLED":
-			cancelled++
-		case cancelResp.Status == 409 && (cancelResp.code() == "already_dispatched" || cancelResp.code() == "operation_changed") && disposition == "claimed" && st == "DISPATCHING":
-			claimed++ // the claim bumped the generation first: the cancel's CAS or its capability check refuses
-		default:
-			t.Fatalf("iteration %d: cancel=%d %s claim=%s state=%s: both or neither won", i, cancelResp.Status, cancelResp.Body, disposition, st)
-		}
-		if st == "CANCELLED" && e.events(t, o.ID, "dispatch_claimed") != 0 {
-			t.Fatalf("iteration %d: a cancelled operation has a dispatch claim", i)
-		}
+		t.Fatalf("never saw %d sessions blocked on the row lock", want)
 	}
-	t.Logf("cancel won %d, claim won %d of 20", cancelled, claimed)
-	if cancelled == 0 || claimed == 0 {
-		t.Fatalf("the race sweep never produced both outcomes (cancel %d, claim %d)", cancelled, claimed)
+	for _, cancelFirst := range []bool{true, false} {
+		o := e.mock(t)
+		hold, err := e.base.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		released := false
+		release := func() {
+			if !released {
+				released = true
+				_ = hold.Rollback(ctx)
+			}
+		}
+		defer release()
+		if _, err := hold.Exec(ctx, `SELECT 1 FROM integration.operations WHERE id=$1 FOR UPDATE`, o.ID); err != nil {
+			t.Fatal(err)
+		}
+		cancelDone := make(chan oqResp, 1)
+		claimDone := make(chan string, 1)
+		startCancel := func() { go func() { cancelDone <- e.post(t, o.ID, "cancel", 0) }() }
+		startClaim := func() {
+			go func() {
+				var disposition string
+				var gen int64
+				var mode string
+				if err := e.worker.QueryRow(ctx, `SELECT disposition,generation,mode FROM integration.claim_operation($1,30,$2)`, o.ID, randomBytes(32)).Scan(&disposition, &gen, &mode); err != nil {
+					disposition = "error: " + err.Error()
+				}
+				claimDone <- disposition
+			}()
+		}
+		if cancelFirst {
+			startCancel()
+			blocked(1)
+			startClaim()
+		} else {
+			startClaim()
+			blocked(1)
+			startCancel()
+		}
+		blocked(2)
+		release()
+		cancelResp, disposition := <-cancelDone, <-claimDone
+		st, _, gen, _ := e.row(t, o.ID)
+		if cancelFirst {
+			if cancelResp.Status != 200 || disposition != "terminal" || st != "CANCELLED" || e.events(t, o.ID, "dispatch_claimed") != 0 {
+				t.Fatalf("cancel first: cancel=%d %s claim=%s state=%s: the cancel must win and the claim must see it terminal", cancelResp.Status, cancelResp.Body, disposition, st)
+			}
+		} else if cancelResp.Status != 409 || cancelResp.code() != "operation_changed" || disposition != "claimed" || st != "DISPATCHING" || gen != 1 {
+			t.Fatalf("claim first: cancel=%d %s claim=%s state=%s gen=%d: the claim must win and the cancel's CAS must refuse", cancelResp.Status, cancelResp.Body, disposition, st, gen)
+		}
 	}
 }
