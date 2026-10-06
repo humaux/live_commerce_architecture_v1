@@ -184,9 +184,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
 		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
-		// 0113 adds the price-neutral immutable order_origins ledger.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 9 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins", n)
+		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 10 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)", n)
 		}
 	})
 
@@ -240,6 +240,19 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "claims.order_origins", "INSERT", "tenant_id", "store_id", "order_id", "bundle_id", "offer_id", "line_version", "session_id", "post_id", "occurred_at")
 		add(wr, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "owner_id", "bound_at", "version")
 		add(wr, "claims.bundles", "UPDATE", "owner_id", "bound_at")
+		// 0129 (LC-B6, live-console-v1 §5): the for-buyer definers read purged_at (not-purged proof of the grant branch), the grants table is
+		// written only by claims.for_buyer_begin/bind_merchant_origin_grant/consume_live_prices, the reservation table only by the for_buyer_* definers,
+		// and the peer comparison reads the conversation and bundle peers and the session lifecycle (all scoped to the tenant/store GUCs).
+		add(wr, "claims.bundles", "SELECT", "purged_at")
+		add(wr, "claims.merchant_origin_grants", "SELECT", cols("claims.merchant_origin_grants")...)
+		add(wr, "claims.merchant_origin_grants", "INSERT", cols("claims.merchant_origin_grants")...)
+		add(wr, "claims.merchant_origin_grants", "UPDATE", "quote_id", "consumed_at", "expires_at")
+		add(wr, "inbox.order_for_buyer", "SELECT", cols("inbox.order_for_buyer")...)
+		add(wr, "inbox.order_for_buyer", "INSERT", cols("inbox.order_for_buyer")...)
+		add(wr, "inbox.order_for_buyer", "UPDATE", "order_id", "state", "updated_at")
+		add(wr, "live.sessions", "SELECT", "tenant_id", "store_id", "id", "lifecycle")
+		add(wr, "social.conversations", "SELECT", "id", "tenant_id", "store_id", "app_id", "object", "asset_id", "peer_key")
+		add(wr, "inbox.bundle_peers", "SELECT", "tenant_id", "store_id", "bundle_id", "peer_key", "app_id", "object", "asset_id")
 		add(wr, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "sku_id", "quantity", "version", "applied_version")
 		add(wr, "claims.lines", "UPDATE", "applied_version")
 		// live-tools 0092: claims.live_prices / preview_live_prices read the offer SKU and live price.
@@ -334,7 +347,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// 0113 R6: origins are immutable to all runtime roles.
 			wr + " claims.order_origins SELECT", wr + " claims.order_origins INSERT",
 			// 0123 (LC-B2): live.comment_print upserts the print fact (no comment text/name column exists).
-			wr + " live.comment_prints SELECT", wr + " live.comment_prints INSERT", wr + " live.comment_prints UPDATE"}
+			wr + " live.comment_prints SELECT", wr + " live.comment_prints INSERT", wr + " live.comment_prints UPDATE",
+			// 0129 (LC-B6): grants and reservation rows, definers only.
+			wr + " claims.merchant_origin_grants SELECT", wr + " claims.merchant_origin_grants INSERT",
+			wr + " inbox.order_for_buyer SELECT", wr + " inbox.order_for_buyer INSERT"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
@@ -359,7 +375,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0118 (A5): the session-results attribution seams it owns (EXECUTE: commerce_auth only).
 				"claims.session_orders", "claims.order_session_counts", "claims.pick_list_session_orders",
 				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
-				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print"})
+				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
+				// 0129 (LC-B6): the seven for-buyer definers it owns.
+				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
+				"claims.for_buyer_release", "claims.bind_merchant_origin_grant"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -424,6 +443,18 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// 0105 (R4S-01): the only ledger writer, called by checkout.Begin on the checkout pool (never the buyer pool).
 			"consume_live_prices": {args: "p_order uuid", result: "integer", volatility: "v", acl: "commerce_checkout_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_checkout_runtime"},
+			// 0129 (LC-B6, live-console-v1 §5): order for a buyer. for_buyer_scope is the owner-only fence helper; the four merchant definers are
+			// called by commerce_runtime inside the merchant transaction; bind_merchant_origin_grant by the buyer pool right after CreateQuote.
+			"for_buyer_scope":      {args: "", result: "uuid[]", volatility: "s", acl: "commerce_claims_writer:EXECUTE", caller: "commerce_claims_writer"},
+			"for_buyer_peer_state": {args: "p_conversation uuid, p_bundles uuid[]", result: "text", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"for_buyer_lines": {args: "p_conversation uuid, p_bundle uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, keyword text, quantity integer, live_price_minor bigint, live_remaining bigint)",
+				volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"for_buyer_begin": {args: "p_key_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid", result: "TABLE(o_request uuid, o_reason text)", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"for_buyer_finish": {args: "p_request uuid, p_order uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, quantity bigint, live_price_minor bigint)", volatility: "v",
+				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"for_buyer_release":          {args: "p_request uuid", result: "integer", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"bind_merchant_origin_grant": {args: "p_quote uuid", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
@@ -506,8 +537,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0118 adds exactly two attribution functions (session_orders, order_session_counts).
 		// 0123 (LC-B2) adds exactly four: comment_poll_sources, console_source, console_marks, comment_print.
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 28 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its twenty-eight functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam)", n)
+		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 35 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-five functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -528,6 +560,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
+			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
+			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
+			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
 			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
 			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))
 			       OR (r.rolname='commerce_retention_job' AND p.proname IN ('run_retention','retention_status'))
@@ -853,7 +888,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
 				"claims.order_live_sources(uuid,uuid,uuid[])",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
-				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)"})
+				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
+				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
+				"claims.for_buyer_begin(bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),

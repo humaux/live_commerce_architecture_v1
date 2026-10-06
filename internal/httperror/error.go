@@ -210,6 +210,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_cursor":                 "The page cursor is not valid.",
 		"invalid_ref":                    "The comment reference is not valid.",
 		"invalid_filter":                 "The filter is not valid.",
+		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
+		"bundle_already_ordered": "These claims already have an order.",
+		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
 	}
 	message, ok := messages[code]
 	if !ok {

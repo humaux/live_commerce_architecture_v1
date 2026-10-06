@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
@@ -32,9 +33,12 @@ import (
 var manualOrderFields = []string{"items", "customer", "delivery", "payment_mode", "locale"}
 var manualRegenerateFields = []string{"order_id", "locale"}
 
+// forBuyerFields is the exact POST orders/for-buyer body (live-console-v1 §5.1 step 3): no price, no tenant.
+var forBuyerFields = []string{"items", "customer", "delivery", "payment_mode", "locale", "for", "send_payment_link"}
+
 const importBudget = 60 * time.Second
 
-func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual *merchanttools.ManualOrders) {
+func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual *merchanttools.ManualOrders, forBuyer *merchanttools.ForBuyer) {
 	const base = "/v1/admin/stores/{store_id}"
 	mux.HandleFunc("GET "+base+"/dashboard", cvsRoute(http.MethodGet, false, func(w http.ResponseWriter, r *http.Request) {
 		toolsServe(w, r, pool, "orders:read", 0, http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
@@ -146,6 +150,7 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		}
 		respond(w, status, result)
 	}))
+	registerForBuyerRoutes(mux, forBuyer)
 	// ---- bulk tracking import (manual-fulfilment-v1 Amendment "M-7 revoked", unit w3-01b) ----
 	// POST preview: dry-run one CSV with the same §3 rules and audit as the single PUT; nothing is written.
 	mux.HandleFunc("POST "+base+"/shipments/tracking-import/preview", cvsRoute(http.MethodPost, false, func(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +229,10 @@ func toolsClassify(err error) (int, string) {
 	var coded *merchanttools.Error
 	if errors.As(err, &coded) {
 		return coded.Status, coded.Code
+	}
+	var refusal *claims.ForBuyerError // LC-B6: 409 bundle_already_ordered | bundle_buyer_mismatch
+	if errors.As(err, &refusal) {
+		return refusal.Status, refusal.Code
 	}
 	return claimsClassify(err)
 }
@@ -326,4 +335,77 @@ func trackingImportOnlyFailed(r *http.Request) (bool, bool) {
 		return false, false
 	}
 	return true, true
+}
+
+// registerForBuyerRoutes mounts A15 GET inbox/order-prefill and A16 POST orders/for-buyer (live-console-v1 §5, unit LC-B6). Both stay mounted when the
+// service is nil and answer 503 manual_order_unavailable. Authority is decided in internal/merchanttools and the claims definers below it (A15:
+// orders:read + inventory:reserve; A16: inventory:reserve, +live:manage for the live price, +inbox:reply for the DM); the tenant and store come from the
+// bearer (platform.WithScope). Idempotency-Key is required on A16 and refused on A15.
+func registerForBuyerRoutes(mux *http.ServeMux, forBuyer *merchanttools.ForBuyer) {
+	const base = "/v1/admin/stores/{store_id}"
+	mux.HandleFunc("GET "+base+"/inbox/order-prefill", studioRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {
+		conversation, bundle, ok := prefillQuery(r)
+		if value := r.PathValue("store_id"); !ok || !command.ValidID(value) {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		if !canonicalBearer(r) {
+			respondError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		out, err := forBuyer.Prefill(ctx, bearerToken(r), r.PathValue("store_id"), conversation, bundle)
+		if err != nil {
+			respondForBuyerError(w, err)
+			return
+		}
+		respond(w, http.StatusOK, out)
+	}))
+	mux.HandleFunc("POST "+base+"/orders/for-buyer", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := cvsStrictBody[merchanttools.ForBuyerInput](w, r, forBuyerFields, nil)
+		if !ok {
+			return
+		}
+		// The pipeline is several transactions on three pools plus the DM (each bounded to 5 s); the request gets 14 s inside the 15 s server cap.
+		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
+		defer cancel()
+		result, replayed, err := forBuyer.Place(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
+		if err != nil {
+			respondForBuyerError(w, err)
+			return
+		}
+		status := http.StatusCreated
+		if replayed {
+			status = http.StatusOK
+		}
+		respond(w, status, result)
+	}))
+}
+
+// prefillQuery reads the one query key of A15: exactly one of bundle_id | conversation_id, one canonical UUID value.
+func prefillQuery(r *http.Request) (conversation, bundle *string, ok bool) {
+	values, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil || len(values) != 1 {
+		return nil, nil, false
+	}
+	for name, got := range values {
+		if len(got) != 1 || !command.ValidID(got[0]) {
+			return nil, nil, false
+		}
+		value := got[0]
+		switch name {
+		case "conversation_id":
+			return &value, nil, true
+		case "bundle_id":
+			return nil, &value, true
+		}
+	}
+	return nil, nil, false
+}
+
+// respondForBuyerError answers a for-buyer refusal (409 bundle_already_ordered carries the existing order id) or the shared tools classification.
+func respondForBuyerError(w http.ResponseWriter, err error) {
+	status, code := toolsClassify(err)
+	respondErrorDetails(w, err, status, code)
 }
