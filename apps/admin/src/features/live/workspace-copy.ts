@@ -2,6 +2,7 @@
 // Depends on: @live-commerce/i18n locale keys; no network services.
 // Used by: LiveWorkspace, LiveConsole, SessionResults and live workspace hooks.
 const en = {
+  refusals: { too_many_open_windows: "Five sessions already accept comments. Close one before opening another.", billing_restricted: "Billing restrictions prevent starting this session. Check your subscription.", below_reserved: "Stock cannot fall below reserved and allocated quantities. Refresh and enter a higher target." },
   leavePending: "A request is still pending. Leave this session? Its receipt will still require reconciliation.",
   feed: "Comment feed", stream: { live: "Receiving", throttled: "Temporarily rate-limited", reauth_required: "Reconnect the account", unavailable: "Not available", not_started: "Not started" },
   title: "Live console", sessions: "Live sessions", settings: "Session settings", choose: "Choose a session",
@@ -33,6 +34,7 @@ const en = {
 };
 export type WorkspaceCopy = typeof en;
 const tw: WorkspaceCopy = {
+  refusals: { too_many_open_windows: "已有 5 場開放收單，請先關閉其中一場。", billing_restricted: "帳務限制暫時阻止開播，請核對訂閱狀態。", below_reserved: "庫存不可低於已保留與已分配數量，請重新整理並提高目標數量。" },
   leavePending: "尚有待確認請求。仍要離開場次嗎？離開後仍須核對回執。",
   feed: "留言接收", stream: { live: "接收中", throttled: "暫時限流", reauth_required: "請重新連接帳號", unavailable: "暫時無法接收", not_started: "尚未開始" },
   title: "直播控台", sessions: "直播場次", settings: "場次設定", choose: "選擇場次",
@@ -66,6 +68,7 @@ const cn: WorkspaceCopy = {
   start: "开始直播", end: "结束直播", copy: "复制成下一场", copyLast: "复制上一场", lifecycleHint: "此处控制本场评论收单，不会启动或停止 Facebook、Instagram 的实际直播。",
   feed: "评论接收", stream: { live: "接收中", throttled: "暂时限流", reauth_required: "请重新连接账号", unavailable: "暂时无法接收", not_started: "尚未开始" },
   leavePending: "仍有待确认请求。仍要离开场次吗？离开后仍须核对回执。",
+  refusals: { too_many_open_windows: "已有 5 场开放收单，请先关闭其中一场。", billing_restricted: "账务限制暂时阻止开播，请核对订阅状态。", below_reserved: "库存不可低于已保留与已分配数量，请刷新并提高目标数量。" },
   confirmEnd: "结束本场评论收单？平台上的直播不会因此停止。", refresh: "刷新", loading: "正在加载场次…", unavailable: "暂时无法读取直播控台。请刷新确认；系统未推测场次状态。",
   signedOut: "登录已过期，请重新登录。", forbidden: "你没有执行此操作的权限。", conflict: "场次已变更，已重新读取最新数据；请确认后再操作。", failed: "操作未被接受，请核对最新场次状态后重试。",
   uncertain: "结果尚未确认，其他操作已锁定。请核对结果或重试同一请求，不要新增请求。", recovery: "先前请求仍待对账，重新加载后操作仍会锁定；请管理员核对请求回执。", retry: "重试同一请求", updated: "更新于", taipei: "台北时间", polling: "画面显示时每 5 秒更新",

@@ -54,6 +54,7 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
 /** Keeps one command/key across explicit retries and a durable opaque fence across reloads. */
 export function useLiveCommand(scope: string, boundary: string, onChanged: () => void) {
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [fenced, setFenced] = useState(true);
+  const [reason, setReason] = useState("");
   type Request = { key: string; execute: (key: string) => Promise<unknown>; complete: (value: unknown) => void };
   const pending = useRef<Request | null>(null);
   const lifetime = useRef(0);
@@ -65,7 +66,7 @@ export function useLiveCommand(scope: string, boundary: string, onChanged: () =>
     pending.current = null; active.current = false; setBusy(false);
     let blocked = true;
     try { blocked = !boundary || sessionStorage.getItem(fenceKey) !== null; } catch { /* unavailable storage fails closed */ }
-    setFenced(blocked); setError(blocked && boundary ? "recovery" : "");
+    setFenced(blocked); setError(blocked && boundary ? "recovery" : ""); setReason("");
   }, [fenceKey, boundary]);
   useEffect(() => {
     const leave = (event: BeforeUnloadEvent) => { if (active.current || pending.current) { event.preventDefault(); event.returnValue = ""; } };
@@ -75,7 +76,7 @@ export function useLiveCommand(scope: string, boundary: string, onChanged: () =>
     const atStart = identity.current;
     const generation = lifetime.current;
     const isCurrent = () => identity.current === atStart && lifetime.current === generation;
-    active.current = true; setBusy(true); setError("");
+    active.current = true; setBusy(true); setError(""); setReason("");
     try {
       await settleLiveCommand(() => request.execute(request.key), isCurrent, (value) => {
         sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); onChanged(); request.complete(value);
@@ -87,6 +88,7 @@ export function useLiveCommand(scope: string, boundary: string, onChanged: () =>
       if (retain) { pending.current = code === "uncertain" ? request : null; setFenced(true); }
       else { sessionStorage.removeItem(fenceKey); pending.current = null; setFenced(false); }
       setError(code);
+      setReason(caught instanceof StudioError ? caught.api : "");
       if (code === "conflict" || code === "signed-out" || code === "forbidden") onChanged();
     } finally { if (isCurrent()) { active.current = false; setBusy(false); } }
   };
@@ -96,6 +98,6 @@ export function useLiveCommand(scope: string, boundary: string, onChanged: () =>
     try { sessionStorage.setItem(fenceKey, key); } catch { setError("recovery"); setFenced(true); return; }
     const request: Request = { key, execute, complete: (value) => complete?.(value as T) }; pending.current = request; await attempt(request);
   };
-  return { busy, error, blocked: busy || fenced || !!pending.current, canRetry: !!pending.current && !busy,
+  return { busy, error, reason, blocked: busy || fenced || !!pending.current, canRetry: !!pending.current && !busy,
     invalidate, run, retry: async () => { if (pending.current && !active.current) await attempt(pending.current); } };
 }

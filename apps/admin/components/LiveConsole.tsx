@@ -39,7 +39,8 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
   const action = data ? primaryAction(data.session.lifecycle) : null;
   const manage = can("live:manage") && detail?.can_manage === true;
   const editable = manage && !!data && ["draft", "live"].includes(data.session.lifecycle) && !command.blocked;
-  const feedback = command.error === "uncertain" ? c.uncertain : command.error === "recovery" ? c.recovery : command.error === "conflict" ? c.conflict : command.error === "signed-out" ? c.signedOut : command.error === "forbidden" ? c.forbidden : c.failed;
+  const refusal = Object.hasOwn(c.refusals, command.reason) ? c.refusals[command.reason as keyof typeof c.refusals] : null;
+  const feedback = refusal ?? (command.error === "uncertain" ? c.uncertain : command.error === "recovery" ? c.recovery : command.error === "conflict" ? c.conflict : command.error === "signed-out" ? c.signedOut : command.error === "forbidden" ? c.forbidden : c.failed);
   const primary = async () => {
     if (!data || !action || !manage) return;
     if (action === "copy") { setTitle(data.session.title); setCopying(true); return; }
