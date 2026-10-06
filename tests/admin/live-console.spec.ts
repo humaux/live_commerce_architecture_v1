@@ -5,6 +5,7 @@
 import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
+import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -17,6 +18,8 @@ const evidence = required("LC_BROWSER_EVIDENCE");
 const store = required("LC_BROWSER_CONSOLE_STORE");
 const otherStore = required("LC_BROWSER_CONSOLE_OTHER_STORE");
 const otherScene = required("LC_BROWSER_CONSOLE_OTHER_SCENE");
+const lateScene = required("LC_BROWSER_CONSOLE_LATE_SCENE");
+const lateDestination = required("LC_BROWSER_CONSOLE_LATE_DEST");
 const control = required("LC_BROWSER_CONSOLE_CONTROL");
 const narrowToken = required("LC_BROWSER_CONSOLE_NARROW_TOKEN");
 const scenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_SCENES"));
@@ -207,10 +210,10 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
   });
 }
 
-test("LC-U1 delayed copy cannot navigate back after an actual shell store switch", async ({ page, request }) => {
+test("LC-U1 delayed copy cannot navigate back after an actual SPA scene switch", async ({ page, request }) => {
   await page.setViewportSize(sizes[1]!);
   await login(page);
-  await page.goto(route("en", otherScene, otherStore));
+  await page.goto(route("en", lateScene));
   await phase(page, "draft");
   await page.getByTestId("live-primary-action").click();
   await phase(page, "live");
@@ -219,16 +222,17 @@ test("LC-U1 delayed copy cannot navigate back after an actual shell store switch
   await phase(page, "ended");
   await page.getByTestId("live-primary-action").click();
   await page.getByTestId("live-copy-title").fill("Delayed copy scope test");
-  await fault(request, otherScene, "delay_copy");
-  const response = page.waitForResponse((r) => r.url().endsWith(`/${otherScene}/copy`) && r.request().method() === "POST");
+  await fault(request, lateScene, "delay_copy");
+  const response = page.waitForResponse((r) => r.url().endsWith(`/${lateScene}/copy`) && r.request().method() === "POST");
   await page.getByTestId("live-copy-confirm").click();
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByTestId("shell-store-selector").selectOption(store);
+  await page.locator("#live-session-picker").selectOption(lateDestination);
   await response;
   await expect.poll(() => new URL(page.url()).searchParams.get("store")).toBe(store);
+  await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(lateDestination);
   await expect(page.getByText("Delayed copy scope test", { exact: true })).toHaveCount(0);
-  expect((await facts(request)).receipts.filter((r) => r.scene === otherScene && r.action === "copy" && r.effect)).toHaveLength(1);
-  await screenshot(page, "en-390-delayed-copy-other-store");
+  expect((await facts(request)).receipts.filter((r) => r.scene === lateScene && r.action === "copy" && r.effect)).toHaveLength(1);
+  await screenshot(page, "en-390-delayed-copy-other-scene");
 });
 
 for (const [index, locale] of locales.entries()) {
@@ -241,11 +245,13 @@ for (const [index, locale] of locales.entries()) {
         { name: "__Host-commerce_csrf", value: randomBytes(32).toString("base64url"), url, secure: true, httpOnly: false, sameSite: "Lax" },
       ]);
       const page = await context.newPage();
-      const scene = scenes[index * 2]!;
+      const scene = lateDestination;
       await page.goto(route(locale, scene));
       await expect(page.getByTestId("live-console")).toBeVisible();
+      await phase(page, "draft");
       const body = (await facts(request)).scenes[scene]!;
       await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeDisabled();
+      await expect(page.getByText(workspaceCopy[locale].narrowPending, { exact: true })).toBeVisible();
       const before = (await facts(request)).receipts.length;
       await expect(page.getByTestId(`live-stock-save-${body.Offer}`)).toBeDisabled();
       expect((await facts(request)).receipts).toHaveLength(before);

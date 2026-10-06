@@ -354,9 +354,14 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	mux.Handle("/", httpapi.NewHandler(h.f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &h.labels}))
 	mock := &consoleMock{scenes: map[string]*consoleMockScene{}, responses: map[string]any{}}
 	ids := []string{}
-	for i := 0; i < 6; i++ {
+	lateScenes := []string{}
+	for i := 0; i < 8; i++ {
 		id := h.draft(t, h.f.storeA1)
-		ids = append(ids, id)
+		if i < 6 {
+			ids = append(ids, id)
+		} else {
+			lateScenes = append(lateScenes, id)
+		}
 		mock.scenes[id] = &consoleMockScene{ID: id, Store: h.f.storeA1, Title: fmt.Sprintf("LC-U1 MOCK lane %d", i), Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 12, StockVersion: 1, Active: true}
 	}
 	other := h.draft(t, h.f.storeA2)
@@ -479,7 +484,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/live-console.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken})
+	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken})
 	cmd.Stdout, cmd.Stderr = log, log
 	runErr := cmd.Run()
 	mock.mu.Lock()
