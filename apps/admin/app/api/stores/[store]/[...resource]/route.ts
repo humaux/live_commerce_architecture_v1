@@ -1,4 +1,4 @@
-// Purpose: Authenticated, allowlisted admin BFF including LC-U1 console/lifecycle/recommend and session-results/copy.
+// Purpose: Authenticated, allowlisted admin BFF including LC-U1 console/results commands and Meta health B1/B2.
 // Depends on: backend/auth server boundaries and each domain's request grammar; Go admin endpoints under /v1/admin/stores.
 // Used by: merchant admin clients. Invariants: I01/I02/I11/I15; server scope, CSRF, keyed commands and private no-store.
 import { callBackend, fixtureSession } from "@/lib/backend";
@@ -17,6 +17,8 @@ import {
 import {
   DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
+import { metaHealthRoute, validMetaHealthRequest, validRecheckBody } from "@/lib/meta-health-request";
+import { parseMetaHealth, parseRecheck } from "@/lib/meta-health-model";
 import { metaConnectAny, metaConnectRoutes, validMetaConnectRequest } from "@/lib/meta-connect-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch } from "@/lib/ads-request";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
@@ -105,6 +107,8 @@ async function route(request: Request, context: Context) {
   const error = localError;
   const { store, resource } = await context.params;
   const path = resource.join("/");
+  const health = metaHealthRoute(request.method, path);
+  if (health && !validMetaHealthRequest(request)) return error(422, "invalid_request");
   // Refund/shipment/export/permission resources (orders-request.ts grammar) -> Go refunds.go/shipments.go.
   const action = orderActionRoute(request.method, path);
   // customers-billing-ui: customers/finance/billing resources (lib/customers-request.ts grammar) -> Go customers.go/finance.go/billing.go.
@@ -120,7 +124,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !logistic))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !logistic && !health))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -133,7 +137,7 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((studio || order || orderSearch || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((health || studio || order || orderSearch || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
@@ -286,7 +290,7 @@ async function route(request: Request, context: Context) {
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
     // Billing POSTs are keyless by contract (§6), print-form is a keyless command; every other command needs its key.
-    const keyless = orderSearch || customers === "checkout" || customers === "portal" || action === "keyless-command";
+    const keyless = health === "recheck" || orderSearch || customers === "checkout" || customers === "portal" || action === "keyless-command";
     if (!inspection && !keyless && !/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
       return error(422, "invalid_request");
     const customersBodyless = customers === "export" || customers === "portal";
@@ -309,7 +313,7 @@ async function route(request: Request, context: Context) {
         const part = await reader.read();
         if (part.done) break;
         size += part.value.byteLength;
-        if (size > (orderSearch ? 1024 : imageUpload ? MAX_UPLOAD : designJson ? DESIGN_MAX_JSON : 65536)) {
+        if (size > (health || orderSearch ? 1024 : imageUpload ? MAX_UPLOAD : designJson ? DESIGN_MAX_JSON : 65536)) {
           await reader.cancel();
           return imageUpload ? error(413, "invalid_request") : error(400, "invalid_json");
         }
@@ -324,6 +328,7 @@ async function route(request: Request, context: Context) {
       // The photo bytes go to Go untouched (Go sniffs the type and owns the 2 MiB rule); everything else is JSON text.
       init.body = imageUpload ? new Blob([data]) : new TextDecoder().decode(data);
     }
+    if (health === "recheck" && !validRecheckBody(typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // Exact bodies for the customers/billing commands (closed keys, ERASE word, consent pairs, price id).
     if (customers && !validCustomersBody(customers, typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // PUT ads/drafts/{id} is revision-guarded: forward exactly one bare-decimal If-Match, never anything else.
@@ -388,6 +393,14 @@ async function route(request: Request, context: Context) {
     const denied = await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
+  }
+  if (health && response.ok) {
+    // Calls Go meta-health B1/B2 (§9): project known fields and never forward provider/debug payloads.
+    try {
+      if (response.status !== (health === "status" ? 200 : 202)) return error(503, "retry_later");
+      const raw: unknown = JSON.parse(await readBody(response, "application/json", 128 << 10));
+      return Response.json(health === "status" ? parseMetaHealth(raw) : parseRecheck(raw), { status: response.status, headers: { "Cache-Control": "private, no-store", "X-Request-ID": response.headers.get("x-request-id") ?? "" } });
+    } catch { return error(503, "retry_later"); }
   }
   if (!response.ok) {
     // store-design D3: a refused document (422) keeps only the closed {path, reason} pair so the editor can mark the field.

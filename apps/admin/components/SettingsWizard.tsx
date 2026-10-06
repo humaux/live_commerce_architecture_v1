@@ -3,6 +3,9 @@
 // Used by: apps/admin/app/[locale]/settings/page.tsx
 "use client";
 
+// Purpose: merchant setup and provider/Meta settings, forwarding the authenticated store permissions.
+// Depends on: settings read/write clients, MetaConnect and the store list authority.
+// Used by: localized admin settings page.
 // Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/{provider-accounts,markets/...}
 // -> Go internal/httpapi settings routes. The merchant-arranged (manual) branch also hosts the logistics cards
 // (<LogisticsSettings>: BFF logistics/ecpay, logistics/ecpay/enabled, logistics/cvs-settings -> Go
@@ -2725,7 +2728,7 @@ export function SettingsWizard({
         </div>
         {store && <StorefrontSettings store={store.id} locale={locale} />}
         {/* Facebook Page / Instagram connect: BFF /api/meta/*, /api/stores/{store}/meta-connect/* -> Go internal/httpapi/meta_connect.go */}
-        {store && <MetaConnect key={store.id} store={store.id} locale={locale} />}
+        {store && <MetaConnect key={store.id} store={store.id} locale={locale} canManage={store.permissions?.includes("integration:manage") === true} />}
       </div>
     </WorkspaceFrame>
   );

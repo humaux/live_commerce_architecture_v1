@@ -1,7 +1,8 @@
 // Purpose: the merchant import HTTP adapter of contracts/migration-import-v1.md (unit W5-02B), under
 //   /v1/admin/stores/{store_id}/imports: POST customers/preview, POST customers/commit?expected_apply_rows=N and
-//   GET {batch_id}/results.csv[?only=failed]. It decides no rule: internal/migrationimport and the migration 0152 definers do.
-// Depends on: internal/migrationimport (CustomersPreview, CustomersCommit, ResultsCSV, ParseMapping), merchanttools.go helpers
+//   GET {batch_id}/results.csv[?only=failed], plus (W5-03B) POST orders/preview and POST orders/commit for the historical-order archive.
+//   It decides no rule: internal/migrationimport and the migration 0152 / 0156 definers do.
+// Depends on: internal/migrationimport (CustomersPreview, CustomersCommit, OrdersPreview, OrdersCommit, ResultsCSV, ParseMapping), merchanttools.go helpers
 //   (trackingImportRoute, withToolsScope, toolsClassify, importBudget), customers.go writeAttachment.
 // Used by: handler.go NewHandler (mounted unconditionally, like the customer rows); pinned by imports_test.go (DB-free full router).
 // Invariants: authority is customers:privacy (imported rows are PII); the tenant and store come from the bearer; no Idempotency-Key
@@ -27,7 +28,7 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// registerImportRoutes mounts the three customer-import rows. The literal "customers" segment and the {batch_id} wildcard never
+// registerImportRoutes mounts the three customer-import rows and the two order-import rows. The literal "customers" segment and the {batch_id} wildcard never
 // overlap (different method and second literal); the DB-free full-router test fails at registration on any conflict.
 func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const base = "/v1/admin/stores/{store_id}/imports"
@@ -64,6 +65,41 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		}
 		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
 			return migrationimport.CustomersCommit(ctx, tx, s, bearerToken(r), data, mapping, expected)
+		})
+	}))
+	// POST orders/preview and orders/commit (W5-03B): the same two rows for the historical-order CSV (a read-only archive attached to
+	// already-imported customers); same query grammar, same file-hash idempotency, same 60 s budget.
+	mux.HandleFunc("POST "+base+"/orders/preview", trackingImportRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		q, ok := importQuery(r, "mapping")
+		if !ok {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		mapping, err := migrationimport.ParseMapping(q.Get("mapping"))
+		if err != nil {
+			status, code := importClassify(err)
+			respondError(w, status, code)
+			return
+		}
+		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+			return migrationimport.OrdersPreview(ctx, tx, s, bearerToken(r), data, mapping)
+		})
+	}))
+	mux.HandleFunc("POST "+base+"/orders/commit", trackingImportRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
+		q, ok := importQuery(r, "expected_apply_rows", "mapping")
+		expected, perr := strconv.ParseInt(q.Get("expected_apply_rows"), 10, 64)
+		if !ok || q.Get("expected_apply_rows") == "" || perr != nil || expected < 0 || expected > migrationimport.MaxRows {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		mapping, err := migrationimport.ParseMapping(q.Get("mapping"))
+		if err != nil {
+			status, code := importClassify(err)
+			respondError(w, status, code)
+			return
+		}
+		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+			return migrationimport.OrdersCommit(ctx, tx, s, bearerToken(r), data, mapping, expected)
 		})
 	}))
 	// GET results.csv[?only=failed]: the downloadable per-row result of one committed batch (no name, phone or email in it).
