@@ -68,7 +68,18 @@ func t04Scoped[T any](ctx context.Context, f *testFixture, token, store, permiss
 	return result, err
 }
 
-func t04Tag() string { return strings.ReplaceAll(randomUUID(), "-", "")[:12] }
+// t04Tag is the shared random fixture suffix (12 hex chars). Product/offer/keyword names embed it, and a run of >=8
+// ASCII digits trips the §3.5 public-safe phone rule (msgtemplates.ValidatePublicSafe) -> flaky public_reply_forbidden_content.
+// Digits at positions 3 and 8 are remapped to letters (a-j) so no run exceeds 4 digits; ~40 bits of entropy remain.
+func t04Tag() string {
+	b := []byte(strings.ReplaceAll(randomUUID(), "-", "")[:12])
+	for _, i := range []int{3, 8} {
+		if b[i] >= '0' && b[i] <= '9' {
+			b[i] = 'a' + (b[i] - '0')
+		}
+	}
+	return string(b)
+}
 
 func t04Key(prefix string) string { return prefix + ":" + t04Tag() }
 
