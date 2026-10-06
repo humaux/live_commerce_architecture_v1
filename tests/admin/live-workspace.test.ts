@@ -45,3 +45,9 @@ test("LC-U1 delayed copy completion cannot navigate after store switch or unmoun
   assert.equal(await settleLiveCommand(async () => "new-scene", () => true, (id) => { completed = id; }), true);
   assert.equal(completed, "new-scene");
 });
+test("LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary", () => {
+  const hook = readFileSync("apps/admin/src/features/live/use-live-workspace.ts", "utf8");
+  assert.match(hook, /const fenceKey = `live-workspace-command:\$\{scope\}`;/);
+  assert.match(hook, /identity\.current === atStart/);
+  assert.match(hook, /\[fenceKey, boundary\]/);
+});

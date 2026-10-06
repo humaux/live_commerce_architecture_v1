@@ -229,6 +229,30 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
   });
 }
 
+test("LC-U1 unknown receipt stays fenced after real logout and reauthentication", async ({ page, request }) => {
+  await login(page);
+  await page.goto(route("en", lateDestination));
+  await phase(page, "draft");
+  const offer = (await facts(request)).scenes[lateDestination]!.Offer;
+  await fault(request, lateDestination, "unknown");
+  await page.getByTestId(`live-recommend-${offer}`).click();
+  await expect(page.getByTestId("live-command-retry")).toBeVisible();
+  const receipt = (await facts(request)).receipts.at(-1)!;
+  const before = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  await page.getByTestId("workspace-sign-out").click();
+  await expect(page.getByTestId("live-console")).toHaveCount(0);
+  await login(page);
+  const after = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  expect(Boolean(before && after && before !== after)).toBe(true); // Never put cookie values in assertion diagnostics.
+  await page.goto(route("en", lateDestination));
+  await phase(page, "draft");
+  await expect(page.getByTestId("live-primary-action")).toBeDisabled();
+  await expect(page.getByTestId(`live-recommend-${offer}`)).toBeDisabled();
+  await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+  expect((await facts(request)).receipts.filter((r) => r.key_hash === receipt.key_hash)).toHaveLength(1);
+  await screenshot(page, "en-reauth-receipt-fence");
+});
+
 test("LC-U1 delayed copy cannot navigate back after an actual SPA scene switch", async ({ page, request }) => {
   await page.setViewportSize(sizes[1]!);
   await login(page);

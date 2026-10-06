@@ -61,7 +61,9 @@ export function useLiveCommand(scope: string, boundary: string, onChanged: () =>
   const invalidate = useCallback(() => { ++lifetime.current; }, []);
   useEffect(() => { ++lifetime.current; return () => { ++lifetime.current; }; }, []);
   const active = useRef(false), identity = useRef(`${scope}|${boundary}`); identity.current = `${scope}|${boundary}`;
-  const fenceKey = `live-workspace-command:${scope}:${boundary}`;
+  // Persist only the opaque receipt key. Reauthentication must not make an ambiguous command disappear.
+  // In-memory replay remains bound to the original session through identity/isCurrent below.
+  const fenceKey = `live-workspace-command:${scope}`;
   useEffect(() => {
     pending.current = null; active.current = false; setBusy(false);
     let blocked = true;
