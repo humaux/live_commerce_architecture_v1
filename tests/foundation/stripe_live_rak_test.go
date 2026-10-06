@@ -153,11 +153,14 @@ func TestStripeSL08RestrictedKey(t *testing.T) {
 	step("probe_checkout create+expire+retrieve", meta.HTTPStatus, err)
 	_, meta, err = client.FindCheckoutSessions(ctx, randomUUID(), time.Now().Add(-time.Hour).Unix(), time.Now().Add(time.Hour).Unix())
 	step("find_checkout_sessions (list)", meta.HTTPStatus, err)
+	// W4-S2 (stripe-platform-account-v1 §6.5): the settlement sync lists balance transactions; the RAK needs "Balance transactions read".
+	_, meta, err = client.ListBalanceTransactions(ctx, time.Now().Add(-time.Hour).Unix(), time.Now().Unix())
+	step("balance_transactions_list (settlement sync)", meta.HTTPStatus, err)
 
 	// Raw read probes name the permissions Stripe wants for each resource family (403 body, rak_ tokens only).
 	for _, p := range []struct{ name, path string }{
 		{"account", "/v1/account"}, {"checkout_sessions", "/v1/checkout/sessions?limit=1"}, {"payment_intents", "/v1/payment_intents?limit=1"},
-		{"charges", "/v1/charges?limit=1"}, {"refunds", "/v1/refunds?limit=1"},
+		{"charges", "/v1/charges?limit=1"}, {"refunds", "/v1/refunds?limit=1"}, {"balance_transactions", "/v1/balance_transactions?limit=1"},
 	} {
 		status, names := slkRawGet(key, p.path)
 		note("read probe %-18s http=%d permissions_named_in_403=%s", p.name, status, strings.Join(names, ","))

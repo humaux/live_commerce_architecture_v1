@@ -609,7 +609,9 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 	apply := func(tx pgx.Tx, paths []string, prefix, skip string) {
 		for _, path := range paths {
 			// 0137 / post-River 0022 (platform Stripe) re-create 0077/0016 objects, so the pre-0077 fixture must hold them back too.
-			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" {
+			// 0150 (W4-S2 settlement ledger) needs 0137's platform tables, so it is held back with them.
+			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
+				filepath.Base(path) == "0150_platform_settlement.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -766,9 +768,9 @@ func slsUpgrade(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerAfter); err != nil {
 		t.Fatal(err)
 	}
-	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016 and applied by the same Apply.
-	if ledgerAfter != ledgerBefore+4 {
-		t.Fatalf("ledger grew by %d, want exactly 4 (0077, post_river/0016, 0137 and post_river/0022, once)", ledgerAfter-ledgerBefore)
+	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) with them; the same Apply runs all five.
+	if ledgerAfter != ledgerBefore+5 {
+		t.Fatalf("ledger grew by %d, want exactly 5 (0077, post_river/0016, 0137, post_river/0022 and 0150, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -862,6 +864,9 @@ func slsUpgrade(t *testing.T) {
 				ok = true
 				sawFn[obj] = true
 			}
+			if !ok && slsSettlementDelta(role, kind, obj, priv) {
+				ok = true // 0150 (settlement ledger) is applied by the same Apply; exact per-role sets, pinned from its own side by PF09
+			}
 			if !ok && slsPlatformStripeDelta(role, kind, obj, priv) {
 				ok = true // 0137 (platform Stripe) is applied by the same Apply; its own delta is pinned by PF01
 			}
@@ -897,6 +902,40 @@ func slsUpgrade(t *testing.T) {
 			t.Fatalf("ledger rows with a checksum: %d", got)
 		}
 	})
+}
+
+// slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):
+//   - commerce_payment_registry_writer: any privilege on its own settlement tables/functions/triggers, and SELECT on exactly the existing-table
+//     columns the attribution reads use (stripe_sessions six columns, stripe_refunds four, payment_attempts.order_id);
+//   - commerce_payment_registrar: EXECUTE on the four operator functions only;
+//   - commerce_runtime: EXECUTE on read_store_settlements only.
+//
+// Nobody else (checkout writer, workers, ingress) gains anything. The same sets are pinned from the 0150 side by TestPlatformSettlement/PF09_schema.
+func slsSettlementDelta(role, kind, obj, priv string) bool {
+	switch role {
+	case "commerce_payment_registry_writer":
+		if strings.HasPrefix(obj, "payments.settlement_") || strings.HasPrefix(obj, "payments.record_settlement_") ||
+			strings.HasPrefix(obj, "payments.close_settlement") || strings.HasPrefix(obj, "payments.read_settlement_statement") ||
+			strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") {
+			return true
+		}
+		if kind == "column" && priv == "SELECT" {
+			for _, col := range []string{"payments.stripe_sessions.tenant_id", "payments.stripe_sessions.store_id", "payments.stripe_sessions.attempt_id",
+				"payments.stripe_sessions.environment", "payments.stripe_sessions.account_id", "payments.stripe_sessions.payment_intent_id",
+				"payments.stripe_refunds.stripe_refund_id", "payments.stripe_refunds.account_id", "payments.stripe_refunds.amount_minor",
+				"payments.stripe_refunds.currency", "checkout.payment_attempts.order_id"} {
+				if obj == col {
+					return true
+				}
+			}
+		}
+	case "commerce_payment_registrar":
+		return kind == "exec" && priv == "EXECUTE" && (obj == "payments.record_settlement_lines" || obj == "payments.close_settlement" ||
+			obj == "payments.record_settlement_payout" || obj == "payments.read_settlement_statement")
+	case "commerce_runtime":
+		return kind == "exec" && priv == "EXECUTE" && obj == "payments.read_store_settlements"
+	}
+	return false
 }
 
 // slsPlatformStripeDelta recognises the privileges migration 0137 adds (stripe-platform-account-v1 §3.5 plus the owner amendment
