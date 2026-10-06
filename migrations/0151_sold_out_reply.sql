@@ -33,8 +33,8 @@ INSERT INTO msgtemplates.fixed_templates(template_id, version, name, body, kinds
  ('sold-out-reply/v1', 1, '沒貨回覆', '抱歉，{{product.name}} 已售完，補貨時會在直播中通知，請留意直播。', ARRAY['private_reply'], false)
 ON CONFLICT (template_id, version) DO NOTHING;
 
--- Body of a template usable as the sold-out reply (NULL = not usable): fixed or this store's, kind private_reply, one line of <= 280 characters,
--- {{product.name}} the only placeholder. Used by the setter (validation) and plan_claim_reply (rendering); versions are append-only, so a
+-- Body of a template usable as the sold-out reply (NULL = not usable): fixed or this store's, kind private_reply, <= 280 characters, no control
+-- character (Cc only: the same rule as the Go adapter's soldOutTextOK, so SQL never freezes text Go refuses), {{product.name}} the only placeholder, at most once. Used by the setter (validation) and plan_claim_reply (rendering); versions are append-only, so a
 -- body that was valid when chosen stays valid.
 CREATE FUNCTION msgtemplates.sold_out_body(p_tenant uuid, p_store uuid, p_template_id text, p_version bigint) RETURNS text
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
@@ -46,8 +46,9 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
     ) x
     WHERE x.kinds @> ARRAY['private_reply']::text[]
       AND char_length(x.body) BETWEEN 1 AND 280
-      AND x.body !~ '[[:cntrl:]]'
-      AND regexp_replace(x.body, '\{\{product\.name\}\}', '', 'g') !~ '\{\{|\}\}'
+      AND x.body !~ '[\x01-\x1f\x7f-\x9f]' -- exactly the Cc set (Go unicode.IsControl); U+3000 and ZWJ are allowed
+      AND (char_length(x.body) - char_length(replace(x.body, '{{product.name}}', ''))) <= 16 -- {{product.name}} (16 chars) at most once
+      AND replace(x.body, '{{product.name}}', '') !~ '\{\{|\}\}'
     LIMIT 1
 $$;
 ALTER FUNCTION msgtemplates.sold_out_body(uuid, uuid, text, bigint) OWNER TO commerce_msgtemplates_writer;
@@ -106,8 +107,15 @@ GRANT SELECT, INSERT, UPDATE ON claims.sold_out_settings TO commerce_integration
 CREATE POLICY sold_out_settings_rw ON claims.sold_out_settings FOR ALL TO commerce_integration_writer
     USING (inbox.lcn_in_scope(tenant_id, store_id)) WITH CHECK (inbox.lcn_in_scope(tenant_id, store_id));
 
--- Reads the planners need beyond 0064/0128 (columns only; scope policies of those migrations apply).
-GRANT SELECT(offer_id, quantity) ON claims.events TO commerce_integration_writer;
+-- The claim event records that its bundle's automatic reply was the sold-out one (NULL otherwise). Set once by plan_claim_reply, never cleared.
+ALTER TABLE claims.events ADD COLUMN reply_kind text CHECK (reply_kind IS NULL OR (reply_kind = 'sold_out' AND outcome = 'ACCEPTED'));
+
+-- Reads/marks the planners need beyond 0064/0128 (columns only; scope policies of those migrations apply).
+GRANT SELECT(offer_id, quantity, reply_kind) ON claims.events TO commerce_integration_writer;
+GRANT UPDATE(reply_kind) ON claims.events TO commerce_integration_writer;
+CREATE POLICY event_sold_out_mark ON claims.events FOR UPDATE TO commerce_integration_writer
+    USING ((tenant_id, store_id) = (SELECT s.tenant_id, s.store_id FROM claims.intake_scope() s) AND reply_kind IS NULL)
+    WITH CHECK (reply_kind = 'sold_out');
 
 -- Audit actions of this unit. The two planner actions are written inside the intake transaction (intake_scope), the setter's in the merchant one.
 CREATE POLICY sold_out_reply_audit ON ops.audit_events FOR INSERT TO commerce_integration_writer
@@ -118,7 +126,7 @@ CREATE POLICY sold_out_settings_audit ON ops.audit_events FOR INSERT TO commerce
 
 -- ---------------------------------------------------------------------------------------
 -- Private helper: the facts of the bundle-creating claim event. Zero rows when the event has no offer (not a claim). sold_out is the A6 rule
--- or an inactive offer; product_name is cut to 60 characters so the frozen text stays within the 2048-byte request bound.
+-- or an inactive offer; product_name has control characters replaced by spaces and is cut to 60 characters so the frozen text stays within the request bound.
 -- ---------------------------------------------------------------------------------------
 CREATE FUNCTION integration.claim_sold_out_facts(p_tenant uuid, p_store uuid, p_inbox_event uuid)
 RETURNS TABLE(sold_out boolean, reply_enabled boolean, tpl_id text, tpl_version bigint, offer uuid, product_name text)
@@ -134,13 +142,16 @@ BEGIN
     v_sold := NOT o.active OR inventory.claim_sku_sold_out(o.sku_id, e.quantity);
     SELECT s.enabled, s.template_id, s.template_version INTO st FROM claims.sold_out_settings s WHERE s.tenant_id = p_tenant AND s.store_id = p_store;
     IF NOT FOUND THEN st.enabled := true; st.template_id := 'sold-out-reply/v1'; st.template_version := 1; END IF;
-    SELECT left(p.name, 60) INTO v_name FROM catalog.skus k
+    -- Control characters become spaces and the name is clipped by characters, so the frozen text always passes the adapter's check.
+    SELECT left(regexp_replace(p.name, '[\x01-\x1f\x7f-\x9f]', ' ', 'g'), 60) INTO v_name FROM catalog.skus k
       JOIN catalog.products p ON p.tenant_id = k.tenant_id AND p.store_id = k.store_id AND p.id = k.product_id
      WHERE k.tenant_id = p_tenant AND k.store_id = p_store AND k.id = o.sku_id;
     RETURN QUERY SELECT v_sold, st.enabled, st.template_id, st.template_version, e.offer_id, coalesce(v_name, '');
 END $$;
 ALTER FUNCTION integration.claim_sold_out_facts(uuid, uuid, uuid) OWNER TO commerce_integration_writer;
 REVOKE ALL ON FUNCTION integration.claim_sold_out_facts(uuid, uuid, uuid) FROM PUBLIC;
+COMMENT ON FUNCTION integration.claim_sold_out_facts(uuid, uuid, uuid) IS
+ 'W3-04B (0151). Private helper of claim_reply_plannable and plan_claim_reply (owner-only, no EXECUTE grant): sold-out verdict, switch, template and clipped product name of a bundle-creating claim event; the two planners read it in separate statements and plan_claim_reply never raises on a disagreement.';
 
 -- ---------------------------------------------------------------------------------------
 -- claim_reply_plannable: sold-out + switch off = audited skip, patched in place from the live definition (the 0143 pattern: loud failure when
@@ -167,7 +178,7 @@ CREATE OR REPLACE FUNCTION integration.plan_claim_reply(p_intake uuid,p_operatio
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE i record; ev record; src record; b record; j record; v_domain uuid; v_origin text; v_expires timestamptz;
  v_deadline timestamptz; v_request jsonb; v_key text; dw record; v_known boolean:=false; v_gen bigint:=0;
- sf record; v_text text; v_tpl text; v_tplv bigint;
+ sf record; v_text text; v_tpl text; v_tplv bigint; v_so boolean:=false;
 BEGIN
  IF p_intake IS NULL OR p_operation IS NULL OR p_link_hash IS NULL OR octet_length(p_link_hash)<>32
   OR p_link_key_id IS NULL OR p_link_key_id !~ '^[0-9a-f]{16}$' OR p_job IS NULL OR p_job<=0
@@ -203,11 +214,13 @@ BEGIN
  -- §3.6 / P2-3: freeze the EFFECTIVE takeover generation of the actor's known conversation (via bundle peers), else 0.
  SELECT t.takeover_generation INTO dw FROM inbox.dm_window_for_bundle(i.tenant_id,i.store_id,ev.bundle_id,i.app_id,i.object,i.asset_id) t;
  IF FOUND THEN v_known:=true; v_gen:=dw.takeover_generation; END IF;
- -- W3-04B: is the claimed offer sold out (A6 rule)? claim_reply_plannable already returned OK, so a sold-out claim here has the switch ON.
+ -- W3-04B: sold-out branch only when the offer is sold out NOW and the switch is ON now. The facts are read in a fresh statement snapshot (stock and
+ -- the switch are not locked), so they may differ from what claim_reply_plannable saw; any disagreement takes the normal link branch (Begin stays the
+ -- stock authority) and never raises: a RAISE here is final in the poller and would lose the claim.
  SELECT f.sold_out,f.reply_enabled,f.tpl_id,f.tpl_version,f.offer,f.product_name INTO sf
   FROM integration.claim_sold_out_facts(i.tenant_id,i.store_id,i.inbox_event_id) f;
- IF sf.sold_out IS TRUE THEN
-  IF NOT sf.reply_enabled THEN RAISE EXCEPTION 'invalid claim reply plan' USING ERRCODE='22023'; END IF;
+ v_so:=sf.sold_out IS TRUE AND sf.reply_enabled IS TRUE;
+ IF v_so THEN
   -- msgtemplates.sold_out_body: definer commerce_msgtemplates_writer; the store's chosen template, else the fixed default (never fail the claim).
   v_tpl:=sf.tpl_id; v_tplv:=sf.tpl_version;
   v_text:=msgtemplates.sold_out_body(i.tenant_id,i.store_id,v_tpl,v_tplv);
@@ -215,8 +228,11 @@ BEGIN
    v_tpl:='sold-out-reply/v1'; v_tplv:=1;
    v_text:=msgtemplates.sold_out_body(i.tenant_id,i.store_id,v_tpl,v_tplv);
   END IF;
-  IF v_text IS NULL THEN RAISE EXCEPTION 'invalid claim reply plan' USING ERRCODE='22023'; END IF;
-  v_text:=replace(v_text,'{{product.name}}',sf.product_name);
+  IF v_text IS NOT NULL THEN v_text:=replace(v_text,'{{product.name}}',sf.product_name); END IF;
+  -- Never fail the claim on a text problem: no usable template, or a render above the bound, is the fixed default without the product name.
+  IF v_text IS NULL OR char_length(v_text)>400 THEN
+   v_tpl:='sold-out-reply/v1'; v_tplv:=1; v_text:='抱歉，此商品已售完，補貨時會在直播中通知，請留意直播。';
+  END IF;
   -- No claims.links row: there is no link to prove at Check time (claims.check_meta_reply skips it for this message type).
   v_deadline:=least(i.occurred_at+interval '7 days'-interval '1 hour',
    CASE WHEN i.live_media THEN i.received_at+interval '15 minutes' END);
@@ -226,6 +242,10 @@ BEGIN
    'message_type','sold_out_reply','origin_kind','auto','text',v_text,'conversation_known',v_known,'takeover_generation',v_gen,
    'app_id',i.app_id,
    'deadline_at',to_char(v_deadline AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),'live_media',i.live_media);
+  IF octet_length(v_request::text)>2048 THEN -- unreachable with the 280/60/400 bounds; kept so this branch can never raise
+   v_request:=v_request||jsonb_build_object('template','sold-out-reply/v1','template_version',1,
+    'text','抱歉，此商品已售完，補貨時會在直播中通知，請留意直播。');
+  END IF;
  ELSE
   v_expires:=claims.issue_system_link(p_intake,p_link_hash);
   v_deadline:=least(i.occurred_at+interval '7 days'-interval '1 hour',v_expires-interval '10 minutes',
@@ -247,9 +267,11 @@ BEGIN
   VALUES(i.tenant_id,i.store_id,p_operation,0,'READY','','operation_planned');
  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
   VALUES(i.tenant_id,i.store_id,src.principal_id,'meta.private_reply.planned');
- IF sf.sold_out IS TRUE THEN
+ IF v_so THEN
   INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
    VALUES(i.tenant_id,i.store_id,src.principal_id,'claim_reply_sold_out');
+  -- The claim event carries the reply kind (append-only otherwise; this one-way mark is the only UPDATE the planner may do).
+  UPDATE claims.events x SET reply_kind='sold_out' WHERE x.tenant_id=i.tenant_id AND x.store_id=i.store_id AND x.id=ev.id AND x.reply_kind IS NULL;
  END IF;
  RETURN p_operation;
 END $$;

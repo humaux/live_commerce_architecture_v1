@@ -44,8 +44,8 @@ func isSoldOutReply(raw []byte) bool {
 	return json.Unmarshal(raw, &t) == nil && t.MessageType == soldOutType
 }
 
-// parseSoldOut validates a sold-out request against the operation's own asset; the text must be one printable line (the SQL helper
-// forbids control characters, this is the second fence before text reaches Graph).
+// parseSoldOut validates a sold-out request against the operation's own asset; the text must satisfy soldOutTextOK (the same rule SQL applies
+// before freezing it; this is the second fence before text reaches Graph).
 func parseSoldOut(req core.DispatchRequest) (soldOutRequest, error) {
 	var r soldOutRequest
 	if err := json.Unmarshal(req.Request, &r); err != nil || r.V != 1 || r.MessageType != soldOutType || !command.ValidID(r.BundleID) ||
@@ -55,13 +55,16 @@ func parseSoldOut(req core.DispatchRequest) (soldOutRequest, error) {
 	return r, nil
 }
 
+// soldOutTextOK is the ONE text rule shared with SQL (msgtemplates.sold_out_body / plan_claim_reply): 1..400 characters and no control character
+// (Unicode Cc: C0, DEL, C1, which includes newline). Full-width space, ZWJ and NBSP are ordinary text. Keeping both fences identical is what
+// guarantees a frozen text is never refused here after SQL has spent the comment's one private reply.
 func soldOutTextOK(s string) bool {
 	n := utf8.RuneCountInString(s)
 	if !utf8.ValidString(s) || n < 1 || n > maxSoldOutText {
 		return false
 	}
 	for _, r := range s {
-		if !unicode.IsPrint(r) {
+		if unicode.IsControl(r) {
 			return false
 		}
 	}

@@ -99,3 +99,27 @@ func TestSoldOutCheckUsesSharedCheck(t *testing.T) {
 		}
 	}
 }
+
+// P1-1 (review): the adapter accepts exactly what SQL freezes: only control characters are refused, so a full-width space or ZWJ in a product
+// name (common in zh-TW names and emoji sequences) is sent instead of consuming the comment's private reply with nothing sent.
+func TestSoldOutTextRuleIsControlCharactersOnly(t *testing.T) {
+	var calls []graphCall
+	srv := graphServer(t, 200, `{"message_id":"m1"}`, &calls)
+	h := newHarness(t)
+	route := h.routes(Config{GraphBaseURL: srv.URL, GraphVersion: "v23.0"})["facebook"]
+	for name, text := range map[string]string{"U+3000": "抱歉，韓版　針織衫 已售完", "ZWJ": "抱歉，👨\u200d👩 已售完", "NBSP": "抱歉，a\u00a0b 已售完", "400 runes": strings.Repeat("好", 400)} {
+		req := h.soldOutRequest("facebook", func(m map[string]any) { m["text"] = text })
+		if _, err := route.DispatchWithSecret(context.Background(), req, core.NewSecret([]byte(fakeTok))); err != nil {
+			t.Errorf("%s refused: %v", name, err)
+		}
+	}
+	for name, text := range map[string]string{"C1": "a\u0085b", "DEL": "a\u007fb", "tab": "a\tb", "401 runes": strings.Repeat("好", 401)} {
+		req := h.soldOutRequest("facebook", func(m map[string]any) { m["text"] = text })
+		if _, err := route.DispatchWithSecret(context.Background(), req, core.NewSecret([]byte(fakeTok))); !errors.Is(err, errBadRequest) {
+			t.Errorf("%s accepted: %v", name, err)
+		}
+	}
+	if len(calls) != 4 {
+		t.Fatalf("%d calls, want 4", len(calls))
+	}
+}

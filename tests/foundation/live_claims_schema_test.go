@@ -280,7 +280,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "claims.events", "INSERT", cols("claims.events")...)
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
 		// 0151 (W3-04B): the sold-out predicate reads the claimed offer and quantity of the bundle-creating event (no actor, text or payload).
-		add(iw, "claims.events", "SELECT", "offer_id", "quantity")
+		add(iw, "claims.events", "SELECT", "offer_id", "quantity", "reply_kind")
+		add(iw, "claims.events", "UPDATE", "reply_kind") // 0151: the one-way sold_out mark plan_claim_reply sets on the bundle-creating event
 		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
 		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
 		// W3-03B (0144): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).

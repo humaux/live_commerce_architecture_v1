@@ -917,5 +917,5 @@ template_version, policy:"mpr-policy/v1", message_type:"sold_out_reply", origin_
 deadline_at, live_media}` (<= 2 KiB; `text` is the rendered template, <= 400 characters, no buyer data) and creates **no** link (`link_generation`,
 `link_key_id`, `origin` absent). The "no token/text/name" rule of §6.2 holds for the claim-link message type only. Check = `claims.check_meta_reply`
 without the `link_invalid` proof for this message type; Dispatch posts the frozen `text` once to the same Graph endpoint, Page token placement and
-UNKNOWN/never-resend semantics as §6.3. The adapter refuses a malformed sold-out request (empty/over-long/non-printable text, foreign asset, bad
+UNKNOWN/never-resend semantics as §6.3. The adapter refuses a malformed sold-out request (empty/over-long text or one with a control character, foreign asset, bad
 bundle or comment id) before any HTTP call.

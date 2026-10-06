@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -505,5 +506,157 @@ func TestSoldOutReplyACL(t *testing.T) {
 	if err := f.owner.QueryRow(ctx, `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='fixed_templates_template_id_check'`).Scan(&def); err != nil ||
 		!strings.Contains(def, "sold-out-reply/v1") || !strings.Contains(def, "checkout-reminder/v1") {
 		t.Errorf("fixed template id CHECK lost an id: %q %v", def, err)
+	}
+}
+
+// P1-1 (review): the text SQL freezes must be exactly what the Go adapter accepts, whatever the product name holds, so a sold-out reply can never
+// consume the comment's one private reply without sending. Full-width space, ZWJ and a newline in the name, a 120-character name, a template with
+// several placeholders and a C1 control character all end in a SENT message (or a refused template), never UNKNOWN-with-no-send or a lost claim.
+func TestSoldOutReplyTextMatchesAdapter(t *testing.T) {
+	e := mciSetup(t, mciOpts{private: true})
+	soCleanSettings(t, e)
+	f := e.h.f
+	g := newMciGraph(t)
+	d := e.newDispatcher(t, g, nil, nil)
+	e.soldOut(t, 0)
+	rename := func(name string) {
+		mustExec(t, f.owner, `UPDATE catalog.products SET name=$1 WHERE id=(SELECT product_id FROM catalog.skus WHERE id=$2)`, name, e.sku)
+	}
+	sendOK := func(t *testing.T, r mciReply, want string) {
+		t.Helper()
+		g.setMode("ok")
+		d.run(t, r.op)
+		e.awaitOp(t, r.op, "SUCCEEDED", 30*time.Second, "completed")
+		for _, q := range g.all() {
+			if q.comment == r.s.comment {
+				if q.text != want {
+					t.Fatalf("sent %q, want %q", q.text, want)
+				}
+				return
+			}
+		}
+		t.Fatal("nothing was posted")
+	}
+
+	t.Run("full-width space, ZWJ and newline in the name", func(t *testing.T) {
+		rename("韓版　針織衫‍\n外套")
+		r := e.planReply(t, false, "", "A1")
+		want := "抱歉，韓版　針織衫‍ 外套 已售完，補貨時會在直播中通知，請留意直播。"
+		if o := e.soOpOf(t, r.s.comment); o.Type != "sold_out_reply" || o.Text != want {
+			t.Fatalf("frozen text %q, want %q", o.Text, want)
+		}
+		sendOK(t, r, want)
+	})
+	t.Run("120-character name is clipped by characters and still sends", func(t *testing.T) {
+		rename(strings.Repeat("好", 120))
+		r := e.planReply(t, false, "", "A1")
+		want := "抱歉，" + strings.Repeat("好", 60) + " 已售完，補貨時會在直播中通知，請留意直播。"
+		if o := e.soOpOf(t, r.s.comment); o.Text != want {
+			t.Fatalf("frozen text %q, want %q", o.Text, want)
+		}
+		sendOK(t, r, want)
+	})
+	t.Run("multi-placeholder or C1-control templates are refused and a stored one falls back", func(t *testing.T) {
+		rename("測試商品")
+		pub := func(id, body string) {
+			mustExec(t, f.owner, `INSERT INTO msgtemplates.templates(tenant_id,store_id,template_id,version,name,body,kinds,public_safe,created_by)
+				VALUES($1,$2,$3,1,$3,$4,'{private_reply}',false,$5)`, f.tenantA, f.storeA1, id, body, e.h.actor)
+		}
+		pub("so-six", strings.Repeat("{{product.name}}", 6))
+		pub("so-two", "{{product.name}} / {{product.name}}")
+		pub("so-c1", "a\u0085b {{product.name}}")
+		for _, id := range []string{"so-six", "so-two", "so-c1"} {
+			if _, err := e.setSoldOut(t, true, id, 1, 0); !errors.Is(err, command.ErrInvalid) {
+				t.Errorf("template %s accepted: %v", id, err)
+			}
+		}
+		// A row that bypassed the setter (older data / owner repair) must not lose or strand the claim: the fixed text is planned instead.
+		mustExec(t, f.owner, `INSERT INTO claims.sold_out_settings(tenant_id,store_id,enabled,template_id,template_version,version,principal_id) VALUES($1,$2,true,'so-six',1,1,$3)`, f.tenantA, f.storeA1, e.h.actor)
+		r := e.planReply(t, false, "", "A1")
+		want := "抱歉，測試商品 已售完，補貨時會在直播中通知，請留意直播。"
+		var tpl string
+		if err := f.owner.QueryRow(context.Background(), `SELECT request->>'template' FROM integration.operations WHERE id=$1`, r.op).Scan(&tpl); err != nil || tpl != "sold-out-reply/v1" || r.ev.outcome != "ACCEPTED" {
+			t.Fatalf("fallback: template %q outcome %q err %v", tpl, r.ev.outcome, err)
+		}
+		sendOK(t, r, want)
+	})
+}
+
+// P1-2 (review): claim_reply_plannable and plan_claim_reply read stock and the switch in separate statements. A change between them (simulated by a
+// trigger on the River job insert, which sits exactly between the two calls in the poller) must never raise a final error and lose the claim: the
+// disagreement takes the normal link branch.
+func TestSoldOutReplyDisagreementKeepsTheClaim(t *testing.T) {
+	e := mciSetup(t, mciOpts{private: true})
+	soCleanSettings(t, e)
+	f := e.h.f
+	flipTo := func(units int) {
+		// Database-level settings keep the trigger's inputs out of the poller's session.
+		mustExec(t, f.owner, `DROP TRIGGER IF EXISTS so_flip ON river.river_job`)
+		mustExec(t, f.owner, `CREATE FUNCTION public.so_flip_tmp() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+			BEGIN UPDATE inventory.balances SET on_hand=reserved+allocated+unavailable+`+strconv.Itoa(units)+` WHERE sku_id='`+e.sku+`'; RETURN NEW; END $$`)
+		mustExec(t, f.owner, `CREATE TRIGGER so_flip AFTER INSERT ON river.river_job FOR EACH ROW WHEN (NEW.kind='external_operation_v1') EXECUTE FUNCTION public.so_flip_tmp()`)
+		t.Cleanup(func() {
+			_, _ = f.owner.Exec(context.Background(), `DROP TRIGGER IF EXISTS so_flip ON river.river_job`)
+			_, _ = f.owner.Exec(context.Background(), `DROP FUNCTION IF EXISTS public.so_flip_tmp()`)
+		})
+	}
+	done := func() {
+		mustExec(t, f.owner, `DROP TRIGGER IF EXISTS so_flip ON river.river_job`)
+		mustExec(t, f.owner, `DROP FUNCTION IF EXISTS public.so_flip_tmp()`)
+	}
+
+	t.Run("switch OFF, stock disappears between the two checks", func(t *testing.T) {
+		if _, err := e.setSoldOut(t, false, "sold-out-reply/v1", 1, 0); err != nil {
+			t.Fatal(err)
+		}
+		e.soldOut(t, 5)
+		flipTo(0)
+		defer done()
+		r := e.planReply(t, false, "", "A1")
+		if r.intake.State != "APPLIED" || r.ev.outcome != "ACCEPTED" {
+			t.Fatalf("claim lost: intake %s/%s outcome %q", r.intake.State, r.intake.FailCode, r.ev.outcome)
+		}
+		if o := e.soOpOf(t, r.s.comment); o.Type != "first_private_reply" || o.Links != 1 {
+			t.Fatalf("want the normal link reply, got %+v", o)
+		}
+	})
+	t.Run("switch ON, stock returns between the two checks", func(t *testing.T) {
+		if _, err := e.setSoldOut(t, true, "sold-out-reply/v1", 1, 1); err != nil {
+			t.Fatal(err)
+		}
+		e.soldOut(t, 0)
+		flipTo(5)
+		defer done()
+		r := e.planReply(t, false, "", "A1")
+		if r.intake.State != "APPLIED" || r.ev.outcome != "ACCEPTED" {
+			t.Fatalf("claim lost: intake %s/%s", r.intake.State, r.intake.FailCode)
+		}
+		if o := e.soOpOf(t, r.s.comment); o.Type != "first_private_reply" || o.Links != 1 {
+			t.Fatalf("want the normal link reply, got %+v", o)
+		}
+		if k := miCount(t, f.owner, `SELECT count(*) FROM claims.events WHERE id=$1 AND reply_kind IS NOT NULL`, r.intake.AppliedEvent); k != 0 {
+			t.Fatal("a link reply must not mark the event sold_out")
+		}
+	})
+}
+
+// The claim event carries reply_kind='sold_out' exactly when the sold-out reply was planned (brief scope 2), and the column is a closed vocabulary.
+func TestSoldOutReplyEventMark(t *testing.T) {
+	e := mciSetup(t, mciOpts{private: true})
+	soCleanSettings(t, e)
+	f := e.h.f
+	e.soldOut(t, 0)
+	r := e.planReply(t, false, "", "A1")
+	var kind *string
+	if err := f.owner.QueryRow(context.Background(), `SELECT reply_kind FROM claims.events WHERE id=$1`, r.intake.AppliedEvent).Scan(&kind); err != nil || kind == nil || *kind != "sold_out" {
+		t.Fatalf("event reply_kind = %v (%v), want sold_out", kind, err)
+	}
+	e.soldOut(t, 9)
+	r = e.planReply(t, false, "", "A1")
+	if err := f.owner.QueryRow(context.Background(), `SELECT reply_kind FROM claims.events WHERE id=$1`, r.intake.AppliedEvent).Scan(&kind); err != nil || kind != nil {
+		t.Fatalf("link-reply event reply_kind = %v (%v), want NULL", kind, err)
+	}
+	if _, err := f.owner.Exec(context.Background(), `UPDATE claims.events SET reply_kind='other' WHERE id=$1`, r.intake.AppliedEvent); err == nil {
+		t.Fatal("reply_kind accepted a value outside {NULL, sold_out}")
 	}
 }

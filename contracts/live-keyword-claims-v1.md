@@ -1240,8 +1240,17 @@ reply says when the claimed offer has no stock. The claim itself is unchanged.
   `commerce_integration_writer`, EXECUTE `commerce_runtime`; Go `claims.GetSoldOutReply/SetSoldOutReply`. Switch OFF: a sold-out claim is committed and the
   reply is skipped with audit `claim_reply_skipped:sold_out_off` (the comment's budget stays for one manual reply). A usable template is the fixed
   `sold-out-reply/v1` (zh-TW; kind `private_reply`, not public-safe) or a merchant-published template of the SAME store with kind `private_reply`, one line,
-  <= 280 characters and `{{product.name}}` as its only placeholder; a chosen template that later cannot render falls back to the fixed one (the claim never fails).
+  <= 280 characters and `{{product.name}}` as its only placeholder (at most once); a chosen template that later cannot render falls back to the fixed one (the claim never fails).
   The reply text is not localised per `reply_locale` in this slice (the template is the locale).
+- **Race rules (never lose a claim)**: stock and the switch are read twice (`claim_reply_plannable`, then `plan_claim_reply`, separate statements, nothing locked).
+  `plan_claim_reply` takes the sold-out branch only when the offer is sold out AND the switch is ON at that moment; any other combination takes the normal
+  link branch and never raises (a raise is final in the poller and would lose the claim). Consequence: two concurrent claims for the last unit can both get a
+  link; checkout (Begin) decides stock, as before. A rendered text above 400 characters or a template that is not usable falls back to the fixed text.
+- **One text rule in SQL and Go**: a sold-out text is 1..400 characters with no control character (Unicode Cc: C0, DEL, C1, hence no newline); full-width space,
+  ZWJ and NBSP are ordinary text. SQL (`msgtemplates.sold_out_body`: Cc check, `{{product.name}}` at most once, template <= 280 characters; product name: control
+  characters replaced by spaces, clipped to 60 characters) and the adapter (`soldOutTextOK`) apply the same rule, so a frozen text is never refused at send time.
+- **Claim event mark**: `claims.events.reply_kind` (`NULL` | `'sold_out'`, only on ACCEPTED events) is set once by `plan_claim_reply` when the sold-out reply is planned
+  (column UPDATE for `commerce_integration_writer`, intake-scope policy, one-way). With the switch OFF there is no mark (no reply was planned; audit `claim_reply_skipped:sold_out_off`).
 - **Feed**: `live.console_marks.private_reply_kind` reports a `sold_out_reply` operation as `out_of_stock` (the existing enum of live-console-v1 §2.5).
 - Gates: `TestSoldOutReply*` (SO01-SO08, settings/template rules, ACL pins), `internal/integrations/metareply` unit tests. Evidence MOCK (REAL_PG + fake Graph); Meta LIVE NOT_RUN.
 - NOT in this slice: restock notification (no lawful channel), auto-pausing sold-out offers (live-console §7.2), public "sold out" comments, stock holds,
