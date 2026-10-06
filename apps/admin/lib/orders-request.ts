@@ -2,6 +2,8 @@
 // -> Go `internal/httpapi/{orders,refunds,shipments,cvs}.go`. No generic proxying: every resource is listed.
 // CVS (contracts/taiwan-cvs-logistics-v1.md §8, §16.4, §16.8): GET|POST orders/{id}/cvs-shipment,
 // POST .../cvs-shipment/{print-form|abandon}, POST orders/{id}/{collection|pay-at-pickup-release}.
+// Returns (contracts/returns-v1.md §6, W3-08B): POST orders/{id}/cancel, POST|GET orders/{id}/returns,
+// GET orders/cancel-refund-gaps, GET returns (?state= only), POST returns/{id}/{receive|inspect|close|cancel}.
 import { validOrdersV2Query } from "./orders-v2.ts";
 const states = new Set([
   "all",
@@ -62,9 +64,25 @@ const actionRoutes: [string, RegExp, OrderActionKind][] = [
   // storefront-v2 §C bank transfer: detail read (orders:read) and the three audited decisions (payments:refund, keyed, body {} or {reason}).
   ["GET", new RegExp(`^orders/${uuid}/bank-transfer$`), "get"],
   ["POST", new RegExp(`^orders/${uuid}/bank-transfer/(?:confirm|reject|refund-offline)$`), "command"],
+  // returns-v1 §6 (W3-08B): merchant cancel, per-order RMA register/read, the store RMA list (only this read may
+  // carry a query — ?state=, checked by validReturnsQuery), the refund-gap list and the four RMA step commands.
+  ["POST", new RegExp(`^orders/${uuid}/cancel$`), "command"],
+  ["POST", new RegExp(`^orders/${uuid}/returns$`), "command"],
+  ["GET", new RegExp(`^orders/${uuid}/returns$`), "get"],
+  ["GET", /^orders\/cancel-refund-gaps$/, "get"],
+  ["GET", /^returns$/, "get"],
+  ["POST", new RegExp(`^returns/${uuid}/(?:receive|inspect|close|cancel)$`), "command"],
 ];
 export function orderActionRoute(method: string, path: string): OrderActionKind | null {
   return actionRoutes.find(([m, re]) => m === method && re.test(path))?.[2] ?? null;
+}
+
+// returns-v1 §6: GET returns is the one order-action read that may carry a query — exactly `?state=` once,
+// one of the five RMA states (Go re-checks the same grammar). Inspect the raw URL before Next.js drops a bare '?'.
+export function validReturnsQuery(rawURL: string) {
+  const at = rawURL.indexOf("?");
+  if (at < 0) return true;
+  return /^state=(?:REGISTERED|RECEIVED|INSPECTED|CLOSED|CANCELLED)$/.test(rawURL.slice(at + 1));
 }
 
 // Response headers the Go CSV route must send before the BFF streams it through (manual-fulfilment-v1 §5.1).

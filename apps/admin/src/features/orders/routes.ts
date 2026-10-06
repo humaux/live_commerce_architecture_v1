@@ -24,6 +24,17 @@ export const ordersRoutes = [
     spec: "tests/admin/shell-browser.mjs",
   },
   {
+    id: "returns",
+    path: "/returns",
+    group: "orders",
+    labelKey: "returns",
+    icon: "orders",
+    permission: "orders:read",
+    template: "list",
+    nav: true,
+    spec: "tests/admin/returns-ui.spec.ts",
+  },
+  {
     id: "cvs-print",
     path: "/orders/cvs-print",
     group: "orders",

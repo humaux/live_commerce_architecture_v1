@@ -1,6 +1,10 @@
+// Purpose: The one admin BFF catch-all: proxies exactly the allowlisted per-store resources to Go, nothing generic.
+// Depends on: @/lib/backend, @/lib/auth, and the per-domain request grammars in @/lib/*-request (orders, customers,
+//   logistics, promotions, studio, claims, design, meta-connect, ads; W3-U5 added the returns/cancel grammar).
+// Used by: every admin client module under apps/admin/lib (browser fetch -> this route -> Go /v1/admin/stores/...).
 import { callBackend, fixtureSession } from "@/lib/backend";
 import {
-  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
+  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery, validReturnsQuery,
 } from "@/lib/orders-request";
 import { customersRoute, validCustomersBody, validCustomersRequest } from "@/lib/customers-request";
 import { logisticsRoute } from "@/lib/logistics-request";
@@ -132,8 +136,11 @@ async function route(request: Request, context: Context) {
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
-  // Exact resources: no query at all, including a bare trailing '?'.
-  if ((action || logistic) && request.url.includes("?")) return error(422, "invalid_request");
+  // Exact resources: no query at all, including a bare trailing '?'. The one exception is the returns-v1 §6
+  // RMA list: GET returns may carry exactly `?state=<RMA state>` (validReturnsQuery mirrors the Go grammar).
+  if ((action || logistic) && request.url.includes("?") &&
+    !(request.method === "GET" && path === "returns" && validReturnsQuery(request.url)))
+    return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
   // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
   if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))
