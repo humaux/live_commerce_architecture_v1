@@ -1,0 +1,12 @@
+=== RUN   TestParcelGroup
+=== RUN   TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+=== NAME  TestParcelGroup
+    parcel_groups_test.go:112: merge-suggestions answered 503: {"code":"unavailable","message":"Temporarily unavailable.","request_id":"ce02e37789f8055c4c7c4e0fadfe0aaa","retryable":true,"details":{}}
+=== NAME  TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestParcelGroup (8.80s)
+    --- FAIL: TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.540s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

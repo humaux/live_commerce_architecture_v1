@@ -2,7 +2,7 @@
 //   (fulfillment.read_pick_list), one fixed column set per carrier template (Go constants, <=15 columns),
 //   RFC 4180 with UTF-8 BOM via the shared writeCSVLine/guardFormula, and the COD collect amount taken from
 //   the reader's collect_minor (= total + cod_surcharge, never recomputed here).
-// Depends on: fulfillment.read_pick_list (0130), identity.resolve_access (orders:read + orders:export),
+// Depends on: fulfillment.read_pick_list (0130; parcel group ids via readPickListJSON, 0146), identity.resolve_access (orders:read + orders:export),
 //   ops.audit_events (orders.carrier_export), platform.WithScope, shared writeCSVLine/guardFormula.
 // Used by: internal/httpapi/picklist.go (export route). Tests: TestCarrierExport.
 // Invariants: collect_minor = total_minor + coalesce(cod_surcharge_minor,0); formula guard on a leading
@@ -27,7 +27,7 @@ var carrierTemplates = map[string][]string{
 	"hsinchu":       {"order_id", "order_number", "recipient_name", "phone", "region", "city", "line1", "line2", "items", "collect_minor"},
 	"chunghwa_post": {"order_id", "recipient_name", "phone", "country", "region", "city", "postal_code", "line1", "line2", "items", "total_minor"},
 	"generic": {"order_id", "order_number", "created_at_utc", "destination_kind", "recipient_name", "phone",
-		"region", "city", "line1", "line2", "pickup_code", "items", "total_minor", "collect_minor"},
+		"region", "city", "line1", "line2", "pickup_code", "items", "total_minor", "collect_minor", "parcel_group_id"},
 }
 
 // CarrierExportFile is the finished file; it lives only in memory per request (MD9).
@@ -106,6 +106,8 @@ func carrierCell(column string, row pickListRow) string {
 		return row.Line2
 	case "pickup_code":
 		return row.PickupCode
+	case "parcel_group_id":
+		return row.ParcelGroupID // W3-07B: blank unless the order is in a parcel group (generic template only; carrier formats are fixed)
 	case "items":
 		parts := make([]string, len(row.Lines))
 		for i, line := range row.Lines {

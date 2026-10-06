@@ -8,7 +8,7 @@ package foundation_test
 //	TestCatalogMediaSchemaSurface   0082 applied: FORCE RLS, role, definer owner/EXECUTE/search_path, exact grants, CHECK/UNIQUE/FK.
 //	TestCatalogMediaRLSScope        commerce_runtime sees and writes only its own store's rows (policy scope_access).
 //	TestCatalogMediaLifecycle       upload -> list -> merchant bytes -> buyer catalog images -> public bytes + headers -> Meta feed
-//	                                image_link -> reorder -> delete renumbering -> 12-photo cap (13th = 409) -> idempotent replay.
+//	                                image_link -> reorder -> delete renumbering -> 4-main cap (5th = 409) -> idempotent replay.
 //	TestCatalogMediaSniff           magic-byte truth: SVG/GIF/garbage/PNG-as-JPEG/2 MiB / 2 MiB+1 and the multipart grammar.
 //	TestCatalogMediaBuyer404        BCAT07: unpublished, unknown, other-product, cross-store, cross-tenant and archived are one 404.
 //	TestCatalogMediaBuyerAuthority  the media route takes the BFF key + origin only (Authorization 403, query/cookie/body 422).
@@ -479,7 +479,7 @@ func TestCatalogMediaSchemaSurface(t *testing.T) {
 	}
 
 	// Table privileges, enumerated: the buyer runtime and PUBLIC have none; the merchant runtime has SELECT/INSERT/DELETE and UPDATE
-	// only on position and version; the definer owner has SELECT.
+	// only on position, version and role (0149); the definer owner has SELECT.
 	cols, err := f.owner.Query(ctx, `SELECT attname FROM pg_attribute WHERE attrelid='catalog.product_images'::regclass AND attnum>0 AND NOT attisdropped ORDER BY attnum`)
 	if err != nil {
 		t.Fatal(err)
@@ -541,7 +541,7 @@ func TestCatalogMediaSchemaSurface(t *testing.T) {
 	for _, c := range columns {
 		var can bool
 		_ = f.owner.QueryRow(ctx, `SELECT has_column_privilege('commerce_runtime','catalog.product_images',$1,'UPDATE')`, c).Scan(&can)
-		if want := c == "position" || c == "version"; can != want {
+		if want := c == "position" || c == "version" || c == "role"; can != want {
 			t.Errorf("commerce_runtime UPDATE(%s)=%v, want %v", c, can, want)
 		}
 	}
@@ -610,8 +610,8 @@ func TestCatalogMediaSchemaSurface(t *testing.T) {
 			t.Errorf("%s: error %s, want a CHECK (23514) or FK (23503) violation", name, code)
 		}
 	}
-	if err := insert(7, "image/png", make([]byte, 2<<20), sha, f.storeA1); err != nil {
-		t.Errorf("exactly 2 MiB at position 7 must be accepted: %v", err)
+	if err := insert(3, "image/png", make([]byte, 2<<20), sha, f.storeA1); err != nil {
+		t.Errorf("exactly 2 MiB at position 3 must be accepted: %v", err)
 	}
 	mustExec(t, f.owner, `DELETE FROM catalog.product_images WHERE product_id=$1`, product)
 	// UNIQUE(position) is DEFERRABLE INITIALLY DEFERRED: a duplicate fails at COMMIT, a swap inside one transaction passes.
@@ -915,26 +915,26 @@ func TestCatalogMediaLifecycle(t *testing.T) {
 		t.Fatalf("%d image rows remain, want 2", n)
 	}
 
-	// Cap: 12 photos; the 13th is 409 and stores nothing; positions are exactly 0..11.
-	for seed := uint8(100); len(m.list(product)) < 12; seed++ {
+	// Cap (product-media-v2): the default role is main, at most 4 (positions exactly 0..3); the 5th is 409 and stores nothing.
+	for seed := uint8(100); len(m.list(product)) < 4; seed++ {
 		m.mustUpload(product, cmiPNG(t, 6, 6, seed), "fill.png", "image/png")
 	}
 	full := m.list(product)
 	cmiRequireContiguous(t, full)
-	if w := m.upload(product, t04Key("cmi-thirteenth"), cmiFile("thirteen.png", "image/png", cmiPNG(t, 6, 6, 250))); w.Code != 409 {
-		t.Fatalf("13th photo: %d %s, want 409", w.Code, w.Body.String())
+	if w := m.upload(product, t04Key("cmi-fifth"), cmiFile("five.png", "image/png", cmiPNG(t, 6, 6, 250))); w.Code != 409 {
+		t.Fatalf("5th main photo: %d %s, want 409", w.Code, w.Body.String())
 	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.product_images WHERE product_id=$1`, product); n != 12 {
-		t.Fatalf("%d rows after the refused 13th, want 12", n)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.product_images WHERE product_id=$1`, product); n != 4 {
+		t.Fatalf("%d rows after the refused 5th, want 4", n)
 	}
 	// Deleting one frees a slot again and renumbers.
-	if w := m.remove(product, full[3].ID, t04Key("cmi-rm-mid")); w.Code != 200 {
+	if w := m.remove(product, full[1].ID, t04Key("cmi-rm-mid")); w.Code != 200 {
 		t.Fatalf("delete from a full set: %d", w.Code)
 	}
 	cmiRequireContiguous(t, m.list(product))
 	m.mustUpload(product, cmiPNG(t, 6, 6, 251), "again.png", "image/png")
-	if n := len(m.list(product)); n != 12 {
-		t.Fatalf("%d after delete+upload, want 12", n)
+	if n := len(m.list(product)); n != 4 {
+		t.Fatalf("%d after delete+upload, want 4", n)
 	}
 	cmiRequireContiguous(t, m.list(product))
 }

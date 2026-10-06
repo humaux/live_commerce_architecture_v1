@@ -515,7 +515,7 @@ func TestAttributionRealPGFlow(t *testing.T) {
 		if err != nil || len(rows) != 2 {
 			t.Fatalf("csv = %v %v", rows, err)
 		}
-		want := []string{f.sku, `Tea "Set", boxed`, "Two cups\nand a pot", "in stock", "new", "2500.00 TWD", f.origin + "/products/" + f.product, "", "Capi Shop, Inc"}
+		want := []string{f.sku, `Tea "Set", boxed`, "Two cups\nand a pot", "in stock", "new", "2500.00 TWD", f.origin + "/products/" + f.product, "", "", "Capi Shop, Inc"}
 		for i := range want {
 			if rows[1][i] != want[i] {
 				t.Errorf("col %s = %q want %q", feedColumns[i], rows[1][i], want[i])

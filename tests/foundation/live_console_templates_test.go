@@ -70,8 +70,8 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 			t.Fatalf("fixed %s: kinds=%v safe=%t body=%q", id, kinds, safe, body)
 		}
 	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 3 { // + checkout-reminder/v1 (0144, W3-03B)
-		t.Fatalf("fixed template rows=%d, want 3", n)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 4 { // + checkout-reminder/v1 (0144, W3-03B) + sold-out-reply/v1 (0151, W3-04B)
+		t.Fatalf("fixed template rows=%d, want 4", n)
 	}
 
 	// The three definers are owned by the NOLOGIN writer, SECURITY DEFINER, pg_catalog search_path, correct

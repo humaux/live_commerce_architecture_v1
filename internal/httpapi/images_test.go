@@ -147,6 +147,9 @@ func TestImageReadAndWriteRoutesRequireLogin(t *testing.T) {
 	for _, tt := range []struct{ method, path string }{
 		{"GET", imagesPath}, {"GET", imagesPath + "/33333333-3333-4333-8333-333333333333"},
 		{"POST", imagesPath + "/33333333-3333-4333-8333-333333333333/delete"}, {"POST", imagesPath + "/order"},
+		// product-media-v2 routes
+		{"POST", imagesPath + "/33333333-3333-4333-8333-333333333333/move"},
+		{"POST", strings.TrimSuffix(imagesPath, "/images") + "/option-images"}, {"POST", strings.TrimSuffix(imagesPath, "/images") + "/image-axis"},
 	} {
 		r := httptest.NewRequest(tt.method, tt.path, strings.NewReader("{}"))
 		r.Header.Set("Content-Type", "application/json")
@@ -164,5 +167,30 @@ func TestRawResponseHeaders(t *testing.T) {
 	if w.Code != 200 || w.Body.String() != "png" || w.Header().Get("Content-Type") != "image/png" ||
 		w.Header().Get("Cache-Control") != "private, max-age=300" || !strings.Contains(w.Header().Get("Content-Security-Policy"), "sandbox") {
 		t.Fatalf("raw response %d %v", w.Code, w.Header())
+	}
+}
+
+// product-media-v2: the upload takes only ?role= and ?option_value=, each once; anything else is 422 before auth or body.
+func TestImageUploadQueryGuard(t *testing.T) {
+	h := NewHandler(nil)
+	for query, want := range map[string]int{
+		"":                               401, // valid (default main): reaches the auth check
+		"?role=detail":                   401,
+		"?role=sku&option_value=R":       401,
+		"?role=main&role=detail":         422,
+		"?option_value=a&option_value=b": 422,
+		"?tenant_id=x":                   422,
+		"?role=main&x=1":                 422,
+	} {
+		r := httptest.NewRequest(http.MethodPost, imagesPath+query, strings.NewReader("x"))
+		r.Header.Set("Content-Type", "multipart/form-data; boundary=x")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != want {
+			t.Errorf("upload %q: status %d, want %d", query, w.Code, want)
+		}
+	}
+	if role, value, ok := imageUploadQuery(httptest.NewRequest(http.MethodPost, imagesPath, nil)); !ok || role != catalog.RoleMain || value != "" {
+		t.Errorf("default query = %q %q %v", role, value, ok)
 	}
 }
