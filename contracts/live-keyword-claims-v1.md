@@ -1307,11 +1307,12 @@ no claim link and sends no automatic private reply. Nothing is shown to the buye
 ## Amendment "W3-06B keyword tools and match simulator" (2026-10-07, no migration)
 
 Four merchant routes under the claims base path `/v1/admin/stores/{store_id}/live-sessions/{session_id}/claims` (`internal/claims/{simulate.go,keyword_tools.go}`, `internal/httpapi/keyword_tools.go`).
-No table, grant, definer or role changes: offers stay immutable in keyword and SKU (0060), so nothing here needs migration 0158 (it stays unused). Owner ruling 2026-10-07: the store default match
-mode is **EXACT**, the frozen default (a session without a window row reads EXACT). No store-level setting is added; every tool below takes an optional `match_mode` and treats an omitted value as **EXACT**.
-The tools never read the window's mode implicitly; the simulator reports the window's actual mode next to the simulated one so the console can warn when they differ.
+No table, grant, definer or role changes: offers stay immutable in keyword and SKU (0060), so nothing here needs migration 0158 (it stays unused). Owner ruling 2026-10-07: the store default match mode is **EXACT**, the frozen default (a session without a window row reads EXACT). No store-level setting is added.
+Integrator ruling 2026-10-07 (small, binding): when `match_mode` is omitted the **simulator uses the session's current claim-window mode** and falls back to EXACT only when the session has no window,
+so the merchant sees exactly what would happen live; an explicit `match_mode` always overrides. The keyword check (rule 2) takes an optional `match_mode` too and treats an omitted one as EXACT.
+The simulator always reports the window's actual state and mode (`window_state`, `window_match_mode`) next to the mode it simulated.
 
-1. **Simulator** `POST .../claims/simulate`, body `{comment, match_mode?}` (`comment` 0..1024 bytes of UTF-8; longer is 422; control characters are allowed so multi-line samples work; unknown keys 400),
+1. **Simulator** `POST .../claims/simulate`, body `{comment, match_mode?}` (`match_mode` omitted = the window's mode, EXACT without a window; `comment` 0..1024 bytes of UTF-8; longer is 422; control characters are allowed so multi-line samples work; unknown keys 400),
    live:read; an Idempotency-Key is optional and ignored (a malformed or repeated one is 422). Pure read: no row, no receipt, no audit, no Meta call, the comment is neither stored nor returned.
    It runs the **same matcher as ingest**, not a copy: `grammar.ParseForIngest` (§2.5) then `effective` (the mode gate) then the offer lookup then `offerReason` (§2.3), the exact functions
    `ingest()` calls, against the session's offers at the database clock. Gate SIM-PARITY runs `RecordManualClaim` and the simulator on the same session and compares outcome, reason, offer and quantity.
@@ -1321,7 +1322,7 @@ The tools never read the window's mode implicitly; the simulator reports the win
    never adds); 0 otherwise. `parsed_keyword`/`parsed_quantity` echo the grammar head (also for UNKNOWN_KEYWORD, where real ingest stores nothing; the response only goes back to the typing merchant).
    Not simulated, because they depend on rows a read must not touch: `WINDOW_CLOSED` (read `window_state`: when CLOSED, real ingest answers WINDOW_CLOSED before every reason above, and a comment
    older than `opened_at` is also WINDOW_CLOSED), `BUNDLE_LIMIT` (51st line of one buyer), `RATE_LIMITED` (Meta only), the sold-out flag (inventory is not read here), and previous quantity / bundle versions.
-2. **Keyword conflict check** `POST .../claims/keywords/check`, body `{keywords: [string] (0..50, required), match_mode?}`, live:read, no key. `keywords: []` checks only the existing offers. Same key rule as the simulator.
+2. **Keyword conflict check** `POST .../claims/keywords/check`, body `{keywords: [string] (0..50, required), match_mode?}` (omitted = EXACT), live:read, Idempotency-Key optional and ignored as on the simulator. `keywords: []` checks only the existing offers.
    200 body `{session_id, match_mode, items: [{input, canonical, valid, conflicts: [Finding]}], existing: [Finding]}`; `Finding = {kind, severity, keyword, with?, offer_id?}`. `canonical` is
    `NormalizeKeyword(input)` (full-width and lower case folded; `""` when invalid). Kinds, all derived from the frozen grammar, none invented:
    - errors: `invalid_keyword` (not `^[A-Z0-9]{1,16}$` after normalisation), `keyword_taken` (an offer of this session already has the canonical keyword, active or not, since keywords are unique per session),

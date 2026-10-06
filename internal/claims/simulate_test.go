@@ -1,7 +1,7 @@
 // Purpose: DB-free tests of the W3-06B match simulator: the pure decision table per window mode, the EXACT default, input validation and redaction.
 // Depends on: simulate.go (simulateClaim, validSimulate), grammar (through the simulator only); no database.
 // Used by: go test ./internal/claims (the SIM-PARITY gate against real ingest lives in tests/foundation/keyword_tools_test.go).
-// Invariants: owner ruling 2026-10-07 (omitted match_mode = EXACT); I11 (comment text never formatted or serialized).
+// Invariants: integrator ruling 2026-10-07 (omitted match_mode = the window's mode, EXACT without a window); I11 (comment text never formatted or serialized).
 
 package claims
 
@@ -118,7 +118,7 @@ func TestSimulateValidation(t *testing.T) {
 		"comment 1025":   {Comment: strings.Repeat("a", 1025)},
 		"not utf-8":      {Comment: "A1\xff"},
 	} {
-		if _, err := validSimulate(in); !errors.Is(err, command.ErrInvalid) {
+		if err := validSimulate(in); !errors.Is(err, command.ErrInvalid) {
 			t.Errorf("%s: err=%v, want ErrInvalid", name, err)
 		}
 	}
@@ -128,12 +128,29 @@ func TestSimulateValidation(t *testing.T) {
 		"1024 bytes":                         {Comment: strings.Repeat("a", 1024)},
 		"every mode":                         {Comment: "A1", MatchMode: MatchKeywordQtyContains},
 	} {
-		if _, err := validSimulate(in); err != nil {
+		if err := validSimulate(in); err != nil {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	if mode, _ := validSimulate(SimulateInput{Comment: "A1"}); mode != MatchExact {
-		t.Fatalf("omitted match_mode = %q, want EXACT", mode)
+}
+
+// TestSimulateResolveMode: an omitted match_mode takes the caller's fallback (the simulator passes the session's window mode, which is
+// EXACT for a session without a window; the keyword check passes EXACT); an explicit mode always wins; an unknown one is invalid.
+func TestSimulateResolveMode(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ mode, fallback, want MatchMode }{
+		{"", MatchExact, MatchExact},
+		{"", MatchKeywordQtyOnly, MatchKeywordQtyOnly},
+		{"", MatchKeywordQtyContains, MatchKeywordQtyContains},
+		{MatchExact, MatchKeywordQtyOnly, MatchExact},
+		{MatchKeywordQtyContains, MatchExact, MatchKeywordQtyContains},
+	} {
+		if got, err := resolveMode(tc.mode, tc.fallback); err != nil || got != tc.want {
+			t.Errorf("resolveMode(%q, %q) = %q %v, want %q", tc.mode, tc.fallback, got, err, tc.want)
+		}
+	}
+	if _, err := resolveMode("CONTAINS", MatchExact); !errors.Is(err, command.ErrInvalid) {
+		t.Fatalf("unknown mode: %v", err)
 	}
 }
 

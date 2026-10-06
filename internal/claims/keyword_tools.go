@@ -95,7 +95,7 @@ type KeywordCheck struct {
 // themselves (the caller decides). ErrInvalid for a bad session id, mode or more than 50 keywords; ErrNotFound for a missing
 // session. Called by the keywords/check route.
 func CheckKeywords(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, in KeywordCheckInput) (KeywordCheck, error) {
-	mode, err := resolveMode(in.MatchMode)
+	mode, err := resolveMode(in.MatchMode, MatchExact)
 	if err != nil || !command.ValidID(sessionID) || len(in.Keywords) > maxCheckKeywords {
 		return KeywordCheck{}, command.ErrInvalid
 	}

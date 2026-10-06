@@ -5,9 +5,11 @@ Worktree `.worktrees/w3-06b-keyword-tools` (branch `unit/w3-06b-keyword-tools`).
 W3-06B; M04 #2, #3, #5, #7, #14; FR-RULE-01. UI is a separate Codex unit (W3-U2 simulator part); this unit has no `apps/` change.
 Migration: none needed (reserved 0158 stays unused; see DELIVERY).
 
-## Owner decision 2026-10-07 (binding)
+## Owner decision 2026-10-07 (binding) and integrator ruling
 Store default match mode = **EXACT**. That is the existing frozen default (a window without a row reads EXACT). No store-level default
-setting is added. Every new tool takes an optional `match_mode` and defaults to EXACT when it is omitted.
+setting is added. Integrator ruling (same day): an omitted `match_mode` on the **simulator** means the session's current window mode
+(EXACT when there is no window), so the merchant sees what would happen live; `window_match_mode` and `window_state` stay in the response.
+The keyword check treats an omitted `match_mode` as EXACT.
 
 ## Scope (smallest useful set; reuse, do not duplicate)
 1. **Simulator** `POST .../live-sessions/{session_id}/claims/simulate` `{comment, match_mode?}`: pure read (`live:read`), no row written, no Meta call.

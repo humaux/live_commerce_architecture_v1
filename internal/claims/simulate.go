@@ -1,7 +1,7 @@
 // Purpose: the W3-06B match simulator: SimulateClaim answers "what would real ingest do with this comment in this session" without writing anything. It runs the SAME pure matcher as ingest (grammar.ParseForIngest, then effective, the offer lookup, then offerReason) against the session's offers.
 // Depends on: internal/claims/grammar (ParseForIngest); ingest.go (effective, offerReason, offer: the shared matcher, never re-implemented here); merchant.go (readOffers, readWindow); claims.go (authorize, requireSession); SQL clock_timestamp() for the activation comparison, exactly as manual ingest stamps occurred_at.
 // Used by: internal/httpapi/keyword_tools.go (POST .../claims/simulate); tests/foundation/keyword_tools_test.go (SIM-PARITY against RecordManualClaim).
-// Invariants: contract amendment "W3-06B": read only (no row, receipt, audit or Meta call), the comment is neither stored nor returned (I11), omitted match_mode = EXACT (owner ruling 2026-10-07).
+// Invariants: contract amendment "W3-06B": read only (no row, receipt, audit or Meta call), the comment is neither stored nor returned (I11), omitted match_mode = the session's current window mode (EXACT when it has no window; integrator ruling 2026-10-07 on the owner's EXACT window default).
 // Status: MOCK (REAL_PG gates; no Meta wire).
 
 package claims
@@ -24,7 +24,8 @@ import (
 const maxSimulateBytes = 1024
 
 // SimulateInput is the simulator body. Comment is merchant-typed sample text (redacted under fmt and JSON like
-// ManualClaimInput); MatchMode is optional and an omitted value means EXACT.
+// ManualClaimInput); MatchMode is optional and an omitted value means the session's current window mode (EXACT when the
+// session has no window), so the merchant sees what would happen live.
 type SimulateInput struct {
 	Comment   string    `json:"comment"`
 	MatchMode MatchMode `json:"match_mode,omitempty"`
@@ -60,8 +61,7 @@ type SimulatedClaim struct {
 // transaction. It only reads: the session's window row, its offers and the database clock. ErrInvalid for a bad
 // session id, mode or oversized/non-UTF-8 comment; ErrNotFound for a missing session. Called by the simulate route.
 func SimulateClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, in SimulateInput) (SimulatedClaim, error) {
-	mode, err := validSimulate(in)
-	if err != nil || !command.ValidID(sessionID) {
+	if validSimulate(in) != nil || !command.ValidID(sessionID) {
 		return SimulatedClaim{}, command.ErrInvalid
 	}
 	if err := authorize(ctx, tx, scope, token, readPermission); err != nil {
@@ -82,6 +82,7 @@ func SimulateClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	if err := tx.QueryRow(ctx, `SELECT clock_timestamp()`).Scan(&now); err != nil {
 		return SimulatedClaim{}, mapError(err)
 	}
+	mode, _ := resolveMode(in.MatchMode, window.MatchMode) // omitted = the window's mode; a window-less session reads EXACT (readWindow placeholder)
 	out := simulateClaim(in.Comment, mode, offers, now)
 	out.WindowState, out.WindowMatchMode = window.State, window.MatchMode
 	if err := authorize(ctx, tx, scope, token, readPermission); err != nil {
@@ -90,19 +91,19 @@ func SimulateClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	return out, nil
 }
 
-// validSimulate resolves the simulated mode (empty = EXACT, the store default) and checks the comment bounds.
-func validSimulate(in SimulateInput) (MatchMode, error) {
-	mode, err := resolveMode(in.MatchMode)
-	if err != nil || len(in.Comment) > maxSimulateBytes || !utf8.ValidString(in.Comment) {
-		return "", command.ErrInvalid
+// validSimulate checks the simulator input: an empty or known match mode and the comment bounds.
+func validSimulate(in SimulateInput) error {
+	if _, err := resolveMode(in.MatchMode, MatchExact); err != nil || len(in.Comment) > maxSimulateBytes || !utf8.ValidString(in.Comment) {
+		return command.ErrInvalid
 	}
-	return mode, nil
+	return nil
 }
 
-// resolveMode is the one place the new tools default an omitted match_mode: EXACT (owner ruling 2026-10-07).
-func resolveMode(mode MatchMode) (MatchMode, error) {
+// resolveMode is the one place a tool resolves an omitted match_mode: the caller's fallback. The simulator passes the session's window
+// mode (EXACT, the owner's default, when there is no window); the keyword check passes EXACT. An unknown mode is ErrInvalid.
+func resolveMode(mode, fallback MatchMode) (MatchMode, error) {
 	if mode == "" {
-		return MatchExact, nil
+		return fallback, nil
 	}
 	if !validMode(mode) {
 		return "", command.ErrInvalid

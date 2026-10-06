@@ -1,7 +1,7 @@
 // Purpose: REAL_PG gates of the W3-06B keyword tools: SIM-PARITY (the simulator equals real manual ingest on the kw-v1 and kwc vector corpora, in all three window modes), simulator read-only and scoping, conflict check, auto-numbering and the atomic batch deactivate/rename, plus an in-process HTTP smoke.
 // Depends on: the lcHarness (live_claims_test.go), internal/claims (SimulateClaim, CheckKeywords, NextKeywords, BatchOffers, RecordManualClaim), internal/httpapi (NewHandler, claims routes), tests/claims/*.json corpora; no Meta wire.
 // Used by: scripts/dev/test-focused.sh 'Simulate|KeywordTools'; CI foundation suite.
-// Invariants: contract amendment "W3-06B" (read-only simulator, same matcher as ingest, batch all-or-nothing, rename = retire + create, omitted match_mode = EXACT); I02 (the receipt replays one result).
+// Invariants: contract amendment "W3-06B" (read-only simulator, same matcher as ingest, batch all-or-nothing, rename = retire + create, omitted match_mode = the session's window mode, EXACT without a window); I02 (the receipt replays one result).
 // Status: REAL_PG, MOCK (manual ingress; no Meta wire).
 
 package foundation_test
@@ -143,6 +143,9 @@ func TestSimulateParityWithIngest(t *testing.T) {
 			if err != nil {
 				t.Fatalf("simulate %q (%s): %v", text, mode, err)
 			}
+			if omitted, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: text}); err != nil || !reflect.DeepEqual(omitted, sim) {
+				t.Fatalf("omitted match_mode must equal the window's mode %s for %q: %+v vs %+v (%v)", mode, text, omitted, sim, err)
+			}
 			real := h.claim(t, s, claims.ManualClaimInput{ActorLabel: fmt.Sprintf("sim-%d-%d", m, i), Text: text})
 			offerID, offerKeyword := "", ""
 			if sim.Offer != nil {
@@ -179,8 +182,7 @@ func TestSimulateParityWithIngest(t *testing.T) {
 	}
 }
 
-// TestSimulateReadOnlyDefaultsAndScope: no row is written, an omitted match_mode is EXACT even in a CONTAINS window (and the
-// window's own mode is reported), a CLOSED window is reported (real ingest answers WINDOW_CLOSED), and the route is live:read scoped.
+// TestSimulateReadOnlyDefaultsAndScope: no row is written, an omitted match_mode is the window's mode (and the window's own mode is reported), a CLOSED window is reported (real ingest answers WINDOW_CLOSED), and the route is live:read scoped.
 func TestSimulateReadOnlyDefaultsAndScope(t *testing.T) {
 	h := lcSetup(t)
 	f := h.f
@@ -200,8 +202,12 @@ func TestSimulateReadOnlyDefaultsAndScope(t *testing.T) {
 	lcSameDigest(t, "a closed-window claim persists nothing, so the simulator's rule outcome is not a prediction of a stored row", beforeClosed, lcDigest(t, f, "claims"))
 	h.open(t, s, claims.MatchKeywordQtyContains)
 	omitted, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "我要H1+1"})
-	if err != nil || omitted.MatchMode != claims.MatchExact || omitted.Reason != claims.ReasonNoMatch || omitted.WindowMatchMode != claims.MatchKeywordQtyContains {
-		t.Fatalf("omitted match_mode must be EXACT and report the window mode: %+v %v", omitted, err)
+	if err != nil || omitted.MatchMode != claims.MatchKeywordQtyContains || omitted.Outcome != claims.OutcomeAccepted || omitted.WindowMatchMode != claims.MatchKeywordQtyContains || omitted.WindowState != claims.WindowOpen {
+		t.Fatalf("omitted match_mode must be the window's mode (CONTAINS): %+v %v", omitted, err)
+	}
+	override, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "我要H1+1", MatchMode: claims.MatchExact})
+	if err != nil || override.MatchMode != claims.MatchExact || override.Reason != claims.ReasonNoMatch || override.WindowMatchMode != claims.MatchKeywordQtyContains {
+		t.Fatalf("an explicit mode overrides the window's mode: %+v %v", override, err)
 	}
 	explicit, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "我要H1+1", MatchMode: claims.MatchKeywordQtyContains})
 	if err != nil || explicit.Outcome != claims.OutcomeAccepted || explicit.TargetQuantity != 1 {
@@ -240,6 +246,40 @@ func TestSimulateReadOnlyDefaultsAndScope(t *testing.T) {
 	lcIs(t, lcErr(h.simulate(h.token, f.storeA1, randomUUID(), claims.SimulateInput{Comment: "H1"})), command.ErrNotFound, "missing session")
 	lcIs(t, lcErr(h.simulate(h.token, f.storeA1, "not-a-uuid", claims.SimulateInput{Comment: "H1"})), command.ErrInvalid, "bad session id")
 	lcIs(t, lcErr(h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: strings.Repeat("a", 1025)})), command.ErrInvalid, "oversized comment")
+}
+
+// TestSimulateOmittedModeFollowsWindow: integrator ruling 2026-10-07. Window in KEYWORD_QTY_ONLY and no match_mode: the answer is the
+// QTY_ONLY result (a bare keyword is QUANTITY_REQUIRED, what live ingest would say). No window row at all: EXACT (the owner's default).
+func TestSimulateOmittedModeFollowsWindow(t *testing.T) {
+	h := lcSetup(t)
+	f := h.f
+	s := h.draft(t, f.storeA1) // no window row yet
+	skus := lcSKUs(t, f, f.tenantA, f.storeA1, "USD", 1)
+	h.offer(t, s, "A1", skus[0], 3)
+
+	none, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "A1"})
+	if err != nil || none.MatchMode != claims.MatchExact || none.WindowMatchMode != claims.MatchExact || none.WindowState != claims.WindowClosed ||
+		none.Outcome != claims.OutcomeAccepted || none.TargetQuantity != 1 {
+		t.Fatalf("no window: want EXACT and the bare keyword accepted: %+v %v", none, err)
+	}
+
+	h.open(t, s, claims.MatchKeywordQtyOnly)
+	omitted, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "A1"})
+	if err != nil || omitted.MatchMode != claims.MatchKeywordQtyOnly || omitted.WindowMatchMode != claims.MatchKeywordQtyOnly || omitted.WindowState != claims.WindowOpen ||
+		omitted.Outcome != claims.OutcomeRejected || omitted.Reason != claims.ReasonQuantityRequired {
+		t.Fatalf("QTY_ONLY window, no mode: want the QTY_ONLY result QUANTITY_REQUIRED: %+v %v", omitted, err)
+	}
+	if real := h.claim(t, s, claims.ManualClaimInput{ActorLabel: "live", Text: "A1"}); real.Reason != omitted.Reason {
+		t.Fatalf("the simulator must say what live ingest says: ingest %+v, simulator %+v", real, omitted)
+	}
+	with, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "A1+2"})
+	if err != nil || with.Outcome != claims.OutcomeAccepted || with.TargetQuantity != 2 || with.MatchMode != claims.MatchKeywordQtyOnly {
+		t.Fatalf("QTY_ONLY window, A1+2: %+v %v", with, err)
+	}
+	explicit, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "A1", MatchMode: claims.MatchExact})
+	if err != nil || explicit.MatchMode != claims.MatchExact || explicit.Outcome != claims.OutcomeAccepted || explicit.WindowMatchMode != claims.MatchKeywordQtyOnly {
+		t.Fatalf("explicit EXACT overrides the window: %+v %v", explicit, err)
+	}
 }
 
 // TestKeywordToolsCheckAndNext: the conflict check and auto-numbering against real offers, read only and live:read scoped.
