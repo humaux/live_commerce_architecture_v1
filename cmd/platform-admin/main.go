@@ -1,8 +1,8 @@
 // Purpose: operator-only CLI that suspends/resumes a tenant or store, reports their state, lists the operator audit and
-// manages read-only platform support grants (support-grant / support-revoke / support-list).
+// manages the designated support-principal registry and read-only platform support grants (support-principal-add/-revoke, support-grant / support-revoke / support-list).
 // Depends on: pgx (one-connection pool); SQL definers control.set_store_active / set_tenant_active / platform_status /
 //
-//	read_operator_audit (migration 0143) and identity.grant_support / revoke_support / list_support_grants (0153), all
+//	read_operator_audit (migration 0143) and identity.grant_support / revoke_support / list_support_grants / add_support_principal / revoke_support_principal (0153), all
 //	EXECUTE commerce_platform_operator; env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
 //
 // Used by: deploy/scripts/ops-admin.sh (integrator), tests/foundation/platform_operator_test.go; never the API or a worker.
@@ -145,6 +145,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		fs.StringVar(&ticket, "ticket", "", "")
 	case "support-list":
 		fs.StringVar(&store, "store", "", "")
+	case "support-principal-add", "support-principal-revoke":
+		fs.StringVar(&principal, "principal", "", "")
+		fs.StringVar(&operator, "operator", "", "")
+		fs.StringVar(&ticket, "ticket", "", "")
 	case "status":
 		fs.StringVar(&store, "store", "", "")
 		fs.StringVar(&tenant, "tenant", "", "")
@@ -207,6 +211,15 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 			return errUsage
 		}
 		fn = call(`SELECT identity.list_support_grants($1::uuid)::text`, store)
+	case "support-principal-add", "support-principal-revoke":
+		if !command.ValidID(principal) || !operatorPattern.MatchString(operator) || !validTicket(ticket) {
+			return errUsage
+		}
+		if cmd == "support-principal-add" {
+			fn = call(`SELECT identity.add_support_principal($1::uuid,$2,$3)::text`, principal, operator, ticket)
+		} else {
+			fn = call(`SELECT identity.revoke_support_principal($1::uuid,$2,$3)::text`, principal, operator, ticket)
+		}
 	case "status":
 		if (store == "") == (tenant == "") || (store != "" && !command.ValidID(store)) || (tenant != "" && !command.ValidID(tenant)) {
 			return errUsage

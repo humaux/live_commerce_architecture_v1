@@ -11,6 +11,8 @@
 //   - tenant-resume  --tenant <uuid>
 //   - status --store <uuid> | --tenant <uuid>             (active flags only)
 //   - audit [--since <RFC 3339>] [--limit 1..500]         (newest first)
+//   - support-principal-add | support-principal-revoke --principal <uuid>   (0153 registry of designated support principals;
+//     a principal with any merchant membership/store grant is refused; revoking ends all of its grants at once)
 //   - support-grant  --store <uuid> --principal <uuid> [--hours 1..72 (default 4)] [--perm store:read,orders:read,...]
 //     (0153: read-only access of one named principal to one store; default pack = the six :read permissions; never PII/write)
 //   - support-revoke --grant <uuid> | --store <uuid> --principal <uuid>   (immediate; idempotent)

@@ -35,8 +35,9 @@ type sgrFix struct {
 	tenant, store, store2     string
 	tenantB, storeB           string
 	member, support, supportB string
+	unreg, staffer            string // unreg: never registered; staffer: ex-member of the store
 	memberTok, supportTok     string
-	supportBTok               string
+	supportBTok, stafferTok   string
 }
 
 func sgrSetup(t *testing.T) *sgrFix {
@@ -45,8 +46,8 @@ func sgrSetup(t *testing.T) *sgrFix {
 	ctx := context.Background()
 	s := &sgrFix{t: t, b: b, op: miPool(t, b, "commerce_platform_operator"),
 		tenant: randomUUID(), store: randomUUID(), store2: randomUUID(), tenantB: randomUUID(), storeB: randomUUID(),
-		member: randomUUID(), support: randomUUID(), supportB: randomUUID(),
-		memberTok: randomToken(), supportTok: randomToken(), supportBTok: randomToken()}
+		member: randomUUID(), support: randomUUID(), supportB: randomUUID(), unreg: randomUUID(), staffer: randomUUID(),
+		memberTok: randomToken(), supportTok: randomToken(), supportBTok: randomToken(), stafferTok: randomToken()}
 	tx, err := b.owner.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -59,7 +60,7 @@ func sgrSetup(t *testing.T) *sgrFix {
 		{`INSERT INTO control.tenants(id,name) VALUES($1,'sg-tenant'),($2,'sg-tenant-b')`, []any{s.tenant, s.tenantB}},
 		{`INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'sg-store','USD'),($1,$3,'sg-store-2','USD'),($4,$5,'sg-store-b','USD')`,
 			[]any{s.tenant, s.store, s.store2, s.tenantB, s.storeB}},
-		{`INSERT INTO identity.principals(id) VALUES($1),($2),($3)`, []any{s.member, s.support, s.supportB}},
+		{`INSERT INTO identity.principals(id) VALUES($1),($2),($3),($4),($5)`, []any{s.member, s.support, s.supportB, s.unreg, s.staffer}},
 		{`INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, []any{s.tenant, s.member}},
 		{`INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES
 			($1,$2,$3,'store:read'),($1,$2,$3,'orders:read'),($1,$2,$3,'integration:manage'),($1,$2,$3,'customers:read'),($1,$2,$3,'payments:refund')`,
@@ -69,7 +70,7 @@ func sgrSetup(t *testing.T) *sgrFix {
 			t.Fatalf("setup %q: %v", q.sql, err)
 		}
 	}
-	for tok, p := range map[string]string{s.memberTok: s.member, s.supportTok: s.support, s.supportBTok: s.supportB} {
+	for tok, p := range map[string]string{s.memberTok: s.member, s.supportTok: s.support, s.supportBTok: s.supportB, s.stafferTok: s.staffer} {
 		if err := insertSession(ctx, tx, tok, p, "merchant", time.Now().Add(time.Hour), nil); err != nil {
 			t.Fatal(err)
 		}
@@ -77,8 +78,10 @@ func sgrSetup(t *testing.T) *sgrFix {
 	if err := tx.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
+	s.registerSupport(s.support)
+	s.registerSupport(s.supportB)
 	t.Cleanup(func() { // FK order; operator_audit is append-only and stays (like the OPS-01B tests)
-		ids := []string{s.member, s.support, s.supportB}
+		ids := []string{s.member, s.support, s.supportB, s.unreg, s.staffer}
 		ts := []string{s.tenant, s.tenantB}
 		for _, q := range []string{
 			`DELETE FROM identity.support_grants WHERE tenant_id=ANY($1::uuid[])`,
@@ -87,6 +90,7 @@ func sgrSetup(t *testing.T) *sgrFix {
 		} {
 			_, _ = b.owner.Exec(ctx, q, ts)
 		}
+		_, _ = b.owner.Exec(ctx, `DELETE FROM identity.platform_support_principals WHERE principal_id=ANY($1::uuid[])`, ids)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM identity.sessions WHERE principal_id=ANY($1::uuid[])`, ids)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM identity.memberships WHERE tenant_id=ANY($1::uuid[])`, ts)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM control.stores WHERE tenant_id=ANY($1::uuid[])`, ts)
@@ -94,6 +98,12 @@ func sgrSetup(t *testing.T) *sgrFix {
 		_, _ = b.owner.Exec(ctx, `DELETE FROM identity.principals WHERE id=ANY($1::uuid[])`, ids)
 	})
 	return s
+}
+
+// registerSupport enrols a principal in the platform support registry as the operator login.
+func (s *sgrFix) registerSupport(principal string) {
+	s.t.Helper()
+	s.must(s.json(`SELECT identity.add_support_principal($1,'op.test','TICKET-SG')::text`, principal))
 }
 
 // grant calls identity.grant_support as the operator login.
@@ -175,8 +185,11 @@ func TestSupportGrantSG01ReadAndSG02PackLimits(t *testing.T) {
 	}
 	var detail string
 	if err := s.b.owner.QueryRow(context.Background(), `SELECT details::text FROM ops.audit_events WHERE tenant_id=$1 AND action='support.granted'`, s.tenant).Scan(&detail); err != nil ||
-		!strings.Contains(detail, "TICKET-SG") || !strings.Contains(detail, "op.test") {
-		t.Fatalf("merchant audit detail %q err %v", detail, err)
+		!strings.Contains(detail, "平台支援") || !strings.Contains(detail, "expires_at") || strings.Contains(detail, "TICKET-SG") || strings.Contains(detail, "op.test") {
+		t.Fatalf("merchant audit detail must carry the fixed label + expiry only (ticket/operator stay in control.operator_audit): %q err %v", detail, err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM control.operator_audit WHERE tenant_id=$1 AND action='support_grant' AND ticket='TICKET-SG' AND operator='op.test'`, s.tenant); n != 1 {
+		t.Fatal("operator audit lost the ticket/operator label")
 	}
 	if n := countRows(t, s.b.owner, `SELECT count(*) FROM control.operator_audit WHERE tenant_id=$1 AND action='support_grant' AND db_user<>'' AND store_id=$2`, s.tenant, s.store); n != 1 {
 		t.Fatal("operator audit lacks db_user/store")
@@ -513,14 +526,6 @@ func TestSupportGrantSG07RegularPrincipalsUnaffected(t *testing.T) {
 	if err := platform.WithScope(context.Background(), s.b.runtime, s.supportTok, s.store, "store:read", func(_ pgx.Tx, x platform.Scope) error { sc = x; return nil }); err != nil || sc.Revision >= 0 || sc.PrincipalID != s.support || sc.TenantID != s.tenant {
 		t.Fatalf("support scope %v err %v", sc, err)
 	}
-	// lingering regular grants disable the support branch (default-deny): put an inactive-member grant on store2 for the support principal
-	mustExec(t, s.b.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read')`, s.tenant, s.store2, s.support)
-	if err := s.access(s.supportTok, s.store2, "store:read"); !errors.Is(err, platform.ErrScopeNotFound) {
-		t.Fatalf("support grant over a regular grant row: %v, want scope not found", err)
-	}
-	if err := s.access(s.supportTok, s.store, "store:read"); err != nil {
-		t.Fatalf("support on the other store stays: %v", err)
-	}
 	// the placeholder membership is inactive, so the pre-0153 scope resolver (active membership join) never admits support
 	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.memberships WHERE tenant_id=$1 AND principal_id=$2 AND NOT active`, s.tenant, s.support); n != 1 {
 		t.Fatal("placeholder membership must be inactive")
@@ -529,10 +534,206 @@ func TestSupportGrantSG07RegularPrincipalsUnaffected(t *testing.T) {
 	if n := countRows(t, s.b.runtime, `SELECT count(*) FROM identity.resolve_scope($1,$2,'store:read')`, hash[:], s.store); n != 0 {
 		t.Fatal("identity.resolve_scope admitted a support principal")
 	}
-	// an existing membership is left exactly as it is by a grant to a member of another tenant
-	s.must(s.grant(s.storeB, s.member, 4, nil))
-	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.memberships WHERE principal_id=$1 AND active`, s.member); n != 1 {
-		t.Fatal("grant changed the member's own membership")
+	// P1-1: a merchant of another tenant (active member) is never a support principal: refused, nothing changed
+	if _, err := s.grant(s.storeB, s.member, 4, nil); sqlState(err) != "PT409" {
+		t.Fatalf("grant of tenant B's store to tenant A's member: %v, want PT409", err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.memberships WHERE principal_id=$1`, s.member); n != 1 {
+		t.Fatal("a refused grant touched the member's memberships")
+	}
+}
+
+// SG09 (review P1-1): support identities are a designated registry, separate from merchant identities.
+//   - only registered principals are grantable; the registry is operator-managed and audited;
+//   - a principal with any active membership or store grant anywhere is refused at registration, grant and resolve time;
+//   - a removed staffer is not grantable, and an open grant never revives after staff_remove;
+//   - revoking the registry row cuts access, store list and all open grants at once.
+func TestSupportGrantSG09RegistryAndSeparation(t *testing.T) {
+	s := sgrSetup(t)
+	ctx := context.Background()
+	// a never-registered principal is refused (grant), even though it has no regular access at all
+	if _, err := s.grant(s.store, s.unreg, 4, nil); sqlState(err) != "PT409" {
+		t.Fatalf("grant to an unregistered principal: %v, want PT409", err)
+	}
+	// registry write refusals: active member / holder of store grants, unknown principal; bad operator
+	if _, err := s.json(`SELECT identity.add_support_principal($1,'op.test','TICKET-SG')::text`, s.member); sqlState(err) != "PT409" {
+		t.Fatalf("register an active merchant member: %v, want PT409", err)
+	}
+	if _, err := s.json(`SELECT identity.add_support_principal($1,'op.test','TICKET-SG')::text`, randomUUID()); sqlState(err) != "PT404" {
+		t.Fatalf("register an unknown principal: %v, want PT404", err)
+	}
+	if _, err := s.json(`SELECT identity.add_support_principal($1,'Bad Op','TICKET-SG')::text`, s.unreg); sqlState(err) != "PT400" {
+		t.Fatalf("register with a bad operator label: %v, want PT400", err)
+	}
+	// registration is idempotent and audited without a tenant
+	out := s.must(s.json(`SELECT identity.add_support_principal($1,'op.test','TICKET-SG')::text`, s.support))
+	if out["changed"] != false {
+		t.Fatalf("second registration: %v", out)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM control.operator_audit WHERE action='support_principal_add' AND tenant_id IS NULL AND store_id IS NULL AND detail->>'principal_id'=$1`, s.support); n != 2 {
+		t.Fatalf("support_principal_add audit rows = %d, want 2 (one per call, no-op included)", n)
+	}
+
+	// removed staffer: ex-member of the store (regular grants + active membership, then staff_remove deletes the grants)
+	mustExec(t, s.b.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, s.tenant, s.staffer)
+	mustExec(t, s.b.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read'),($1,$2,$3,'orders:read')`, s.tenant, s.store, s.staffer)
+	mustExec(t, s.b.owner, `DELETE FROM identity.store_grants WHERE principal_id=$1`, s.staffer) // what 0089 staff_remove does
+	mustExec(t, s.b.owner, `UPDATE identity.memberships SET active=false WHERE principal_id=$1`, s.staffer)
+	if _, err := s.grant(s.store, s.staffer, 4, nil); sqlState(err) != "PT409" {
+		t.Fatalf("grant to a removed staffer: %v, want PT409 (not registered)", err)
+	}
+	if err := s.access(s.stafferTok, s.store, "store:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("removed staffer access: %v", err)
+	}
+
+	// no revival: a registered support principal with an open grant who becomes a regular member loses the registry row and
+	// every grant at once; staff_remove afterwards (grants deleted, membership inactive) does not bring support back.
+	s.must(s.grant(s.store, s.support, 4, nil))
+	if err := s.access(s.supportTok, s.store, "orders:read"); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, s.b.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read')`, s.tenant, s.store2, s.support) // staff_accept
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.support_grants WHERE principal_id=$1 AND revoked_at IS NULL`, s.support); n != 0 {
+		t.Fatalf("regular access left %d open support grants", n)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.platform_support_principals WHERE principal_id=$1 AND revoked_at IS NULL`, s.support); n != 0 {
+		t.Fatal("regular access left the registry row enabled")
+	}
+	mustExec(t, s.b.owner, `DELETE FROM identity.store_grants WHERE principal_id=$1`, s.support) // staff_remove
+	if err := s.access(s.supportTok, s.store, "orders:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("support revived after staff_remove: %v", err)
+	}
+	if _, err := s.grant(s.store, s.support, 4, nil); sqlState(err) != "PT409" {
+		t.Fatalf("grant after the registry row was revoked: %v, want PT409", err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND action='support.revoked' AND principal_id=$2`, s.tenant, s.support); n != 1 {
+		t.Fatalf("merchant audit of the automatic revoke = %d rows, want 1", n)
+	}
+	// re-enrol: a principal that is no longer a member can be registered again, but the old grant stays closed
+	mustExec(t, s.b.owner, `UPDATE identity.memberships SET active=false WHERE principal_id=$1`, s.support)
+	s.registerSupport(s.support)
+	if err := s.access(s.supportTok, s.store, "orders:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("old grant revived after re-registration: %v", err)
+	}
+
+	// resolve-time separation does not depend on the trigger: with the trigger off, regular access still refuses support
+	s.must(s.grant(s.store, s.supportB, 4, nil))
+	if err := s.access(s.supportBTok, s.store, "orders:read"); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, s.b.owner, `ALTER TABLE identity.store_grants DISABLE TRIGGER USER`)
+	func() {
+		defer mustExec(t, s.b.owner, `ALTER TABLE identity.store_grants ENABLE TRIGGER USER`)
+		mustExec(t, s.b.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'store:read')`, s.tenant, s.store2, s.supportB)
+		for _, store := range []string{s.store, s.store2} {
+			if err := s.access(s.supportBTok, store, "store:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+				t.Errorf("support principal holding a regular grant (trigger off): %v on %s, want scope not found", err, store)
+			}
+		}
+		mustExec(t, s.b.owner, `DELETE FROM identity.store_grants WHERE principal_id=$1`, s.supportB)
+	}()
+	if err := s.access(s.supportBTok, s.store, "orders:read"); err != nil {
+		t.Fatalf("grant must work again once the regular grant is gone (trigger was off, row still open): %v", err)
+	}
+
+	// registry revocation cuts access, the store list and every grant immediately; unknown principal is PT404; idempotent
+	s.must(s.grant(s.store2, s.supportB, 4, nil))
+	list := func() int {
+		rows, err := s.b.runtime.Query(ctx, `SELECT id FROM identity.list_session_stores($1)`, hashOf(s.supportBTok))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		n := 0
+		for rows.Next() {
+			n++
+		}
+		return n
+	}
+	if list() != 2 {
+		t.Fatalf("support store list before registry revoke = %d, want 2", list())
+	}
+	rv := s.must(s.json(`SELECT identity.revoke_support_principal($1,'op.test','TICKET-SG')::text`, s.supportB))
+	if rv["changed"] != true || rv["closed_grants"] != float64(2) {
+		t.Fatalf("registry revoke result %v", rv)
+	}
+	for _, store := range []string{s.store, s.store2} {
+		if err := s.access(s.supportBTok, store, "store:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+			t.Errorf("after registry revoke: %v on %s, want scope not found", err, store)
+		}
+	}
+	if list() != 0 {
+		t.Fatal("registry-revoked principal still sees stores")
+	}
+	if _, err := s.grant(s.store, s.supportB, 4, nil); sqlState(err) != "PT409" {
+		t.Fatalf("grant after registry revoke: %v", err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.support_grants WHERE principal_id=$1 AND revoked_at IS NULL`, s.supportB); n != 0 {
+		t.Fatal("registry revoke left open grants")
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND action='support.revoked' AND principal_id=$2`, s.tenant, s.supportB); n != 2 {
+		t.Fatalf("merchant audit rows of the registry revoke = %d, want 2", n)
+	}
+	rv = s.must(s.json(`SELECT identity.revoke_support_principal($1,'op.test','TICKET-SG')::text`, s.supportB))
+	if rv["changed"] != false {
+		t.Fatalf("second registry revoke: %v", rv)
+	}
+	if _, err := s.json(`SELECT identity.revoke_support_principal($1,'op.test','TICKET-SG')::text`, s.unreg); sqlState(err) != "PT404" {
+		t.Fatalf("revoke of a principal that was never registered: %v", err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM control.operator_audit WHERE action='support_principal_revoke' AND tenant_id IS NULL AND detail->>'principal_id'=$1`, s.supportB); n != 2 {
+		t.Fatalf("support_principal_revoke audit rows = %d, want 2", n)
+	}
+}
+
+func hashOf(token string) []byte {
+	h := sha256.Sum256([]byte(token))
+	return h[:]
+}
+
+// Review P2-1: resolve_access must deny a NULL permission in the support branch exactly like the regular branch.
+func TestSupportGrantNullPermissionDenied(t *testing.T) {
+	s := sgrSetup(t)
+	s.must(s.grant(s.store, s.support, 4, nil))
+	for name, tok := range map[string]string{"support": s.supportTok, "member": s.memberTok} {
+		var status string
+		if err := s.b.runtime.QueryRow(context.Background(), `SELECT access_status FROM identity.resolve_access($1,$2,NULL)`, hashOf(tok), s.store).Scan(&status); err != nil || status != "forbidden" {
+			t.Errorf("%s with a NULL permission: status %q err %v, want forbidden", name, status, err)
+		}
+	}
+	// the support branch also refuses a non-:read permission that is not in the grant, and a ':read' one outside the pack
+	for _, perm := range []string{"orders:write", "customers:read", "pricing:read"} {
+		var status string
+		if err := s.b.runtime.QueryRow(context.Background(), `SELECT access_status FROM identity.resolve_access($1,$2,$3)`, hashOf(s.supportTok), s.store, perm).Scan(&status); err != nil || status != "forbidden" {
+			t.Errorf("support %s: status %q err %v, want forbidden", perm, status, err)
+		}
+	}
+}
+
+// Review P2-5(d): a write-method route that is authorised by a pack ':read' permission is still refused under support
+// (the read-only transaction), while the same statement shape works for a member (positive control in SG02).
+func TestSupportGrantWriteVerbRouteWithReadPermissionRefused(t *testing.T) {
+	s := sgrSetup(t)
+	s.must(s.grant(s.store, s.support, 4, nil))
+	// deterministic Go-level probe: SELECT ... FOR UPDATE is a write-class statement in a read-only transaction
+	err := platform.WithScope(context.Background(), s.b.runtime, s.supportTok, s.store, "integration:read", func(tx pgx.Tx, sc platform.Scope) error {
+		_, e := tx.Exec(context.Background(), `SELECT 1 FROM control.stores WHERE id=$1 FOR UPDATE`, sc.StoreID)
+		return e
+	})
+	if !errors.Is(err, platform.ErrSupportReadOnly) {
+		t.Fatalf("FOR UPDATE under support: %v, want ErrSupportReadOnly", err)
+	}
+	// (the positive control for a member is the audit INSERT of SG02: runtime holds no row-lock privilege on control.stores)
+	// HTTP: POST .../payment-methods/{code}/inspect is authorised by integration:read and locks rows; support gets a refusal
+	h := httpapi.NewHandler(s.b.runtime, httpapi.Options{SessionStoreList: true})
+	body := `{"market_id":"` + randomUUID() + `","country":"TW","code":"bank_transfer","expected_version":0,"environment":"test","currency":"TWD","amount_minor":100}`
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/v1/admin/stores/"+s.store+"/markets/"+randomUUID()+"/countries/TW/payment-methods/bank_transfer/inspect", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+s.supportTok)
+	req.Header.Set("Content-Type", "application/json")
+	h.ServeHTTP(rec, req)
+	if rec.Code < 400 {
+		t.Fatalf("support POST inspect: %d %s, want a refusal", rec.Code, rec.Body.String())
 	}
 }
 
@@ -542,7 +743,8 @@ func TestSupportGrantSG08AuthorityMatrix(t *testing.T) {
 	s := sgrSetup(t)
 	b := s.b
 	ctx := context.Background()
-	fns := []string{"identity.grant_support(uuid,uuid,integer,text[],text,text)", "identity.revoke_support(uuid,uuid,uuid,text,text)", "identity.list_support_grants(uuid)"}
+	fns := []string{"identity.grant_support(uuid,uuid,integer,text[],text,text)", "identity.revoke_support(uuid,uuid,uuid,text,text)", "identity.list_support_grants(uuid)",
+		"identity.add_support_principal(uuid,text,text)", "identity.revoke_support_principal(uuid,text,text)"}
 	for _, fn := range fns {
 		var secdef bool
 		var owner, cfg, comment string
@@ -579,6 +781,8 @@ func TestSupportGrantSG08AuthorityMatrix(t *testing.T) {
 		`SELECT identity.grant_support($1::uuid,$2::uuid,4,NULL,'op.test','T-1')`,
 		`SELECT identity.revoke_support(NULL,$1::uuid,$2::uuid,'op.test','T-1')`,
 		`SELECT identity.list_support_grants($1::uuid) WHERE $2::uuid IS NOT NULL`,
+		`SELECT identity.add_support_principal($2::uuid,'op.test','T-1') WHERE $1::uuid IS NOT NULL`,
+		`SELECT identity.revoke_support_principal($2::uuid,'op.test','T-1') WHERE $1::uuid IS NOT NULL`,
 	}
 	for _, authority := range []string{"commerce_runtime", "commerce_identity", "commerce_auth", "commerce_staff_writer", "commerce_buyer_runtime", "commerce_checkout_runtime",
 		"commerce_worker", "commerce_claims_worker", "commerce_expiry_worker", "commerce_storefront_registrar"} {
@@ -609,6 +813,22 @@ func TestSupportGrantSG08AuthorityMatrix(t *testing.T) {
 	lcSameSet(t, "support_grants column ACL", cols, []string{
 		"revoked_at:UPDATE:commerce_platform_writer", "tenant_id:SELECT:commerce_auth", "store_id:SELECT:commerce_auth", "principal_id:SELECT:commerce_auth",
 		"permissions:SELECT:commerce_auth", "expires_at:SELECT:commerce_auth", "revoked_at:SELECT:commerce_auth"})
+	// registry: same shape (writer writes through the definers, commerce_auth reads two columns, nobody else has anything)
+	acl = lcStrings(t, b.owner, `SELECT a.grantee::regrole::text||':'||a.privilege_type FROM pg_class c, aclexplode(c.relacl) a WHERE c.oid='identity.platform_support_principals'::regclass AND a.grantee<>c.relowner ORDER BY 1`)
+	lcSameSet(t, "registry table ACL", acl, []string{"commerce_platform_writer:INSERT", "commerce_platform_writer:SELECT"})
+	cols = lcStrings(t, b.owner, `SELECT a.attname||':'||x.privilege_type||':'||x.grantee::regrole::text FROM pg_attribute a, LATERAL aclexplode(a.attacl) x
+		WHERE a.attrelid='identity.platform_support_principals'::regclass AND a.attnum>0 ORDER BY 1`)
+	lcSameSet(t, "registry column ACL", cols, []string{"principal_id:SELECT:commerce_auth", "revoked_at:SELECT:commerce_auth",
+		"added_by:UPDATE:commerce_platform_writer", "db_user:UPDATE:commerce_platform_writer", "ticket:UPDATE:commerce_platform_writer",
+		"added_at:UPDATE:commerce_platform_writer", "revoked_at:UPDATE:commerce_platform_writer"})
+	for who, fn := range map[string]string{"helper": "identity.support_principal_ok(uuid)", "close": "identity.support_close_grants(uuid,text)", "trigger": "identity.support_regular_access_trigger()"} {
+		var over []string
+		over = lcStrings(t, b.owner, `SELECT r.rolname FROM pg_roles r WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_platform_writer','commerce_auth')
+			AND has_function_privilege(r.oid,$1::regprocedure,'EXECUTE')`, fn)
+		if len(over) != 0 {
+			t.Errorf("%s %s is executable by %v", who, fn, over)
+		}
+	}
 	if _, err := s.op.Exec(ctx, `SET ROLE commerce_platform_writer`); sqlState(err) != "42501" {
 		t.Errorf("operator login SET ROLE commerce_platform_writer: %v, want 42501", err)
 	}

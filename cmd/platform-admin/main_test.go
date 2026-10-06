@@ -238,6 +238,14 @@ func TestSupportCommandsCallTheDefiners(t *testing.T) {
 		!strings.Contains(q.sql, "identity.list_support_grants") || q.args[0] != cliStore {
 		t.Fatalf("list: %v %v", err, q.args)
 	}
+	if err := run(context.Background(), []string{"support-principal-add", "--principal", cliPrincipal, "--operator", "ops.alice", "--ticket", "T-3"}, goodEnv, &bytes.Buffer{}); err != nil ||
+		!strings.Contains(q.sql, "identity.add_support_principal") || q.args[0] != cliPrincipal || q.args[2] != "T-3" {
+		t.Fatalf("principal add: %v %s %v", err, q.sql, q.args)
+	}
+	if err := run(context.Background(), []string{"support-principal-revoke", "--principal", cliPrincipal, "--operator", "ops.alice", "--ticket", "T-4"}, goodEnv, &bytes.Buffer{}); err != nil ||
+		!strings.Contains(q.sql, "identity.revoke_support_principal") || q.args[0] != cliPrincipal {
+		t.Fatalf("principal revoke: %v %s %v", err, q.sql, q.args)
+	}
 	fake(t, &querier0{r: row{err: &pgconn.PgError{Code: "PT409", Message: "support grant already open"}}})
 	if err := run(context.Background(), []string{"support-list", "--store", cliStore}, goodEnv, &bytes.Buffer{}); err != errConflict {
 		t.Fatalf("PT409 -> %v, want platform_admin_conflict", err)
@@ -267,6 +275,10 @@ func TestSupportUsageErrorsNeverOpenTheDatabase(t *testing.T) {
 		"revoke store only":    with("support-revoke", "--store", cliStore),
 		"revoke bad grant":     with("support-revoke", "--grant", "nope"),
 		"revoke no ticket":     {"support-revoke", "--grant", cliStore, "--operator", "ops.alice"},
+		"principal add none":   with("support-principal-add"),
+		"principal add bad id": with("support-principal-add", "--principal", "nope"),
+		"principal add store":  with("support-principal-add", "--principal", cliPrincipal, "--store", cliStore),
+		"principal revoke tkt": {"support-principal-revoke", "--principal", cliPrincipal, "--operator", "ops.alice"},
 		"list no store":        {"support-list"},
 		"list bad store":       {"support-list", "--store", "nope"},
 		"list with principal":  {"support-list", "--store", cliStore, "--principal", cliPrincipal},
