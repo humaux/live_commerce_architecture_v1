@@ -1,7 +1,9 @@
 # Purpose: Keep downloaded GitHub artifacts and raw traces local to CI triage.
-# Depends on: gh run download evidence for run 37443892071.
+# Depends on: gh run download evidence for LC-U1 GitHub gate runs.
 # Used by: LC-U1 handoff; reviewed extracts and artifact hashes are committed separately.
 ci-37443892071-artifacts/
 ci-37443892071-failed.log
 ci2-artifacts/
 ci2-failed.log
+ci3-artifacts/
+ci3-failed.log

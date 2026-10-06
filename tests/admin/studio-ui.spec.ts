@@ -24,7 +24,9 @@ const readOnlyToken = required("LC_BROWSER_STUDIO_READONLY_TOKEN");
 const expiredToken = required("LC_BROWSER_STUDIO_EXPIRED_TOKEN");
 const cookieName = "__Host-commerce_session";
 
-test.use({ baseURL: origin, headless: false, trace: "retain-on-failure", screenshot: "only-on-failure" });
+// Chromium native pickers can lose their keyboard target when screencast capture
+// intervenes. Keep trace actions/DOM/source data; explicit shots follow selection.
+test.use({ baseURL: origin, headless: false, trace: { mode: "retain-on-failure", screenshots: false, snapshots: true, sources: true }, screenshot: "only-on-failure" });
 test.setTimeout(240_000);
 
 async function signedLogin(page: Page) {

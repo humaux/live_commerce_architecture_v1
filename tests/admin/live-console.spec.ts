@@ -2,7 +2,7 @@
 // Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
-import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
+import { test, expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
@@ -55,6 +55,15 @@ async function login(page: Page) {
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByTestId("shell-store-selector")).toBeAttached();
 }
+async function authorityCookie(context: BrowserContext): Promise<string> {
+  // SECURITY/NEGATIVE: Node's APIRequestContext omits Secure cookies on this HTTP
+  // loopback fixture, unlike Chromium. Pin the existing signed browser authority
+  // so the negative probe reaches CSRF/permission checks, not the 401 login gate.
+  const cookies = await context.cookies(origin);
+  expect(cookies.some((cookie) => cookie.name === "__Host-commerce_session")).toBe(true);
+  return cookies.filter((cookie) => ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name))
+    .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+}
 const route = (locale: string, scene: string, selectedStore = store) => `${origin}/${locale}/studio/console?store=${selectedStore}&scene=${scene}`;
 async function phase(page: Page, value: string) {
   await expect(page.getByTestId("live-phase")).toHaveAttribute("data-phase", value);
@@ -89,7 +98,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     // Actual BFF CSRF/Origin refusal must happen before the MOCK write transport receives a command.
     const beforeRefusal = (await facts(request)).receipts.length;
     const refused = await page.request.post(`${origin}/api/stores/${store}/live-sessions/${scene}/lifecycle`, {
-      headers: { Origin: origin, "Idempotency-Key": `lc-u1-csrf-${name}` },
+      headers: { Cookie: await authorityCookie(page.context()), Origin: origin, "Idempotency-Key": `lc-u1-csrf-${name}` },
       data: { action: "start", expected_version: 1 },
     });
     expect(refused.status()).toBe(403);
@@ -265,6 +274,10 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
   await page.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("live-console")).toHaveCount(0);
+  // Clearing the private view precedes the hard logout redirect. Do not race
+  // that navigation with the next login's goto (net::ERR_ABORTED on Linux CI).
+  await page.waitForURL(`${origin}/en/`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
   await login(page);
   const after = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
   expect(Boolean(before && after && before !== after)).toBe(true); // Never put cookie values in assertion diagnostics.
@@ -354,7 +367,7 @@ for (const [index, locale] of locales.entries()) {
       expect((await facts(request)).receipts).toHaveLength(after);
       // Authority negative only: direct BFF request supplements the real disabled-control clicks above.
       const forbidden = await context.request.post(`${origin}/api/stores/${store}/inventory/adjustments`, {
-        headers: { origin, "x-csrf-token": csrf, "idempotency-key": `no-stock-${locale}` },
+        headers: { Cookie: await authorityCookie(context), origin, "x-csrf-token": csrf, "idempotency-key": `no-stock-${locale}` },
         data: { warehouse_id: body.Warehouse, sku_id: body.SKU, delta: 1, expected_version: body.StockVersion + 1, reason: "live_console_edit" },
       });
       expect(forbidden.status()).toBe(403);
