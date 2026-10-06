@@ -25,7 +25,7 @@ import { expect } from "@playwright/test";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import {
-  CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
+  CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
 } from "./click-sweep-lib.mjs";
 
@@ -161,7 +161,7 @@ async function sweepPage({ make, unit, scopes, fresh = false, session = null }) 
       for (const d of all) { const k = classKey(d); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(d); }
       const picked = [];
       for (const g of groups.values()) for (const d of sample(g, SAMPLE)) picked.push([d, g.length]);
-      picked.sort((a, b) => a[0].index - b[0].index);
+      picked.sort((a, b) => (isCartLineRemoval(hay(a[0])) - isCartLineRemoval(hay(b[0]))) || a[0].index - b[0].index); // a real cart removal goes last: the other controls still need the cart
       log(`${unit.route} ${unit.viewport}/${unit.locale} [${scope.name}] ${all.length} controls, ${picked.length} classes sampled`);
       for (const [d, size] of picked) {
         if (isSignOut(hay(d))) { ledger.add({ ...rowBase(unit, scope.name, controlLabel(d), { kind: `${d.tag}`, testid: d.testid, action: "-", expected: "sign out is exercised once, last, in a throwaway context (journey J5)", actual: "not clicked here: it would end the sweep's own session", result: "skip", classSize: size }) }); continue; }
@@ -280,6 +280,7 @@ async function storefrontSession(v, placed) {
     if (wanted("/cart") || wanted("/checkout") || wanted("/orders/[orderID]") || run("journeys")) {
       await addToCartByClicks(page, v, product);
       if (wanted("/cart")) await sweep({ route: "/cart", url: `${base}/cart`, viewport: v.viewport, locale: v.locale }, main);
+      if (wanted("/cart")) await addToCartByClicks(page, v, product); // the cart sweep really removed the line (last control): fill the cart again for checkout and the order
       if (wanted("/checkout")) await sweep({ route: "/checkout", url: `${base}/checkout`, viewport: v.viewport, locale: v.locale }, main);
       const order = await placeCodOrder(page, v, product);
       placed.set(`${v.viewport}/${v.locale}`, order);

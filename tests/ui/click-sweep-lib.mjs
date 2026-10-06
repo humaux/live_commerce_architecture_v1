@@ -15,7 +15,12 @@ import { writeFile } from "node:fs/promises";
 // cart and raced its own checkout/order steps (CI run 37424335236).
 const DESTRUCTIVE_EN = /\b(delete|remove|archive|void|disconnect|refund|cancel (the )?order|revoke|unpublish|publish|deactivate|erase|discard|suspend|detach|unbind|unlink|terminate)\b/i;
 const DESTRUCTIVE_ZH = /刪除|删除|封存|作廢|作废|斷開|断开|中斷連接|中断连接|退款|取消訂單|取消订单|撤銷|撤销|下架|上架|發布|发布|發佈|取消發佈|取消发布|停用|移除|移出|清除|抹除|丟棄|丢弃|解除|終止|终止|停止/;
-export const isDestructive = (text) => DESTRUCTIVE_EN.test(text) || DESTRUCTIVE_ZH.test(text);
+// A storefront cart line's Remove is reversible (add it again) and is a plain cart write, not a confirmed destructive action. It must NOT be guarded: the
+// guard aborts the PUT after the cart journalled it, which leaves an UNKNOWN-outcome "check the previous attempt" notice in the buyer's session (the cart
+// then no longer renders), and un-guarding right after the first DOM change races the PUT (slow CI runners let it through after the guard was gone).
+// The sweep clicks it for real, LAST in its scope (see sweepPage), and the storefront walk re-fills the cart by clicks afterwards.
+export const isCartLineRemoval = (text) => /\bfrom the cart\b|移出(購物車|购物车)/i.test(text);
+export const isDestructive = (text) => !isCartLineRemoval(text) && (DESTRUCTIVE_EN.test(text) || DESTRUCTIVE_ZH.test(text));
 // Sign out ends the session the sweep itself runs in: it is exercised once, last, in a throwaway context (journey J5), never inside the sweep.
 const SIGN_OUT = /\b(sign ?out|log ?out)\b|登出|退出登录|退出登錄/i;
 export const isSignOut = (text) => SIGN_OUT.test(text);
