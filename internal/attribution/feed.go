@@ -1,3 +1,7 @@
+// Purpose: GET /v1/buyer/feeds/meta.csv: the public Meta Commerce Manager product feed of the verified storefront host (image links per product-media-v2).
+// Depends on: ads.feed_rows, catalog.buyer_feed_images, catalog.buyer_feed_variant_images (migrations 0080/0082/0149); buyer.resolve_published_store.
+// Used by: cmd/api (mountFeed) via the storefront BFF app/feeds/meta.csv; tests/foundation/product_media_v2_test.go.
+
 package attribution
 
 import (
@@ -30,7 +34,7 @@ import (
 // NOT_RUN and the set below is the long-standing required list (id, title, description, availability, condition, price,
 // link, image_link, brand). image_link is the storefront origin + /media/p/<product>/<first image> (catalog-media CM4,
 // migrations/0082) and stays empty for a product without photos; Meta reports such items as incomplete.
-var feedColumns = []string{"id", "title", "description", "availability", "condition", "price", "link", "image_link", "brand"}
+var feedColumns = []string{"id", "title", "description", "availability", "condition", "price", "link", "image_link", "additional_image_link", "brand"}
 
 const originHeader = "X-Commerce-Storefront-Origin"
 
@@ -39,7 +43,8 @@ type feedRow struct {
 	ID, Title, Description, Availability string
 	PriceMinor                           int64
 	Currency, Link, Brand                string
-	ImageLink                            string // absolute public URL of the product's first photo, "" when none
+	ImageLink                            string // absolute public URL: the variant's option-value image, else the first main photo; "" when none
+	AdditionalImageLink                  string // comma-joined absolute URLs of the other main photos (product-media-v2); "" when none
 }
 
 // feedPrice formats price_minor as Meta's "<amount> <ISO>" (I05: exact decimal of minor units / 100, never a float).
@@ -64,7 +69,7 @@ func writeFeed(w *csv.Writer, rows []feedRow) error {
 		if !ok {
 			continue
 		}
-		if err := w.Write([]string{r.ID, r.Title, r.Description, r.Availability, "new", price, r.Link, r.ImageLink, r.Brand}); err != nil {
+		if err := w.Write([]string{r.ID, r.Title, r.Description, r.Availability, "new", price, r.Link, r.ImageLink, r.AdditionalImageLink, r.Brand}); err != nil {
 			return err
 		}
 	}
@@ -134,9 +139,10 @@ func loadFeed(ctx context.Context, pool *pgxpool.Pool, origin string) ([]feedRow
 	return out, addImageLinks(ctx, tx, origin, out)
 }
 
-// addImageLinks sets ImageLink from catalog.buyer_feed_images (migrations/0082, owner commerce_catalog_media, EXECUTE
-// commerce_buyer_runtime): the first photo id of each active product of the published store, no bytes. The feed row's
-// link is origin + "/products/" + product id (ads.feed_rows), which is the join key back to the product.
+// addImageLinks sets ImageLink and AdditionalImageLink (product-media-v2). catalog.buyer_feed_images (migrations/0082, replaced by 0149; owner
+// commerce_catalog_media, EXECUTE commerce_buyer_runtime) lists every MAIN image id of each active product in display order and
+// catalog.buyer_feed_variant_images (0149) the option-value image of each SKU that has one; no bytes, no detail images. The feed row's
+// link is origin + "/products/" + product id (ads.feed_rows) and its id is the SKU id: the join keys back to the product and the SKU.
 func addImageLinks(ctx context.Context, tx pgx.Tx, origin string, rows []feedRow) error {
 	if len(rows) == 0 {
 		return nil
@@ -146,31 +152,64 @@ func addImageLinks(ctx context.Context, tx pgx.Tx, origin string, rows []feedRow
 		return err
 	}
 	defer rs.Close()
-	first := map[string]string{}
+	main := map[string][]string{}
 	for rs.Next() {
 		var product, image string
 		if err = rs.Scan(&product, &image); err != nil {
 			return err
 		}
-		first[product] = image
+		main[product] = append(main[product], image)
 	}
 	if err = rs.Err(); err != nil {
 		return err
 	}
+	rs.Close() // the connection must be idle before the second statement
+	vs, err := tx.Query(ctx, `SELECT sku_id::text,image_id::text FROM catalog.buyer_feed_variant_images($1::text)`, origin)
+	if err != nil {
+		return err
+	}
+	defer vs.Close()
+	variant := map[string]string{}
+	for vs.Next() {
+		var sku, image string
+		if err = vs.Scan(&sku, &image); err != nil {
+			return err
+		}
+		variant[sku] = image
+	}
+	if err = vs.Err(); err != nil {
+		return err
+	}
 	for i := range rows {
-		rows[i].ImageLink = imageLink(origin, rows[i].Link, first)
+		rows[i].ImageLink, rows[i].AdditionalImageLink = imageLinks(origin, rows[i].Link, variant[rows[i].ID], main)
 	}
 	return nil
 }
 
-// imageLink maps a feed row link (origin/products/<product>) and the first-photo map to the public photo URL, or ""
-// when the link is not of that shape or the product has no photo.
-func imageLink(origin, link string, first map[string]string) string {
+// imageLinks maps a feed row link (origin/products/<product>), the SKU's option-value image id ("" when none) and the main-image map to
+// (image_link, additional_image_link): the variant image else main[0] first, then main[1..3] (or main[0..3] after a variant image).
+// Both are "" when the link is not of that shape or there is no image.
+func imageLinks(origin, link, variantImage string, main map[string][]string) (string, string) {
 	product, ok := strings.CutPrefix(link, origin+"/products/")
-	if image := first[product]; ok && image != "" {
-		return origin + "/media/p/" + product + "/" + image
+	if !ok {
+		return "", ""
 	}
-	return ""
+	url := func(id string) string { return origin + "/media/p/" + product + "/" + id }
+	ids := main[product]
+	if variantImage != "" {
+		ids = append([]string{variantImage}, ids...)
+	}
+	if len(ids) == 0 {
+		return "", ""
+	}
+	if len(ids) > 5 { // a variant image plus the four main images is the most a row can show
+		ids = ids[:5]
+	}
+	extra := make([]string, 0, len(ids)-1)
+	for _, id := range ids[1:] {
+		extra = append(extra, url(id))
+	}
+	return url(ids[0]), strings.Join(extra, ",")
 }
 
 // feedError maps the definer's SQLSTATEs to HTTP without ever returning a driver message.

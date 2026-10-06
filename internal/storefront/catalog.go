@@ -1,3 +1,7 @@
+// Purpose: Buyer v1 catalog page (one row per active SKU) with main images and the per-variant thumbnail image_id.
+// Depends on: catalog.skus/products, catalog.buyer_product_images, catalog.buyer_sku_images (migrations 0082/0149), buyer.WithScope.
+// Used by: internal/buyerhttp catalog route; apps/storefront cart-details.
+
 package storefront
 
 import (
@@ -28,9 +32,12 @@ type CatalogItem struct {
 	SKUCode     string `json:"sku_code"`
 	Currency    string `json:"currency"`
 	PriceMinor  int64  `json:"price_minor"`
-	// Images are the product's photos in display order (metadata only; bytes are served by the public media route).
+	// Images are the product's MAIN photos in display order (metadata only; bytes are served by the public media route).
 	// Always non-nil after ListCatalog. Every SKU row of one product carries the same list.
 	Images []CatalogImage `json:"images"`
+	// ImageID is the thumbnail of THIS variant (product-media-v2): its option-value image when present, else the cover (main[0]);
+	// nil when the product has no usable image. Cart, order and claim lines use it.
+	ImageID *string `json:"image_id"`
 }
 
 // CatalogImage is one photo's public metadata. Width/Height are nil for WebP (migrations/0082).
@@ -192,7 +199,35 @@ func attachImages(ctx context.Context, tx pgx.Tx, items []CatalogItem) error {
 			items[i].Images = imgs
 		}
 	}
-	return nil
+	return attachSKUImages(ctx, tx, items)
+}
+
+// attachSKUImages fills CatalogItem.ImageID with one call to catalog.buyer_sku_images (migrations/0149, owner commerce_catalog_media,
+// EXECUTE commerce_buyer_runtime): per SKU its option-value image, else the product cover. Same buyer.WithScope transaction.
+func attachSKUImages(ctx context.Context, tx pgx.Tx, items []CatalogItem) error {
+	ids := make([]string, 0, len(items))
+	at := map[string]int{}
+	for i := range items {
+		ids = append(ids, items[i].SKUID)
+		at[items[i].SKUID] = i
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	rows, err := tx.Query(ctx, `SELECT sku_id::text,image_id::text FROM catalog.buyer_sku_images($1::uuid[])`, ids)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var sku string
+		var image *string
+		if err := rows.Scan(&sku, &image); err != nil {
+			return err
+		}
+		items[at[sku]].ImageID = image
+	}
+	return rows.Err()
 }
 
 // StoreName returns the buyer scope store's public name for the storefront home heading. control.stores: the

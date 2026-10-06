@@ -57,8 +57,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0144 (W3-03B checkout reminders) adds one more: 70 -> 71.
 	// 0148 (LC-B7 console read model: console_session_facts + read_live_console_sales) adds one more: 71 -> 72.
 	// 0147 (W6-02B reports) adds one more: 72 -> 73.
-	if len(r2) != 73 {
-		t.Fatalf("R2 migration set = %d files %v, want 73", len(r2), r2)
+	// 0149 (product-media-v2: image roles, option-value images) adds one more: 73 -> 74.
+	if len(r2) != 74 {
+		t.Fatalf("R2 migration set = %d files %v, want 74", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

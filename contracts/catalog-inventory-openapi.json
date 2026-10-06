@@ -7089,7 +7089,7 @@
     "/v1/admin/stores/{store_id}/products/{product_id}/option-images": {
       "post": {
         "operationId": "linkOptionImage",
-        "description": "Requires catalog:write. Links an unlinked sku-role image of this product to a value of the effective image axis (409 value or image already linked, 422 value not on the axis or image not sku, 404 foreign image). Returns ImageList.",
+        "description": "Requires catalog:write. Points a sku-role image of this product at a value of the effective image axis, replacing the image's previous link (409 value already has another image, 422 value not on the axis or image not sku, 404 foreign image/product). Returns ImageList.",
         "security": [
           {
             "merchantBearer": []

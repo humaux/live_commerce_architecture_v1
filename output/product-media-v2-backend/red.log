@@ -1,0 +1,39 @@
+=== RUN   TestPMv2ConstantsParity
+--- PASS: TestPMv2ConstantsParity (0.00s)
+=== RUN   TestPMv2MigrationNineImages
+    product_media_v2_test.go:154: held-back migrations [], want 0149_product_media_v2.sql first
+--- FAIL: TestPMv2MigrationNineImages (1.41s)
+=== RUN   TestPMv2SQLStructure
+    product_media_v2_test.go:255: role=main position=3 accepted=false err=ERROR: column "role" of relation "product_images" does not exist (SQLSTATE 42703)
+    product_media_v2_test.go:257: role=main position=4: 42703, want CHECK 23514
+    product_media_v2_test.go:255: role=detail position=19 accepted=false err=ERROR: column "role" of relation "product_images" does not exist (SQLSTATE 42703)
+    product_media_v2_test.go:257: role=detail position=20: 42703, want CHECK 23514
+    product_media_v2_test.go:255: role=sku position=49 accepted=false err=ERROR: column "role" of relation "product_images" does not exist (SQLSTATE 42703)
+    product_media_v2_test.go:257: role=sku position=50: 42703, want CHECK 23514
+    product_media_v2_test.go:257: role=bogus position=0: 42703, want CHECK 23514
+    product_media_v2_test.go:267: ERROR: column "role" of relation "product_images" does not exist (SQLSTATE 42703)
+--- FAIL: TestPMv2SQLStructure (1.43s)
+=== RUN   TestPMv2MerchantRolesAndCaps
+    product_media_v2_test.go:328: 5th main: 200 {"id":"52c8458a-e4c5-440c-b87c-1ebd1d091416","product_id":"65cf7ba7-9367-49ff-8f28-c080f2fa4739","position":4,"content_type":"image/jpeg","size_bytes":647,"width":40,"height":30,"version":1}
+        , want 409
+--- FAIL: TestPMv2MerchantRolesAndCaps (0.31s)
+=== RUN   TestPMv2OptionImages
+    product_media_v2_test.go:418: sku without option_value: 200, want 422
+--- FAIL: TestPMv2OptionImages (0.27s)
+=== RUN   TestPMv2CrossStoreRefused
+    product_media_v2_test.go:502: garbage path accepted: 307
+--- FAIL: TestPMv2CrossStoreRefused (0.28s)
+=== RUN   TestPMv2BuyerShapes
+    product_media_v2_test.go:552: images = [0ebf0706-df23-4125-aeeb-b1a7cbaa03e3 65b1e622-c696-432c-94c7-c149e98f631e df143013-cc8b-4e52-a830-2485704cac2c 1087ab4b-3a7c-4421-ad2b-e8749d58f720 36cabd1f-08d4-4e42-b36f-a0cfa8c2337c 1faa0d4b-e3b9-4902-8b77-0f2a2b84e88b b2093871-59ba-4eb0-bc7d-c9099107c3a9 88e3d72e-c0b0-4b82-8ede-2a47afae77e8 b7c8e5f2-2ee8-48c1-ad40-63c35413e6c4 390fe84d-94b0-4d0f-a98b-75ea07ac918d e9a91b6c-998e-44a4-9ab0-37bf5951b46d], want the 4 main images in order [0ebf0706-df23-4125-aeeb-b1a7cbaa03e3 65b1e622-c696-432c-94c7-c149e98f631e df143013-cc8b-4e52-a830-2485704cac2c 1087ab4b-3a7c-4421-ad2b-e8749d58f720]
+--- FAIL: TestPMv2BuyerShapes (0.33s)
+=== RUN   TestPMv2FeedLinks
+    product_media_v2_test.go:698: feed header [id title description availability condition price link image_link brand]
+--- FAIL: TestPMv2FeedLinks (0.29s)
+=== RUN   TestPMv2ACLPins
+    product_media_v2_test.go:741: catalog.product_option_images must ENABLE and FORCE RLS: false false ERROR: relation "catalog.product_option_images" does not exist (SQLSTATE 42P01)
+--- FAIL: TestPMv2ACLPins (0.24s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.375s
+FAIL
+test-focused: top-level PASS=1 FAIL=8 SKIP=0 exit=1
+exit 1

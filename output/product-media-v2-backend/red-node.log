@@ -1,0 +1,7 @@
+✖ apps/storefront/tests/product-media.test.mjs (162.281833ms)
+ℹ pass 0
+ℹ fail 1
+✖ failing tests:
+✖ apps/storefront/tests/product-media.test.mjs (162.281833ms)
+--- admin (contract module absent in HEAD: old images-client validator)
+admin red = module image-list-contract.ts and role/caps absent on HEAD (test imports fail)

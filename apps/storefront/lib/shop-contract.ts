@@ -3,6 +3,12 @@
 // islands. They return a closed typed value or null; a null means "treat as unavailable", never "render half a page".
 // They never decide price/stock (Go does) and never accept a field the contract does not list.
 
+// product-media-v2 caps (contracts/catalog-inventory-v1.md); pinned to Go catalog.MaxMainImages / MaxDetailImages / MaxOptionImages
+// by tests/product-media-parity (apps/storefront/tests/product-media.test.mjs). Change a number here only with the Go constant.
+export const MAX_MAIN_IMAGES = 4;
+export const MAX_DETAIL_IMAGES = 20;
+export const MAX_OPTION_IMAGES = 50;
+
 export type StockHint = "in" | "low" | "out";
 export type ImageSize = { width: 360 | 720 | 1080; pixel_width: number };
 export type ProductCard = {
@@ -24,14 +30,20 @@ export type Variant = {
   price_minor: number;
   compare_at_minor: number | null;
   stock: StockHint;
+  // product-media-v2: the image linked to this variant's value on the image axis (null = use the cover).
+  image_id: string | null;
 };
+export type DetailImage = { id: string; width: number | null; height: number | null; sizes?: ImageSize[] };
 export type ProductDetail = {
   id: string;
   slug: string;
   title: string;
   description: string;
   seo: { title: string; description: string };
-  images: { id: string; width: number | null; height: number | null; sizes?: ImageSize[] }[];
+  images: DetailImage[]; // main images, <= MAX_MAIN_IMAGES, cover first
+  detail_images: DetailImage[]; // ordered detail-page stack, <= MAX_DETAIL_IMAGES
+  image_axis: string | null; // effective option axis that carries option_images
+  option_images: { value: string; image_id: string }[];
   options: { name: string; values: string[] }[];
   variants: Variant[];
   collections: { slug: string; title: string }[];
@@ -94,17 +106,35 @@ export function parseProductList(v: unknown): ProductList | null {
   return { store: { name: v.store.name, currency: String(v.store.currency) }, products, next: v.next as string | null };
 }
 
-export function parseProductDetail(v: unknown): ProductDetail | null {
-  if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 300) || !str(v.description, 20000)) return null;
-  if (!rec(v.seo) || !str(v.seo.title, 200) || !str(v.seo.description, 400)) return null;
-  if (!Array.isArray(v.images) || v.images.length > 8 || !Array.isArray(v.options) || v.options.length > 3) return null;
-  if (!Array.isArray(v.variants) || v.variants.length < 1 || v.variants.length > 500 || !Array.isArray(v.collections)) return null;
-  const images: ProductDetail["images"] = [];
-  for (const i of v.images) {
+// One image list of the detail wire shape, capped at `max` (the Go per-role cap); null when malformed or over the cap.
+function parseDetailImages(list: unknown, max: number): DetailImage[] | null {
+  if (!Array.isArray(list) || list.length > max) return null;
+  const out: DetailImage[] = [];
+  for (const i of list) {
     if (!rec(i) || !uuid(i.id) || !maybe(i.width, dim) || !maybe(i.height, dim)) return null;
     const sizes = imageSizes(i.sizes);
     if (!sizes) return null;
-    images.push({ id: i.id, width: i.width as number | null, height: i.height as number | null, ...(sizes.length ? {sizes} : {}) });
+    out.push({ id: i.id, width: i.width as number | null, height: i.height as number | null, ...(sizes.length ? { sizes } : {}) });
+  }
+  return out;
+}
+
+export function parseProductDetail(v: unknown): ProductDetail | null {
+  if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 300) || !str(v.description, 20000)) return null;
+  if (!rec(v.seo) || !str(v.seo.title, 200) || !str(v.seo.description, 400)) return null;
+  if (!Array.isArray(v.options) || v.options.length > 3) return null;
+  if (!Array.isArray(v.variants) || v.variants.length < 1 || v.variants.length > 500 || !Array.isArray(v.collections)) return null;
+  const images = parseDetailImages(v.images, MAX_MAIN_IMAGES);
+  const detailImages = v.detail_images === undefined ? [] : parseDetailImages(v.detail_images, MAX_DETAIL_IMAGES); // absent = a backend before product-media-v2
+  if (!images || !detailImages) return null;
+  if (v.image_axis !== undefined && !maybe(v.image_axis, (x): x is string => str(x, 60))) return null;
+  const optionImages: ProductDetail["option_images"] = [];
+  if (v.option_images !== undefined) {
+    if (!Array.isArray(v.option_images) || v.option_images.length > MAX_OPTION_IMAGES) return null;
+    for (const o of v.option_images) {
+      if (!rec(o) || !str(o.value, 80) || !uuid(o.image_id)) return null;
+      optionImages.push({ value: o.value, image_id: o.image_id });
+    }
   }
   const options: ProductDetail["options"] = [];
   for (const o of v.options) {
@@ -116,6 +146,7 @@ export function parseProductDetail(v: unknown): ProductDetail | null {
     if (!rec(x) || !uuid(x.sku_id) || !str(x.title, 200) || !Array.isArray(x.option_values) || !x.option_values.every((y) => str(y, 80))) return null;
     if (x.option_values.length !== options.length || !money(x.price_minor) || !maybe(x.compare_at_minor, money)) return null;
     if (x.stock !== "in" && x.stock !== "low" && x.stock !== "out") return null;
+    if (x.image_id !== undefined && !maybe(x.image_id, uuid)) return null;
     variants.push({
       sku_id: x.sku_id,
       title: x.title,
@@ -123,6 +154,7 @@ export function parseProductDetail(v: unknown): ProductDetail | null {
       price_minor: x.price_minor,
       compare_at_minor: x.compare_at_minor as number | null,
       stock: x.stock,
+      image_id: (x.image_id as string | null | undefined) ?? null,
     });
   }
   const collections: ProductDetail["collections"] = [];
@@ -130,7 +162,7 @@ export function parseProductDetail(v: unknown): ProductDetail | null {
     if (!rec(c) || !str(c.slug, 80) || !str(c.title, 200)) return null;
     collections.push({ slug: c.slug, title: c.title });
   }
-  return { id: v.id, slug: v.slug, title: v.title, description: v.description, seo: { title: v.seo.title, description: v.seo.description }, images, options, variants, collections };
+  return { id: v.id, slug: v.slug, title: v.title, description: v.description, seo: { title: v.seo.title, description: v.seo.description }, images, detail_images: detailImages, image_axis: (v.image_axis as string | null | undefined) ?? null, option_images: optionImages, options, variants, collections };
 }
 
 export function parseCollections(v: unknown): CollectionCard[] | null {

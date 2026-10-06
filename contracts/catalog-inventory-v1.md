@@ -154,8 +154,8 @@ EXIF handling and the 360/720/1080 size children (0111, `media-sizes-v1.md`) are
 - `POST images/{image_id}/move` `{role: "main"|"detail"}`: moves a `main`/`detail` image to the END of the other role keeping its bytes and sizes,
   renumbering the source role; 409 when the target is full; 422 for a `sku` image or the same role; a `detail` target also applies the 6x ratio rule.
 - `POST images/{image_id}/delete`: unchanged, renumbers inside the image's own role; a linked sku image's link is removed with it.
-- `POST option-images` `{option_value, image_id}`: link an unlinked `sku` image of this product to a value of the effective axis (409 when the
-  value or the image is already linked, 422 when the value is not on the axis or the image is not `sku`, 404 for a foreign image).
+- `POST option-images` `{option_value, image_id}`: point a `sku` image of this product (new or already linked elsewhere) at a value of the effective axis; the previous link of that
+  image is replaced. 409 when the value already has another image, 422 when the value is not on the axis or the image is not `sku`, 404 for a foreign image or product. Returns `ImageList`.
 - `POST image-axis` `{axis: string|null}`: set the image axis (422 when it is not a current axis name; `null` = back to the first axis). Returns `ImageList`.
 - Cover everywhere on the merchant side (ledger, product list, collection members) = the `main` image at position 0.
 
