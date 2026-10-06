@@ -52,8 +52,10 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const HEX = /^#[0-9a-f]{6}$/;
 
 const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+// Go counts these limits in runes (internal/design/schema.go): clip by code point, never by UTF-16 unit (that halves emoji text and can split a pair).
+const clip = (v: string, max: number): string => (v.length <= max ? v : [...v].slice(0, max).join(""));
 const text = (v: unknown, max: number): string | null =>
-  typeof v === "string" && v.trim() !== "" ? v.trim().slice(0, max) : null;
+  typeof v === "string" && v.trim() !== "" ? clip(v.trim(), max) : null;
 const image = (v: unknown): string | null => (typeof v === "string" && UUID.test(v) ? v : null);
 const slug = (v: unknown): string | null => (typeof v === "string" && v.length <= 80 && SLUG.test(v) ? v : null);
 const limit = (v: unknown, min: number, max: number, fallback: number) =>
@@ -142,14 +144,14 @@ function sections(raw: unknown): Section[] {
         break;
       }
       case "rich_text":
-        out.push({ type: "rich_text", heading, body: typeof s.body === "string" ? s.body.slice(0, 4000) : "" });
+        out.push({ type: "rich_text", heading, body: typeof s.body === "string" ? clip(s.body, 4000) : "" });
         break;
       case "image_text":
         out.push({
           type: "image_text",
           image_id: image(s.image_id),
           heading,
-          body: typeof s.body === "string" ? s.body.slice(0, 2000) : "",
+          body: typeof s.body === "string" ? clip(s.body, 2000) : "",
           image_side: s.image_side === "left" ? "left" : "right",
         });
         break;
@@ -173,7 +175,7 @@ export function normalizeDesign(raw: unknown, storeName = ""): Design {
       if (!isRecord(page)) continue;
       const s = slug(page.slug);
       const title = text(page.title, 80);
-      if (s && title) pages.push({ slug: s, title, body: typeof page.body === "string" ? page.body.slice(0, 20000) : "" });
+      if (s && title) pages.push({ slug: s, title, body: typeof page.body === "string" ? clip(page.body, 20000) : "" });
     }
   return {
     profile: {

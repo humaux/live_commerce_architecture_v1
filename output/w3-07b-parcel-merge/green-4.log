@@ -1,0 +1,38 @@
+=== RUN   TestManualFulfilmentMF04Authority
+=== RUN   TestManualFulfilmentMF04Authority/other-store_and_cross-tenant_orders_are_indistinguishable_from_missing_ones
+2026/10/06 18:01:32 INFO orders.export_unshipped store_id=9ea4aa78-987d-4580-a0fc-9cd21592eade rows=3 truncated=false duration_ms=11
+=== RUN   TestManualFulfilmentMF04Authority/permission_matrix:_neither_orders:read,_fulfillment:write_nor_orders:export_implies_another
+2026/10/06 18:01:32 INFO orders.export_unshipped store_id=9ea4aa78-987d-4580-a0fc-9cd21592eade rows=2 truncated=false duration_ms=3
+=== RUN   TestManualFulfilmentMF04Authority/a_session_or_grant_revoked_while_the_command_waits_on_the_order_lock_is_rejected_by_the_fresh_final_auth
+=== RUN   TestManualFulfilmentMF04Authority/a_buyer_cannot_read_another_buyer's_shipment
+--- PASS: TestManualFulfilmentMF04Authority (7.89s)
+    --- PASS: TestManualFulfilmentMF04Authority/other-store_and_cross-tenant_orders_are_indistinguishable_from_missing_ones (0.04s)
+    --- PASS: TestManualFulfilmentMF04Authority/permission_matrix:_neither_orders:read,_fulfillment:write_nor_orders:export_implies_another (0.07s)
+    --- PASS: TestManualFulfilmentMF04Authority/a_session_or_grant_revoked_while_the_command_waits_on_the_order_lock_is_rejected_by_the_fresh_final_auth (0.13s)
+    --- PASS: TestManualFulfilmentMF04Authority/a_buyer_cannot_read_another_buyer's_shipment (0.03s)
+=== RUN   TestParcelGroup
+=== RUN   TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+=== RUN   TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown
+=== RUN   TestParcelGroup/PG03_one_order,_at_most_one_group
+=== RUN   TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id
+=== RUN   TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched
+    parcel_groups_test.go:251: control order shipped-mail rows: 1
+=== RUN   TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back
+=== RUN   TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import
+=== RUN   TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone
+=== RUN   TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins
+--- PASS: TestParcelGroup (14.14s)
+    --- PASS: TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create (0.03s)
+    --- PASS: TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown (0.98s)
+    --- PASS: TestParcelGroup/PG03_one_order,_at_most_one_group (0.00s)
+    --- PASS: TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id (0.01s)
+    --- PASS: TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched (0.03s)
+    --- PASS: TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back (0.02s)
+    --- PASS: TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import (0.01s)
+    --- PASS: TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone (0.02s)
+    --- PASS: TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins (1.74s)
+=== RUN   TestParcelGroupACL
+--- PASS: TestParcelGroupACL (0.06s)
+PASS
+ok  	livecommerce/tests/foundation	23.826s
+test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0

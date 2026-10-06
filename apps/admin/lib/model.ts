@@ -1,3 +1,6 @@
+// Purpose: shared TypeScript wire models of the admin workspace (ledger, product photos, image lists).
+// Depends on: nothing at runtime (types only); mirrors Go internal/catalog and internal/httpapi shapes.
+// Used by: apps/admin components and lib clients.
 export type LedgerRow = {
   product_id: string;
   product_name: string;
@@ -63,10 +66,17 @@ export type WorkspaceData = {
 export type ProductImage = {
   id: string;
   product_id: string;
+  role: "main" | "detail" | "sku"; // product-media-v2; position is per role
   position: number;
   content_type: "image/jpeg" | "image/png" | "image/webp";
   size_bytes: number;
   width: number | null;
   height: number | null;
   version: number;
+};
+// GET products/{id}/images: all roles ordered main, detail, sku, plus the effective image axis and the option-value links on it.
+export type ProductImageList = {
+  items: ProductImage[];
+  image_axis: string | null;
+  option_images: { option_name: string; option_value: string; image_id: string }[];
 };

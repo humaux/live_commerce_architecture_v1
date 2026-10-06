@@ -408,6 +408,10 @@ reply, then out-of-stock auto reply W3-04B) wherever they can still be planned:
   clause 2), it commits the claim, writes audit `claim_reply_skipped:reply_used` **and sets
   `claims.bundles.link_pending_manual = true`** (new column, 0123); the console shows 「此買家的認領連結尚未送出，請在私訊中補發」
   and the bundle's thread appears under A8 `unreplied`. The flag clears when a claim link is issued for the bundle.
+- W3-04B (migration 0151): the automatic reply of a **sold-out** claim is a `meta.private_reply` of message_type `sold_out_reply`, the same single
+  operation on the same `mpr:` key as the claim-link reply (rank "auto"): it consumes the comment's one private reply, so a manual reply after it is
+  `409 used` and a restock cannot re-reply to that comment (only a DM inside the 24 h window or a new comment can). With the store switch off the
+  claim is skipped (`claim_reply_skipped:sold_out_off`) and the budget stays for the merchant. See live-keyword-claims-v1 Amendment "W3-04B sold-out reply".
 - `used` counts the key only while its operation is READY, DISPATCHING, SUCCEEDED, UNKNOWN or FAILED_FINAL. When the
   existing `mpr:` operation ended BLOCKED_POLICY or STALE_BINDING (zero HTTP calls, provably unsent), one manual
   private reply may use the second key class `mpr:` + `:m1` (same partial unique index, now `semantic_key LIKE

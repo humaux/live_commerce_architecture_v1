@@ -23,6 +23,7 @@ import { validClaimRedeemed, type ClaimRedeemed } from "./claim-contract.ts";
 // It never decides money or eligibility (Go does). CVS additions follow contracts/taiwan-cvs-logistics-v1.md
 // §5 and §16 (options rows, CVS destinations by pickup_id, Begin payment_mode, order CVS projection).
 import { CARRIER_CODES } from "./purchase-types.ts";
+import { MAX_MAIN_IMAGES } from "./shop-contract.ts";
 import type {
   CartWrite,
   CheckoutWrite,
@@ -118,7 +119,7 @@ export const validCart = (v: unknown): v is Cart =>
   validItems(v.items);
 export const validProductImages = (v: unknown): v is ProductImageMeta[] =>
   Array.isArray(v) &&
-  v.length <= 8 &&
+  v.length <= MAX_MAIN_IMAGES &&
   v.every(
     (x) =>
       record(x) &&
@@ -130,6 +131,7 @@ export const validProductImages = (v: unknown): v is ProductImageMeta[] =>
 export const validProduct = (v: unknown): v is Product =>
   record(v) &&
   (v.images === undefined || validProductImages(v.images)) &&
+  (v.image_id === undefined || v.image_id === null || id(v.image_id)) &&
   id(v.product_id) &&
   id(v.sku_id) &&
   [v.name, v.description, v.sku_code].every((x) => typeof x === "string") &&
