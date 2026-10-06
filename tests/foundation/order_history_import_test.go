@@ -12,6 +12,7 @@ package foundation_test
 //   - OH07 customers:privacy to import, customers:read to read, another store's customer is 404, no login role holds a table grant;
 //   - OH08 more than 5000 data lines is too_many_rows (the 0152 batch cap), over 2 MiB is 413, results carry no id;
 //   - OH09 the keyset read pages newest first with a total; OH10 the merchant privacy export contains the archive;
+//   - OH13 only the 22 Taiwan cities are archived (台/臺 normalised); any other city cell is dropped to NULL with a counted warning, never stored, and a table CHECK backs it.
 //   - OH11 2000 archive rows per customer: the next order fails order_limit; OH12 the batch / results.csv hold row numbers and codes only.
 // Disclosed owner-pool fixtures: the final purge of the archive rows this test created, and the 2000-row filler of OH11.
 
@@ -140,7 +141,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		var items, city, status, currency string
 		var total int64
 		if err := f.owner.QueryRow(context.Background(), `SELECT items_summary,city,status,total_minor,currency FROM customers.historical_orders WHERE external_order_id='OH-1002'`).
-			Scan(&items, &city, &status, &total, &currency); err != nil || items != "貼紙×3、膠帶×1、卡片×2" || city != "台北市" || status != "已出貨" || total != 30000 || currency != "TWD" {
+			Scan(&items, &city, &status, &total, &currency); err != nil || items != "貼紙×3、膠帶×1、卡片×2" || city != "臺北市" || status != "已出貨" || total != 30000 || currency != "TWD" {
 			t.Fatalf("OH-1002: %q %q %q %d %q %v", items, city, status, total, currency, err)
 		}
 		if c.n(`SELECT count(*) FROM customers.historical_orders WHERE external_order_id='OH-1001' AND total_minor=128000 AND owner_id=$1 AND ordered_at='2026-03-05T06:30:00Z'`, owner1) != 1 {
@@ -228,12 +229,6 @@ func TestOrderHistoryImport(t *testing.T) {
 		if c.n(`SELECT count(*) FROM information_schema.columns WHERE table_schema='customers' AND table_name='historical_orders' AND column_name ~ '(addr|street|line1|line2|phone|email|card|bank|payment|account)'`) != 0 {
 			t.Error("the archive table has an address / contact / payment column")
 		}
-		// A full address mapped onto the city column is refused, not archived.
-		bad := "訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額,城市\nOH-9100,SL-0001,2026-03-05,已完成,100,中山路99號3樓\n"
-		st, pv := c.opreview(c.adminTok, bad, "")
-		if st != 200 || pv["rows"].([]any)[0].(map[string]any)["code"] != "invalid_city" {
-			t.Fatalf("address in the city column: %d %v", st, pv)
-		}
 	})
 
 	t.Run("OH05 the same order again is updated; another customer's order number is refused", func(t *testing.T) {
@@ -264,7 +259,7 @@ func TestOrderHistoryImport(t *testing.T) {
 			t.Fatalf("page 1: %d %v", st, p1)
 		}
 		first := items[0].(map[string]any)
-		if first["order_id"] != "OH-1002" || first["currency"] != "TWD" || first["city"] != "台北市" || first["items_summary"] != "貼紙×3、膠帶×1、卡片×2" || first["total_minor"] != float64(30000) {
+		if first["order_id"] != "OH-1002" || first["currency"] != "TWD" || first["city"] != "臺北市" || first["items_summary"] != "貼紙×3、膠帶×1、卡片×2" || first["total_minor"] != float64(30000) {
 			t.Fatalf("newest first: %v", first)
 		}
 		if len(first) != 7 {
@@ -391,6 +386,58 @@ func TestOrderHistoryImport(t *testing.T) {
 		}
 	})
 
+	t.Run("OH13 only the 22 cities are archived as a city; anything else is dropped, counted and never stored", func(t *testing.T) {
+		const samples = "臺北市中正區重慶南路一段一二二號|王小明|amy@mail.tw|台北市大安區忠孝東路四段"
+		var b strings.Builder
+		b.WriteString("訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額,城市\n")
+		for i, cell := range append(strings.Split(samples, "|"), "台中市") {
+			fmt.Fprintf(&b, "OH-91%02d,SL-0002,2026-05-0%d,已完成,100,%s\n", i, i+1, cell)
+		}
+		st, pv := c.opreview(c.adminTok, b.String(), "")
+		if st != 200 || pv["new_rows"] != float64(5) || pv["failed_rows"] != float64(0) || pv["city_dropped_rows"] != float64(4) {
+			t.Fatalf("preview: %d %v", st, pv)
+		}
+		if row := pv["rows"].([]any)[0].(map[string]any); row["warning"] != "city_dropped" || row["outcome"] != "created" {
+			t.Fatalf("warning row: %v", row)
+		}
+		st, cm := c.ocommit(c.adminTok, b.String(), 5, "")
+		if st != 200 || cm["created"] != float64(5) {
+			t.Fatalf("commit: %d %v", st, cm)
+		}
+		if c.n(`SELECT count(*) FROM customers.historical_orders WHERE external_order_id LIKE 'OH-91%' AND city IS NULL`) != 4 ||
+			c.n(`SELECT count(*) FROM customers.historical_orders WHERE external_order_id='OH-9104' AND city='臺中市'`) != 1 {
+			t.Fatal("a refused city must be stored as NULL and 台中市 as 臺中市")
+		}
+		for _, cell := range strings.Split(samples, "|") {
+			rows, err := f.owner.Query(context.Background(), `SELECT quote_ident(table_schema)||'.'||quote_ident(table_name) FROM information_schema.tables
+			 WHERE table_type='BASE TABLE' AND table_schema NOT IN ('pg_catalog','information_schema')`)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var tables []string
+			for rows.Next() {
+				var n string
+				_ = rows.Scan(&n)
+				tables = append(tables, n)
+			}
+			rows.Close()
+			for _, table := range tables {
+				if got := c.n(`SELECT count(*) FROM `+table+` t WHERE t::text LIKE '%'||$1||'%'`, cell); got != 0 {
+					t.Errorf("%s holds the refused city cell %q", table, cell)
+				}
+			}
+		}
+		// Backstop: the table itself refuses anything outside the allowlist, whoever writes it.
+		for _, bad := range []string{"王小明", "台北市", "臺北市中正區", "amy@mail.tw"} {
+			_, err := f.owner.Exec(context.Background(), `INSERT INTO customers.historical_orders(tenant_id,store_id,owner_id,external_order_id,ordered_at,status,total_minor,currency,items_summary,city)
+			 VALUES($1,$2,$3,'OH-CHK',now(),'x',1,'TWD','',$4)`, f.tenantA, c.store, owner2, bad)
+			if err == nil || !strings.Contains(err.Error(), "23514") {
+				t.Errorf("city %q must violate the CHECK: %v", bad, err)
+			}
+		}
+		mustExec(t, f.owner, `DELETE FROM customers.historical_orders WHERE external_order_id LIKE 'OH-91%'`)
+	})
+
 	t.Run("OH08 limits", func(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\n")
@@ -408,10 +455,10 @@ func TestOrderHistoryImport(t *testing.T) {
 		}
 	})
 
-	t.Run("OH11 2000 archive rows per customer, then order_limit", func(t *testing.T) {
+	t.Run("OH11 2000 archive rows per customer, then order_limit and a bounded export", func(t *testing.T) {
 		owner3 := c.ownerOf("SL-0003")
 		mustExec(t, f.owner, `INSERT INTO customers.historical_orders(tenant_id,store_id,owner_id,external_order_id,ordered_at,status,total_minor,currency,items_summary)
-		 SELECT $1,$2,$3,'FILL-'||g,'2026-01-01T00:00:00Z','x',100,'TWD','' FROM generate_series(1,2000) g`, f.tenantA, c.store, owner3)
+		 SELECT $1,$2,$3,'FILL-'||g,'2026-01-01T00:00:00Z'::timestamptz+g*interval '1 second','x',100,'TWD',repeat('商',500) FROM generate_series(1,2000) g`, f.tenantA, c.store, owner3)
 		one := "訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\nOH-LIMIT,SL-0003,2026-03-05,已完成,100\n"
 		st, pv := c.opreview(c.adminTok, one, "")
 		if st != 200 || pv["failed_rows"] != float64(1) || pv["rows"].([]any)[0].(map[string]any)["code"] != "order_limit" {
@@ -419,6 +466,16 @@ func TestOrderHistoryImport(t *testing.T) {
 		}
 		if st, p := c.archive(owner3, "?limit=100"); st != 200 || p["total"] != float64(2000) || len(p["items"].([]any)) != 100 {
 			t.Fatalf("archive of 2000: %d total=%v", st, p["total"])
+		}
+		// P2-4: 2000 rows of 500 characters would be ~3 MB; the export keeps the newest 100 and states the total.
+		st, raw, _ := c.call("POST", "/v1/admin/stores/"+c.store+"/customers/"+owner3+"/exports", c.adminTok, "", "Content-Type", "application/json", "Idempotency-Key", t04Key("oh-export-cap"))
+		if st != 200 || len(raw) > 1<<20 {
+			t.Fatalf("export of a 2000-row archive: %d (%d bytes)", st, len(raw))
+		}
+		prof, _ := sraJSON(raw)["import_profile"].(map[string]any)
+		kept, _ := prof["historical_orders"].([]any)
+		if len(kept) != 100 || prof["historical_orders_total"] != float64(2000) || kept[0].(map[string]any)["order_id"] != "FILL-2000" {
+			t.Fatalf("export archive section: kept=%d total=%v", len(kept), prof["historical_orders_total"])
 		}
 	})
 }

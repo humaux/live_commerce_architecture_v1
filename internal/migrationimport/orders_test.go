@@ -34,7 +34,7 @@ func TestOrderAggregationAndFields(t *testing.T) {
 	}
 	u := p.units[0]
 	if u.outcome != "" || u.orderID != "O-1" || u.customerID != "C-1" || u.status != "已完成" || u.totalMinor != 128000 ||
-		u.items != "紅茶×2、綠茶×1" || u.city != "台北市" || u.n != 1 || u.orderedAt.UTC().Format("2006-01-02T15:04:05Z") != "2026-03-05T06:30:00Z" {
+		u.items != "紅茶×2、綠茶×1" || u.city != "臺北市" || u.n != 1 || u.orderedAt.UTC().Format("2006-01-02T15:04:05Z") != "2026-03-05T06:30:00Z" {
 		t.Fatalf("unit 1: %+v", u)
 	}
 	if u := p.units[1]; u.outcome != "" || u.totalMinor != 30000 || u.items != "貼紙×1" || u.n != 3 {
@@ -71,13 +71,31 @@ func TestOrderRowFailures(t *testing.T) {
 		"status too long":     {"O-9,C-1,2026-03-05," + strings.Repeat("狀", 41) + ",100,x,1,台北市,", "invalid_status"},
 		"quantity zero":       {"O-9,C-1,2026-03-05,完成,100,x,0,台北市,", "invalid_quantity"},
 		"quantity text":       {"O-9,C-1,2026-03-05,完成,100,x,two,台北市,", "invalid_quantity"},
-		"address in city":     {"O-9,C-1,2026-03-05,完成,100,x,1,中山路12號,", "invalid_city"},
-		"long city":           {"O-9,C-1,2026-03-05,完成,100," + "x,1," + strings.Repeat("市", 21) + ",", "invalid_city"},
+		"item is an email":    {"O-9,C-1,2026-03-05,完成,100,amy@mail.tw,1,台北市,", "invalid_item"},
+		"item is a phone":     {"O-9,C-1,2026-03-05,完成,100,0912-345-678,1,台北市,", "invalid_item"},
+		"status is an email":  {"O-9,C-1,2026-03-05,amy@mail.tw,100,x,1,台北市,", "invalid_status"},
+		"status is a phone":   {"O-9,C-1,2026-03-05,0912345678,100,x,1,台北市,", "invalid_status"},
 		"field count":         {"O-9,C-1,2026-03-05", "invalid_request"},
 	} {
 		p := unitsOf(t, orderHeader+tc.line+"\n", nil)
 		if len(p.units) != 1 || p.units[0].outcome != outcomeFailed || p.units[0].code != tc.code {
 			t.Errorf("%s: %+v want %s", name, p.units, tc.code)
+		}
+	}
+}
+
+// P1-1 of the W5-03B privacy review: only the 22 Taiwan cities and counties are archived as a city; any other cell (a street, a house
+// number in Chinese numerals, a name, an email, an English street) is never stored and the order still imports with an empty city.
+func TestOrderCityAllowlist(t *testing.T) {
+	for cell, want := range map[string]string{
+		"台北市": "臺北市", "臺北市": "臺北市", "台中市": "臺中市", "臺南市": "臺南市", "台東縣": "臺東縣", "新北市": "新北市", "高雄市": "高雄市",
+		"桃園市": "桃園市", "基隆市": "基隆市", "新竹市": "新竹市", "新竹縣": "新竹縣", "嘉義市": "嘉義市", "嘉義縣": "嘉義縣", "連江縣": "連江縣",
+		"臺北市中正區重慶南路一段一二二號": "", "台北市大安區忠孝東路四段": "", "王小明": "", "amy@mail.tw": "", "Zhongxiao East Road": "",
+		"中山路12號": "", "台北": "", "臺北市 ": "臺北市", "": "", "新竹": "", strings.Repeat("市", 21): "",
+	} {
+		p := unitsOf(t, orderHeader+"O-1,C-1,2026-03-05,完成,100,x,1,"+cell+",\n", nil)
+		if p.units[0].outcome != "" || p.units[0].city != want {
+			t.Errorf("city %q -> %+v, want city %q and no failure", cell, p.units[0], want)
 		}
 	}
 }
