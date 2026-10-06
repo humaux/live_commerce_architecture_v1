@@ -55,11 +55,16 @@ async function login(page: Page) {
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByTestId("shell-store-selector")).toBeAttached();
 }
+async function authorityCookies(context: BrowserContext) {
+  // Cookie inspection filters by scheme too. Query the same host's Secure
+  // scope; the actual BFF request still uses the unchanged loopback origin.
+  return context.cookies(origin.replace(/^http:/, "https:"));
+}
 async function authorityCookie(context: BrowserContext): Promise<string> {
   // SECURITY/NEGATIVE: Node's APIRequestContext omits Secure cookies on this HTTP
   // loopback fixture, unlike Chromium. Pin the existing signed browser authority
   // so the negative probe reaches CSRF/permission checks, not the 401 login gate.
-  const cookies = await context.cookies(origin);
+  const cookies = await authorityCookies(context);
   expect(cookies.some((cookie) => cookie.name === "__Host-commerce_session")).toBe(true);
   return cookies.filter((cookie) => ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name))
     .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
@@ -270,16 +275,16 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await page.getByTestId(`live-recommend-${offer}`).click();
   await expect(page.getByTestId("live-command-retry")).toBeVisible();
   const receipt = (await facts(request)).receipts.at(-1)!;
-  const before = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  const before = (await authorityCookies(page.context())).find((c) => c.name === "__Host-commerce_csrf")?.value;
   await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
   await page.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("live-console")).toHaveCount(0);
   // Clearing the private view precedes the hard logout redirect. Do not race
   // that navigation with the next login's goto (net::ERR_ABORTED on Linux CI).
-  await page.waitForURL(`${origin}/en/`, { waitUntil: "domcontentloaded" });
+  await page.waitForURL((url) => url.origin === new URL(origin).origin && url.pathname === "/en", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
   await login(page);
-  const after = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  const after = (await authorityCookies(page.context())).find((c) => c.name === "__Host-commerce_csrf")?.value;
   expect(Boolean(before && after && before !== after)).toBe(true); // Never put cookie values in assertion diagnostics.
   await page.goto(route("en", lateDestination));
   await phase(page, "draft");

@@ -38,6 +38,11 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if os.Getenv("LC_BROWSER_STUDIO_UI_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-studio-ui")
 	}
+	grep := os.Getenv("LC_BROWSER_STUDIO_GREP")
+	focused := grep != ""
+	if focused && grep != "^STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker$" {
+		t.Fatal("LC_BROWSER_STUDIO_GREP only supports the exact STU04 main case")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 330*time.Second)
 	defer cancel()
 	h, ca, stopsAllowed := studioProcessFixture(t)
@@ -238,14 +243,9 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	mrReadyLog(t, worker, "media_worker_ready")
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
-	grep := os.Getenv("LC_BROWSER_STUDIO_GREP")
-	focused := grep != ""
 	if focused {
 		// A single known main case preserves its real chain while giving exact
 		// cohort totals below. Arbitrary subsets cannot bypass full readbacks.
-		if grep != "^STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker$" {
-			t.Fatal("LC_BROWSER_STUDIO_GREP only supports the exact STU04 main case")
-		}
 		browser.Args = append(browser.Args, "--grep", grep)
 		t.Log("FOCUSED_SPEC_ONLY: STU04 main case; full-mode acceptance remains NOT_RUN")
 	}
