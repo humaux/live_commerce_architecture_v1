@@ -363,7 +363,7 @@ func TestReturns(t *testing.T) {
 		}
 		id, v := e.rtInspected(o5, 2, "rt-rt07")
 		// a refund of ANOTHER order is not linkable
-		st, out := e.rtClose(e.token(), id, "rt-cls-0030", v, refund[:len(refund)-1]+"0")
+		st, out := e.rtClose(e.token(), id, "rt-cls-0030", v, "99999999-9999-4999-8999-999999999999")
 		rtExpect(t, "unknown refund id", st, out, 422, "refund_mismatch")
 		_ = rf1
 		other := e.r.mustRefund(t, rf1, 100, "requested_by_customer")
@@ -566,6 +566,44 @@ func TestReturns(t *testing.T) {
 		}
 		if e.rtAll() != ledger {
 			t.Fatal("a forged row survived")
+		}
+		// 4) a second, fully legitimate-looking CLOSED RMA (forged by the owner) for units the first RMA already released: every provenance
+		// condition holds, ONLY the remaining-allocation bound refuses it, with its own message.
+		o10, _ := e.rtPaid()
+		e.rtShip(o10)
+		id1, v1 := e.rtInspected(o10, 2, "rt-fb")
+		if st, out := e.rtClose(e.token(), id1, "rt-cls-fb01", v1, ""); st != 200 {
+			t.Fatalf("close the first RMA: %d %v", st, out)
+		}
+		var owner10, session10 string
+		if err := f.owner.QueryRow(context.Background(), `SELECT owner_id::text,creator_session_id::text FROM checkout.orders WHERE id=$1`, o10).Scan(&owner10, &session10); err != nil {
+			t.Fatal(err)
+		}
+		rma2 := randomUUID()
+		mustExec(t, f.owner, `INSERT INTO returns.rmas(tenant_id,store_id,id,owner_id,order_id,state,reason,created_by,received_by,received_at,inspected_by,inspected_at,closed_by,closed_at)
+		 VALUES($1,$2,$3,$4,$5,'CLOSED','forged',$6,$6,now(),$6,now(),$6,now())`, f.tenantA, f.storeA1, rma2, owner10, o10, f.principalA)
+		mustExec(t, f.owner, `INSERT INTO returns.rma_lines(tenant_id,store_id,rma_id,order_id,warehouse_id,sku_id,qty_registered,qty_received,qty_restock,qty_scrap)
+		 VALUES($1,$2,$3,$4,$5,$6,2,2,2,0)`, f.tenantA, f.storeA1, rma2, o10, wh, sku)
+		_, _, alBefore := e.cofBalance(sku)
+		tx, err := f.owner.Begin(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(context.Background())
+		for k, v := range map[string]string{"app.tenant_id": f.tenantA, "app.store_id": f.storeA1, "app.principal_id": f.principalA, "app.buyer_id": owner10, "app.buyer_session_id": session10} {
+			if _, err := tx.Exec(context.Background(), `SELECT set_config($1,$2,true)`, k, v); err != nil {
+				t.Fatal(err)
+			}
+		}
+		sp, _ := tx.Begin(context.Background())
+		_, ferr := sp.Exec(context.Background(), `INSERT INTO inventory.ledger(tenant_id,store_id,warehouse_id,sku_id,kind,delta_allocated,operation,command_key,reservation_id,reason,principal_id,checkout_id,buyer_owner_id,buyer_session_id,actor_kind)
+		 VALUES($1,$2,$3,$4,'DEALLOCATE',-2,'returns.rma.restock',$5::text,$6::uuid,'rma_restock',$7,$6::uuid,$8,$9,'MERCHANT')`, f.tenantA, f.storeA1, wh, sku, rma2, o10, f.principalA, owner10, session10)
+		_ = sp.Rollback(context.Background())
+		if sqlState(ferr) != "42501" || ferr == nil || !strings.Contains(ferr.Error(), "deallocate exceeds the remaining allocation of the order line") {
+			t.Fatalf("second RMA restock of the same units: %v, want 42501 'deallocate exceeds the remaining allocation of the order line'", ferr)
+		}
+		if _, _, al := e.cofBalance(sku); al != alBefore {
+			t.Fatalf("allocated %d -> %d after the refused second restock", alBefore, al)
 		}
 	})
 }
@@ -927,8 +965,10 @@ func TestReturnsBankTransfer(t *testing.T) {
 		oh0, rs0, al0 := e.cofBalance(sku)
 		rows := e.count(`SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='DEALLOCATE'`, order)
 		st, out = e.cofDecide(e.token(), order, "refund-offline", t04Key("rt-bank-restock"), `{"restock":true}`)
-		if st == 200 {
-			t.Fatalf("offline refund with restock after an RMA restock was accepted: %v", out)
+		// The bank definer raises the guard's SQLSTATE 42501 ("deallocate exceeds the remaining allocation of the order line"); the offline
+		// route maps an unclassified definer failure to 503 unavailable (never a 200, never a 4xx the merchant could mistake for a rule).
+		if st != 503 || out["code"] != "unavailable" {
+			t.Fatalf("offline refund with restock after an RMA restock: got %d %v, want 503 unavailable (guard 42501)", st, out)
 		}
 		if oh, rs, al := e.cofBalance(sku); oh != oh0 || rs != rs0 || al != al0 {
 			t.Fatalf("balance %d,%d,%d -> %d,%d,%d after the refused second release", oh0, rs0, al0, oh, rs, al)
@@ -968,7 +1008,7 @@ func TestReturnsHelperACLAndGuardBodies(t *testing.T) {
 		"inventory.guard_checkout_ledger()":      {"checkout.merchant_cancel"},
 		"inventory.guard_pay_at_pickup_ledger()": {"fulfillment.pay_at_pickup.cancel", "fulfillment.pay_at_pickup.restock"},
 		"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)": {"has_returns"},
-		"inventory.guard_returns_ledger()": {"returns.rma.restock", "checkout.merchant_cancel", "v_alloc"},
+		"inventory.guard_returns_ledger()": {"returns.rma.restock", "checkout.merchant_cancel", "v_alloc<-NEW.delta_allocated", "deallocate exceeds the remaining allocation of the order line", "a.kind IN ('ALLOCATE','DEALLOCATE')"},
 	} {
 		var src string
 		if err := f.owner.QueryRow(ctx, `SELECT prosrc FROM pg_proc WHERE oid=to_regprocedure($1)`, fn).Scan(&src); err != nil {
