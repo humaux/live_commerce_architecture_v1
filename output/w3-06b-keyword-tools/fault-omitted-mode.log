@@ -1,0 +1,8 @@
+=== RUN   TestSimulateOmittedModeFollowsWindow
+    keyword_tools_test.go:270: QTY_ONLY window, no mode: want the QTY_ONLY result QUANTITY_REQUIRED: {Outcome:ACCEPTED Reason: MatchMode:EXACT GrammarVersion:kw-v1 Kind:MATCH ParsedKeyword:A1 ParsedQuantity:1 Explicit:false Offer:0xc000a601a0 TargetQuantity:1 WindowState:OPEN WindowMatchMode:KEYWORD_QTY_ONLY} <nil>
+--- FAIL: TestSimulateOmittedModeFollowsWindow (1.87s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.640s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1
