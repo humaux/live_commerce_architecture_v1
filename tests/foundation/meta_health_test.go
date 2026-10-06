@@ -692,6 +692,19 @@ func TestMetaHealthBannerRoutes(t *testing.T) {
 	if len(caps) != 4 {
 		t.Fatalf("B1 capability count %d, want 4", len(caps))
 	}
+	// Each row names its capability (contract §9 B1 CapabilityState): the UI labels rows by name, never by position.
+	names := map[string]bool{}
+	for _, c := range caps {
+		row, _ := c.(map[string]any)
+		name, _ := row["capability"].(string)
+		if name == "" {
+			t.Fatalf("B1 capability row without a capability name: %v", row)
+		}
+		names[row["binding_id"].(string)+"/"+name] = true
+	}
+	if len(names) != 4 {
+		t.Fatalf("B1 capability names not distinct per binding: %v", names)
+	}
 
 	// Cross-store (the principal has no store:read there) → 404; cross-tenant likewise.
 	if code, _ := doAdminReq(t, handler, m.f.storeA2, m.token, "GET", mhBase(m.f.storeA2), nil); code != http.StatusNotFound {
