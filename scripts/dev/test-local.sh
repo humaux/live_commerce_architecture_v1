@@ -475,10 +475,11 @@ POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # recovery mode"). 1g keeps the same tmpfs/shared_buffers/max_connections gate.
 # Disk: the whole foundation suite shares this one data directory. PostgreSQL's default max_wal_size (1GB) lets pg_wal outgrow the
 # tmpfs during bulk fixtures (R4 gate: "No space left on device" cascaded ~240 G07 failures), so WAL is capped at 96MB (checkpoints
-# recycle it) and the tmpfs is 320 MiB; both stay well inside --memory=1g.
+# recycle it) and the tmpfs is 640 MiB (2026-10-06: the ~1060-test suite outgrew 320 MiB → "No space left on device" → recovery-mode
+# cascade); memory 1536m keeps tmpfs + server inside the memcg. One test PG at a time (scripts/dev/test-lock.sh) on the 8 GB Docker VM.
 docker run -d --pull=never --name "$test_container" \
-  --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-  --tmpfs /var/lib/postgresql:rw,size=335544320 \
+  --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+  --tmpfs /var/lib/postgresql:rw,size=671088640 \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
@@ -508,8 +509,8 @@ fresh_pg() {
     docker rm -f "$test_container" >/dev/null
   fi
   docker run -d --pull=never --name "$test_container" \
-    --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-    --tmpfs /var/lib/postgresql:rw,size=335544320 \
+    --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+    --tmpfs /var/lib/postgresql:rw,size=671088640 \
     -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
     -p 127.0.0.1::5432 \
     postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
