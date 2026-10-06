@@ -39,7 +39,7 @@ export function LiveWorkspace({ locale, store, scene, initialError }: {
             {selected && !view.data?.items.some((item) => item.session_id === selected) && <option value={selected}>{c.choose}</option>}
             {view.data?.items.map((item) => <option key={item.session_id} value={item.session_id}>{item.title}</option>)}
           </select></label>
-          <a data-testid="live-session-results" href={`/${locale}/studio?store=${storeID}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.sessions}</a>
+          <a data-testid="live-session-results" href={`/${locale}/studio?store=${storeID}${selected ? `&scene=${selected}` : ""}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.sessions}</a>
           {selected && <a href={`/${locale}/studio/claims?store=${storeID}&scene=${selected}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.source}</a>}
         </div>
         {selected && store ? <LiveConsole key={`${storeID}:${selected}`} locale={locale} store={store} sessionID={selected} navigationGuard={beforeLeave} /> : <p role="status">{view.data ? c.empty : c.loading}</p>}
