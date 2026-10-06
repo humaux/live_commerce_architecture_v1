@@ -1,6 +1,7 @@
 // Purpose: the claims-worker dispatcher routes of the Meta private reply: the automatic claim-link reply (meta-claims-intake-v1 §6: Check =
 // claims.check_meta_reply, link token re-derived in memory, one POST that is never repeated, query-only Reconcile) and, on the SAME route, the
-// manual private reply of live-console-v1 §4.3 (message_type manual_private_reply), which the send adapter (send_dm.go) serves.
+// manual private reply of live-console-v1 §4.3 (message_type manual_private_reply), which the send adapter (send_dm.go) serves, and the
+// sold-out reply (message_type sold_out_reply, sold_out.go: frozen text, no link, same single POST).
 // Depends on: internal/integrations/core (DispatchRoute), internal/claims (ReplyLinkKey), pagetoken/pageopen (Page-token custody), SQL
 // claims.check_meta_reply, integration.load_meta_page_token, integration.meta_connect_mark_reauth, inbox.* send definers (send_dm.go); Graph
 // POST /{asset}/messages (MOCK against a loopback fake; LIVE only at the probe).
@@ -218,6 +219,9 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 		}
 		return a.send.checkRoute(ctx, req)
 	}
+	if isSoldOutReply(req.Request) {
+		return a.checkSoldOut(ctx, req)
+	}
 	r, err := parseRequest(req)
 	if err != nil {
 		return err
@@ -230,7 +234,12 @@ func (a *adapter) checkRoute(ctx context.Context, req core.DispatchRequest) erro
 		return err
 	}
 	hash := sha256.Sum256([]byte(token))
-	code, err := a.check(ctx, req.OperationID, hash[:])
+	return a.runCheck(ctx, req, hash[:])
+}
+
+// runCheck calls claims.check_meta_reply and maps its fixed result: only a returned deny code is a policy denial (zero HTTP calls).
+func (a *adapter) runCheck(ctx context.Context, req core.DispatchRequest, hash []byte) error {
+	code, err := a.check(ctx, req.OperationID, hash)
 	if err != nil {
 		return errors.New("metareply: check unavailable")
 	}
@@ -341,23 +350,12 @@ func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret
 		}
 		return a.send.dispatch(ctx, req, secret)
 	}
-	r, err := parseRequest(req)
-	if err != nil {
-		return core.Outcome{}, err
-	}
-	if r.LinkKeyID != a.linkKey.ID() || !validCommentRef(r.CommentRef) || len(secret.Reveal()) == 0 {
-		return core.Outcome{}, errBadRequest
-	}
-	token, err := a.linkToken(req, r)
-	if err != nil {
-		return core.Outcome{}, err
-	}
-	text, err := RenderClaimLink(r.Locale, r.Origin, token)
+	commentRef, text, err := a.replyContent(req, secret)
 	if err != nil {
 		return core.Outcome{}, err
 	}
 	var body graphBody
-	body.Recipient.CommentID, body.Message.Text = r.CommentRef, text
+	body.Recipient.CommentID, body.Message.Text = commentRef, text
 	if !a.cfg.AuthorizationHeader {
 		body.AccessToken = string(secret.Reveal())
 	}
@@ -404,6 +402,31 @@ func (a *adapter) dispatch(ctx context.Context, req core.DispatchRequest, secret
 		out.Detail = sendDetail{recipient: ok.RecipientID}
 	}
 	return out, nil
+}
+
+// replyContent returns the comment to answer and the text to send: the frozen sold-out text of a sold_out_reply, else the claim-link text
+// rendered from the re-derived token. Pure; a malformed request is errBadRequest (the dispatcher records UNKNOWN with zero calls).
+func (a *adapter) replyContent(req core.DispatchRequest, secret core.Secret) (commentRef, text string, err error) {
+	if isSoldOutReply(req.Request) {
+		r, err := parseSoldOut(req)
+		if err != nil || len(secret.Reveal()) == 0 {
+			return "", "", errBadRequest
+		}
+		return r.CommentRef, r.Text, nil
+	}
+	r, err := parseRequest(req)
+	if err != nil {
+		return "", "", err
+	}
+	if r.LinkKeyID != a.linkKey.ID() || !validCommentRef(r.CommentRef) || len(secret.Reveal()) == 0 {
+		return "", "", errBadRequest
+	}
+	token, err := a.linkToken(req, r)
+	if err != nil {
+		return "", "", err
+	}
+	text, err = RenderClaimLink(r.Locale, r.Origin, token)
+	return r.CommentRef, text, err
 }
 
 // graphErrorCode reads error.code of a Graph error envelope (0 when the body is not one).
