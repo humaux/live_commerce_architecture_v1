@@ -84,3 +84,11 @@ bash scripts/dev/check-headers.sh
 # Go formatting (2026-10-06: an unformatted test file only surfaced as a CRP10 failure deep in the full PG suite).
 unformatted="$(gofmt -l cmd internal tests migrations 2>/dev/null || true)"
 if [[ -n "$unformatted" ]]; then printf 'check-gates: gofmt needed:\n%s\n' "$unformatted" >&2; exit 1; fi
+# Browser-tagged test files (//go:build browser) only compile in --browser-* modes, so a helper name clash there passes every
+# PG shard and then breaks every browser gate (trunk a8d029ea: mustJSON redeclared). Type-check both tag sets here.
+for tags in "" browser; do
+  if ! go vet ${tags:+-tags "$tags"} ./tests/foundation >/dev/null 2>"${TMPDIR:-/tmp}/check-gates-vet.$$"; then
+    echo "check-gates: go vet ${tags:+-tags $tags }./tests/foundation failed:" >&2; head -20 "${TMPDIR:-/tmp}/check-gates-vet.$$" >&2; rm -f "${TMPDIR:-/tmp}/check-gates-vet.$$"; exit 1
+  fi
+done
+rm -f "${TMPDIR:-/tmp}/check-gates-vet.$$"
