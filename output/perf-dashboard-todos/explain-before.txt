@@ -1,0 +1,326 @@
+tenant=0fe9fd20-a010-421c-9779-10f93c8b1a42 store=ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3 candidate=43d709e9-99bb-4aa0-906e-56f9ac96ed45
+
+===== row counts (n_live_tup) =====
+checkout.bank_transfers 0
+checkout.orders 10000
+checkout.payment_attempts 0
+fulfillment.cvs_shipments 0
+fulfillment.payment_work_items 0
+payments.facts 0
+payments.refund_facts 0
+payments.review_cases 0
+payments.stripe_refunds 0
+
+===== indexes =====
+checkout.bank_transfers | CREATE INDEX bank_transfers_open ON checkout.bank_transfers USING btree (tenant_id, store_id, state) WHERE (state = ANY (ARRAY['AWAITING'::text, 'SUBMITTED'::text, 'REJECTED'::text]))
+checkout.bank_transfers | CREATE UNIQUE INDEX bank_transfers_pkey ON checkout.bank_transfers USING btree (tenant_id, store_id, order_id)
+checkout.orders | CREATE INDEX checkout_owner_history ON checkout.orders USING btree (tenant_id, store_id, owner_id, created_at DESC, id DESC)
+checkout.orders | CREATE INDEX merchant_orders_history ON checkout.orders USING btree (tenant_id, store_id, created_at DESC, id DESC)
+checkout.orders | CREATE INDEX orders_by_owner ON checkout.orders USING btree (tenant_id, store_id, owner_id, created_at DESC, id DESC)
+checkout.orders | CREATE INDEX orders_cod_open ON checkout.orders USING btree (tenant_id, store_id, owner_id) WHERE ((payment_mode = 'cash_on_delivery'::text) AND (collection_state = 'PENDING'::text) AND (fulfillment_state = 'MANUAL_UNASSIGNED'::text))
+checkout.orders | CREATE INDEX orders_method_date_read ON checkout.orders USING btree (tenant_id, store_id, payment_mode, created_at DESC, id DESC)
+checkout.orders | CREATE INDEX orders_pay_at_pickup_open ON checkout.orders USING btree (tenant_id, store_id, owner_id) WHERE ((payment_mode = 'pay_at_pickup'::text) AND (collection_state = 'PENDING'::text) AND (fulfillment_state = 'MANUAL_UNASSIGNED'::text))
+checkout.orders | CREATE INDEX orders_phone_suffix_read ON checkout.orders USING btree (tenant_id, store_id, "right"((snapshot #>> '{destination,phone}'::text[]), 4), created_at DESC, id DESC)
+checkout.orders | CREATE INDEX orders_unshipped ON checkout.orders USING btree (tenant_id, store_id, created_at, id) WHERE ((commercial_state = ANY (ARRAY['CONFIRMED'::text, 'AWAITING_COLLECTION'::text])) AND (fulfillment_state = 'MANUAL_UNASSIGNED'::text))
+checkout.orders | CREATE UNIQUE INDEX checkout_one_active_cart_version ON checkout.orders USING btree (tenant_id, store_id, owner_id, cart_id, cart_version) WHERE (commercial_state = ANY (ARRAY['DRAFT'::text, 'AWAITING_PAYMENT'::text, 'AWAITING_TRANSFER'::text, 'CONFIRMED'::text, 'AWAITING_COLLECTION'::text]))
+checkout.orders | CREATE UNIQUE INDEX checkout_orders_attribution_scope ON checkout.orders USING btree (tenant_id, store_id, id)
+checkout.orders | CREATE UNIQUE INDEX orders_id_key ON checkout.orders USING btree (id)
+checkout.orders | CREATE UNIQUE INDEX orders_job_id_key ON checkout.orders USING btree (job_id)
+checkout.orders | CREATE UNIQUE INDEX orders_pkey ON checkout.orders USING btree (tenant_id, store_id, owner_id, id)
+checkout.orders | CREATE UNIQUE INDEX orders_tenant_id_store_id_id_owner_id_creator_session_id_key ON checkout.orders USING btree (tenant_id, store_id, id, owner_id, creator_session_id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_id_key ON checkout.payment_attempts USING btree (id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_job_id_key ON checkout.payment_attempts USING btree (job_id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_merchant_trade_no_key ON checkout.payment_attempts USING btree (merchant_trade_no)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_order_attempt_key ON checkout.payment_attempts USING btree (tenant_id, store_id, owner_id, order_id, id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_pkey ON checkout.payment_attempts USING btree (tenant_id, store_id, owner_id, id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_tenant_id_store_id_id_owner_id_session_id_key ON checkout.payment_attempts USING btree (tenant_id, store_id, id, owner_id, session_id)
+checkout.payment_attempts | CREATE UNIQUE INDEX payment_attempts_tenant_id_store_id_order_id_key ON checkout.payment_attempts USING btree (tenant_id, store_id, order_id)
+fulfillment.cvs_shipments | CREATE UNIQUE INDEX cvs_shipments_connection_id_merchant_trade_no_key ON fulfillment.cvs_shipments USING btree (connection_id, merchant_trade_no)
+fulfillment.cvs_shipments | CREATE UNIQUE INDEX cvs_shipments_one_live ON fulfillment.cvs_shipments USING btree (tenant_id, store_id, order_id) WHERE (state <> ALL (ARRAY['FAILED'::text, 'ABANDONED'::text]))
+fulfillment.cvs_shipments | CREATE UNIQUE INDEX cvs_shipments_operation_id_key ON fulfillment.cvs_shipments USING btree (operation_id)
+fulfillment.cvs_shipments | CREATE UNIQUE INDEX cvs_shipments_pkey ON fulfillment.cvs_shipments USING btree (tenant_id, store_id, order_id, attempt)
+fulfillment.payment_work_items | CREATE UNIQUE INDEX payment_work_items_pkey ON fulfillment.payment_work_items USING btree (tenant_id, store_id, order_id)
+payments.facts | CREATE UNIQUE INDEX facts_pkey ON payments.facts USING btree (tenant_id, store_id, attempt_id, kind)
+payments.facts | CREATE UNIQUE INDEX facts_tenant_id_store_id_connection_id_provider_reference_k_key ON payments.facts USING btree (tenant_id, store_id, connection_id, provider_reference, kind)
+payments.refund_facts | CREATE UNIQUE INDEX refund_facts_pkey ON payments.refund_facts USING btree (tenant_id, store_id, refund_id, kind)
+payments.review_cases | CREATE UNIQUE INDEX review_cases_pkey ON payments.review_cases USING btree (tenant_id, store_id, attempt_id, reason)
+payments.stripe_refunds | CREATE INDEX stripe_refunds_by_attempt ON payments.stripe_refunds USING btree (tenant_id, store_id, attempt_id, requested_at DESC, id DESC)
+payments.stripe_refunds | CREATE UNIQUE INDEX stripe_refunds_pkey ON payments.stripe_refunds USING btree (id)
+payments.stripe_refunds | CREATE UNIQUE INDEX stripe_refunds_stripe_refund_id_key ON payments.stripe_refunds USING btree (stripe_refund_id)
+payments.stripe_refunds | CREATE UNIQUE INDEX stripe_refunds_tenant_id_store_id_attempt_id_id_key ON payments.stripe_refunds USING btree (tenant_id, store_id, attempt_id, id)
+
+===== dashboard_todos call: 452ms =====
+identity.sessions                        seq_scan+0 seq_tup_read+0 idx_scan+3
+checkout.orders                          seq_scan+0 seq_tup_read+0 idx_scan+401
+checkout.payment_attempts                seq_scan+0 seq_tup_read+0 idx_scan+100
+identity.store_grants                    seq_scan+0 seq_tup_read+0 idx_scan+6
+payments.stripe_refunds                  seq_scan+0 seq_tup_read+0 idx_scan+1
+identity.principals                      seq_scan+0 seq_tup_read+0 idx_scan+3
+identity.memberships                     seq_scan+0 seq_tup_read+0 idx_scan+3
+checkout.bank_transfers                  seq_scan+0 seq_tup_read+0 idx_scan+1
+
+===== candidate: manual_shipment_eligible =====
+SELECT fulfillment.manual_shipment_eligible('0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid,'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid,'43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid)
+Result  (cost=0.00..0.26 rows=1 width=1) (actual time=17.272..17.273 rows=1.00 loops=1)
+  Buffers: shared hit=8688 read=15
+Planning Time: 0.019 ms
+Execution Time: 17.280 ms
+
+===== candidate: order_money_shippable =====
+SELECT fulfillment.order_money_shippable('0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid,'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid,'43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid)
+Result  (cost=0.00..0.26 rows=1 width=1) (actual time=8.873..8.876 rows=1.00 loops=1)
+  Buffers: shared hit=7835
+Planning Time: 0.020 ms
+Execution Time: 8.882 ms
+
+===== unshipped CTE (outer query only) =====
+SELECT o.tenant_id,o.store_id,o.id FROM checkout.orders o WHERE o.tenant_id='0fe9fd20-a010-421c-9779-10f93c8b1a42' AND o.store_id='ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
+Index Only Scan using orders_unshipped on orders o  (cost=0.14..8.16 rows=1 width=48) (actual time=0.008..0.078 rows=100.00 loops=1)
+  Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+  Heap Fetches: 100
+  Index Searches: 1
+  Buffers: shared hit=101
+Planning:
+  Buffers: shared hit=2
+Planning Time: 0.150 ms
+Execution Time: 0.089 ms
+
+===== full todos select =====
+WITH unshipped AS MATERIALIZED (
+  SELECT o.tenant_id,o.store_id,o.id,o.snapshot#>>'{destination,kind}' AS kind FROM checkout.orders o
+  WHERE o.tenant_id='0fe9fd20-a010-421c-9779-10f93c8b1a42' AND o.store_id='ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
+   AND fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,o.id))
+ SELECT jsonb_build_object(
+  'awaiting_transfer_confirmation',(SELECT count(*) FROM checkout.bank_transfers t WHERE t.tenant_id='0fe9fd20-a010-421c-9779-10f93c8b1a42' AND t.store_id='ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3' AND t.state='SUBMITTED'),
+  'to_ship',(SELECT count(*) FROM unshipped),
+  'cvs_awaiting_label',(SELECT count(*) FROM unshipped u WHERE u.kind LIKE 'cvs\_%'
+     AND NOT EXISTS(SELECT 1 FROM fulfillment.cvs_shipments c WHERE c.tenant_id=u.tenant_id AND c.store_id=u.store_id AND c.order_id=u.id AND c.state NOT IN ('FAILED','ABANDONED'))),
+  'open_refunds',(SELECT count(*) FROM payments.stripe_refunds r WHERE r.tenant_id='0fe9fd20-a010-421c-9779-10f93c8b1a42' AND r.store_id='ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'
+     AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id AND rf.store_id=r.store_id AND rf.refund_id=r.id)))
+Result  (cost=41.17..41.19 rows=1 width=32) (actual time=431.774..431.775 rows=1.00 loops=1)
+  Buffers: shared hit=779514
+  CTE unshipped
+    ->  Index Scan using orders_unshipped on orders o  (cost=0.14..8.41 rows=1 width=80) (actual time=431.739..431.739 rows=0.00 loops=1)
+          Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+          Filter: fulfillment.manual_shipment_eligible(tenant_id, store_id, id)
+          Rows Removed by Filter: 100
+          Index Searches: 1
+          Buffers: shared hit=779511
+  InitPlan 2
+    ->  Aggregate  (cost=8.17..8.18 rows=1 width=8) (actual time=0.010..0.010 rows=1.00 loops=1)
+          Buffers: shared hit=1
+          ->  Index Only Scan using bank_transfers_open on bank_transfers t  (cost=0.14..8.16 rows=1 width=0) (actual time=0.009..0.009 rows=0.00 loops=1)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (state = 'SUBMITTED'::text))
+                Heap Fetches: 0
+                Index Searches: 1
+                Buffers: shared hit=1
+  InitPlan 3
+    ->  Aggregate  (cost=0.02..0.03 rows=1 width=8) (actual time=431.742..431.742 rows=1.00 loops=1)
+          Buffers: shared hit=779511
+          ->  CTE Scan on unshipped  (cost=0.00..0.02 rows=1 width=0) (actual time=431.740..431.740 rows=0.00 loops=1)
+                Storage: Memory  Maximum Storage: 17kB
+                Buffers: shared hit=779511
+  InitPlan 4
+    ->  Aggregate  (cost=8.18..8.19 rows=1 width=8) (actual time=0.001..0.001 rows=1.00 loops=1)
+          ->  Nested Loop Anti Join  (cost=0.12..8.18 rows=1 width=0) (actual time=0.001..0.001 rows=0.00 loops=1)
+                ->  CTE Scan on unshipped u  (cost=0.00..0.02 rows=1 width=48) (actual time=0.000..0.000 rows=0.00 loops=1)
+                      Filter: (kind ~~ 'cvs\_%'::text)
+                      Storage: Memory  Maximum Storage: 17kB
+                ->  Index Only Scan using cvs_shipments_one_live on cvs_shipments c  (cost=0.12..8.15 rows=1 width=48) (never executed)
+                      Index Cond: ((tenant_id = u.tenant_id) AND (store_id = u.store_id) AND (order_id = u.id))
+                      Heap Fetches: 0
+                      Index Searches: 0
+  InitPlan 5
+    ->  Aggregate  (cost=16.35..16.36 rows=1 width=8) (actual time=0.003..0.003 rows=1.00 loops=1)
+          Buffers: shared hit=2
+          ->  Nested Loop Anti Join  (cost=0.29..16.34 rows=1 width=0) (actual time=0.002..0.003 rows=0.00 loops=1)
+                Join Filter: (rf.refund_id = r.id)
+                Buffers: shared hit=2
+                ->  Index Only Scan using stripe_refunds_by_attempt on stripe_refunds r  (cost=0.14..8.16 rows=1 width=48) (actual time=0.002..0.002 rows=0.00 loops=1)
+                      Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                      Heap Fetches: 0
+                      Index Searches: 1
+                      Buffers: shared hit=2
+                ->  Index Only Scan using refund_facts_pkey on refund_facts rf  (cost=0.15..8.17 rows=1 width=48) (never executed)
+                      Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                      Heap Fetches: 0
+                      Index Searches: 0
+Planning:
+  Buffers: shared hit=16 read=1
+Planning Time: 0.297 ms
+Execution Time: 431.806 ms
+
+===== auto_explain nested plans for ONE manual_shipment_eligible call =====
+duration: 6.033 ms  plan:
+Query Text: 
+ SELECT EXISTS(
+  SELECT 1 FROM checkout.orders o
+  JOIN checkout.payment_attempts a ON a.tenant_id=o.tenant_id AND a.store_id=o.store_id
+   AND a.owner_id=o.owner_id AND a.order_id=o.id
+  JOIN fulfillment.payment_work_items w ON w.tenant_id=o.tenant_id AND w.store_id=o.store_id
+   AND w.owner_id=o.owner_id AND w.order_id=o.id AND w.attempt_id=a.id AND w.state='READY'
+  JOIN payments.facts f ON f.tenant_id=a.tenant_id AND f.store_id=a.store_id AND f.attempt_id=a.id
+   AND f.kind='CAPTURED' AND f.connection_id=a.connection_id AND f.execution_profile=a.execution_profile
+   AND f.environment=a.environment AND f.currency=a.currency AND f.amount_minor=a.amount_minor
+   AND f.currency=o.currency AND f.amount_minor=o.total_minor
+  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
+   AND o.commercial_state='CONFIRMED' AND o.payment_mode='card'
+   AND NOT EXISTS(SELECT 1 FROM payments.review_cases rc WHERE rc.tenant_id=a.tenant_id
+     AND rc.store_id=a.store_id AND rc.attempt_id=a.id AND rc.reason<>'PROVIDER_PRESENTMENT_DRIFT')
+   AND NOT EXISTS(SELECT 1 FROM (
+     SELECT coalesce(sum(r.amount_minor),0) AS held FROM payments.stripe_refunds r
+      WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.attempt_id=a.id
+       AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id
+        AND rf.store_id=r.store_id AND rf.refund_id=r.id AND rf.kind IN ('FAILED','CANCELED','REJECTED'))
+    ) h WHERE h.held>0 AND h.held>=f.amount_minor))
+ OR EXISTS(
+  SELECT 1 FROM checkout.orders o
+  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
+   AND o.commercial_state='CONFIRMED' AND o.payment_mode='pay_at_pickup' AND o.collection_state='PENDING'
+   AND NOT EXISTS(SELECT 1 FROM checkout.payment_attempts pa WHERE pa.tenant_id=o.tenant_id
+    AND pa.store_id=o.store_id AND pa.order_id=o.id))
+ OR EXISTS(
+  SELECT 1 FROM checkout.orders o
+  JOIN checkout.bank_transfers t ON t.tenant_id=o.tenant_id AND t.store_id=o.store_id AND t.owner_id=o.owner_id AND t.order_id=o.id
+  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
+   AND o.commercial_state='CONFIRMED' AND o.payment_mode='bank_transfer' AND t.state='CONFIRMED'
+   AND t.confirmed_amount_minor=o.total_minor
+   AND NOT EXISTS(SELECT 1 FROM checkout.payment_attempts pa WHERE pa.tenant_id=o.tenant_id
+    AND pa.store_id=o.store_id AND pa.order_id=o.id))
+ OR EXISTS(
+  -- home-cod: a home cash_on_delivery order is shippable while AWAITING_COLLECTION and PENDING; it never has a payment attempt.
+  SELECT 1 FROM checkout.orders o
+  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
+   AND o.commercial_state='AWAITING_COLLECTION' AND o.payment_mode='cash_on_delivery' AND o.collection_state='PENDING'
+   AND NOT EXISTS(SELECT 1 FROM checkout.payment_attempts pa WHERE pa.tenant_id=o.tenant_id
+    AND pa.store_id=o.store_id AND pa.order_id=o.id))
+
+Query Parameters: $1 = '0fe9fd20-a010-421c-9779-10f93c8b1a42', $2 = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3', $3 = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'
+Result  (cost=98.73..98.74 rows=1 width=1) (actual rows=1.00 loops=1)
+  Buffers: shared hit=7790
+  InitPlan 2
+    ->  Nested Loop Anti Join  (cost=8.92..41.08 rows=1 width=0) (actual rows=0.00 loops=1)
+          Join Filter: (rc.attempt_id = a.id)
+          Buffers: shared hit=2
+          ->  Hash Join  (cost=8.77..32.89 rows=1 width=48) (actual rows=0.00 loops=1)
+                Hash Cond: ((w.attempt_id = f.attempt_id) AND (a.connection_id = f.connection_id) AND (a.execution_profile = f.execution_profile) AND (a.environment = f.environment) AND (a.currency = f.currency) AND (a.amount_minor = f.amount_minor))
+                Join Filter: (NOT EXISTS(SubPlan 1))
+                Buffers: shared hit=2
+                ->  Nested Loop  (cost=0.57..24.68 rows=1 width=224) (actual rows=0.00 loops=1)
+                      Join Filter: ((a.owner_id = w.owner_id) AND (a.id = w.attempt_id))
+                      Buffers: shared hit=2
+                      ->  Nested Loop  (cost=0.43..16.49 rows=1 width=288) (actual rows=0.00 loops=1)
+                            Join Filter: ((a.owner_id = o.owner_id) AND (a.currency = o.currency) AND (a.amount_minor = o.total_minor))
+                            Buffers: shared hit=2
+                            ->  Index Scan using payment_attempts_tenant_id_store_id_id_owner_id_session_id_key on payment_attempts a  (cost=0.14..8.17 rows=1 width=200) (actual rows=0.00 loops=1)
+                                  Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                                  Filter: (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid)
+                                  Index Searches: 1
+                                  Buffers: shared hit=2
+                            ->  Index Scan using checkout_one_active_cart_version on orders o  (cost=0.28..8.31 rows=1 width=104) (never executed)
+                                  Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                                  Filter: ((id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid) AND (commercial_state = 'CONFIRMED'::text) AND (payment_mode = 'card'::text))
+                                  Index Searches: 0
+                      ->  Index Scan using payment_work_items_pkey on payment_work_items w  (cost=0.15..8.17 rows=1 width=80) (never executed)
+                            Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                            Filter: (state = 'READY'::text)
+                            Index Searches: 0
+                ->  Hash  (cost=8.17..8.17 rows=1 width=168) (never executed)
+                      ->  Index Scan using facts_tenant_id_store_id_connection_id_provider_reference_k_key on facts f  (cost=0.15..8.17 rows=1 width=168) (never executed)
+                            Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (kind = 'CAPTURED'::text))
+                            Index Searches: 0
+                SubPlan 1
+                  ->  Subquery Scan on h  (cost=16.36..16.38 rows=1 width=0) (never executed)
+                        ->  Aggregate  (cost=16.36..16.37 rows=1 width=32) (never executed)
+                              Filter: ((COALESCE(sum(r.amount_minor), '0'::numeric) > '0'::numeric) AND (COALESCE(sum(r.amount_minor), '0'::numeric) >= (f.amount_minor)::numeric))
+                              ->  Nested Loop Anti Join  (cost=0.29..16.35 rows=1 width=8) (never executed)
+                                    Join Filter: (rf.refund_id = r.id)
+                                    ->  Index Scan using stripe_refunds_tenant_id_store_id_attempt_id_id_key on stripe_refunds r  (cost=0.14..8.17 rows=1 width=56) (never executed)
+                                          Index Cond: ((tenant_id = a.tenant_id) AND (store_id = a.store_id) AND (attempt_id = a.id))
+                                          Index Searches: 0
+                                    ->  Index Only Scan using refund_facts_pkey on refund_facts rf  (cost=0.15..8.17 rows=1 width=48) (never executed)
+                                          Index Cond: ((tenant_id = a.tenant_id) AND (store_id = a.store_id) AND (kind = ANY ('{FAILED,CANCELED,REJECTED}'::text[])))
+                                          Heap Fetches: 0
+                                          Index Searches: 0
+          ->  Index Only Scan using review_cases_pkey on review_cases rc  (cost=0.15..8.17 rows=1 width=48) (never executed)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                Filter: (reason <> 'PROVIDER_PRESENTMENT_DRIFT'::text)
+                Heap Fetches: 0
+                Index Searches: 0
+  InitPlan 3
+    ->  Nested Loop Anti Join  (cost=0.43..16.49 rows=1 width=0) (actual rows=0.00 loops=1)
+          Buffers: shared hit=2596
+          ->  Index Scan using checkout_one_active_cart_version on orders o_1  (cost=0.28..8.31 rows=1 width=48) (actual rows=0.00 loops=1)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                Filter: ((id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid) AND (commercial_state = 'CONFIRMED'::text) AND (payment_mode = 'pay_at_pickup'::text) AND (collection_state = 'PENDING'::text))
+                Rows Removed by Filter: 8002
+                Index Searches: 1
+                Buffers: shared hit=2596
+          ->  Index Only Scan using payment_attempts_order_attempt_key on payment_attempts pa  (cost=0.14..8.17 rows=1 width=48) (never executed)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                Heap Fetches: 0
+                Index Searches: 0
+  InitPlan 4
+    ->  Nested Loop Anti Join  (cost=0.57..24.67 rows=1 width=0) (actual rows=0.00 loops=1)
+          Buffers: shared hit=2596
+          ->  Nested Loop  (cost=0.43..16.49 rows=1 width=48) (actual rows=0.00 loops=1)
+                Join Filter: ((t.owner_id = o_2.owner_id) AND (t.confirmed_amount_minor = o_2.total_minor))
+                Buffers: shared hit=2596
+                ->  Index Scan using checkout_one_active_cart_version on orders o_2  (cost=0.28..8.31 rows=1 width=72) (actual rows=0.00 loops=1)
+                      Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                      Filter: ((id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid) AND (commercial_state = 'CONFIRMED'::text) AND (payment_mode = 'bank_transfer'::text))
+                      Rows Removed by Filter: 8002
+                      Index Searches: 1
+                      Buffers: shared hit=2596
+                ->  Index Scan using bank_transfers_pkey on bank_transfers t  (cost=0.14..8.17 rows=1 width=72) (never executed)
+                      Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                      Filter: (state = 'CONFIRMED'::text)
+                      Index Searches: 0
+          ->  Index Only Scan using payment_attempts_order_attempt_key on payment_attempts pa_1  (cost=0.14..8.17 rows=1 width=48) (never executed)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                Heap Fetches: 0
+                Index Searches: 0
+  InitPlan 5
+    ->  Nested Loop Anti Join  (cost=0.43..16.49 rows=1 width=0) (actual rows=0.00 loops=1)
+          Buffers: shared hit=2596
+          ->  Index Scan using checkout_one_active_cart_version on orders o_3  (cost=0.28..8.31 rows=1 width=48) (actual rows=0.00 loops=1)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid))
+                Filter: ((id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid) AND (commercial_state = 'AWAITING_COLLECTION'::text) AND (payment_mode = 'cash_on_delivery'::text) AND (collection_state = 'PENDING'::text))
+                Rows Removed by Filter: 8002
+                Index Searches: 1
+                Buffers: shared hit=2596
+          ->  Index Only Scan using payment_attempts_order_attempt_key on payment_attempts pa_2  (cost=0.14..8.17 rows=1 width=48) (never executed)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                Heap Fetches: 0
+                Index Searches: 0
+duration: 10.617 ms  plan:
+Query Text: 
+ SELECT EXISTS(
+  SELECT 1 FROM checkout.orders o
+  WHERE o.tenant_id=p_tenant AND o.store_id=p_store AND o.id=p_order
+   AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
+   AND fulfillment.order_money_shippable(o.tenant_id,o.store_id,o.id)
+   AND NOT EXISTS(SELECT 1 FROM fulfillment.cvs_shipments c WHERE c.tenant_id=o.tenant_id AND c.store_id=o.store_id
+     AND c.order_id=o.id AND c.state NOT IN ('FAILED','ABANDONED')))
+
+Query Parameters: $1 = '0fe9fd20-a010-421c-9779-10f93c8b1a42', $2 = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3', $3 = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'
+Result  (cost=16.57..16.58 rows=1 width=1) (actual rows=1.00 loops=1)
+  Buffers: shared hit=9428 read=1
+  InitPlan 1
+    ->  Nested Loop Anti Join  (cost=0.27..16.57 rows=1 width=0) (actual rows=0.00 loops=1)
+          Buffers: shared hit=9428 read=1
+          ->  Index Only Scan using orders_unshipped on orders o  (cost=0.14..8.41 rows=1 width=48) (actual rows=0.00 loops=1)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                Filter: fulfillment.order_money_shippable(tenant_id, store_id, id)
+                Rows Removed by Filter: 1
+                Heap Fetches: 1
+                Index Searches: 1
+                Buffers: shared hit=9428 read=1
+          ->  Index Only Scan using cvs_shipments_one_live on cvs_shipments c  (cost=0.12..8.15 rows=1 width=48) (never executed)
+                Index Cond: ((tenant_id = '0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid) AND (store_id = 'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid) AND (order_id = '43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid))
+                Heap Fetches: 0
+                Index Searches: 0
+duration: 13.324 ms  plan:
+Query Text: SELECT fulfillment.manual_shipment_eligible('0fe9fd20-a010-421c-9779-10f93c8b1a42'::uuid,'ceafa4ad-6ea3-4bc1-b1d7-01899145e9e3'::uuid,'43d709e9-99bb-4aa0-906e-56f9ac96ed45'::uuid)
+Result  (cost=0.00..0.26 rows=1 width=1) (actual rows=1.00 loops=1)
+  Buffers: shared hit=10597 read=81

@@ -66,12 +66,12 @@ type CustomerCommitResult struct {
 }
 
 // PreviewStaleError is the commit refusal when the applicable set drifted after the preview: the handler answers 409 preview_stale
-// with the fresh preview so the merchant re-confirms the new count.
+// with the fresh preview so the merchant re-confirms the new count. Preview is a CustomerPreview or an OrderPreview.
 type PreviewStaleError struct {
-	Preview CustomerPreview
+	Preview any
 }
 
-func (e *PreviewStaleError) Error() string { return "customer import preview stale" }
+func (e *PreviewStaleError) Error() string { return "import preview stale" }
 
 // importWireRow is one element of the p_rows array of migrationimport.import_customers.
 type importWireRow struct {
