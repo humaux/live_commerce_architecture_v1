@@ -8,8 +8,9 @@
 //   flag+reference pair (LIVE sync only).
 // Used by: cmd/stripe-admin main.go dispatch; deploy/scripts/ops-admin.sh allowlist.
 // Invariants: none takes a secret; --tenant/--store/--principal name the PLATFORM store (the target store of close is --target-store,
-//   because --store is already the scope flag); --operator and --ticket are required on every subcommand and the ticket is echoed in the
-//   one JSON result line (the SQL signatures carry the operator only). Close, export and payout never call Stripe and never read the LIVE pair.
+//   because --store is already the scope flag); --operator and --ticket are required on every subcommand; the ticket goes into the audit
+//   row's details and is echoed in the one JSON result line. settlement-sync also names --connection, which SQL asserts is the designated
+//   platform connection, and refuses --to later than now minus 15 minutes. Close, export and payout never call Stripe and never read the LIVE pair.
 // Status: MOCK + REAL_PG; SANDBOX sync needs the owner's test key (NOT_RUN here).
 
 package main
@@ -78,6 +79,10 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		if to, err = time.Parse(time.RFC3339, toStr); err != nil {
 			return errUsage
 		}
+		// P1-2: a window may not claim time that has not settled (--to later than now minus 15 minutes); SQL enforces it again
+		if to.After(time.Now().Add(-15 * time.Minute)) {
+			return errUsage
+		}
 	case "settlement-payout":
 		if paidAt, err = time.Parse(time.RFC3339, paidAtStr); err != nil {
 			return errUsage
@@ -113,14 +118,14 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 	defer reg.Close()
 	switch name {
 	case "settlement-sync":
-		rep, err := reg.SettlementSync(ctx, c.scope, connection, expected, from, to)
+		rep, err := reg.SettlementSync(ctx, c.scope, connection, expected, from, to, ticket)
 		if err != nil {
 			return err
 		}
 		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "from": from.UTC().Format(time.RFC3339),
 			"to": to.UTC().Format(time.RFC3339), "report": rep})
 	case "settlement-close":
-		statements, err := reg.SettlementClose(ctx, c.scope, environment, periodStart, operator, targetStore)
+		statements, err := reg.SettlementClose(ctx, c.scope, environment, periodStart, operator, targetStore, ticket)
 		if err != nil {
 			return err
 		}
@@ -135,7 +140,7 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		}
 		return emit(stdout, map[string]any{"statement_id": statement, "ticket": ticket, "line_count": st.LineCount, "written": true})
 	default: // settlement-payout
-		at, err := reg.SettlementPayout(ctx, c.scope, statement, payoutRef, amount, paidAt, operator)
+		at, err := reg.SettlementPayout(ctx, c.scope, statement, payoutRef, amount, paidAt, operator, ticket)
 		if err != nil {
 			return err
 		}

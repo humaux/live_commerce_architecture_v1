@@ -13,7 +13,12 @@
 --   * a sync-coverage table (settlement_sync_runs) because close requires "a sync covered [period_start-7d, period_end)" (§6.2);
 --   * record_settlement_lines takes an optional window pair (default NULL) that records the coverage and returns the window net;
 --   * read_store_settlements takes an optional statement id (default NULL) for the single-statement route; the list has no lines;
---   * read_settlement_statement is the operator read for settlement-export (no contract function reads lines for the operator).
+--   * read_settlement_statement is the operator read for settlement-export (no contract function reads lines for the operator);
+--   * (fix round, Opus review) a line with no statement yet is RE-CHECKED by an identical re-sync (mismatch and its fee share may change,
+--     nothing else), a REFUND is cross-checked against payments.stripe_refunds once the refund has ANY terminal fact, a sync window may not
+--     end inside the last 15 minutes or in whole fractions of a second, the platform connection and the operator ticket are optional
+--     arguments (assertion / audit), an all-store close gives every store with an earlier statement a (possibly empty) statement, and the
+--     fee share is rounded half away from zero on the absolute value so a refund exactly reverses its charge's share.
 -- Status: MOCK + REAL_PG only. No Stripe call, no bank or payout API: a payout is only RECORDED (operator-entered reference).
 
 -- ---------------------------------------------------------------------------------------------------------
@@ -110,7 +115,8 @@ CREATE TABLE payments.settlement_sync_runs (
 );
 
 -- A helper index for the cross-store attribution lookups below (a payment intent id maps to exactly one Stripe session).
-CREATE INDEX stripe_sessions_payment_intent_idx ON payments.stripe_sessions(environment,payment_intent_id) WHERE payment_intent_id IS NOT NULL;
+-- UNIQUE: the attribution lookup assumes one session per payment intent (a Stripe PaymentIntent belongs to exactly one Checkout Session).
+CREATE UNIQUE INDEX stripe_sessions_payment_intent_idx ON payments.stripe_sessions(environment,payment_intent_id) WHERE payment_intent_id IS NOT NULL;
 
 DO $$ DECLARE v_table text; v_col record; BEGIN
  FOREACH v_table IN ARRAY ARRAY['settlement_statements','settlement_lines','settlement_unattributed','settlement_sync_runs'] LOOP
@@ -128,7 +134,7 @@ END $$;
 
 GRANT SELECT,INSERT ON payments.settlement_lines,payments.settlement_statements,payments.settlement_unattributed,
  payments.settlement_sync_runs TO commerce_payment_registry_writer;
-GRANT UPDATE(statement_id) ON payments.settlement_lines TO commerce_payment_registry_writer;
+GRANT UPDATE(statement_id,mismatch,fee_store_minor) ON payments.settlement_lines TO commerce_payment_registry_writer;
 GRANT UPDATE(payout_ref,payout_minor,paid_at,paid_recorded_by) ON payments.settlement_statements TO commerce_payment_registry_writer;
 
 -- RLS. The definers pin the scope GUCs (tenant/store). The operator definers ALSO set app.settlement_op='on' for their transaction,
@@ -164,9 +170,13 @@ CREATE POLICY settlement_sync_rw ON payments.settlement_sync_runs TO commerce_pa
 GRANT SELECT(tenant_id,store_id,attempt_id,environment,account_id,payment_intent_id) ON payments.stripe_sessions TO commerce_payment_registry_writer;
 CREATE POLICY settlement_session_lookup ON payments.stripe_sessions FOR SELECT TO commerce_payment_registry_writer
  USING(current_setting('app.settlement_op',true)='on');
-GRANT SELECT(stripe_refund_id,account_id) ON payments.stripe_refunds TO commerce_payment_registry_writer;
+GRANT SELECT(stripe_refund_id,account_id,amount_minor,currency) ON payments.stripe_refunds TO commerce_payment_registry_writer;
 CREATE POLICY settlement_refund_lookup ON payments.stripe_refunds FOR SELECT TO commerce_payment_registry_writer
  USING(current_setting('app.settlement_op',true)='on');
+COMMENT ON POLICY settlement_session_lookup ON payments.stripe_sessions IS 'W4-S2: attribution lookup by payment intent for the settlement operator definers only; open only while app.settlement_op=on. That GUC is a session value any caller of a registry-writer definer could set, so EVERY reader of a settlement table must keep its explicit tenant/store predicate (settlement_statement_json and read_store_settlements do)';
+COMMENT ON POLICY settlement_refund_lookup ON payments.stripe_refunds IS 'W4-S2: attribution lookup by Stripe refund id (id, account, amount, currency) for the settlement operator definers only; same app.settlement_op caveat as settlement_session_lookup';
+COMMENT ON POLICY settlement_line_read ON payments.settlement_lines IS 'W4-S2: own scope, or every store while app.settlement_op=on (operator duplicate detection, close, payout). Readers must keep explicit tenant/store predicates';
+COMMENT ON POLICY settlement_statement_read ON payments.settlement_statements IS 'W4-S2: own scope, or every store while app.settlement_op=on (operator close/payout/export). Readers must keep explicit tenant/store predicates';
 -- The order of a line comes from the attempt (read in the line's own scope through the existing stripe_registry_attempt_read policy).
 GRANT SELECT(order_id) ON checkout.payment_attempts TO commerce_payment_registry_writer;
 
@@ -176,9 +186,10 @@ GRANT SELECT(order_id) ON checkout.payment_attempts TO commerce_payment_registry
 CREATE FUNCTION payments.guard_settlement_line() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN
- -- statement_id moves NULL -> value exactly once; no other column ever changes
- IF OLD.statement_id IS NOT NULL OR NEW.statement_id IS NULL
-  OR (to_jsonb(NEW)-'statement_id') IS DISTINCT FROM (to_jsonb(OLD)-'statement_id') THEN
+ -- A line is frozen once it belongs to a statement. Before that, an identical re-sync may re-check it: only mismatch (a fact that was late)
+ -- and fee_store_minor (a dispute whose charge line was late) may change, and statement_id moves NULL -> value exactly once (close).
+ IF OLD.statement_id IS NOT NULL
+  OR (to_jsonb(NEW)-'statement_id'-'mismatch'-'fee_store_minor') IS DISTINCT FROM (to_jsonb(OLD)-'statement_id'-'mismatch'-'fee_store_minor') THEN
   RAISE EXCEPTION 'settlement_line_immutable' USING ERRCODE='PT409'; END IF;
  RETURN NEW;
 END $$;
@@ -218,11 +229,14 @@ LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
  END
 $$;
 
--- §6.3: fee_store_minor = -step * round_half_up(fee * store_minor / settle_amount / step), step 100 (whole NT$). round_half_up is
--- floor(x+0.5) on an exact numeric quotient (the denominators are bounded, so the quotient is never within 1e-13 of a half unless exact).
+-- §6.3: fee_store_minor = -step * sign(q) * floor(|q| + 1/2), q = fee * store_minor / settle_amount / step, step 100 (whole NT$): half away
+-- from zero on the ABSOLUTE value, then the sign (Opus review P2-4), so a refund (negative store and settle amounts, positive ratio) reverses
+-- its charge's fee share exactly and a returned (negative) fee credits the same magnitude a positive one debits. Exact integer arithmetic on
+-- the absolute values: 2*|fee*store| + |settle|*step over 2*|settle|*step, truncated; no rounding of a quotient is involved.
 CREATE FUNCTION payments.settlement_fee_store(p_fee bigint,p_store_minor bigint,p_settle_amount bigint) RETURNS bigint
 LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
- SELECT (-100 * floor((p_fee::numeric * p_store_minor::numeric) / (p_settle_amount::numeric * 100) + 0.5))::bigint
+ SELECT (-100 * sign(p_fee::numeric * p_store_minor::numeric * p_settle_amount::numeric)
+  * div(2 * abs(p_fee::numeric * p_store_minor::numeric) + abs(p_settle_amount::numeric) * 100, 2 * abs(p_settle_amount::numeric) * 100))::bigint
 $$;
 
 -- One statement as the merchant/operator JSON. Rows are read in the CURRENT scope GUCs (the callers pin them); no txn ids, no
@@ -258,11 +272,12 @@ REVOKE ALL ON FUNCTION payments.guard_settlement_line(),payments.guard_settlemen
 -- record_settlement_lines (operator CLI, scope = the PLATFORM store)
 -- ---------------------------------------------------------------------------------------------------------
 CREATE FUNCTION payments.record_settlement_lines(p_tenant uuid,p_store uuid,p_principal uuid,p_environment text,p_lines jsonb,
- p_window_from timestamptz DEFAULT NULL,p_window_to timestamptz DEFAULT NULL) RETURNS jsonb
+ p_window_from timestamptz DEFAULT NULL,p_window_to timestamptz DEFAULT NULL,p_connection uuid DEFAULT NULL,p_ticket text DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE
  sp payments.stripe_platform%ROWTYPE; l jsonb; v_pass integer;
- v_inserted integer:=0; v_dup integer:=0; v_unattr integer:=0; v_mismatch integer:=0;
+ v_inserted integer:=0; v_dup integer:=0; v_unattr integer:=0; v_mismatch integer:=0; v_rechecked integer:=0;
+ v_recheck boolean; v_old_statement uuid; v_old_mismatch text; v_old_tenant uuid; v_old_store uuid; v_old_attempt uuid; v_kinds text[];
  v_keys constant text[]:=ARRAY['amount','charge_amount','charge_currency','charge_payment_intent','created','currency','dispute_amount',
   'dispute_currency','dispute_id','dispute_payment_intent','exchange_rate','fee','id','net','refund_amount','refund_currency',
   'refund_id','reporting_category','source_id','source_object','type'];
@@ -276,11 +291,20 @@ BEGIN
  PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
  IF p_environment IS NULL OR p_environment NOT IN ('SANDBOX','LIVE') OR p_lines IS NULL OR jsonb_typeof(p_lines)<>'array'
   OR jsonb_array_length(p_lines)>500 OR (p_window_from IS NULL)<>(p_window_to IS NULL)
-  OR (p_window_from IS NOT NULL AND (p_window_to<=p_window_from OR p_window_to-p_window_from>interval '8 days')) THEN
+  OR (p_window_from IS NOT NULL AND (p_window_to<=p_window_from OR p_window_to-p_window_from>interval '8 days'
+   -- P1-2: coverage may only claim time that has settled. A window ending in the future (or in the last 15 minutes) would let close treat
+   -- balance transactions that did not exist yet as already read; they would never be credited or deducted. Whole seconds only: the wire
+   -- lists created[gte]/created[lt] in unix seconds, so a fractional bound would claim a sliver that was never listed (P2-9).
+   OR p_window_to>clock_timestamp()-interval '15 minutes'
+   OR p_window_from<>date_trunc('second',p_window_from) OR p_window_to<>date_trunc('second',p_window_to)))
+  OR (p_ticket IS NOT NULL AND p_ticket !~ '^[A-Za-z0-9._:-]{8,128}$') THEN
   RAISE EXCEPTION 'invalid settlement lines' USING ERRCODE='22023'; END IF;
  SELECT x.* INTO sp FROM payments.stripe_platform x WHERE x.environment=p_environment;
  IF NOT FOUND OR sp.tenant_id<>p_tenant OR sp.store_id<>p_store THEN
   RAISE EXCEPTION 'platform_stripe_unavailable' USING ERRCODE='PT409'; END IF;
+ -- the CLI names the connection whose STORED key read the list; it must be the designated platform connection (Opus review P2-1)
+ IF p_connection IS NOT NULL AND p_connection<>sp.connection_id THEN
+  RAISE EXCEPTION 'not_platform_connection' USING ERRCODE='PT409'; END IF;
  PERFORM set_config('app.settlement_op','on',true);
  -- one writer per environment: a sync and a close never interleave (close totals must see a settled set of lines)
  PERFORM pg_advisory_xact_lock(hashtextextended('lc.settlement.'||p_environment,0));
@@ -307,14 +331,22 @@ BEGIN
    IF (v_pass=1)<>coalesce(v_kind='CHARGE',false) THEN CONTINUE; END IF;
    v_hash:=sha256(convert_to(l::text,'UTF8'));
 
-   -- replay: the same txn id is never inserted twice; changed content for it is an integrity conflict (nothing written)
-   SELECT x.payload_sha256 INTO v_old_hash FROM payments.settlement_lines x WHERE x.balance_txn_id=v_id;
+   -- replay: the same txn id is never inserted twice; changed content for it is an integrity conflict (nothing written).
+   -- P1-1: a line that carries a mismatch and has no statement yet is RE-CHECKED below (webhook lag, a refund still pending): the fact it
+   -- was compared with may have arrived since. Once it belongs to a statement it is frozen.
+   v_recheck:=false;
+   SELECT x.payload_sha256,x.statement_id,x.mismatch,x.tenant_id,x.store_id,x.attempt_id INTO v_old_hash,v_old_statement,v_old_mismatch,
+     v_old_tenant,v_old_store,v_old_attempt FROM payments.settlement_lines x WHERE x.balance_txn_id=v_id;
    IF FOUND THEN
     IF v_old_hash<>v_hash THEN RAISE EXCEPTION 'settlement_content_changed' USING ERRCODE='PT409'; END IF;
-    v_dup:=v_dup+1; CONTINUE;
+    IF v_old_statement IS NOT NULL OR v_old_mismatch IS NULL THEN v_dup:=v_dup+1; CONTINUE; END IF;
+    v_recheck:=true;
    END IF;
-   SELECT x.payload_sha256,x.reason INTO v_old_hash,v_old_reason FROM payments.settlement_unattributed x WHERE x.balance_txn_id=v_id;
-   v_found:=FOUND;
+   v_found:=false;
+   IF NOT v_recheck THEN
+    SELECT x.payload_sha256,x.reason INTO v_old_hash,v_old_reason FROM payments.settlement_unattributed x WHERE x.balance_txn_id=v_id;
+    v_found:=FOUND;
+   END IF;
    IF v_found THEN
     IF v_old_hash<>v_hash THEN RAISE EXCEPTION 'settlement_content_changed' USING ERRCODE='PT409'; END IF;
     -- a final reason stays; an unmapped/foreign one is retried (a session or refund may have been recorded since)
@@ -379,9 +411,13 @@ BEGIN
      ELSIF f.currency<>v_src_cur OR v_src_cur<>'TWD' THEN v_mismatch_code:='currency';
      ELSIF f.amount_minor<>v_src_amount THEN v_mismatch_code:='amount'; END IF;
     ELSIF v_kind IN ('REFUND','REFUND_FAILURE') THEN
-     SELECT x.amount_minor,x.currency INTO f FROM payments.refund_facts x WHERE x.tenant_id=v_tenant AND x.store_id=v_target
-      AND x.refund_id=v_refund_uuid AND x.kind=CASE WHEN v_kind='REFUND' THEN 'SUCCEEDED' ELSE 'FAILED' END;
-     IF NOT FOUND THEN v_mismatch_code:='no_fact';
+     -- P1-1: Stripe debits the balance when a refund is CREATED, so a REFUND line exists whether the refund later succeeds, fails or is
+     -- canceled: any TERMINAL fact proves the worker saw the refund (a pending one has none yet: no_fact until it arrives). A REFUND_FAILURE
+     -- needs the FAILED/CANCELED one. The amount and currency are the refund's own (payments.stripe_refunds), the same for every outcome.
+     v_kinds:=CASE WHEN v_kind='REFUND' THEN ARRAY['SUCCEEDED','FAILED','CANCELED'] ELSE ARRAY['FAILED','CANCELED'] END;
+     SELECT x.amount_minor,x.currency INTO f FROM payments.stripe_refunds x WHERE x.tenant_id=v_tenant AND x.store_id=v_target AND x.id=v_refund_uuid;
+     IF NOT FOUND OR NOT EXISTS(SELECT 1 FROM payments.refund_facts y WHERE y.tenant_id=v_tenant AND y.store_id=v_target
+       AND y.refund_id=v_refund_uuid AND y.kind=ANY(v_kinds)) THEN v_mismatch_code:='no_fact';
      ELSIF f.currency<>v_src_cur OR v_src_cur<>'TWD' THEN v_mismatch_code:='currency';
      ELSIF f.amount_minor<>v_src_amount THEN v_mismatch_code:='amount'; END IF;
     ELSE
@@ -401,16 +437,26 @@ BEGIN
     ELSE
      v_fee_store:=payments.settlement_fee_store(v_fee,v_ratio_store,v_ratio_settle);
     END IF;
-    INSERT INTO payments.settlement_lines(balance_txn_id,tenant_id,store_id,environment,attempt_id,order_id,refund_id,dispute_id,kind,
+    IF v_recheck THEN
+     -- the same transaction attributes to the same store and attempt (else something changed under the ledger: stop)
+     IF v_old_tenant<>v_tenant OR v_old_store<>v_target OR v_old_attempt<>v_attempt THEN
+      RAISE EXCEPTION 'settlement_content_changed' USING ERRCODE='PT409'; END IF;
+     -- only mismatch and the fee share may move, and only while no statement exists (the trigger enforces both)
+     UPDATE payments.settlement_lines SET mismatch=v_mismatch_code,fee_store_minor=v_fee_store
+      WHERE balance_txn_id=v_id AND statement_id IS NULL AND (mismatch IS DISTINCT FROM v_mismatch_code OR fee_store_minor<>v_fee_store);
+     IF FOUND THEN v_rechecked:=v_rechecked+1; ELSE v_dup:=v_dup+1; END IF;
+    ELSE
+     INSERT INTO payments.settlement_lines(balance_txn_id,tenant_id,store_id,environment,attempt_id,order_id,refund_id,dispute_id,kind,
       store_currency,store_minor,settle_currency,settle_amount,settle_fee,settle_net,fee_store_minor,txn_created_at,mismatch,payload_sha256)
      VALUES(v_id,v_tenant,v_target,p_environment,v_attempt,v_order,v_refund_uuid,v_dispute,v_kind,v_src_cur,v_store_minor,v_cur,v_amount,
       v_fee,v_net,v_fee_store,v_created,v_mismatch_code,v_hash);
-    v_inserted:=v_inserted+1;
-    IF v_mismatch_code IS NOT NULL THEN v_mismatch:=v_mismatch+1; END IF;
+     v_inserted:=v_inserted+1;
+     IF v_mismatch_code IS NOT NULL THEN v_mismatch:=v_mismatch+1; END IF;
+    END IF;
    ELSE
     -- unattributed: written in the PLATFORM scope; an already stored row of the same content is only counted
     PERFORM set_config('app.tenant_id',p_tenant::text,true),set_config('app.store_id',p_store::text,true);
-    IF v_found THEN v_dup:=v_dup+1; ELSE
+    IF v_found OR v_recheck THEN v_dup:=v_dup+1; ELSE
      INSERT INTO payments.settlement_unattributed(balance_txn_id,tenant_id,store_id,environment,type,settle_currency,settle_amount,
        settle_fee,settle_net,txn_created_at,reason,payload_sha256)
       VALUES(v_id,p_tenant,p_store,p_environment,v_type,v_cur,v_amount,v_fee,v_net,v_created,v_reason,v_hash);
@@ -431,21 +477,23 @@ BEGIN
     SELECT x.settle_currency AS cur,x.settle_net AS net FROM payments.settlement_lines x
      WHERE x.environment=p_environment AND x.txn_created_at>=p_window_from AND x.txn_created_at<p_window_to
     UNION ALL
+    -- a row that has since become a line (unmapped, then attributed) is counted once, as the line
     SELECT y.settle_currency,y.settle_net FROM payments.settlement_unattributed y
-     WHERE y.environment=p_environment AND y.txn_created_at>=p_window_from AND y.txn_created_at<p_window_to) u GROUP BY u.cur) t;
+     WHERE y.environment=p_environment AND y.txn_created_at>=p_window_from AND y.txn_created_at<p_window_to
+      AND NOT EXISTS(SELECT 1 FROM payments.settlement_lines z WHERE z.balance_txn_id=y.balance_txn_id)) u GROUP BY u.cur) t;
  END IF;
  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details)
- VALUES(p_tenant,p_store,p_principal,'stripe.settlement.sync',jsonb_build_object('environment',p_environment,
-  'inserted',v_inserted,'duplicate',v_dup,'unattributed',v_unattr,'mismatch',v_mismatch));
+ VALUES(p_tenant,p_store,p_principal,'stripe.settlement.sync',jsonb_strip_nulls(jsonb_build_object('environment',p_environment,
+  'inserted',v_inserted,'duplicate',v_dup,'unattributed',v_unattr,'mismatch',v_mismatch,'rechecked',v_rechecked,'ticket',p_ticket)));
  RETURN jsonb_strip_nulls(jsonb_build_object('inserted',v_inserted,'duplicate',v_dup,'unattributed',v_unattr,'mismatch',v_mismatch,
-  'window_net',v_window));
+  'rechecked',v_rechecked,'window_net',v_window));
 END $$;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- close_settlement
 -- ---------------------------------------------------------------------------------------------------------
 CREATE FUNCTION payments.close_settlement(p_tenant uuid,p_store uuid,p_principal uuid,p_environment text,p_period_start date,
- p_operator text,p_target_store uuid DEFAULT NULL) RETURNS jsonb
+ p_operator text,p_target_store uuid DEFAULT NULL,p_ticket text DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE
  sp payments.stripe_platform%ROWTYPE; v_start timestamptz; v_end timestamptz; v_cur timestamptz; r record; t record; st record; v_prev record;
@@ -454,7 +502,8 @@ DECLARE
 BEGIN
  PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
  IF p_environment IS NULL OR p_environment NOT IN ('SANDBOX','LIVE') OR p_period_start IS NULL
-  OR extract(isodow FROM p_period_start)<>1 OR p_operator IS NULL OR p_operator !~ '^[A-Za-z0-9._:@-]{2,64}$' THEN
+  OR extract(isodow FROM p_period_start)<>1 OR p_operator IS NULL OR p_operator !~ '^[A-Za-z0-9._:@-]{2,64}$'
+  OR (p_ticket IS NOT NULL AND p_ticket !~ '^[A-Za-z0-9._:-]{8,128}$') THEN
   RAISE EXCEPTION 'invalid settlement close' USING ERRCODE='22023'; END IF;
  SELECT x.* INTO sp FROM payments.stripe_platform x WHERE x.environment=p_environment;
  IF NOT FOUND OR sp.tenant_id<>p_tenant OR sp.store_id<>p_store THEN
@@ -487,6 +536,11 @@ BEGIN
    UNION
    -- a replay finds the statements this period already has (idempotent per store and period)
    SELECT x.tenant_id,x.store_id FROM payments.settlement_statements x WHERE x.environment=p_environment AND x.period_start=p_period_start
+    AND (p_target_store IS NULL OR x.store_id=p_target_store)
+   UNION
+   -- P2-5 quiet week: every store that already has an EARLIER statement gets one for this period too (empty when it had no line), so the
+   -- period chain never breaks and the next all-store close does not abort on previous_period_open for everybody
+   SELECT x.tenant_id,x.store_id FROM payments.settlement_statements x WHERE x.environment=p_environment AND x.period_start<p_period_start
     AND (p_target_store IS NULL OR x.store_id=p_target_store)
    UNION
    -- an explicit --store may be closed with no lines (an empty statement keeps the period chain unbroken) when it can sell on the platform
@@ -529,7 +583,6 @@ BEGIN
     ORDER BY l.balance_txn_id),''),'UTF8')) INTO v_captured,v_refunded,v_dispute,v_fee,v_count,v_sha
    FROM payments.settlement_lines l WHERE l.tenant_id=t.tenant_id AND l.store_id=t.store_id AND l.environment=p_environment
     AND l.statement_id IS NULL AND l.txn_created_at<v_end;
-  IF v_count=0 AND p_target_store IS NULL THEN CONTINUE; END IF;
   -- platform fee: bps is data (default 0), rounded half up to the currency step (TWD 100), never negative
   v_pfee:=greatest(0,(100*floor(((v_captured-v_refunded)::numeric*sp.platform_fee_bps/10000)/100+0.5))::bigint);
   v_net:=v_captured-v_refunded-v_dispute+v_fee-v_pfee+v_carry;
@@ -549,7 +602,7 @@ BEGIN
   PERFORM set_config('app.tenant_id',p_tenant::text,true),set_config('app.store_id',p_store::text,true);
   INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details)
   VALUES(p_tenant,p_store,p_principal,'stripe.settlement.close',jsonb_build_object('environment',p_environment,
-   'target_store',t.store_id,'period_start',p_period_start,'statement_id',v_new));
+   'target_store',t.store_id,'period_start',p_period_start,'statement_id',v_new,'ticket',p_ticket));
  END LOOP;
  PERFORM set_config('app.tenant_id',p_tenant::text,true),set_config('app.store_id',p_store::text,true);
  RETURN jsonb_build_object('statements',v_out);
@@ -559,13 +612,14 @@ END $$;
 -- record_settlement_payout (RECORD ONLY: this unit never calls a bank, Stripe payout or transfer API)
 -- ---------------------------------------------------------------------------------------------------------
 CREATE FUNCTION payments.record_settlement_payout(p_tenant uuid,p_store uuid,p_principal uuid,p_statement uuid,p_payout_ref text,
- p_payout_minor bigint,p_paid_at timestamptz,p_operator text) RETURNS timestamptz
+ p_payout_minor bigint,p_paid_at timestamptz,p_operator text,p_ticket text DEFAULT NULL) RETURNS timestamptz
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE st payments.settlement_statements%ROWTYPE; sp payments.stripe_platform%ROWTYPE;
 BEGIN
  PERFORM integration.require_stripe_registrar_scope(p_tenant,p_store,p_principal);
  IF p_statement IS NULL OR p_payout_ref IS NULL OR p_payout_ref !~ '^[A-Za-z0-9._:/-]{4,80}$' OR p_payout_minor IS NULL
-  OR p_paid_at IS NULL OR p_operator IS NULL OR p_operator !~ '^[A-Za-z0-9._:@-]{2,64}$' THEN
+  OR p_paid_at IS NULL OR p_operator IS NULL OR p_operator !~ '^[A-Za-z0-9._:@-]{2,64}$'
+  OR (p_ticket IS NOT NULL AND p_ticket !~ '^[A-Za-z0-9._:-]{8,128}$') THEN
   RAISE EXCEPTION 'invalid settlement payout' USING ERRCODE='22023'; END IF;
  PERFORM set_config('app.settlement_op','on',true);
  SELECT x.* INTO st FROM payments.settlement_statements x WHERE x.id=p_statement;
@@ -587,8 +641,8 @@ BEGIN
  IF NOT FOUND THEN RAISE EXCEPTION 'payout_already_recorded' USING ERRCODE='PT409'; END IF;
  PERFORM set_config('app.tenant_id',p_tenant::text,true),set_config('app.store_id',p_store::text,true);
  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details)
- VALUES(p_tenant,p_store,p_principal,'stripe.settlement.payout',jsonb_build_object('environment',st.environment,
-  'target_store',st.store_id,'statement_id',st.id));
+ VALUES(p_tenant,p_store,p_principal,'stripe.settlement.payout',jsonb_strip_nulls(jsonb_build_object('environment',st.environment,
+  'target_store',st.store_id,'statement_id',st.id,'ticket',p_ticket)));
  RETURN p_paid_at;
 END $$;
 
@@ -647,18 +701,18 @@ BEGIN
  RETURN v_list;
 END $$;
 
-ALTER FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz) OWNER TO commerce_payment_registry_writer;
-ALTER FUNCTION payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid) OWNER TO commerce_payment_registry_writer;
-ALTER FUNCTION payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text) OWNER TO commerce_payment_registry_writer;
+ALTER FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text) OWNER TO commerce_payment_registry_writer;
+ALTER FUNCTION payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text) OWNER TO commerce_payment_registry_writer;
+ALTER FUNCTION payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text) OWNER TO commerce_payment_registry_writer;
 ALTER FUNCTION payments.read_settlement_statement(uuid,uuid,uuid,uuid) OWNER TO commerce_payment_registry_writer;
 ALTER FUNCTION payments.read_store_settlements(bytea,uuid,integer,date,uuid) OWNER TO commerce_payment_registry_writer;
-REVOKE ALL ON FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz),
- payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid),
- payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text),
+REVOKE ALL ON FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text),
+ payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text),
+ payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text),
  payments.read_settlement_statement(uuid,uuid,uuid,uuid),
  payments.read_store_settlements(bytea,uuid,integer,date,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz),
- payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid),
- payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text),
+GRANT EXECUTE ON FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text),
+ payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text),
+ payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text),
  payments.read_settlement_statement(uuid,uuid,uuid,uuid) TO commerce_payment_registrar;
 GRANT EXECUTE ON FUNCTION payments.read_store_settlements(bytea,uuid,integer,date,uuid) TO commerce_runtime;

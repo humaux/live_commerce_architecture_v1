@@ -28,17 +28,27 @@ import (
 
 var pslTPE = time.FixedZone("TPE", 8*3600)
 
+// pslTicket is the operator ticket every fixture call carries; it must reach the audit details (Opus review P2-10).
+const pslTicket = "TICKET-2026-1001"
+
 func pslDay(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, pslTPE) }
 
 func pslS(v string) *string { return &v }
 func pslI(v int64) *int64   { return &v }
 
-// pslFee is the contract §6.3 reference: -step*round_half_up(fee*store/settle/step), step 100, in exact rational arithmetic.
+// pslFee is the contract §6.3 reference with the review's symmetric rounding (P2-4): -step * sign * floor(|fee*store/settle/step| + 1/2), step 100,
+// in exact rational arithmetic (half away from zero on the absolute value, then the sign), so a refund exactly reverses its charge's fee share.
 func pslFee(fee, store, settle int64) int64 {
-	q := new(big.Rat).SetFrac(big.NewInt(fee*store), big.NewInt(settle*100))
+	num, den := big.NewInt(fee*store), big.NewInt(settle*100)
+	negative := num.Sign()*den.Sign() < 0
+	q := new(big.Rat).SetFrac(new(big.Int).Abs(num), new(big.Int).Abs(den))
 	q.Add(q, big.NewRat(1, 2))
-	floor := new(big.Int).Div(q.Num(), q.Denom()) // Euclidean division with a positive denominator is floor
-	return -100 * floor.Int64()
+	magnitude := new(big.Int).Div(q.Num(), q.Denom()) // floor of a positive rational
+	steps := -100 * magnitude.Int64()
+	if negative {
+		return -steps
+	}
+	return steps
 }
 
 func pslCharge(id, pi string, store, settle, fee int64, at time.Time) stripe.BalanceTransaction {
@@ -87,11 +97,13 @@ func pslRaw(id, typ, rc string, amount int64, fee *int64, source *string, at tim
 // paid through the real capture path (A1..A3 in A, B1 in B, P1 on the platform store, X1 on X) plus a refund each on A1 and B1.
 type pslEnv struct {
 	*pfEnv
-	a, b                   psHarness
-	oa1, oa2, oa3, ob1     rfxOrder
-	op1, ox1               rfxOrder
-	refundA1, refundB1     string // Stripe refund ids
-	storeA, storeB, storeP string
+	a, b, c                        psHarness
+	oa1, oa2, oa3, ob1             rfxOrder
+	oc1, oc2                       rfxOrder
+	op1, ox1                       rfxOrder
+	refundA1, refundB1             string // Stripe refund ids
+	refundC2, refundC2ID           string // the Stripe refund id and the refund uuid of C2's refund
+	storeA, storeB, storeC, storeP string
 }
 
 func pslNew(t *testing.T) *pslEnv {
@@ -99,11 +111,14 @@ func pslNew(t *testing.T) *pslEnv {
 	pf := pfNew(t)
 	pf.designate(t)
 	pf.setOpen(t, true)
-	a, b := pf.merchant(t, true), pf.merchant(t, true)
+	a, b, c := pf.merchant(t, true), pf.merchant(t, true), pf.merchant(t, true)
 	pf.mustSet(t, a, pfInput(true, 0, ""))
 	pf.mustSet(t, b, pfInput(true, 0, ""))
-	e := &pslEnv{pfEnv: pf, a: a, b: b}
-	sa, sb := pf.derived(t, a), pf.derived(t, b)
+	pf.mustSet(t, c, pfInput(true, 0, ""))
+	e := &pslEnv{pfEnv: pf, a: a, b: b, c: c}
+	sa, sb, sc := pf.derived(t, a), pf.derived(t, b), pf.derived(t, c)
+	e.oc1 = pf.pay(t, sc, pf.endpoint, pf.secret)
+	e.oc2 = pf.payMore(t, e.oc1)
 	e.oa1 = pf.pay(t, sa, pf.endpoint, pf.secret)
 	e.oa2 = pf.payMore(t, e.oa1)
 	e.oa3 = pf.payMore(t, e.oa2)
@@ -112,24 +127,26 @@ func pslNew(t *testing.T) *pslEnv {
 	x := pf.e2(t)
 	xep, xsec := pf.sflEnv.endpoint(t, x)
 	e.ox1 = pf.pay(t, x, xep, xsec)
-	for _, o := range []rfxOrder{e.oa1, e.ob1} {
+	for _, o := range []rfxOrder{e.oa1, e.ob1, e.oc2} {
 		pf.grant(t, o, "orders:read", "payments:refund")
 	}
-	ra, rb := pf.mustRefund(t, e.oa1, 800, "requested_by_customer"), pf.mustRefund(t, e.ob1, 800, "requested_by_customer")
+	ra, rb, rc := pf.mustRefund(t, e.oa1, 800, "requested_by_customer"), pf.mustRefund(t, e.ob1, 800, "requested_by_customer"), pf.mustRefund(t, e.oc2, 800, "requested_by_customer")
 	pf.awaitRefundFact(t, ra, e.oa1.attempt, "SUCCEEDED")
 	pf.awaitRefundFact(t, rb, e.ob1.attempt, "SUCCEEDED")
-	for refund, dest := range map[string]*string{ra: &e.refundA1, rb: &e.refundB1} {
+	pf.awaitRefundFact(t, rc, e.oc2.attempt, "SUCCEEDED")
+	e.refundC2ID = rc
+	for refund, dest := range map[string]*string{ra: &e.refundA1, rb: &e.refundB1, rc: &e.refundC2} {
 		if err := pf.f.owner.QueryRow(context.Background(), `SELECT stripe_refund_id FROM payments.stripe_refunds WHERE id=$1`, refund).Scan(dest); err != nil {
 			t.Fatalf("stripe refund id: %v", err)
 		}
 	}
-	e.storeA, e.storeB, e.storeP = a.f.storeA1, b.f.storeA1, pf.plat.p.f.storeA1
+	e.storeA, e.storeB, e.storeC, e.storeP = a.f.storeA1, b.f.storeA1, c.f.storeA1, pf.plat.p.f.storeA1
 	return e
 }
 
 func (e *pslEnv) sync(t *testing.T, from, to time.Time, txns ...stripe.BalanceTransaction) stripeadmin.SyncReport {
 	t.Helper()
-	rep, err := e.reg.RecordSettlementLines(context.Background(), e.op, txns, from, to)
+	rep, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, txns, from, to)
 	if err != nil {
 		t.Fatalf("sync [%s,%s): %v", from.Format("01-02"), to.Format("01-02"), err)
 	}
@@ -137,12 +154,12 @@ func (e *pslEnv) sync(t *testing.T, from, to time.Time, txns ...stripe.BalanceTr
 }
 
 func (e *pslEnv) syncErr(from, to time.Time, txns ...stripe.BalanceTransaction) error {
-	_, err := e.reg.RecordSettlementLines(context.Background(), e.op, txns, from, to)
+	_, err := e.reg.RecordSettlementLines(context.Background(), e.op, e.plat.connection, pslTicket, txns, from, to)
 	return err
 }
 
 func (e *pslEnv) closeWeek(start time.Time, target string) ([]stripeadmin.ClosedStatement, error) {
-	return e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target)
+	return e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target, pslTicket)
 }
 
 func (e *pslEnv) line(t *testing.T, txn string) (kind, store string, storeMinor, feeStore int64, mismatch *string, statement *string) {
@@ -163,6 +180,54 @@ func (e *pslEnv) unattributed(t *testing.T, txn string) string {
 	return reason
 }
 
+// fixtureExec runs SQL in one owner-pool transaction with triggers and FK checks off (session_replication_role=replica). Disclosed fixture:
+// it only moves worker-written fact rows aside and back, to reproduce the webhook/worker lag that P1-1 is about.
+func (e *pslEnv) fixtureExec(t *testing.T, sql string, args ...any) {
+	t.Helper()
+	ctx := context.Background()
+	tx, err := e.f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, sql, args...); err != nil {
+		t.Fatalf("fixture %.60s: %v", sql, err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// hideCaptured moves the attempt's CAPTURED fact out of payments.facts (the worker has not recorded it yet) and returns the restore.
+func (e *pslEnv) hideCaptured(t *testing.T, attempt string) func() {
+	t.Helper()
+	e.fixtureExec(t, `CREATE TABLE IF NOT EXISTS public.psl_saved_facts (LIKE payments.facts)`)
+	e.fixtureExec(t, `INSERT INTO public.psl_saved_facts SELECT * FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED'`, attempt)
+	e.fixtureExec(t, `DELETE FROM payments.facts WHERE attempt_id=$1 AND kind='CAPTURED'`, attempt)
+	return func() {
+		e.fixtureExec(t, `INSERT INTO payments.facts SELECT * FROM public.psl_saved_facts WHERE attempt_id=$1`, attempt)
+		e.fixtureExec(t, `DELETE FROM public.psl_saved_facts WHERE attempt_id=$1`, attempt)
+	}
+}
+
+// hideRefundFact removes the refund's fact rows (the refund is pending as far as the database knows) and returns a restore that puts the
+// fact back with the given terminal kind (SUCCEEDED, or FAILED for a refund that never succeeded).
+func (e *pslEnv) hideRefundFact(t *testing.T, refund string) func(kind string) {
+	t.Helper()
+	e.fixtureExec(t, `CREATE TABLE IF NOT EXISTS public.psl_saved_refund_facts (LIKE payments.refund_facts)`)
+	e.fixtureExec(t, `INSERT INTO public.psl_saved_refund_facts SELECT * FROM payments.refund_facts WHERE refund_id=$1`, refund)
+	e.fixtureExec(t, `DELETE FROM payments.refund_facts WHERE refund_id=$1`, refund)
+	return func(kind string) {
+		e.fixtureExec(t, `INSERT INTO payments.refund_facts(tenant_id,store_id,refund_id,attempt_id,kind,amount_minor,currency,stripe_refund_id,failure_reason,source_report_hash,received_at)
+			SELECT tenant_id,store_id,refund_id,attempt_id,$2,amount_minor,currency,stripe_refund_id,failure_reason,source_report_hash,received_at
+			FROM public.psl_saved_refund_facts WHERE refund_id=$1`, refund, kind)
+		e.fixtureExec(t, `DELETE FROM public.psl_saved_refund_facts WHERE refund_id=$1`, refund)
+	}
+}
+
 func pslWantRefused(t *testing.T, what string, err error, token string) {
 	t.Helper()
 	if err == nil || !strings.Contains(err.Error(), "rejected") || (token != "" && !strings.Contains(err.Error(), token)) {
@@ -173,7 +238,7 @@ func pslWantRefused(t *testing.T, what string, err error, token string) {
 func TestPlatformSettlement(t *testing.T) {
 	e := pslNew(t)
 	ctx := context.Background()
-	w0, w1, w2, w3 := pslDay(2026, 9, 7), pslDay(2026, 9, 14), pslDay(2026, 9, 21), pslDay(2026, 9, 28)
+	w0, w1, w2, w3, w4 := pslDay(2026, 8, 31), pslDay(2026, 9, 7), pslDay(2026, 9, 14), pslDay(2026, 9, 21), pslDay(2026, 9, 28)
 	d := func(w time.Time, n int) time.Time { return w.Add(time.Duration(n)*24*time.Hour + 3*time.Hour) }
 	settleOf := func(minor int64) int64 { return minor * 2564 / 10000 } // 2500 -> 641 (the fixture rate 0.2564)
 
@@ -202,14 +267,14 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 		}
 		fns := map[string][]string{
-			"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz)": {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid)":                       {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text)": {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                             {"commerce_payment_registrar", "commerce_payment_registry_writer"},
-			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                       {"commerce_runtime", "commerce_payment_registry_writer"},
-			"payments.settlement_kind(text,text,text,bigint)":                                     {"commerce_payment_registry_writer"},
-			"payments.settlement_fee_store(bigint,bigint,bigint)":                                 {"commerce_payment_registry_writer"},
-			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                          {"commerce_payment_registry_writer"},
+			"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)": {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)":                            {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":      {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                                       {"commerce_payment_registrar", "commerce_payment_registry_writer"},
+			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                                 {"commerce_runtime", "commerce_payment_registry_writer"},
+			"payments.settlement_kind(text,text,text,bigint)":                                               {"commerce_payment_registry_writer"},
+			"payments.settlement_fee_store(bigint,bigint,bigint)":                                           {"commerce_payment_registry_writer"},
+			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                                    {"commerce_payment_registry_writer"},
 		}
 		for fn, want := range fns {
 			var secdef bool
@@ -238,8 +303,8 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 		}
 		// the merchant runtime can execute the reader only
-		if n := countRows(t, o, `SELECT count(*) FROM unnest(ARRAY['payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz)',
-			'payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid)','payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text)',
+		if n := countRows(t, o, `SELECT count(*) FROM unnest(ARRAY['payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)',
+			'payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)','payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)',
 			'payments.read_settlement_statement(uuid,uuid,uuid,uuid)']) f WHERE has_function_privilege('commerce_runtime',f::regprocedure,'EXECUTE')`); n != 0 {
 			t.Fatalf("commerce_runtime can execute %d operator definers", n)
 		}
@@ -299,6 +364,18 @@ func TestPlatformSettlement(t *testing.T) {
 		defer func() {
 			mustExec(t, o, `DELETE FROM payments.settlement_lines WHERE balance_txn_id LIKE 'txn_Fixture%'`)
 		}()
+		// P1-1: before a statement exists ONLY mismatch and the fee share may be re-checked; nothing else moves
+		mustExec(t, o, `UPDATE payments.settlement_lines SET mismatch='no_fact',fee_store_minor=-100 WHERE balance_txn_id LIKE 'txn_Fixture%'`)
+		mustExec(t, o, `UPDATE payments.settlement_lines SET mismatch=NULL,fee_store_minor=0 WHERE balance_txn_id LIKE 'txn_Fixture%'`)
+		for _, bad := range []string{`store_minor=200`, `settle_fee=11,settle_net=89`, `kind='REFUND'`, `payload_sha256=sha256('y')`, `txn_created_at=now()`} {
+			if _, err := o.Exec(ctx, `UPDATE payments.settlement_lines SET `+bad+` WHERE balance_txn_id LIKE 'txn_Fixture%'`); sqlState(err) != "PT409" {
+				t.Fatalf("an unassigned line accepted a change of %s: %v", bad, err)
+			}
+		}
+		var unique bool
+		if err := o.QueryRow(ctx, `SELECT indisunique FROM pg_index WHERE indexrelid='payments.stripe_sessions_payment_intent_idx'::regclass`).Scan(&unique); err != nil || !unique {
+			t.Fatalf("one session per payment intent must be a UNIQUE index: %v %v", unique, err)
+		}
 		mustExec(t, o, `UPDATE payments.settlement_lines SET statement_id=$1 WHERE balance_txn_id LIKE 'txn_Fixture%'`, stmt)
 		if _, err := o.Exec(ctx, `UPDATE payments.settlement_lines SET statement_id=NULL WHERE balance_txn_id LIKE 'txn_Fixture%'`); sqlState(err) != "PT409" {
 			t.Fatalf("statement_id is set once: %v", err)
@@ -307,12 +384,29 @@ func TestPlatformSettlement(t *testing.T) {
 			t.Fatalf("a ledger line is immutable: %v", err)
 		}
 
+		// P2-6 (Opus): the attribution reads 0150 grants on three existing tables are pinned to the exact columns (SELECT only), for the registry writer
+		// and for nobody else beyond what those tables already granted.
+		colsOf := func(table, role string) []string {
+			return lcStrings(t, o, `SELECT a.attname FROM pg_attribute a, aclexplode(a.attacl) x WHERE a.attrelid=$1::regclass AND x.grantee=$2::regrole
+				AND x.privilege_type='SELECT' AND a.attnum>0 AND NOT a.attisdropped ORDER BY 1`, table, role)
+		}
+		lcSameSet(t, "registry writer columns on payments.stripe_sessions", colsOf("payments.stripe_sessions", "commerce_payment_registry_writer"),
+			[]string{"tenant_id", "store_id", "attempt_id", "environment", "account_id", "payment_intent_id"})
+		lcSameSet(t, "registry writer columns on payments.stripe_refunds", colsOf("payments.stripe_refunds", "commerce_payment_registry_writer"),
+			[]string{"tenant_id", "store_id", "id", "attempt_id", "environment", "stripe_refund_id", "account_id", "amount_minor", "currency"})
+		lcSameSet(t, "registry writer columns on checkout.payment_attempts", colsOf("checkout.payment_attempts", "commerce_payment_registry_writer"),
+			[]string{"tenant_id", "store_id", "id", "method_code", "environment", "connection_id", "currency", "qualification_id", "created_at", "order_id"})
 		// §6.3 vectors (the brief's PF11 vector, with its arithmetic): HKD 25,640 settled for TWD 100000 minor, fee 1,046 ->
 		// 1046 x 100000 / 25640 = 4079.56 -> /100 = 40.80 -> half-up 41 -> x100 = 4100 -> fee_store_minor = -4100.
 		type vec struct{ fee, store, settle, want int64 }
 		vectors := []vec{{1046, 100000, 25640, -4100}, {1, 50, 1, -100}, {49, 100, 100, 0}, {0, 100000, 25640, 0}, {-1500, 250000, 64100, 5900}}
 		for k := int64(0); k < 6; k++ { // exact halves: fee*store = (k+1/2)*settle*100 -> rounds up to k+1
 			vectors = append(vectors, vec{fee: 2*k + 1, store: 700, settle: 14, want: -100 * (k + 1)})
+			// P2-4 (Opus): half away from zero on the absolute value. A returned fee (negative) at an exact half credits the SAME magnitude, and a
+			// refund (negative store and settle amounts) reverses its charge's fee share exactly.
+			vectors = append(vectors, vec{fee: -(2*k + 1), store: 700, settle: 14, want: 100 * (k + 1)})
+			vectors = append(vectors, vec{fee: 2*k + 1, store: -700, settle: -14, want: -100 * (k + 1)})
+			vectors = append(vectors, vec{fee: -(2*k + 1), store: -700, settle: -14, want: 100 * (k + 1)})
 		}
 		for _, v := range vectors {
 			if got := pslFee(v.fee, v.store, v.settle); got != v.want {
@@ -336,7 +430,7 @@ func TestPlatformSettlement(t *testing.T) {
 	// PF10 sync: attribution in SQL, unattributed reasons, replay, changed content, cross-checks, fail-closed rows.
 	// ---------------------------------------------------------------------------------------------------------------------
 	cap1 := func(o rfxOrder) int64 { return o.captured }
-	feeA2, feeA1, feeP1, feeA3 := int64(33), int64(31), int64(29), int64(35)
+	feeA2, feeA1, feeP1, feeA3, feeC1, feeC2 := int64(33), int64(31), int64(29), int64(35), int64(31), int64(29)
 	t.Run("PF10_sync", func(t *testing.T) {
 		// week 0 first (the dispute of A2 in week 1 needs A2's charge line for its ratio)
 		rep := e.sync(t, w0, w1, pslCharge("txn_ChargeA2", e.oa2.pi, cap1(e.oa2), settleOf(cap1(e.oa2)), feeA2, d(w0, 1)))
@@ -347,11 +441,8 @@ func TestPlatformSettlement(t *testing.T) {
 			pslCharge("txn_ChargeP1", e.op1.pi, cap1(e.op1), settleOf(cap1(e.op1)), feeP1, d(w1, 1)),
 			pslCharge("txn_ChargeA1", e.oa1.pi, cap1(e.oa1), settleOf(cap1(e.oa1)), feeA1, d(w1, 1)),
 			pslRefund("txn_RefundA1", e.refundA1, 800, settleOf(800), 0, d(w1, 2)),
-			pslDispute("txn_DisputeA2", "dp_A2", e.oa2.pi, cap1(e.oa2), settleOf(cap1(e.oa2)), 1500, false, d(w1, 3)), // listed before its charge's batch-mate: order must not matter
-			// store B: the charge amount differs from the CAPTURED fact (mismatch amount); its refund failure has no FAILED fact (no_fact)
-			pslCharge("txn_ChargeB1", e.ob1.pi, cap1(e.ob1)+100, settleOf(cap1(e.ob1)+100), 40, d(w1, 1)),
-			pslRefundFailure("txn_RefundFailB1", e.refundB1, 800, settleOf(800), d(w1, 4)),
-			// another primary account's charge, an unmapped payment intent, and the types that are never a store line
+			pslDispute("txn_DisputeA2", "dp_A2", e.oa2.pi, cap1(e.oa2), settleOf(cap1(e.oa2)), 1500, false, d(w1, 3)), // its charge line is in the earlier batch
+			// another primary account's charge, and the types that are never a store line
 			pslCharge("txn_ChargeX1", e.ox1.pi, cap1(e.ox1), settleOf(cap1(e.ox1)), 30, d(w1, 1)),
 			pslRaw("txn_Payout1", "payout", "payout", -500000, pslI(0), pslS("po_1"), d(w1, 4)),
 			pslRaw("txn_StripeFee1", "stripe_fee", "fee", -100, pslI(0), nil, d(w1, 4)),
@@ -372,7 +463,7 @@ func TestPlatformSettlement(t *testing.T) {
 			}(),
 		}
 		rep = e.sync(t, w1, w2, week1...)
-		if rep.Inserted != 6 || rep.Unattributed != 6 || rep.Duplicate != 0 || rep.Mismatch != 2 || rep.Fetched != 12 {
+		if rep.Inserted != 4 || rep.Unattributed != 6 || rep.Duplicate != 0 || rep.Mismatch != 0 || rep.Fetched != 10 {
 			t.Fatalf("week 1 sync: %+v", rep)
 		}
 		for _, cur := range []string{"HKD"} {
@@ -381,8 +472,7 @@ func TestPlatformSettlement(t *testing.T) {
 			}
 		}
 		// attribution: every line is in exactly its own store's scope
-		for txn, store := range map[string]string{"txn_ChargeP1": e.storeP, "txn_ChargeA1": e.storeA, "txn_RefundA1": e.storeA, "txn_DisputeA2": e.storeA,
-			"txn_ChargeA2": e.storeA, "txn_ChargeB1": e.storeB, "txn_RefundFailB1": e.storeB} {
+		for txn, store := range map[string]string{"txn_ChargeP1": e.storeP, "txn_ChargeA1": e.storeA, "txn_RefundA1": e.storeA, "txn_DisputeA2": e.storeA, "txn_ChargeA2": e.storeA} {
 			if _, got, _, _, _, _ := e.line(t, txn); got != store {
 				t.Fatalf("%s attributed to %s, want %s", txn, got, store)
 			}
@@ -397,26 +487,20 @@ func TestPlatformSettlement(t *testing.T) {
 		if k, _, sm, fm, mm, _ := e.line(t, "txn_DisputeA2"); k != "DISPUTE" || sm != -cap1(e.oa2) || fm != pslFee(1500, cap1(e.oa2), settleOf(cap1(e.oa2))) || mm != nil {
 			t.Fatalf("A2 dispute line: %s %d %d %v", k, sm, fm, mm)
 		}
-		if _, _, _, _, mm, _ := e.line(t, "txn_ChargeB1"); mm == nil || *mm != "amount" {
-			t.Fatalf("B1 charge mismatch = %v, want amount", mm)
-		}
-		if _, _, _, _, mm, _ := e.line(t, "txn_RefundFailB1"); mm == nil || *mm != "no_fact" {
-			t.Fatalf("B1 refund failure mismatch = %v, want no_fact", mm)
-		}
 		for txn, want := range map[string]string{"txn_ChargeX1": "foreign_connection", "txn_Payout1": "unsupported_type", "txn_StripeFee1": "unsupported_type",
 			"txn_NoFee": "unsupported_type", "txn_NoRate": "unsupported_type", "txn_DisputeOdd": "unmapped_source"} {
 			if got := e.unattributed(t, txn); got != want {
 				t.Fatalf("%s reason = %s, want %s", txn, got, want)
 			}
 		}
-		// an unknown payment intent: unmapped_source (placed in week 3 so it blocks no closable period)
-		rep = e.sync(t, w3, w3.Add(7*24*time.Hour), pslCharge("txn_Unknown", "pi_unknownintent", 2500, 641, 30, d(w3, 1)))
+		// an unknown payment intent: unmapped_source (placed in week 4 so it blocks no closable period)
+		rep = e.sync(t, w4, w4.Add(7*24*time.Hour), pslCharge("txn_Unknown", "pi_unknownintent", 2500, 641, 30, d(w4, 1)))
 		if rep.Unattributed != 1 || e.unattributed(t, "txn_Unknown") != "unmapped_source" {
 			t.Fatalf("unmapped: %+v", rep)
 		}
 		// replay inserts nothing; changed content for one txn id is an integrity conflict (PT409) and writes nothing
 		rep = e.sync(t, w1, w2, week1...)
-		if rep.Inserted != 0 || rep.Unattributed != 0 || rep.Duplicate != 12 {
+		if rep.Inserted != 0 || rep.Unattributed != 0 || rep.Duplicate != 10 {
 			t.Fatalf("replay: %+v", rep)
 		}
 		before := countRows(t, e.f.owner, `SELECT (SELECT count(*) FROM payments.settlement_lines)+(SELECT count(*) FROM payments.settlement_unattributed)`)
@@ -431,13 +515,65 @@ func TestPlatformSettlement(t *testing.T) {
 		if err := e.syncErr(w1, w2, bad); err == nil {
 			t.Fatal("a lower-case currency was accepted")
 		}
-		// a late, week-1 dated charge for A arrives only now (after week 1 closes below it rolls into week 2)
+	})
+
+	// P2-1 (Opus review): the connection named by the CLI must be the designated platform connection.
+	t.Run("PF10_platform_connection_assertion", func(t *testing.T) {
+		_, err := e.reg.RecordSettlementLines(ctx, e.op, e.ox1.s.connection, pslTicket, nil, w1, w2)
+		pslWantRefused(t, "a connection that is not the platform connection", err, "not_platform_connection")
+		if _, err := e.reg.RecordSettlementLines(ctx, e.op, e.plat.connection, "short", nil, w1, w2); err == nil {
+			t.Fatal("an invalid ticket was accepted")
+		}
+	})
+
+	// P1-1 (Opus review): a fact-lag mismatch is transient. The sync runs before the worker recorded the CAPTURED fact (webhook lag),
+	// and before a refund reached a terminal state (pending, or one that only ever FAILED). A re-sync of the same transactions must
+	// clear the mismatch while no statement exists, and the store must then close. Fixtures (disclosed, owner pool, replica mode):
+	// the fact rows are moved aside to simulate the lag and put back (the refund fact as FAILED) to simulate the worker catching up.
+	t.Run("PF10_recheck_transient_mismatch", func(t *testing.T) {
+		restoreCaptured := e.hideCaptured(t, e.oc1.attempt)
+		restoreRefund := e.hideRefundFact(t, e.refundC2ID)
+		batch := []stripe.BalanceTransaction{
+			pslCharge("txn_ChargeC1", e.oc1.pi, cap1(e.oc1), settleOf(cap1(e.oc1)), feeC1, d(w1, 1)),
+			pslCharge("txn_ChargeC2", e.oc2.pi, cap1(e.oc2), settleOf(cap1(e.oc2)), feeC2, d(w1, 1)),
+			pslRefund("txn_RefundC2", e.refundC2, 800, settleOf(800), 0, d(w1, 2)),
+			pslRefundFailure("txn_RefundFailC2", e.refundC2, 800, settleOf(800), d(w1, 3)),
+		}
+		rep := e.sync(t, w1, w2, batch...)
+		if rep.Inserted != 4 || rep.Mismatch != 3 {
+			t.Fatalf("first sync under fact lag: %+v (want 4 inserted, 3 no_fact)", rep)
+		}
+		for _, txn := range []string{"txn_ChargeC1", "txn_RefundC2", "txn_RefundFailC2"} {
+			if _, _, _, _, mm, _ := e.line(t, txn); mm == nil || *mm != "no_fact" {
+				t.Fatalf("%s mismatch = %v, want no_fact", txn, mm)
+			}
+		}
+		// the worker catches up: CAPTURED appears; the refund turns out to have FAILED (it never succeeded)
+		restoreCaptured()
+		restoreRefund("FAILED")
+		rep = e.sync(t, w1, w2, batch...)
+		if rep.Inserted != 0 || rep.Unattributed != 0 || rep.Mismatch != 0 || rep.Rechecked != 3 || rep.Duplicate != 1 {
+			t.Fatalf("re-sync after the facts arrived: %+v (want 3 rechecked, the already-clean C2 charge a duplicate)", rep)
+		}
+		// a third identical sync changes nothing
+		if rep = e.sync(t, w1, w2, batch...); rep.Rechecked != 0 || rep.Duplicate != 4 || rep.Inserted != 0 {
+			t.Fatalf("third sync: %+v", rep)
+		}
+		for _, txn := range []string{"txn_ChargeC1", "txn_ChargeC2", "txn_RefundC2", "txn_RefundFailC2"} {
+			if _, _, _, _, mm, st := e.line(t, txn); mm != nil || st != nil {
+				t.Fatalf("%s still blocked after the facts arrived: mismatch=%v statement=%v", txn, mm, st)
+			}
+		}
+		// a refund that only ever FAILED nets to zero: the REFUND (-800) and its REFUND_FAILURE (+800) cancel
+		if _, _, sm, _, _, _ := e.line(t, "txn_RefundC2"); sm != -800 {
+			t.Fatalf("refund line store_minor = %d", sm)
+		}
 	})
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// PF11 close
 	// ---------------------------------------------------------------------------------------------------------------------
-	var stmtA0, stmtA1, stmtA2 string
+	var stmtA0, stmtA1, stmtA2, stmtA3 string
 	var netA0, netA1 int64
 	t.Run("PF11_close", func(t *testing.T) {
 		// a period that has not reached +72 h is refused; use the week that contains now (always in the future relative to its own end)
@@ -448,17 +584,41 @@ func TestPlatformSettlement(t *testing.T) {
 		}
 		_, err := e.closeWeek(thisMonday, e.storeA)
 		pslWantRefused(t, "period not closable", err, "period_not_closable")
-		if _, err := e.reg.SettlementClose(ctx, e.op, "SANDBOX", "2026-09-15", "op@test", e.storeA); err == nil { // a Tuesday
+		if _, err := e.reg.SettlementClose(ctx, e.op, "SANDBOX", "2026-09-08", "op@test", e.storeA, pslTicket); err == nil { // a Tuesday
 			t.Fatal("a non-Monday period was accepted")
 		}
-		// close requires a sync that covered [period_start - 7 d, period_end): week 0 needs [08-31, 09-14) and 08-31..09-07 was never synced
+		// P1-2: a window may not cover time that has not passed (a sync run Thursday with --to next Monday would claim the weekend)
+		now := time.Now().Truncate(time.Second)
+		if err := e.syncErr(now.Add(-24*time.Hour), now.Add(6*24*time.Hour)); err == nil {
+			t.Fatal("a window ending in the future was accepted by the registrar")
+		}
+		if err := e.syncErr(now.Add(-24*time.Hour), now.Add(-5*time.Minute)); err == nil {
+			t.Fatal("a window ending inside the 15-minute settling margin was accepted by the registrar")
+		}
+		for _, to := range []time.Time{now.Add(time.Hour), now.Add(-5 * time.Minute)} {
+			var state string
+			if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz)) q`,
+				e.op.TenantID, e.op.StoreID, e.op.PrincipalID, to.Add(-24*time.Hour), to).Scan(&state); sqlState(err) != "22023" {
+				t.Fatalf("SQL accepted a window ending at %s: %v", to.Format(time.RFC3339), err)
+			}
+		}
+		// P2-9: the wire lists whole unix seconds, so a fractional bound would claim a sliver that was never listed
+		var frac string
+		if err := e.f.owner.QueryRow(ctx, `SELECT 'x' FROM (SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,'SANDBOX','[]'::jsonb,$4::timestamptz,$5::timestamptz)) q`,
+			e.op.TenantID, e.op.StoreID, e.op.PrincipalID, w0.Add(500*time.Millisecond), w1).Scan(&frac); sqlState(err) != "22023" {
+			t.Fatalf("SQL accepted a fractional-second window: %v", err)
+		}
+		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_sync_runs WHERE window_to>now()-interval '15 minutes'`); n != 0 {
+			t.Fatalf("%d coverage rows claim time that has not settled", n)
+		}
+		// close requires a sync that covered [period_start - 7 d, period_end): week 0 needs [08-24, 09-07) and 08-24..08-31 was never synced
 		_, err = e.closeWeek(w0, e.storeA)
 		pslWantRefused(t, "sync required", err, "sync_required")
 		e.sync(t, w0.Add(-7*24*time.Hour), w0) // an empty coverage run
 		// an unmapped source (here the dispute-shaped adjustment Stripe did not classify as a known pair) blocks every store's close
 		_, err = e.closeWeek(w1, e.storeA)
 		pslWantRefused(t, "unmapped source blocks", err, "settlement_unattributed")
-		// Resolution tooling is out of scope (S2-OPEN-1: escalate); the fixture removes the row the way an operator-approved fix would.
+		// Resolution tooling is out of scope (S2-OPEN-1: escalate, before LIVE); the fixture removes the row the way an operator-approved fix would.
 		mustExec(t, e.f.owner, `DELETE FROM payments.settlement_unattributed WHERE balance_txn_id='txn_DisputeOdd'`)
 		// week 1 for A while week 0 is still open
 		_, err = e.closeWeek(w1, e.storeA)
@@ -478,21 +638,23 @@ func TestPlatformSettlement(t *testing.T) {
 		if err != nil || len(again) != 1 || again[0].StatementID != stmtA0 || !again[0].Replayed {
 			t.Fatalf("close replay: %+v %v", again, err)
 		}
-		// week 1 for all stores: store B's mismatches block the close
-		_, err = e.closeWeek(w1, "")
-		pslWantRefused(t, "mismatch blocks", err, "settlement_mismatch")
-		// week 1 for A alone: refund, dispute and the charge; the net is negative and carries forward
-		got, err = e.closeWeek(w1, e.storeA)
-		if err != nil || len(got) != 1 || got[0].LineCount != 3 {
-			t.Fatalf("close week 1 (A): %+v %v", got, err)
+		// week 1 for EVERY store (the transient C mismatches were cleared by the re-sync): A, C and the platform store
+		got, err = e.closeWeek(w1, "")
+		by := map[string]stripeadmin.ClosedStatement{}
+		for _, s := range got {
+			by[s.StoreID] = s
 		}
-		stmtA1, netA1 = got[0].StatementID, got[0].NetPayableMinor
+		if err != nil || len(got) != 3 || by[e.storeA].LineCount != 3 || by[e.storeC].LineCount != 4 || by[e.storeP].LineCount != 1 {
+			t.Fatalf("close week 1 (all stores): %+v %v", got, err)
+		}
+		stmtA1, netA1 = by[e.storeA].StatementID, by[e.storeA].NetPayableMinor
 		wantFees := pslFee(feeA1, cap1(e.oa1), settleOf(cap1(e.oa1))) + pslFee(1500, cap1(e.oa2), settleOf(cap1(e.oa2)))
-		if want := cap1(e.oa1) - 800 - cap1(e.oa2) + wantFees; netA1 != want || netA1 >= 0 {
+		if want := cap1(e.oa1) - 800 - cap1(e.oa2) + wantFees; netA1 != want || netA1 >= 0 { // the net is negative and carries forward
 			t.Fatalf("A week 1 net = %d, want %d (negative)", netA1, want)
 		}
-		if p, err := e.closeWeek(w1, e.storeP); err != nil || len(p) != 1 { // the platform store's own sale
-			t.Fatalf("close week 1 (platform store): %+v %v", p, err)
+		wantC := cap1(e.oc1) + cap1(e.oc2) + pslFee(feeC1, cap1(e.oc1), settleOf(cap1(e.oc1))) + pslFee(feeC2, cap1(e.oc2), settleOf(cap1(e.oc2)))
+		if by[e.storeC].NetPayableMinor != wantC { // refunded 800 and failure +800: net refund 0
+			t.Fatalf("C week 1 net = %d, want %d", by[e.storeC].NetPayableMinor, wantC)
 		}
 		// a charge dated in week 1 that arrives after week 1 closed: it rolls into the next statement, never into the closed one
 		e.sync(t, w1, w2, pslCharge("txn_ChargeA3", e.oa3.pi, cap1(e.oa3), settleOf(cap1(e.oa3)), feeA3, d(w1, 6)))
@@ -507,11 +669,18 @@ func TestPlatformSettlement(t *testing.T) {
 			t.Fatalf("set platform fee: %v", err)
 		}
 		e.version = v
-		got, err = e.closeWeek(w2, e.storeA)
-		if err != nil || len(got) != 1 || got[0].LineCount != 2 {
-			t.Fatalf("close week 2 (A): %+v %v", got, err)
+		// P2-5 quiet week: C and the platform store have no line this week; every store that has an earlier statement still gets one, so the
+		// chain never breaks (previous_period_open would otherwise abort the NEXT all-store close for everybody)
+		got, err = e.closeWeek(w2, "")
+		by = map[string]stripeadmin.ClosedStatement{}
+		for _, s := range got {
+			by[s.StoreID] = s
 		}
-		stmtA2 = got[0].StatementID
+		if err != nil || len(got) != 3 || by[e.storeA].LineCount != 2 || by[e.storeC].LineCount != 0 || by[e.storeP].LineCount != 0 ||
+			by[e.storeC].NetPayableMinor != 0 || by[e.storeP].NetPayableMinor != 0 {
+			t.Fatalf("close week 2 (all stores, quiet week): %+v %v", got, err)
+		}
+		stmtA2 = by[e.storeA].StatementID
 		var captured, refunded, dispute, fee, pfee, carried, net int64
 		var bps int
 		if err := e.f.owner.QueryRow(ctx, `SELECT captured_minor,refunded_minor,dispute_minor,stripe_fee_minor,platform_fee_bps,platform_fee_minor,carried_in_minor,net_payable_minor
@@ -527,8 +696,8 @@ func TestPlatformSettlement(t *testing.T) {
 		if _, _, _, _, _, st := e.line(t, "txn_ChargeA3"); st == nil || *st != stmtA2 {
 			t.Fatal("the late line did not roll into the week 2 statement")
 		}
-		// the week 2 replay and the audit trail
-		if r, err := e.closeWeek(w2, e.storeA); err != nil || len(r) != 1 || !r[0].Replayed || r[0].StatementID != stmtA2 {
+		// the week 2 replay (every store) and the audit trail
+		if r, err := e.closeWeek(w2, ""); err != nil || len(r) != 3 || !r[0].Replayed || !r[1].Replayed || !r[2].Replayed {
 			t.Fatalf("week 2 replay: %+v %v", r, err)
 		}
 		if n := countRows(t, e.f.owner, `SELECT count(*) FROM ops.audit_events WHERE action='stripe.settlement.close' AND details->>'target_store'=$1`, e.storeA); n != 3 {
@@ -541,6 +710,31 @@ func TestPlatformSettlement(t *testing.T) {
 		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_statements WHERE id IN ($1,$2) AND platform_fee_bps=0 AND platform_fee_minor=0`, stmtA0, stmtA1); n != 2 {
 			t.Fatal("platform fee applied while bps was 0")
 		}
+		// week 3: store B's lines arrive with mismatches that are NOT transient (the amount differs from the CAPTURED fact; a refund failure
+		// without a FAILED fact), so the all-store close refuses, while a quiet-week statement for A alone is still allowed
+		rep := e.sync(t, w3, w4,
+			pslCharge("txn_ChargeB1", e.ob1.pi, cap1(e.ob1)+100, settleOf(cap1(e.ob1)+100), 40, d(w3, 1)),
+			pslRefund("txn_RefundB1", e.refundB1, 800, settleOf(800), 0, d(w3, 2)),
+			pslRefundFailure("txn_RefundFailB1", e.refundB1, 800, settleOf(800), d(w3, 3)))
+		if rep.Inserted != 3 || rep.Mismatch != 2 {
+			t.Fatalf("store B sync: %+v", rep)
+		}
+		if _, _, _, _, mm, _ := e.line(t, "txn_ChargeB1"); mm == nil || *mm != "amount" {
+			t.Fatalf("B1 charge mismatch = %v, want amount", mm)
+		}
+		if _, _, _, _, mm, _ := e.line(t, "txn_RefundB1"); mm != nil { // a SUCCEEDED refund fact: amount taken from payments.stripe_refunds
+			t.Fatalf("B1 refund mismatch = %v", mm)
+		}
+		if _, _, _, _, mm, _ := e.line(t, "txn_RefundFailB1"); mm == nil || *mm != "no_fact" {
+			t.Fatalf("B1 refund failure mismatch = %v, want no_fact", mm)
+		}
+		_, err = e.closeWeek(w3, "")
+		pslWantRefused(t, "mismatch blocks", err, "settlement_mismatch")
+		got, err = e.closeWeek(w3, e.storeA)
+		if err != nil || len(got) != 1 || got[0].LineCount != 0 {
+			t.Fatalf("quiet week 3 (A alone): %+v %v", got, err)
+		}
+		stmtA3 = got[0].StatementID
 	})
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -549,7 +743,7 @@ func TestPlatformSettlement(t *testing.T) {
 	t.Run("PF12_payout", func(t *testing.T) {
 		past := time.Now().Add(-time.Hour).Truncate(time.Second)
 		pay := func(st string, ref string, amount int64, at time.Time) (time.Time, error) {
-			return e.reg.SettlementPayout(ctx, e.op, st, ref, amount, at, "op@test")
+			return e.reg.SettlementPayout(ctx, e.op, st, ref, amount, at, "op@test", pslTicket)
 		}
 		_, err := pay(stmtA1, "BANK-REF-A1", 1, past) // net <= 0 can never be paid, whatever the amount
 		pslWantRefused(t, "payout of a negative net", err, "payout_amount_mismatch")
@@ -580,6 +774,14 @@ func TestPlatformSettlement(t *testing.T) {
 		}
 	})
 
+	t.Run("PF12_ticket_in_audit", func(t *testing.T) {
+		for _, action := range []string{"stripe.settlement.sync", "stripe.settlement.close", "stripe.settlement.payout"} {
+			if n := countRows(t, e.f.owner, `SELECT count(*) FROM ops.audit_events WHERE action=$1 AND details->>'ticket'=$2`, action, pslTicket); n == 0 {
+				t.Fatalf("no %s audit row carries the operator ticket", action)
+			}
+		}
+	})
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// PF13 merchant read and the CSV
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -591,8 +793,8 @@ func TestPlatformSettlement(t *testing.T) {
 			t.Fatalf("list: %d %s %v", status, raw, hdr)
 		}
 		var list settlement.List
-		if err := json.Unmarshal(raw, &list); err != nil || len(list.Statements) != 3 || list.Statements[0].StatementID != stmtA2 ||
-			list.Statements[0].PeriodStart != "2026-09-21" || len(list.Statements[0].Lines) != 0 {
+		if err := json.Unmarshal(raw, &list); err != nil || len(list.Statements) != 4 || list.Statements[0].StatementID != stmtA3 ||
+			list.Statements[0].PeriodStart != "2026-09-21" || list.Statements[0].LineCount != 0 || len(list.Statements[0].Lines) != 0 {
 			t.Fatalf("list body: %s", raw)
 		}
 		byID := map[string]settlement.Statement{}
@@ -602,11 +804,14 @@ func TestPlatformSettlement(t *testing.T) {
 		if s := byID[stmtA0]; !s.Paid || s.PayoutRef == nil || *s.PayoutRef != "BANK-REF-A0" || s.NetPayableMinor != netA0 {
 			t.Fatalf("paid statement: %+v", s)
 		}
+		if s := byID[stmtA3]; s.LineCount != 0 || s.Paid || s.PeriodStart != "2026-09-21" {
+			t.Fatalf("quiet-week statement: %+v", s)
+		}
 		if s := byID[stmtA1]; s.Paid || s.NetPayableMinor != netA1 || s.RefundedMinor != 800 {
 			t.Fatalf("open statement: %+v", s)
 		}
 		// before + limit
-		status, raw, _ = e.call(http.MethodGet, listPath+"?before=2026-09-21&limit=1", tokenA, nil, "")
+		status, raw, _ = e.call(http.MethodGet, listPath+"?before=2026-09-14&limit=1", tokenA, nil, "")
 		var one settlement.List
 		if err := json.Unmarshal(raw, &one); status != 200 || err != nil || len(one.Statements) != 1 || one.Statements[0].StatementID != stmtA1 {
 			t.Fatalf("before/limit: %d %s", status, raw)

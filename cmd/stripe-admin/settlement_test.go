@@ -24,6 +24,7 @@ func TestSettlementUsageErrorsAreFixedAndPrintNothing(t *testing.T) {
 		"settlement-close " + ids + " --environment SANDBOX --period-start 2026-09-14 --operator o --ticket TICKET-1234", // operator too short
 		"settlement-close " + ids + " --environment SANDBOX --period-start 2026-09-14 --operator op@test --ticket short",
 		"settlement-sync " + ids + " --environment SANDBOX --from notatime --to 2026-09-21T00:00:00Z" + slOp,
+		"settlement-sync " + ids + " --environment SANDBOX --from 2098-12-28T00:00:00Z --to 2099-01-01T00:00:00Z --connection 44444444-4444-4444-8444-444444444444 --expected-version 1" + slOp, // P1-2: a future window
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-1 --amount 100 --paid-at nope" + slOp,
 		"settlement-export " + ids + " --statement " + slStmt + slOp, // no --out
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/x.csv --extra=SECRETLEAK" + slOp,

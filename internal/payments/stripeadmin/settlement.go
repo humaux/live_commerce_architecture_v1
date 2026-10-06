@@ -31,6 +31,9 @@ const (
 	settlementBudget = 10 * time.Minute // up to 50 Stripe pages of 10 s each is the wire bound; SQL is bounded separately
 	settlementChunk  = 500              // record_settlement_lines accepts at most 500 lines per call
 	maxSettleWindow  = 8 * 24 * time.Hour
+	// settleMargin: a sync window may not end later than now minus this (P1-2). A window that claims time that has not settled would let close
+	// treat balance transactions that did not exist yet as already read. SQL enforces the same margin (record_settlement_lines).
+	settleMargin = 15 * time.Minute
 )
 
 var (
@@ -53,6 +56,7 @@ type SyncReport struct {
 	Duplicate    int              `json:"duplicate"`
 	Unattributed int              `json:"unattributed"`
 	Mismatch     int              `json:"mismatch"`
+	Rechecked    int              `json:"rechecked"` // lines whose mismatch (or fee share) was re-evaluated because a late fact arrived (P1-1)
 	StripeNet    map[string]int64 `json:"stripe_net"`
 	RecordedNet  map[string]int64 `json:"recorded_net"`
 	Difference   map[string]int64 `json:"difference"`
@@ -69,11 +73,17 @@ type ClosedStatement struct {
 
 // SettlementSync reads the platform account's balance transactions created in [from, to) (at most 8 days) with the STORED credential of
 // connectionID at expectedVersion, then records them (RecordSettlementLines). It fetches ALL pages first: on ErrUncertain (more than
-// 50 pages, a malformed body, a transport failure) nothing is written. A read only: a failed run is simply rerun.
-func (r *Registrar) SettlementSync(ctx context.Context, s Scope, connectionID string, expectedVersion int64, from, to time.Time) (SyncReport, error) {
+// 50 pages, a malformed body, a transport failure) nothing is written. A read only: a failed run is simply rerun. The window is cut to whole
+// seconds (the wire lists unix seconds) and may not end inside the last 15 minutes (ErrRejected). connectionID is also sent to SQL, which
+// refuses it unless it is the designated platform connection; ticket (optional) goes into the audit row.
+func (r *Registrar) SettlementSync(ctx context.Context, s Scope, connectionID string, expectedVersion int64, from, to time.Time, ticket string) (SyncReport, error) {
 	if r == nil || r.db == nil || ctx == nil || r.apiKeys == nil || !validScope(s) || !command.ValidID(connectionID) || expectedVersion < 1 ||
 		from.IsZero() || !to.After(from) || to.Sub(from) > maxSettleWindow {
 		return SyncReport{}, ErrConfig
+	}
+	from, to = from.Truncate(time.Second), to.Truncate(time.Second)
+	if !settledWindow(to) || (ticket != "" && !refPattern.MatchString(ticket)) {
+		return SyncReport{}, ErrRejected
 	}
 	bounded, cancel := context.WithTimeout(ctx, settlementBudget)
 	defer cancel()
@@ -97,15 +107,32 @@ func (r *Registrar) SettlementSync(ctx context.Context, s Scope, connectionID st
 	case err != nil:
 		return SyncReport{}, ErrProvider
 	}
-	return r.RecordSettlementLines(bounded, s, txns, from, to)
+	return r.RecordSettlementLines(bounded, s, connectionID, ticket, txns, from, to)
 }
+
+// settledWindow reports whether a window ending at to claims only time that has settled (to <= now - 15 minutes).
+func settledWindow(to time.Time) bool { return !to.After(time.Now().Add(-settleMargin)) }
 
 // RecordSettlementLines hands the projected transactions to payments.record_settlement_lines in chunks of at most 500 (attribution is
 // done in SQL from Stripe ids). The LAST chunk carries the window, which records the sync coverage that close requires and returns the
-// persisted net of the window for the reconciliation. Replaying a window inserts nothing new (duplicates are counted).
-func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, txns []stripe.BalanceTransaction, from, to time.Time) (SyncReport, error) {
-	if r == nil || r.db == nil || ctx == nil || !validScope(s) || from.IsZero() || !to.After(from) || to.Sub(from) > maxSettleWindow {
+// persisted net of the window for the reconciliation. Replaying a window inserts nothing new (duplicates are counted), but a line that still
+// has no statement and carries a mismatch is re-checked (rechecked). connection (optional) is asserted in SQL to be the designated platform
+// connection; ticket (optional) goes into the audit row. SQL applies the same window rules as SettlementSync (whole seconds, 15-minute margin).
+func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connection, ticket string, txns []stripe.BalanceTransaction, from, to time.Time) (SyncReport, error) {
+	if r == nil || r.db == nil || ctx == nil || !validScope(s) || from.IsZero() || !to.After(from) || to.Sub(from) > maxSettleWindow ||
+		(connection != "" && !command.ValidID(connection)) {
 		return SyncReport{}, ErrConfig
+	}
+	from, to = from.Truncate(time.Second), to.Truncate(time.Second)
+	if !settledWindow(to) || (ticket != "" && !refPattern.MatchString(ticket)) {
+		return SyncReport{}, ErrRejected
+	}
+	var connArg, ticketArg any
+	if connection != "" {
+		connArg = connection
+	}
+	if ticket != "" {
+		ticketArg = ticket
 	}
 	rep := SyncReport{Fetched: len(txns), StripeNet: map[string]int64{}, RecordedNet: map[string]int64{}, Difference: map[string]int64{}}
 	for _, t := range txns {
@@ -119,20 +146,20 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, txns []s
 			return SyncReport{}, ErrConfig
 		}
 		var out string
-		// payments.record_settlement_lines: platform-scope operator definer; attribution, cross-checks and the unattributed rows are SQL.
+		var winFrom, winTo any // only the LAST chunk carries the window: coverage exists only after a complete record
 		if last {
-			err = r.settlementScan(ctx, &out, `SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,$4::text,$5::jsonb,
-				$6::timestamptz,$7::timestamptz)::text`, s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload), from.UTC(), to.UTC())
-		} else {
-			err = r.settlementScan(ctx, &out, `SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,$4::text,$5::jsonb)::text`,
-				s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload))
+			winFrom, winTo = from.UTC(), to.UTC()
 		}
+		// payments.record_settlement_lines: platform-scope operator definer; attribution, cross-checks and the unattributed rows are SQL.
+		err = r.settlementScan(ctx, &out, `SELECT payments.record_settlement_lines($1::uuid,$2::uuid,$3::uuid,$4::text,$5::jsonb,
+			$6::timestamptz,$7::timestamptz,$8::uuid,$9::text)::text`, s.TenantID, s.StoreID, s.PrincipalID, r.environment(), string(payload),
+			winFrom, winTo, connArg, ticketArg)
 		if err != nil {
 			return SyncReport{}, err
 		}
 		var res struct {
-			Inserted, Duplicate, Unattributed, Mismatch int
-			WindowNet                                   map[string]int64 `json:"window_net"`
+			Inserted, Duplicate, Unattributed, Mismatch, Rechecked int
+			WindowNet                                              map[string]int64 `json:"window_net"`
 		}
 		if json.Unmarshal([]byte(out), &res) != nil {
 			return SyncReport{}, ErrDatabase
@@ -141,6 +168,7 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, txns []s
 		rep.Duplicate += res.Duplicate
 		rep.Unattributed += res.Unattributed
 		rep.Mismatch += res.Mismatch
+		rep.Rechecked += res.Rechecked
 		if last {
 			rep.RecordedNet = res.WindowNet
 			if rep.RecordedNet == nil {
@@ -161,22 +189,25 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, txns []s
 
 // SettlementClose closes the weekly statement of the Monday periodStart (YYYY-MM-DD, Asia/Taipei) for one store, or for every store with
 // unassigned lines when targetStore is "". SQL applies the §6.2 rules and returns the statements. A replay returns the stored ones.
-func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, periodStart, operator, targetStore string) ([]ClosedStatement, error) {
+func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, periodStart, operator, targetStore, ticket string) ([]ClosedStatement, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || (environment != envSandbox && environment != envLive) ||
 		(targetStore != "" && !command.ValidID(targetStore)) {
 		return nil, ErrConfig
 	}
-	if !datePattern.MatchString(periodStart) || !operatorPattern.MatchString(operator) {
+	if !datePattern.MatchString(periodStart) || !operatorPattern.MatchString(operator) || (ticket != "" && !refPattern.MatchString(ticket)) {
 		return nil, ErrRejected
 	}
-	var target any
+	var target, ticketArg any
 	if targetStore != "" {
 		target = targetStore
 	}
+	if ticket != "" {
+		ticketArg = ticket
+	}
 	var out string
 	// payments.close_settlement: platform-scope definer; sets statement_id on the lines once, one audit row per statement.
-	if err := r.settlementScan(ctx, &out, `SELECT payments.close_settlement($1::uuid,$2::uuid,$3::uuid,$4::text,$5::date,$6::text,$7::uuid)::text`,
-		s.TenantID, s.StoreID, s.PrincipalID, environment, periodStart, operator, target); err != nil {
+	if err := r.settlementScan(ctx, &out, `SELECT payments.close_settlement($1::uuid,$2::uuid,$3::uuid,$4::text,$5::date,$6::text,$7::uuid,$8::text)::text`,
+		s.TenantID, s.StoreID, s.PrincipalID, environment, periodStart, operator, target, ticketArg); err != nil {
 		return nil, err
 	}
 	var res struct {
@@ -191,17 +222,22 @@ func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, p
 // SettlementPayout RECORDS that the operator paid a statement off-Stripe (bank reference, amount, time). It never moves money. SQL sets
 // the payout quadruple once; an identical replay returns the stored time, anything else is refused.
 func (r *Registrar) SettlementPayout(ctx context.Context, s Scope, statement, payoutRef string, amountMinor int64, paidAt time.Time,
-	operator string) (time.Time, error) {
+	operator, ticket string) (time.Time, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || !command.ValidID(statement) {
 		return time.Time{}, ErrConfig
 	}
-	if !payoutRefPat.MatchString(payoutRef) || amountMinor < 1 || paidAt.IsZero() || !operatorPattern.MatchString(operator) {
+	if !payoutRefPat.MatchString(payoutRef) || amountMinor < 1 || paidAt.IsZero() || !operatorPattern.MatchString(operator) ||
+		(ticket != "" && !refPattern.MatchString(ticket)) {
 		return time.Time{}, ErrRejected
+	}
+	var ticketArg any
+	if ticket != "" {
+		ticketArg = ticket
 	}
 	var at time.Time
 	// payments.record_settlement_payout: net_payable > 0 and amount = net_payable, paid_at not in the future, set once.
 	if err := r.settlementScan(ctx, &at, `SELECT payments.record_settlement_payout($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::text,$6::bigint,
-		$7::timestamptz,$8::text)`, s.TenantID, s.StoreID, s.PrincipalID, statement, payoutRef, amountMinor, paidAt.UTC(), operator); err != nil {
+		$7::timestamptz,$8::text,$9::text)`, s.TenantID, s.StoreID, s.PrincipalID, statement, payoutRef, amountMinor, paidAt.UTC(), operator, ticketArg); err != nil {
 		return time.Time{}, err
 	}
 	return at, nil

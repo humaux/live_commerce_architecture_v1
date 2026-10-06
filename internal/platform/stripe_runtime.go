@@ -123,9 +123,9 @@ var stripeRegistrarFunctions = []string{
 	"payments.allow_platform_stripe(uuid,uuid,uuid,uuid,uuid,text,boolean,text,text)",
 	// w4-s2-platform-settlement (migration 0150): the per-store settlement ledger operator steps. Same registrar authority; none takes a
 	// secret and none calls a bank. The merchant reader (read_store_settlements) belongs to commerce_runtime, not to this list.
-	"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamp with time zone,timestamp with time zone)",
-	"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid)",
-	"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamp with time zone,text)",
+	"payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamp with time zone,timestamp with time zone,uuid,text)",
+	"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)",
+	"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamp with time zone,text,text)",
 	"payments.read_settlement_statement(uuid,uuid,uuid,uuid)",
 }
 

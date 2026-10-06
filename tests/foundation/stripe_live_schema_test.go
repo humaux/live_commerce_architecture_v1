@@ -864,6 +864,9 @@ func slsUpgrade(t *testing.T) {
 				ok = true
 				sawFn[obj] = true
 			}
+			if !ok && slsSettlementDelta(role, kind, obj, priv) {
+				ok = true // 0150 (settlement ledger) is applied by the same Apply; exact per-role sets, pinned from its own side by PF09
+			}
 			if !ok && slsPlatformStripeDelta(role, kind, obj, priv) {
 				ok = true // 0137 (platform Stripe) is applied by the same Apply; its own delta is pinned by PF01
 			}
@@ -901,15 +904,38 @@ func slsUpgrade(t *testing.T) {
 	})
 }
 
-// slsSettlementObject recognises the objects migration 0150 (W4-S2 settlement ledger) adds, and the column-limited attribution reads it
-// grants on existing tables (stripe_sessions ids, the Stripe refund id and account, the attempt's order id; every one is gated by the
-// app.settlement_op policy or by the store scope GUC). Its own matrix is pinned by TestPlatformSettlement/PF09_schema.
-func slsSettlementObject(obj string) bool {
-	return strings.HasPrefix(obj, "payments.settlement_") || strings.HasPrefix(obj, "payments.record_settlement_") ||
-		strings.HasPrefix(obj, "payments.close_settlement") || strings.HasPrefix(obj, "payments.read_settlement_statement") ||
-		strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") ||
-		strings.HasPrefix(obj, "payments.stripe_sessions") || obj == "payments.stripe_refunds.stripe_refund_id" ||
-		obj == "payments.stripe_refunds.account_id" || obj == "checkout.payment_attempts.order_id"
+// slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):
+//   - commerce_payment_registry_writer: any privilege on its own settlement tables/functions/triggers, and SELECT on exactly the existing-table
+//     columns the attribution reads use (stripe_sessions six columns, stripe_refunds four, payment_attempts.order_id);
+//   - commerce_payment_registrar: EXECUTE on the four operator functions only;
+//   - commerce_runtime: EXECUTE on read_store_settlements only.
+//
+// Nobody else (checkout writer, workers, ingress) gains anything. The same sets are pinned from the 0150 side by TestPlatformSettlement/PF09_schema.
+func slsSettlementDelta(role, kind, obj, priv string) bool {
+	switch role {
+	case "commerce_payment_registry_writer":
+		if strings.HasPrefix(obj, "payments.settlement_") || strings.HasPrefix(obj, "payments.record_settlement_") ||
+			strings.HasPrefix(obj, "payments.close_settlement") || strings.HasPrefix(obj, "payments.read_settlement_statement") ||
+			strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") {
+			return true
+		}
+		if kind == "column" && priv == "SELECT" {
+			for _, col := range []string{"payments.stripe_sessions.tenant_id", "payments.stripe_sessions.store_id", "payments.stripe_sessions.attempt_id",
+				"payments.stripe_sessions.environment", "payments.stripe_sessions.account_id", "payments.stripe_sessions.payment_intent_id",
+				"payments.stripe_refunds.stripe_refund_id", "payments.stripe_refunds.account_id", "payments.stripe_refunds.amount_minor",
+				"payments.stripe_refunds.currency", "checkout.payment_attempts.order_id"} {
+				if obj == col {
+					return true
+				}
+			}
+		}
+	case "commerce_payment_registrar":
+		return kind == "exec" && priv == "EXECUTE" && (obj == "payments.record_settlement_lines" || obj == "payments.close_settlement" ||
+			obj == "payments.record_settlement_payout" || obj == "payments.read_settlement_statement")
+	case "commerce_runtime":
+		return kind == "exec" && priv == "EXECUTE" && obj == "payments.read_store_settlements"
+	}
+	return false
 }
 
 // slsPlatformStripeDelta recognises the privileges migration 0137 adds (stripe-platform-account-v1 §3.5 plus the owner amendment
@@ -919,8 +945,7 @@ func slsPlatformStripeDelta(role, kind, obj, priv string) bool {
 		strings.HasPrefix(obj, "payments.designate_stripe_platform") || strings.HasPrefix(obj, "payments.set_stripe_platform_open") ||
 		strings.HasPrefix(obj, "payments.block_platform_stripe") || strings.HasPrefix(obj, "payments.allow_platform_stripe") ||
 		strings.HasPrefix(obj, "payments.set_platform_stripe") || strings.HasPrefix(obj, "payments.read_platform_stripe") ||
-		strings.HasPrefix(obj, "payments.platform_stripe") || strings.HasPrefix(obj, "integration.guard_derived_stripe") ||
-		slsSettlementObject(obj)
+		strings.HasPrefix(obj, "payments.platform_stripe") || strings.HasPrefix(obj, "integration.guard_derived_stripe")
 	switch role {
 	case "commerce_payment_registry_writer", "commerce_checkout_writer", "commerce_payment_registrar", "commerce_runtime":
 		if platformObj {
