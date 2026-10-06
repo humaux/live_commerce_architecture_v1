@@ -386,7 +386,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
-				"claims.for_buyer_release", "claims.bind_merchant_origin_grant"})
+				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
+				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
+				"claims.report_order_bundles", "claims.report_funnel_bundles"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -474,6 +476,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			// 0148 (LC-B7): console counts + attributed (order,offer,sku) pairs, read only through identity.read_live_console_sales.
 			"console_session_facts": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "jsonb",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			// 0147 (W6-02B): report seams, read only through identity.read_report_channels / read_report_manual_orders / read_report_funnel.
+			"report_order_bundles": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, bundle_id uuid, session_id uuid)",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			"report_funnel_bundles": {args: "p_tenant uuid, p_store uuid, p_t0 timestamp with time zone, p_t1 timestamp with time zone, p_session uuid",
+				result: "TABLE(bundle_id uuid, link_sent boolean, order_ids uuid[])", volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
 			// 0130 (W3-02B): session -> order ids for the pick list, read only through fulfillment.read_pick_list.
 			"pick_list_session_orders": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "TABLE(order_id uuid)", volatility: "s",
 				acl: "commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "W3-02B session->orders resolution (PL-OPEN-1: live_price_uses UNION order_origins). commerce_claims_writer-only read; called by fulfillment.read_pick_list for {session_id} selections."},
@@ -550,8 +557,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 36 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-six functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 38 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-eight (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -563,7 +570,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
 			       -- 0110 ACL ruling: authenticated merchant projection only; not runtime-callable.
 			       -- 0118 (A5): the two attribution seams keep the same commerce_auth-only shape.
-			       OR (r.rolname='commerce_auth' AND p.proname IN ('order_live_sources','session_orders','order_session_counts','console_session_facts'))
+			       OR (r.rolname='commerce_auth' AND p.proname IN ('order_live_sources','session_orders','order_session_counts','console_session_facts','report_order_bundles','report_funnel_bundles'))
 			       -- 0113: exact internal checkout/ads/media/integration capabilities, no raw table rights.
 			       OR (r.rolname='commerce_checkout_writer' AND p.proname IN ('capture_order_origins','order_comment_posts','attribution_session_orders','pick_list_session_orders'))
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
@@ -899,6 +906,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text,uuid)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
 				"claims.order_live_sources(uuid,uuid,uuid[])",
+				// 0147 (W6-02B): the channel report reads the platform of consumed origin bundles (commerce_auth holds SELECT(platform), 0078); read-only, no binding write.
+				"identity.read_report_channels(bytea,uuid,date,date,text)",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
 				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
