@@ -136,6 +136,8 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     const unknown = (await facts(request)).receipts.at(-1)!;
     expect(unknown.status).toBe(503);
     expect(unknown.effect).toBe(true);
+    await page.getByTestId("live-console-refresh").click();
+    await expect(page.getByTestId("live-command-retry")).toBeVisible();
     const reads = (await facts(request)).scenes[scene]!.Reads?.length ?? 0;
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Reads?.length ?? 0, { timeout: 8_000 }).toBeGreaterThan(reads);
     expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
@@ -146,6 +148,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(retries.map((receipt) => receipt.body_hash)).toEqual([unknown.body_hash, unknown.body_hash]);
     expect(retries.filter((receipt) => receipt.effect)).toHaveLength(1);
 
+    page.once("dialog", (dialog) => dialog.accept());
     await page.getByTestId("live-primary-action").click();
     await phase(page, "ended");
     await screenshot(page, `${name}-ended`);

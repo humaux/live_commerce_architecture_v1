@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { primaryAction, stockDelta, facebookEmbed } from "../../apps/admin/src/features/live/workspace-model.ts";
+import { primaryAction, stockDelta, facebookEmbed, settleLiveCommand } from "../../apps/admin/src/features/live/workspace-model.ts";
 test("LC-U1 one primary action follows lifecycle, never planning or transport state", () => {
   assert.equal(primaryAction("draft"), "start");
   assert.equal(primaryAction("live"), "end");
@@ -30,4 +30,18 @@ test("LC-U1 public Facebook framing is allowed only on the console route", () =>
   assert.match(config, /source: "\/:locale\/studio\/console"/);
   assert.match(config, /frame-src https:\/\/www\.facebook\.com/);
   assert.equal(config.match(/frame-src/g)?.length, 1);
+});
+test("LC-U1 delayed copy completion cannot navigate after store switch or unmount", async () => {
+  for (const reason of ["store-switch", "unmount"]) {
+    let resolve!: (id: string) => void, current = true;
+    const navigations: string[] = [];
+    const response = new Promise<string>((done) => { resolve = done; });
+    const work = settleLiveCommand(() => response, () => current, (id) => { navigations.push(id); });
+    current = false; resolve(reason);
+    assert.equal(await work, false);
+    assert.deepEqual(navigations, []);
+  }
+  let completed = "";
+  assert.equal(await settleLiveCommand(async () => "new-scene", () => true, (id) => { completed = id; }), true);
+  assert.equal(completed, "new-scene");
 });

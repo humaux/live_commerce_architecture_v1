@@ -18,3 +18,10 @@ export function facebookEmbed(platform: string, objectID: string): string | null
   const query = new URLSearchParams({ href: `https://www.facebook.com/${pair[1]}/posts/${pair[2]}`, show_text: "false", width: "500" });
   return `https://www.facebook.com/plugins/post.php?${query}`;
 }
+/** Applies a completed command only while its original mounted session/store scope remains current. */
+export async function settleLiveCommand<T>(execute: () => Promise<T>, isCurrent: () => boolean, complete: (value: T) => void): Promise<boolean> {
+  const value = await execute();
+  if (!isCurrent()) return false;
+  complete(value);
+  return true;
+}

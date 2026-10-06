@@ -144,6 +144,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const concealed = useRef<Concealed | null>(initialRecovery ?? null);
   const explicitDeparture = useRef(false);
   const previous = useRef<string[]>([]);
+  const copyNavigationGuard = useRef<() => boolean>(() => true);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
   // A visible shell is not an authenticated Studio read. Creation must wait
@@ -478,6 +479,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     if (recoveryGuard) return false;
     if (pending.current || actionError === "uncertain") return false;
     if (dirty.current && !window.confirm(c.dirty)) return false;
+    if (!copyNavigationGuard.current()) return false;
     if (sameRecovery(historyRecovery, scope, scene)) historyRecovery = null;
     if (depart) explicitDeparture.current = true;
     return true;
@@ -718,7 +720,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
             <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
           {!mediaOn && actionAlert}
-          {shown && <SessionCopy key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} boundary={boundary.current} disabled={!shown.can_manage || busy || formDirty || recoveryGuard || recoveryElsewhere} refresh={refresh} />}
+          {shown && <SessionCopy key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} boundary={boundary.current} disabled={!shown.can_manage || busy || formDirty || recoveryGuard || recoveryElsewhere || actionError === "uncertain" || actionError === "conflict"} refresh={refresh} navigationGuard={copyNavigationGuard} />}
         </section>
         {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
           <div className="studio-status-title"><h2>{c.rehearsal}</h2><Badge tone="info">MOCK</Badge></div>

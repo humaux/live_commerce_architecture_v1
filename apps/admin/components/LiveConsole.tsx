@@ -2,7 +2,7 @@
 // Depends on: frozen console clients/model, Studio detail/source reads, session hooks, packages/format and Next navigation.
 // Used by: LiveWorkspace at /[locale]/studio/console; Go retains authorization, CAS and receipt authority.
 "use client";
-import { useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { money, displayTime } from "@live-commerce/format";
@@ -16,13 +16,20 @@ import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-worksp
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
 
 /** Shows server-authored lifecycle and snapshots; unresolved writes remain fenced across refreshes. */
-export function LiveConsole({ locale, store, sessionID }: { locale: Locale; store: Store; sessionID: string }) {
+export function LiveConsole({ locale, store, sessionID, navigationGuard }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean> }) {
   const c = workspaceCopy[locale], router = useRouter(), scope = `${store.id}:${sessionID}`;
   const view = useLiveRead(scope, true, async (signal) => {
     const [console, detail, source, controls] = await Promise.all([readConsole(store.id, sessionID, signal), readStudioDetail(store.id, sessionID, signal), readClaimSource(store.id, sessionID, signal), readOfferControls(store.id, sessionID, signal)]);
     return { console, detail, source, controls };
   });
   const command = useLiveCommand(scope, view.boundary, view.refresh);
+  useEffect(() => {
+    navigationGuard.current = () => {
+      if ((command.busy || command.canRetry) && !window.confirm(c.leavePending)) return false;
+      command.invalidate(); return true;
+    };
+    return () => { navigationGuard.current = () => true; };
+  }, [navigationGuard, command.busy, command.canRetry, c.leavePending, command.invalidate]);
   const [copying, setCopying] = useState(false), [title, setTitle] = useState(""), [copyConflict, setCopyConflict] = useState("");
   const [embedLoaded, setEmbedLoaded] = useState(false);
   const can = (permission: string) => store.role === "owner" || store.permissions?.includes(permission) === true;
@@ -43,7 +50,8 @@ export function LiveConsole({ locale, store, sessionID }: { locale: Locale; stor
     if (!detail || !title.trim()) return;
     await command.run(async (key) => {
       // A5 copy uses the planning version, never the separate A7 lifecycle CAS.
-      const result = await copySession(store.id, sessionID, { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }, key, view.boundary);
+      return copySession(store.id, sessionID, { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }, key, view.boundary);
+    }, (result) => {
       setCopying(false);
       if (result.conflicts.length) setCopyConflict(result.session.session_id);
       else router.push(`/${locale}/studio/console?store=${store.id}&scene=${result.session.session_id}`);
