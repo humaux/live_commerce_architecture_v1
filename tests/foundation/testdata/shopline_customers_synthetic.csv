@@ -1,0 +1,4 @@
+顧客編號,姓名,手機,電子郵件,同意行銷,備註
+SL-0001,測試顧客一,0900-000-001,cust1@example.test,否,
+SL-0002,測試顧客二,+886900000002,cust2@example.test,是,synthetic note
+SL-0003,Test Customer Three,900000003,,否,

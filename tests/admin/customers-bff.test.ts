@@ -186,7 +186,7 @@ const t0 = "2026-09-27T00:00:00.000000Z";
 const customer = () => ({
   customer_id: id, first_seen_at: t0, last_activity_at: "2026-09-27T01:00:00.000000Z", display_name: "Synthetic Buyer", phone_last3: "001",
   orders_count: 2, paid_orders_count: 1, captured_minor: 2500, refunded_minor: 500, currency: "TWD", claims_count: 1, platforms: ["manual"],
-  consents: { marketing_messages: true, ads_personalization: false }, active: true,
+  consents: { marketing_messages: true, ads_personalization: false }, active: true, imported: false, // W5-02B (0152) Go customerKeys
   tags: [{ id: "55555555-5555-4555-8555-555555555555", name: "VIP", color: "red" }],
 });
 const summary = {

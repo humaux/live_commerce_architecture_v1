@@ -1,0 +1,44 @@
+# red-fix: tests written first, run against 0152 as committed at dddb1452a9dd51fb242ad7f92fd6cc78030122e3 (a96c81a8 + trunk merge); command: bash scripts/dev/test-focused.sh '^TestCustomerImport$'
+=== RUN   TestCustomerImport
+=== RUN   TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers
+=== RUN   TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts
+=== RUN   TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner
+=== RUN   TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written
+=== RUN   TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv
+=== RUN   TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match
+=== RUN   TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results
+=== RUN   TestCustomerImport/CI07b_erasure_leaves_a_salted_tombstone:_a_stale_export_cannot_resurrect_the_person
+    customer_import_test.go:397: preview after erasure: 200 map[apply_rows:3 consent_ignored_rows:3 failed_rows:0 file_sha256:d2cc28d25cf3b21d515f4b3c61b3a99a659951e821c7fd55212f862bdc615a40 headers:[顧客編號 姓名 手機 電子郵件 同意行銷 備註] mapping:map[consent:同意行銷 email:電子郵件 external_id:顧客編號 name:姓名 phone:手機] new_rows:1 rows:[map[consent_ignored:true external_id:SL-0001 outcome:updated row:1] map[consent_ignored:true external_id:SL-0002 outcome:created row:2] map[consent_ignored:true external_id:SL-0003 outcome:updated row:3]] rows_total:3 update_rows:2]
+=== RUN   TestCustomerImport/CI08_limits_and_drift
+    customer_import_test.go:489: 5000-row preview + commit: 4.312544333s
+=== RUN   TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs
+=== RUN   TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted
+=== RUN   TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners
+=== RUN   TestCustomerImport/CI12_the_merchant_privacy_export_contains_the_imported_profile
+    customer_import_test.go:561: export import_profile: <nil>
+=== RUN   TestCustomerImport/CI13_the_owner-insert_privilege_cannot_create_an_owner_outside_the_GUC_scope
+=== RUN   TestCustomerImport/CI14_two_parallel_commits_of_one_file_import_it_once
+=== RUN   TestCustomerImport/CI15_the_commerce_auth_read_policy_is_store-scoped;_a_phone_or_email_as_external_id_is_refused
+    customer_import_test.go:658: auth_import_profile_read must be GUC-scoped: "true" <nil>
+--- FAIL: TestCustomerImport (6.31s)
+    --- PASS: TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers (0.05s)
+    --- PASS: TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts (0.01s)
+    --- PASS: TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner (0.01s)
+    --- PASS: TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written (0.01s)
+    --- PASS: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv (0.01s)
+    --- PASS: TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match (0.01s)
+    --- PASS: TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results (0.02s)
+    --- FAIL: TestCustomerImport/CI07b_erasure_leaves_a_salted_tombstone:_a_stale_export_cannot_resurrect_the_person (0.00s)
+    --- PASS: TestCustomerImport/CI08_limits_and_drift (4.36s)
+    --- PASS: TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs (0.03s)
+    --- PASS: TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted (0.03s)
+    --- PASS: TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners (0.00s)
+    --- FAIL: TestCustomerImport/CI12_the_merchant_privacy_export_contains_the_imported_profile (0.01s)
+    --- PASS: TestCustomerImport/CI13_the_owner-insert_privilege_cannot_create_an_owner_outside_the_GUC_scope (0.01s)
+    --- PASS: TestCustomerImport/CI14_two_parallel_commits_of_one_file_import_it_once (0.04s)
+    --- FAIL: TestCustomerImport/CI15_the_commerce_auth_read_policy_is_store-scoped;_a_phone_or_email_as_external_id_is_refused (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.510s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

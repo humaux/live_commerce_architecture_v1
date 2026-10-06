@@ -1,0 +1,15 @@
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (6.891375ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (1.269041ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (2.770917ms)
+✔ erasure summary is four counts only (0.09675ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.29925ms)
+✔ financeDay is the UTC+8 day (0.058ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.545333ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 229.535875
