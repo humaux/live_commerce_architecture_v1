@@ -27,3 +27,11 @@
 - NOT_RUN / BLOCKED: full foundation suite, `--browser-customers-billing`, `release-gate.sh --strict --only G07` (heavy gates; run on GitHub). No UI touched.
 - CI gates: `.github/workflows/gates.yml` full foundation suite (new `TestOrderHistoryImport`); `--browser-customers-billing` regression (no UI/API shape change for list/detail, export document grew one key).
 - Integrator to-do: parallel units 0150/0154/0155 may also REPLACE `privacy_audit_insert` -> union the action lists (mine adds `customers.orders_imported`) and the `r2_integration_upgrade_test.go` count (+1 here); confirm decisions 1-3.
+
+## Fix round (Opus review MERGE-AFTER-FIX; code at ca58517e, red 6086047d, logs red-fix.log / green-fix.log, SHA at the top of each)
+- P1-1 city: allowlist of the 22 Taiwan cities / counties (`internal/twcity`, 台 folded to 臺; English and simplified spellings NOT accepted: the SHOPLINE Taiwan export is Traditional). Any other cell is never stored: the order imports with `city=NULL`, counted as warning `city_dropped` (preview `city_dropped_rows` + row `warning`; batch results code column). DB `CHECK (city IN (22 names))` backstop; a Go test compares the SQL list with `twcity.Cities`; the reader / export re-validate with `twcity.Valid`. Contract section 7 corrected.
+- P2a: item name and status that look like an email or a TW mobile fail the order (`invalid_item`, `invalid_status`), same W5-02B shape rule as ids.
+- P2b: export carries the newest 100 archive rows + `historical_orders_total`; OH11 exports a 2000 x 500-character archive (200, < 1 MiB, 100 kept, total 2000).
+- P2c: drift guards are now md5(prosrc) of the three 0152 bodies (record_batch, erase_import_profile, export_import_profile) and an exact action-set check of `privacy_audit_insert` (a parallel unit that adds an action fails the migration, forcing a union). Not a fragment guard any more.
+- P2d: logs carry the commit SHA; green ran on the committed tree. Test made independent of TestCustomerImport leftovers (own customer ids OHC-xxxx: that test leaves an erasure tombstone and command receipts for SL-0002/SL-0001 files in the shared store).
+- Deferred: order-number tombstone (P2-3, an erased person's order number can be re-created under another live customer id if the file says so); an import-vs-erasure race test (code reasoning in the review holds; no test).
