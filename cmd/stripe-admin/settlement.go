@@ -104,7 +104,7 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 			if live, err = requireLivePair(getenv); err != nil {
 				return err
 			}
-		} else if getenv("STRIPE_SANDBOX") != "1" { // a SANDBOX sync dials api.stripe.com with the stored test key: explicit opt-in
+		} else if getenv("STRIPE_SANDBOX") != "1" { // a SANDBOX sync calls the real Stripe API (psp/stripe client) with the stored test key: explicit opt-in
 			return errConfig
 		}
 		if apiKeys, err = apiKeyring(getenv); err != nil {
