@@ -109,6 +109,12 @@ type v2Variant struct {
 	Price        int64    `json:"price_minor"`
 	CompareAt    *int64   `json:"compare_at_minor"`
 	Stock        string   `json:"stock"`
+	// ImageID is the image linked to this variant's value on the image axis (product-media-v2); null when none.
+	ImageID *string `json:"image_id"`
+}
+type v2OptionImage struct {
+	Value   string `json:"value"`
+	ImageID string `json:"image_id"`
 }
 type v2CollectionRef struct {
 	Slug  string `json:"slug"`
@@ -123,10 +129,14 @@ type v2Detail struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
 	} `json:"seo"`
-	Images      []v2Image         `json:"images"`
-	Options     []v2Axis          `json:"options"`
-	Variants    []v2Variant       `json:"variants"`
-	Collections []v2CollectionRef `json:"collections"`
+	Images []v2Image `json:"images"` // main images, <= 4, cover first
+	// DetailImages is the ordered detail-page stack (<= 20); ImageAxis the effective option axis carrying OptionImages (product-media-v2).
+	DetailImages []v2Image         `json:"detail_images"`
+	ImageAxis    *string           `json:"image_axis"`
+	OptionImages []v2OptionImage   `json:"option_images"`
+	Options      []v2Axis          `json:"options"`
+	Variants     []v2Variant       `json:"variants"`
+	Collections  []v2CollectionRef `json:"collections"`
 }
 type v2CollectionCard struct {
 	ID           string  `json:"id"` // storefront-v2 §A: builds /media/c/{id}/{image_id}
@@ -333,6 +343,9 @@ func attachV2ImageSizes(ctx context.Context, tx pgx.Tx, origin string, out any) 
 		for _, i := range value.Images {
 			ids = append(ids, i.ID)
 		}
+		for _, i := range value.DetailImages { // <= 4 + 20 ids, under buyer_image_sizes' cap of 48
+			ids = append(ids, i.ID)
+		}
 	}
 	if len(ids) == 0 {
 		return nil
@@ -364,6 +377,9 @@ func attachV2ImageSizes(ctx context.Context, tx pgx.Tx, origin string, out any) 
 	case v2Detail:
 		for i := range value.Images {
 			value.Images[i].Sizes = sizes[value.Images[i].ID]
+		}
+		for i := range value.DetailImages {
+			value.DetailImages[i].Sizes = sizes[value.DetailImages[i].ID]
 		}
 	}
 	return nil
@@ -419,6 +435,12 @@ func projectV2(kind routeKind, raw []byte, query v2Query) (any, error) {
 		}
 		if d.Images == nil {
 			d.Images = []v2Image{}
+		}
+		if d.DetailImages == nil {
+			d.DetailImages = []v2Image{}
+		}
+		if d.OptionImages == nil {
+			d.OptionImages = []v2OptionImage{}
 		}
 		if d.Options == nil {
 			d.Options = []v2Axis{}

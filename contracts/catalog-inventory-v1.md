@@ -12,8 +12,8 @@ Status: CONTRACT_FROZEN; implementation/tests must independently prove it. Owner
   OR (NOT inventory_tracked AND max_per_order BETWEEN 1 AND 999)`.
 - TWD whole-dollar: for store currency `TWD`, `price_minor` and `compare_at_minor`
   (when present) must each satisfy `% 100 == 0`; refusal code `amount_not_whole_twd`.
-- Product images: cap is 12 per product (position 0..11; migration 0109 widens the
-  0082 CHECK; `internal/catalog.MaxImagesPerProduct = 12`).
+- Product images: cap was 12 per product (position 0..11; migration 0109 widens the
+  0082 CHECK). SUPERSEDED by "Amendment — product-media-v2" below (roles, per-role caps).
 - A product **document save command** (create `product.save` / edit
   `product.save:<id>` under one `internal/command.Run`) writes products, options,
   SKUs (with `inventory_tracked`/`max_per_order`), stock opening/target, keyword and
@@ -111,3 +111,68 @@ Tables/columns are defined exactly in `migrations/0002_catalog_inventory.sql`; m
 ## Acceptance gates (REAL_PG + independent review)
 
 Cross-tenant/store reads/writes and scoped FKs; ordinary runtime direct balance write denied; ledger/history update/delete denied; same-key simultaneous replay one result and one audit; changed input conflict; optimistic stale edit; price history and money overflow; inventory1 two independent connections only one reserve; multi-SKU reverse order no deadlock/partial success; duplicate lines canonicalize; terminal release exactly once; pending/committed cannot release; early expiry rejects; errors/cancel roll back result+balance+ledger+audit; archived product/SKU rejects new reservation while historical rows remain. Tests include HTTP only when route contract lands; model tests do not substitute real PG.
+
+## Amendment — product-media-v2 (2026-10-06, 1688-style media; migration 0149; unit docs/delivery/units/product-media-v2.md)
+
+Owner decision: main images (max 4) + one image per value of ONE option axis + a detail-page stack (max 20) instead of
+one flat gallery. This section is FROZEN as the interface for PM-B (backend) and PM-U (UI); it supersedes the "cap is 12"
+amendment above and the 8-image text of `catalog-inventory-openapi.json`. 2 MiB per original, JPEG/PNG/WebP magic-sniffed,
+EXIF handling and the 360/720/1080 size children (0111, `media-sizes-v1.md`) are unchanged and apply to every role.
+
+### Model
+| `role` | cap | position | meaning |
+|---|---|---|---|
+| `main` | `catalog.MaxMainImages = 4` | 0..3, contiguous, 0 = cover | storefront cards/collections (cover), product gallery, Meta `image_link`, claim/live previews; >=1 to publish (unchanged rule) |
+| `detail` | `catalog.MaxDetailImages = 20` | 0..19, contiguous | ordered full-width stack below the description; tall images allowed: `height <= 6 x width` (Go, new uploads and moves; WebP without dimensions passes) |
+| `sku` | one per value of the image axis (`MaxOptionImages = 50`, the axis value cap) | 0..49 | an image owned by the product that is linked to exactly one option value; never shown in the main gallery |
+
+- **Image axis** = `catalog.products.image_axis` (nullable text, the NAME of an option axis; `NULL` = the first axis).
+  Effective axis = `image_axis` when it names a current axis, else the first axis, else none (product without options
+  has no image axis and no sku images). The merchant changes it with `POST .../image-axis`; links made on another axis
+  stay stored but dormant (they are keyed by axis name) and come back if that axis is selected again.
+- **Link** = row `catalog.product_option_images(tenant_id, store_id, product_id, option_name, option_value, image_id,
+  image_role='sku')`, PK `(tenant,store,product,option_name,option_value)` (one image per value), UNIQUE `image_id` (one value
+  per image), composite FK to `catalog.product_images(tenant,store,product_id,id,role)` (same product, role `sku`, same
+  store/tenant, deleted with the image). A trigger refuses a link whose `option_name` is not the effective axis or
+  whose `option_value` is not currently a value of it. Every SKU carrying that value resolves to that image.
+- **Caps are structural**: `CHECK` per role on `position` and `UNIQUE (tenant,store,product,role,position)` (deferred), repeated
+  in Go (409 `conflict` when a role is full) with parity constants `MaxMainImages`, `MaxDetailImages`, `MaxOptionImages`.
+  Frontend parsers pin the same numbers (`apps/storefront/lib/shop-contract.ts`, `apps/admin/lib/catalog-v2-model.ts`) with
+  parity tests against the Go constants.
+- **Migration of existing rows (forward-only, nothing deleted)**: positions 0..3 -> `main` (same order), positions >= 4 ->
+  `detail` (same order, renumbered from 0). A 9-image product becomes 4 main + 5 detail. The migration asserts
+  `main+detail = before` and drops the 0..11 CHECK only after the per-role CHECK exists.
+
+### Merchant routes (base `/v1/admin/stores/{store_id}/products/{product_id}`; catalog:write unless GET; Idempotency-Key on every POST)
+- `POST images?role=main|detail|sku[&option_value=<value>]` multipart `file`: default `role=main`. `role=sku` REQUIRES `option_value`
+  (a current value of the effective axis; else 422) and links atomically; 409 when that value already has an image (delete it
+  first), when the role is full, or when the product is archived. Response `Image`.
+- `GET images` (catalog:read) -> `ImageList` = `{items:[Image], image_axis: string|null, option_images:[{option_name, option_value, image_id}]}`;
+  `items` ordered `main`, `detail`, `sku`, then position. `Image` gains `role` (`position` is per role).
+- `POST images/order` `{role?: "main"|"detail" (default main), ids:[uuid]}`: `ids` is exactly the current ids of that role in the new order
+  (any other set is 409). Returns `ImageList`.
+- `POST images/{image_id}/move` `{role: "main"|"detail"}`: moves a `main`/`detail` image to the END of the other role keeping its bytes and sizes,
+  renumbering the source role; 409 when the target is full; 422 for a `sku` image or the same role; a `detail` target also applies the 6x ratio rule.
+- `POST images/{image_id}/delete`: unchanged, renumbers inside the image's own role; a linked sku image's link is removed with it.
+- `POST option-images` `{option_value, image_id}`: point a `sku` image of this product (new or already linked elsewhere) at a value of the effective axis; the previous link of that
+  image is replaced. 409 when the value already has another image, 422 when the value is not on the axis or the image is not `sku`, 404 for a foreign image or product. Returns `ImageList`.
+- `POST image-axis` `{axis: string|null}`: set the image axis (422 when it is not a current axis name; `null` = back to the first axis). Returns `ImageList`.
+- Cover everywhere on the merchant side (ledger, product list, collection members) = the `main` image at position 0.
+
+### Buyer shapes (additive; `images` keeps meaning "main images" so current UIs keep working)
+- `GET /v1/buyer/catalog/v2/products/{slug_or_id}` (see `storefront-v2.md`): `images` = main (<= 4), plus NEW `detail_images:[{id,width,height,sizes?}]` (<= 20),
+  `image_axis: string|null` (effective axis name, null without options), `option_images:[{value, image_id}]` (links on the effective axis), and each
+  `variants[]` gains `image_id: uuid|null` (the image linked to that variant's value on the image axis). URL = `/media/p/{product_id}/{image_id}`.
+- `GET /v1/buyer/catalog` items (`buyer-catalog-discovery-v1.md`): `images` = main; NEW `image_id: uuid|null` = the variant's option-value image when present, else the
+  cover (main[0]), else null. Cart, order and claim thumbnails use `image_id`.
+- Product list cards keep `cover_image_id` = main[0].
+
+### Meta catalog feed (`GET /v1/buyer/feeds/meta.csv`)
+Columns: `id,title,description,availability,condition,price,link,image_link,additional_image_link,brand` (adds `additional_image_link`, comma-joined absolute URLs).
+Per item (item id = SKU id): `image_link` = the variant's option-value image when present, else main[0]; `additional_image_link` = main[1..3] (when `image_link`
+is the main cover) or main[0..3] (when `image_link` is a variant image). No detail images in the feed. Empty when the product has no images.
+
+### Acceptance (REAL_PG, evidence class REAL_PG; browser gates are PM-U)
+PM1 migration of a 9-image product -> 4 main + 5 detail in order, counts asserted; PM2 5th main / 21st detail refused in SQL (CHECK) and Go (409); PM3 option-value
+link: same product, role sku, real value of the effective axis, one image per value, cross-store/tenant refused (FK + RLS); PM4 buyer detail shape; PM5 feed links;
+PM6 v1 catalog `image_id` and v2 variant `image_id`; PM7 move/reorder/delete per role; PM8 ACL inventory pins the new table, functions and `UPDATE(role,position,version)`.

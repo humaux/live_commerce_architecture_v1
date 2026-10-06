@@ -107,6 +107,13 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 			{"fulfillment.read_manual_shipment_history(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"identity.export_unshipped_orders(bytea,uuid,integer)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"fulfillment.read_merge_suggestions(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},                // 0146 W3-07B
+			{"fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}}, // 0146 W3-07B
+			{"fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},     // 0146 W3-07B
+			{"fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},      // 0146 W3-07B
+			{"fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},        // 0146 W3-07B
+			{"fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},      // 0146 W3-07B
+			{"fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},          // 0146 W3-07B
 		} {
 			var owner string
 			var definer, fixed, publicExec, commented bool

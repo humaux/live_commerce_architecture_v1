@@ -25,6 +25,7 @@ const (
 	FixedOrderPayLink     = "order-pay-link/v1"
 	FixedOfferRecommend   = "offer-recommend/v1"
 	FixedCheckoutReminder = "checkout-reminder/v1" // W3-03B (0144): dm-only, carries {{連結}}, rendered by internal/inbox/reminders.go
+	FixedSoldOutReply     = "sold-out-reply/v1"    // W3-04B (0151): private_reply, {{product.name}} only, rendered in SQL by integration.plan_claim_reply
 )
 
 // PublishInput is POST /message-templates. template_id, name, kinds, public_safe and body are all required; null is

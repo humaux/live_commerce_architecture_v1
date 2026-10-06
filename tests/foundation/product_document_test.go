@@ -502,19 +502,19 @@ func TestProductEditorPE05UntrackedTrackedFlags(t *testing.T) {
 	}
 }
 
-// ---- PE06 image cap 12: the 12th upload succeeds, the 13th is refused, order persists ---------------------------------
+// ---- PE06 main image cap 4 (product-media-v2, owner 2026-10-06; was 12): the 4th upload succeeds, the 5th is refused, order persists ----
 
 func TestProductEditorPE06ImagesCap(t *testing.T) {
 	e := ccNew(t)
 	var p ccProduct
 	e.a.ok("POST", "/products", e.key("p"), map[string]any{"name": e.name("PE06 images")}, &p)
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 4; i++ {
 		if st, body := e.upload("/products/"+p.ID+"/images", ccPNG(uint8(i+1)), e.key("img")); st != 200 {
 			t.Fatalf("image %d status=%d body=%s", i+1, st, body)
 		}
 	}
 	if st, body := e.upload("/products/"+p.ID+"/images", ccPNG(99), e.key("img")); st != 409 {
-		t.Fatalf("13th image status=%d want 409 body=%s", st, body)
+		t.Fatalf("5th main image status=%d want 409 body=%s", st, body)
 	}
 	var imgs struct {
 		Items []struct {
@@ -522,8 +522,8 @@ func TestProductEditorPE06ImagesCap(t *testing.T) {
 		} `json:"items"`
 	}
 	e.a.ok("GET", "/products/"+p.ID+"/images", "", nil, &imgs)
-	if len(imgs.Items) != 12 {
-		t.Fatalf("image count=%d want 12", len(imgs.Items))
+	if len(imgs.Items) != 4 {
+		t.Fatalf("image count=%d want 4", len(imgs.Items))
 	}
 	for i, im := range imgs.Items {
 		if im.Position != i {

@@ -1,7 +1,9 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
 Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source c743b465, CI 37443892071 and owner rule 2f596a0c.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — CI repairs submitted; privacy ruling blocks acceptance
+# LC-U1 — CI2 repairs submitted; GitHub runtime acceptance pending
+
+Latest CI2 follow-up: [CI2-DELIVERY.md](CI2-DELIVERY.md). Trunk `71235fc4` is merged; original TCV09 passes after removing the iframe/CSP exception. Console nil receipts, hidden Account sign-out, alert ambiguity and missing sweep CommentStream are source-fixed. Node **496/496**, types and check-gates pass. Local focused attempts were canceled before PG while waiting for the shared lock and remain **NOT_RUN**. New-source GitHub browser execution is pending; the older failure/ruling records below are historical.
 
 Latest D3 follow-up: [D3-DELIVERY.md](D3-DELIVERY.md) records the shared Claims/Console Go/SQL enum, third mode picker, zh-TW/en/ja host prompts, red→green parity and **477/477** Node result. It merges integration `8c3851e4` and requires the additional GitHub `--browser-e2e` real-click matrix. The source hashes there bind the final D3 commit; the older SHA and CI receipts below remain historical.
 
@@ -24,7 +26,7 @@ The earlier LC-B7 alignment and initial candidate receipts below remain historic
 | Products | Offer switch preserves the existing `max_quantity_per_claim`; local recommendation uses `post_comment:false`; stock uses sellable delta and CAS. Both `inventory:write` and `inventory:live_adjust` enable stock controls independently of `live:manage`. | LC-B7 enforces reason, delta and reserved/allocated/unavailable bounds. No inventory grant keeps stock disabled and the server refusal is preserved. |
 | Status/polling | Five-second visible-only, non-overlapping reads; collected revenue and order amounts are separate; IG totals and other unavailable comment counts show a dash, not zero. | A1 business acceptance in this browser fixture is MOCK; actual Go/PG acceptance belongs to LC-B7. |
 | Session results/copy | A5 results retain currencies and sandbox money separately; both list and console copy entry points use keyed commands. | A5 reads may be refused without the backend-required permissions; unavailable totals are not fabricated. |
-| Media | Optional official public Facebook-post iframe from a validated numeric Page/post pair and a verified source; console-only CSP allowance; honest IG no-embed notice. | Live-video identity selection/playback is not proven. No external Meta request/mutation was used for acceptance. |
+| Media | Verified numeric Page/post link opens Facebook externally with `noopener noreferrer`; no iframe or CSP widening. Honest IG no-embed notice remains. | Access depends on the Facebook account/post visibility. Playback is not certified; test external traffic is MOCK. |
 | Command safety | Opaque receipt fence survives reload **and reauthentication**; in-memory replay stays bound to the original session. Delayed copy completion is fenced after navigation/unmount. Transient list/console reads do not lose UNKNOWN retry. | Durable recovery needs authoritative reconciliation; the UI does not guess that a request failed or silently generate a new key. |
 
 No authored changes to product Go, SQL, migrations, dependency lockfiles, `packages/ui`, or frozen `tests/ui/**`. Go changes are confined to the explicitly MOCK browser fixture. See [REVIEW-NOTES.md](REVIEW-NOTES.md) for the independent findings and bounded repairs.

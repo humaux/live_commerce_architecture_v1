@@ -1,0 +1,7 @@
+=== RUN   TestSoldOutReplyPlanShape
+    sold_out_reply_test.go:105: exec test setup: ERROR: relation "claims.sold_out_settings" does not exist (SQLSTATE 42P01)
+--- FAIL: TestSoldOutReplyPlanShape (8.69s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.433s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

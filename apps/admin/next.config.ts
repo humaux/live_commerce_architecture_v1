@@ -41,11 +41,6 @@ const config: NextConfig = {
           },
         ],
       },
-      {
-        source: "/:locale/studio/console",
-        // Only a user-requested official public-post iframe is allowed; scripts/connect remain same-origin.
-        headers: [{ key: "Content-Security-Policy", value: `${contentPolicy}; frame-src https://www.facebook.com` }],
-      },
       // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive
       // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests
       // the browser starts before it parses <head>.

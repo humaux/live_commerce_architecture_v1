@@ -2,6 +2,10 @@
 
 package foundation_test
 
+// Purpose: Run the real-click sweep against a fully configured, isolated merchant/buyer MOCK stack.
+// Depends on: httpapi/buyerhttp, PG fixture, provider fakes and loopback metabridge CommentStream.
+// Used by: --browser-click-sweep and --browser-visual-lint; no real provider calls.
+
 // G-UI8 real-click sweep (owner 2026-10-03; docs/engineering/ui-architecture.md 10.6b). `TestBrowserClickSweep`, prefix `cs`.
 // Run through `bash scripts/dev/test-local.sh --browser-click-sweep` (isolated PG 18, production admin + storefront Next builds).
 //
@@ -56,6 +60,7 @@ import (
 	core "livecommerce/internal/integrations/core"
 	metaoauth "livecommerce/internal/integrations/meta/oauth"
 	metaads "livecommerce/internal/integrations/meta_ads"
+	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/live"
 	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/oidclogin"
@@ -189,7 +194,28 @@ func TestBrowserClickSweep(t *testing.T) {
 	if err != nil || !billSvc.Enabled() {
 		t.Fatalf("billing service: enabled=%v err=%v", billSvc != nil && billSvc.Enabled(), err)
 	}
-	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, ClaimLabels: &labels, RefundJobs: e.jobs,
+	// Match cmd/api's configured stream; absence of a bound source stays not_started, not bridge_disabled.
+	bridgeToken := randomBytes(32)
+	bridgeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/internal/v1/comment-page" || r.Header.Get("Authorization") != "Bearer "+base64.StdEncoding.EncodeToString(bridgeToken) {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(metabridge.BridgePage{Epoch: 1, Items: []metabridge.BridgeComment{}, Stream: metabridge.BridgeStreamState{
+			State: "not_started", PollIntervalMs: 5000, SourcePlatform: "facebook", Reason: "no_source",
+		}})
+	}))
+	t.Cleanup(bridgeServer.Close)
+	bridge, err := metabridge.NewBridgeClient(bridgeServer.URL, bridgeToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream, err := live.NewCommentStream(bridge, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, CommentStream: stream, ClaimLabels: &labels, RefundJobs: e.jobs,
 		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example"}
 	api := httpapi.NewHandler(f.runtime, options)
 	call := func(method, path, key string, body any, want int, out any) {

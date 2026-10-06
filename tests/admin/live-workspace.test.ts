@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { primaryAction, stockDelta, facebookEmbed, settleLiveCommand } from "../../apps/admin/src/features/live/workspace-model.ts";
+import { primaryAction, stockDelta, facebookPostLink, settleLiveCommand } from "../../apps/admin/src/features/live/workspace-model.ts";
 import * as workspace from "../../apps/admin/src/features/live/workspace-model.ts";
 test("Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link", () => {
   const store = "11111111-1111-4111-8111-111111111111", scene = "22222222-2222-4222-8222-222222222222";
@@ -40,19 +40,18 @@ test("LC-U1 stock target uses sellable delta and rejects fractions, negative and
   assert.equal(stockDelta("8", 5), 3);
   for (const target of ["-1", "1.5", "1e3", "1006", ""]) assert.equal(stockDelta(target, 5), null);
 });
-test("LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos", () => {
-  const href = facebookEmbed("facebook", "123_456");
-  assert.ok(href?.startsWith("https://www.facebook.com/plugins/post.php?"));
-  assert.ok(href?.includes(encodeURIComponent("https://www.facebook.com/123/posts/456")));
-  assert.equal(facebookEmbed("instagram", "123_456"), null);
-  assert.equal(facebookEmbed("facebook", "https://attacker.invalid"), null);
-  assert.equal(facebookEmbed("facebook", "456"), null);
+test("LC-U1 links only explicit FB post identities, never arbitrary URLs or guessed videos", () => {
+  assert.equal(facebookPostLink("facebook", "123_456"), "https://www.facebook.com/123/posts/456");
+  assert.equal(facebookPostLink("instagram", "123_456"), null);
+  assert.equal(facebookPostLink("facebook", "https://attacker.invalid"), null);
+  assert.equal(facebookPostLink("facebook", "456"), null);
 });
-test("LC-U1 public Facebook framing is allowed only on the console route", () => {
+test("LC-U1 Facebook preview keeps the original no-frame CSP and uses a safe external link", () => {
   const config = readFileSync("apps/admin/next.config.ts", "utf8");
-  assert.match(config, /source: "\/:locale\/studio\/console"/);
-  assert.match(config, /frame-src https:\/\/www\.facebook\.com/);
-  assert.equal(config.match(/frame-src/g)?.length, 1);
+  assert.doesNotMatch(config, /frame-src/);
+  const component = readFileSync("apps/admin/components/LiveConsole.tsx", "utf8");
+  assert.doesNotMatch(component, /<iframe\b/);
+  assert.match(component, /target="_blank" rel="noopener noreferrer"/);
 });
 test("LC-U1 delayed copy completion cannot navigate after store switch or unmount", async () => {
   for (const reason of ["store-switch", "unmount"]) {

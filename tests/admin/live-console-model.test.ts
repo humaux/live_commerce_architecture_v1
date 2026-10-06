@@ -34,8 +34,10 @@ test("A1 strict MOCK snapshot preserves unavailable counts, capability unknown a
     { ...snapshot, capabilities: { facebook: { read_comment: { ...snapshot.capabilities.facebook.read_comment, state: "supported" } } } },
     { ...snapshot, stats: { ...snapshot.stats, paid: { count: 1, amount_minor: Number.MAX_SAFE_INTEGER + 1 } } },
     { ...snapshot, offers: [offer, offer] },
+    { ...snapshot, offers: null },
     { ...snapshot, window: { ...snapshot.window, match_mode: "CONTAINS" } },
-  ]) assert.throws(() => parseConsole(value, sid));
+  ]) assert.throws(() => parseConsole(value, sid), { message: "invalid_console_response" });
+  assert.deepEqual(parseConsole({ ...snapshot, offers: [] }, sid).offers, []);
   for (const value of [null, [], { ...offer, token: "forbidden" }, { ...offer, version: 0 },
     { ...offer, stock: { ...offer.stock, reserved: -1 } }, { ...offer, active: "true" },
     { ...offer, claimed: { buyers: 1.1, quantity: 1 } }]) assert.throws(() => parseConsoleOffer(value));

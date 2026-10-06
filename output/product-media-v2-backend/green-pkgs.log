@@ -1,0 +1,1567 @@
+=== RUN   TestInputValidationBounds
+--- PASS: TestInputValidationBounds (0.00s)
+=== RUN   TestImageSizesDimensionsAndOriginal
+--- PASS: TestImageSizesDimensionsAndOriginal (4.01s)
+=== RUN   TestImageSizesNoUpscaleAndAlpha
+--- PASS: TestImageSizesNoUpscaleAndAlpha (0.00s)
+=== RUN   TestImageSizesRejectCorruptAndBudget
+--- PASS: TestImageSizesRejectCorruptAndBudget (0.00s)
+=== RUN   TestImageSizesWebP
+--- PASS: TestImageSizesWebP (0.00s)
+=== RUN   TestImageSizesOrientation
+--- PASS: TestImageSizesOrientation (0.00s)
+=== RUN   TestImageSizesMemoryBudget
+    image_sizes_test.go:217: 1000x20000 strip: peak heap growth 209 MiB
+    image_sizes_test.go:217: 20000x1000 strip: peak heap growth 112 MiB
+    image_sizes_test.go:217: 20MP EXIF-6 portrait: peak heap growth 216 MiB
+--- PASS: TestImageSizesMemoryBudget (38.68s)
+=== RUN   TestImageSizesRejectsLarge16Bit
+--- PASS: TestImageSizesRejectsLarge16Bit (8.83s)
+=== RUN   TestImageSizesOrientationEndToEnd
+--- PASS: TestImageSizesOrientationEndToEnd (0.00s)
+=== RUN   TestSniffImageAccepts
+--- PASS: TestSniffImageAccepts (0.00s)
+=== RUN   TestSniffImageRejects
+--- PASS: TestSniffImageRejects (0.00s)
+=== RUN   TestImageCommandsRejectBeforeSQL
+--- PASS: TestImageCommandsRejectBeforeSQL (0.00s)
+=== RUN   TestRoleCaps
+--- PASS: TestRoleCaps (0.00s)
+=== RUN   TestEffectiveAxis
+--- PASS: TestEffectiveAxis (0.00s)
+=== RUN   TestLedgerFilter
+--- PASS: TestLedgerFilter (0.00s)
+=== RUN   TestSlugify
+--- PASS: TestSlugify (0.00s)
+=== RUN   TestValidSlug
+--- PASS: TestValidSlug (0.00s)
+=== RUN   TestValidOptions
+--- PASS: TestValidOptions (0.00s)
+=== RUN   TestValuesFitAndTitle
+--- PASS: TestValuesFitAndTitle (0.00s)
+=== RUN   TestOptAbsentNullValue
+--- PASS: TestOptAbsentNullValue (0.00s)
+=== RUN   TestProductValidatorsV2
+--- PASS: TestProductValidatorsV2 (0.00s)
+=== RUN   TestSKUCompareAtValidation
+--- PASS: TestSKUCompareAtValidation (0.00s)
+=== RUN   TestCollectionValidators
+--- PASS: TestCollectionValidators (0.00s)
+=== RUN   TestPrefixed
+--- PASS: TestPrefixed (0.00s)
+=== RUN   TestReadPurchaseEntryStates
+=== RUN   TestReadPurchaseEntryStates/configured
+=== RUN   TestReadPurchaseEntryStates/archived
+=== RUN   TestReadPurchaseEntryStates/missing_sku
+=== RUN   TestReadPurchaseEntryStates/no_domain
+=== RUN   TestReadPurchaseEntryStates/ambiguous
+--- PASS: TestReadPurchaseEntryStates (0.00s)
+    --- PASS: TestReadPurchaseEntryStates/configured (0.00s)
+    --- PASS: TestReadPurchaseEntryStates/archived (0.00s)
+    --- PASS: TestReadPurchaseEntryStates/missing_sku (0.00s)
+    --- PASS: TestReadPurchaseEntryStates/no_domain (0.00s)
+    --- PASS: TestReadPurchaseEntryStates/ambiguous (0.00s)
+=== RUN   TestReadPurchaseEntryFailClosed
+=== RUN   TestReadPurchaseEntryFailClosed/revoked
+=== RUN   TestReadPurchaseEntryFailClosed/permission
+=== RUN   TestReadPurchaseEntryFailClosed/store
+=== RUN   TestReadPurchaseEntryFailClosed/non_RC
+=== RUN   TestReadPurchaseEntryFailClosed/invalid_input
+=== RUN   TestReadPurchaseEntryFailClosed/driver_secret
+=== RUN   TestReadPurchaseEntryFailClosed/unknown_state
+=== RUN   TestReadPurchaseEntryFailClosed/unexpected_origin
+=== RUN   TestReadPurchaseEntryFailClosed/unsafe_origin
+=== RUN   TestReadPurchaseEntryFailClosed/localhost_origin
+=== RUN   TestReadPurchaseEntryFailClosed/loopback_origin
+=== RUN   TestReadPurchaseEntryFailClosed/localhost_subdomain
+=== RUN   TestReadPurchaseEntryFailClosed/trailing_dot
+=== RUN   TestReadPurchaseEntryFailClosed/underscore
+--- PASS: TestReadPurchaseEntryFailClosed (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/revoked (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/permission (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/store (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/non_RC (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/invalid_input (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/driver_secret (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/unknown_state (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/unexpected_origin (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/unsafe_origin (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/localhost_origin (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/loopback_origin (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/localhost_subdomain (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/trailing_dot (0.00s)
+    --- PASS: TestReadPurchaseEntryFailClosed/underscore (0.00s)
+=== RUN   FuzzSKUValidation
+=== RUN   FuzzSKUValidation/seed#0
+=== RUN   FuzzSKUValidation/seed#1
+--- PASS: FuzzSKUValidation (0.00s)
+    --- PASS: FuzzSKUValidation/seed#0 (0.00s)
+    --- PASS: FuzzSKUValidation/seed#1 (0.00s)
+PASS
+ok  	livecommerce/internal/catalog	53.074s
+=== RUN   TestCatalogCursorCanonicalAndBound
+--- PASS: TestCatalogCursorCanonicalAndBound (0.00s)
+=== RUN   TestCarryOriginsRules
+=== PAUSE TestCarryOriginsRules
+=== RUN   TestDestinationInputValidation
+=== RUN   TestDestinationInputValidation/negative_expected_version
+=== RUN   TestDestinationInputValidation/overflow_expected_version
+=== RUN   TestDestinationInputValidation/zero_cart_version
+=== RUN   TestDestinationInputValidation/lowercase_country
+=== RUN   TestDestinationInputValidation/leading_name_space
+=== RUN   TestDestinationInputValidation/blank_name
+=== RUN   TestDestinationInputValidation/format_character
+=== RUN   TestDestinationInputValidation/invalid_UTF8
+=== RUN   TestDestinationInputValidation/long_name
+=== RUN   TestDestinationInputValidation/short_phone
+=== RUN   TestDestinationInputValidation/nondigit_phone
+=== RUN   TestDestinationInputValidation/too_many_phone_digits
+=== RUN   TestDestinationInputValidation/missing_city
+=== RUN   TestDestinationInputValidation/trimmed_line
+=== RUN   TestDestinationInputValidation/long_line
+=== RUN   TestDestinationInputValidation/home_pickup
+=== RUN   TestDestinationInputValidation/wrong_country
+=== RUN   TestDestinationInputValidation/missing_pickup_ID
+=== RUN   TestDestinationInputValidation/bad_pickup_ID
+=== RUN   TestDestinationInputValidation/buyer-supplied_address
+--- PASS: TestDestinationInputValidation (0.00s)
+    --- PASS: TestDestinationInputValidation/negative_expected_version (0.00s)
+    --- PASS: TestDestinationInputValidation/overflow_expected_version (0.00s)
+    --- PASS: TestDestinationInputValidation/zero_cart_version (0.00s)
+    --- PASS: TestDestinationInputValidation/lowercase_country (0.00s)
+    --- PASS: TestDestinationInputValidation/leading_name_space (0.00s)
+    --- PASS: TestDestinationInputValidation/blank_name (0.00s)
+    --- PASS: TestDestinationInputValidation/format_character (0.00s)
+    --- PASS: TestDestinationInputValidation/invalid_UTF8 (0.00s)
+    --- PASS: TestDestinationInputValidation/long_name (0.00s)
+    --- PASS: TestDestinationInputValidation/short_phone (0.00s)
+    --- PASS: TestDestinationInputValidation/nondigit_phone (0.00s)
+    --- PASS: TestDestinationInputValidation/too_many_phone_digits (0.00s)
+    --- PASS: TestDestinationInputValidation/missing_city (0.00s)
+    --- PASS: TestDestinationInputValidation/trimmed_line (0.00s)
+    --- PASS: TestDestinationInputValidation/long_line (0.00s)
+    --- PASS: TestDestinationInputValidation/home_pickup (0.00s)
+    --- PASS: TestDestinationInputValidation/wrong_country (0.00s)
+    --- PASS: TestDestinationInputValidation/missing_pickup_ID (0.00s)
+    --- PASS: TestDestinationInputValidation/bad_pickup_ID (0.00s)
+    --- PASS: TestDestinationInputValidation/buyer-supplied_address (0.00s)
+=== RUN   TestDestinationReceiptOmitsPII
+--- PASS: TestDestinationReceiptOmitsPII (0.00s)
+=== CONT  TestCarryOriginsRules
+--- PASS: TestCarryOriginsRules (0.00s)
+PASS
+ok  	livecommerce/internal/storefront	1.700s
+=== RUN   TestBuyerHTTPCatalogQueryAdmission
+--- PASS: TestBuyerHTTPCatalogQueryAdmission (0.00s)
+=== RUN   TestBuyerHTTPCatalogProjectionExactKeys
+--- PASS: TestBuyerHTTPCatalogProjectionExactKeys (0.00s)
+=== RUN   TestCatalogV2RouteMatching
+--- PASS: TestCatalogV2RouteMatching (0.00s)
+=== RUN   TestCatalogV2EarlyRefusals
+=== RUN   TestCatalogV2EarlyRefusals/no_bff_key
+=== RUN   TestCatalogV2EarlyRefusals/bearer_is_forbidden
+=== RUN   TestCatalogV2EarlyRefusals/cookie_is_forbidden
+=== RUN   TestCatalogV2EarlyRefusals/query_on_collections_is_forbidden
+=== RUN   TestCatalogV2EarlyRefusals/query_on_detail_is_forbidden
+=== RUN   TestCatalogV2EarlyRefusals/bare_question_mark
+=== RUN   TestCatalogV2EarlyRefusals/post
+=== RUN   TestCatalogV2EarlyRefusals/unknown_v2_path
+=== RUN   TestCatalogV2EarlyRefusals/collection_media_bearer
+=== RUN   TestCatalogV2EarlyRefusals/collection_media_bad_id
+--- PASS: TestCatalogV2EarlyRefusals (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/no_bff_key (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/bearer_is_forbidden (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/cookie_is_forbidden (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/query_on_collections_is_forbidden (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/query_on_detail_is_forbidden (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/bare_question_mark (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/post (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/unknown_v2_path (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/collection_media_bearer (0.00s)
+    --- PASS: TestCatalogV2EarlyRefusals/collection_media_bad_id (0.00s)
+=== RUN   TestParseV2Query
+--- PASS: TestParseV2Query (0.00s)
+=== RUN   TestV2CursorBoundToFilter
+--- PASS: TestV2CursorBoundToFilter (0.00s)
+=== RUN   TestProjectV2IsClosedAndNonNull
+--- PASS: TestProjectV2IsClosedAndNonNull (0.00s)
+=== RUN   TestClaimRoutesAndMethods
+--- PASS: TestClaimRoutesAndMethods (0.00s)
+=== RUN   TestClaimTokenOnlyInItsHeaderOnItsRoutes
+--- PASS: TestClaimTokenOnlyInItsHeaderOnItsRoutes (0.00s)
+=== RUN   TestClaimTokenHeaderStrictness
+--- PASS: TestClaimTokenHeaderStrictness (0.00s)
+=== RUN   TestClaimEarlyTransportFailures
+=== RUN   TestClaimEarlyTransportFailures/direct_cart_write_with_derived_key
+=== RUN   TestClaimEarlyTransportFailures/preview_replay_key
+=== RUN   TestClaimEarlyTransportFailures/redeem_without_key
+=== RUN   TestClaimEarlyTransportFailures/preview_wrong_method
+--- PASS: TestClaimEarlyTransportFailures (0.00s)
+    --- PASS: TestClaimEarlyTransportFailures/direct_cart_write_with_derived_key (0.00s)
+    --- PASS: TestClaimEarlyTransportFailures/preview_replay_key (0.00s)
+    --- PASS: TestClaimEarlyTransportFailures/redeem_without_key (0.00s)
+    --- PASS: TestClaimEarlyTransportFailures/preview_wrong_method (0.00s)
+=== RUN   TestClaimProjectionsAreExact
+--- PASS: TestClaimProjectionsAreExact (0.00s)
+=== RUN   TestClaimSoldOutProjectionTrue
+--- PASS: TestClaimSoldOutProjectionTrue (0.00s)
+=== RUN   TestMatchCVSRoute
+--- PASS: TestMatchCVSRoute (0.00s)
+=== RUN   TestCVSRouteKindsClearOfHandlerIota
+--- PASS: TestCVSRouteKindsClearOfHandlerIota (0.00s)
+=== RUN   TestAllowedCVSMethods
+--- PASS: TestAllowedCVSMethods (0.00s)
+=== RUN   TestCVSHTTPError
+--- PASS: TestCVSHTTPError (0.00s)
+=== RUN   TestOriginAndMobileHints
+--- PASS: TestOriginAndMobileHints (0.00s)
+=== RUN   TestCVSRequestIsNotFoundWhenNotWired
+--- PASS: TestCVSRequestIsNotFoundWhenNotWired (0.00s)
+=== RUN   TestCVSRoutesWiredIntoTheSharedRouter
+--- PASS: TestCVSRoutesWiredIntoTheSharedRouter (0.00s)
+=== RUN   TestDesignRouteMatching
+--- PASS: TestDesignRouteMatching (0.00s)
+=== RUN   TestDesignEarlyRefusals
+=== RUN   TestDesignEarlyRefusals/published_without_bff_key
+=== RUN   TestDesignEarlyRefusals/published_no_origin
+=== RUN   TestDesignEarlyRefusals/published_bearer
+=== RUN   TestDesignEarlyRefusals/published_query
+=== RUN   TestDesignEarlyRefusals/published_post
+=== RUN   TestDesignEarlyRefusals/published_with_a_preview_header
+=== RUN   TestDesignEarlyRefusals/preview_token_in_query
+=== RUN   TestDesignEarlyRefusals/preview_cookie
+=== RUN   TestDesignEarlyRefusals/media_bearer
+=== RUN   TestDesignEarlyRefusals/media_bad_id
+=== RUN   TestDesignEarlyRefusals/media_upper-case_id
+=== RUN   TestDesignEarlyRefusals/media_query
+=== RUN   TestDesignEarlyRefusals/media_post
+--- PASS: TestDesignEarlyRefusals (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_without_bff_key (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_no_origin (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_bearer (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_query (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_post (0.00s)
+    --- PASS: TestDesignEarlyRefusals/published_with_a_preview_header (0.00s)
+    --- PASS: TestDesignEarlyRefusals/preview_token_in_query (0.00s)
+    --- PASS: TestDesignEarlyRefusals/preview_cookie (0.00s)
+    --- PASS: TestDesignEarlyRefusals/media_bearer (0.00s)
+    --- PASS: TestDesignEarlyRefusals/media_bad_id (0.00s)
+    --- PASS: TestDesignEarlyRefusals/media_upper-case_id (0.00s)
+    --- PASS: TestDesignEarlyRefusals/media_query (0.00s)
+    --- PASS: TestDesignEarlyRefusals/media_post (0.00s)
+=== RUN   TestBodyTimeoutIsUnavailableNotMalformedInput
+--- PASS: TestBodyTimeoutIsUnavailableNotMalformedInput (0.00s)
+=== RUN   TestExactRoutesAndMethods
+--- PASS: TestExactRoutesAndMethods (0.00s)
+=== RUN   TestOrdersStrictQuery
+--- PASS: TestOrdersStrictQuery (0.00s)
+=== RUN   TestCanonicalHeadersAndForbiddenScope
+--- PASS: TestCanonicalHeadersAndForbiddenScope (0.00s)
+=== RUN   TestStrictJSONAndBody
+--- PASS: TestStrictJSONAndBody (0.00s)
+=== RUN   TestSessionEarlyErrorsNeverRetryable
+=== RUN   TestSessionEarlyErrorsNeverRetryable/missing_key
+=== RUN   TestSessionEarlyErrorsNeverRetryable/missing_origin
+=== RUN   TestSessionEarlyErrorsNeverRetryable/bad_key
+=== RUN   TestSessionEarlyErrorsNeverRetryable/duplicate_key
+=== RUN   TestSessionEarlyErrorsNeverRetryable/scope_cookie
+=== RUN   TestSessionEarlyErrorsNeverRetryable/authorization
+=== RUN   TestSessionEarlyErrorsNeverRetryable/replay_key
+--- PASS: TestSessionEarlyErrorsNeverRetryable (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/missing_key (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/missing_origin (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/bad_key (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/duplicate_key (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/scope_cookie (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/authorization (0.00s)
+    --- PASS: TestSessionEarlyErrorsNeverRetryable/replay_key (0.00s)
+=== RUN   TestTransportUnknownAndUnsupportedStayJSON
+--- PASS: TestTransportUnknownAndUnsupportedStayJSON (0.00s)
+=== RUN   TestErrorClassification
+--- PASS: TestErrorClassification (0.00s)
+=== RUN   TestLookupRouteTable
+--- PASS: TestLookupRouteTable (0.00s)
+=== RUN   TestNormalizeRef
+--- PASS: TestNormalizeRef (0.00s)
+=== RUN   TestContactDigest
+--- PASS: TestContactDigest (0.00s)
+=== RUN   TestLookupClientIP
+--- PASS: TestLookupClientIP (0.00s)
+=== RUN   TestViewOnlyAllowlist
+--- PASS: TestViewOnlyAllowlist (0.00s)
+=== RUN   TestMediaSizesAdmission
+--- PASS: TestMediaSizesAdmission (0.00s)
+=== RUN   TestMediaRouteMatching
+--- PASS: TestMediaRouteMatching (0.00s)
+=== RUN   TestMediaEarlyRefusals
+=== RUN   TestMediaEarlyRefusals/no_bff_key
+=== RUN   TestMediaEarlyRefusals/bad_bff_key
+=== RUN   TestMediaEarlyRefusals/no_origin
+=== RUN   TestMediaEarlyRefusals/bearer_is_forbidden
+=== RUN   TestMediaEarlyRefusals/cookie_is_forbidden
+=== RUN   TestMediaEarlyRefusals/query_is_forbidden
+=== RUN   TestMediaEarlyRefusals/post
+=== RUN   TestMediaEarlyRefusals/upper-case_id
+=== RUN   TestMediaEarlyRefusals/bad_image_id
+=== RUN   TestMediaEarlyRefusals/idempotency_key
+--- PASS: TestMediaEarlyRefusals (0.00s)
+    --- PASS: TestMediaEarlyRefusals/no_bff_key (0.00s)
+    --- PASS: TestMediaEarlyRefusals/bad_bff_key (0.00s)
+    --- PASS: TestMediaEarlyRefusals/no_origin (0.00s)
+    --- PASS: TestMediaEarlyRefusals/bearer_is_forbidden (0.00s)
+    --- PASS: TestMediaEarlyRefusals/cookie_is_forbidden (0.00s)
+    --- PASS: TestMediaEarlyRefusals/query_is_forbidden (0.00s)
+    --- PASS: TestMediaEarlyRefusals/post (0.00s)
+    --- PASS: TestMediaEarlyRefusals/upper-case_id (0.00s)
+    --- PASS: TestMediaEarlyRefusals/bad_image_id (0.00s)
+    --- PASS: TestMediaEarlyRefusals/idempotency_key (0.00s)
+=== RUN   TestBuyerHTTPOptionsQueryAdmission
+--- PASS: TestBuyerHTTPOptionsQueryAdmission (0.00s)
+=== RUN   TestBuyerHTTPOptionsProjectionExactKeys
+--- PASS: TestBuyerHTTPOptionsProjectionExactKeys (0.00s)
+=== RUN   TestBuyerHTTPOptionsProjectionCarriesTransferWindow
+--- PASS: TestBuyerHTTPOptionsProjectionCarriesTransferWindow (0.00s)
+=== RUN   TestBuyerHTTPOptionsProjectionCarriesCodSurcharge
+--- PASS: TestBuyerHTTPOptionsProjectionCarriesCodSurcharge (0.00s)
+=== RUN   TestBuyerHTTPOptionsProjectionCarriesFreeShippingThreshold
+--- PASS: TestBuyerHTTPOptionsProjectionCarriesFreeShippingThreshold (0.00s)
+=== RUN   TestOrderLinkRouteTableAndTokenGrammar
+--- PASS: TestOrderLinkRouteTableAndTokenGrammar (0.00s)
+=== RUN   TestBuyerPaymentRoutesAndOneShotInput
+--- PASS: TestBuyerPaymentRoutesAndOneShotInput (0.00s)
+=== RUN   TestBuyerPaymentPrepareStrictProjection
+--- PASS: TestBuyerPaymentPrepareStrictProjection (0.00s)
+=== RUN   TestBuyerPaymentSignalRoutesAreKeylessPostOnlyAndFailClosed
+--- PASS: TestBuyerPaymentSignalRoutesAreKeylessPostOnlyAndFailClosed (0.00s)
+=== RUN   TestBuyerPaymentKeylessPathsAreNonRetryableAndPrepareAdmitsStripe
+--- PASS: TestBuyerPaymentKeylessPathsAreNonRetryableAndPrepareAdmitsStripe (0.00s)
+=== RUN   TestConsentPutBodyIsStrictBeforeDatabase
+--- PASS: TestConsentPutBodyIsStrictBeforeDatabase (0.00s)
+=== RUN   TestErasureNeedsTheTypedConfirmation
+--- PASS: TestErasureNeedsTheTypedConfirmation (0.00s)
+=== RUN   TestExportRejectsABodyAndReadIsNotBodyBound
+--- PASS: TestExportRejectsABodyAndReadIsNotBodyBound (0.00s)
+=== RUN   TestPrivacyErrorMapping
+--- PASS: TestPrivacyErrorMapping (0.00s)
+=== RUN   TestBuyerTransactionRefusesWithoutAPool
+--- PASS: TestBuyerTransactionRefusesWithoutAPool (0.00s)
+=== RUN   TestPrivacyPaths
+--- PASS: TestPrivacyPaths (0.00s)
+=== RUN   TestProjectCartExactKeysAndNonNullItems
+--- PASS: TestProjectCartExactKeysAndNonNullItems (0.00s)
+=== RUN   TestProjectQuoteExactKeysSnapshotAndNonNullLines
+--- PASS: TestProjectQuoteExactKeysSnapshotAndNonNullLines (0.00s)
+=== RUN   TestProjectDestinationExactKeysAndPickupAllowlist
+--- PASS: TestProjectDestinationExactKeysAndPickupAllowlist (0.00s)
+=== RUN   TestProjectCheckoutReceiptOnly
+--- PASS: TestProjectCheckoutReceiptOnly (0.00s)
+=== RUN   TestProjectOrderSummaryExactKeys
+--- PASS: TestProjectOrderSummaryExactKeys (0.00s)
+=== RUN   TestProjectOrderExactDisplayAndDraftOnlyExpiry
+--- PASS: TestProjectOrderExactDisplayAndDraftOnlyExpiry (0.00s)
+=== RUN   TestProjectOrderCodCarrier
+--- PASS: TestProjectOrderCodCarrier (0.00s)
+=== RUN   TestPromotionRefusalIsCodedNonRetryable422
+--- PASS: TestPromotionRefusalIsCodedNonRetryable422 (0.00s)
+=== RUN   TestBootstrapExactRouteAndNoReplayKey
+--- PASS: TestBootstrapExactRouteAndNoReplayKey (0.00s)
+=== RUN   TestBootstrapEarlyAdmissionAndBody
+=== RUN   TestBootstrapEarlyAdmissionAndBody/missing_bearer
+=== RUN   TestBootstrapEarlyAdmissionAndBody/duplicate_bearer
+=== RUN   TestBootstrapEarlyAdmissionAndBody/replay_key
+=== RUN   TestBootstrapEarlyAdmissionAndBody/query
+=== RUN   TestBootstrapEarlyAdmissionAndBody/bare_query
+=== RUN   TestBootstrapEarlyAdmissionAndBody/browser_origin
+=== RUN   TestBootstrapEarlyAdmissionAndBody/missing_BFF_key
+=== RUN   TestBootstrapEarlyAdmissionAndBody/missing_storefront_origin
+--- PASS: TestBootstrapEarlyAdmissionAndBody (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/missing_bearer (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/duplicate_bearer (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/replay_key (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/query (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/bare_query (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/browser_origin (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/missing_BFF_key (0.00s)
+    --- PASS: TestBootstrapEarlyAdmissionAndBody/missing_storefront_origin (0.00s)
+PASS
+ok  	livecommerce/internal/buyerhttp	1.490s
+=== RUN   TestMajorUnitsRoundTripAndRefusals
+--- PASS: TestMajorUnitsRoundTripAndRefusals (0.00s)
+=== RUN   TestFormulaGuardRoundTrip
+--- PASS: TestFormulaGuardRoundTrip (0.00s)
+=== RUN   TestParseFileAcceptsBOMQuotesAndGuards
+--- PASS: TestParseFileAcceptsBOMQuotesAndGuards (0.00s)
+=== RUN   TestParseFileListsEveryRowError
+--- PASS: TestParseFileListsEveryRowError (0.00s)
+=== RUN   TestParseFileHeaderAndLimits
+--- PASS: TestParseFileHeaderAndLimits (0.00s)
+=== RUN   TestGroupRowsFindsCrossRowDefects
+--- PASS: TestGroupRowsFindsCrossRowDefects (0.00s)
+=== RUN   TestAxesMergeKeepsExistingValuesAndAppendsNew
+--- PASS: TestAxesMergeKeepsExistingValuesAndAppendsNew (0.00s)
+=== RUN   TestValidateManualRefusesWhatTheBuyerPathWouldNotTake
+--- PASS: TestValidateManualRefusesWhatTheBuyerPathWouldNotTake (0.00s)
+=== RUN   TestValidateManualAcceptsCashOnDelivery
+--- PASS: TestValidateManualAcceptsCashOnDelivery (0.00s)
+=== RUN   TestCapabilityDerivationIsDeterministicScopedAndValid
+--- PASS: TestCapabilityDerivationIsDeterministicScopedAndValid (0.00s)
+=== RUN   TestCutGMVSplitsWindowsAndNeverMixesCurrencies
+--- PASS: TestCutGMVSplitsWindowsAndNeverMixesCurrencies (0.00s)
+=== RUN   TestValidateTargetSortsAndRefusesBadIds
+--- PASS: TestValidateTargetSortsAndRefusesBadIds (0.00s)
+=== RUN   TestPickOriginsFailsClosedPerLine
+--- PASS: TestPickOriginsFailsClosedPerLine (0.00s)
+=== RUN   TestGrantAuditStaysUnderTheDetailCap
+--- PASS: TestGrantAuditStaysUnderTheDetailCap (0.00s)
+=== RUN   TestPayLinkRefusalsBecomeNotSentNeverFailTheOrder
+--- PASS: TestPayLinkRefusalsBecomeNotSentNeverFailTheOrder (0.00s)
+=== RUN   TestTrackingFoldHeader
+--- PASS: TestTrackingFoldHeader (0.00s)
+=== RUN   TestTrackingNormalizeOrderRef
+--- PASS: TestTrackingNormalizeOrderRef (0.00s)
+=== RUN   TestTrackingCarrierAliases
+--- PASS: TestTrackingCarrierAliases (0.00s)
+=== RUN   TestTrackingParseCSV
+=== RUN   TestTrackingParseCSV/ascii_header_and_rows
+=== RUN   TestTrackingParseCSV/UTF-8_BOM,_Chinese_header_and_full-width_header
+=== RUN   TestTrackingParseCSV/unknown_column_ignored,_blank_rows_skipped
+=== RUN   TestTrackingParseCSV/file-level_refusals
+=== RUN   TestTrackingParseCSV/too_many_rows
+=== RUN   TestTrackingParseCSV/field-count_mismatch_is_a_per-row_code,_not_a_file_refusal
+--- PASS: TestTrackingParseCSV (0.00s)
+    --- PASS: TestTrackingParseCSV/ascii_header_and_rows (0.00s)
+    --- PASS: TestTrackingParseCSV/UTF-8_BOM,_Chinese_header_and_full-width_header (0.00s)
+    --- PASS: TestTrackingParseCSV/unknown_column_ignored,_blank_rows_skipped (0.00s)
+    --- PASS: TestTrackingParseCSV/file-level_refusals (0.00s)
+    --- PASS: TestTrackingParseCSV/too_many_rows (0.00s)
+    --- PASS: TestTrackingParseCSV/field-count_mismatch_is_a_per-row_code,_not_a_file_refusal (0.00s)
+=== RUN   TestTrackingGuardCellRoundTrip
+--- PASS: TestTrackingGuardCellRoundTrip (0.00s)
+=== RUN   TestTrackingMailETAHours
+--- PASS: TestTrackingMailETAHours (0.00s)
+PASS
+ok  	livecommerce/internal/merchanttools	1.881s
+=== RUN   TestAccountWireAndMetadataRedaction
+--- PASS: TestAccountWireAndMetadataRedaction (0.00s)
+=== RUN   TestAccountRoutesRejectQueriesAndUnknownSecretFields
+--- PASS: TestAccountRoutesRejectQueriesAndUnknownSecretFields (0.00s)
+=== RUN   TestAccountLimiterScopesResetCapacityAndRace
+--- PASS: TestAccountLimiterScopesResetCapacityAndRace (0.01s)
+=== RUN   TestAccountLimiterErrorsAreSafe
+--- PASS: TestAccountLimiterErrorsAreSafe (0.00s)
+=== RUN   TestAdsRoutesAreUnmountedWithoutAService
+--- PASS: TestAdsRoutesAreUnmountedWithoutAService (0.00s)
+=== RUN   TestAdsTransportRules
+=== RUN   TestAdsTransportRules/connect_ok
+=== RUN   TestAdsTransportRules/connect_needs_key
+=== RUN   TestAdsTransportRules/connect_rejects_body
+=== RUN   TestAdsTransportRules/connect_rejects_query
+=== RUN   TestAdsTransportRules/connect_bad_key
+=== RUN   TestAdsTransportRules/connect_two_keys
+=== RUN   TestAdsTransportRules/connect_wrong_method
+=== RUN   TestAdsTransportRules/states_get
+=== RUN   TestAdsTransportRules/states_bad_id
+=== RUN   TestAdsTransportRules/states_with_key
+=== RUN   TestAdsTransportRules/settings
+=== RUN   TestAdsTransportRules/settings_query
+=== RUN   TestAdsTransportRules/settings_post
+=== RUN   TestAdsTransportRules/drafts_list
+=== RUN   TestAdsTransportRules/draft_get
+=== RUN   TestAdsTransportRules/draft_get_bad_id
+=== RUN   TestAdsTransportRules/draft_create_ok
+=== RUN   TestAdsTransportRules/draft_create_no_key
+=== RUN   TestAdsTransportRules/draft_create_wrong_content_type
+=== RUN   TestAdsTransportRules/draft_create_unknown_field
+=== RUN   TestAdsTransportRules/draft_create_null
+=== RUN   TestAdsTransportRules/draft_create_duplicate_key
+=== RUN   TestAdsTransportRules/draft_create_missing_field
+=== RUN   TestAdsTransportRules/draft_create_bad_time
+=== RUN   TestAdsTransportRules/draft_create_trailing_data
+=== RUN   TestAdsTransportRules/draft_update_ok
+=== RUN   TestAdsTransportRules/draft_update_needs_If-Match
+=== RUN   TestAdsTransportRules/draft_update_If-Match_junk
+=== RUN   TestAdsTransportRules/draft_update_If-Match_zero
+=== RUN   TestAdsTransportRules/approve_ok
+=== RUN   TestAdsTransportRules/approve_takes_no_key
+=== RUN   TestAdsTransportRules/approve_missing_revision
+=== RUN   TestAdsTransportRules/approve_unknown_field
+=== RUN   TestAdsTransportRules/publish_ok
+=== RUN   TestAdsTransportRules/publish_needs_key
+=== RUN   TestAdsTransportRules/publish_missing_attempt
+=== RUN   TestAdsTransportRules/pause_ok
+=== RUN   TestAdsTransportRules/pause_rejects_body
+=== RUN   TestAdsTransportRules/end_ok
+=== RUN   TestAdsTransportRules/end_bad_id
+=== RUN   TestAdsTransportRules/report_ok
+=== RUN   TestAdsTransportRules/report_no_query
+=== RUN   TestAdsTransportRules/report_extra_param
+=== RUN   TestAdsTransportRules/report_duplicate
+=== RUN   TestAdsTransportRules/report_bad_date
+=== RUN   TestAdsTransportRules/capi_ok
+=== RUN   TestAdsTransportRules/capi_full
+=== RUN   TestAdsTransportRules/capi_needs_key
+=== RUN   TestAdsTransportRules/capi_missing_enabled
+=== RUN   TestAdsTransportRules/capi_null_optional
+=== RUN   TestAdsTransportRules/bindings_ok
+=== RUN   TestAdsTransportRules/bindings_with_dataset
+=== RUN   TestAdsTransportRules/bindings_missing_account
+=== RUN   TestAdsTransportRules/bindings_unknown_field
+--- PASS: TestAdsTransportRules (0.01s)
+    --- PASS: TestAdsTransportRules/connect_ok (0.00s)
+    --- PASS: TestAdsTransportRules/connect_needs_key (0.00s)
+    --- PASS: TestAdsTransportRules/connect_rejects_body (0.00s)
+    --- PASS: TestAdsTransportRules/connect_rejects_query (0.00s)
+    --- PASS: TestAdsTransportRules/connect_bad_key (0.00s)
+    --- PASS: TestAdsTransportRules/connect_two_keys (0.00s)
+    --- PASS: TestAdsTransportRules/connect_wrong_method (0.00s)
+    --- PASS: TestAdsTransportRules/states_get (0.00s)
+    --- PASS: TestAdsTransportRules/states_bad_id (0.00s)
+    --- PASS: TestAdsTransportRules/states_with_key (0.00s)
+    --- PASS: TestAdsTransportRules/settings (0.00s)
+    --- PASS: TestAdsTransportRules/settings_query (0.00s)
+    --- PASS: TestAdsTransportRules/settings_post (0.00s)
+    --- PASS: TestAdsTransportRules/drafts_list (0.00s)
+    --- PASS: TestAdsTransportRules/draft_get (0.00s)
+    --- PASS: TestAdsTransportRules/draft_get_bad_id (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_ok (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_no_key (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_wrong_content_type (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_unknown_field (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_null (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_duplicate_key (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_missing_field (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_bad_time (0.00s)
+    --- PASS: TestAdsTransportRules/draft_create_trailing_data (0.00s)
+    --- PASS: TestAdsTransportRules/draft_update_ok (0.00s)
+    --- PASS: TestAdsTransportRules/draft_update_needs_If-Match (0.00s)
+    --- PASS: TestAdsTransportRules/draft_update_If-Match_junk (0.00s)
+    --- PASS: TestAdsTransportRules/draft_update_If-Match_zero (0.00s)
+    --- PASS: TestAdsTransportRules/approve_ok (0.00s)
+    --- PASS: TestAdsTransportRules/approve_takes_no_key (0.00s)
+    --- PASS: TestAdsTransportRules/approve_missing_revision (0.00s)
+    --- PASS: TestAdsTransportRules/approve_unknown_field (0.00s)
+    --- PASS: TestAdsTransportRules/publish_ok (0.00s)
+    --- PASS: TestAdsTransportRules/publish_needs_key (0.00s)
+    --- PASS: TestAdsTransportRules/publish_missing_attempt (0.00s)
+    --- PASS: TestAdsTransportRules/pause_ok (0.00s)
+    --- PASS: TestAdsTransportRules/pause_rejects_body (0.00s)
+    --- PASS: TestAdsTransportRules/end_ok (0.00s)
+    --- PASS: TestAdsTransportRules/end_bad_id (0.00s)
+    --- PASS: TestAdsTransportRules/report_ok (0.00s)
+    --- PASS: TestAdsTransportRules/report_no_query (0.00s)
+    --- PASS: TestAdsTransportRules/report_extra_param (0.00s)
+    --- PASS: TestAdsTransportRules/report_duplicate (0.00s)
+    --- PASS: TestAdsTransportRules/report_bad_date (0.00s)
+    --- PASS: TestAdsTransportRules/capi_ok (0.00s)
+    --- PASS: TestAdsTransportRules/capi_full (0.00s)
+    --- PASS: TestAdsTransportRules/capi_needs_key (0.00s)
+    --- PASS: TestAdsTransportRules/capi_missing_enabled (0.00s)
+    --- PASS: TestAdsTransportRules/capi_null_optional (0.00s)
+    --- PASS: TestAdsTransportRules/bindings_ok (0.00s)
+    --- PASS: TestAdsTransportRules/bindings_with_dataset (0.00s)
+    --- PASS: TestAdsTransportRules/bindings_missing_account (0.00s)
+    --- PASS: TestAdsTransportRules/bindings_unknown_field (0.00s)
+=== RUN   TestAdsCallbackTransportAndSecrecy
+=== RUN   TestAdsCallbackTransportAndSecrecy/valid_shape_reaches_the_service
+=== RUN   TestAdsCallbackTransportAndSecrecy/no_query
+=== RUN   TestAdsCallbackTransportAndSecrecy/missing_state
+=== RUN   TestAdsCallbackTransportAndSecrecy/extra_parameter
+=== RUN   TestAdsCallbackTransportAndSecrecy/duplicate_code
+=== RUN   TestAdsCallbackTransportAndSecrecy/code_with_space
+=== RUN   TestAdsCallbackTransportAndSecrecy/state_wrong_shape_is_a_mismatch
+--- PASS: TestAdsCallbackTransportAndSecrecy (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/valid_shape_reaches_the_service (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/no_query (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/missing_state (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/extra_parameter (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/duplicate_code (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/code_with_space (0.00s)
+    --- PASS: TestAdsCallbackTransportAndSecrecy/state_wrong_shape_is_a_mismatch (0.00s)
+=== RUN   TestAdsClassify
+--- PASS: TestAdsClassify (0.00s)
+=== RUN   TestBillingGetsAreMountedWithoutAService
+--- PASS: TestBillingGetsAreMountedWithoutAService (0.00s)
+=== RUN   TestBillingTransportRules
+--- PASS: TestBillingTransportRules (0.00s)
+=== RUN   TestBillingResponsesArePrivateAndNoReferrer
+--- PASS: TestBillingResponsesArePrivateAndNoReferrer (0.00s)
+=== RUN   TestBillingClassifierMapping
+--- PASS: TestBillingClassifierMapping (0.00s)
+=== RUN   TestClaimsClassifyMapsBillingRestrictedTo402
+--- PASS: TestClaimsClassifyMapsBillingRestrictedTo402 (0.00s)
+=== RUN   TestClaimsRoutesUnmountedWithoutLabelKey
+--- PASS: TestClaimsRoutesUnmountedWithoutLabelKey (0.00s)
+=== RUN   TestClaimsTransportRulesBeforeDatabase
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_board
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M2_window
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M3_offer
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M4_offer_update
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M5_new_actor
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M5_bundle
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_bundles
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_offer_with_live_price
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_offer_update_live_price
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_read
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_set
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_import_library
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_import_session
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_bad_sku
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_set_without_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_read_with_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_post
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_delete
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_import_get
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_import_missing_source
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_import_unknown_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_null_live_price
+=== RUN   TestClaimsTransportRulesBeforeDatabase/R4_library_query
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_bundles_paged
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M7_link
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_head
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_post
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M2_get
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M4_delete
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_post
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M7_put
+=== RUN   TestClaimsTransportRulesBeforeDatabase/unknown_child
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_query
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_bare_query
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M5_query
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_label_filter
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_limit_bound
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_duplicate
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M6_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M2_missing_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M7_short_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M3_duplicate_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/bad_session
+=== RUN   TestClaimsTransportRulesBeforeDatabase/bad_offer
+=== RUN   TestClaimsTransportRulesBeforeDatabase/bad_bundle
+=== RUN   TestClaimsTransportRulesBeforeDatabase/media
+=== RUN   TestClaimsTransportRulesBeforeDatabase/unknown_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/duplicate_json_key
+=== RUN   TestClaimsTransportRulesBeforeDatabase/trailing
+=== RUN   TestClaimsTransportRulesBeforeDatabase/null_boolean
+=== RUN   TestClaimsTransportRulesBeforeDatabase/null_generation
+=== RUN   TestClaimsTransportRulesBeforeDatabase/missing_active
+=== RUN   TestClaimsTransportRulesBeforeDatabase/missing_release
+=== RUN   TestClaimsTransportRulesBeforeDatabase/manual_both
+=== RUN   TestClaimsTransportRulesBeforeDatabase/manual_neither
+=== RUN   TestClaimsTransportRulesBeforeDatabase/manual_no_text
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M7_no_bearer
+=== RUN   TestClaimsTransportRulesBeforeDatabase/M1_spaced_bearer
+--- PASS: TestClaimsTransportRulesBeforeDatabase (0.01s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_board (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M2_window (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M3_offer (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M4_offer_update (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M5_new_actor (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M5_bundle (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_bundles (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_offer_with_live_price (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_offer_update_live_price (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_read (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_set (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_import_library (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_import_session (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_bad_sku (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_set_without_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_read_with_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_post (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_delete (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_import_get (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_import_missing_source (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_import_unknown_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_null_live_price (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/R4_library_query (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_bundles_paged (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M7_link (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_head (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_post (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M2_get (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M4_delete (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_post (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M7_put (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/unknown_child (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_query (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_bare_query (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M5_query (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_label_filter (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_limit_bound (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_duplicate (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M6_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M2_missing_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M7_short_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M3_duplicate_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/bad_session (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/bad_offer (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/bad_bundle (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/media (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/unknown_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/duplicate_json_key (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/trailing (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/null_boolean (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/null_generation (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/missing_active (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/missing_release (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/manual_both (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/manual_neither (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/manual_no_text (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M7_no_bearer (0.00s)
+    --- PASS: TestClaimsTransportRulesBeforeDatabase/M1_spaced_bearer (0.00s)
+=== RUN   TestClaimsClassifyContractMapping
+--- PASS: TestClaimsClassifyContractMapping (0.00s)
+=== RUN   TestClaimLinkResponseShape
+--- PASS: TestClaimLinkResponseShape (0.00s)
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_admitted
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_admitted
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/HEAD_never_mirrors_GET
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/POST
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PATCH
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/DELETE
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_query
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_query
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_key
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_missing_key
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_short_key
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/bad_session_id
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/media_type
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/unknown_key
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_input
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_bool
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/duplicate_key
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/trailing
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/missing_active
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/missing_version
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/no_bearer
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/platform_admitted_(ruling_p)
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_platform
+=== RUN   TestClaimSourceTransportRulesBeforeDatabase/live-sessions/platform_not_a_string
+--- PASS: TestClaimSourceTransportRulesBeforeDatabase (0.01s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_admitted (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_admitted (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/HEAD_never_mirrors_GET (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/POST (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PATCH (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/DELETE (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_query (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_query (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/GET_key (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_missing_key (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/PUT_short_key (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/bad_session_id (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/media_type (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/unknown_key (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_input (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_bool (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/duplicate_key (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/trailing (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/missing_active (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/missing_version (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/no_bearer (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/platform_admitted_(ruling_p) (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/null_platform (0.00s)
+    --- PASS: TestClaimSourceTransportRulesBeforeDatabase/live-sessions/platform_not_a_string (0.00s)
+=== RUN   TestClaimSourceAliasRemoved
+--- PASS: TestClaimSourceAliasRemoved (0.00s)
+=== RUN   TestClaimSourceErrorCodesReachJSONBody
+--- PASS: TestClaimSourceErrorCodesReachJSONBody (0.00s)
+=== RUN   TestCustomerTagRoutesTransportRules
+=== RUN   TestCustomerTagRoutesTransportRules/list_tags
+=== RUN   TestCustomerTagRoutesTransportRules/create_tag
+=== RUN   TestCustomerTagRoutesTransportRules/patch_tag
+=== RUN   TestCustomerTagRoutesTransportRules/delete_tag
+=== RUN   TestCustomerTagRoutesTransportRules/set_tags
+=== RUN   TestCustomerTagRoutesTransportRules/list_notes
+=== RUN   TestCustomerTagRoutesTransportRules/add_note
+=== RUN   TestCustomerTagRoutesTransportRules/edit_note
+=== RUN   TestCustomerTagRoutesTransportRules/delete_note
+=== RUN   TestCustomerTagRoutesTransportRules/list_by_tag
+=== RUN   TestCustomerTagRoutesTransportRules/create_tag_no_key
+=== RUN   TestCustomerTagRoutesTransportRules/patch_tag_no_key
+=== RUN   TestCustomerTagRoutesTransportRules/delete_tag_no_key
+=== RUN   TestCustomerTagRoutesTransportRules/set_tags_no_key
+=== RUN   TestCustomerTagRoutesTransportRules/add_note_short_key
+=== RUN   TestCustomerTagRoutesTransportRules/list_tags_with_key
+=== RUN   TestCustomerTagRoutesTransportRules/bad_tag_id
+=== RUN   TestCustomerTagRoutesTransportRules/bad_note_id
+=== RUN   TestCustomerTagRoutesTransportRules/bad_customer_id_on_notes
+=== RUN   TestCustomerTagRoutesTransportRules/tags_query
+=== RUN   TestCustomerTagRoutesTransportRules/notes_q_rejected
+=== RUN   TestCustomerTagRoutesTransportRules/notes_tag_rejected
+=== RUN   TestCustomerTagRoutesTransportRules/bad_tag_filter
+=== RUN   TestCustomerTagRoutesTransportRules/put_tags_collection
+=== RUN   TestCustomerTagRoutesTransportRules/get_tag_item
+=== RUN   TestCustomerTagRoutesTransportRules/post_owner_tags
+=== RUN   TestCustomerTagRoutesTransportRules/create_unknown_key
+=== RUN   TestCustomerTagRoutesTransportRules/create_missing_color
+=== RUN   TestCustomerTagRoutesTransportRules/create_null_name
+=== RUN   TestCustomerTagRoutesTransportRules/create_bad_color
+=== RUN   TestCustomerTagRoutesTransportRules/set_tags_missing_revision
+=== RUN   TestCustomerTagRoutesTransportRules/add_note_missing_body
+=== RUN   TestCustomerTagRoutesTransportRules/edit_note_missing_version
+=== RUN   TestCustomerTagRoutesTransportRules/delete_note_with_body
+=== RUN   TestCustomerTagRoutesTransportRules/delete_tag_with_body
+--- PASS: TestCustomerTagRoutesTransportRules (0.01s)
+    --- PASS: TestCustomerTagRoutesTransportRules/list_tags (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_tag (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/patch_tag (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/delete_tag (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/set_tags (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/list_notes (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/add_note (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/edit_note (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/delete_note (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/list_by_tag (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_tag_no_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/patch_tag_no_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/delete_tag_no_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/set_tags_no_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/add_note_short_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/list_tags_with_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/bad_tag_id (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/bad_note_id (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/bad_customer_id_on_notes (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/tags_query (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/notes_q_rejected (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/notes_tag_rejected (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/bad_tag_filter (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/put_tags_collection (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/get_tag_item (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/post_owner_tags (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_unknown_key (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_missing_color (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_null_name (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/create_bad_color (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/set_tags_missing_revision (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/add_note_missing_body (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/edit_note_missing_version (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/delete_note_with_body (0.00s)
+    --- PASS: TestCustomerTagRoutesTransportRules/delete_tag_with_body (0.00s)
+=== RUN   TestParseCustomersQueryTag
+--- PASS: TestParseCustomersQueryTag (0.00s)
+=== RUN   TestCustomerTagErrorCodesAreInTheTable
+--- PASS: TestCustomerTagErrorCodesAreInTheTable (0.00s)
+=== RUN   TestCustomerTransportRulesBeforeDatabase
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_paged
+=== RUN   TestCustomerTransportRulesBeforeDatabase/detail
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw
+=== RUN   TestCustomerTransportRulesBeforeDatabase/export
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase
+=== RUN   TestCustomerTransportRulesBeforeDatabase/no_bearer
+=== RUN   TestCustomerTransportRulesBeforeDatabase/spaced_bearer
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_head
+=== RUN   TestCustomerTransportRulesBeforeDatabase/detail_head
+=== RUN   TestCustomerTransportRulesBeforeDatabase/post_list
+=== RUN   TestCustomerTransportRulesBeforeDatabase/put_detail
+=== RUN   TestCustomerTransportRulesBeforeDatabase/delete_detail
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_withdraw
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_export
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_erase
+=== RUN   TestCustomerTransportRulesBeforeDatabase/detail_query
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_query
+=== RUN   TestCustomerTransportRulesBeforeDatabase/export_bare_query
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_unknown_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_limit_0
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_limit_101
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_limit_zero_padded
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_limit_twice
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_empty_q
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_blank_q
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_long_q
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_control_q
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_long_after
+=== RUN   TestCustomerTransportRulesBeforeDatabase/list_ampersand
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_no_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_short_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/export_two_keys
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_with_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_with_empty_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/get_with_body
+=== RUN   TestCustomerTransportRulesBeforeDatabase/bad_customer_id
+=== RUN   TestCustomerTransportRulesBeforeDatabase/upper-case_customer_id
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_media
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_empty_body
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_granted_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_source_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_missing_channel
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_null
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_duplicate_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/withdraw_trailing
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_empty_object
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_wrong_confirm
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_blank_confirm
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_extra_key
+=== RUN   TestCustomerTransportRulesBeforeDatabase/erase_no_body
+=== RUN   TestCustomerTransportRulesBeforeDatabase/export_with_body
+--- PASS: TestCustomerTransportRulesBeforeDatabase (0.01s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_paged (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/detail (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/export (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/no_bearer (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/spaced_bearer (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_head (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/detail_head (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/post_list (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/put_detail (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/delete_detail (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_withdraw (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_export (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_erase (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/detail_query (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_query (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/export_bare_query (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_unknown_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_limit_0 (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_limit_101 (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_limit_zero_padded (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_limit_twice (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_empty_q (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_blank_q (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_long_q (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_control_q (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_long_after (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/list_ampersand (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_no_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_short_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/export_two_keys (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_with_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_with_empty_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/get_with_body (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/bad_customer_id (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/upper-case_customer_id (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_media (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_empty_body (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_granted_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_source_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_missing_channel (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_null (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_duplicate_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/withdraw_trailing (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_empty_object (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_wrong_confirm (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_blank_confirm (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_extra_key (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/erase_no_body (0.00s)
+    --- PASS: TestCustomerTransportRulesBeforeDatabase/export_with_body (0.00s)
+=== RUN   TestParseCustomersQuery
+--- PASS: TestParseCustomersQuery (0.00s)
+=== RUN   TestCustomersClassify
+--- PASS: TestCustomersClassify (0.00s)
+=== RUN   TestWriteAttachment
+--- PASS: TestWriteAttachment (0.00s)
+=== RUN   TestCVSRoutesUnmountedWithoutService
+--- PASS: TestCVSRoutesUnmountedWithoutService (0.00s)
+=== RUN   TestCVSRouteTransportGates
+--- PASS: TestCVSRouteTransportGates (0.01s)
+=== RUN   TestCVSStrictBodyAllowsOnlyDeclaredNulls
+--- PASS: TestCVSStrictBodyAllowsOnlyDeclaredNulls (0.00s)
+=== RUN   TestCVSClassify
+--- PASS: TestCVSClassify (0.00s)
+=== RUN   TestCVSServeWritesRetryAfterAndNeverTheDriverText
+--- PASS: TestCVSServeWritesRetryAfterAndNeverTheDriverText (0.00s)
+=== RUN   TestDesignRoutesRequireLogin
+--- PASS: TestDesignRoutesRequireLogin (0.00s)
+=== RUN   TestDesignBodyGuards
+=== RUN   TestDesignBodyGuards/not_json
+=== RUN   TestDesignBodyGuards/unknown_envelope_field
+=== RUN   TestDesignBodyGuards/trailing_value
+=== RUN   TestDesignBodyGuards/malformed
+=== RUN   TestDesignBodyGuards/over_the_cap
+--- PASS: TestDesignBodyGuards (0.00s)
+    --- PASS: TestDesignBodyGuards/not_json (0.00s)
+    --- PASS: TestDesignBodyGuards/unknown_envelope_field (0.00s)
+    --- PASS: TestDesignBodyGuards/trailing_value (0.00s)
+    --- PASS: TestDesignBodyGuards/malformed (0.00s)
+    --- PASS: TestDesignBodyGuards/over_the_cap (0.00s)
+=== RUN   TestDesignUploadGuards
+=== RUN   TestDesignUploadGuards/json_is_not_multipart
+=== RUN   TestDesignUploadGuards/wrong_field_name
+=== RUN   TestDesignUploadGuards/over_the_cap
+--- PASS: TestDesignUploadGuards (0.03s)
+    --- PASS: TestDesignUploadGuards/json_is_not_multipart (0.00s)
+    --- PASS: TestDesignUploadGuards/wrong_field_name (0.00s)
+    --- PASS: TestDesignUploadGuards/over_the_cap (0.03s)
+=== RUN   TestValidationEnvelopeCarriesPathOnly
+--- PASS: TestValidationEnvelopeCarriesPathOnly (0.00s)
+=== RUN   TestDomainErrorCodesReachJSONBody
+=== RUN   TestDomainErrorCodesReachJSONBody/customers/idempotency_conflict
+=== RUN   TestDomainErrorCodesReachJSONBody/customers/erasure_blocked
+=== RUN   TestDomainErrorCodesReachJSONBody/customers/export_too_large
+=== RUN   TestDomainErrorCodesReachJSONBody/customers/erased
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/invalid_carrier
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/invalid_tracking
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/invalid_url
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/void_requires_shipped
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/invalid_void
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/version_changed
+=== RUN   TestDomainErrorCodesReachJSONBody/shipments/not_shippable
+=== RUN   TestDomainErrorCodesReachJSONBody/promotions/idempotency_conflict
+=== RUN   TestDomainErrorCodesReachJSONBody/promotions/invalid_promotion
+=== RUN   TestDomainErrorCodesReachJSONBody/promotions/promo_exists
+=== RUN   TestDomainErrorCodesReachJSONBody/promotions/version_changed
+=== RUN   TestDomainErrorCodesReachJSONBody/billing/subscription_exists
+=== RUN   TestDomainErrorCodesReachJSONBody/billing/no_billing_customer
+=== RUN   TestDomainErrorCodesReachJSONBody/inventory/below_reserved
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/refund_limit
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/refundable_changed
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/exceeds_refundable
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/amount_step
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/not_refundable
+=== RUN   TestDomainErrorCodesReachJSONBody/refunds/refund_blocked_review
+--- PASS: TestDomainErrorCodesReachJSONBody (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/customers/idempotency_conflict (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/customers/erasure_blocked (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/customers/export_too_large (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/customers/erased (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/invalid_carrier (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/invalid_tracking (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/invalid_url (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/void_requires_shipped (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/invalid_void (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/version_changed (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/shipments/not_shippable (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/promotions/idempotency_conflict (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/promotions/invalid_promotion (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/promotions/promo_exists (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/promotions/version_changed (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/billing/subscription_exists (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/billing/no_billing_customer (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/inventory/below_reserved (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/refund_limit (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/refundable_changed (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/exceeds_refundable (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/amount_step (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/not_refundable (0.00s)
+    --- PASS: TestDomainErrorCodesReachJSONBody/refunds/refund_blocked_review (0.00s)
+=== RUN   TestBillingStatusCodesReachJSONBody
+--- PASS: TestBillingStatusCodesReachJSONBody (0.00s)
+=== RUN   TestFinanceTransportRulesBeforeDatabase
+=== RUN   TestFinanceTransportRulesBeforeDatabase/summary
+=== RUN   TestFinanceTransportRulesBeforeDatabase/csv
+=== RUN   TestFinanceTransportRulesBeforeDatabase/same_day
+=== RUN   TestFinanceTransportRulesBeforeDatabase/max_range
+=== RUN   TestFinanceTransportRulesBeforeDatabase/range_too_long
+=== RUN   TestFinanceTransportRulesBeforeDatabase/reversed
+=== RUN   TestFinanceTransportRulesBeforeDatabase/no_query
+=== RUN   TestFinanceTransportRulesBeforeDatabase/missing_to
+=== RUN   TestFinanceTransportRulesBeforeDatabase/bad_date
+=== RUN   TestFinanceTransportRulesBeforeDatabase/timestamp
+=== RUN   TestFinanceTransportRulesBeforeDatabase/extra_key
+=== RUN   TestFinanceTransportRulesBeforeDatabase/duplicate_from
+=== RUN   TestFinanceTransportRulesBeforeDatabase/csv_bad
+=== RUN   TestFinanceTransportRulesBeforeDatabase/post
+=== RUN   TestFinanceTransportRulesBeforeDatabase/head
+=== RUN   TestFinanceTransportRulesBeforeDatabase/csv_head
+=== RUN   TestFinanceTransportRulesBeforeDatabase/with_key
+=== RUN   TestFinanceTransportRulesBeforeDatabase/no_bearer
+--- PASS: TestFinanceTransportRulesBeforeDatabase (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/summary (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/csv (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/same_day (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/max_range (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/range_too_long (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/reversed (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/no_query (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/missing_to (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/bad_date (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/timestamp (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/extra_key (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/duplicate_from (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/csv_bad (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/post (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/head (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/csv_head (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/with_key (0.00s)
+    --- PASS: TestFinanceTransportRulesBeforeDatabase/no_bearer (0.00s)
+=== RUN   TestParseFinanceQuery
+--- PASS: TestParseFinanceQuery (0.00s)
+=== RUN   TestForBuyerRoutesTransportGates
+--- PASS: TestForBuyerRoutesTransportGates (0.03s)
+=== RUN   TestUnwiredForBuyerAnswers503WithTheirCode
+--- PASS: TestUnwiredForBuyerAnswers503WithTheirCode (0.00s)
+=== RUN   TestForBuyerRefusalsReachTheBody
+--- PASS: TestForBuyerRefusalsReachTheBody (0.00s)
+=== RUN   TestClassifyDoesNotExposeDriverDetails
+--- PASS: TestClassifyDoesNotExposeDriverDetails (0.00s)
+=== RUN   TestPageQueryValidation
+--- PASS: TestPageQueryValidation (0.00s)
+=== RUN   TestAdminHTTPTransportGuards
+=== RUN   TestAdminHTTPTransportGuards/no_auth
+=== RUN   TestAdminHTTPTransportGuards/cookie_is_not_login
+=== RUN   TestAdminHTTPTransportGuards/spaces_in_bearer
+=== RUN   TestAdminHTTPTransportGuards/wrong_content_type
+=== RUN   TestAdminHTTPTransportGuards/unknown_tenant_field
+=== RUN   TestAdminHTTPTransportGuards/trailing_json
+=== RUN   TestAdminHTTPTransportGuards/oversize
+=== RUN   TestAdminHTTPTransportGuards/bad_json
+=== RUN   TestAdminHTTPTransportGuards/valid_payload_needs_login
+--- PASS: TestAdminHTTPTransportGuards (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/no_auth (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/cookie_is_not_login (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/spaces_in_bearer (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/wrong_content_type (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/unknown_tenant_field (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/trailing_json (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/oversize (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/bad_json (0.00s)
+    --- PASS: TestAdminHTTPTransportGuards/valid_payload_needs_login (0.00s)
+=== RUN   TestNoPublicReserveOrGETMutation
+--- PASS: TestNoPublicReserveOrGETMutation (0.00s)
+=== RUN   TestUploadImageTransportGuards
+=== RUN   TestUploadImageTransportGuards/no_bearer
+=== RUN   TestUploadImageTransportGuards/spaces_in_bearer
+=== RUN   TestUploadImageTransportGuards/json_is_not_multipart
+--- PASS: TestUploadImageTransportGuards (0.00s)
+    --- PASS: TestUploadImageTransportGuards/no_bearer (0.00s)
+    --- PASS: TestUploadImageTransportGuards/spaces_in_bearer (0.00s)
+    --- PASS: TestUploadImageTransportGuards/json_is_not_multipart (0.00s)
+=== RUN   TestUploadRefusesUnauthenticatedBeforeBodyRead
+=== RUN   TestUploadRefusesUnauthenticatedBeforeBodyRead/no_bearer
+=== RUN   TestUploadRefusesUnauthenticatedBeforeBodyRead/malformed_bearer
+=== RUN   TestUploadRefusesUnauthenticatedBeforeBodyRead/unauthorized_bearer
+--- PASS: TestUploadRefusesUnauthenticatedBeforeBodyRead (0.00s)
+    --- PASS: TestUploadRefusesUnauthenticatedBeforeBodyRead/no_bearer (0.00s)
+    --- PASS: TestUploadRefusesUnauthenticatedBeforeBodyRead/malformed_bearer (0.00s)
+    --- PASS: TestUploadRefusesUnauthenticatedBeforeBodyRead/unauthorized_bearer (0.00s)
+=== RUN   TestReadSingleFileGuards
+=== RUN   TestReadSingleFileGuards/wrong_field_name
+=== RUN   TestReadSingleFileGuards/two_parts
+=== RUN   TestReadSingleFileGuards/empty_body
+=== RUN   TestReadSingleFileGuards/file_over_2_MiB
+=== RUN   TestReadSingleFileGuards/body_over_cap
+--- PASS: TestReadSingleFileGuards (0.07s)
+    --- PASS: TestReadSingleFileGuards/wrong_field_name (0.00s)
+    --- PASS: TestReadSingleFileGuards/two_parts (0.00s)
+    --- PASS: TestReadSingleFileGuards/empty_body (0.00s)
+    --- PASS: TestReadSingleFileGuards/file_over_2_MiB (0.04s)
+    --- PASS: TestReadSingleFileGuards/body_over_cap (0.03s)
+=== RUN   TestImageReadAndWriteRoutesRequireLogin
+--- PASS: TestImageReadAndWriteRoutesRequireLogin (0.00s)
+=== RUN   TestRawResponseHeaders
+--- PASS: TestRawResponseHeaders (0.00s)
+=== RUN   TestImageUploadQueryGuard
+--- PASS: TestImageUploadQueryGuard (0.00s)
+=== RUN   TestInboxSendRoutesMountOnlyWhenEnabled
+--- PASS: TestInboxSendRoutesMountOnlyWhenEnabled (0.01s)
+=== RUN   TestInboxSendClassify
+--- PASS: TestInboxSendClassify (0.00s)
+=== RUN   TestSendCodesSurviveHTTPError
+--- PASS: TestSendCodesSurviveHTTPError (0.00s)
+=== RUN   TestSendErrorDetailsReachTheEnvelope
+--- PASS: TestSendErrorDetailsReachTheEnvelope (0.00s)
+=== RUN   TestPrivateReplyFactsMapping
+--- PASS: TestPrivateReplyFactsMapping (0.00s)
+=== RUN   TestEncodeDecodeInboxCursor
+--- PASS: TestEncodeDecodeInboxCursor (0.00s)
+=== RUN   TestParseInboxListRequest
+--- PASS: TestParseInboxListRequest (0.00s)
+=== RUN   TestParseInboxThreadQuery
+--- PASS: TestParseInboxThreadQuery (0.00s)
+=== RUN   TestParseInboxBuyerPanel
+--- PASS: TestParseInboxBuyerPanel (0.00s)
+=== RUN   TestInboxClassify
+--- PASS: TestInboxClassify (0.00s)
+=== RUN   TestInboxCustomerLinkBody
+--- PASS: TestInboxCustomerLinkBody (0.00s)
+=== RUN   TestInboxRoutesMountWhenServicePresent
+=== RUN   TestInboxRoutesMountWhenServicePresent/nil_service_unmounted
+=== RUN   TestInboxRoutesMountWhenServicePresent/non-nil_service_mounted
+--- PASS: TestInboxRoutesMountWhenServicePresent (0.00s)
+    --- PASS: TestInboxRoutesMountWhenServicePresent/nil_service_unmounted (0.00s)
+    --- PASS: TestInboxRoutesMountWhenServicePresent/non-nil_service_mounted (0.00s)
+=== RUN   TestLiveConsoleRouteOnFullRouter
+--- PASS: TestLiveConsoleRouteOnFullRouter (0.01s)
+=== RUN   TestInventoryAdjustRouteOnFullRouter
+--- PASS: TestInventoryAdjustRouteOnFullRouter (0.00s)
+=== RUN   TestInventoryAdjustClassify
+--- PASS: TestInventoryAdjustClassify (0.00s)
+=== RUN   TestLiveFlowRouteRegistration
+--- PASS: TestLiveFlowRouteRegistration (0.00s)
+=== RUN   TestLiveLifecycleRouteOnFullRouter
+--- PASS: TestLiveLifecycleRouteOnFullRouter (0.01s)
+=== RUN   TestLifecycleClassify
+--- PASS: TestLifecycleClassify (0.00s)
+=== RUN   TestLiveStreamRouteRegistration
+--- PASS: TestLiveStreamRouteRegistration (0.00s)
+=== RUN   TestLiveStreamQuery
+--- PASS: TestLiveStreamQuery (0.00s)
+=== RUN   TestLiveStreamClassify
+--- PASS: TestLiveStreamClassify (0.00s)
+=== RUN   TestLiveStreamTransportGuards
+=== RUN   TestLiveStreamTransportGuards/a2_no_auth
+=== RUN   TestLiveStreamTransportGuards/a2_bad_cursor
+=== RUN   TestLiveStreamTransportGuards/a2_post_method
+=== RUN   TestLiveStreamTransportGuards/a3_no_auth
+=== RUN   TestLiveStreamTransportGuards/a3_get_method
+--- PASS: TestLiveStreamTransportGuards (0.00s)
+    --- PASS: TestLiveStreamTransportGuards/a2_no_auth (0.00s)
+    --- PASS: TestLiveStreamTransportGuards/a2_bad_cursor (0.00s)
+    --- PASS: TestLiveStreamTransportGuards/a2_post_method (0.00s)
+    --- PASS: TestLiveStreamTransportGuards/a3_no_auth (0.00s)
+    --- PASS: TestLiveStreamTransportGuards/a3_get_method (0.00s)
+=== RUN   TestLiveStreamRoutesCoexistWithInboxAndTemplates
+--- PASS: TestLiveStreamRoutesCoexistWithInboxAndTemplates (0.00s)
+=== RUN   TestMerchantToolsTransportGates
+--- PASS: TestMerchantToolsTransportGates (0.03s)
+=== RUN   TestUnwiredManualOrdersAnswer503WithTheirCode
+--- PASS: TestUnwiredManualOrdersAnswer503WithTheirCode (0.00s)
+=== RUN   TestMerchantToolsCodesReachJSONBody
+--- PASS: TestMerchantToolsCodesReachJSONBody (0.00s)
+=== RUN   TestMerchantOrdersQuery
+--- PASS: TestMerchantOrdersQuery (0.00s)
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/head_list
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/head_detail
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/body
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/transfer
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/idempotency_even_empty
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/duplicate
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/unknown
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/bare_query
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/detail_query
+=== RUN   TestMerchantOrdersTransportRejectsBeforeDatabase/invalid_order_id
+--- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/head_list (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/head_detail (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/body (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/transfer (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/idempotency_even_empty (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/duplicate (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/unknown (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/bare_query (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/detail_query (0.00s)
+    --- PASS: TestMerchantOrdersTransportRejectsBeforeDatabase/invalid_order_id (0.00s)
+=== RUN   TestPlatformStripePF08RouterBuild
+--- PASS: TestPlatformStripePF08RouterBuild (0.01s)
+=== RUN   TestPicklistClassify
+=== RUN   TestPicklistClassify/too_many
+=== RUN   TestPicklistClassify/unauthorized
+=== RUN   TestPicklistClassify/forbidden
+=== RUN   TestPicklistClassify/scope_not_found
+=== RUN   TestPicklistClassify/invalid
+=== RUN   TestPicklistClassify/unavailable_sentinel
+=== RUN   TestPicklistClassify/deadline
+=== RUN   TestPicklistClassify/unclassified
+--- PASS: TestPicklistClassify (0.00s)
+    --- PASS: TestPicklistClassify/too_many (0.00s)
+    --- PASS: TestPicklistClassify/unauthorized (0.00s)
+    --- PASS: TestPicklistClassify/forbidden (0.00s)
+    --- PASS: TestPicklistClassify/scope_not_found (0.00s)
+    --- PASS: TestPicklistClassify/invalid (0.00s)
+    --- PASS: TestPicklistClassify/unavailable_sentinel (0.00s)
+    --- PASS: TestPicklistClassify/deadline (0.00s)
+    --- PASS: TestPicklistClassify/unclassified (0.00s)
+=== RUN   TestExportTemplate
+--- PASS: TestExportTemplate (0.00s)
+=== RUN   TestPickListSelection
+=== RUN   TestPickListSelection/order_ids
+=== RUN   TestPickListSelection/session_id
+=== RUN   TestPickListSelection/both_selectors
+=== RUN   TestPickListSelection/neither_selector
+=== RUN   TestPickListSelection/empty_order_ids
+=== RUN   TestPickListSelection/empty_session_id
+=== RUN   TestPickListSelection/wrong_media
+=== RUN   TestPickListSelection/unknown_key
+=== RUN   TestPickListSelection/duplicate_key
+=== RUN   TestPickListSelection/invalid_json
+--- PASS: TestPickListSelection (0.00s)
+    --- PASS: TestPickListSelection/order_ids (0.00s)
+    --- PASS: TestPickListSelection/session_id (0.00s)
+    --- PASS: TestPickListSelection/both_selectors (0.00s)
+    --- PASS: TestPickListSelection/neither_selector (0.00s)
+    --- PASS: TestPickListSelection/empty_order_ids (0.00s)
+    --- PASS: TestPickListSelection/empty_session_id (0.00s)
+    --- PASS: TestPickListSelection/wrong_media (0.00s)
+    --- PASS: TestPickListSelection/unknown_key (0.00s)
+    --- PASS: TestPickListSelection/duplicate_key (0.00s)
+    --- PASS: TestPickListSelection/invalid_json (0.00s)
+=== RUN   TestPurchaseEntryQuery
+--- PASS: TestPurchaseEntryQuery (0.00s)
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/missing_locale
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/duplicate_locale
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/body
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/idempotency
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/head
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/post
+=== RUN   TestPurchaseEntryHTTPBoundariesBeforeDatabase/no_auth
+--- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/missing_locale (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/duplicate_locale (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/body (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/idempotency (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/head (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/post (0.00s)
+    --- PASS: TestPurchaseEntryHTTPBoundariesBeforeDatabase/no_auth (0.00s)
+=== RUN   TestPurchaseEntryErrorAndJSONContract
+--- PASS: TestPurchaseEntryErrorAndJSONContract (0.00s)
+=== RUN   TestRegisterRefundRoutesInMountsOnlyKnownEnvironments
+--- PASS: TestRegisterRefundRoutesInMountsOnlyKnownEnvironments (0.00s)
+=== RUN   TestRefundRoutesAreUnmountedWithoutAJobClient
+--- PASS: TestRefundRoutesAreUnmountedWithoutAJobClient (0.00s)
+=== RUN   TestRefundPostTransportRules
+--- PASS: TestRefundPostTransportRules (0.00s)
+=== RUN   TestRefundGetAndRefreshTransportRules
+--- PASS: TestRefundGetAndRefreshTransportRules (0.00s)
+=== RUN   TestRefundClassifyMapsFixedCodes
+--- PASS: TestRefundClassifyMapsFixedCodes (0.00s)
+=== RUN   TestReminderRoutesMountAndGuards
+--- PASS: TestReminderRoutesMountAndGuards (0.01s)
+=== RUN   TestReminderErrorCodes
+--- PASS: TestReminderErrorCodes (0.00s)
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/products
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/channels
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/funnel
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/funnel_session
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/manual
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/products_csv
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/channels_csv
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/funnel_csv
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/manual_csv
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/max_range
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/93_days
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/93_days_csv
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/reversed
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/no_query
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/missing_to
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/bad_date
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/extra_key
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/duplicate_from
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/session_on_products
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/session_on_csv_products
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/bad_session
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/post
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/head
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/with_key
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/no_bearer
+=== RUN   TestReportRoutesTransportRulesBeforeDatabase/unknown_report
+--- PASS: TestReportRoutesTransportRulesBeforeDatabase (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/products (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/channels (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/funnel (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/funnel_session (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/manual (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/products_csv (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/channels_csv (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/funnel_csv (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/manual_csv (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/max_range (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/93_days (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/93_days_csv (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/reversed (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/no_query (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/missing_to (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/bad_date (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/extra_key (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/duplicate_from (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/session_on_products (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/session_on_csv_products (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/bad_session (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/post (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/head (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/with_key (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/no_bearer (0.00s)
+    --- PASS: TestReportRoutesTransportRulesBeforeDatabase/unknown_report (0.00s)
+=== RUN   TestParseReportQuery
+--- PASS: TestParseReportQuery (0.00s)
+=== RUN   TestSettingsRoutesRejectQueriesBeforeAuthentication
+--- PASS: TestSettingsRoutesRejectQueriesBeforeAuthentication (0.00s)
+=== RUN   TestSettingsBodiesDoNotAcceptProviderCredentials
+--- PASS: TestSettingsBodiesDoNotAcceptProviderCredentials (0.00s)
+=== RUN   TestSettingsPathTargetMustMatchExactly
+--- PASS: TestSettingsPathTargetMustMatchExactly (0.00s)
+=== RUN   TestShipmentTransportRulesBeforeDatabase
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_record
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_void
+=== RUN   TestShipmentTransportRulesBeforeDatabase/history
+=== RUN   TestShipmentTransportRulesBeforeDatabase/csv
+=== RUN   TestShipmentTransportRulesBeforeDatabase/actions
+=== RUN   TestShipmentTransportRulesBeforeDatabase/no_bearer
+=== RUN   TestShipmentTransportRulesBeforeDatabase/spaced_bearer
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_head
+=== RUN   TestShipmentTransportRulesBeforeDatabase/history_head
+=== RUN   TestShipmentTransportRulesBeforeDatabase/csv_head
+=== RUN   TestShipmentTransportRulesBeforeDatabase/actions_head
+=== RUN   TestShipmentTransportRulesBeforeDatabase/post_shipment
+=== RUN   TestShipmentTransportRulesBeforeDatabase/patch_shipment
+=== RUN   TestShipmentTransportRulesBeforeDatabase/get_shipment
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_history
+=== RUN   TestShipmentTransportRulesBeforeDatabase/post_csv
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_query
+=== RUN   TestShipmentTransportRulesBeforeDatabase/put_bare_query
+=== RUN   TestShipmentTransportRulesBeforeDatabase/history_query
+=== RUN   TestShipmentTransportRulesBeforeDatabase/csv_query
+=== RUN   TestShipmentTransportRulesBeforeDatabase/actions_query
+=== RUN   TestShipmentTransportRulesBeforeDatabase/missing_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/short_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/two_keys
+=== RUN   TestShipmentTransportRulesBeforeDatabase/read_with_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/read_with_empty_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/read_with_body
+=== RUN   TestShipmentTransportRulesBeforeDatabase/bad_order_id_put
+=== RUN   TestShipmentTransportRulesBeforeDatabase/bad_order_id_history
+=== RUN   TestShipmentTransportRulesBeforeDatabase/media
+=== RUN   TestShipmentTransportRulesBeforeDatabase/empty_body
+=== RUN   TestShipmentTransportRulesBeforeDatabase/unknown_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/duplicate_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/trailing_data
+=== RUN   TestShipmentTransportRulesBeforeDatabase/top-level_null
+=== RUN   TestShipmentTransportRulesBeforeDatabase/wrong_type
+=== RUN   TestShipmentTransportRulesBeforeDatabase/missing_nullable_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/missing_void_reason_key
+=== RUN   TestShipmentTransportRulesBeforeDatabase/null_expected_version
+=== RUN   TestShipmentTransportRulesBeforeDatabase/null_status
+=== RUN   TestShipmentTransportRulesBeforeDatabase/oversized
+--- PASS: TestShipmentTransportRulesBeforeDatabase (0.01s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_record (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_void (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/history (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/csv (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/actions (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/no_bearer (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/spaced_bearer (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_head (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/history_head (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/csv_head (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/actions_head (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/post_shipment (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/patch_shipment (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/get_shipment (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_history (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/post_csv (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_query (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/put_bare_query (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/history_query (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/csv_query (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/actions_query (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/missing_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/short_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/two_keys (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/read_with_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/read_with_empty_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/read_with_body (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/bad_order_id_put (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/bad_order_id_history (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/media (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/empty_body (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/unknown_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/duplicate_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/trailing_data (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/top-level_null (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/wrong_type (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/missing_nullable_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/missing_void_reason_key (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/null_expected_version (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/null_status (0.00s)
+    --- PASS: TestShipmentTransportRulesBeforeDatabase/oversized (0.00s)
+=== RUN   TestShipmentRoutesDoNotShadowOrderRoutes
+--- PASS: TestShipmentRoutesDoNotShadowOrderRoutes (0.00s)
+=== RUN   TestShipmentClassifyMapping
+--- PASS: TestShipmentClassifyMapping (0.00s)
+=== RUN   TestShipmentErrorEnvelopeKeepsContractCodes
+--- PASS: TestShipmentErrorEnvelopeKeepsContractCodes (0.00s)
+=== RUN   TestWriteExportHeaders
+--- PASS: TestWriteExportHeaders (0.00s)
+=== RUN   TestOrdersListAdmitsShipmentFilters
+--- PASS: TestOrdersListAdmitsShipmentFilters (0.00s)
+=== RUN   TestStorefrontTransportRulesBeforeDatabase
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_query
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_bare_question_mark
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_no_bearer
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_query
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_media_type
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_unknown_key
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_duplicate-free_trailing_value
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_not_json
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_on_the_read_resource
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_on_the_write_resource
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_domains_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/GET_domains_query
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_domains_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_domains_unknown_key
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_domains_suspend_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/POST_domains_detach_admitted
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/no_domain_route_PUT
+=== RUN   TestStorefrontTransportRulesBeforeDatabase/no_domain_bind
+--- PASS: TestStorefrontTransportRulesBeforeDatabase (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_query (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_bare_question_mark (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_no_bearer (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_query (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_media_type (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_unknown_key (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_duplicate-free_trailing_value (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_not_json (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_on_the_read_resource (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_on_the_write_resource (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_domains_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/GET_domains_query (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_domains_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_domains_unknown_key (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_domains_suspend_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/POST_domains_detach_admitted (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/no_domain_route_PUT (0.00s)
+    --- PASS: TestStorefrontTransportRulesBeforeDatabase/no_domain_bind (0.00s)
+=== RUN   TestStorefrontUnavailableMapsTo503
+--- PASS: TestStorefrontUnavailableMapsTo503 (0.00s)
+=== RUN   TestStorefrontDomainsErrorMapping
+--- PASS: TestStorefrontDomainsErrorMapping (0.00s)
+=== RUN   TestTemplatesClassify
+--- PASS: TestTemplatesClassify (0.00s)
+=== RUN   TestTemplateRoutesMountWhenServicePresent
+=== RUN   TestTemplateRoutesMountWhenServicePresent/nil_service_unmounted
+=== RUN   TestTemplateRoutesMountWhenServicePresent/non-nil_service_mounted
+--- PASS: TestTemplateRoutesMountWhenServicePresent (0.01s)
+    --- PASS: TestTemplateRoutesMountWhenServicePresent/nil_service_unmounted (0.00s)
+    --- PASS: TestTemplateRoutesMountWhenServicePresent/non-nil_service_mounted (0.00s)
+=== RUN   TestTemplateRouteTransportRules
+--- PASS: TestTemplateRouteTransportRules (0.00s)
+PASS
+ok  	livecommerce/internal/httpapi	1.889s
+=== RUN   TestHashPhoneVectors
+--- PASS: TestHashPhoneVectors (0.00s)
+=== RUN   TestExternalIDVector
+--- PASS: TestExternalIDVector (0.00s)
+=== RUN   TestEventID
+--- PASS: TestEventID (0.00s)
+=== RUN   TestCleanUserAgent
+--- PASS: TestCleanUserAgent (0.00s)
+=== RUN   TestPutCAPIContext
+--- PASS: TestPutCAPIContext (0.00s)
+=== RUN   TestFeedPrice
+--- PASS: TestFeedPrice (0.00s)
+=== RUN   TestWriteFeedEscaping
+--- PASS: TestWriteFeedEscaping (0.00s)
+=== RUN   TestFeedHandlerRejectsBeforeSQL
+--- PASS: TestFeedHandlerRejectsBeforeSQL (0.00s)
+=== RUN   TestImageLinks
+--- PASS: TestImageLinks (0.00s)
+=== RUN   TestAttributionRealPGFlow
+=== RUN   TestAttributionRealPGFlow/consent_hook_records_a_context_only_while_consent_holds
+=== RUN   TestAttributionRealPGFlow/sweeper_plans_exactly_one_operation_per_eligible_attempt
+=== RUN   TestAttributionRealPGFlow/Check_codes
+=== RUN   TestAttributionRealPGFlow/lease-fenced_user_data
+=== RUN   TestAttributionRealPGFlow/feed
+--- PASS: TestAttributionRealPGFlow (1.75s)
+    --- PASS: TestAttributionRealPGFlow/consent_hook_records_a_context_only_while_consent_holds (0.02s)
+    --- PASS: TestAttributionRealPGFlow/sweeper_plans_exactly_one_operation_per_eligible_attempt (0.07s)
+    --- PASS: TestAttributionRealPGFlow/Check_codes (0.02s)
+    --- PASS: TestAttributionRealPGFlow/lease-fenced_user_data (0.03s)
+    --- PASS: TestAttributionRealPGFlow/feed (0.02s)
+PASS
+ok  	livecommerce/internal/attribution	3.123s
+test-focused: top-level PASS=238 FAIL=0 SKIP=0 exit=0
+exit 0

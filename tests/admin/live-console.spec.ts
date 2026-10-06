@@ -41,6 +41,7 @@ async function facts(request: APIRequestContext): Promise<Facts> {
   expect(response.status()).toBe(200);
   const value = await response.json() as Facts;
   expect(value.class).toBe("MOCK");
+  expect(Array.isArray(value.receipts)).toBe(true);
   expect(value.bad_authority).toBe(0);
   return value;
 }
@@ -84,6 +85,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     const offer = initial.Offer;
     await expect(page.getByTestId(`live-offer-${offer}`)).toContainText("MOCK Console Tea");
     await screenshot(page, `${name}-draft`);
+    await expect(page.locator("iframe")).toHaveCount(0);
     // Actual BFF CSRF/Origin refusal must happen before the MOCK write transport receives a command.
     const beforeRefusal = (await facts(request)).receipts.length;
     const refused = await page.request.post(`${origin}/api/stores/${store}/live-sessions/${scene}/lifecycle`, {
@@ -101,6 +103,25 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     for (let i = 1; i < cadence.length; i++) {
       expect(cadence[i]! - cadence[i - 1]!).toBeGreaterThanOrEqual(3500);
       expect(cadence[i]! - cadence[i - 1]!).toBeLessThanOrEqual(8000);
+    }
+    if (locale === "en" && size.width === 1586) {
+      // Preview refresh/focus reads happen only after measuring the untouched polling window above.
+      await fault(request, scene, "facebook_source");
+      await page.getByTestId("live-console-refresh").click();
+      const url = "https://www.facebook.com/123/posts/456";
+      // MOCK external dependency only: actual link click opens the real URL shape without a live Facebook request.
+      await page.context().route(url, (route) => route.fulfill({ contentType: "text/html", body: "<!doctype html><title>MOCK Facebook post</title><h1>MOCK Facebook post</h1>" }));
+      const link = page.getByRole("link", { name: workspaceCopy.en.openFacebook, exact: true });
+      await expect(link).toHaveAttribute("href", url);
+      await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+      const popupReady = page.waitForEvent("popup");
+      await link.click();
+      const popup = await popupReady;
+      await expect(popup).toHaveURL(url);
+      await popup.close();
+      await page.bringToFront();
+      await phase(page, "draft");
+      await expect(page.locator("iframe")).toHaveCount(0);
     }
     await page.getByTestId("live-primary-action").click();
     await phase(page, "live");
@@ -221,6 +242,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.goto(route(locale, otherScene, otherStore));
     await expect(page.getByTestId("live-console")).toBeVisible();
     await expect(page.getByText(`LC-U1 copied ${name}`, { exact: true })).toHaveCount(0);
+    await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
     await page.getByTestId("workspace-sign-out").click();
     await expect(page.getByTestId("live-console")).toHaveCount(0);
     const cookies = await page.context().cookies(origin);
@@ -240,6 +262,7 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await expect(page.getByTestId("live-command-retry")).toBeVisible();
   const receipt = (await facts(request)).receipts.at(-1)!;
   const before = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
   await page.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("live-console")).toHaveCount(0);
   await login(page);
@@ -303,7 +326,7 @@ for (const [index, locale] of locales.entries()) {
       const before = (await facts(request)).receipts.length;
       await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 1001));
       await page.getByTestId(`live-stock-save-${body.Offer}`).click();
-      await expect(page.getByRole("alert")).toHaveText(workspaceCopy[locale].stockInvalid);
+      await expect(page.getByTestId(`live-offer-${body.Offer}`).getByRole("alert")).toHaveText(workspaceCopy[locale].stockInvalid);
       expect((await facts(request)).receipts).toHaveLength(before);
       await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 2));
       await page.getByTestId(`live-stock-save-${body.Offer}`).click();
@@ -316,7 +339,7 @@ for (const [index, locale] of locales.entries()) {
       await fault(request, scene, "below_reserved");
       await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 1));
       await page.getByTestId(`live-stock-save-${body.Offer}`).click();
-      await expect(page.getByRole("alert")).toContainText(workspaceCopy[locale].refusals.below_reserved);
+      await expect(page.getByTestId("live-console").getByRole("alert")).toContainText(workspaceCopy[locale].refusals.below_reserved);
       expect((await facts(request)).scenes[scene]!.Stock).toBe(body.Stock + 2);
       await screenshot(page, `${locale}-narrow-permission`);
       // Setup a distinct signed principal with no inventory grant; assertions use the real page.
