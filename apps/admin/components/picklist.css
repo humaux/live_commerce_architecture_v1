@@ -10,13 +10,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  align-items: center;
+  align-items: flex-end;
 }
 .pick-controls p {
   margin: 0;
 }
-.pick-controls label,
-.pick-export label {
+.pick-controls .pick-field,
+.pick-export .pick-field {
   display: grid;
   gap: 4px;
 }
@@ -118,7 +118,7 @@
   .pick-controls {
     align-items: stretch;
   }
-  .pick-controls label {
+  .pick-controls .pick-field {
     flex-basis: 100%;
   }
   .pick-dialog {
@@ -195,4 +195,12 @@
 .pick-row-check input:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 3px;
+}
+
+/* Align one-line actions with the select control, below its label, across browser defaults. */
+.pick-controls > button,
+.pick-controls select,
+.pick-export button,
+.pick-export select {
+  height: 44px;
 }

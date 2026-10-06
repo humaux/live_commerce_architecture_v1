@@ -135,6 +135,7 @@ test(
           await toolbar
             .getByRole("button", { name: c.export, exact: true })
             .click();
+          await expect(toolbar.getByLabel(c.template, {exact:true})).toBeVisible();
           for (const template of [
             "black_cat",
             "hsinchu",

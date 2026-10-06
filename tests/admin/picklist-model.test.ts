@@ -246,3 +246,42 @@ test("recovery and order-detail MOCK fixtures satisfy real read parsers", async 
     await f.close();
   }
 });
+
+test("order selection can read its session fence during SSR without browser globals", async () => {
+  const { csrfCookie } =
+    await import("../../apps/admin/lib/settings-client.ts");
+  assert.equal(typeof globalThis.document, "undefined");
+  assert.equal(csrfCookie(), "");
+});
+
+test("MOU keeps native headed checks runnable on a Linux CI worker without DISPLAY", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { execFileSync } = await import("node:child_process");
+  const script = readFileSync(
+    new URL("../../scripts/dev/test-local.sh", import.meta.url),
+    "utf8",
+  );
+  const body =
+    /elif \[\[ "\$test_mode" == --browser-merchant-orders-ui \]\]; then\n([\s\S]*?)\nelif /.exec(
+      script,
+    )?.[1];
+  assert.ok(body);
+  const run = (os: "Linux" | "Darwin", display: string) =>
+    execFileSync(
+      "bash",
+      [
+        "-c",
+        `uname(){ printf '%s' "$1_OS"; }\ngo(){ printf 'GO %s\\n' "$*"; }\nxvfb-run(){ printf 'XVFB %s\\n' "$*"; }\n${body}`.replace(
+          '"$1_OS"',
+          `'${os}'`,
+        ),
+      ],
+      { encoding: "utf8", env: { ...process.env, DISPLAY: display } },
+    );
+  assert.match(
+    run("Linux", ""),
+    /XVFB --auto-servernum go test -race -tags browser/,
+  );
+  assert.match(run("Linux", ":99"), /GO test -race -tags browser/);
+  assert.match(run("Darwin", ""), /GO test -race -tags browser/);
+});

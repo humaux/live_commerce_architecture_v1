@@ -1,6 +1,8 @@
 // Purpose: count-confirmed CVS batches with durable unknown-outcome blocking and no retry loop.
 // Depends on: picklist-client/model/copy, logistics-client recovery reads, ID-only sessionStorage and scoped onViewOrder.
 // Used by: PickList for fulfillment_write actors; never purchases real labels in fixtures.
+// BFF: POST /api/stores/{store}/shipments/cvs-batch; recovery GET /api/stores/{store}/orders/{id}/cvs-shipment.
+// Go: /v1/admin/stores/{store}/shipments/cvs-batch (W3-02B); no automatic write retry.
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";

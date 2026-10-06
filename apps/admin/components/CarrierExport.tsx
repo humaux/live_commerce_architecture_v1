@@ -2,7 +2,7 @@
 // Depends on: picklist-client, locale copy and native Blob download.
 // Used by: PickList order toolbar; requires server-reported orders_export permission.
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import {
   carrierTemplates,
@@ -26,6 +26,7 @@ export function CarrierExport({
   disabled: boolean;
 }) {
   const c = picklistCopy[locale];
+  const templateID = useId();
   const dialog = useRef<HTMLDialogElement>(null);
   const [template, setTemplate] = useState<CarrierTemplate>("black_cat");
   const [busy, setBusy] = useState(false);
@@ -90,9 +91,10 @@ export function CarrierExport({
         </button>
         <fieldset className="pick-export" disabled={disabled || busy}>
           <legend>{c.export}</legend>
-          <label>
-            {c.template}
+          <div className="pick-field">
+            <label htmlFor={templateID}>{c.template}</label>
             <select
+              id={templateID}
               value={template}
               onChange={(e) => setTemplate(e.target.value as CarrierTemplate)}
             >
@@ -102,7 +104,7 @@ export function CarrierExport({
                 </option>
               ))}
             </select>
-          </label>
+          </div>
           <button type="button" onClick={download} disabled={!selection}>
             {busy ? c.loading : c.download}
           </button>
