@@ -72,7 +72,7 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 }
 
 // 0146 (W3-07B) adds seven parcel-group definers with the same shape (owner commerce_checkout_writer, EXECUTE commerce_runtime only);
-// 0155 (W3-08B) adds the seven returns.* definers and fulfillment.merchant_cancel_order with it.
+// 0155 (W3-08B) adds the eight returns.* definers and fulfillment.merchant_cancel_order with it.
 // 0130 adds two read-only definers for the pick list: the shared reader (EXECUTE commerce_runtime only,
 // owner commerce_checkout_writer) and the session->orders resolution helper (claims-owned, EXECUTE
 // commerce_checkout_writer only). No worker authority, legacy role, auth login, buyer role or any other
@@ -102,6 +102,7 @@ func TestMerchantOrdersV2PickListReadAuthority(t *testing.T) {
 		{"returns.read_order_returns(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                             // 0155 W3-08B
 		{"returns.list_returns(bytea,uuid,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                                   // 0155 W3-08B
 		{"fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, false}, // 0155 W3-08B
+		{"returns.list_cancel_refund_gaps(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                             // 0155 W3-08B
 	} {
 		t.Run(helper.signature, func(t *testing.T) {
 			var owner string

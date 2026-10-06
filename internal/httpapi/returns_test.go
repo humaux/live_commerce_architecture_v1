@@ -38,6 +38,9 @@ func TestReturnRoutesTransportRules(t *testing.T) {
 		{"register admitted", "POST", order + "/returns", `{"reason":"damaged","lines":` + retLines + `}`, withKey, 401, "unauthorized"},
 		{"order returns admitted", "GET", order + "/returns", "", nil, 401, "unauthorized"},
 		{"list admitted", "GET", retBase + "/returns", "", nil, 401, "unauthorized"},
+		{"gaps admitted", "GET", order[:len(order)-len(shipOrder)-1] + "/cancel-refund-gaps", "", nil, 401, "unauthorized"},
+		{"gaps key", "GET", order[:len(order)-len(shipOrder)-1] + "/cancel-refund-gaps", "", withKey, 422, "invalid_request"},
+		{"gaps wrong method", "POST", order[:len(order)-len(shipOrder)-1] + "/cancel-refund-gaps", "", withKey, 405, "method_not_allowed"},
 		{"list state admitted", "GET", retBase + "/returns?state=CLOSED", "", nil, 401, "unauthorized"},
 		{"receive admitted", "POST", rma + "/receive", `{"expected_version":1,"lines":[{"sku_id":"66666666-6666-4666-8666-666666666666","warehouse_id":null,"qty_received":1}]}`, withKey, 401, "unauthorized"},
 		{"inspect admitted", "POST", rma + "/inspect", `{"expected_version":2,"lines":[{"sku_id":"66666666-6666-4666-8666-666666666666","warehouse_id":null,"qty_restock":1,"qty_scrap":0}]}`, withKey, 401, "unauthorized"},
@@ -102,6 +105,9 @@ func TestReturnCodesReachJSONBody(t *testing.T) {
 				t.Fatalf("status=%d code=%q message=%q err=%v", status, body.Code, body.Message, err)
 			}
 		})
+	}
+	if status, code := returnsClassify(returns.MapError(&pgconn.PgError{Code: "PT409", Message: "retry_later"})); status != http.StatusServiceUnavailable || code != "retry_later" {
+		t.Fatalf("retry_later: %d %s", status, code)
 	}
 	if status, code := returnsClassify(returns.ErrUnavailable); status != http.StatusServiceUnavailable || code != "unavailable" {
 		t.Fatalf("unavailable: %d %s", status, code)

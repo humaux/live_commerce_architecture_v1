@@ -24,6 +24,9 @@ func TestMapErrorClosedSet(t *testing.T) {
 	if err = MapError(&pgconn.PgError{Code: "PT422", Message: "exceeds_shipped"}); !errors.As(err, &coded) || coded.Status != 422 {
 		t.Fatalf("exceeds_shipped: %v", err)
 	}
+	if err = MapError(&pgconn.PgError{Code: "PT409", Message: "retry_later"}); !errors.As(err, &coded) || coded.Status != 503 {
+		t.Fatalf("retry_later: %v", err)
+	}
 	if err = MapError(&pgconn.PgError{Code: "PT409", Message: "collection_state_changed"}); !errors.As(err, &coded) || coded.Code != "state_changed" {
 		t.Fatalf("collection_state_changed: %v", err)
 	}

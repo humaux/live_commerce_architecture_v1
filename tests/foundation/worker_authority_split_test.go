@@ -200,6 +200,7 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 			`SELECT returns.cancel_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1)`,
 			`SELECT returns.read_order_returns($1::bytea,$2::uuid,$3::uuid)`,
 			`SELECT returns.list_returns($1::bytea,$2::uuid,NULL::text) WHERE $3::uuid IS NOT NULL`,
+			`SELECT returns.list_cancel_refund_gaps($1::bytea,$2::uuid) WHERE $3::uuid IS NOT NULL`,
 			`SELECT fulfillment.merchant_cancel_order($1::bytea,$2::uuid,$3::uuid,'was02-cancel-key',$1::bytea,'CONFIRMED','x')`,
 		} {
 			if _, err := p.Exec(ctx, call, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {

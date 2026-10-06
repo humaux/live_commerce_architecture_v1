@@ -99,7 +99,7 @@ func rmaRoute(method string, next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-// registerReturnRoutes mounts the eight W3-08B routes; NewHandler calls it unconditionally.
+// registerReturnRoutes mounts the nine W3-08B routes; NewHandler calls it unconditionally.
 func registerReturnRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const base = "/v1/admin/stores/{store_id}"
 	// POST cancel: {expected_state, reason}; fulfillment:write. A paid card order is refused 409 refund_first until refunds cover the capture.
@@ -114,6 +114,18 @@ func registerReturnRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		}
 		result, ok := returnScope(w, r, pool, "fulfillment:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 			return fulfillment.CancelOrder(ctx, tx, s, bearerToken(r), key, r.PathValue("order_id"), in.ExpectedState, in.Reason)
+		})
+		if ok {
+			respond(w, http.StatusOK, result)
+		}
+	}))
+	// GET cancelled card orders whose in-flight refund later failed (orders:read); the literal segment wins over {order_id}.
+	mux.HandleFunc("GET "+base+"/orders/cancel-refund-gaps", shipmentRoute(http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
+		result, ok := returnScope(w, r, pool, "orders:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			items, err := returns.CancelRefundGaps(ctx, tx, s, bearerToken(r))
+			return struct {
+				Items []returns.RefundGap `json:"items"`
+			}{items}, err
 		})
 		if ok {
 			respond(w, http.StatusOK, result)

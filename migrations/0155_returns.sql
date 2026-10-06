@@ -15,6 +15,10 @@
 --   never more than is allocated), I05 (no payment write), I13 (refund, return, restock and cancel stay separate), I02 (every command
 --   carries an Idempotency-Key replayed from ops.command_results). Every definer is SECURITY DEFINER SET search_path=pg_catalog, REVOKE
 --   ALL FROM PUBLIC, EXECUTE commerce_runtime only, owner commerce_checkout_writer.
+-- Fix round (Opus review): ONE invariant bounds every DEALLOCATE (guard_returns_ledger: the order line's remaining allocation), a shipment
+--   VOID is refused while a live RMA exists (record_manual_shipment patched), home-COD returns use returns.order_returnable (COD keeps
+--   commercial_state AWAITING_COLLECTION after collection), cancel answers retry_later when the order joined a parcel group after the unlocked
+--   membership read, AWAITING_TRANSFER is a 422 not_cancellable, and returns.list_cancel_refund_gaps shows cancelled orders whose refunds failed.
 -- Deviations from the brief (decided by the implementer, see contracts/returns-v1.md): sellable stock is a DEALLOCATE of `allocated`
 --   (shipping never lowered on_hand, so crediting on_hand would double count; same model as the §16.8 pay-at-pickup restock);
 --   RMA lines are keyed (warehouse_id, sku_id) because an order has no line-id table (its lines are inventory.reservation_lines);
@@ -157,8 +161,17 @@ COMMENT ON INDEX inventory.ledger_pay_at_pickup_release_once IS '§16.8 + W3-08B
 -- state first and the guard reads the new state (same order as the pay-at-pickup release).
 CREATE FUNCTION inventory.guard_returns_ledger() RETURNS trigger
  LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v_line bigint; v_alloc bigint; v_qty bigint;
+DECLARE v_line bigint; v_alloc bigint;
 BEGIN
+ -- THE invariant (every writer: RMA restock, cancel release, bank-transfer refund restock, pay-at-pickup/COD cancel and restock): a DEALLOCATE
+ -- never exceeds what the ledger still holds allocated for that order line (sum ALLOCATE + DEALLOCATE of that checkout/warehouse/sku). A second
+ -- release of the same units (e.g. after a shipment void) therefore cannot create phantom stock even when other orders hold the SKU.
+ IF NEW.kind='DEALLOCATE' THEN
+  SELECT coalesce(sum(a.delta_allocated),0) INTO v_alloc FROM inventory.ledger a WHERE a.tenant_id=NEW.tenant_id AND a.store_id=NEW.store_id
+   AND a.checkout_id=NEW.checkout_id AND a.warehouse_id=NEW.warehouse_id AND a.sku_id=NEW.sku_id AND a.kind IN ('ALLOCATE','DEALLOCATE');
+  IF NEW.checkout_id IS NULL OR NEW.delta_allocated>=0 OR v_alloc<-NEW.delta_allocated THEN
+   RAISE EXCEPTION 'deallocate exceeds the remaining allocation of the order line' USING ERRCODE='42501'; END IF;
+ END IF;
  IF NEW.operation NOT IN ('returns.rma.restock','checkout.merchant_cancel') THEN RETURN NEW; END IF;
  IF NEW.actor_kind<>'MERCHANT' OR NEW.checkout_id IS NULL OR NEW.reservation_id IS DISTINCT FROM NEW.checkout_id
   OR NEW.principal_id IS NULL OR NEW.kind NOT IN ('DEALLOCATE','RELEASE') THEN
@@ -166,22 +179,21 @@ BEGIN
  -- the order lines of THIS reservation: quantity of the line and what the ledger still holds allocated for it
  SELECT l.quantity INTO v_line FROM inventory.reservation_lines l WHERE l.tenant_id=NEW.tenant_id AND l.store_id=NEW.store_id
   AND l.reservation_id=NEW.reservation_id AND l.warehouse_id=NEW.warehouse_id AND l.sku_id=NEW.sku_id;
- SELECT coalesce(sum(a.delta_allocated),0) INTO v_alloc FROM inventory.ledger a WHERE a.tenant_id=NEW.tenant_id AND a.store_id=NEW.store_id
-  AND a.checkout_id=NEW.checkout_id AND a.warehouse_id=NEW.warehouse_id AND a.sku_id=NEW.sku_id AND a.kind IN ('ALLOCATE','DEALLOCATE');
  IF NEW.operation='returns.rma.restock' THEN
   IF NEW.kind<>'DEALLOCATE' OR NEW.reason<>'rma_restock' OR NEW.delta_allocated>=0
    OR NEW.command_key !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
    RAISE EXCEPTION 'rma restock ledger mismatch' USING ERRCODE='42501'; END IF;
-  -- CLOSED RMA of this order whose line says exactly this quantity is sellable, closed by this principal; order still CONFIRMED with a
-  -- COMMITTED reservation (a cancelled/released order has nothing allocated to give back); never more than is still allocated.
+  -- CLOSED RMA of this order whose line says exactly this quantity is sellable, closed by this principal; order returnable (CONFIRMED, or a
+  -- collected COD order) with a COMMITTED reservation (a cancelled/released order has nothing allocated to give back); the remaining
+  -- allocation bound is the generic check above.
   IF NOT EXISTS(SELECT 1 FROM returns.rmas r
     JOIN returns.rma_lines l ON l.tenant_id=r.tenant_id AND l.store_id=r.store_id AND l.rma_id=r.id
     JOIN checkout.orders o ON o.tenant_id=r.tenant_id AND o.store_id=r.store_id AND o.owner_id=r.owner_id AND o.id=r.order_id
     JOIN inventory.reservations v ON v.tenant_id=o.tenant_id AND v.store_id=o.store_id AND v.id=o.id
     WHERE r.tenant_id=NEW.tenant_id AND r.store_id=NEW.store_id AND r.id=NEW.command_key::uuid AND r.order_id=NEW.checkout_id
      AND r.state='CLOSED' AND r.closed_by=NEW.principal_id AND l.warehouse_id=NEW.warehouse_id AND l.sku_id=NEW.sku_id
-     AND l.qty_restock=-NEW.delta_allocated AND o.commercial_state='CONFIRMED' AND o.owner_id=NEW.buyer_owner_id
-     AND o.creator_session_id=NEW.buyer_session_id AND v.state='COMMITTED') OR v_alloc<-NEW.delta_allocated THEN
+     AND l.qty_restock=-NEW.delta_allocated AND returns.order_returnable(o.commercial_state,o.payment_mode,o.collection_state)
+     AND o.owner_id=NEW.buyer_owner_id AND o.creator_session_id=NEW.buyer_session_id AND v.state='COMMITTED') THEN
    RAISE EXCEPTION 'rma restock ledger mismatch' USING ERRCODE='42501'; END IF;
   RETURN NEW;
  END IF;
@@ -218,7 +230,7 @@ ALTER FUNCTION inventory.guard_returns_ledger() OWNER TO commerce_checkout_write
 REVOKE ALL ON FUNCTION inventory.guard_returns_ledger() FROM PUBLIC;
 CREATE TRIGGER zz_returns_ledger_guard BEFORE INSERT ON inventory.ledger
  FOR EACH ROW EXECUTE FUNCTION inventory.guard_returns_ledger();
-COMMENT ON FUNCTION inventory.guard_returns_ledger() IS 'inventory trigger guard (BEFORE INSERT on ledger): the only rows with operation returns.rma.restock (DEALLOCATE of a CLOSED RMA line for exactly qty_restock, never more than still allocated, order CONFIRMED + reservation COMMITTED) or checkout.merchant_cancel (RELEASE of an unpaid hold, or DEALLOCATE of the whole allocation of a paid card order whose CAPTURED amount is covered by succeeded + in-flight refunds), each after the definer set order/RMA/reservation state. No caller EXECUTE.';
+COMMENT ON FUNCTION inventory.guard_returns_ledger() IS 'inventory trigger guard (BEFORE INSERT on ledger): EVERY DEALLOCATE is bounded by the remaining allocation of its order line (single invariant for all writers); and the only rows with operation returns.rma.restock (DEALLOCATE of a CLOSED RMA line for exactly qty_restock, never more than still allocated, order CONFIRMED + reservation COMMITTED) or checkout.merchant_cancel (RELEASE of an unpaid hold, or DEALLOCATE of the whole allocation of a paid card order whose CAPTURED amount is covered by succeeded + in-flight refunds), each after the definer set order/RMA/reservation state. No caller EXECUTE.';
 
 -- ---------------------------------------------------------------------------------------------------
 -- Helpers (no grants: only the definers below, same owner, call them).
@@ -284,6 +296,17 @@ ALTER FUNCTION returns.line_set(jsonb,text,text) OWNER TO commerce_checkout_writ
 REVOKE ALL ON FUNCTION returns.line_set(jsonb,text,text) FROM PUBLIC;
 COMMENT ON FUNCTION returns.line_set(jsonb,text,text) IS 'W3-08B internal helper (no grants): validates and unnests the request line array (sku_id, optional warehouse_id, one or two bounded integer fields).';
 
+-- The single "may this order be returned" predicate (register, close and the ledger guard share it): a CONFIRMED order (card, bank transfer,
+-- pay-at-pickup once COLLECTED), or a home-COD order once COLLECTED: COD keeps commercial_state AWAITING_COLLECTION after collection by design.
+CREATE FUNCTION returns.order_returnable(p_commercial text,p_mode text,p_collection text) RETURNS boolean
+LANGUAGE sql IMMUTABLE SET search_path=pg_catalog AS $$
+ SELECT (p_commercial='CONFIRMED' AND (p_collection IS NULL OR p_collection='COLLECTED'))
+  OR (p_commercial='AWAITING_COLLECTION' AND p_mode='cash_on_delivery' AND p_collection='COLLECTED')
+$$;
+ALTER FUNCTION returns.order_returnable(text,text,text) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION returns.order_returnable(text,text,text) FROM PUBLIC;
+COMMENT ON FUNCTION returns.order_returnable(text,text,text) IS 'W3-08B internal helper (no grants): true for a CONFIRMED order whose collection state is NULL or COLLECTED, and for a cash_on_delivery order that is COLLECTED while commercial_state is still AWAITING_COLLECTION.';
+
 -- The RMA projection every command returns and the reads list.
 CREATE FUNCTION returns.rma_json(p_tenant uuid,p_store uuid,p_rma uuid) RETURNS jsonb
 LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
@@ -315,7 +338,7 @@ BEGIN
  PERFORM 1 FROM returns.line_set(p_lines,'quantity',NULL);  -- shape check (PT400) before any lock
  <<work>>
  BEGIN
-  SELECT k.owner_id,k.commercial_state,k.fulfillment_state,k.collection_state INTO o FROM checkout.orders k
+  SELECT k.owner_id,k.payment_mode,k.commercial_state,k.fulfillment_state,k.collection_state INTO o FROM checkout.orders k
    WHERE k.tenant_id=v_t AND k.store_id=p_store AND k.id=p_order FOR UPDATE;  -- the order lock serializes registrations of one order
   IF NOT FOUND THEN v_fail_code:='PT404'; v_fail_msg:='order not found'; EXIT work; END IF;
   SELECT c.request_hash,c.response INTO v_saved,v_response FROM ops.command_results c WHERE c.tenant_id=v_t AND c.store_id=p_store
@@ -328,7 +351,7 @@ BEGIN
   IF NOT (o.fulfillment_state='MERCHANT_SHIPPED' OR (o.fulfillment_state='PROVIDER_LABEL_CREATED' AND EXISTS(
     SELECT 1 FROM fulfillment.cvs_shipments c WHERE c.tenant_id=v_t AND c.store_id=p_store AND c.order_id=p_order AND c.state='PICKED_UP'))) THEN
    v_fail_code:='PT409'; v_fail_msg:='not_shipped'; EXIT work; END IF;
-  IF o.commercial_state<>'CONFIRMED' OR (o.collection_state IS NOT NULL AND o.collection_state<>'COLLECTED') THEN
+  IF NOT returns.order_returnable(o.commercial_state,o.payment_mode,o.collection_state) THEN
    v_fail_code:='PT409'; v_fail_msg:='not_returnable'; EXIT work; END IF;
   INSERT INTO returns.rmas(tenant_id,store_id,id,owner_id,order_id,state,reason,created_by)
    VALUES(v_t,p_store,v_rma,o.owner_id,p_order,'REGISTERED',btrim(p_reason),v_p);
@@ -545,7 +568,7 @@ BEGIN
   END IF;
   IF rr.version<>p_expected_version THEN v_fail_code:='PT409'; v_fail_msg:='version_changed'; EXIT work; END IF;
   IF rr.state<>'INSPECTED' THEN v_fail_code:='PT409'; v_fail_msg:='invalid_state'; EXIT work; END IF;
-  SELECT k.owner_id,k.creator_session_id,k.commercial_state INTO od FROM checkout.orders k
+  SELECT k.owner_id,k.creator_session_id,k.commercial_state,k.payment_mode,k.collection_state INTO od FROM checkout.orders k
    WHERE k.tenant_id=v_t AND k.store_id=p_store AND k.id=rr.order_id FOR UPDATE;
   PERFORM set_config('app.buyer_id',od.owner_id::text,true),set_config('app.buyer_session_id',od.creator_session_id::text,true);
   IF p_refund IS NOT NULL AND NOT EXISTS(SELECT 1 FROM payments.stripe_refunds sr WHERE sr.tenant_id=v_t AND sr.store_id=p_store
@@ -554,7 +577,7 @@ BEGIN
   SELECT coalesce(sum(d.qty_restock),0) INTO v_restock FROM returns.rma_lines d WHERE d.tenant_id=v_t AND d.store_id=p_store AND d.rma_id=p_rma;
   IF v_restock>0 THEN
    SELECT x.state INTO rv FROM inventory.reservations x WHERE x.tenant_id=v_t AND x.store_id=p_store AND x.id=rr.order_id FOR UPDATE;
-   IF NOT FOUND OR rv.state<>'COMMITTED' OR od.commercial_state<>'CONFIRMED' THEN
+   IF NOT FOUND OR rv.state<>'COMMITTED' OR NOT returns.order_returnable(od.commercial_state,od.payment_mode,od.collection_state) THEN
     v_fail_code:='PT409'; v_fail_msg:='not_restockable'; EXIT work; END IF;
   END IF;
   UPDATE returns.rmas SET state='CLOSED',version=version+1,closed_by=v_p,closed_at=clock_timestamp(),refund_id=p_refund,updated_at=clock_timestamp()
@@ -646,7 +669,7 @@ DECLARE v_auth jsonb; v_t uuid; v_p uuid; o record; r record; l record; g record
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_order IS NULL OR p_key IS NULL OR p_key !~ '^[A-Za-z0-9_.:-]{8,128}$'
   OR p_request_hash IS NULL OR octet_length(p_request_hash)<>32 OR p_reason IS NULL OR length(btrim(p_reason)) NOT BETWEEN 1 AND 240
-  OR p_expected_state IS NULL OR p_expected_state NOT IN ('DRAFT','AWAITING_PAYMENT','CONFIRMED','AWAITING_COLLECTION')
+  OR p_expected_state IS NULL OR p_expected_state NOT IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION')
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid cancel request' USING ERRCODE='PT400'; END IF;
  v_auth:=returns.authorize(p_hash,p_store,'fulfillment:write',NULL);
@@ -661,6 +684,11 @@ BEGIN
    FROM checkout.orders k WHERE k.tenant_id=v_t AND k.store_id=p_store AND k.id=p_order FOR UPDATE;
   IF NOT FOUND THEN v_fail_code:='PT404'; v_fail_msg:='order not found'; EXIT work; END IF;
   PERFORM set_config('app.buyer_id',o.owner_id::text,true),set_config('app.buyer_session_id',o.creator_session_id::text,true);
+  -- Membership changed since the unlocked read above (the order joined or left a group while this waited for the order lock): the group lock
+  -- must never be taken AFTER the order lock (begin_parcel_group_shipment locks group -> order), so refuse before any write; the retry locks
+  -- group -> order deterministically.
+  SELECT m.group_id INTO v_group2 FROM fulfillment.parcel_group_orders m WHERE m.tenant_id=v_t AND m.store_id=p_store AND m.order_id=p_order;
+  IF v_group2 IS DISTINCT FROM v_group THEN v_fail_code:='PT409'; v_fail_msg:='retry_later'; EXIT work; END IF;
   SELECT c.request_hash,c.response INTO v_saved,v_response FROM ops.command_results c WHERE c.tenant_id=v_t AND c.store_id=p_store
    AND c.operation='fulfillment.merchant_cancel' AND c.idempotency_key=p_key;
   IF FOUND THEN
@@ -736,9 +764,8 @@ BEGIN
     v_lines:=v_lines+1;
    END LOOP;
    -- W3-07B parcel group: an OPEN group loses this order (a group needs >= 2 orders, so the last survivor dissolves it).
-   SELECT m.group_id INTO v_group2 FROM fulfillment.parcel_group_orders m WHERE m.tenant_id=v_t AND m.store_id=p_store AND m.order_id=p_order;
    IF v_group2 IS NOT NULL THEN
-    -- joined a group after the unlocked read above (creator committed first): lock it now; a deadlock here is retried by the client (503)
+    -- already locked (group -> order) before the order lock; v_group2 = v_group was verified above
     SELECT x.state,x.version INTO g FROM fulfillment.parcel_groups x WHERE x.tenant_id=v_t AND x.store_id=p_store AND x.id=v_group2 FOR UPDATE;
     IF g.state<>'OPEN' THEN v_fail_code:='PT409'; v_fail_msg:='already_shipped'; EXIT work; END IF;
     DELETE FROM fulfillment.parcel_group_orders m WHERE m.tenant_id=v_t AND m.store_id=p_store AND m.order_id=p_order;
@@ -769,3 +796,54 @@ ALTER FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text
 REVOKE ALL ON FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) TO commerce_runtime;
 COMMENT ON FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) IS 'internal/fulfillment CancelOrder only; EXECUTE commerce_runtime. fulfillment:write, Idempotency-Key, CAS on expected_state. DRAFT hold -> RELEASE rows; CONFIRMED unshipped card order -> only after refunds cover the capture (else 409 refund_first) -> DEALLOCATE of the whole allocation, leaves its OPEN parcel group; pay-at-pickup/COD delegates to inventory.release_pay_at_pickup; AWAITING_PAYMENT 409 payment_in_flight; shipped 409 already_shipped. Never starts a refund, never writes payments.*.';
+
+-- ---------------------------------------------------------------------------------------------------
+-- P1-1: a shipment VOID says "the parcel never left"; a live (non-cancelled) RMA says it did. record_manual_shipment (0107) is patched in
+-- place (exactly-once anchor, the 0088/0155 house pattern): the VOID branch refuses 409 has_returns while such an RMA exists, so an order can
+-- never be re-opened (re-shipped, cancelled, refunded-with-restock) after its units were given back. A correction (no state change) is unaffected.
+-- ---------------------------------------------------------------------------------------------------
+DO $$
+DECLARE v_fn text; v_from text:='ELSE v_action:=''fulfillment.shipment_voided''; END IF;'; v_to text;
+BEGIN
+ v_fn:=pg_get_functiondef('fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)'::regprocedure);
+ v_to:='ELSIF EXISTS(SELECT 1 FROM returns.rmas m WHERE m.tenant_id=s.tenant_id AND m.store_id=p_store AND m.order_id=p_order AND m.state<>''CANCELLED'') THEN
+     v_fail_code:=''PT409''; v_fail_msg:=''has_returns'';
+    ELSE v_action:=''fulfillment.shipment_voided''; END IF;';
+ IF length(v_fn)-length(replace(v_fn,v_from,''))<>length(v_from) THEN
+  RAISE EXCEPTION 'fulfillment.record_manual_shipment has an unexpected shape (void anchor)'; END IF;
+ EXECUTE replace(v_fn,v_from,v_to);
+END $$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- P2-2: a cancel counts refunds IN FLIGHT. If such a refund later FAILS the order stays CANCELLED with its stock released (the goods never
+-- left) and the buyer's money is held: this read lists those orders (merchant-cancelled card orders whose non-failed refunds are below the
+-- captured amount) so the merchant can refund again (payments.request_stripe_refund has no order-state gate). orders:read; read only.
+-- ---------------------------------------------------------------------------------------------------
+CREATE FUNCTION returns.list_cancel_refund_gaps(p_hash bytea,p_store uuid) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE v_auth jsonb; v_t uuid; v_out jsonb;
+BEGIN
+ IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR current_setting('transaction_isolation')<>'read committed' THEN
+  RAISE EXCEPTION 'invalid returns request' USING ERRCODE='PT400'; END IF;
+ v_auth:=returns.authorize(p_hash,p_store,'orders:read',NULL);
+ v_t:=(v_auth->>'t')::uuid;
+ SELECT coalesce(jsonb_agg(q.x ORDER BY q.cancelled_at DESC,q.order_id),'[]'::jsonb) INTO v_out FROM (
+  SELECT o.id AS order_id,o.updated_at AS cancelled_at,jsonb_build_object('order_id',o.id,'captured_minor',f.amount_minor,'refunded_minor',h.held,
+    'gap_minor',f.amount_minor-h.held,'cancelled_at',o.updated_at,'reason','cancel_refund_failed') AS x
+  FROM checkout.orders o
+  JOIN checkout.payment_attempts a ON a.tenant_id=o.tenant_id AND a.store_id=o.store_id AND a.owner_id=o.owner_id AND a.order_id=o.id
+  JOIN payments.facts f ON f.tenant_id=a.tenant_id AND f.store_id=a.store_id AND f.attempt_id=a.id AND f.kind='CAPTURED' AND f.amount_minor=a.amount_minor
+  CROSS JOIN LATERAL (SELECT coalesce(sum(r.amount_minor),0) AS held FROM payments.stripe_refunds r WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id
+    AND r.attempt_id=a.id AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id AND rf.store_id=r.store_id
+     AND rf.refund_id=r.id AND rf.kind IN ('FAILED','CANCELED','REJECTED'))) h
+  WHERE o.tenant_id=v_t AND o.store_id=p_store AND o.commercial_state='CANCELLED' AND o.payment_mode='card' AND h.held<f.amount_minor
+   AND EXISTS(SELECT 1 FROM inventory.ledger l WHERE l.tenant_id=o.tenant_id AND l.store_id=o.store_id AND l.checkout_id=o.id
+    AND l.operation='checkout.merchant_cancel' AND l.kind='DEALLOCATE')
+  ORDER BY o.updated_at DESC,o.id LIMIT 100) q;
+ PERFORM returns.reauthorize(p_hash,p_store,'orders:read',NULL,v_auth);
+ RETURN v_out;
+END $$;
+ALTER FUNCTION returns.list_cancel_refund_gaps(bytea,uuid) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION returns.list_cancel_refund_gaps(bytea,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION returns.list_cancel_refund_gaps(bytea,uuid) TO commerce_runtime;
+COMMENT ON FUNCTION returns.list_cancel_refund_gaps(bytea,uuid) IS 'internal/returns CancelRefundGaps only; EXECUTE commerce_runtime. orders:read; the 100 newest merchant-cancelled card orders whose refunds (not failed/cancelled/rejected) are below the CAPTURED amount, i.e. a refund that was in flight at cancel time later failed. Read only; reason cancel_refund_failed.';

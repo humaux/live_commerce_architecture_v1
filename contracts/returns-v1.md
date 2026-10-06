@@ -20,8 +20,10 @@ Lines (`returns.rma_lines`) are keyed `(warehouse_id, sku_id)`: an order has no 
 `sku_id` and optionally `warehouse_id` (needed only when the order holds the SKU in two warehouses; else `422 ambiguous_line`). Columns:
 `qty_registered`, `qty_received`, `qty_restock`, `qty_scrap`; once inspected `qty_restock + qty_scrap = qty_received <= qty_registered` (table CHECKs).
 
-* **Register** (`fulfillment:write`): order must be shipped (`MERCHANT_SHIPPED`, or `PROVIDER_LABEL_CREATED` with a CVS parcel `PICKED_UP`), `CONFIRMED`,
-  and a pay-on-delivery order must be `COLLECTED`; else `409 not_shipped` / `409 not_returnable`. Per line, the sum of `qty_registered` over every
+* **Register** (`fulfillment:write`): order must be shipped (`MERCHANT_SHIPPED`, or `PROVIDER_LABEL_CREATED` with a CVS parcel `PICKED_UP`) and returnable
+  (`returns.order_returnable`, shared by register, close and the ledger guard): `CONFIRMED` with `collection_state` NULL or `COLLECTED`, or a `cash_on_delivery` order that is
+  `COLLECTED` while its `commercial_state` is still `AWAITING_COLLECTION` (COD keeps that state after collection by design); an uncollected COD order is `409 not_returnable`;
+  else `409 not_shipped` / `409 not_returnable`. Per line, the sum of `qty_registered` over every
   non-cancelled RMA (CLOSED ones included: returned units cannot be returned again) is `<= reservation_lines.quantity` (the shipped quantity; shipments are
   whole-order) else `422 exceeds_shipped`. The order row lock serializes registrations of one order.
 * **Receive** (`fulfillment:write`): every line named exactly once, `0 <= qty_received <= qty_registered`, at least one unit (`422 nothing_received`).
@@ -42,7 +44,7 @@ commercial state the merchant saw; mismatch `409 state_changed`; `reason` 1..240
 | `CANCELLED` | `409 already_cancelled` |
 | `AWAITING_PAYMENT` | `409 payment_in_flight` (a payment attempt exists; the payment worker closes it, never the merchant) |
 | `MERCHANT_SHIPPED` / `PROVIDER_LABEL_CREATED` (or a live CVS parcel) | `409 already_shipped` (use the returns path); a CVS create in flight `409 cvs_attempt_in_flight` |
-| other `fulfillment_state` (e.g. `PAID_ALLOCATION_FAILED`), `AWAITING_TRANSFER`, bank transfer | `422 not_cancellable` (bank transfer ends by expiry or the offline-refund path) |
+| other `fulfillment_state` (e.g. `PAID_ALLOCATION_FAILED`), `AWAITING_TRANSFER` (accepted as `expected_state`), bank transfer | `422 not_cancellable` (bank transfer ends by expiry or the offline-refund path) |
 | `pay_at_pickup` / `cash_on_delivery`, `collection_state=PENDING` | delegates to `inventory.release_pay_at_pickup(cancel)` (taiwan-cvs-logistics §16.8), unchanged |
 | `DRAFT` (unpaid hold) | reservation `HELD -> RELEASED`; one `RELEASE` ledger row per line |
 | `CONFIRMED` card, unshipped | `409 has_returns` if a live RMA exists; `409 payment_review_open` if an open payment review case exists; **`409 refund_first` unless the refunds not failed/cancelled/rejected (succeeded + in flight) sum to at least the CAPTURED amount**; then order `CANCELLED/CANCELLED`, reservation `COMMITTED -> RELEASED`, one `DEALLOCATE` row per line |
@@ -50,7 +52,12 @@ commercial state the merchant saw; mismatch `409 state_changed`; `reason` 1..240
 The cancel NEVER starts a refund and never writes `payments.*` (I05, I13). The existing notify trigger enqueues the buyer's `cancelled` notice for a
 `CONFIRMED -> CANCELLED` transition; no new mail template. Audit `orders.merchant_cancelled`.
 
-**Parcel groups (W3-07B).** Lock order is group -> order -> reservation -> balances (the same direction as `begin_parcel_group_shipment`). Cancelling a member of an OPEN group removes it
+**Refund fails after the cancel.** A cancel counts refunds in flight. If one later FAILS the order stays CANCELLED (stock released: the goods never left) and the buyer's money is held:
+`GET /orders/cancel-refund-gaps` (`orders:read`) lists the merchant-cancelled card orders whose non-failed refunds are below the captured amount (`{order_id, captured_minor, refunded_minor, gap_minor,
+cancelled_at, reason:"cancel_refund_failed"}`); the merchant refunds again on the cancelled order (the refund route has no order-state gate) and the row disappears.
+
+**Parcel groups (W3-07B).** Lock order is group -> order -> reservation -> balances (the same direction as `begin_parcel_group_shipment`). If the order's group membership changed between the unlocked
+read and the order lock, the cancel answers `503 retry_later` before any write (the group lock is never taken after the order lock); the retry succeeds. Cancelling a member of an OPEN group removes it
 from `parcel_group_orders` and bumps the group `version`; if one order is left, the group is `DISSOLVED` (the survivor row is deleted so it may ship alone or regroup). The response carries
 `parcel_group:{id,state,version}` (or null). A SHIPPED group cannot hold an unshipped order, so `already_shipped` is the only other outcome.
 
@@ -72,12 +79,15 @@ Shipping never lowers `on_hand` or `allocated` in this system (a shipped order's
 | `checkout.merchant_cancel` | DEALLOCATE | cancel of a paid card order, per line | the order id | `merchant_cancel` |
 | `checkout.merchant_cancel` | RELEASE | cancel of an unpaid hold, per line | the order id | `merchant_cancel` |
 
-Scrap writes nothing. A refund writes nothing (RD6). Provenance guard `inventory.guard_returns_ledger` (BEFORE INSERT, the only way a row with either operation name is accepted):
+Scrap writes nothing. A refund writes nothing (RD6). **One invariant for every DEALLOCATE writer** (RMA restock, cancel release, bank-transfer refund restock, pay-at-pickup/COD cancel and restock): the guard refuses any
+DEALLOCATE larger than what the ledger still holds allocated for that order line (sum ALLOCATE + DEALLOCATE of that checkout/warehouse/sku), so a second release of the same units cannot create phantom stock even when other orders
+hold the SKU. **A shipment void is refused `409 has_returns` while a live (non-cancelled) RMA exists** (`record_manual_shipment` patched in 0155): a return presumes the parcel left, a void says it never did; without it an order could be
+re-shipped, cancelled or refunded-with-restock after its units were given back. Provenance guard `inventory.guard_returns_ledger` (BEFORE INSERT, the only way a row with either operation name is accepted):
 restock requires a `CLOSED` RMA of that order whose line says exactly the quantity, closed by the writing principal, the order `CONFIRMED` with a `COMMITTED` reservation, and never more than the ledger
 still holds allocated for that line; cancel requires the order already `CANCELLED/CANCELLED` and the reservation `RELEASED`, the exact line quantity, for a DEALLOCATE a CAPTURED fact whose amount is covered by
 succeeded + in-flight refunds, for a RELEASE no payment attempt. No double restock: the RMA state machine, the row lock plus `inventory.lock_balance`, the ledger unique key `(operation, command_key, warehouse, sku, kind)`
 and the guard each refuse it independently. The unique index `ledger_pay_at_pickup_release_once` (one DEALLOCATE per order line) now excludes `returns.rma.restock` (several partial returns of one line).
-Known edge: an offline bank-transfer refund WITH restock after a partial RMA restock of the same line would try to release more than is allocated and fails loudly on the balance CHECK (`allocated >= 0`), it never double counts silently.
+Operator rule (pre-existing ceiling): `allocated` of shipped orders only shrinks through restocks, and a merchant who adjusts `on_hand` DOWN for goods that already shipped breaks `available = on_hand - reserved - allocated - unavailable`; do not.
 
 ## 6. HTTP (merchant routes, `/v1/admin/stores/{store_id}`)
 
@@ -91,14 +101,21 @@ Known edge: an offline bank-transfer refund WITH restock after a partial RMA res
 | `POST /returns/{rma_id}/inspect` `{expected_version, lines:[{sku_id, warehouse_id?, qty_restock, qty_scrap}]}` | `fulfillment:write` + `inventory:write` | 200 RMA |
 | `POST /returns/{rma_id}/close` `{expected_version, refund_id?}` | `fulfillment:write` + `inventory:write` | 200 RMA + `restocked_units` |
 | `POST /returns/{rma_id}/cancel` `{expected_version}` | `fulfillment:write` | 200 RMA |
+| `GET /orders/cancel-refund-gaps` | `orders:read` | 200 `{items:[{order_id, captured_minor, refunded_minor, gap_minor, cancelled_at, reason}]}` |
 
 Every POST needs exactly one canonical `Idempotency-Key`, no query, strict JSON (unknown or duplicate keys 400). RMA: `{id, order_id, state, version, reason, refund_id, created_at, updated_at, lines:[{warehouse_id, sku_id, qty_registered, qty_received, qty_restock, qty_scrap}]}`.
 
 ## 7. Codes
 
 409: `not_shipped`, `not_returnable`, `version_changed`, `invalid_state`, `not_restockable`, `has_returns`, `already_cancelled`, `state_changed`, `payment_in_flight`, `refund_first`, `already_shipped`,
-`cvs_attempt_in_flight`, `payment_review_open`, `conflict` (idempotency). 422: `unknown_line`, `ambiguous_line`, `exceeds_shipped`, `exceeds_registered`, `invalid_quantities`, `quantities_mismatch`,
+`cvs_attempt_in_flight`, `payment_review_open`, `conflict` (idempotency); `has_returns` also answers a shipment VOID (PUT shipment). 503: `retry_later` (cancel raced a parcel-group change; also deadlocks). 422: `unknown_line`, `ambiguous_line`, `exceeds_shipped`, `exceeds_registered`, `invalid_quantities`, `quantities_mismatch`,
 `lines_incomplete`, `nothing_received`, `refund_mismatch`, `not_cancellable`, `invalid_request`. 403 `forbidden`, 404 `not_found` (also another store's id), 401 `unauthorized`, 503 `retry_later` (deadlock) / `unavailable`.
+
+## 7a. Known limits
+
+* A card order shipped to a convenience store and returned to sender unclaimed has no stock path: it is not returnable (an RMA needs the parcel `PICKED_UP`) and not cancellable (a live parcel is `already_shipped`).
+  The merchant uses an inventory adjustment; a restock path for returned CVS parcels is a follow-up unit.
+* The inspect step records the decision and close writes stock (two calls); the order list has no "has returns" filter (`GET /returns` is the list).
 
 ## 8. Gates (`tests/foundation/returns_test.go`, `internal/httpapi/returns_test.go`)
 

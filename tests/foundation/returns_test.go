@@ -477,6 +477,55 @@ func TestReturns(t *testing.T) {
 		rtExpect(t, "a third unit does not exist", st, out, 422, "exceeds_shipped")
 	})
 
+	t.Run("P1-1 a shipment cannot be voided while a live RMA exists (a return presumes the parcel left)", func(t *testing.T) {
+		ov, _ := e.rtPaid()
+		e.rtShip(ov)
+		st, out := e.rtRegister(e.token(), ov, "rt-reg-0060", 1)
+		rtExpect(t, "register", st, out, 201, "")
+		id := out["id"].(string)
+		st, out, _ = e.mcall(e.token(), "PUT", e.rtPath("/orders/"+ov+"/shipment"), "rt-void-0001", mfxVoid(1, "wrong_order"))
+		rtExpect(t, "void with a live RMA", st, out, 409, "has_returns")
+		if c, fu, _ := e.rtStates(ov); c != "CONFIRMED" || fu != "MERCHANT_SHIPPED" {
+			t.Fatalf("a refused void changed the order to %s %s", c, fu)
+		}
+		st, out, _ = e.mcall(e.token(), "POST", e.rtPath("/returns/"+id+"/cancel"), "rt-can-0060", `{"expected_version":1}`)
+		rtExpect(t, "withdraw the RMA", st, out, 200, "")
+		st, out, _ = e.mcall(e.token(), "PUT", e.rtPath("/orders/"+ov+"/shipment"), "rt-void-0002", mfxVoid(1, "wrong_order"))
+		rtExpect(t, "void once no live RMA is left", st, out, 200, "")
+		if _, fu, _ := e.rtStates(ov); fu != "MANUAL_UNASSIGNED" {
+			t.Fatalf("voided order is %s", fu)
+		}
+	})
+
+	t.Run("P1-2 a collected home-COD order can be returned (commercial_state stays AWAITING_COLLECTION); uncollected is refused", func(t *testing.T) {
+		e.hcrEnable(0)
+		cod, _ := e.hcrPlace()
+		e.hcrShip(cod)
+		st, out := e.rtRegister(e.token(), cod, "rt-reg-0070", 2)
+		rtExpect(t, "uncollected COD", st, out, 409, "not_returnable")
+		writer, _ := e.member("fulfillment:write", "orders:read")
+		if r := e.hcrRecord(writer, cod, "PENDING", "collected"); r.status != 200 {
+			t.Fatalf("collect: %d %s", r.status, r.raw)
+		}
+		if c, _, _ := e.rtStates(cod); c != "AWAITING_COLLECTION" {
+			t.Fatalf("COD commercial_state %s after collection, the fixture premise changed", c)
+		}
+		_, _, al0 := e.cofBalance(sku)
+		id, v := e.rtInspected(cod, 2, "rt-cod")
+		st, out = e.rtClose(e.token(), id, "rt-cls-0070", v, "")
+		rtExpect(t, "close COD return", st, out, 200, "")
+		if out["restocked_units"] != float64(2) || e.rtLedger("returns.rma.restock") < 1 {
+			t.Fatalf("close body %v", out)
+		}
+		if _, _, al1 := e.cofBalance(sku); al1 != al0-2 {
+			t.Fatalf("allocated %d -> %d, want -2 once", al0, al1)
+		}
+		st, out = e.rtClose(e.token(), id, "rt-cls-0070", v, "")
+		if st != 200 || e.count(`SELECT count(*) FROM inventory.ledger WHERE operation='returns.rma.restock' AND checkout_id=$1`, cod) != 1 {
+			t.Fatalf("COD close replay: %d %v", st, out)
+		}
+	})
+
 	t.Run("the ledger refuses forged rows with the reserved operations", func(t *testing.T) {
 		// Disclosed owner fixture: the same GUCs the definers set, then a direct INSERT (triggers fire for every writer).
 		o9, _ := e.rtPaid()
@@ -833,4 +882,224 @@ func rtGroupOf(e *tcvEnv, order string) string {
 		e.t.Fatal(err)
 	}
 	return g
+}
+
+// TestReturnsBankTransfer: P1-1 root two (one remaining-allocation bound for EVERY DEALLOCATE writer) and the contract's
+// AWAITING_TRANSFER refusal, on bank-transfer orders.
+func TestReturnsBankTransfer(t *testing.T) {
+	e := cogNew(t, 72)
+	e.grantCreator("inventory:write")
+	f := e.p.f
+	sku, _ := e.rtSKU()
+
+	t.Run("AWAITING_TRANSFER is 422 not_cancellable (the expiry or the offline refund ends it)", func(t *testing.T) {
+		_, pending := e.cogPlace("")
+		st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+pending+"/cancel"), "rt-can-2001", `{"expected_state":"AWAITING_TRANSFER","reason":"x"}`)
+		rtExpect(t, "cancel AWAITING_TRANSFER", st, out, 422, "not_cancellable")
+	})
+
+	t.Run("RMA restock then an offline refund WITH restock: the second release is refused, no phantom stock", func(t *testing.T) {
+		_, holder := e.cokConfirmed(true) // another order holding the same SKU: the balance CHECK alone would not catch a double release
+		_, order := e.cokConfirmed(true)
+		_ = holder
+		e.rtShip(order)
+		id, v := e.rtInspected(order, 2, "rt-bank")
+		st, out := e.rtClose(e.token(), id, "rt-cls-2001", v, "")
+		rtExpect(t, "close", st, out, 200, "")
+		st, out, _ = e.mcall(e.token(), "PUT", e.rtPath("/orders/"+order+"/shipment"), "rt-void-2001", mfxVoid(1, "wrong_order"))
+		rtExpect(t, "void after a CLOSED RMA", st, out, 409, "has_returns")
+		// Disclosed owner fixture: bypass the void guard (the order row alone is rewritten; the head/state constraint trigger is
+		// disabled for this one statement) to prove the LEDGER refuses the second release on its own.
+		tx, err := f.owner.Begin(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, stmt := range []string{`ALTER TABLE checkout.orders DISABLE TRIGGER manual_shipment_state_orders`,
+			`UPDATE checkout.orders SET fulfillment_state='MANUAL_UNASSIGNED' WHERE id='` + order + `'`,
+			`ALTER TABLE checkout.orders ENABLE TRIGGER manual_shipment_state_orders`} {
+			if _, err := tx.Exec(context.Background(), stmt); err != nil {
+				t.Fatalf("%s: %v", stmt, err)
+			}
+		}
+		if err := tx.Commit(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		oh0, rs0, al0 := e.cofBalance(sku)
+		rows := e.count(`SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='DEALLOCATE'`, order)
+		st, out = e.cofDecide(e.token(), order, "refund-offline", t04Key("rt-bank-restock"), `{"restock":true}`)
+		if st == 200 {
+			t.Fatalf("offline refund with restock after an RMA restock was accepted: %v", out)
+		}
+		if oh, rs, al := e.cofBalance(sku); oh != oh0 || rs != rs0 || al != al0 {
+			t.Fatalf("balance %d,%d,%d -> %d,%d,%d after the refused second release", oh0, rs0, al0, oh, rs, al)
+		}
+		if n := e.count(`SELECT count(*) FROM inventory.ledger WHERE checkout_id=$1 AND kind='DEALLOCATE'`, order); n != rows || rows != 1 {
+			t.Fatalf("DEALLOCATE rows %d -> %d, want exactly the RMA row", rows, n)
+		}
+	})
+}
+
+// rtHelperSigs are the internal helpers of 0155: nobody but their owner (a definer of the same role) may EXECUTE them.
+var rtHelperSigs = []string{"returns.authorize(bytea,uuid,text,text)", "returns.reauthorize(bytea,uuid,text,text,jsonb)", "returns.line_set(jsonb,text,text)",
+	"returns.rma_json(uuid,uuid,uuid)", "returns.order_returnable(text,text,text)", "inventory.guard_returns_ledger()"}
+
+func TestReturnsHelperACLAndGuardBodies(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	for _, sig := range rtHelperSigs {
+		var owner string
+		var public bool
+		var callers []string
+		if err := f.owner.QueryRow(ctx, `SELECT pg_get_userbyid(p.proowner),
+		 EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'),
+		 ARRAY(SELECT rolname FROM pg_roles WHERE rolname LIKE 'commerce\_%' AND rolname<>pg_get_userbyid(p.proowner) AND has_function_privilege(oid,p.oid,'EXECUTE') ORDER BY 1)
+		 FROM pg_proc p WHERE p.oid=to_regprocedure($1)`, sig).Scan(&owner, &public, &callers); err != nil {
+			t.Fatalf("%s: %v", sig, err)
+		}
+		if owner != "commerce_checkout_writer" || public || len(callers) != 0 {
+			t.Errorf("%s: owner=%s public-exec=%v extra callers=%v, want an owner-only helper", sig, owner, public, callers)
+		}
+		if !srsBoolPG(t, f, `SELECT obj_description(to_regprocedure($1),'pg_proc') IS NOT NULL`, sig) {
+			t.Errorf("%s has no COMMENT ON FUNCTION", sig)
+		}
+	}
+	// The anchor-patched guards must keep carrying the 0155 branches (a later migration that copies an older body would drop them).
+	for fn, needles := range map[string][]string{
+		"inventory.guard_checkout_ledger()":      {"checkout.merchant_cancel"},
+		"inventory.guard_pay_at_pickup_ledger()": {"fulfillment.pay_at_pickup.cancel", "fulfillment.pay_at_pickup.restock"},
+		"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)": {"has_returns"},
+		"inventory.guard_returns_ledger()": {"returns.rma.restock", "checkout.merchant_cancel", "v_alloc"},
+	} {
+		var src string
+		if err := f.owner.QueryRow(ctx, `SELECT prosrc FROM pg_proc WHERE oid=to_regprocedure($1)`, fn).Scan(&src); err != nil {
+			t.Fatalf("%s: %v", fn, err)
+		}
+		for _, n := range needles {
+			if !strings.Contains(src, n) {
+				t.Errorf("%s lost %q", fn, n)
+			}
+		}
+	}
+}
+
+func srsBoolPG(t *testing.T, f *testFixture, q string, args ...any) bool {
+	t.Helper()
+	var b bool
+	if err := f.owner.QueryRow(context.Background(), q, args...).Scan(&b); err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+// TestMerchantCancelRefundGap: a cancel counts in-flight refunds; when such a refund later FAILS the order stays cancelled and the
+// merchant sees it in GET /orders/cancel-refund-gaps until the money is refunded again (P2-2).
+func TestMerchantCancelRefundGap(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write", "inventory:write")
+	order, rf := e.rtPaid()
+	gaps := func() []any {
+		st, out, raw := e.mcall(e.token(), "GET", e.rtPath("/orders/cancel-refund-gaps"), "", "")
+		if st != 200 {
+			t.Fatalf("gaps: %d %s", st, raw)
+		}
+		items, _ := out["items"].([]any)
+		return items
+	}
+	refund := e.r.mustRefund(t, rf, rf.captured, "requested_by_customer")
+	st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+order+"/cancel"), "rt-can-3001", `{"expected_state":"CONFIRMED","reason":"customer asked"}`)
+	rtExpect(t, "cancel with the refund requested", st, out, 200, "")
+	if n := len(gaps()); n != 0 {
+		t.Fatalf("gap list has %d rows while the refund is healthy", n)
+	}
+	e.r.awaitRefundFact(t, refund, rf.attempt, "SUCCEEDED")
+	fakeID := e.r.fake.RefundByRef(refund)
+	e.r.fake.SetRefundStatus(fakeID, "failed", "declined")
+	body := e.r.fake.RefundEventBody("evt_rt_failed_"+t04Tag(), "refund.failed", fakeID, false)
+	if status := e.r.deliverRaw(t, rf.endpoint, rf.secret, body); status != 200 {
+		t.Fatalf("refund.failed webhook answered %d", status)
+	}
+	e.r.awaitRefundFact(t, refund, rf.attempt, "FAILED")
+	items := gaps()
+	if len(items) != 1 {
+		t.Fatalf("gap list after the refund failed: %v", items)
+	}
+	g := items[0].(map[string]any)
+	if g["order_id"] != order || g["captured_minor"] != float64(rf.captured) || g["refunded_minor"] != float64(0) || g["gap_minor"] != float64(rf.captured) || g["reason"] != "cancel_refund_failed" {
+		t.Fatalf("gap row %v", g)
+	}
+	if c, _, rv := e.rtStates(order); c != "CANCELLED" || rv != "RELEASED" {
+		t.Fatalf("order %s %s: the failed refund must not reopen it", c, rv)
+	}
+	e.r.mustRefund(t, rf, rf.captured, "requested_by_customer") // the merchant refunds again on the cancelled order
+	if n := len(gaps()); n != 0 {
+		t.Fatalf("gap list still has %d rows after the re-refund", n)
+	}
+	noRead, _ := e.member("fulfillment:write")
+	if st, out, _ := e.mcall(noRead, "GET", e.rtPath("/orders/cancel-refund-gaps"), "", ""); st != 403 {
+		t.Fatalf("gap list without orders:read: %d %v", st, out)
+	}
+}
+
+// TestMerchantCancelGroupRace: an order that joins a parcel group between the cancel's unlocked membership read and its order lock
+// is answered 503 retry_later BEFORE any write (the group lock must never be taken after the order lock: begin_parcel_group_shipment
+// locks group -> order); the retry locks group -> order and succeeds (P2-3).
+func TestMerchantCancelGroupRace(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write", "inventory:write")
+	f := e.p.f
+	ctx := context.Background()
+	order, rf := e.rtPaid()
+	e.r.mustRefund(t, rf, rf.captured, "requested_by_customer")
+	var owner string
+	if err := f.owner.QueryRow(ctx, `SELECT owner_id::text FROM checkout.orders WHERE id=$1`, order).Scan(&owner); err != nil {
+		t.Fatal(err)
+	}
+	tx, err := f.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SELECT 1 FROM checkout.orders WHERE id=$1 FOR UPDATE`, order); err != nil {
+		t.Fatal(err)
+	}
+	type res struct {
+		st  int
+		out map[string]any
+	}
+	done := make(chan res, 1)
+	go func() {
+		st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+order+"/cancel"), "rt-can-3010", `{"expected_state":"CONFIRMED","reason":"x"}`)
+		done <- res{st, out}
+	}()
+	deadline := time.Now().Add(20 * time.Second)
+	for e.count(`SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%merchant_cancel_order%'`) == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the cancel never blocked on the order lock")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	group := randomUUID()
+	// the creator of a group commits its membership while still holding the order lock
+	if _, err := tx.Exec(ctx, `INSERT INTO fulfillment.parcel_groups(tenant_id,store_id,id,owner_id,destination_hash,state,created_by) VALUES($1,$2,$3,$4,sha256('rt'::bytea),'OPEN',$5)`,
+		e.tenant(), e.store(), group, owner, f.principalA); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO fulfillment.parcel_group_orders(tenant_id,store_id,group_id,owner_id,order_id) VALUES($1,$2,$3,$4,$5)`, e.tenant(), e.store(), group, owner, order); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	r := <-done
+	rtExpect(t, "cancel that raced a group creation", r.st, r.out, 503, "retry_later")
+	if c, _, rv := e.rtStates(order); c != "CONFIRMED" || rv != "COMMITTED" {
+		t.Fatalf("the refused attempt changed the order to %s %s", c, rv)
+	}
+	st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+order+"/cancel"), "rt-can-3011", `{"expected_state":"CONFIRMED","reason":"x"}`)
+	rtExpect(t, "retry", st, out, 200, "")
+	if pg, _ := out["parcel_group"].(map[string]any); pg["id"] != group || pg["state"] != "DISSOLVED" {
+		t.Fatalf("parcel_group %v", out["parcel_group"])
+	}
 }

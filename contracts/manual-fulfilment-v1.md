@@ -376,7 +376,8 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
 
 - **Effect on shipment eligibility (MD6).** A merchant-cancelled order is `CANCELLED/CANCELLED` and so is no longer `manual_shipment_eligible` (needs `CONFIRMED`/`AWAITING_COLLECTION`
   + `MANUAL_UNASSIGNED`): shipment, group shipment, CVS shipment and the unshipped list/export refuse or omit it exactly as they do for any cancelled order. A cancel is refused for a shipped
-  order (`409 already_shipped`); a voided shipment returns the order to `MANUAL_UNASSIGNED` and makes it cancellable again.
+  order (`409 already_shipped`); a voided shipment returns the order to `MANUAL_UNASSIGNED` and makes it cancellable again, but a VOID is refused `409 has_returns` while a live (non-cancelled) RMA exists
+  (a return presumes the parcel left).
 - **Parcel groups (resolves PG-OPEN-1).** Cancelling a member of an OPEN group removes it (group `version` +1); a group left with one order is `DISSOLVED` and its survivor is free to ship alone or regroup.
   Lock order is group -> order -> reservation -> balances, the same direction as `begin_parcel_group_shipment`.
 - **Returns** apply to shipped orders only and never change `fulfillment_state` or the shipment head; an order with a live RMA cannot be cancelled (`409 has_returns`).

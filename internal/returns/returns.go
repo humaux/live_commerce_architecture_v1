@@ -43,6 +43,7 @@ var codes = map[string]int{
 	"not_shipped": 409, "not_returnable": 409, "version_changed": 409, "invalid_state": 409, "not_restockable": 409, "has_returns": 409,
 	"already_cancelled": 409, "state_changed": 409, "payment_in_flight": 409, "refund_first": 409, "already_shipped": 409,
 	"cvs_attempt_in_flight": 409, "payment_review_open": 409,
+	"retry_later":  503, // the order joined a parcel group while the cancel waited for its lock: retry (locks group -> order)
 	"unknown_line": 422, "ambiguous_line": 422, "exceeds_shipped": 422, "exceeds_registered": 422, "invalid_quantities": 422,
 	"quantities_mismatch": 422, "lines_incomplete": 422, "nothing_received": 422, "refund_mismatch": 422, "not_cancellable": 422,
 }
@@ -157,6 +158,7 @@ var sqlFor = map[string]string{
 	"cancel":   `SELECT returns.cancel_rma($1,$2::uuid,$3::uuid,$4,$5,$6)`,
 	"order":    `SELECT returns.read_order_returns($1,$2::uuid,$3::uuid)`,
 	"list":     `SELECT returns.list_returns($1,$2::uuid,$3)`,
+	"gaps":     `SELECT returns.list_cancel_refund_gaps($1,$2::uuid)`,
 }
 
 // run executes one definer statement and returns its jsonb. The Go-side fence re-checks every permission first (the definer checks again).
@@ -329,6 +331,38 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, state str
 	}
 	raw, err := run(ctx, tx, scope, token, []string{"orders:read"}, "list", st)
 	return many(raw, err)
+}
+
+// RefundGap is one merchant-cancelled card order whose refunds (not failed/cancelled/rejected) no longer cover the captured amount: a refund
+// that was in flight at cancel time failed afterwards. Reason is always cancel_refund_failed.
+type RefundGap struct {
+	OrderID       string `json:"order_id"`
+	CapturedMinor int64  `json:"captured_minor"`
+	RefundedMinor int64  `json:"refunded_minor"`
+	GapMinor      int64  `json:"gap_minor"`
+	CancelledAt   string `json:"cancelled_at"`
+	Reason        string `json:"reason"`
+}
+
+// CancelRefundGaps lists the cancelled orders that still need a refund (orders:read, read only, 100 newest).
+func CancelRefundGaps(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) ([]RefundGap, error) {
+	raw, err := run(ctx, tx, scope, token, []string{"orders:read"}, "gaps")
+	if err != nil {
+		return nil, err
+	}
+	var out []RefundGap
+	if json.Unmarshal(raw, &out) != nil {
+		return nil, ErrUnavailable
+	}
+	for _, g := range out {
+		if !command.ValidID(g.OrderID) || g.GapMinor < 1 || g.Reason != "cancel_refund_failed" {
+			return nil, ErrUnavailable
+		}
+	}
+	if out == nil {
+		out = []RefundGap{}
+	}
+	return out, nil
 }
 
 func validKey(key string) bool {

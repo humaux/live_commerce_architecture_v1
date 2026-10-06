@@ -122,6 +122,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 			{"returns.read_order_returns(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},                             // 0155 W3-08B
 			{"returns.list_returns(bytea,uuid,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},                                   // 0155 W3-08B
 			{"fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}}, // 0155 W3-08B
+			{"returns.list_cancel_refund_gaps(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},                             // 0155 W3-08B
 		} {
 			var owner string
 			var definer, fixed, publicExec, commented bool

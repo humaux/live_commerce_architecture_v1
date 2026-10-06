@@ -38,14 +38,14 @@ type CancelResult struct {
 }
 
 // CancelOrder cancels an unshipped order (fulfillment:write, Idempotency-Key). expectedState is the commercial state the merchant saw
-// (DRAFT, AWAITING_PAYMENT, CONFIRMED, AWAITING_COLLECTION); the definer answers 409 state_changed when it moved. Writes the order and
+// (DRAFT, AWAITING_PAYMENT, AWAITING_TRANSFER, CONFIRMED, AWAITING_COLLECTION; the last two cancel only per returns-v1 §3); the definer answers 409 state_changed when it moved. Writes the order and
 // reservation state, ledger release rows and one audit row; never a payment or refund row.
 func CancelOrder(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, orderID, expectedState, reason string) (CancelResult, error) {
 	if tx == nil || !returns.ValidAuthority(scope, token) || !command.ValidID(orderID) || len(reason) == 0 || len(reason) > 240 || len(key) < 8 || len(key) > 128 {
 		return CancelResult{}, command.ErrInvalid
 	}
 	switch expectedState {
-	case "DRAFT", "AWAITING_PAYMENT", "CONFIRMED", "AWAITING_COLLECTION":
+	case "DRAFT", "AWAITING_PAYMENT", "AWAITING_TRANSFER", "CONFIRMED", "AWAITING_COLLECTION":
 	default:
 		return CancelResult{}, command.ErrInvalid
 	}
