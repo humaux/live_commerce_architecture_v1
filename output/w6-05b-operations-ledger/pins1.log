@@ -1,0 +1,480 @@
+=== RUN   TestBlocklistPlannerACLPin
+--- PASS: TestBlocklistPlannerACLPin (1.45s)
+=== RUN   TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode
+--- PASS: TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode (0.18s)
+=== RUN   TestT06DispatcherR7aFinishErrorRollsBackAndReconciles
+--- PASS: TestT06DispatcherR7aFinishErrorRollsBackAndReconciles (5.48s)
+=== RUN   TestT06DispatcherR7aFinishRunsOnPolicyBlock
+--- PASS: TestT06DispatcherR7aFinishRunsOnPolicyBlock (0.20s)
+=== RUN   TestT06DispatcherCommittedFrozenIntentAndTerminalReplay
+--- PASS: TestT06DispatcherCommittedFrozenIntentAndTerminalReplay (1.47s)
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed
+--- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect (0.59s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied (0.45s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed (0.15s)
+=== RUN   TestT06DispatcherBusyDuplicateSnoozesWithoutEffect
+--- PASS: TestT06DispatcherBusyDuplicateSnoozesWithoutEffect (1.40s)
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack
+--- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (5.05s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (1.34s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.20s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.14s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.37s)
+=== RUN   TestT06DispatcherOneDeadlineAndFreshCompletion
+--- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.38s)
+=== RUN   TestT06DispatcherUnknownRouteFailsClosedWithoutClaim
+--- PASS: TestT06DispatcherUnknownRouteFailsClosedWithoutClaim (0.12s)
+=== RUN   TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown
+--- PASS: TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown (2.37s)
+=== RUN   TestT06DispatcherBudgetPersistsManualRequirement
+--- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.37s)
+=== RUN   TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob
+--- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.38s)
+=== RUN   TestT06DispatcherForcedStopPreservesClaimForReconcile
+--- PASS: TestT06DispatcherForcedStopPreservesClaimForReconcile (1.41s)
+=== RUN   TestT06DispatcherCrashChild
+--- PASS: TestT06DispatcherCrashChild (0.00s)
+=== RUN   TestT06DispatcherRealProcessCrashRescue
+=== RUN   TestT06DispatcherRealProcessCrashRescue/before
+=== RUN   TestT06DispatcherRealProcessCrashRescue/after
+--- PASS: TestT06DispatcherRealProcessCrashRescue (41.77s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (19.74s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (22.03s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.48s)
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_runtime
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_identity
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_runtime
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_issuer
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_claims_worker
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_payment_worker
+--- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole (0.11s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_runtime (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_identity (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_runtime (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_issuer (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_claims_worker (0.03s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_payment_worker (0.03s)
+=== RUN   TestT06PolicyOutcomeCannotErasePossibleRemoteEffect
+--- PASS: TestT06PolicyOutcomeCannotErasePossibleRemoteEffect (0.03s)
+=== RUN   TestT06SQLLeaseOwnershipExpiryAndNoRedispatch
+--- PASS: TestT06SQLLeaseOwnershipExpiryAndNoRedispatch (0.03s)
+=== RUN   TestT06SQLConcurrentClaimAndBindingOutcomeFacts
+--- PASS: TestT06SQLConcurrentClaimAndBindingOutcomeFacts (0.05s)
+=== RUN   TestT06SQLEventFailureRollsBackClaimAndCompletion
+--- PASS: TestT06SQLEventFailureRollsBackClaimAndCompletion (0.02s)
+=== RUN   TestT06OrdinaryWorkerStartsProcessesAndStops
+--- PASS: TestT06OrdinaryWorkerStartsProcessesAndStops (0.08s)
+=== RUN   TestT06GoBindingPermissionsScopeAndCAS
+--- PASS: TestT06GoBindingPermissionsScopeAndCAS (0.06s)
+=== RUN   TestT06GoPlanAtomicReplayCanonicalAndReadback
+--- PASS: TestT06GoPlanAtomicReplayCanonicalAndReadback (0.12s)
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/trailing
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/oversize
+--- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation (0.10s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/trailing (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/oversize (0.00s)
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/job
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/event
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/audit
+--- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence (0.08s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/job (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/event (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/audit (0.01s)
+=== RUN   TestHomeCodReviewACLInventory
+--- PASS: TestHomeCodReviewACLInventory (0.48s)
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL
+--- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness (3.59s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL (0.01s)
+=== RUN   TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies (8.55s)
+=== RUN   TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:130: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:130: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:130: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:130: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:133: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:133: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:133: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:133: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:136: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:136: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:136: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:136: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:139: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:139: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:139: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:139: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies (8.46s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/IP
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted (1.70s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/IP (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP (0.00s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsCleanup
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsCleanup (1.63s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsHeadUntouched
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsHeadUntouched (3.32s)
+=== RUN   TestLegacyRuntimeIsolationPopulatedUpgrade
+    legacy_runtime_upgrade_test.go:823: integration.operations business rows changed
+--- FAIL: TestLegacyRuntimeIsolationPopulatedUpgrade (5.17s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+--- PASS: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (2.46s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeFailClosedRetry
+    legacy_runtime_upgrade_test.go:1003: pg teardown: "cancelled migration attempt still holds the migration advisory lock" backends reached 0 after 27ms (2 polls)
+--- PASS: TestLegacyRuntimeIsolationUpgradeFailClosedRetry (2.68s)
+=== RUN   TestLegacyRuntimeIsolationFamilyCollidingIDs
+--- PASS: TestLegacyRuntimeIsolationFamilyCollidingIDs (3.43s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs
+--- PASS: TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs (2.86s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater
+--- PASS: TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater (2.68s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence
+--- PASS: TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence (4.01s)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[])
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe()
+--- PASS: TestLiveConsoleInboxMigration0122ExactACL (0.04s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[]) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe() (0.00s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.05s)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list()
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint)
+--- PASS: TestLiveConsoleTemplatesMigration0121ExactACL (0.01s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list() (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint) (0.00s)
+=== RUN   TestLocalRecoverySnapshotDetectsSecurityAndSequenceDrift
+--- PASS: TestLocalRecoverySnapshotDetectsSecurityAndSequenceDrift (3.26s)
+=== RUN   TestLocalRecoveryArtifactHashDetectsByteChange
+--- PASS: TestLocalRecoveryArtifactHashDetectsByteChange (0.00s)
+=== RUN   TestLocalRecoverySnapshotCanonicalACLAndDatabaseOwner
+--- PASS: TestLocalRecoverySnapshotCanonicalACLAndDatabaseOwner (3.93s)
+=== RUN   TestLocalRecoveryBootstrapRolesTransform
+--- PASS: TestLocalRecoveryBootstrapRolesTransform (0.00s)
+=== RUN   TestLocalRecoveryLogicalRestoreAndColdStart
+    local_recovery_test.go:703: native pg_dumpall: pg_dumpall (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+    local_recovery_test.go:703: native pg_dump: pg_dump (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+    local_recovery_test.go:703: native pg_restore: pg_restore (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+    local_recovery_test.go:703: native psql: psql (PostgreSQL) 18.6 (Debian 18.6-1.pgdg13+2)
+    local_recovery_test.go:730: native roles password-clause-present=false; derived roles bytes=20180 sha256=558e7cc69d4122eec69be6d29f1a1f2d41ff9c6cfaf581c4a50c4c5001903ed4
+    local_recovery_test.go:743: native dump roles bytes=20214 sha256=6125bed4e92ee3de9858ffc63e77142159bbcc6ba9e78a1f84032300130645c0 elapsed=60.393166ms; archive bytes=5008751 sha256=3bf923332ce7edc232714546a3c29c091ae87cdb9ef26dad39548c20c1c594fb elapsed=255.342666ms
+    local_recovery_test.go:792: native restore roles=65.267416ms archive=834.551583ms
+    local_recovery_test.go:1030: LOCAL recovery gate completed in 20.520108875s; no provider or production access
+--- PASS: TestLocalRecoveryLogicalRestoreAndColdStart (21.07s)
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:170: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:170: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:170: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (0.50s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.02s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.06s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.06s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.11s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.07s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.09s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.09s)
+=== RUN   TestMetaClaimsMCI04RiverGuards
+--- PASS: TestMetaClaimsMCI04RiverGuards (7.43s)
+=== RUN   TestMetaClaimsMCI07DispatcherRouteShape
+--- PASS: TestMetaClaimsMCI07DispatcherRouteShape (0.04s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (4.26s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+=== RUN   TestMetaClaimsMCI02PoolValidator
+--- PASS: TestMetaClaimsMCI02PoolValidator (0.56s)
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only
+--- PASS: TestMetaClaimsMCI02PolicyBehaviour (0.93s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window (0.02s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only (0.00s)
+=== RUN   TestMetaConnectMultiPageUpgrade
+--- PASS: TestMetaConnectMultiPageUpgrade (2.60s)
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+--- PASS: TestPlatformOperatorOP08SchemaAndExecuteMatrix (0.03s)
+=== RUN   TestPMv2ACLPins
+--- PASS: TestPMv2ACLPins (0.72s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.34s)
+=== RUN   TestReturnsHelperACLAndGuardBodies
+--- PASS: TestReturnsHelperACLAndGuardBodies (0.02s)
+=== RUN   TestSoldOutReplyACL
+--- PASS: TestSoldOutReplyACL (6.95s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.01s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.22s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.00s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.25s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.08s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.07s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.06s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.10s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	177.900s
+FAIL
+test-focused: top-level PASS=66 FAIL=1 SKIP=0 exit=1
+exit 1

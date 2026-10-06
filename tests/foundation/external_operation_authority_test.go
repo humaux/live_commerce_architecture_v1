@@ -311,7 +311,15 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 -- 0137 (W4-S1 platform Stripe): the two trigger guards of derived Stripe rows; registry-writer definers, no EXECUTE grant to any login.
 	 ('integration.guard_derived_stripe_account()'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false),
-	 ('integration.guard_derived_stripe_credential()'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false))
+	 ('integration.guard_derived_stripe_credential()'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false),
+	 -- 0159 (W6-05B operations ledger): three private helpers (no EXECUTE for any login) and the four merchant definers (runtime EXECUTE only; no worker authority).
+	 ('integration.ledger_auth(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.ledger_capability(integration.operations,text,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.ledger_open(bytea,uuid,uuid,bigint,text,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 ('integration.read_operation_ledger(bytea,uuid,text,uuid,timestamptz,uuid,integer)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.request_operation_query(bytea,uuid,uuid,bigint,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.cancel_operation(bytea,uuid,uuid,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 ('integration.retry_operation(bytea,uuid,uuid,bigint,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)=a.owner
 	 -- every worker authority holds EXACTLY the listed functions; the empty legacy commerce_worker none (T21-02)
@@ -327,7 +335,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 89 || !safe {
+	if err != nil || functions != 96 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

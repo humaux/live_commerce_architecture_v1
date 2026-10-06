@@ -1,0 +1,33 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.50s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.26s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+    operations_queue_flow_test.go:330: 8 concurrent queries: ok=8 others=map[] jobs 1->9
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect (0.25s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:371: iteration 0: cancel=422 {"code":"invalid_request","message":"Request validation failed.","request_id":"1bc57fb831bbafb297f524109e5f6880","retryable":false,"details":{}}
+         claim=claimed state=DISPATCHING: both or neither won
+--- FAIL: TestOperationsQueueCancelRacesDispatchClaim (0.06s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.20s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.30s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.22s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.58s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.13s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.675s
+FAIL
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1

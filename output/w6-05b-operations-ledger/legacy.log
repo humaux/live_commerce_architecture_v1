@@ -1,0 +1,213 @@
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress
+=== RUN   TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL
+--- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness (4.89s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_deferred (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_lane (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_payment_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_expiry_job_family (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/missing_legacy_family_exclusion (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_owner_search_path (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_owner_search_path (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_payment_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/old_expiry_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_foreign_kind (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_malformed (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_wrong_queue (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/payment_orphan (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/expiry_orphan (0.00s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_worker (0.02s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_consumer (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/meta_ACL_commerce_meta_ingress (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAdmissionAndReadiness/checkout_producer_old_River_ACL (0.01s)
+=== RUN   TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:51: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:51: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:51: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:51: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:51: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:59: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:59: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:59: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:59: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:59: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationPaymentDoesNotMaintainForeignFamilies (6.89s)
+=== RUN   TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies
+    legacy_runtime_isolation_test.go:130: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:130: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:130: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:130: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:130: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:133: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:133: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:133: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:133: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:133: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:136: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:136: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:136: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:136: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:136: seed identity backend_after=0
+    legacy_runtime_isolation_test.go:139: seed checkout capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed checkout backend_after=0
+    legacy_runtime_isolation_test.go:139: seed worker capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed worker backend_after=0
+    legacy_runtime_isolation_test.go:139: seed expiry capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed expiry backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_runtime backend_after=0
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed buyer_issuer backend_after=0
+    legacy_runtime_isolation_test.go:139: seed identity capacity=60 reserved=0 super=3 total=1 idle=1 acquired=0 pool_max=8 backend_before=1
+    legacy_runtime_isolation_test.go:139: seed identity backend_after=0
+--- PASS: TestLegacyRuntimeIsolationExpiryDoesNotMaintainForeignFamilies (15.95s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/IP
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted (5.64s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/empty_touch_object (0.01s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/JSON_null_is_not_SQL_NULL (0.02s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/nonempty_touch (0.02s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/IP (0.02s)
+    --- PASS: TestLegacyRuntimeIsolationAttributionShimsRestricted/whitespace_IP (0.03s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsCleanup
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsCleanup (3.58s)
+=== RUN   TestLegacyRuntimeIsolationAttributionShimsHeadUntouched
+--- PASS: TestLegacyRuntimeIsolationAttributionShimsHeadUntouched (4.67s)
+=== RUN   TestLegacyRuntimeIsolationPopulatedUpgrade
+--- PASS: TestLegacyRuntimeIsolationPopulatedUpgrade (12.13s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+--- PASS: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (4.82s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeFailClosedRetry
+    legacy_runtime_upgrade_test.go:1004: pg teardown: "cancelled migration attempt still holds the migration advisory lock" backends reached 0 after 27ms (2 polls)
+--- PASS: TestLegacyRuntimeIsolationUpgradeFailClosedRetry (2.72s)
+=== RUN   TestLegacyRuntimeIsolationFamilyCollidingIDs
+--- PASS: TestLegacyRuntimeIsolationFamilyCollidingIDs (3.32s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs
+--- PASS: TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs (2.59s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater
+--- PASS: TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater (2.58s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence
+--- PASS: TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence (2.46s)
+PASS
+ok  	livecommerce/tests/foundation	74.024s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+exit 0
