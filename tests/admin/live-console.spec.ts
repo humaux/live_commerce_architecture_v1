@@ -6,6 +6,7 @@ import { test, expect, type Page, type APIRequestContext } from "@playwright/tes
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
+import { money } from "../../packages/format/src/index";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -74,6 +75,10 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId("live-console")).toBeVisible();
     await phase(page, "draft");
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    const stats = page.getByTestId("live-console").locator(".live-status-bar");
+    await expect(stats.locator("div").filter({ has: page.getByText(workspaceCopy[locale].amount, { exact: true }) }).locator("dd")).toHaveText(money(locale, "TWD", 60000));
+    await expect(stats.locator("div").filter({ has: page.getByText(workspaceCopy[locale].paid, { exact: true }) }).locator("dd")).toHaveText(money(locale, "TWD", 20000));
+    await expect(stats.locator("div").filter({ has: page.getByText(workspaceCopy[locale].comments, { exact: true }) }).locator("dd")).toHaveText("—");
     const initial = (await facts(request)).scenes[scene]!;
     const offer = initial.Offer;
     await expect(page.getByTestId(`live-offer-${offer}`)).toContainText("MOCK Console Tea");

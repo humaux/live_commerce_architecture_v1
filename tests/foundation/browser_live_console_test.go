@@ -86,10 +86,14 @@ func (s *consoleMockScene) window() map[string]any {
 	return map[string]any{"session_id": s.ID, "state": state, "match_mode": "EXACT", "generation": s.Generation, "version": s.Version, "opened_at": opened, "closed_at": nil}
 }
 func (s *consoleMockScene) read() map[string]any {
+	orders, paid, orderMinor, paidMinor := int64(3), int64(1), int64(60000), int64(20000)
+	if s.Copied {
+		orders, paid, orderMinor, paidMinor = 0, 0, 0, 0
+	}
 	return map[string]any{
 		"session":      map[string]any{"id": s.ID, "title": s.Title, "lifecycle": s.Phase, "version": s.Version, "started_at": nil, "ended_at": nil},
 		"window":       map[string]any{"state": s.window()["state"], "generation": s.Generation, "opened_at": s.window()["opened_at"], "match_mode": "EXACT"},
-		"stats":        map[string]any{"comments": map[string]any{"total": nil, "source": "unavailable"}, "keyword_comments": 0, "buyers": 0, "orders": map[string]any{"count": 0, "amount_minor": 0}, "paid": map[string]any{"count": 0, "amount_minor": 0}, "currency": "TWD", "as_of": "2030-01-01T00:00:00Z"},
+		"stats":        map[string]any{"comments": map[string]any{"total": nil, "source": "unavailable"}, "keyword_comments": 0, "buyers": 0, "orders": map[string]any{"count": orders, "amount_minor": orderMinor}, "paid": map[string]any{"count": paid, "amount_minor": paidMinor}, "currency": "TWD", "as_of": "2030-01-01T00:00:00Z"},
 		"offers":       []any{map[string]any{"offer_id": s.Offer, "keyword": "A1", "sku_id": s.SKU, "product_name": "MOCK Console Tea", "variant_label": "250 g", "active": s.Active, "version": s.OfferVersion, "live_price_minor": 20000, "sku_price_minor": 30000, "stock": map[string]any{"tracked": true, "sellable": s.Stock, "reserved": 0, "warehouse_id": s.Warehouse, "balance_version": s.StockVersion}, "claimed": map[string]any{"buyers": 0, "quantity": 0}, "ordered_qty": 0, "paid_qty": 0, "paid_amount_minor": 0, "sold_out": s.Stock <= 0, "low_stock": s.Stock > 0 && s.Stock <= 5}},
 		"capabilities": map[string]any{}, "stream": map[string]any{"state": "unavailable", "poll_interval_ms": 5000, "last_ok_at": nil, "lag_ms": nil, "source_platform": "facebook", "video_embeddable": false, "reason": "no_source"}, "recommended": s.Recommended,
 	}
