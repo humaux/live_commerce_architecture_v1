@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:48763) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/admin/studio-ui.spec.ts:136:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker (23.9s)
+  ✓  2 tests/admin/studio-ui.spec.ts:411:1 › STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens (11.8s)
+  ✓  3 tests/admin/studio-ui.spec.ts:430:1 › STU04 exact draft timestamp parser accepts offsets without admitting malformed dates (14ms)
+  ✓  4 tests/admin/studio-ui.spec.ts:443:1 › STU04 read-only and expired sessions cannot mutate (1.1s)
+  ✓  5 tests/admin/studio-ui.spec.ts:475:1 › STU04 native visibility conceal and revalidation remains required (3.3s)
+  ✓  6 tests/admin/studio-ui.spec.ts:494:1 › STU04 native conceal retains an uncertain committed request (2.8s)
+
+  6 passed (44.9s)

@@ -1,12 +1,17 @@
+/*
+ * Purpose: Styles order action forms and fulfilment feedback.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Billing.tsx, apps/admin/components/BillingBanner.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/Customers.tsx, apps/admin/components/Finance.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/OrderBankTransfer.tsx, apps/admin/components/OrderCodCollection.tsx, apps/admin/components/OrderCvsShipment.tsx, apps/admin/components/OrderRefunds.tsx, apps/admin/components/OrderShipment.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/Team.tsx
+ */
 /* Refund / shipment / export additions to the approved C inline order row (refund-fulfilment-ui Q1, Q4, Q5).
    Only existing tokens and colours from orders.css / globals.css are reused; no new colour values. */
-.orders-badge-merchant_shipped { background: #d8f3e7; color: #126951; }
-.orders-tone-neutral { background: #e8eef5; color: #455c74; }
-.orders-tone-success { background: #d8f3e7; color: #126951; }
-.orders-tone-warning { background: #fff0df; color: #975016; }
+.orders-badge-merchant_shipped { background: var(--ui-success-soft); color: var(--ui-success); }
+.orders-tone-neutral { background: var(--ui-neutral-soft); color: var(--ui-muted); }
+.orders-tone-success { background: var(--ui-success-soft); color: var(--ui-success); }
+.orders-tone-warning { background: var(--ui-warning-soft); color: var(--ui-warning); }
 .orders-sections { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 26px; border-top: 1px solid var(--line); padding-top: 24px; }
 .orders-section { min-width: 0; }
-.orders-section h2 { font-size: 16px; margin: 0 0 14px; }
+.orders-section h2 { font-size: var(--ui-heading-section); margin: 0 0 14px; }
 .orders-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 18px; margin: 0 0 14px; font-variant-numeric: tabular-nums; }
 .orders-facts > div { display: grid; gap: 3px; min-width: 0; }
 .orders-facts dt { color: var(--orders-muted); font-size: 12px; }
@@ -22,33 +27,33 @@
    orders.css also strips the border off every button in a first table cell. Both are undone for these sections only. */
 .orders-actions-table { width: 100%; min-width: 540px; table-layout: auto; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
 .orders-actions-table > thead > tr > th { width: auto; height: auto; background: #f2f5f9; color: var(--orders-muted); font-size: 12px; padding: 9px 10px; border-right: 0; }
-.orders-actions-table > tbody > tr > td { height: auto; padding: 9px 10px; font-size: 13px; border-bottom: 1px solid var(--line); border-right: 0; vertical-align: top; }
+.orders-actions-table > tbody > tr > td { height: auto; padding: 9px 10px; font-size: 13px; border-bottom: 1px solid var(--line); border-right: 0; vertical-align: middle; }
 .orders-actions-table small { display: block; margin-top: 4px; color: var(--orders-muted); overflow-wrap: anywhere; }
 .orders-actions-table td:last-child { text-align: right; }
 .orders-actions-table .orders-badge { white-space: nowrap; }
-.orders-table > tbody > .orders-detail-row > td .orders-sections button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 8px 16px; border: 1px solid #cbd6e2; border-radius: 5px; background: #fff; color: var(--ink); font-weight: 600; white-space: normal; }
+.orders-table > tbody > .orders-detail-row > td .orders-sections button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--ui-target); padding: 8px 16px; border: 1px solid #cbd6e2; border-radius: 5px; background: #fff; color: var(--ink); font-weight: 600; white-space: normal; }
 .orders-table > tbody > .orders-detail-row > td .orders-sections button:hover:not(:disabled) { background: #edf3f8; color: var(--ink); }
 .orders-table > tbody > .orders-detail-row > td .orders-sections button.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
-.orders-table > tbody > .orders-detail-row > td .orders-sections button.primary:hover:not(:disabled) { background: #1c6554; color: #fff; }
-.orders-table > tbody > .orders-detail-row > td .orders-sections .orders-compact { min-height: 32px; padding: 4px 10px; white-space: nowrap; }
+.orders-table > tbody > .orders-detail-row > td .orders-sections button.primary:hover:not(:disabled) { background: var(--ui-primary-hover); color: #fff; }
+.orders-table > tbody > .orders-detail-row > td .orders-sections .orders-compact { min-height: var(--ui-target); padding: 4px 10px; white-space: nowrap; }
 .orders-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-wrap: anywhere; }
 .orders-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .orders-empty { margin: 0 0 12px; color: var(--orders-muted); }
 .orders-hint { color: var(--orders-muted); font-size: 12px; margin: 0 0 12px; }
-.orders-notice { margin: 10px 0 0; color: #126951; font-size: 13px; }
-.orders-bad { color: #975016; font-size: 13px; }
+.orders-notice { margin: 10px 0 0; color: var(--ui-success); font-size: 13px; }
+.orders-bad { color: var(--ui-warning); font-size: 13px; }
 .orders-form, .orders-dialog form { display: grid; gap: 12px; max-width: 440px; }
 .orders-form label, .orders-dialog label { display: grid; gap: 5px; color: var(--orders-muted); font-size: 12px; font-weight: 600; }
 .orders-dialog .orders-check { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
 .orders-dialog .orders-check small { flex-basis: 100%; margin: 0; font-weight: 400; }
-.orders-form input, .orders-form select, .orders-dialog input, .orders-dialog select { color: var(--ink); font-size: 14px; min-height: 42px; width: 100%; box-sizing: border-box; }
+.orders-form input, .orders-form select, .orders-dialog input, .orders-dialog select { color: var(--ink); font-size: 14px; min-height: var(--ui-target); width: 100%; box-sizing: border-box; }
 .orders-form-actions, .orders-dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .orders-section-action { margin-top: 2px; }
 .orders-dialog { width: min(480px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 6px; padding: 24px; color: var(--ink); }
 .orders-dialog::backdrop { background: rgba(20, 41, 66, .45); }
-.orders-dialog h2 { font-size: 17px; margin: 0 0 4px; }
+.orders-dialog h2 { font-size: var(--ui-heading-section); margin: 0 0 4px; }
 .orders-history { margin-top: 14px; font-size: 13px; }
-.orders-history summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+.orders-history summary { cursor: pointer; font-weight: 600; min-height: var(--ui-target); }
 .orders-history ol { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .orders-history li { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; overflow-wrap: anywhere; }
 .orders-history li span { color: var(--orders-muted); }

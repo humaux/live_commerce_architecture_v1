@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant finance summary and CSV download controls.
+// Depends on: react, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-client, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/finance/page.tsx
 "use client";
 
 // Merchant finance summary (/{locale}/finance): date range (native date inputs), daily table + totals row, CSV link,
@@ -16,6 +19,9 @@ import { isSandbox, type FinanceRow } from "@/lib/customers-model";
 import { readOrderActions } from "@/lib/orders-client";
 import { customersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { DateControl, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -28,6 +34,7 @@ function rangeOK(from: string, to: string) {
   return Number.isFinite(a) && Number.isFinite(b) && b >= a && (b - a) / DAY_MS <= 91;
 }
 
+/** Owns the merchant finance summary and CSV download controls. Loads finance data through customers-client and exposes the server CSV download. */
 export function Finance({
   locale,
   stores,
@@ -90,30 +97,16 @@ export function Finance({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">
       <div className="orders-page customers-page" data-testid="finance-page">
-        <header className="orders-heading">
-          <h1>{c.financeTitle}</h1>
-          <p>{c.financeSubtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.financeSubtitle} />
         <form className="orders-controls customers-finance-controls" onSubmit={submit}>
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""}
-                onChange={(event) => navigate(event.target.value, from, to)}>
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
           <label>
             {c.from}
-            <input type="date" data-testid="finance-from" value={draftFrom} max={today} required
+            <DateControl emptyLabel={presentationCopy[locale].date} lang={locale} type="date" data-testid="finance-from" value={draftFrom} max={today} required
               onChange={(event) => setDraftFrom(event.target.value)} />
           </label>
           <label>
             {c.to}
-            <input type="date" data-testid="finance-to" value={draftTo} max={today} required
+            <DateControl emptyLabel={presentationCopy[locale].date} lang={locale} type="date" data-testid="finance-to" value={draftTo} max={today} required
               onChange={(event) => setDraftTo(event.target.value)} />
           </label>
           <button type="submit" data-testid="finance-show" disabled={!store || !valid || read.status === "loading"}>
@@ -144,7 +137,7 @@ export function Finance({
             {summary.rows.length === 0 ? (
               <p className="orders-message" role="status">{c.financeEmpty}</p>
             ) : (
-              <div className="orders-actions-scroll">
+              <TableFrame label={c.financeTitle} scrollHint={presentationCopy[locale].scroll}>
                 <table className="orders-actions-table customers-finance-table" data-testid="finance-table">
                   <thead>
                     <tr>
@@ -163,7 +156,7 @@ export function Finance({
                     ))}
                   </tfoot>
                 </table>
-              </div>
+              </TableFrame>
             )}
           </>
         )}

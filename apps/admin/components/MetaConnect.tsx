@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant Facebook and Instagram connection controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/meta-connect-client, @/lib/meta-connect-model, @/lib/meta-connect-copy, ./settings.css
+// Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
 // Purpose: merchant Facebook/Instagram connection controls and per-Page health capabilities.
@@ -12,10 +15,20 @@
 // A GET 403 hides the card (no integration:read). Nothing is optimistic: every write re-GETs. No token ever reaches the browser.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
 import { displayTime } from "@/lib/orders-model";
-import { newKey, postConnect, postDisconnect, postPick, readPickState, readStatus, type ConnectStatus, type PickState } from "@/lib/meta-connect-client";
+import {
+  newKey,
+  postConnect,
+  postDisconnect,
+  postPick,
+  readPickState,
+  readStatus,
+  type ConnectStatus,
+  type PickState,
+} from "@/lib/meta-connect-client";
 import { pickable, type PickPage } from "@/lib/meta-connect-model";
 import { metaConnectCopy, type MetaConnectCopy } from "@/lib/meta-connect-copy";
 import { useMetaHealth } from "@/lib/meta-health-hook";
@@ -26,7 +39,8 @@ import "./settings.css";
 type Load = "loading" | "ready" | "hidden" | "error";
 const day = 86_400_000;
 // Permission / Page-task names -> text: tasks are translated, permissions are Meta's own identifiers.
-const label = (c: MetaConnectCopy, code: string) => (code === "task_messaging" ? c.task_messaging : code === "task_moderate" ? c.task_moderate : code);
+const label = (c: MetaConnectCopy, code: string) =>
+  code === "task_messaging" ? c.task_messaging : code === "task_moderate" ? c.task_moderate : code;
 
 /** Reads Page connections and health; authorized actions use the existing reauthorization flow. */
 export function MetaConnect({ store, locale, canManage = false }: { store: string; locale: Locale; canManage?: boolean }) {
@@ -50,7 +64,10 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
 
   useEffect(() => {
     let live = true;
-    sessionBoundary().then((v) => live && setBoundary(v), () => live && setBoundary(""));
+    sessionBoundary().then(
+      (v) => live && setBoundary(v),
+      () => live && setBoundary(""),
+    );
     return () => { live = false; };
   }, [store]);
 
@@ -64,7 +81,10 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
   useEffect(() => {
     if (arrival.current === undefined) {
       const params = new URLSearchParams(window.location.search);
-      arrival.current = { id: params.get("meta_connect"), error: params.get("meta_error") };
+      arrival.current = {
+        id: params.get("meta_connect"),
+        error: params.get("meta_error"),
+      };
       params.delete("meta_connect");
       params.delete("meta_error");
       window.history.replaceState(null, "", `${window.location.pathname}${params.size ? `?${params}` : ""}${window.location.hash}`);
@@ -101,7 +121,9 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
       (error) => {
         if (active.signal.aborted) return;
         setStatus(null);
-        setLoad(error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error");
+        setLoad(
+          error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error",
+        );
       },
     );
     return () => active.abort();
@@ -111,11 +133,16 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
 
   // One key per intent. Only start supports keyed retries. Pick/disconnect UNKNOWN must
   // read back, never repeat a write: these backend commands do not yet replay receipts.
-  const keyFor = (kind: string) => { if (key.current?.kind !== kind) key.current = { kind, value: newKey(`meta-${kind}`) }; return key.current.value; };
+  const keyFor = (kind: string) => {
+    if (key.current?.kind !== kind) key.current = { kind, value: newKey(`meta-${kind}`) };
+    return key.current.value;
+  };
   const fail = (code: string, unknown: boolean) => {
     setUncertain(unknown);
     if (!unknown) key.current = null;
-    setProblem(unknown ? key.current?.kind === "connect" ? c.uncertainStart : c.uncertain : (c.errors[code] ?? c.errors.unavailable));
+    setProblem(
+      unknown ? key.current?.kind === "connect" ? c.uncertainStart : c.uncertain : (c.errors[code] ?? c.errors.unavailable),
+    );
   };
 
   async function connect() {
@@ -132,10 +159,25 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
     if (inFlight.current || uncertain || !pick || load !== "ready" || !status) return;
     const page = pick.pages.find((p) => p.page_id === chosen);
     if (!page || !pickable(page, false)) return;
-    inFlight.current = true; setBusy(true); setProblem(""); setNotice("");
-    pickIntent.current = { id: chosen, ig: withIG && pickable(page, true), before: status?.pages.find((p) => p.id === chosen)?.connected_at ?? null };
-    const result = await postPick(store, keyFor(`pick-${pick.state_id}-${chosen}-${withIG}`), pick.state_id, chosen, withIG && pickable(page, true), boundary);
-    inFlight.current = false; setBusy(false);
+    inFlight.current = true;
+    setBusy(true);
+    setProblem("");
+    setNotice("");
+    pickIntent.current = {
+      id: chosen,
+      ig: withIG && pickable(page, true),
+      before: status?.pages.find((p) => p.id === chosen)?.connected_at ?? null,
+    };
+    const result = await postPick(
+      store,
+      keyFor(`pick-${pick.state_id}-${chosen}-${withIG}`),
+      pick.state_id,
+      chosen,
+      withIG && pickable(page, true),
+      boundary,
+    );
+    inFlight.current = false;
+    setBusy(false);
     if (result.ok) { pickIntent.current = null; key.current = null; setUncertain(false); setPick(null); setNotice(c.connectedNotice); }
     else { if (!result.uncertain) pickIntent.current = null; fail(result.code, result.uncertain); }
     setTick((v) => v + 1);
@@ -143,9 +185,18 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
   async function disconnect() {
     if (!canManage) return;
     if (inFlight.current || uncertain || !confirming) return;
-    inFlight.current = true; setBusy(true); setProblem(""); setNotice("");
-    const result = await postDisconnect(store, keyFor(`disconnect-${confirming}`), confirming, boundary);
-    inFlight.current = false; setBusy(false);
+    inFlight.current = true;
+    setBusy(true);
+    setProblem("");
+    setNotice("");
+    const result = await postDisconnect(
+      store,
+      keyFor(`disconnect-${confirming}`),
+      confirming,
+      boundary,
+    );
+    inFlight.current = false;
+    setBusy(false);
     if (result.ok) { key.current = null; setUncertain(false); setConfirming(""); setNotice(c.disconnectedNotice); }
     else { if (!result.uncertain) setConfirming(""); fail(result.code, result.uncertain); }
     setTick((v) => v + 1);
@@ -162,27 +213,51 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
       {load === "error" && (
         <div role="status"><p>{c.unavailable}</p><button type="button" onClick={() => setTick((v) => v + 1)}>{c.retry}</button></div>
       )}
-      {problem && <p className="settings-warning" role="alert" data-testid="metaconnect-error">{problem}</p>}
-      {uncertain && key.current?.kind !== "connect" && <button type="button" data-testid="metaconnect-readback" disabled={busy} onClick={() => setTick((v) => v + 1)}>{c.checkStatus}</button>}
-      {notice && <p className="settings-note" role="status" data-testid="metaconnect-notice">{notice}</p>}
+      {problem && (
+        <p className="settings-warning" role="alert" data-testid="metaconnect-error">{problem}</p>
+      )}
+      {uncertain && key.current?.kind !== "connect" && (
+        <button type="button" data-testid="metaconnect-readback" disabled={busy} onClick={() => setTick((v) => v + 1)}>{c.checkStatus}</button>
+      )}
+      {notice && (
+        <p className="settings-note" role="status" data-testid="metaconnect-notice">{notice}</p>
+      )}
 
       {pick && (
         <div data-testid="metaconnect-pick">
           <h3>{c.pickTitle}</h3>
           <p className="settings-note">{c.pickIntro}</p>
-          {pick.pages.length === 0 ? <p className="settings-warning" data-testid="metaconnect-nopages">{c.noPages}</p> : (
+          {pick.pages.length === 0 ? (
+            <p className="settings-warning" data-testid="metaconnect-nopages">{c.noPages}</p>
+          ) : (
             <fieldset className="metaconnect-pages" data-testid="metaconnect-pick-list">
               {pick.pages.map((p) => (
                 <label key={p.page_id} className="settings-check">
-                  <input type="radio" name="metaconnect-page" value={p.page_id} checked={chosen === p.page_id} disabled={locked} data-testid={`metaconnect-pick-${p.page_id}`}
-                    onChange={() => { setChosen(p.page_id); setWithIG(!!p.ig_id && p.ig_missing.length === 0); }} />
-                  <span>{p.name || p.page_id} <small>{p.page_id}{p.ig_username ? ` · @${p.ig_username}` : ""}</small></span>
+                  <input
+                    type="radio"
+                    name="metaconnect-page"
+                    value={p.page_id}
+                    checked={chosen === p.page_id}
+                    disabled={locked}
+                    data-testid={`metaconnect-pick-${p.page_id}`}
+                    onChange={() => { setChosen(p.page_id); setWithIG(!!p.ig_id && p.ig_missing.length === 0); }}
+                  />
+                  <span>
+                    {p.name || p.page_id}{" "}
+                    <small>
+                      {p.page_id}
+                      {p.ig_username ? ` · @${p.ig_username}` : ""}
+                    </small>
+                  </span>
                 </label>
               ))}
             </fieldset>
           )}
           {chosenPage && chosenPage.missing.length > 0 && (
-            <p className="settings-warning" data-testid="metaconnect-missing">{c.pickMissing} {chosenPage.missing.map((m) => label(c, m)).join(", ")}</p>
+            <p className="settings-warning" data-testid="metaconnect-missing">
+              {c.pickMissing}{" "}
+              {chosenPage.missing.map((m) => label(c, m)).join(", ")}
+            </p>
           )}
           {chosenPage?.ig_id && chosenPage.missing.length === 0 && (chosenPage.ig_missing.length === 0 ? (
             <label className="settings-check">
@@ -209,37 +284,90 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
               aria-describedby={status.count >= status.cap ? "metaconnect-cap" : undefined}
               disabled={!canManage || busy || !boundary || status.count >= status.cap || (uncertain && key.current?.kind !== "connect")}
               onClick={() => void connect()}>{busy ? c.connecting : status.connected ? c.add : c.connect}</button>
-            {status.connected && <button type="button" data-testid="metaconnect-reconnect" disabled={!canManage || busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>}
+            {status.connected && (
+              <button type="button" data-testid="metaconnect-reconnect" disabled={!canManage || busy || !boundary || !!confirming || (uncertain && key.current?.kind !== "connect")} onClick={() => void connect()}>{c.reconnect}</button>
+            )}
           </div>
-          {status.count >= status.cap && <p id="metaconnect-cap" className="settings-note">{c.capReached}</p>}
-          {!status.connected && <p data-testid="metaconnect-none">{c.notConnected}</p>}
-          {status.connected && <p className="settings-note">{c.timezone}</p>}
-          {status.pages.map((connected) => <article className="metaconnect-row" data-testid={`metaconnect-row-${connected.id}`} key={connected.id}>
-          <h3 data-testid="metaconnect-page">{connected.name || connected.id} <small>{connected.id}</small></h3>
-          <dl className="settings-status-list" data-testid="metaconnect-status">
-            <div><dt>{c.instagram}</dt><dd data-testid="metaconnect-ig">{connected.instagram ? `@${connected.instagram.username}` : c.noInstagram}</dd></div>
-            <div><dt>{c.permissions}</dt><dd data-testid="metaconnect-permissions">{connected.permissions.join(", ")}</dd></div>
-            <div><dt>{c.token}</dt><dd data-testid="metaconnect-token" data-state={connected.status}>{connected.status === "active" ? c.tokenActive : c.tokenReauth}</dd></div>
-            <div><dt>{c.lastEvent}</dt><dd data-testid="metaconnect-last-event">{connected.last_event_at ? displayTime(locale, connected.last_event_at) : c.never}</dd></div>
-            <div><dt>{c.connectedAt}</dt><dd>{displayTime(locale, connected.connected_at)}</dd></div>
-            <div><dt>{c.routeUntil}</dt><dd>{displayTime(locale, connected.route_expires_at)}</dd></div>
-          </dl>
-          <MetaHealthCapabilities key={`${store}:${connected.id}`} store={store} page={health.data?.pages.find(page => page.page_id === connected.id)} locale={locale} canManage={canManage} boundary={boundary} failed={health.failed} />
-          {Date.parse(connected.route_expires_at) - Date.now() < 30 * day && connected.status === "active" && <p className="settings-warning">{c.renewSoon}</p>}
-          {confirming === connected.id ? (
-            <div className="settings-pending" role="alertdialog" aria-label={`${c.disconnect}: ${connected.name || connected.id}`} data-testid="metaconnect-confirm">
-              <p>{c.confirmDisconnect}</p>
-              <div className="settings-actions">
-                <button type="button" disabled={locked} onClick={() => setConfirming("")}>{c.cancel}</button>
-                <button className="primary" type="button" data-testid="metaconnect-confirm-yes" disabled={locked} onClick={() => void disconnect()}>{busy ? c.saving : c.confirm}</button>
-              </div>
-            </div>
-          ) : (
-            <div className="settings-actions">
-              <button type="button" data-testid="metaconnect-disconnect" disabled={locked || !!confirming} onClick={() => setConfirming(connected.id)}>{c.disconnect}</button>
-            </div>
+          {status.count >= status.cap && (
+            <p id="metaconnect-cap" className="settings-note">{c.capReached}</p>
           )}
-          </article>)}
+          {!status.connected && (
+            <p data-testid="metaconnect-none">{c.notConnected}</p>
+          )}
+          {status.connected && <p className="settings-note">{c.timezone}</p>}
+          {status.pages.map((connected) => (
+            <article
+              className="metaconnect-row"
+              data-testid={`metaconnect-row-${connected.id}`}
+              key={connected.id}
+            >
+              <h3 data-testid="metaconnect-page">{connected.name || connected.id} <small>{connected.id}</small></h3>
+              <dl className="settings-status-list" data-testid="metaconnect-status">
+                <div>
+                  <dt>{c.instagram}</dt>
+                  <dd data-testid="metaconnect-ig">
+                    {connected.instagram
+                      ? `@${connected.instagram.username}`
+                      : c.noInstagram}
+                  </dd>
+                </div>
+                <div><dt>{c.permissions}</dt><dd data-testid="metaconnect-permissions">{connected.permissions.join(", ")}</dd></div>
+                <div>
+                  <dt>{c.token}</dt>
+                  <dd data-testid="metaconnect-token" data-state={connected.status}>
+                    <Badge
+                      tone={
+                        connected.status === "active" ? "success" : "warning"
+                      }
+                    >
+                      {connected.status === "active" ? c.tokenActive : c.tokenReauth}
+                    </Badge>
+                  </dd>
+                </div>
+                <div><dt>{c.lastEvent}</dt><dd data-testid="metaconnect-last-event">{connected.last_event_at ? displayTime(locale, connected.last_event_at) : c.never}</dd></div>
+                <div><dt>{c.connectedAt}</dt><dd>{displayTime(locale, connected.connected_at)}</dd></div>
+                <div><dt>{c.routeUntil}</dt><dd>{displayTime(locale, connected.route_expires_at)}</dd></div>
+              </dl>
+              <MetaHealthCapabilities key={`${store}:${connected.id}`} store={store} page={health.data?.pages.find(page => page.page_id === connected.id)} locale={locale} canManage={canManage} boundary={boundary} failed={health.failed} />
+              {Date.parse(connected.route_expires_at) - Date.now() < 30 * day && connected.status === "active" && (
+                  <p className="settings-warning">{c.renewSoon}</p>
+                )}
+              {confirming === connected.id ? (
+                <div
+                  className="settings-pending"
+                  role="alertdialog"
+                  aria-label={`${c.disconnect}: ${connected.name || connected.id}`}
+                  data-testid="metaconnect-confirm"
+                >
+                  <p>{c.confirmDisconnect}</p>
+                  <div className="settings-actions">
+                    <button type="button" disabled={locked} onClick={() => setConfirming("")}>{c.cancel}</button>
+                    <button
+                      className="settings-danger"
+                      type="button"
+                      data-testid="metaconnect-confirm-yes"
+                      disabled={locked}
+                      onClick={() => void disconnect()}
+                    >
+                      {busy ? c.saving : c.confirm}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="settings-actions">
+                  <button
+                    className="settings-danger"
+                    type="button"
+                    data-testid="metaconnect-disconnect"
+                    disabled={locked || !!confirming}
+                    onClick={() => setConfirming(connected.id)}
+                  >
+                    {c.disconnect}
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
         </>
       )}
     </section>

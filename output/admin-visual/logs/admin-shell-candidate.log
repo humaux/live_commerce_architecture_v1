@@ -1,0 +1,42 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (452.404458ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (1.274041ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (1.260209ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (3.964416ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.099166ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.144875ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (146.60425ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.351334ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 635.704459
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 44px shell targets
++ actual - expected
+
++ [
++   '帮助',
++   '账号'
++ ]
+- []
+
+    at runShellGate (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/shell-browser.mjs:245:16)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at process.processImmediate (node:internal/timers:472:9)
+    at async file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/shell-runner.mjs:184:7 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: [ '帮助', '账号' ],
+  expected: [],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.15.0

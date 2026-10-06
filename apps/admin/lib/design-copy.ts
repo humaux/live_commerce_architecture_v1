@@ -1,3 +1,6 @@
+// Purpose: Owns storefront design labels and template interpolation.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Design.tsx, apps/admin/components/DesignMedia.tsx, apps/admin/components/DesignNav.tsx, apps/admin/components/DesignPages.tsx, apps/admin/components/DesignProfile.tsx, apps/admin/components/DesignSections.tsx, tests/admin/design.spec.ts
 // Copy for the admin Design page (components/Design*.tsx; BFF design/* -> Go internal/httpapi/design.go), locales zh-CN /
 // zh-TW / en. Owns every UI string of the page and the error-code map; the merchant's own content (store name, headings,
 // page text) is single-language and never goes through here. `{n}` / `{path}` / `{reason}` are filled by `fill`.
@@ -68,6 +71,7 @@ const en = {
     help: "Supported: paragraphs, **bold**, *italic*, lists starting with “- ”, and [text](https://…) links. HTML is not allowed.", problem: "Not allowed: ", limit: "Limit reached",
   },
   media: {
+    noFile: "No file selected",
     choose: "Choose image", change: "Change image", upload: "Upload image", uploading: "Uploading…", remove: "Remove", none: "No images uploaded yet.", library: "Image library ({n}/60)",
     delete: "Delete image", inUse: "This image is used by the draft or the live version.", badType: "Use a JPEG, PNG or WebP image.", badSize: "The image must be 2 MB or smaller.",
     full: "The image library is full (60). Delete an unused image first.", pick: "Use this image", alt: "Store image",
@@ -143,6 +147,7 @@ const zhCN: DesignCopy = {
     help: "支持：段落、**粗体**、*斜体*、以“- ”开头的列表，以及 [文字](https://…) 链接。不支持 HTML。", problem: "不允许：", limit: "已达上限",
   },
   media: {
+    noFile: "未选择文件",
     choose: "选择图片", change: "更换图片", upload: "上传图片", uploading: "上传中…", remove: "移除", none: "还没有上传图片。", library: "图片库（{n}/60）",
     delete: "删除图片", inUse: "此图片正被草稿或线上版本使用。", badType: "请使用 JPEG、PNG 或 WebP 图片。", badSize: "图片不能超过 2 MB。",
     full: "图片库已满（60 张）。请先删除未使用的图片。", pick: "使用此图片", alt: "店铺图片",
@@ -217,6 +222,7 @@ const zhTW: DesignCopy = {
     help: "支援：段落、**粗體**、*斜體*、以「- 」開頭的清單，以及 [文字](https://…) 連結。不支援 HTML。", problem: "不允許：", limit: "已達上限",
   },
   media: {
+    noFile: "未選擇檔案",
     choose: "選擇圖片", change: "更換圖片", upload: "上傳圖片", uploading: "上傳中…", remove: "移除", none: "還沒有上傳圖片。", library: "圖片庫（{n}/60）",
     delete: "刪除圖片", inUse: "此圖片正被草稿或線上版本使用。", badType: "請使用 JPEG、PNG 或 WebP 圖片。", badSize: "圖片不能超過 2 MB。",
     full: "圖片庫已滿（60 張）。請先刪除未使用的圖片。", pick: "使用此圖片", alt: "店鋪圖片",
@@ -228,4 +234,5 @@ const zhTW: DesignCopy = {
 };
 
 export const designCopy: Record<Locale, DesignCopy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+/** Interpolates supplied template values without external calls. */
 export const fill = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ""));

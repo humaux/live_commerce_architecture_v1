@@ -1,0 +1,251 @@
+/*
+ * Purpose: Styles shared headers, fields, badges, tabs, tables and native inputs.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: packages/ui/src/Presentation.tsx
+ */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin: 0 0 24px;
+  padding: 0;
+}
+.dateControl { display: block; position: relative; min-width: 0; min-height: var(--ui-target); }
+.dateControl input { width: 100%; min-width: 0; min-height: var(--ui-target); box-sizing: border-box; }
+.dateDisplay { position: absolute; inset: 1px 34px 1px 1px; display: flex; align-items: center; padding: 6px 10px; pointer-events: none; background: var(--ui-surface); color: var(--ui-text); font-size: var(--ui-text-body); font-weight: 400; z-index: 1; white-space: nowrap; }
+.dateControl:focus-within .dateDisplay { display: none; }
+.heading {
+  min-width: 0;
+}
+.heading h1 {
+  margin: 0;
+  font-size: var(--ui-heading-page);
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+.heading p {
+  margin: 6px 0 0;
+  max-width: 75ch;
+  color: var(--ui-muted);
+  font-size: var(--ui-text-body);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: start;
+  gap: 6px 16px;
+}
+.field {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 3;
+  gap: 6px;
+  min-width: 0;
+  align-self: stretch;
+  align-content: start;
+}
+.field > label {
+  display: block;
+  align-self: start;
+  color: var(--ui-text);
+  font-size: var(--ui-text-body);
+  font-weight: 600;
+}
+.control {
+  min-width: 0;
+}
+.control > input,
+.control > select,
+.control > textarea {
+  width: 100%;
+  min-height: var(--ui-target);
+  box-sizing: border-box;
+}
+.field[data-width="short"] {
+  max-width: var(--ui-field-short);
+}
+.field[data-width="medium"] {
+  max-width: var(--ui-field-medium);
+}
+.field[data-width="long"] {
+  max-width: var(--ui-field-long);
+}
+.hint {
+  color: var(--ui-muted);
+  font-size: var(--ui-text-helper);
+  font-weight: 400;
+  line-height: 1.5;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--ui-neutral-soft);
+  color: var(--ui-muted);
+  font-size: var(--ui-text-helper);
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.badge[data-tone="success"] {
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+.badge[data-tone="warning"] {
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+.badge[data-tone="danger"] {
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+}
+.badge[data-tone="info"] {
+  background: var(--ui-info-soft);
+  color: var(--ui-info);
+}
+.tabs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  align-items: stretch;
+  border-bottom: 1px solid var(--ui-border);
+  margin-bottom: 16px;
+}
+.tabStrip {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-primary) var(--ui-page);
+  overscroll-behavior-x: contain;
+}
+.tabStrip > button {
+  flex: 0 0 auto;
+  min-height: var(--ui-target);
+  padding: 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ui-muted);
+  white-space: nowrap;
+  font-size: var(--ui-text-body);
+}
+.tabStrip > button[aria-selected="true"],
+.tabStrip > button[aria-pressed="true"],
+.tabStrip > button:global(.active) {
+  color: var(--ui-primary);
+  border-bottom-color: var(--ui-primary);
+  background: var(--ui-primary-soft);
+}
+.tableContainer {
+  min-width: 0;
+}
+.tableFrame {
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-muted) var(--ui-page);
+}
+.tableFrame table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.tableFrame th {
+  padding: 10px 14px;
+  height: 40px;
+  background: var(--ui-page);
+  color: var(--ui-muted);
+  font-size: var(--ui-text-helper);
+  white-space: nowrap;
+}
+.tableFrame td {
+  padding: 10px 14px;
+  border-top: 1px solid var(--ui-border);
+}
+.tableFrame th,
+.tableFrame td {
+  border-right: 0;
+  vertical-align: middle;
+  font-size: max(var(--ui-text-helper), 1em);
+}
+.tableFrame :global(.num) {
+  text-align: right;
+}
+.scrollHint {
+  margin: 6px 0 0;
+  font-size: var(--ui-text-helper);
+  color: var(--ui-muted);
+}
+.filePicker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.fileButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ui-target);
+  padding: 8px 14px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-surface);
+  color: var(--ui-link);
+  font-size: var(--ui-text-body);
+  font-weight: 600;
+}
+.fileButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.fileButton:focus-within {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 3px;
+}
+.fileButton[data-disabled="true"] {
+  color: var(--ui-muted);
+  background: var(--ui-page);
+}
+.fileName {
+  font-size: var(--ui-text-helper);
+  color: var(--ui-muted);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+@media (max-width: 680px) {
+  .header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .heading h1 {
+    font-size: 24px;
+  }
+  .actions {
+    width: 100%;
+  }
+}

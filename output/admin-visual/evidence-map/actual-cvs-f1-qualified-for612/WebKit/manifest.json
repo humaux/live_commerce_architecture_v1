@@ -1,0 +1,194 @@
+[
+  {
+    "File": "merchant-created-zh-TW-1586x992.png",
+    "Sha256": "a0c22980289775eeb28d2d0a9b1d67f2b3485b088fd20333ba0ae52e8c803b03",
+    "Locale": "zh-TW",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "merchant-created",
+    "Route": "/zh-TW/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-zh-TW-1586x992.png",
+    "Sha256": "b3262569870b7e7f08d75e6688fb6af945f438408645babed02fe1baef18a7fc",
+    "Locale": "zh-TW",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "opening-pre-response",
+    "Route": "/zh-TW/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "merchant-created-zh-CN-1586x992.png",
+    "Sha256": "4282aca04c30db90c5bf3fe31fcca815bc1169380741cf86a50706ffcbee190f",
+    "Locale": "zh-CN",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "merchant-created",
+    "Route": "/zh-CN/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-zh-CN-1586x992.png",
+    "Sha256": "042c8b54f013486deb61c155d9f1400cd2cce55ad48f3b8c100132bf777ef05c",
+    "Locale": "zh-CN",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "opening-pre-response",
+    "Route": "/zh-CN/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "merchant-created-en-1586x992.png",
+    "Sha256": "b45753779931198a57005089b43264fce2f72482c0d3b3a2be0ec0e9aa705cfa",
+    "Locale": "en",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "merchant-created",
+    "Route": "/en/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-en-1586x992.png",
+    "Sha256": "e1c92cc980632855bdc2bbe5bc655430bca66a605784a23ca4ed5c31c20a5ebe",
+    "Locale": "en",
+    "Viewport": {
+      "width": 1586,
+      "height": 992
+    },
+    "State": "opening-pre-response",
+    "Route": "/en/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "merchant-created-zh-TW-390x844.png",
+    "Sha256": "cfee04df231d83b6e1c1d6b8067d4a781b0a367338dedfd152bed66c201f99f2",
+    "Locale": "zh-TW",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "merchant-created",
+    "Route": "/zh-TW/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-zh-TW-390x844.png",
+    "Sha256": "d3ea37723945d5ab9b6fb90bfb2357b5f0962248cdf98fe3cf8cfeec69ea6458",
+    "Locale": "zh-TW",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "opening-pre-response",
+    "Route": "/zh-TW/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "merchant-created-zh-CN-390x844.png",
+    "Sha256": "bf4bf3b83bf41cc07ba185728cb8ee42f8f5803c75b18f8ef9b3b1b4fad96b29",
+    "Locale": "zh-CN",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "merchant-created",
+    "Route": "/zh-CN/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-zh-CN-390x844.png",
+    "Sha256": "17a6538b9e1fba3e6d9cbc1c7b37d47437036fe1bd5087023710e6eadd15a903",
+    "Locale": "zh-CN",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "opening-pre-response",
+    "Route": "/zh-CN/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "merchant-created-en-390x844.png",
+    "Sha256": "f37ed28c5d2e17f7910132d2907bd8fbf1849b23003198f04553de28403f6d5c",
+    "Locale": "en",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "merchant-created",
+    "Route": "/en/orders",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  },
+  {
+    "File": "opening-pre-response-en-390x844.png",
+    "Sha256": "3b5b0ce210f885abc1112ddd8e45cf0aa859e51faf214f3aea76ce0c7b4642e7",
+    "Locale": "en",
+    "Viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "State": "opening-pre-response",
+    "Route": "/en/orders/cvs-print",
+    "Evidence": "BROWSER actual admin DOM",
+    "ProviderResponse": "MOCK existing trapEcpay label HTML",
+    "ProviderLayout": "NOT_RUN",
+    "ManualReadyLayout": "NOT_RUN",
+    "SignedFields": "NOT_RECORDED"
+  }
+]

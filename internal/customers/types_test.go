@@ -133,7 +133,8 @@ func rowJSON(t *testing.T, mutate func(map[string]any)) json.RawMessage {
 	m := map[string]any{"customer_id": testUUID, "first_seen_at": testTS, "last_activity_at": testTS, "display_name": "Alice",
 		"phone_last3": "678", "orders_count": 2, "paid_orders_count": 1, "captured_minor": 1200, "refunded_minor": 200,
 		"currency": "TWD", "claims_count": 1, "platforms": []string{"facebook"},
-		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "active": true}
+		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "active": true,
+		"tags": []map[string]string{{"id": testUUID, "name": "VIP", "color": "red"}}}
 	if mutate != nil {
 		mutate(m)
 	}
@@ -191,6 +192,8 @@ func detailJSON(t *testing.T, mutate func(map[string]any)) json.RawMessage {
 	m["consent_history"] = []map[string]any{
 		{"purpose": "ads_personalization", "channel": "meta_ads", "granted": true, "source": "buyer_checkout", "policy_version": "lc-2026-10", "occurred_at": testTS}}
 	m["privacy_actions"] = []map[string]any{{"kind": "EXPORT", "via": "merchant", "completed_at": testTS, "summary": map[string]int{"orders": 1}}}
+	m["tags_revision"] = strings.Repeat("a", 64)
+	m["notes"] = []map[string]any{{"id": testUUID, "body": "only 7-11", "author_id": testUUID, "created_at": testTS, "edited_at": nil, "version": 1}}
 	if mutate != nil {
 		mutate(m)
 	}

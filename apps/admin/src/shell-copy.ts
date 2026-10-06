@@ -1,3 +1,6 @@
+// Purpose: Owns localized shell navigation labels independently of domain status copy.
+// Depends on: Native JavaScript/static data; no imported runtime modules.
+// Used by: apps/admin/components/WorkspaceFrame.tsx, apps/admin/src/page-title.ts, apps/admin/src/route-metadata.ts, apps/admin/src/route-types.ts, tests/admin/claims-ui.spec.ts, tests/admin/customers-billing.spec.ts, tests/admin/design.spec.ts, tests/admin/entry.spec.ts, tests/admin/ledger.spec.ts, tests/admin/platform-brand-browser.mjs, tests/admin/shell-browser.mjs, tests/admin/shell-registry.test.ts, tests/admin/studio-ui.spec.ts
 // Shell-only copy; business status language stays inside its domain.
 const en = {
   overview: "Overview",
@@ -18,6 +21,7 @@ const en = {
   cvsPrint: "Print shipping label",
   products: "Products",
   product: "Edit product",
+  productNew: "New product",
   collections: "Collections",
   inventory: "Inventory",
   productImport: "Import products",
@@ -76,6 +80,7 @@ const zhCN: ShellCopy = {
   cvsPrint: "打印寄件标签",
   products: "商品",
   product: "编辑商品",
+  productNew: "新增商品",
   collections: "分类",
   inventory: "库存",
   productImport: "导入商品",
@@ -132,6 +137,7 @@ const zhTW: ShellCopy = {
   cvsPrint: "列印寄件標籤",
   products: "商品",
   product: "編輯商品",
+  productNew: "新增商品",
   collections: "分類",
   inventory: "庫存",
   productImport: "匯入商品",

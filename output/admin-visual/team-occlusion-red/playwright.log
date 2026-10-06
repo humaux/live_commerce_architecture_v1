@@ -1,0 +1,44 @@
+
+Running 1 test using 1 worker
+
+(node:53096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/staff-team.spec.ts:193:3 › staff chains › staff chain en mobile: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke (11.9s)
+
+
+  1) tests/admin/staff-team.spec.ts:193:3 › staff chains › staff chain en mobile: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke 
+
+    Error: member role must not be covered by the actions column
+
+    member role must not be covered by the actions column
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      131 |       return hit === element || (hit !== null && element.contains(hit));
+      132 |     });
+    > 133 |   }), { message: "member role must not be covered by the actions column" }).toBe(true);
+          |                                                                             ^
+      134 | }
+      135 |
+      136 | // Sign-up up to a session; `priorMails` = mails already sent to the address (the sign-up code is the next one).
+        at unobscuredMemberRole (/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/staff-team.spec.ts:133:77)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/staff-team.spec.ts:347:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/staff-team-20261005T194243.603953000/results/staff-team-staff-chains-st-5fd06-nt-powers---viewer---revoke/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/staff-team-20261005T194243.603953000/results/staff-team-staff-chains-st-5fd06-nt-powers---viewer---revoke/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/staff-team-20261005T194243.603953000/results/staff-team-staff-chains-st-5fd06-nt-powers---viewer---revoke/error-context.md
+
+  1 failed
+    tests/admin/staff-team.spec.ts:193:3 › staff chains › staff chain en mobile: invite -> mail -> sign up -> accept -> fulfilment powers -> viewer -> revoke 

@@ -1,3 +1,6 @@
+// Purpose: signed MOCK comment -> direct claim checkout -> payment/shipment/refund end-to-end regression.
+// Depends on: production admin/storefront, real PG, fake Meta/Stripe and owned worker fixtures.
+// Used by: --browser-e2e TestBrowserE2EDealLoop; no LIVE money or messages.
 // T12 (docs/delivery/units/t12-e2e.md): the core deal loop in one real-browser chain. Started only by
 // tests/foundation/browser_e2e_test.go (TestBrowserE2EDealLoop), which owns every process (admin + storefront production
 // Next builds, Go APIs, PostgreSQL, payment worker, Meta consumer/poller/dispatcher, fake Stripe, fake Graph, signed MOCK
@@ -224,11 +227,13 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   await storageLacks(buyer, [token]);
   await buyerShots(buyer, "buyer-claim");
   await buyer.getByRole("button", { name: claim.add }).click();
-  await expect(buyer.getByTestId("claim-added")).toHaveText(claim.added);
-  await expect(buyer.getByTestId(`claim-cart-${fixtures.sku_id}`)).toContainText("× 2");
+  await buyer.waitForURL((url) => url.pathname === `/${L}/checkout`);
+  await expect(buyer.getByTestId("claim-checkout-notice")).toHaveText(claim.checkoutNotice);
+  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`)).toBeVisible();
+  await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`).locator(".sf-line__unit")).toContainText("× 2");
   await act("check", { name: "cart" });
   await buyerShots(buyer, "buyer-claim-added");
-  pass("the buyer opens the private-reply link (zh-TW): prefilled claim A1 x 2, fragment dropped, token not stored; add-to-cart puts A1 x 2 in the server cart");
+  pass("the buyer opens the private-reply link (zh-TW): prefilled claim A1 x 2, fragment dropped, token not stored; one explicit checkout click puts A1 x 2 in the server cart and opens checkout");
 
   // ------------------------------------------------------------------------------------------------ 6. checkout
   const purchase = purchaseCopy[L];

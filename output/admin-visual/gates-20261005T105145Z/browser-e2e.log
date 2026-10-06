@@ -1,0 +1,279 @@
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 15ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1006ms
+  Running TypeScript ...
+  Finished TypeScript in 323ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 49ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 26ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1303ms
+  Running TypeScript ...
+  Finished TypeScript in 222ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 76ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserE2EDealLoop
+    browser_e2e_test.go:594: T12 provisioned; PG connections=21 of 60: commerce_payment_worker=3 commerce_claims_worker=3 commerce_meta_worker=3 postgres=2 commerce_hosted_runtime=1 commerce_identity=1 commerce_buyer_issuer=1 commerce_meta_ingress=1 commerce_runtime=1 commerce_stripe_ingress=1 commerce_meta_consumer=1 commerce_buyer_runtime=1 commerce_checkout_runtime=1 commerce_claims_intake=1
+    browser_e2e_test.go:187: T12 step provision ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step comment ok
+    browser_e2e_test.go:187: T12 step await-reply ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step replay ok
+    browser_e2e_test.go:187: T12 step negatives ok
+2026/10/05 19:21:15 http: TLS handshake error from 127.0.0.1:64834: remote error: tls: unknown certificate
+2026/10/05 19:21:16 http: TLS handshake error from 127.0.0.1:64844: remote error: tls: unknown certificate
+2026/10/05 19:21:16 http: TLS handshake error from 127.0.0.1:64846: remote error: tls: unknown certificate
+2026/10/05 19:21:16 http: TLS handshake error from 127.0.0.1:64851: remote error: tls: unknown certificate
+2026/10/05 19:21:16 http: TLS handshake error from 127.0.0.1:64849: remote error: tls: unknown certificate
+2026/10/05 19:21:16 http: TLS handshake error from 127.0.0.1:64850: remote error: tls: unknown certificate
+    browser_e2e_test.go:187: T12 step check ok
+2026/10/05 19:21:17 http: TLS handshake error from 127.0.0.1:64890: remote error: tls: unknown certificate
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step pay ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step settle-refund ok
+    browser_e2e_test.go:187: T12 step check ok
+    browser_e2e_test.go:187: T12 step isolation ok
+    browser_e2e_test.go:199: T12 PG connection peak: 35 of 60 (max_connections)
+    browser_e2e_test.go:199: T12 evidence logs scanned clean
+    browser_e2e_test.go:200: T12 BROWSER (MOCK Meta, MOCK Stripe): the deal loop passed end to end; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/e2e/20261005T112056.335287000
+--- PASS: TestBrowserE2EDealLoop (30.19s)
+=== RUN   TestBrowserE2EDealLoopSandbox
+    browser_e2e_test.go:1153: NOT_RUN: SANDBOX tier needs STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 with the owner's test keys
+--- SKIP: TestBrowserE2EDealLoopSandbox (0.00s)
+=== RUN   TestBrowserLiveTools
+    browser_live_tools_test.go:142: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65103: remote error: tls: unknown certificate
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65112: remote error: tls: unknown certificate
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65118: remote error: tls: unknown certificate
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65119: remote error: tls: unknown certificate
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65115: remote error: tls: unknown certificate
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65117: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:34 http: TLS handshake error from 127.0.0.1:65148: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65160: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65164: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65171: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65172: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65174: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65173: remote error: tls: unknown certificate
+2026/10/05 19:21:36 http: TLS handshake error from 127.0.0.1:65191: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step end-run ok
+2026/10/05 19:21:38 http: proxy error: context canceled
+    browser_live_tools_test.go:142: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65246: remote error: tls: unknown certificate
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65252: remote error: tls: unknown certificate
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65255: remote error: tls: unknown certificate
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65257: remote error: tls: unknown certificate
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65256: remote error: tls: unknown certificate
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65258: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:42 http: TLS handshake error from 127.0.0.1:65283: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65296: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65300: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65307: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65309: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65308: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65310: remote error: tls: unknown certificate
+2026/10/05 19:21:44 http: TLS handshake error from 127.0.0.1:65329: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step end-run ok
+2026/10/05 19:21:46 http: proxy error: context canceled
+    browser_live_tools_test.go:142: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65381: remote error: tls: unknown certificate
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65386: remote error: tls: unknown certificate
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65391: remote error: tls: unknown certificate
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65390: remote error: tls: unknown certificate
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65393: remote error: tls: unknown certificate
+2026/10/05 19:21:49 http: TLS handshake error from 127.0.0.1:65392: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:50 http: TLS handshake error from 127.0.0.1:65415: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65423: remote error: tls: unknown certificate
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65427: remote error: tls: unknown certificate
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65435: remote error: tls: unknown certificate
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65437: remote error: tls: unknown certificate
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65436: remote error: tls: unknown certificate
+2026/10/05 19:21:51 http: TLS handshake error from 127.0.0.1:65434: remote error: tls: unknown certificate
+2026/10/05 19:21:52 http: TLS handshake error from 127.0.0.1:65453: remote error: tls: unknown certificate
+2026/10/05 19:21:52 http: proxy error: context canceled
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step end-run ok
+2026/10/05 19:21:53 http: proxy error: context canceled
+    browser_live_tools_test.go:142: LIVE-TOOLS step provision-run ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step new-post ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step comment ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step await-reply ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65510: remote error: tls: unknown certificate
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65516: remote error: tls: unknown certificate
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65521: remote error: tls: unknown certificate
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65522: remote error: tls: unknown certificate
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65520: remote error: tls: unknown certificate
+2026/10/05 19:21:57 http: TLS handshake error from 127.0.0.1:65519: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:58 http: TLS handshake error from 127.0.0.1:49165: remote error: tls: unknown certificate
+2026/10/05 19:21:58 http: proxy error: context canceled
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49177: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49181: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49188: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49190: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49186: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49189: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49191: remote error: tls: unknown certificate
+2026/10/05 19:21:59 http: TLS handshake error from 127.0.0.1:49211: remote error: tls: unknown certificate
+    browser_live_tools_test.go:142: LIVE-TOOLS step check ok
+    browser_live_tools_test.go:142: LIVE-TOOLS step end-run ok
+2026/10/05 19:22:00 http: proxy error: context canceled
+    browser_live_tools_test.go:154: live-tools evidence logs scanned clean
+    browser_live_tools_test.go:155: LIVE-TOOLS BROWSER (MOCK Meta, pay at pickup): chromium desktop + 390 px x zh-TW + en passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/live-tools/20261005T112126.523185000
+--- PASS: TestBrowserLiveTools (34.54s)
+PASS
+ok  	livecommerce/tests/foundation	66.417s
+PASS: T12 isolated admin + storefront Next, Go, PG, real worker/consumer/poller/dispatcher; Meta = MOCK (signed webhook, fake Graph), Stripe = MOCK (fake + routed hosted page); SANDBOX variant NOT_RUN unless it says otherwise above; not provider or deployment acceptance. Live tools (R4): Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price (zh-TW + en, desktop + 390 px).

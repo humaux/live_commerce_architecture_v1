@@ -1,0 +1,33 @@
+✖ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (1.069834ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.973125ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (6.034667ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.083167ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.127ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (265.587834ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.186209ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 378.595375
+
+✖ failing tests:
+
+test at tests/admin/shell-registry.test.ts:15:1
+✖ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (1.069834ms)
+  AssertionError [ERR_ASSERTION]: zh-TW: product prerequisite
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/shell-registry.test.ts:18:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

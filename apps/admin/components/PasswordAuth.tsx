@@ -1,3 +1,6 @@
+// Purpose: Owns password sign-in, signup, reset and code-verification views.
+// Depends on: react, @live-commerce/i18n, @/lib/entry-copy, @/lib/invite-next, @/lib/entry-state
+// Used by: apps/admin/components/Entry.tsx
 "use client";
 // Email + password + emailed-code forms for the admin host (merchant-password-auth-v1 §7.3).
 // Mounted by Entry.tsx at /[locale]/ (signin), /[locale]/signup and /[locale]/reset.
@@ -19,6 +22,7 @@ import {
   throttleMinutes,
 } from "@/lib/entry-state";
 
+/** Describes PasswordMode values shared by this presentation module. */
 export type PasswordMode = "signin" | "signup" | "reset";
 const purposeOf = {
   signin: "login",
@@ -63,6 +67,7 @@ async function post(path: string, body: unknown): Promise<Reply> {
   }
 }
 
+/** Owns password sign-in, signup, reset and code-verification views. User actions submit authentication requests to password and OIDC BFF routes. */
 export function PasswordAuth({
   locale,
   mode,
@@ -226,7 +231,7 @@ export function PasswordAuth({
     reset: c.verifyReset,
   }[mode];
   const left = { textAlign: "left" } as const;
-  const link = { color: "var(--focus)" } as const;
+  const link = { color: "var(--ui-link)", display: "inline-flex", alignItems: "center", minHeight: "var(--ui-target)" } as const;
 
   return (
     <section className="entry-auth-panel" aria-labelledby="password-auth-title">

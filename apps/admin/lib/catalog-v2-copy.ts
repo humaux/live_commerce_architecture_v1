@@ -1,3 +1,6 @@
+// Purpose: Owns catalog labels, error text and presentation hints.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/CollectionManager.tsx, apps/admin/components/Design.tsx, apps/admin/components/ProductDocumentForm.tsx, apps/admin/components/ProductEditor.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/ProductPhoto.tsx, tests/admin/catalog-core.spec.ts, tests/admin/shell-registry.test.ts
 // Copy for the admin Products list, Product editor and Collections pages (unit catalog-core; BFF catalog-products,
 // products/{id}, collections* -> Go internal/httpapi/collections.go). Owns every string those pages show in zh-CN, zh-TW
 // and en, including the error map for the Go error codes. Merchant content (names, descriptions, option names) is
@@ -180,7 +183,7 @@ const en = {
 export type CatalogV2Copy = typeof en;
 
 const zhCN: CatalogV2Copy = {
-  nav: { collections: "商品集合" },
+  nav: { collections: "分类" },
   list: {
     title: "商品",
     subtitle: "本店全部商品，含价格、库存和买家是否可见。",
@@ -288,9 +291,9 @@ const zhCN: CatalogV2Copy = {
     invalidSlug: "请使用小写字母、数字和单个连字符，最多 80 个字符。",
   },
   collections: {
-    title: "商品集合",
+    title: "分类",
     subtitle: "把商品归入买家可浏览的页面，例如「新品」或「特价」。",
-    newCollection: "新增集合",
+    newCollection: "新增分类",
     name: "标题",
     slug: "页面网址标识",
     description: "描述（纯文字）",
@@ -306,7 +309,7 @@ const zhCN: CatalogV2Copy = {
     removeImage: "移除图片",
     imageTooLarge: "这张图片超过 2 MB。",
     imageType: "请选择 JPEG、PNG 或 WebP 图片。",
-    members: "此集合中的商品",
+    members: "此分类中的商品",
     membersHint: "买家只会看到上架中的商品。手动排序即此处顺序。",
     noMembers: "尚无商品。",
     findProducts: "添加商品",
@@ -316,27 +319,27 @@ const zhCN: CatalogV2Copy = {
     moveUp: "前移",
     moveDown: "后移",
     saveMembers: "保存商品",
-    save: "保存集合",
-    create: "创建集合",
-    delete: "删除集合",
-    confirmDelete: "删除此集合？商品会保留，买家将失去该集合页面。此操作无法撤销。",
+    save: "保存分类",
+    create: "创建分类",
+    delete: "删除分类",
+    confirmDelete: "删除此分类？商品会保留，买家将失去该分类页面。此操作无法撤销。",
     confirmDeleteButton: "删除",
     saved: "已保存",
-    deleted: "集合已删除",
-    empty: "还没有集合。",
+    deleted: "分类已删除",
+    empty: "还没有分类。",
     count: (n: number) => `${n} 件商品`,
-    loading: "正在载入集合…",
+    loading: "正在载入分类…",
     noStore: "没有可用的授权店铺。",
-    signedOut: "请登录后管理集合。",
-    forbidden: "此账号没有管理集合的权限。",
-    unavailable: "集合暂时无法使用，请重试。",
-    notFound: "此集合在所选店铺中不可用。",
+    signedOut: "请登录后管理分类。",
+    forbidden: "此账号没有管理分类的权限。",
+    unavailable: "分类暂时无法使用，请重试。",
+    notFound: "此分类在所选店铺中不可用。",
     retry: "重试",
     uncertain: "结果未能确认。重试会发送相同请求，不会重复生效。",
     dismiss: "关闭",
     invalidTitle: "请输入标题（最多 80 字）。",
     invalidSlug: "请使用小写字母、数字和单个连字符，最多 80 个字符。",
-    limit: "每个集合最多 500 件商品，每家店铺最多 200 个集合。",
+    limit: "每个分类最多 500 件商品，每家店铺最多 200 个分类。",
     inactiveBadge: (status: string) => (status === "draft" ? "草稿" : status === "archived" ? "已封存" : ""),
   },
   errors: {
@@ -352,7 +355,7 @@ const zhCN: CatalogV2Copy = {
 };
 
 const zhTW: CatalogV2Copy = {
-  nav: { collections: "商品集合" },
+  nav: { collections: "分類" },
   list: {
     title: "商品",
     subtitle: "本店全部商品，含價格、庫存與買家是否可見。",
@@ -460,9 +463,9 @@ const zhTW: CatalogV2Copy = {
     invalidSlug: "請使用小寫字母、數字與單一連字號，最多 80 個字元。",
   },
   collections: {
-    title: "商品集合",
+    title: "分類",
     subtitle: "把商品歸入買家可瀏覽的頁面，例如「新品」或「特價」。",
-    newCollection: "新增集合",
+    newCollection: "新增分類",
     name: "標題",
     slug: "頁面網址識別",
     description: "描述（純文字）",
@@ -478,7 +481,7 @@ const zhTW: CatalogV2Copy = {
     removeImage: "移除圖片",
     imageTooLarge: "這張圖片超過 2 MB。",
     imageType: "請選擇 JPEG、PNG 或 WebP 圖片。",
-    members: "此集合中的商品",
+    members: "此分類中的商品",
     membersHint: "買家只會看到上架中的商品。手動排序即此處順序。",
     noMembers: "尚無商品。",
     findProducts: "加入商品",
@@ -488,27 +491,27 @@ const zhTW: CatalogV2Copy = {
     moveUp: "前移",
     moveDown: "後移",
     saveMembers: "儲存商品",
-    save: "儲存集合",
-    create: "建立集合",
-    delete: "刪除集合",
-    confirmDelete: "刪除此集合？商品會保留，買家將失去該集合頁面。此操作無法復原。",
+    save: "儲存分類",
+    create: "建立分類",
+    delete: "刪除分類",
+    confirmDelete: "刪除此分類？商品會保留，買家將失去該分類頁面。此操作無法復原。",
     confirmDeleteButton: "刪除",
     saved: "已儲存",
-    deleted: "集合已刪除",
-    empty: "還沒有集合。",
+    deleted: "分類已刪除",
+    empty: "還沒有分類。",
     count: (n: number) => `${n} 件商品`,
-    loading: "正在載入集合…",
+    loading: "正在載入分類…",
     noStore: "沒有可用的授權商店。",
-    signedOut: "請登入後管理集合。",
-    forbidden: "此帳號沒有管理集合的權限。",
-    unavailable: "集合暫時無法使用，請重試。",
-    notFound: "此集合在所選商店中無法使用。",
+    signedOut: "請登入後管理分類。",
+    forbidden: "此帳號沒有管理分類的權限。",
+    unavailable: "分類暫時無法使用，請重試。",
+    notFound: "此分類在所選商店中無法使用。",
     retry: "重試",
     uncertain: "結果未能確認。重試會送出相同請求，不會重複生效。",
     dismiss: "關閉",
     invalidTitle: "請輸入標題（最多 80 字）。",
     invalidSlug: "請使用小寫字母、數字與單一連字號，最多 80 個字元。",
-    limit: "每個集合最多 500 件商品，每家商店最多 200 個集合。",
+    limit: "每個分類最多 500 件商品，每家商店最多 200 個分類。",
     inactiveBadge: (status: string) => (status === "draft" ? "草稿" : status === "archived" ? "已封存" : ""),
   },
   errors: {
@@ -524,4 +527,33 @@ const zhTW: CatalogV2Copy = {
 };
 
 export const catalogCopy: Record<Locale, CatalogV2Copy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
+/** Selects catalog error copy with a retry-later fallback. */
 export const errorText = (c: CatalogV2Copy, code: string) => c.errors[code] ?? c.errors.retry_later;
+
+// Presentation-only labels; never describe API capabilities or create business states.
+export const catalogPresentationCopy = {
+  en: {
+    previousTabs: "Previous tabs", nextTabs: "More tabs", noFile: "No file selected", chooseFile: "Choose file",
+    chooseCollection: "Select a collection", collectionHelp: "Choose a collection from the list to edit its details and products, or create a new collection.",
+    busy: "Wait for the current operation to finish.", noChanges: "There are no unsaved changes.", alreadyPublished: "This saved draft is already published.",
+    chooseFileFirst: "Choose a CSV file before checking it.", checkFileFirst: "Check the file before importing it.", fixFileFirst: "Fix the reported file errors before importing.",
+    importedAlready: "This file has already been imported.", sessionUnavailable: "A verified session is required. Reload the page or sign in again.",
+    tableScroll: "Scroll horizontally to view all columns.",
+  },
+  "zh-CN": {
+    previousTabs: "前面的页签", nextTabs: "更多页签", noFile: "未选择文件", chooseFile: "选择文件",
+    chooseCollection: "选择一个分类", collectionHelp: "从列表选择分类以编辑详情和商品，或新增分类。",
+    busy: "请等待当前操作完成。", noChanges: "没有尚未保存的变更。", alreadyPublished: "此已保存草稿已发布。",
+    chooseFileFirst: "请先选择 CSV 文件，再检查文件。", checkFileFirst: "请先检查文件，再导入。", fixFileFirst: "请先修正提示的文件错误，再导入。",
+    importedAlready: "此文件已导入。", sessionUnavailable: "需要已验证的登录会话，请重新加载页面或登录。",
+    tableScroll: "横向滚动可查看全部列。",
+  },
+  "zh-TW": {
+    previousTabs: "前面的頁籤", nextTabs: "更多頁籤", noFile: "未選擇檔案", chooseFile: "選擇檔案",
+    chooseCollection: "選擇一個分類", collectionHelp: "從清單選擇分類以編輯詳情和商品，或新增分類。",
+    busy: "請等待目前操作完成。", noChanges: "沒有尚未儲存的變更。", alreadyPublished: "此已儲存草稿已發佈。",
+    chooseFileFirst: "請先選擇 CSV 檔案，再檢查檔案。", checkFileFirst: "請先檢查檔案，再匯入。", fixFileFirst: "請先修正提示的檔案錯誤，再匯入。",
+    importedAlready: "此檔案已匯入。", sessionUnavailable: "需要已驗證的登入工作階段，請重新載入頁面或登入。",
+    tableScroll: "橫向捲動可查看全部欄位。",
+  },
+} satisfies Record<Locale, Record<string, string>>;

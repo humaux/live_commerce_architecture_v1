@@ -55,9 +55,9 @@ func TestPicklistClassify(t *testing.T) {
 
 func TestExportTemplate(t *testing.T) {
 	for _, tc := range []struct {
-		query    string
-		want     string
-		wantOK   bool
+		query  string
+		want   string
+		wantOK bool
 	}{
 		{"?template=black_cat", "black_cat", true},
 		{"?template=hsinchu", "hsinchu", true},

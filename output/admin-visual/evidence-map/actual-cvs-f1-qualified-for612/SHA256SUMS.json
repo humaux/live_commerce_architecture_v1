@@ -1,0 +1,150 @@
+{
+  "source_snapshot": "f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf",
+  "files": [
+    {
+      "file": "Chromium/manifest.json",
+      "sha256": "8ce737d308bfac0904503ce4a54e499f081598401398049287852d90d6b8d125",
+      "bytes": 6110
+    },
+    {
+      "file": "Chromium/merchant-created-zh-TW-1586x992.png",
+      "sha256": "ab384d09e0f446d1d2ef4b04cfdd0af2d92a9b449e70ef10615ff5f572e2f8f6",
+      "bytes": 304600
+    },
+    {
+      "file": "Chromium/opening-pre-response-zh-TW-1586x992.png",
+      "sha256": "aa3895ecf1d97ef1f92f700c8db1763653e537adbb24c475d76241f0132e0dd2",
+      "bytes": 51684
+    },
+    {
+      "file": "Chromium/merchant-created-zh-CN-1586x992.png",
+      "sha256": "652570f2b811f59941cf9cd8a6932f539374ac6919f15bf5fd1ca96602a66bad",
+      "bytes": 295790
+    },
+    {
+      "file": "Chromium/opening-pre-response-zh-CN-1586x992.png",
+      "sha256": "a44ed83c72e19f729895b7ef8d25228db48c1c96c3936bc0011c004a1b031a6f",
+      "bytes": 48741
+    },
+    {
+      "file": "Chromium/merchant-created-en-1586x992.png",
+      "sha256": "67f87caf7f6e15b49aee1625cc5bc50ffcaf946432c6ad891ed08d1c13a03da9",
+      "bytes": 305722
+    },
+    {
+      "file": "Chromium/opening-pre-response-en-1586x992.png",
+      "sha256": "0cacaf947ae0bac9f8d88efbec61fa91435365d56531e0b642a822705b5a7429",
+      "bytes": 51053
+    },
+    {
+      "file": "Chromium/merchant-created-zh-TW-390x844.png",
+      "sha256": "9cbb956747e5047de08406b5fbfdd72696b09ce094bd8a3152f2b776e3c1a63d",
+      "bytes": 291558
+    },
+    {
+      "file": "Chromium/opening-pre-response-zh-TW-390x844.png",
+      "sha256": "d9abe6727714d1e7ec68d7a5a0c8f14b6ad192593dd188131c5e455ef080b0ed",
+      "bytes": 26921
+    },
+    {
+      "file": "Chromium/merchant-created-zh-CN-390x844.png",
+      "sha256": "dc9b8aef6381e8503a06b2e73819d7b6fe09d612dd8a9579065413912b75a45a",
+      "bytes": 284268
+    },
+    {
+      "file": "Chromium/opening-pre-response-zh-CN-390x844.png",
+      "sha256": "7ff4ab5b378f90502da4b88cca19d28da680fe6fdaf01468d6314dad091c376b",
+      "bytes": 25466
+    },
+    {
+      "file": "Chromium/merchant-created-en-390x844.png",
+      "sha256": "67e51ce0cddffb7588ecabd2c7c9ceed0bef5ab96a37242e1e987531ffbc99ab",
+      "bytes": 282433
+    },
+    {
+      "file": "Chromium/opening-pre-response-en-390x844.png",
+      "sha256": "eac8ee8594231ef0acaa4600cc14cdb9998827fd37028bd07bf315bcfab86c53",
+      "bytes": 24783
+    },
+    {
+      "file": "WebKit/manifest.json",
+      "sha256": "8d658347211d05f301a03c11aa6c8cd63da122f92dc026dceff98b813af00de3",
+      "bytes": 6110
+    },
+    {
+      "file": "WebKit/merchant-created-zh-TW-1586x992.png",
+      "sha256": "a0c22980289775eeb28d2d0a9b1d67f2b3485b088fd20333ba0ae52e8c803b03",
+      "bytes": 397152
+    },
+    {
+      "file": "WebKit/opening-pre-response-zh-TW-1586x992.png",
+      "sha256": "b3262569870b7e7f08d75e6688fb6af945f438408645babed02fe1baef18a7fc",
+      "bytes": 82440
+    },
+    {
+      "file": "WebKit/merchant-created-zh-CN-1586x992.png",
+      "sha256": "4282aca04c30db90c5bf3fe31fcca815bc1169380741cf86a50706ffcbee190f",
+      "bytes": 387618
+    },
+    {
+      "file": "WebKit/opening-pre-response-zh-CN-1586x992.png",
+      "sha256": "042c8b54f013486deb61c155d9f1400cd2cce55ad48f3b8c100132bf777ef05c",
+      "bytes": 78626
+    },
+    {
+      "file": "WebKit/merchant-created-en-1586x992.png",
+      "sha256": "b45753779931198a57005089b43264fce2f72482c0d3b3a2be0ec0e9aa705cfa",
+      "bytes": 399716
+    },
+    {
+      "file": "WebKit/opening-pre-response-en-1586x992.png",
+      "sha256": "e1c92cc980632855bdc2bbe5bc655430bca66a605784a23ca4ed5c31c20a5ebe",
+      "bytes": 82137
+    },
+    {
+      "file": "WebKit/merchant-created-zh-TW-390x844.png",
+      "sha256": "cfee04df231d83b6e1c1d6b8067d4a781b0a367338dedfd152bed66c201f99f2",
+      "bytes": 362317
+    },
+    {
+      "file": "WebKit/opening-pre-response-zh-TW-390x844.png",
+      "sha256": "d3ea37723945d5ab9b6fb90bfb2357b5f0962248cdf98fe3cf8cfeec69ea6458",
+      "bytes": 34838
+    },
+    {
+      "file": "WebKit/merchant-created-zh-CN-390x844.png",
+      "sha256": "bf4bf3b83bf41cc07ba185728cb8ee42f8f5803c75b18f8ef9b3b1b4fad96b29",
+      "bytes": 355579
+    },
+    {
+      "file": "WebKit/opening-pre-response-zh-CN-390x844.png",
+      "sha256": "17a6538b9e1fba3e6d9cbc1c7b37d47437036fe1bd5087023710e6eadd15a903",
+      "bytes": 33270
+    },
+    {
+      "file": "WebKit/merchant-created-en-390x844.png",
+      "sha256": "f37ed28c5d2e17f7910132d2907bd8fbf1849b23003198f04553de28403f6d5c",
+      "bytes": 355319
+    },
+    {
+      "file": "WebKit/opening-pre-response-en-390x844.png",
+      "sha256": "3b5b0ce210f885abc1112ddd8e45cf0aa859e51faf214f3aea76ce0c7b4642e7",
+      "bytes": 33318
+    },
+    {
+      "file": "browser-cvs.log",
+      "sha256": "1dc1098d7e693e23a57050ebad7b588acc87847e882fc8a54e4bba820033ae68",
+      "bytes": 6707
+    },
+    {
+      "file": "actual-cvs-evidence.json",
+      "sha256": "835261d1c255bf191266e67754a569ac336f60e50f3ce302e0690df0b03348b5",
+      "bytes": 30420
+    },
+    {
+      "file": "ACTUAL-CVS.md",
+      "sha256": "01e4e006da57d3464d5612b7db032452c779d87287625a7f549ed631ed2d516b",
+      "bytes": 1021
+    }
+  ]
+}

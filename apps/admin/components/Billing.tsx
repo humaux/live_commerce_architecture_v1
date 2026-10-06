@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant subscription status and hosted billing entry controls.
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/billing-client, @/lib/customers-client, @/lib/billing-model, @/lib/orders-model, @/lib/billing-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/billing/page.tsx
 "use client";
 
 // Merchant billing page (/{locale}/billing): standing, plan choices -> Stripe Checkout redirect, "Manage payment &
@@ -17,6 +20,9 @@ import { hasLiveSubscription, type BillingStatus } from "@/lib/billing-model";
 import { displayTime } from "@/lib/orders-model";
 import { billingCopy, type BillingCopy } from "@/lib/billing-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -24,6 +30,7 @@ import "./customers.css";
 type Phase = "idle" | "updating" | "slow";
 const errorText = (c: BillingCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns the merchant subscription status and hosted billing entry controls. User actions request hosted checkout or portal navigation through billing-client. */
 export function Billing({
   locale,
   stores,
@@ -70,28 +77,10 @@ export function Billing({
     : read.status === "not-found" ? (store ? c.notFound : c.noStore)
     : read.status === "unavailable" ? c.unavailable
     : "";
-  const go = (nextStore: string) => {
-    window.location.assign(`/${locale}/billing?store=${nextStore}`);
-  };
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="billing">
       <div className="orders-page customers-page" data-testid="billing-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
-        <div className="orders-controls">
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""} onChange={(event) => go(event.target.value)}>
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
-        </div>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         {checkout === "cancel" && <p className="orders-message" role="status" data-testid="billing-cancelled">{c.checkoutCancel}</p>}
         {phase === "updating" && <p className="orders-message" role="status" data-testid="billing-updating">{c.checkoutDone}</p>}
         {phase === "slow" && <p className="orders-message" role="status">{c.checkoutDoneSlow}</p>}
@@ -152,23 +141,18 @@ function Sections({
       <section className="customers-section" aria-label={c.standingTitle}>
         <h2>{c.standingTitle}</h2>
         <p>
-          <span
-            className={`orders-badge ${status.standing === "GOOD" ? "orders-tone-success" : status.standing === "UNBILLED" ? "orders-tone-neutral" : status.standing === "GRACE" ? "orders-tone-neutral" : "orders-tone-warning"}`}
+          <Badge
+            tone={status.standing === "GOOD" ? "success" : status.standing === "UNBILLED" ? "neutral" : "warning"}
             data-testid="billing-standing" data-standing={status.standing}
           >
             {c.standing[status.standing]}
-          </span>
+          </Badge>
         </p>
         <p>{c.standingText[status.standing]}</p>
         {status.payment_pending && <p className="orders-hint" role="status" data-testid="billing-pending">{c.paymentPending}</p>}
-      </section>
-
-      <section className="customers-section" aria-label={c.subscriptionsTitle}>
+        {status.subscriptions.length > 0 && (<>
         <h2>{c.subscriptionsTitle}</h2>
-        {status.subscriptions.length === 0 ? (
-          <p className="orders-empty">{c.subscriptionsNone}</p>
-        ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.subscriptionsTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="billing-subscriptions">
               <thead><tr><th>{c.plan}</th><th>{c.status}</th><th>{c.period}</th></tr></thead>
               <tbody>
@@ -178,9 +162,9 @@ function Sections({
                     <tr key={`${item.price_id}-${item.retrieved_at}`}>
                       <td>{plan?.name ?? item.price_id}</td>
                       <td>
-                        <span className={`orders-badge ${item.status === "active" || item.status === "trialing" ? "orders-tone-success" : item.status === "canceled" || item.status === "incomplete_expired" ? "orders-tone-neutral" : "orders-tone-warning"}`}>
+                        <Badge tone={item.status === "active" || item.status === "trialing" ? "success" : item.status === "canceled" || item.status === "incomplete_expired" ? "neutral" : "warning"}>
                           {c.subStatus[item.status]}
-                        </span>
+                        </Badge>
                         {item.cancel_at_period_end && <small>{c.endsAtPeriodEnd}</small>}
                       </td>
                       <td>{time(item.current_period_start)} → {time(item.current_period_end)}</td>
@@ -189,8 +173,8 @@ function Sections({
                 })}
               </tbody>
             </table>
-          </div>
-        )}
+          </TableFrame>
+        </>)}
         {status.customer_pinned && (
           <>
             <div className="customers-actions">
@@ -230,7 +214,7 @@ function Sections({
 
       <section className="customers-section" aria-label={c.usageTitle}>
         <h2>{c.usageTitle}</h2>
-        <div className="orders-actions-scroll">
+        <TableFrame label={c.usageTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
           <table className="orders-actions-table orders-kv-table" data-testid="billing-usage">
             <tbody>
               <tr><th scope="row">{c.usagePeriod}</th><td>{status.usage.period_start.slice(0, 10)} → {status.usage.period_end.slice(0, 10)}</td></tr>
@@ -240,7 +224,7 @@ function Sections({
               <tr><th scope="row">{c.members}</th><td>{status.usage.members}</td></tr>
             </tbody>
           </table>
-        </div>
+        </TableFrame>
       </section>
     </>
   );

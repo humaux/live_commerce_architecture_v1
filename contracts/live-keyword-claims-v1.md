@@ -1,3 +1,6 @@
+<!-- Purpose: frozen claim-link and live keyword transaction contracts.
+Depends on: claims, storefront, inventory and buyer HTTP scope and command contracts.
+Used by: Go services, storefront clients and independent acceptance gates. -->
 # Live keyword claims v1 — T10 comment → claim → prefilled cart
 
 Status: FROZEN for T10 implementation (integrator 2026-09-28, cloud lane `claude/gallant-bohr-9rs3yo`, base 6bb5092 + c3878a4); NOT_PUBLIC; MOCK social ingress only until the Meta hookup gate (T10c) passes. See §0.1 for binding integrator rulings.
@@ -1182,3 +1185,30 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    0105): a second order of an already-ordered claim line is priced at catalog until the first order is CANCELLED. KC03 gains
    the 0092 grants/functions and the 0105 ledger, definer and column grants; no other KC03 row changes. Gate:
    `tests/foundation/live_price_consumption_gate_test.go` (LPC01-06).
+
+
+## Amendment "Direct checkout" (2026-10-05, migration 0116)
+
+Authorized by claim-direct-checkout Integrator rulings 6–8 and the owner's full-stack assignment.
+This amendment freezes the additive B1/B2 interface for this unit; shared ACL inventories remain integrator-owned.
+
+- B1 (§4.4, §7.2) adds mandatory `sold_out: boolean` to every preview line. It is true iff the SKU tracks inventory and
+  `SUM(on_hand - reserved - allocated - unavailable)` across this store's warehouses is below that line's quantity.
+  `available` retains its existing catalog/offer meaning. The flag is a read-only snapshot; Begin remains stock authority.
+- B2 skips pending sold-out lines with `reason: "sold_out"`, after offer_inactive/unavailable precedence; skipped lines stay
+  pending and can be redeemed after replenishment. Catalog availability, merge, CAS and per-click idempotency are unchanged.
+- `inventory.buyer_sku_availability(uuid[]) RETURNS TABLE(sku_id uuid, tracked boolean, available bigint)` is read-only,
+  SECURITY DEFINER, owned by `commerce_inventory_writer`, search_path `pg_catalog`, EXECUTE only `commerce_buyer_runtime`.
+  It accepts at most 50 non-null SKU IDs, requires the canonical READ COMMITTED buyer GUC scope (missing/malformed: 22023),
+  and returns only the scope's SKUs. The NOLOGIN writer receives only catalog schema usage and SELECT of id/scope/tracking;
+  the buyer receives inventory schema usage and function EXECUTE, no new table/column read privilege. Integrator updates KC03.
+- Storefront (§11.1) uses one explicit “直接結帳 / 直接结账 / Check out now” action: process existing checkout/next-cart/order
+  recovery first; `continueShopping` clears an already-ordered cart before redeem; B2 runs under the same
+  `commerce-purchase-write-v1` Web Lock and no-order guard as all purchase writes, one fresh key, no automatic retry.
+  Existing unpaid cart lines are merged. Success navigates to `/{locale}/checkout?from=claim`; checkout consumes the flag and
+  explains that other cart items are included and may be removed. No SKU or variant picker.
+- All unavailable/sold-out pending lines disable the action; partial skips keep their reason visible. Unknown outcomes are
+  recovered by preview, never blind replay. In-flight checkout navigates to recovery without redeem. 409 links to the cart;
+  uniform 404 asks for a replacement link and offers a cart link when non-empty. Claims still never reserve stock.
+- The handoff token stays in memory/header only; fragment is removed before requests and discarded when navigating away.
+  New gate `--browser-claim-checkout` and seventh WebKit step `claim-checkout` cover the real-click path (CDC01–CDC05).

@@ -1,0 +1,8 @@
+source	mode	exit	seconds	log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-admin-shell	0	86	output/admin-visual/gates-20261005T085441Z/browser-admin-shell.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-product-editor	1	70	output/admin-visual/gates-20261005T085441Z/browser-product-editor.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-live-claims	1	37	output/admin-visual/gates-20261005T085441Z/browser-live-claims.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-catalog-core	0	31	output/admin-visual/gates-20261005T085441Z/browser-catalog-core.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-platform-site	0	82	output/admin-visual/gates-20261005T085441Z/browser-platform-site.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-visual-lint	1	487	output/admin-visual/gates-20261005T085441Z/browser-visual-lint.log
+a4b456b42a9df44fa054db8d18937cf73c6bca61	--browser-click-sweep	1	1909	output/admin-visual/gates-20261005T085441Z/browser-click-sweep.log
