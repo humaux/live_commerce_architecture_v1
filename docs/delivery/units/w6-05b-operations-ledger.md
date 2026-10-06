@@ -40,7 +40,7 @@ Owner 裁决 2026-10-07：「失败台账：需要做」。来源：`output/arch
 ## 写入路径
 `migrations/0159_operations_ledger.sql`；`internal/integrations/core/{ledger.go,dispatcher.go}`；`internal/pagination/pagination.go`（`operations` 集合）；
 `internal/httpapi/{operations.go,operations_test.go,handler.go}`；`internal/httperror/error.go`（13 个原因码文案）；`cmd/api/{main.go,studio.go}`（接线 River insert-only client）；
-`tests/foundation/{operations_queue_test.go,operations_queue_flow_test.go,external_operation_authority_test.go,r2_integration_upgrade_test.go,legacy_runtime_upgrade_test.go}`；`scripts/dev/test-local.sh`、`docs/delivery/GATES.md`；
+`tests/foundation/{operations_queue_test.go,operations_queue_helpers_test.go,operations_queue_flow_test.go,external_operation_authority_test.go,r2_integration_upgrade_test.go,legacy_runtime_upgrade_test.go}`；`scripts/dev/test-local.sh`、`docs/delivery/GATES.md`；
 `contracts/external-operation-v1.md`（Amendment）。
 
 ## 验收 gate
