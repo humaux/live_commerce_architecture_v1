@@ -1,15 +1,28 @@
+// Purpose: own a headed Chromium default context for trusted tab visibility/focus checks.
+// Depends on: Playwright CDP, child_process and per-run filesystem evidence; requires an X display on Linux.
+// Used by: orders-ui.spec.ts and studio-ui.spec.ts; keeps startup diagnostics outside the temporary profile.
 import { chromium, expect, type Browser } from "@playwright/test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, open, readFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 // The default context and noDefaults are essential: Playwright's normal CDP
 // attachment captures focus and cannot observe a real tab becoming hidden.
+/** Start one native context, retain child diagnostics and remove only its temporary profile on close. */
 export async function nativePage(evidence: string, profilePrefix: string) {
   const profile = await mkdtemp(`${evidence}/${profilePrefix}`);
-  const child = spawn(chromium.executablePath(), [
-    `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
-  ], { stdio: "ignore" });
+  let diagnostics: Awaited<ReturnType<typeof open>> | undefined;
+  let child: ReturnType<typeof spawn>;
+  try {
+    diagnostics = await open(`${profile}.log`, "w");
+    child = spawn(chromium.executablePath(), [
+      `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
+    ], { stdio: ["ignore", diagnostics.fd, diagnostics.fd] });
+  } catch (error) {
+    await diagnostics?.close().catch(() => {});
+    await rm(profile, { recursive: true, force: true });
+    throw error;
+  }
   let browser: Browser | undefined;
   let launchError: Error | undefined;
   child.once("error", (error) => { launchError = error; });
@@ -33,6 +46,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     await rm(profile, { recursive: true, force: true });
   };
   try {
+    await diagnostics.close();
     let port = 0;
     const deadline = performance.now() + 10_000;
     while (performance.now() < deadline && !exited()) {
@@ -54,6 +68,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
     return { page, close };
   } catch (error) {
+    await diagnostics.close().catch(() => {});
     await close();
     throw error;
   }

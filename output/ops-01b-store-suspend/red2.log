@@ -1,0 +1,36 @@
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+    platform_operator_authority_test.go:44: control.store_serving(uuid,uuid) EXECUTE grantees mismatch
+        missing: [commerce_claims_writer]
+        extra:   []
+--- FAIL: TestPlatformOperatorOP08SchemaAndExecuteMatrix (1.27s)
+=== RUN   TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns
+--- PASS: TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns (0.41s)
+=== RUN   TestPlatformOperatorOP10AutoSendQueuedBeforeSuspensionIsBlocked
+    platform_operator_inflight_test.go:44: check_send for a suspended store = "human_takeover", want store_suspended
+--- FAIL: TestPlatformOperatorOP10AutoSendQueuedBeforeSuspensionIsBlocked (7.55s)
+=== RUN   TestPlatformOperatorOP04bStripeRecordsForSuspendedStore
+    platform_operator_inflight_test.go:77: merchant order list answered 404: {"code":"not_found","message":"Resource not found.","request_id":"6aa8d0d0bea36b1e812233573d72a7ce","retryable":false,"details":{}}
+--- FAIL: TestPlatformOperatorOP04bStripeRecordsForSuspendedStore (4.90s)
+=== RUN   TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags
+--- PASS: TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags (0.02s)
+=== RUN   TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected
+--- PASS: TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected (0.23s)
+=== RUN   TestPlatformOperatorOP06IdempotentAndInputBoundaries
+--- PASS: TestPlatformOperatorOP06IdempotentAndInputBoundaries (0.17s)
+=== RUN   TestPlatformOperatorOP07AuditAppendOnly
+--- PASS: TestPlatformOperatorOP07AuditAppendOnly (0.17s)
+=== RUN   TestPlatformOperatorOP02BuyerSurface
+--- PASS: TestPlatformOperatorOP02BuyerSurface (0.27s)
+=== RUN   TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned
+    platform_operator_test.go:329: a suspension skip did not set claims.bundles.link_pending_manual
+--- FAIL: TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned (0.70s)
+=== RUN   TestPlatformOperatorOP03MailNotClaimedForSuspendedStore
+    platform_operator_test.go:399: ERROR: permission denied for table merchant_alerts (SQLSTATE 42501)
+--- FAIL: TestPlatformOperatorOP03MailNotClaimedForSuspendedStore (0.08s)
+=== RUN   TestPlatformOperatorOP09CLIProcess
+--- PASS: TestPlatformOperatorOP09CLIProcess (3.26s)
+FAIL
+FAIL	livecommerce/tests/foundation	20.226s
+FAIL
+test-focused: top-level PASS=7 FAIL=5 SKIP=0 exit=1
+exit=1

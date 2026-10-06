@@ -2,7 +2,7 @@
 // Depends on: native dialog/print, picklist-client/model/copy, CarrierExport and CvsBatch.
 // Used by: MerchantOrders; read-only session selection never expands CVS command scope.
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { createPortal } from "react-dom";
 import type { Locale } from "@live-commerce/i18n";
 import { readPickList, PickError } from "@/lib/picklist-client";
@@ -44,6 +44,7 @@ export function PickList({
   onViewOrder: (id: string) => void;
 }) {
   const c = picklistCopy[locale];
+  const scopeID = useId();
   const [scope, setScope] = useState("chosen"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -105,15 +106,19 @@ export function PickList({
         <button type="button" disabled={!ids.length} onClick={onClear}>
           {c.clear}
         </button>
-        <label>
-          {c.scope}
-          <select value={scope} onChange={(e) => setScope(e.target.value)}>
+        <div className="pick-field">
+          <label htmlFor={scopeID}>{c.scope}</label>
+          <select
+            id={scopeID}
+            value={scope}
+            onChange={(e) => setScope(e.target.value)}
+          >
             <option value="chosen">{c.chosen}</option>
             <option value="session" disabled={!pickUUID.test(sessionID)}>
               {c.session}
             </option>
           </select>
-        </label>
+        </div>
         <button type="button" onClick={preview} disabled={busy || !selection}>
           {busy ? c.loading : c.pick}
         </button>

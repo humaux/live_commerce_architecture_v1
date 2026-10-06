@@ -55,6 +55,9 @@ type Options struct {
 	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
 	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
 	ClaimLabels *claims.LabelKey
+	// PaymentProfile is COMMERCE_PAYMENT_PROFILE (PROVIDER_MOCK|SANDBOX|LIVE; cmd/api validates it). Empty leaves the platform-Stripe
+	// card routes (payments/card) unmounted.
+	PaymentProfile string
 	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
 	// stripe-refund-v1 §7.1 refund routes unmounted.
 	RefundJobs *river.Client[pgx.Tx]
@@ -208,6 +211,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 		paymentEnvironment = "SANDBOX"
 	}
 	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
+	registerPaymentCardRoutes(mux, pool, configured.PaymentProfile) // unit w4-s1-platform-stripe: payment_card.go
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)

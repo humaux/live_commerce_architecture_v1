@@ -85,7 +85,7 @@ func OpenStripeRegistrarPool(ctx context.Context, dsn string) (*pgxpool.Pool, er
 var stripeIngressFunctions = []string{
 	"payments.stripe_webhook_material(uuid)",
 	// stripe-refund-v1 D2: 0062 replaces the 16-argument prepare with 16 + payment_intent + lc_refund.
-	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint,text,text)",
+	"payments.stripe_webhook_prepare(uuid,bigint,text,text,bigint,text,text,text,text,text,boolean,boolean,boolean,boolean,bytea,bigint,text,text,text)",
 	"payments.stripe_webhook_commit(uuid,uuid,bigint)",
 	// customers-billing-v1 C-4 (0079): the platform webhook shares this login and executes exactly this ABI.
 	// billing.platform_account_conflict(text) is granted to BOTH this login and commerce_runtime (startup
@@ -115,6 +115,12 @@ var stripeRegistrarFunctions = []string{
 	// w4-01b-payuni-notify (migration 0136): the operator registrar creates/rotates the SANDBOX
 	// notify endpoint token for one payuni connection. Same registrar authority, no LIVE ingress.
 	"payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)",
+	// w4-s1-platform-stripe (migration 0137, owner amendment AD-PF2): the platform operator steps. Same registrar authority;
+	// none takes a secret. The merchant functions (set/read_platform_stripe) belong to commerce_runtime, not to this list.
+	"payments.designate_stripe_platform(uuid,uuid,uuid,uuid,text,text,text,bigint)",
+	"payments.set_stripe_platform_open(uuid,uuid,uuid,text,boolean,integer,bigint)",
+	"payments.block_platform_stripe(uuid,uuid,uuid,uuid,uuid,text,boolean,text,text)",
+	"payments.allow_platform_stripe(uuid,uuid,uuid,uuid,uuid,text,boolean,text,text)",
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {

@@ -596,7 +596,13 @@ elif [[ "$test_mode" == --browser-studio-bff ]]; then
   LC_BROWSER_STUDIO_BFF_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=240s -run '^TestBrowserStudioBFFRealChain$' -v ./tests/foundation
   printf 'PASS: isolated signed OIDC + Next + Go + PG Studio BFF transport; not Studio page/UI, Cloud or provider acceptance.\n'
 elif [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
-  LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
+  # Native tab focus/visibility assertions require headed Chromium; keep them intact under CI's virtual X server.
+  mou_browser_command=(go)
+  if [[ "$(uname -s)" == Linux && -z "${DISPLAY:-}" ]]; then
+    command -v xvfb-run >/dev/null || { printf 'MOU: headed native checks require xvfb-run on Linux without DISPLAY\n' >&2; exit 2; }
+    mou_browser_command=(xvfb-run --auto-servernum go)
+  fi
+  LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 "${mou_browser_command[@]}" test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
   printf 'PASS: isolated merchant C order UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.\n'
 elif [[ "$test_mode" == --browser-buyer ]]; then
   LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
