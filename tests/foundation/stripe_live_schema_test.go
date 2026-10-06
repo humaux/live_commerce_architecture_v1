@@ -819,7 +819,14 @@ func slsUpgrade(t *testing.T) {
 		}
 	})
 	t.Run("privilege delta equals section 3.3", func(t *testing.T) {
-		if lost := mciDiff(pre.acl, post1.acl); len(lost) != 0 {
+		var lost []string
+		for _, k := range mciDiff(pre.acl, post1.acl) {
+			// 0137 P2-8: the runtime's table-level INSERT on merchant_accounts becomes a column-list grant (no platform_connection_id)
+			if k != "commerce_runtime|table|integration.merchant_accounts|INSERT" {
+				lost = append(lost, k)
+			}
+		}
+		if len(lost) != 0 {
 			t.Errorf("the upgrade removed privileges:\n  %s", mciHead(lost))
 		}
 		delta := mciDiff(post1.acl, pre.acl)
@@ -907,6 +914,7 @@ func slsPlatformStripeDelta(role, kind, obj, priv string) bool {
 		}
 		// pricing.policy_versions(country...) read for the card heads, and identity.resolve_access EXECUTE
 		return (role == "commerce_payment_registry_writer" && priv == "SELECT" && strings.HasPrefix(obj, "pricing.policy_versions")) ||
+			(role == "commerce_runtime" && kind == "column" && priv == "INSERT" && strings.HasPrefix(obj, "integration.merchant_accounts.")) ||
 			(role == "commerce_payment_registry_writer" && kind == "exec" && obj == "identity.resolve_access") ||
 			(role == "commerce_payment_registry_writer" && kind == "column" && strings.HasPrefix(obj, "integration.account_credentials.sealed_version"))
 	}

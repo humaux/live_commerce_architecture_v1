@@ -143,12 +143,26 @@ CREATE POLICY platform_qualification_read ON payments.account_qualifications FOR
  USING(EXISTS(SELECT 1 FROM payments.stripe_platform p WHERE p.connection_id=account_qualifications.connection_id));
 CREATE POLICY platform_approval_read ON payments.stripe_live_approvals FOR SELECT TO commerce_payment_registry_writer
  USING(EXISTS(SELECT 1 FROM payments.stripe_platform p WHERE p.connection_id=stripe_live_approvals.connection_id));
+-- P1-1: SELECT ... FOR SHARE also needs an UPDATE-policy USING that admits the row. Lock-only policies (WITH CHECK false):
+-- the registry definers can lock the platform rows across tenants but never change them through these.
+CREATE POLICY platform_account_lock ON integration.merchant_accounts FOR UPDATE TO commerce_payment_registry_writer
+ USING(EXISTS(SELECT 1 FROM payments.stripe_platform p WHERE p.connection_id=merchant_accounts.id)) WITH CHECK(false);
+CREATE POLICY platform_approval_lock ON payments.stripe_live_approvals FOR UPDATE TO commerce_payment_registry_writer
+ USING(EXISTS(SELECT 1 FROM payments.stripe_platform p WHERE p.connection_id=stripe_live_approvals.connection_id)) WITH CHECK(false);
+CREATE POLICY platform_qualification_lock ON payments.account_qualifications FOR UPDATE TO commerce_payment_registry_writer
+ USING(EXISTS(SELECT 1 FROM payments.stripe_platform p WHERE p.connection_id=account_qualifications.connection_id)) WITH CHECK(false);
 -- Which (market,country) pairs a store sells to: the enable definer creates one card head per pair.
 GRANT SELECT(tenant_id,store_id,market_id,country) ON pricing.policy_versions TO commerce_payment_registry_writer;
 CREATE POLICY stripe_registry_policy_read ON pricing.policy_versions FOR SELECT TO commerce_payment_registry_writer
  USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
 GRANT EXECUTE ON FUNCTION identity.resolve_access(bytea,uuid,text) TO commerce_payment_registry_writer;
+
+-- P2-8: the merchant runtime may insert PAYUNi accounts but never set platform_connection_id (column-list grant replaces the
+-- table-level INSERT of 0014; internal/integrations/accounts/service.go inserts exactly these columns).
+REVOKE INSERT ON integration.merchant_accounts FROM commerce_runtime;
+GRANT INSERT(id,tenant_id,store_id,principal_id,provider,environment,account_id,binding_id,credential_version)
+ ON integration.merchant_accounts TO commerce_runtime;
 
 -- Revoke-only now also covers derived qualifications (contract §3.2).
 DROP POLICY stripe_registry_qualification_revoke ON payments.account_qualifications;
@@ -201,6 +215,11 @@ DECLARE a integration.merchant_accounts%ROWTYPE; p payments.stripe_platform%ROWT
 BEGIN
  SELECT x.* INTO a FROM integration.merchant_accounts x WHERE x.tenant_id=NEW.tenant_id
   AND x.store_id=NEW.store_id AND x.id=NEW.connection_id;
+ -- P2-8: a credential whose account the guard cannot see is refused, never waved through as non-derived
+ IF NOT FOUND THEN
+  -- the migration owner and disposable fixtures are superusers (the guard_ads_job precedent); every application login is judged
+  IF NEW.sealed_version IS NULL AND EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname=session_user AND r.rolsuper) THEN RETURN NEW; END IF;
+  RAISE EXCEPTION 'derived Stripe credential guard cannot resolve the account' USING ERRCODE='42501'; END IF;
  IF a.platform_connection_id IS NULL THEN
   IF NEW.sealed_version IS NOT NULL THEN
    RAISE EXCEPTION 'sealed_version belongs to derived Stripe credentials only' USING ERRCODE='42501'; END IF;
@@ -306,7 +325,7 @@ DECLARE sp payments.stripe_platform%ROWTYPE; pa integration.merchant_accounts%RO
  v_currency text; v_min bigint; v_max bigint; v_ver bigint; v_found boolean; v_count integer:=0;
  v_hans text; v_hant text; v_en text; v_sort integer;
 BEGIN
- IF p_mode NOT IN ('enable','follow','disable') OR p_tenant IS NULL OR p_store IS NULL OR p_principal IS NULL
+ IF p_mode NOT IN ('enable','follow','disable','creds') OR p_tenant IS NULL OR p_store IS NULL OR p_principal IS NULL
   OR p_environment NOT IN ('SANDBOX','LIVE') THEN
   RAISE EXCEPTION 'invalid platform Stripe refresh' USING ERRCODE='22023'; END IF;
  SELECT x.* INTO sp FROM payments.stripe_platform x WHERE x.environment=p_environment;
@@ -348,6 +367,7 @@ BEGIN
    da.credential_version:=v_next;
   END IF;
  END IF;
+ IF p_mode='creds' THEN RETURN da.id; END IF; -- P2-5: credential sync only (blocked stores keep refund custody current)
  SELECT x.* INTO b FROM integration.bindings x WHERE x.tenant_id=p_tenant AND x.store_id=p_store AND x.id=da.binding_id;
  IF NOT FOUND THEN RAISE EXCEPTION 'Stripe binding unavailable' USING ERRCODE='PT409'; END IF;
  -- mirror the platform qualification (same proof class, same expiry, evidence = the platform qualification id)
@@ -442,18 +462,23 @@ END $$;
 -- Bounded to 2000 enrollments; a blocked store is skipped (its derived rows were already revoked).
 CREATE FUNCTION payments.platform_stripe_fanout(p_environment text,p_reason text) RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE e record; v_n integer; v_done integer:=0; v_pq uuid; v_t text; v_s text; v_p text;
+DECLARE e record; v_n integer; v_done integer:=0; v_pq uuid; v_t text; v_s text; v_p text; v_mirror boolean; v_proof text;
 BEGIN
  IF p_environment NOT IN ('SANDBOX','LIVE') OR p_reason NOT IN ('rotate','qualify','revoke') THEN
   RAISE EXCEPTION 'invalid platform Stripe fan-out' USING ERRCODE='22023'; END IF;
  SELECT count(*) INTO v_n FROM payments.platform_stripe_enrollments x
-  WHERE x.environment=p_environment AND x.blocked_at IS NULL;
+  WHERE x.environment=p_environment AND (x.blocked_at IS NULL OR p_reason='rotate');
  IF v_n>2000 THEN RAISE EXCEPTION 'platform_fanout_too_large' USING ERRCODE='PT409'; END IF;
  v_t:=coalesce(current_setting('app.tenant_id',true),''); v_s:=coalesce(current_setting('app.store_id',true),'');
  v_p:=coalesce(current_setting('app.principal_id',true),'');
- v_pq:=CASE WHEN p_reason='qualify' THEN payments.platform_stripe_valid_qualification(p_environment) END;
- FOR e IN SELECT x.tenant_id,x.store_id,x.environment,x.connection_id,x.enrolled_by
-  FROM payments.platform_stripe_enrollments x WHERE x.environment=p_environment AND x.blocked_at IS NULL
+ -- P1-2: on LIVE mirror a new platform qualification only while the platform is OPEN or CLOSED (approval active AND canary
+ -- verified). After a revoke and a fresh approval the platform is DESIGNATED until its new canary is verified: nothing is
+ -- re-armed before then; a merchant replay of the enable re-derives afterwards.
+ v_mirror:=p_reason='qualify' AND (p_environment='SANDBOX' OR payments.platform_stripe_state(p_environment) IN ('OPEN','CLOSED'));
+ -- P2-5: a rotation also copies the new head to BLOCKED stores (their refunds keep needing the current key, §4.3); only
+ -- the qualification and the card heads are skipped for them.
+ FOR e IN SELECT x.tenant_id,x.store_id,x.environment,x.connection_id,x.enrolled_by,x.blocked_at
+  FROM payments.platform_stripe_enrollments x WHERE x.environment=p_environment AND (x.blocked_at IS NULL OR p_reason='rotate')
   ORDER BY x.tenant_id,x.store_id LOOP
   PERFORM set_config('app.tenant_id',e.tenant_id::text,true),set_config('app.store_id',e.store_id::text,true),
    set_config('app.principal_id',e.enrolled_by::text,true);
@@ -464,7 +489,20 @@ BEGIN
    UPDATE payments.account_qualifications SET revoked_at=clock_timestamp() WHERE tenant_id=e.tenant_id
     AND store_id=e.store_id AND connection_id=e.connection_id AND platform_qualification_id IS NOT NULL
     AND revoked_at IS NULL;
+  ELSIF e.blocked_at IS NOT NULL THEN
+   PERFORM payments.platform_stripe_refresh_store(e.tenant_id,e.store_id,e.environment,e.enrolled_by,NULL,'creds');
   ELSE
+   -- P2-6: mirror only the proof class of this store's current head (a MOCK/SANDBOX store never flips to another class)
+   v_pq:=NULL;
+   IF v_mirror THEN
+    SELECT dq.proof_class INTO v_proof FROM payments.method_heads h JOIN payments.method_versions m
+     ON m.tenant_id=h.tenant_id AND m.store_id=h.store_id AND m.market_id=h.market_id AND m.country=h.country
+     AND m.code=h.code AND m.version=h.current_version JOIN payments.account_qualifications dq
+     ON dq.tenant_id=m.tenant_id AND dq.store_id=m.store_id AND dq.id=m.qualification_id
+     WHERE h.tenant_id=e.tenant_id AND h.store_id=e.store_id AND h.code='stripe_checkout' AND m.enabled
+     ORDER BY h.market_id,h.country LIMIT 1;
+    IF FOUND THEN v_pq:=payments.platform_stripe_valid_qualification(p_environment,v_proof); END IF;
+   END IF;
    PERFORM payments.platform_stripe_refresh_store(e.tenant_id,e.store_id,e.environment,e.enrolled_by,v_pq,'follow');
   END IF;
   v_done:=v_done+1;
@@ -543,6 +581,25 @@ BEGIN
  v_env:=CASE WHEN p_profile='LIVE' THEN 'LIVE' ELSE 'SANDBOX' END;
  PERFORM pg_advisory_xact_lock(hashtextextended('platform.stripe.enroll|'||s.tenant_id||'|'||p_store||'|'||v_env,0));
  SELECT x.* INTO sp FROM payments.stripe_platform x WHERE x.environment=v_env; v_has_sp:=FOUND;
+ v_proof:=CASE p_profile WHEN 'PROVIDER_MOCK' THEN 'PROVIDER_MOCK' WHEN 'SANDBOX' THEN 'REAL_SANDBOX' ELSE 'REAL_LIVE' END;
+ IF p_enabled AND v_has_sp THEN
+  -- P1-1 lock order (the frozen one: account -> approval -> qualification, then this store's rows): an enable and a platform
+  -- live-revoke are serialised. revoke_stripe_live takes the approval FOR UPDATE, so it either waits for this transaction (and
+  -- its fan-out then sees the committed enrollment) or commits first (and the re-read below finds the approval revoked).
+  -- The allowlist is locked first so allow_platform_stripe(false) (allowlist, then enrollment) never crosses this order.
+  PERFORM 1 FROM payments.platform_stripe_allowlist a WHERE a.tenant_id=s.tenant_id AND a.store_id=p_store
+   AND a.environment=v_env AND a.allowed FOR SHARE;
+  PERFORM 1 FROM integration.merchant_accounts x WHERE x.id=sp.connection_id FOR SHARE;
+  IF v_env='LIVE' THEN
+   SELECT x.* INTO ap FROM payments.stripe_live_approvals x WHERE x.connection_id=sp.connection_id AND x.revoked_at IS NULL FOR SHARE;
+   IF NOT FOUND THEN RAISE EXCEPTION 'platform_stripe_unavailable' USING ERRCODE='PT409'; END IF;
+  END IF;
+  v_pq:=payments.platform_stripe_valid_qualification(v_env,v_proof);
+  IF v_pq IS NOT NULL THEN
+   PERFORM 1 FROM payments.account_qualifications q WHERE q.id=v_pq AND q.revoked_at IS NULL FOR SHARE;
+   IF NOT FOUND THEN v_pq:=NULL; END IF;
+  END IF;
+ END IF;
  SELECT x.* INTO e FROM payments.platform_stripe_enrollments x WHERE x.tenant_id=s.tenant_id AND x.store_id=p_store
   AND x.environment=v_env FOR UPDATE; v_has_e:=FOUND;
  IF NOT p_enabled THEN
@@ -564,9 +621,9 @@ BEGIN
  ELSE
   IF v_has_e AND e.blocked_at IS NOT NULL THEN RAISE EXCEPTION 'platform_stripe_blocked' USING ERRCODE='PT403'; END IF;
   -- AD-PF2: only operator-allowlisted stores (the platform owner's own) may enable; checked before platform state
-  IF NOT EXISTS(SELECT 1 FROM payments.platform_stripe_allowlist a WHERE a.tenant_id=s.tenant_id AND a.store_id=p_store
-   AND a.environment=v_env AND a.allowed) THEN
-   RAISE EXCEPTION 'platform_stripe_not_allowed' USING ERRCODE='PT403'; END IF;
+  PERFORM 1 FROM payments.platform_stripe_allowlist a WHERE a.tenant_id=s.tenant_id AND a.store_id=p_store
+   AND a.environment=v_env AND a.allowed FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'platform_stripe_not_allowed' USING ERRCODE='PT403'; END IF;
   IF NOT v_has_sp THEN RAISE EXCEPTION 'platform_stripe_unavailable' USING ERRCODE='PT409'; END IF;
   v_state:=payments.platform_stripe_state(v_env);
   IF v_state='CLOSED' THEN RAISE EXCEPTION 'platform_stripe_closed' USING ERRCODE='PT409'; END IF;
@@ -602,8 +659,7 @@ BEGIN
   END IF;
   IF NOT v_replay AND ((v_has_e AND e.version<>p_expected_version) OR (NOT v_has_e AND p_expected_version<>0)) THEN
    RAISE EXCEPTION 'version_changed' USING ERRCODE='PT409'; END IF;
-  v_proof:=CASE p_profile WHEN 'PROVIDER_MOCK' THEN 'PROVIDER_MOCK' WHEN 'SANDBOX' THEN 'REAL_SANDBOX' ELSE 'REAL_LIVE' END;
-  v_pq:=payments.platform_stripe_valid_qualification(v_env,v_proof);
+  -- v_pq was resolved and locked FOR SHARE above (P1-1); none valid any more means the platform moved: refuse
   IF v_pq IS NULL THEN RAISE EXCEPTION 'platform_stripe_unavailable' USING ERRCODE='PT409'; END IF;
   -- one transaction: binding, derived account, credential copy, derived qualification, method heads (no-op when current)
   PERFORM payments.platform_stripe_refresh_store(s.tenant_id,p_store,v_env,s.principal_id,v_pq,'enable');
@@ -828,6 +884,12 @@ BEGIN
  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details)
  VALUES(p_tenant,p_store,p_principal,CASE WHEN p_allowed THEN 'stripe.platform.allow' ELSE 'stripe.platform.disallow' END,
   jsonb_build_object('target_tenant',p_target_tenant,'target_store',p_target_store,'environment',p_environment));
+ -- P2-4 ruling: withdrawing the allowlist from a store that already sells ALSO runs the block path, so new sales stop at once
+ -- (derived qualification revoked, card method disabled); refunds keep working (§4.3). Re-allowing does not unblock.
+ IF NOT p_allowed AND EXISTS(SELECT 1 FROM payments.platform_stripe_enrollments x WHERE x.tenant_id=p_target_tenant
+  AND x.store_id=p_target_store AND x.environment=p_environment AND x.blocked_at IS NULL) THEN
+  PERFORM payments.block_platform_stripe(p_tenant,p_store,p_principal,p_target_tenant,p_target_store,p_environment,true,p_operator,p_ref);
+ END IF;
  RETURN v_ver;
 END $$;
 ALTER FUNCTION payments.allow_platform_stripe(uuid,uuid,uuid,uuid,uuid,text,boolean,text,text) OWNER TO commerce_payment_registry_writer;
@@ -1189,13 +1251,13 @@ BEGIN
   AND x.store_id=p_store AND x.id=p_connection AND x.provider='stripe' AND x.environment IN ('SANDBOX','LIVE');
  IF NOT FOUND OR acct.credential_version<>p_expected_version THEN
   RAISE EXCEPTION 'Stripe credential version changed' USING ERRCODE='PT409'; END IF;
+ -- delta (0137, P2-7): the registrar only probes/approves with a PRIMARY connection's key; a derived row is never read here
+ IF acct.platform_connection_id IS NOT NULL THEN RAISE EXCEPTION 'stripe_platform_derived' USING ERRCODE='PT409'; END IF;
  SELECT x.* INTO c FROM integration.account_credentials x WHERE x.tenant_id=p_tenant
   AND x.store_id=p_store AND x.connection_id=p_connection AND x.version=p_expected_version;
  IF NOT FOUND THEN RAISE EXCEPTION 'Stripe credential unavailable' USING ERRCODE='PT409'; END IF;
- -- delta (0137): the AAD scope the envelope was sealed under: the row's own scope, or the platform connection's for a derived row
- RETURN QUERY SELECT acct.account_id,c.key_id,c.nonce,c.ciphertext,coalesce(p.tenant_id,acct.tenant_id),
-  coalesce(p.store_id,acct.store_id),coalesce(p.connection_id,acct.id),coalesce(c.sealed_version,c.version)
-  FROM (SELECT 1) one LEFT JOIN payments.stripe_platform p ON p.connection_id=acct.platform_connection_id;
+ -- the AAD scope the envelope was sealed under: a primary row's own scope and version
+ RETURN QUERY SELECT acct.account_id,c.key_id,c.nonce,c.ciphertext,acct.tenant_id,acct.store_id,acct.id,c.version;
 END $$;
 ALTER FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) OWNER TO commerce_payment_registry_writer;
 REVOKE ALL ON FUNCTION payments.stripe_registrar_credential(uuid,uuid,uuid,uuid,bigint) FROM PUBLIC;

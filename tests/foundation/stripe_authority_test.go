@@ -565,3 +565,35 @@ func TestStripeAuthorityRegistrarPositive(t *testing.T) {
 		}
 	}
 }
+
+// TestStripeAuthorityPlatformPolicies pins the W4-S1 (stripe-platform-account-v1 §3.5) deviations the integrator accepted:
+// the registry writer reads (and only locks) the platform's own rows across tenants, and the checkout writer reads the platform
+// display columns and the store's own descriptor suffix, never an account id.
+func TestStripeAuthorityPlatformPolicies(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	for _, want := range []string{
+		"integration.merchant_accounts|platform_account_read|SELECT", "integration.account_credentials|platform_credential_read|SELECT",
+		"payments.account_qualifications|platform_qualification_read|SELECT", "payments.stripe_live_approvals|platform_approval_read|SELECT",
+		"integration.merchant_accounts|platform_account_lock|UPDATE", "payments.stripe_live_approvals|platform_approval_lock|UPDATE",
+		"payments.account_qualifications|platform_qualification_lock|UPDATE",
+		"payments.stripe_platform|platform_checkout_read|SELECT", "payments.platform_stripe_enrollments|enrollment_checkout_read|SELECT",
+	} {
+		var n int
+		if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_policies WHERE schemaname||'.'||tablename||'|'||policyname||'|'||cmd=$1`, want).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("policy %s: count=%d err=%v", want, n, err)
+		}
+	}
+	// the lock policies never allow a change: WITH CHECK(false)
+	var open int
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM pg_policies WHERE policyname LIKE 'platform\_%\_lock' AND with_check IS DISTINCT FROM 'false'`).Scan(&open); err != nil || open != 0 {
+		t.Fatalf("platform lock policies must be WITH CHECK(false): %d %v", open, err)
+	}
+	var ok bool
+	if err := f.owner.QueryRow(ctx, `SELECT has_column_privilege('commerce_checkout_writer','payments.stripe_platform','display_name','SELECT')
+	 AND has_column_privilege('commerce_checkout_writer','payments.platform_stripe_enrollments','descriptor_suffix','SELECT')
+	 AND NOT has_column_privilege('commerce_checkout_writer','payments.stripe_platform','account_id','SELECT')
+	 AND NOT has_column_privilege('commerce_checkout_writer','payments.stripe_platform','tenant_id','SELECT')`).Scan(&ok); err != nil || !ok {
+		t.Fatalf("checkout writer platform column privileges: %v %v", ok, err)
+	}
+}

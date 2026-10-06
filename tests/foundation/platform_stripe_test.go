@@ -20,6 +20,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/command"
@@ -282,6 +283,13 @@ func TestPlatformStripePF01Schema(t *testing.T) {
 			t.Fatalf("with a platform link the CHECK passes and the FK decides, got %s", c)
 		}
 	})
+	t.Run("runtime cannot set the derived pointer; the guard refuses an invisible account (P2-8)", func(t *testing.T) {
+		var ok bool
+		if err := owner.QueryRow(ctx, `SELECT has_column_privilege('commerce_runtime','integration.merchant_accounts','account_id','INSERT')
+		 AND NOT has_column_privilege('commerce_runtime','integration.merchant_accounts','platform_connection_id','INSERT')`).Scan(&ok); err != nil || !ok {
+			t.Fatalf("runtime INSERT column grant: %v %v", ok, err)
+		}
+	})
 	t.Run("FORCE RLS and ACL matrix", func(t *testing.T) {
 		for _, tbl := range []string{"payments.stripe_platform", "payments.platform_stripe_enrollments", "payments.platform_stripe_allowlist"} {
 			var force bool
@@ -445,7 +453,8 @@ func TestPlatformStripePF02Enable(t *testing.T) {
 	// AD-PF2: withdrawing the allowlist refuses enable again, never disable
 	pf.block(t, m, false)
 	pf.allow(t, m, false)
-	if _, err := pf.set(m, pfInput(true, 5, "SHOP A")); pfCode(err) != "platform_stripe_not_allowed" {
+	// P2-4 ruling: withdrawing the allowlist from an ENROLLED store also blocks it, so the blocked refusal answers first
+	if _, err := pf.set(m, pfInput(true, 5, "SHOP A")); pfCode(err) != "platform_stripe_blocked" {
 		t.Fatalf("enable after the allowlist was withdrawn: %v", err)
 	}
 	if _, err := pf.set(m, pfInput(false, 5, "")); err != nil {
@@ -497,8 +506,9 @@ func TestPlatformStripePF03Fanout(t *testing.T) {
 			t.Fatalf("store %s credential after rotate: version %d sealed %d", name, cred, sealed)
 		}
 	}
-	if cred, sealed := head(c); cred != 1 || sealed != 1 {
-		t.Fatalf("blocked store credential moved: %d %d", cred, sealed)
+	// P2-5: a blocked store also gets the new credential head (its refunds keep needing the current key, §4.3) but nothing else
+	if cred, sealed := head(c); cred != 2 || sealed != 2 {
+		t.Fatalf("blocked store credential must follow the rotation: %d %d", cred, sealed)
 	}
 	// until the platform re-qualifies, the new derived head has no qualification: starts are blocked (existing rule)
 	sa := pf.derived(t, a)
@@ -518,6 +528,14 @@ func TestPlatformStripePF03Fanout(t *testing.T) {
 	}
 	if n := pf.n(t, `SELECT count(*) FROM payments.account_qualifications WHERE tenant_id=$1 AND store_id=$2 AND credential_version=2`, c.f.tenantA, c.f.storeA1); n != 0 {
 		t.Fatalf("blocked store got a qualification: %d", n)
+	}
+	// P2-6: a REAL_SANDBOX platform qualification is NOT mirrored into stores whose head runs PROVIDER_MOCK
+	if _, err := pf.reg.Qualify(ctx, pf.plat.scope, stripeadmin.QualifyInput{ConnectionID: pf.plat.connection, AccountID: pf.plat.account,
+		SecretKey: next, Profile: "SANDBOX", Currency: "TWD", ReturnURL: sstReturnURL, ExpectedVersion: 2, AmountMinor: 2500}); err != nil {
+		t.Fatalf("platform SANDBOX qualify: %v", err)
+	}
+	if n := pf.n(t, `SELECT count(*) FROM payments.account_qualifications WHERE platform_qualification_id IS NOT NULL AND proof_class='REAL_SANDBOX'`); n != 0 {
+		t.Fatalf("a head running PROVIDER_MOCK was re-armed with another proof class: %d", n)
 	}
 	if _, err := sa.begin(pf.svc, t04Key("pf03-post"), pf.derived(t, a).input("zh-TW")); err != nil {
 		t.Fatalf("start after qualify: %v", err)
@@ -883,5 +901,213 @@ func TestPlatformStripePF08Routes(t *testing.T) {
 	pfSecretFree(t, "PUT body", body)
 	if status, body := put(false, 1, "null"); status != http.StatusOK || !strings.Contains(body, `"state":"DISABLED"`) {
 		t.Fatalf("PUT disable: %d %s", status, body)
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// P2-4: withdrawing the allowlist from a selling store also blocks it (stops new sales, refunds keep working)
+// ---------------------------------------------------------------------------------------------------------------------
+
+func TestPlatformStripePF11DisallowBlocks(t *testing.T) {
+	pf := pfNew(t)
+	pf.designate(t)
+	pf.setOpen(t, true)
+	a := pf.merchant(t, true)
+	pf.mustSet(t, a, pfInput(true, 0, ""))
+	oa := pf.pay(t, pf.derived(t, a), pf.endpoint, pf.secret)
+	pf.grant(t, oa, "orders:read", "payments:refund")
+	pf.allow(t, a, false)
+	if s := pf.read(t, a); s.StoreState != "BLOCKED" || s.Allowed {
+		t.Fatalf("disallow on a selling store: %+v", s)
+	}
+	more := pf.derivedMore(t, a)
+	if _, err := more.begin(pf.svc, t04Key("pf11-new-start"), more.input("zh-TW")); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("new start after disallow: %v", err)
+	}
+	pf.awaitRefundFact(t, pf.mustRefund(t, oa, 800, "requested_by_customer"), oa.attempt, "SUCCEEDED") // refunds keep working
+	pf.allow(t, a, true)
+	if _, err := pf.set(a, pfInput(true, pf.read(t, a).Version, "")); pfCode(err) != "platform_stripe_blocked" {
+		t.Fatalf("re-allow must not unblock: %v", err)
+	}
+	pf.block(t, a, false)
+	pf.mustSet(t, a, pfInput(true, pf.read(t, a).Version, ""))
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// LIVE branch at SQL level (no Stripe call is needed: approvals, qualifications and the canary are rows). The owner pool
+// plays the operator and the merchant; the definers under test are the production ones.
+// ---------------------------------------------------------------------------------------------------------------------
+
+type pfLive struct {
+	f              *testFixture
+	plat           psHarness
+	conn, approval string
+	version        int64
+	t              *testing.T
+}
+
+var pfLiveChecklist = []string{"account_active", "canary_private", "descriptor", "dispute_notice", "managed_off", "merchant_terms", "payout_bank",
+	"payout_ops", "platform_stripe_terms", "policy_pages", "radar_default", "rak_live", "tax_invoice", "three_ds", "webhook_live"}
+
+const pfLiveReadiness = `{"AVSRule":true,"CVCRule":true,"ChargesEnabled":true,"CurrentlyDueCount":0,"DescriptorLength":12,"DetailsSubmitted":true,"PayoutsEnabled":true,"PrefixLength":8}`
+
+func pfLiveNew(t *testing.T) *pfLive {
+	t.Helper()
+	f := pwIsolatedFixture(t)
+	plat := psSetupItemsOn(t, f, 1)
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'payments:refund') ON CONFLICT DO NOTHING`, plat.f.tenantA, plat.f.storeA1, plat.f.principalA)
+	l := &pfLive{f: f, plat: plat, conn: randomUUID(), t: t}
+	// owner-pool fixtures: the LIVE platform account row; the key bytes are opaque (no worker runs here)
+	mustExec(t, f.owner, `SELECT integration.register_stripe_account($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'LIVE','acct_LivePlat0001','k1',$6::bytea,$7::bytea)`,
+		plat.f.tenantA, plat.f.storeA1, plat.f.principalA, l.conn, randomUUID(), randomBytes(12), randomBytes(48))
+	l.approve(randomUUID(), 2000000)
+	l.qualify()
+	l.canary()
+	mustExec(t, f.owner, `SELECT payments.designate_stripe_platform($1::uuid,$2::uuid,$3::uuid,$4::uuid,'Platform Live','LCLIVEPLAT','pf-2026-10',0)`,
+		plat.f.tenantA, plat.f.storeA1, plat.f.principalA, l.conn)
+	mustExec(t, f.owner, `SELECT payments.set_stripe_platform_open($1::uuid,$2::uuid,$3::uuid,'LIVE',true,NULL,1)`, plat.f.tenantA, plat.f.storeA1, plat.f.principalA)
+	return l
+}
+
+func (l *pfLive) approve(id string, max int64) {
+	l.t.Helper()
+	mustExec(l.t, l.f.owner, `SELECT payments.approve_stripe_live($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'TWD','approval-ref-'||$4::text,clock_timestamp()-interval '1 minute',5000,$6::bigint,$7::text[],$8::jsonb)`,
+		l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, id, l.conn, max, pfLiveChecklist, pfLiveReadiness)
+	l.approval = id
+}
+
+func (l *pfLive) qualify() {
+	l.t.Helper()
+	mustExec(l.t, l.f.owner, `SELECT payments.qualify_stripe_method($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,1,'LIVE','stripe-probe:cs_live_'||replace($4::text,'-',''),clock_timestamp()-interval '1 second',clock_timestamp()+interval '1 hour')`,
+		l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, randomUUID(), l.conn)
+}
+
+// canary marks the active approval canary-verified directly (OWNER-POOL fixture; the real path needs a LIVE capture and refund).
+func (l *pfLive) canary() {
+	l.t.Helper()
+	mustExec(l.t, l.f.owner, `UPDATE payments.stripe_live_approvals SET canary_attempt_id=gen_random_uuid(),canary_refund_id=gen_random_uuid(),canary_verified_at=clock_timestamp() WHERE id=$1`, l.approval)
+}
+
+func (l *pfLive) revokeSQL() string {
+	return fmt.Sprintf(`SELECT payments.revoke_stripe_live('%s','%s','%s','%s','revoke-ref-%s')`, l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, l.approval, t04Tag())
+}
+
+func (l *pfLive) merchant(allow bool) psHarness {
+	l.t.Helper()
+	m := psSetupItemsOn(l.t, l.f, 1)
+	mustExec(l.t, l.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'billing:manage') ON CONFLICT DO NOTHING`, m.f.tenantA, m.f.storeA1, m.f.principalA)
+	if allow {
+		mustExec(l.t, l.f.owner, `SELECT payments.allow_platform_stripe($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,'LIVE',true,'op@test','tk-live0001')`,
+			l.plat.f.tenantA, l.plat.f.storeA1, l.plat.f.principalA, m.f.tenantA, m.f.storeA1)
+	}
+	return m
+}
+
+const pfLiveEnable = `SELECT payments.set_platform_stripe(sha256(convert_to($1,'UTF8')),$2::uuid,'LIVE',true,'pf-2026-10',NULL::text,$3::bigint)`
+
+func (l *pfLive) liveDerived(m psHarness) int {
+	return countRows(l.t, l.f.owner, `SELECT count(*) FROM payments.account_qualifications WHERE tenant_id=$1 AND store_id=$2 AND platform_qualification_id IS NOT NULL AND revoked_at IS NULL`, m.f.tenantA, m.f.storeA1)
+}
+
+func pfBlocked(t *testing.T, done <-chan error, what string) {
+	t.Helper()
+	select {
+	case err := <-done:
+		t.Fatalf("%s finished while the other transaction still held its locks (err=%v)", what, err)
+	case <-time.After(1500 * time.Millisecond):
+	}
+}
+
+// PF09 (P1-1): an enable and the platform live-revoke are serialised in both orders; a derived REAL_LIVE qualification can
+// never survive the revoke.
+func TestPlatformStripePF09LiveRevokeRace(t *testing.T) {
+	ctx := context.Background()
+	t.Run("enable first: revoke waits and then revokes the new derived qualification", func(t *testing.T) {
+		l := pfLiveNew(t)
+		m := l.merchant(true)
+		tx, err := l.f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		var out []byte
+		if err = tx.QueryRow(ctx, pfLiveEnable, m.f.tokens["a"], m.f.storeA1, int64(0)).Scan(&out); err != nil {
+			t.Fatalf("LIVE enable: %v", err)
+		}
+		done := make(chan error, 1)
+		go func() { _, e := l.f.owner.Exec(ctx, l.revokeSQL()); done <- e }()
+		pfBlocked(t, done, "live-revoke")
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err = <-done; err != nil {
+			t.Fatalf("revoke: %v", err)
+		}
+		if n := l.liveDerived(m); n != 0 {
+			t.Fatalf("a derived REAL_LIVE qualification survived the platform revoke: %d", n)
+		}
+	})
+	t.Run("revoke first: the enable waits, then finds the approval revoked", func(t *testing.T) {
+		l := pfLiveNew(t)
+		m := l.merchant(true)
+		tx, err := l.f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer tx.Rollback(ctx)
+		if _, err = tx.Exec(ctx, l.revokeSQL()); err != nil {
+			t.Fatal(err)
+		}
+		done := make(chan error, 1)
+		go func() {
+			var o []byte
+			done <- l.f.owner.QueryRow(ctx, pfLiveEnable, m.f.tokens["a"], m.f.storeA1, int64(0)).Scan(&o)
+		}()
+		pfBlocked(t, done, "enable")
+		if err = tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if err = <-done; err == nil || !strings.Contains(err.Error(), "platform_stripe_unavailable") {
+			t.Fatalf("enable after the revoke committed: %v", err)
+		}
+		if n := countRows(t, l.f.owner, `SELECT count(*) FROM payments.platform_stripe_enrollments WHERE tenant_id=$1`, m.f.tenantA); n != 0 || l.liveDerived(m) != 0 {
+			t.Fatalf("a refused enable left rows: enrollments=%d", n)
+		}
+	})
+}
+
+// PF07 LIVE branch (P1-2): after a revoke and a fresh approval the platform is DESIGNATED until its new canary is verified;
+// the new qualification is mirrored into NO store before then, and a merchant replay re-derives it afterwards.
+func TestPlatformStripePF07LivePostRevoke(t *testing.T) {
+	ctx := context.Background()
+	l := pfLiveNew(t)
+	m := l.merchant(true)
+	var out []byte
+	if err := l.f.owner.QueryRow(ctx, pfLiveEnable, m.f.tokens["a"], m.f.storeA1, int64(0)).Scan(&out); err != nil {
+		t.Fatalf("LIVE enable: %v", err)
+	}
+	if l.liveDerived(m) != 1 {
+		t.Fatal("enable must derive one REAL_LIVE qualification")
+	}
+	mustExec(t, l.f.owner, l.revokeSQL())
+	if l.liveDerived(m) != 0 {
+		t.Fatal("platform revoke left a derived qualification")
+	}
+	l.approve(randomUUID(), 1000000) // a NEW approval with a smaller cap, canary NOT yet verified
+	l.qualify()                      // fan-out('qualify') runs with the platform DESIGNATED
+	if n := l.liveDerived(m); n != 0 {
+		t.Fatalf("a store was re-armed before the new canary was verified: %d derived qualifications", n)
+	}
+	l.canary() // platform OPEN again (enrollment_open is still true)
+	if err := l.f.owner.QueryRow(ctx, pfLiveEnable, m.f.tokens["a"], m.f.storeA1, int64(0)).Scan(&out); err != nil {
+		t.Fatalf("replay after the canary: %v", err)
+	}
+	var max int64
+	var live bool
+	if err := l.f.owner.QueryRow(ctx, `SELECT v.max_amount_minor,q.revoked_at IS NULL FROM payments.method_heads h JOIN payments.method_versions v
+	 ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.market_id=h.market_id AND v.country=h.country AND v.code=h.code AND v.version=h.current_version
+	 JOIN payments.account_qualifications q ON q.tenant_id=v.tenant_id AND q.store_id=v.store_id AND q.id=v.qualification_id
+	 WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.code='stripe_checkout' AND v.enabled`, m.f.tenantA, m.f.storeA1).Scan(&max, &live); err != nil || !live || max != 1000000 {
+		t.Fatalf("replay must re-derive under the NEW approval cap: max=%d live=%v err=%v", max, live, err)
 	}
 }

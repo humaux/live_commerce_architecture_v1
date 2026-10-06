@@ -201,6 +201,33 @@ each.
 - Workers, ingress, `commerce_checkout_writer` and `commerce_integration_writer`: no privilege on
   `stripe_platform` or `platform_stripe_enrollments`. Runtime admission reads only the derived rows. The ingress prepare
   definer (integration_writer) reads `merchant_accounts.platform_connection_id`, for which it already holds SELECT.
+- **Accepted deviations from "no privilege" (integrator ruling, review of W4-S1):**
+  - `commerce_checkout_writer` may SELECT `stripe_platform(environment, connection_id, display_name, descriptor_display)` and
+    `platform_stripe_enrollments(tenant_id, store_id, environment, connection_id, descriptor_suffix)` (scope-bound policy). The start
+    definer needs the suffix and the hosted view needs the disclosure. Never an account id. Pinned in the SL02 upgrade delta and
+    `TestStripeAuthorityPlatformPolicies`.
+  - `commerce_payment_registry_writer` reads (`platform_*_read`) and only locks (`platform_*_lock`, WITH CHECK false) the platform's own
+    merchant_accounts / account_credentials / account_qualifications / stripe_live_approvals rows across tenants. Locks are needed
+    because `SELECT ... FOR SHARE` also applies the UPDATE policy. It also reads `pricing.policy_versions(country)` and executes
+    `identity.resolve_access`. Pinned in `TestStripeAuthorityPlatformPolicies`.
+  - `commerce_runtime` INSERT on `merchant_accounts` is a column-list grant that excludes `platform_connection_id`.
+- **Lock order (P1-1).** Enable takes: allowlist FOR SHARE -> platform account FOR SHARE -> active approval FOR SHARE (LIVE) -> platform
+  qualification FOR SHARE -> the store's own rows. `revoke_stripe_live` locks the approval FOR UPDATE, so an enable and a revoke
+  serialise in either order. A derived REAL_LIVE qualification cannot survive the platform revoke.
+- **LIVE re-arm (P1-2).** The `qualify` fan-out on LIVE mirrors nothing unless the platform is OPEN or CLOSED (approval active and
+  canary verified). After revoke -> new approval -> qualify the platform stays DESIGNATED, so no store is re-armed with the old cap
+  before the new canary; a merchant replay of the enable re-derives afterwards under the new approval. Fan-out `qualify` mirrors the
+  proof class of each store's current head only.
+- **Rotation and blocked stores.** A rotation copies the new credential head to blocked stores too (their refunds need the current key,
+  §4.3); only qualification and card heads skip them. `stripe_registrar_credential` refuses a derived connection.
+- **`platform-disallow` on an enrolled store** also runs the block path (new sales stop, refunds keep working); re-allow does not
+  unblock (use `platform-unblock`).
+- **Dispatch-time kill switch (frozen behaviour, ruling 9).** A kill switch (block, disable, revoke, close) stops NEW starts. A Checkout
+  Session already created is not force-expired and the worker keeps reconciling it (I16). Only an attempt not yet created at dispatch
+  re-reads the head at start.
+- **Deploy order (ruling 10).** Run `cmd/migrate` first, then roll ALL stripe-ingress pods together. `payments.stripe_webhook_prepare`
+  changed from 18 to 19 arguments, so an old pod that restarts after the migration fails the exact-signature authority check until it is
+  replaced by the new build.
 - Pins to update: `tests/foundation/stripe_authority_test.go`, `stripe_live_schema_test.go` (SL02 column-privilege
   matrix), `worker_authority_split_test.go` (WAS02: five worker logins have no EXECUTE on the new functions) and
   `merchant_orders_v2_acl_test.go` (runtime EXECUTE list).
