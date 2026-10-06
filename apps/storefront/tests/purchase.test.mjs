@@ -414,3 +414,18 @@ test("CVSP05 journal accepts a CVS destination marker and a checkout body with p
   assert.throws(() => parsePending(JSON.stringify({ ...checkout, body: { ...checkout.body, payment_mode: "cash" } }), ctx));
   assert.throws(() => parsePending(JSON.stringify({ ...checkout, body: { ...checkout.body, recipient_name: "x" } }), ctx));
 });
+
+// Drift audit (output/storefront-image-cap/DRIFT.md D1): the cart page reads `catalog?limit=100` (lib/cart-details.ts) and validates every
+// product with validProduct. The Go row carries every photo of the product (internal/buyerhttp/projections.go, up to MaxImagesPerProduct = 12),
+// so a cap of 8 here turned a 9-photo product in the cart into "cart details unavailable" (same pilot bug as the product page).
+test("validProduct accepts up to the Go photo cap and rejects one more", async () => {
+  const { validProduct } = await import("../lib/purchase.ts");
+  const { MAX_PRODUCT_IMAGES } = await import("../lib/shop-contract.ts");
+  const uuid = (n) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const row = (count) => ({
+    product_id: uuid(1), sku_id: uuid(2), name: "n", description: "d", sku_code: "C1", currency: "TWD", price_minor: 100,
+    images: Array.from({ length: count }, (_, i) => ({ id: uuid(100 + i), width: 64, height: 48 })),
+  });
+  for (const count of [0, 8, 9, MAX_PRODUCT_IMAGES]) assert.equal(validProduct(row(count)), true, `${count} photos`);
+  assert.equal(validProduct(row(MAX_PRODUCT_IMAGES + 1)), false);
+});

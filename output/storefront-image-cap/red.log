@@ -1,0 +1,44 @@
+✔ delivery identity includes country for one market and method (0.06275ms)
+✔ journal is bound to context and rejects PII/unknown fields (0.209ms)
+✔ lost response replays exact key/body, then clears only after parsed receipt (20.663584ms)
+✔ RUI02 buyer order admits MERCHANT_SHIPPED only with a SHIPPED head; absent shipment ≡ null (0.486583ms)
+✔ RUI02 shipment shape negatives (incl. unsafe links) (0.287834ms)
+✔ RUI02 history summary admits MERCHANT_SHIPPED (a shipped order must not break the list) (0.092792ms)
+✔ CVSP01 options: CVS rows carry pickup_selection/payment_modes; unavailable rows are a separate shape (0.396334ms)
+✔ CVSP02 CVS destination write: TW only, pickup_id required, empty home address; home unchanged (2.46925ms)
+✔ CVSP03 checkoutInput: payment_mode only for CVS rows and only a mode the row offers (0.450375ms)
+✔ COD confirmation includes expected fee, enforces collect cap and validates immutable order money (0.263042ms)
+✔ CVSP04 buyer order: pay_at_pickup <=> collection_state; cvs_shipment only on a matching CVS destination (0.213375ms)
+✔ CVSP05 journal accepts a CVS destination marker and a checkout body with payment_mode, nothing else (0.174875ms)
+✖ validProduct accepts up to the Go photo cap and rejects one more (3.038584ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 142.408708
+
+✖ failing tests:
+
+test at apps/storefront/tests/purchase.test.mjs:421:1
+✖ validProduct accepts up to the Go photo cap and rejects one more (3.038584ms)
+  AssertionError [ERR_ASSERTION]: 9 photos
+  
+  false !== true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/storefront-image-cap/apps/storefront/tests/purchase.test.mjs:429:61)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+ℹ pass 15
+ℹ fail 1
+    actual: 70,
+    expected: 100,

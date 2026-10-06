@@ -1,5 +1,5 @@
 // Purpose: buyer purchase transport, strict wire validation and crash-safe recovery.
-// Depends on: buyer-client BFF, purchase types, claim/CVS/promotion contracts and Web Locks.
+// Depends on: buyer-client BFF, purchase types, claim/CVS/promotion contracts, shop-contract (photo cap) and Web Locks.
 // Used by: storefront cart, ClaimLink, CheckoutFlow and order/payment components.
 import {
   buyerRequest,
@@ -17,6 +17,7 @@ import {
 import { validBuyerEmail } from "./bank-transfer-contract.ts";
 import { validPromotion } from "./promo-contract.ts";
 import { validClaimRedeemed, type ClaimRedeemed } from "./claim-contract.ts";
+import { MAX_PRODUCT_IMAGES } from "./shop-contract.ts";
 
 // Buyer purchase transport + strict validators for the BFF /api/buyer/* routes (cart, catalog,
 // checkout-options, quotes, destination, checkout, orders). Owns: request journals/CAS and the exact wire shapes.
@@ -118,7 +119,7 @@ export const validCart = (v: unknown): v is Cart =>
   validItems(v.items);
 export const validProductImages = (v: unknown): v is ProductImageMeta[] =>
   Array.isArray(v) &&
-  v.length <= 8 &&
+  v.length <= MAX_PRODUCT_IMAGES && // Go MaxImagesPerProduct (12); the old literal 8 broke the cart page for a 9-photo product
   v.every(
     (x) =>
       record(x) &&

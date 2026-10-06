@@ -209,3 +209,19 @@ test("storefront image cap equals the Go catalog cap (internal/catalog MaxImages
   assert.ok(m, "MaxImagesPerProduct not found in internal/catalog/images.go");
   assert.equal(MAX_PRODUCT_IMAGES, Number(m[1]));
 });
+
+// Drift audit D2: Go counts design text limits in runes (internal/design/schema.go w.text/w.markdown); the storefront clipped by UTF-16 units, so a valid
+// announcement of 100 emoji (100 runes, 200 units) lost half its text (and a cut inside a surrogate pair leaves a lone surrogate).
+test("design text limits count code points like Go, never splitting a surrogate pair", () => {
+  const emoji = "😀";
+  const d = normalizeDesign({
+    profile: { name: "Shop", announcement: emoji.repeat(100), tagline: emoji.repeat(120) },
+    pages: [{ slug: "about", title: "About", body: emoji.repeat(10000) }],
+  });
+  assert.equal([...d.profile.announcement].length, 100);
+  assert.equal([...d.profile.tagline].length, 120);
+  assert.equal([...d.pages[0].body].length, 10000);
+  const over = normalizeDesign({ profile: { name: "Shop", announcement: emoji.repeat(141) } });
+  assert.equal([...over.profile.announcement].length, 140);
+  assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(over.profile.announcement), "no lone surrogate");
+});
