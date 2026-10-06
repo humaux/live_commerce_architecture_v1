@@ -1,0 +1,49 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.46s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.31s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.48s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 8, claim won 12 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.36s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.12s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.21s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.27s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+    operations_queue_test.go:651: meta.ads.pause query: 500 {"code":"internal","message":"Request could not be completed.","request_id":"61633842d8034739c2465b841516b712","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:651: meta.ads.pause retry: 409 {"code":"reconcile_first","message":"Check the provider's status first; an operation with an unknown result is never sent again.","request_id":"015dedbc79f9c099997dfd88789993b0","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:663: meta.ads.pause DTO query = true ""
+    operations_queue_test.go:663: meta.ads.pause DTO retry = false "reconcile_first"
+    operations_queue_test.go:651: meta.ads.activate query: 500 {"code":"internal","message":"Request could not be completed.","request_id":"bb7d438a71eb8aaeea59ea5e9488b8f8","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:651: meta.ads.activate retry: 409 {"code":"reconcile_first","message":"Check the provider's status first; an operation with an unknown result is never sent again.","request_id":"ad9c1a49e6d18945fd8a8ed35f4851cb","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:663: meta.ads.activate DTO query = true ""
+    operations_queue_test.go:663: meta.ads.activate DTO retry = false "reconcile_first"
+    operations_queue_test.go:651: meta.capi.purchase query: 500 {"code":"internal","message":"Request could not be completed.","request_id":"ec3fad3a3a5c152011e20fc2665133e9","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:651: meta.capi.purchase retry: 409 {"code":"reconcile_first","message":"Check the provider's status first; an operation with an unknown result is never sent again.","request_id":"47342833ae438a506ab970147f51cb9c","retryable":false,"details":{}}
+        , want 409 lane_unsupported
+    operations_queue_test.go:663: meta.capi.purchase DTO query = true ""
+    operations_queue_test.go:663: meta.capi.purchase DTO retry = false "reconcile_first"
+--- FAIL: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.16s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.38s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.08s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.852s
+FAIL
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1

@@ -1,0 +1,33 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+    operations_queue_flow_test.go:169: operation 455e95d2-3b67-4ea7-bb4f-40f35b377253 stayed UNKNOWN/reconcile_budget_exhausted, want FAILED_FINAL/mock_not_applied
+--- FAIL: TestOperationsQueueProofThenRetryNeverDoublesEffect (18.62s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+    operations_queue_flow_test.go:242: operation 6f63180e-4527-4422-a600-6d101f829402 stayed UNKNOWN/reconcile_budget_exhausted, want SUCCEEDED/mock_found
+--- FAIL: TestOperationsQueueAppliedEffectIsNeverRetried (17.45s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.26s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.35s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.20s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.28s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.14s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.37s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.12s)
+FAIL
+FAIL	livecommerce/tests/foundation	38.948s
+FAIL
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1

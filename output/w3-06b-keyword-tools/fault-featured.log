@@ -1,0 +1,12 @@
+tested tree: 32d2742a9a86c583ba70b466287d4300c3c45cee + one injected fault, restored afterwards
+fault: rename does not carry the featured state (internal/claims/keyword_tools.go)
+command: bash scripts/dev/test-focused.sh '^TestKeywordToolsBatch$'  (expected: FAIL)
+
+=== RUN   TestKeywordToolsBatch
+    keyword_tools_test.go:454: the console's recommended offer is a2b3523a-28bd-48b6-a1d1-8ca7953a16c8 after the rename, want the new offer 456dc1b3-bec8-4c34-8892-72c554545696 (not the retired a2b3523a-28bd-48b6-a1d1-8ca7953a16c8)
+--- FAIL: TestKeywordToolsBatch (1.49s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.246s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1
