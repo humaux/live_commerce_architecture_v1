@@ -18,6 +18,12 @@ on:
           test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
         default: '["foundation"]'
         required: true
+      extra_env:
+        description: >-
+          Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
+          e.g. LC_PM_UI_INJECT_FAULT=missing-detail). Empty for normal runs.
+        default: ''
+        required: false
 
 permissions:
   contents: read
@@ -32,7 +38,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
-      group: gates-${{ github.ref }}-${{ matrix.mode }}
+      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ inputs.extra_env }}
       # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
       cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
@@ -42,6 +48,7 @@ jobs:
       MODE: ${{ matrix.mode }}
       # Sweep fingerprints cover a shared store; concurrent UI copies alter another page's before/after state.
       LC_SWEEP_WORKERS: "1"
+      EXTRA_ENV: ${{ inputs.extra_env }}
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
@@ -67,6 +74,11 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p output/ci-gates
+          # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.
+          for kv in $EXTRA_ENV; do
+            [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
+            export "$kv"; echo "extra_env: ${kv%%=*} set"
+          done
           log="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
           case "$MODE" in
             foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
