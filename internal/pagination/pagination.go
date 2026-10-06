@@ -138,7 +138,7 @@ func validBinding(b Binding) bool {
 		return b.ParentID == "" && len(b.Filter) == 64
 	case "customers": // internal/customers.List: Filter is empty or the sha256 hex of the search text
 		return b.ParentID == "" && (b.Filter == "" || len(b.Filter) == 64)
-	case "customer-notes": // internal/customers.ListNotes (W6-01B): ParentID is the customer id
+	case "customer-notes", "customer-historical-orders": // internal/customers.ListNotes (W6-01B) / ListHistoricalOrders (W5-03B): ParentID is the customer id
 		return command.ValidID(b.ParentID) && b.Filter == ""
 	case "delivery-services":
 		return command.ValidID(b.ParentID) && len(b.Filter) == 2 &&
@@ -180,7 +180,7 @@ func validKeyCount(collection string, count int) bool {
 // timestamp then a UUID, and only byte-canonical cursors are accepted.
 func timeKeyed(collection string) bool {
 	return collection == "merchant-orders" || collection == "merchant-orders-v2" || collection == "live-sessions" || collection == "claim-bundles" || collection == "customers" ||
-		collection == "customer-notes" || collection == "collections" || collection == "catalog-products"
+		collection == "customer-notes" || collection == "customer-historical-orders" || collection == "collections" || collection == "catalog-products"
 }
 
 func invalid(what string) error { return fmt.Errorf("%w: invalid %s", command.ErrInvalid, what) }

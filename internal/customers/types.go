@@ -477,6 +477,8 @@ type ImportProfile struct {
 	ImportedAt  string   `json:"imported_at"`
 	UpdatedAt   string   `json:"updated_at"`
 	ExternalIDs []string `json:"external_ids"`
+	// HistoricalOrders is the customer's order-history archive (W5-03B, newest first); never nil, empty when none was imported.
+	HistoricalOrders []HistoricalOrder `json:"historical_orders"`
 }
 
 // buyerExportDoc is the same envelope without customer_id and principal ids (D8); orders are the buyer's own

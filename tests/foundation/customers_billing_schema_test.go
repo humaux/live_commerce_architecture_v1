@@ -172,6 +172,8 @@ var cbsFunctions = []cbsFn{
 	// W5-02B (0152): erasure hook of the customer import (EXECUTE nobody; the import definers live in schema migrationimport).
 	{"customers.erase_import_profile(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
 	{"customers.export_import_profile(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	// W5-03B (0156): the historical-order archive reader (customers:read, volatile: it calls the authority fence).
+	{"customers.read_historical_orders(bytea,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"identity.read_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	// 0147 (W6-02B): the report read definers and the audited export (volatile like finance: they call resolve_access / the audit fence).
@@ -219,6 +221,9 @@ var cbsPrivacyFrozen = []cbsPriv{
 	{"customers.import_profiles", "UPDATE", []string{"display_name", "phone_e164", "email", "updated_at"}},
 	{"migrationimport.batches", "SELECT", nil}, {"migrationimport.batches", "INSERT", nil}, {"migrationimport.batches", "UPDATE", []string{"results"}},
 	{"migrationimport.external_ids", "SELECT", nil}, {"migrationimport.external_ids", "INSERT", nil},
+	// W5-03B (0156): the read-only order archive, written by migrationimport.import_orders and deleted by erasure.
+	{"customers.historical_orders", "SELECT", nil}, {"customers.historical_orders", "INSERT", nil},
+	{"customers.historical_orders", "UPDATE", []string{"ordered_at", "status", "total_minor", "items_summary", "city", "updated_at"}},
 	// Erasure tombstones: insert-only (no UPDATE, no DELETE) salted digests and the per-store salt.
 	{"migrationimport.store_salts", "SELECT", nil}, {"migrationimport.store_salts", "INSERT", nil},
 	{"migrationimport.erased_external_ids", "SELECT", nil}, {"migrationimport.erased_external_ids", "INSERT", nil},
@@ -449,7 +454,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			// W6-01B: DELETE is allowed on exactly customers.tags / owner_tags / notes (tag delete, set replacement, erasure) and ops.command_results (erasure of receipts).
 			// W5-02B: plus customers.import_profiles and migrationimport.batches / external_ids (erasure, 90-day batch prune).
 			if e.bool(`SELECT EXISTS(SELECT 1 FROM information_schema.table_privileges WHERE grantee=$1 AND privilege_type IN ('DELETE','TRUNCATE','TRIGGER','REFERENCES')
-			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes','import_profiles')) OR (table_schema='migrationimport' AND table_name IN ('batches','external_ids')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
+			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes','import_profiles','historical_orders')) OR (table_schema='migrationimport' AND table_name IN ('batches','external_ids')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
 				t.Errorf("%s holds DELETE/TRUNCATE/TRIGGER/REFERENCES somewhere", r)
 			}
 		}
@@ -556,7 +561,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// audit inserts are limited to the contract's actions
 		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased",
-			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported"}, "commerce_billing_writer": {"billing.customer_pinned"}}
+			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported", "customers.orders_imported"}, "commerce_billing_writer": {"billing.customer_pinned"}}
 		for role, actions := range auditRe {
 			ps := covers("ops.audit_events", role, "INSERT")
 			if len(ps) == 0 {

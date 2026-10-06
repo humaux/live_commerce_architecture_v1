@@ -123,7 +123,7 @@ func parseCustomerCSV(data []byte, requested map[string]string) (parsedCustomers
 	for i, h := range header {
 		out.headers[i] = strings.TrimSpace(h)
 	}
-	cols, mapping, code := resolveMapping(out.headers, requested)
+	cols, mapping, code := resolveMapping(out.headers, requested, mappingFields, headerAliases, []string{fieldExternalID, fieldName})
 	if code != "" {
 		return out, code
 	}
@@ -161,23 +161,19 @@ func parseCustomerCSV(data []byte, requested map[string]string) (parsedCustomers
 
 // resolveMapping decides which column feeds which field: an explicit merchant entry wins (its header must exist, exactly once after
 // folding; "" unmaps the field), otherwise the first not-yet-claimed column whose folded header is a known alias. external_id and name
-// are required. It returns the column index per field and the mapping as header text (stored on the batch, shown in the preview).
-func resolveMapping(headers []string, requested map[string]string) (map[string]int, map[string]string, string) {
+// are required for customers (the caller names the required fields). It returns the column index per field and the mapping as header text (stored on the batch, shown in the preview).
+func resolveMapping(headers []string, requested map[string]string, fields []string, aliases map[string][]string, required []string) (map[string]int, map[string]string, string) {
 	byFold := map[string][]int{}
 	for i, h := range headers {
 		byFold[foldHeader(h)] = append(byFold[foldHeader(h)], i)
 	}
 	for field := range requested {
-		known := false
-		for _, f := range mappingFields {
-			known = known || f == field
-		}
-		if !known {
+		if !containsString(fields, field) {
 			return nil, nil, "invalid_request"
 		}
 	}
 	cols, mapping, claimed := map[string]int{}, map[string]string{}, map[int]bool{}
-	for _, field := range mappingFields {
+	for _, field := range fields {
 		if h, ok := requested[field]; ok {
 			if h == "" {
 				continue
@@ -190,15 +186,15 @@ func resolveMapping(headers []string, requested map[string]string) (map[string]i
 			continue
 		}
 		for i, h := range headers {
-			if claimed[i] || !containsString(headerAliases[field], foldHeader(h)) {
+			if claimed[i] || !containsString(aliases[field], foldHeader(h)) {
 				continue
 			}
 			cols[field], claimed[i], mapping[field] = i, true, h
 			break
 		}
 	}
-	for _, required := range []string{fieldExternalID, fieldName} {
-		if _, ok := cols[required]; !ok {
+	for _, need := range required {
+		if _, ok := cols[need]; !ok {
 			return nil, nil, "required"
 		}
 	}

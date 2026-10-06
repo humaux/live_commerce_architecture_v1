@@ -62,8 +62,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0151 (W3-04B sold-out reply) adds one more: 75 -> 76.
 	// 0152 (W5-02B customer import) adds one more: 76 -> 77.
 	// 0153 (OPS-02B support grants) adds one more: 77 -> 78.
-	if len(r2) != 78 {
-		t.Fatalf("R2 migration set = %d files %v, want 78", len(r2), r2)
+	// 0156 (W5-03B historical order import) adds one more: 78 -> 79.
+	if len(r2) != 79 {
+		t.Fatalf("R2 migration set = %d files %v, want 79", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
