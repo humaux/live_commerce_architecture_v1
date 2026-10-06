@@ -1,0 +1,20 @@
+base SHA: 056c7e210a7c75ea22975b335a43eae486f2b3ce (056c7e21); fix-round tests present, implementation unchanged
+=== RUN   TestLivePriceKeepOnPauseExistingClaims
+--- PASS: TestLivePriceKeepOnPauseExistingClaims (1.94s)
+=== RUN   TestLivePriceKeepOnPauseClearedPriceStillEndsIt
+--- PASS: TestLivePriceKeepOnPauseClearedPriceStillEndsIt (0.44s)
+=== RUN   TestLivePriceKeepOnPauseOneClaimPerSKU
+--- PASS: TestLivePriceKeepOnPauseOneClaimPerSKU (0.48s)
+=== RUN   TestLivePriceKeepOnPauseReplacementPausedAfterRedeem
+    live_price_keep_on_pause_test.go:346: the superseded typo line must stay pending and unavailable: [{Keyword:A1 SKUID:dee98cdb-44e6-48ca-8f0c-f4e75760d377 SKUCode:TCV-c17fa65ac3f0 ProductName:t04-7f2fcfb5ebe3 Currency:TWD UnitPriceMinor:20000 CatalogUnitPriceMinor:30000 PriceRule:live_claim Quantity:3 Pending:false Available:false SoldOut:false} {Keyword:A11 SKUID:dee98cdb-44e6-48ca-8f0c-f4e75760d377 SKUCode:TCV-c17fa65ac3f0 ProductName:t04-7f2fcfb5ebe3 Currency:TWD UnitPriceMinor:17000 CatalogUnitPriceMinor:30000 PriceRule:live_claim Quantity:2 Pending:true Available:true SoldOut:false}]
+--- FAIL: TestLivePriceKeepOnPauseReplacementPausedAfterRedeem (0.44s)
+=== RUN   TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice
+--- PASS: TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice (0.71s)
+=== RUN   TestLiveConsoleOrderForBuyerSupersededPausedLineIsNotUsed
+    live_price_keep_on_pause_test.go:447: order for 2 units above the active claim of 1: 201 map[buyer_link:https://tcv-d41d4f33ab0d.example/zh-TW/order-link#o=17d55ebc-60d9-4b40-a2eb-479f1aa065f9&t=9bKPANhoRB9dxseI1NDCHppKhnHgJNXgFQQSnW3qUBk commercial_state:AWAITING_TRANSFER currency:TWD expires_at:2026-10-09T18:51:49.561274Z link_state:configured live_price:applied live_price_reason: order_id:17d55ebc-60d9-4b40-a2eb-479f1aa065f9 payment_mode:bank_transfer send:map[reason:not_requested state:not_sent] source:merchant_manual total_minor:34000]
+--- FAIL: TestLiveConsoleOrderForBuyerSupersededPausedLineIsNotUsed (0.55s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.861s
+FAIL
+test-focused: top-level PASS=4 FAIL=2 SKIP=0 exit=1
+exit=1

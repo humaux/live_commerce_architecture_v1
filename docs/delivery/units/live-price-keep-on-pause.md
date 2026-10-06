@@ -23,7 +23,7 @@ Status: IN REVIEW (Claude Sonnet implementer; an Opus money review follows). Bra
   `offer_active` honestly: only Go stopped using it as a gate.
 - Go `internal/claims/buyer.go`: preview `Available` and redeem no longer depend on the offer being active. One SKU can be carried into the cart by
   one claim line only (cart origin is per SKU), so when a bundle holds several pending lines on one SKU (typo recovery: paused `A11` + active `A1`)
-  the active offer's line wins and the others stay pending, skipped as `offer_inactive` (unchanged KC04 behaviour; never an `ErrConflict`).
+  the ranking is: the active offer's line, else the line already applied into the cart, else the lowest offer id; the others stay pending, skipped as `offer_inactive` (unchanged KC04 behaviour; never an `ErrConflict`; fix round after the Opus review P1-1). `claims.for_buyer_lines` reports no live price for a superseded line (same ranking in SQL).
 - Gates updated to the new behaviour (each changed assertion cites this decision): LTG03 `TestLiveToolsGateOfferLifecycleAndExpiry`,
   `TestKeywordToolsBatchDeactivateIsAPause`, `TestLiveToolsLivePriceOnlyThroughClaim`-family pause step in `live_tools_test.go`,
   `TestRedeemPlanning` (unit). New `TestLivePriceKeepOnPause*` (a)-(g), plus a SQL-level same-SKU gate.

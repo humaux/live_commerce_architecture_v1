@@ -184,10 +184,29 @@ func TestLivePriceKeepOnPauseClearedPriceStillEndsIt(t *testing.T) {
 	bundle, link := e.claimLink(s1, "amy", "A1+2")
 	amy := e.redeemed(link)
 	v := e.setOfferActive(s1, o1, o1.Version, false)
-	q, l := e.line(amy, "")
+	q0, l := e.line(amy, "")
 	e.wantLive("paused offer keeps the price", l, ltgLive, bundle, o1.ID)
+
+	// "Keeps the live price" means the offer's CURRENT live_price_minor at quote time (amendment rule 2, Opus review P2-3): repricing a PAUSED offer changes what
+	// its claimants pay at their next quote, and a quote taken at the old price fails closed at placement (conflict, zero facts), exactly as for an active offer.
+	const repriced = int64(15000)
+	holds0, orders0 := e.orderFacts(amy.cap.Scope.OwnerID)
+	st, out := e.mjson(e.token(), "PATCH", e.claimsPath(s1, "/offers/"+o1.ID), fmt.Sprintf(`{"expected_version":%d,"max_quantity_per_claim":5,"active":false,"live_price_minor":%d}`, v, repriced))
+	if st != 200 || ltgNum(out, "live_price_minor") != repriced {
+		t.Fatalf("reprice the paused offer: %d %v", st, out)
+	}
+	v = ltgNum(out, "version")
+	if _, err := e.placeHome(amy, q0); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("a quote taken at the old live price must fail closed after the paused offer was repriced: %v", err)
+	}
+	if h, o := e.orderFacts(amy.cap.Scope.OwnerID); h != holds0 || o != orders0 {
+		t.Fatalf("a refused placement left facts: holds %d->%d orders %d->%d", holds0, h, orders0, o)
+	}
+	q, l := e.line(amy, "")
+	e.wantLive("repriced paused offer: the claimant pays the new price", l, repriced, bundle, o1.ID)
+
 	// Clear the price on the paused offer (PATCH: 0 = clear).
-	st, out := e.mjson(e.token(), "PATCH", e.claimsPath(s1, "/offers/"+o1.ID), fmt.Sprintf(`{"expected_version":%d,"max_quantity_per_claim":5,"active":false,"live_price_minor":0}`, v))
+	st, out = e.mjson(e.token(), "PATCH", e.claimsPath(s1, "/offers/"+o1.ID), fmt.Sprintf(`{"expected_version":%d,"max_quantity_per_claim":5,"active":false,"live_price_minor":0}`, v))
 	if st != 200 || out["live_price_minor"] != nil {
 		t.Fatalf("clear the price of the paused offer: %d %v", st, out)
 	}
@@ -233,33 +252,129 @@ func TestLivePriceKeepOnPauseOneClaimPerSKU(t *testing.T) {
 		t.Fatalf("quantity %d, want 3", l.Quantity)
 	}
 
-	// Degenerate: both offers of the SKU are paused and the buyer claimed both: exactly one line is applied (the lowest offer id), never a conflict.
+	// "Everything paused, nothing opened" (the reminder flow: 0144 re-issues links for never-opened claims after the live, an end-of-live batch deactivate
+	// paused every offer): the buyer holds two pending claims on one SKU. Exactly one line is applied, never a conflict, and the winner is deterministic: the
+	// claim time is not exposed by claims.preview_link/redeem_link, so the lowest offer id is the final tie-break (amendment rule 4). The preview marks only
+	// the winner available, and a re-issued link (new token, same bundle) changes nothing.
 	s2, typo2 := e.session("A11", typoPrice, 5)
 	f2 := e.h.accepted(t, s2, "", "lee", "A11+2")
 	e.h.setOffer(t, s2, typo2, 5, false)
 	fixed2 := e.h.livePriceOffer(t, s2, "A1", e.money, 5, ltgLive)
 	e.h.accepted(t, s2, f2.BundleID, "", "A1+3")
 	e.h.setOffer(t, s2, fixed2, 5, false)
-	link2 := e.h.link(t, s2, f2.BundleID, 0, false)
+	e.h.link(t, s2, f2.BundleID, 0, false)
+	link2 := e.h.link(t, s2, f2.BundleID, 1, false) // the reminder: a fresh link for the never-opened claim
 	e.h.closeWindow(t, s2)
+	wantQty, wantOffer, wantPrice, wantKeyword := int64(2), typo2.ID, typoPrice, "A11"
+	if fixed2.ID < typo2.ID {
+		wantQty, wantOffer, wantPrice, wantKeyword = 3, fixed2.ID, ltgLive, "A1"
+	}
 	lee := e.buyerCap()
 	pv2, err := e.h.preview(lee.cap, link2.Token)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || len(pv2.Lines) != 2 {
+		t.Fatalf("preview of the reminder link: %+v %v", pv2, err)
+	}
+	for _, pl := range pv2.Lines {
+		if pl.Available != (pl.Keyword == wantKeyword) || !pl.Pending {
+			t.Fatalf("only the winner (%s, lowest offer id) is available, both pending: %+v", wantKeyword, pv2.Lines)
+		}
 	}
 	r2, err := e.h.redeem(lee.cap, t04Key("kop-lee"), link2.Token, pv2.BundleVersion)
 	if err != nil || len(r2.Applied) != 1 || len(r2.Skipped) != 1 || r2.Skipped[0].Reason != "offer_inactive" {
 		t.Fatalf("redeem with two paused offers on one SKU must apply exactly one line: %+v %v", r2, err)
 	}
-	wantQty, wantOffer, wantPrice := int64(2), typo2.ID, typoPrice
-	if fixed2.ID < typo2.ID {
-		wantQty, wantOffer, wantPrice = 3, fixed2.ID, ltgLive
-	}
 	if r2.Applied[0].Quantity != wantQty {
 		t.Fatalf("the line with the lowest offer id must win: applied %+v want quantity %d", r2.Applied, wantQty)
 	}
 	_, l = e.line(lee, "")
-	e.wantLive("degenerate case: the winning paused line keeps its own granted price", l, wantPrice, f2.BundleID, wantOffer)
+	e.wantLive("everything paused: the winning line keeps its own granted price", l, wantPrice, f2.BundleID, wantOffer)
+}
+
+// typoPair makes a session whose bundle holds a claim on a PAUSED typo offer (A11, 2 units at typoPrice, claimed first and paused first) and on its ACTIVE replacement
+// on the same SKU (A1, 3 units at ltgLive), with the typo offer's id LOWER than the replacement's: offer ids are random UUIDs and the review's P1 scenario only
+// bites in that order, so fresh sessions are drawn until it holds (each draw is 1/2; 40 failures in a row is about 1e-12).
+func (e *ltgEnv) typoPair(t *testing.T, typoPrice int64) (session string, typo, repl claims.Offer, bundle string, link claims.IssuedLink) {
+	t.Helper()
+	for attempt := 0; attempt < 40; attempt++ {
+		s, typo := e.session("A11", typoPrice, 5)
+		first := e.h.accepted(t, s, "", "kim-"+t04Tag(), "A11+2")
+		e.h.setOffer(t, s, typo, 5, false)
+		repl := e.h.livePriceOffer(t, s, "A1", e.money, 5, ltgLive)
+		if !(typo.ID < repl.ID) {
+			e.h.closeWindow(t, s)
+			continue
+		}
+		e.h.accepted(t, s, first.BundleID, "", "A1+3")
+		l := e.h.link(t, s, first.BundleID, 0, false)
+		e.h.closeWindow(t, s)
+		return s, typo, repl, first.BundleID, l
+	}
+	t.Fatal("no session with typo offer id < replacement offer id in 40 draws")
+	return
+}
+
+// TestLivePriceKeepOnPauseReplacementPausedAfterRedeem is the Opus review P1-1 flow (end-of-live batch deactivate): the buyer redeems while the replacement A1 is
+// active (cart x3 at A1's live price), the merchant then pauses A1 too, and the buyer redeems again. The superseded typo line (lower offer id, still pending) must
+// not flip the cart to x2 at the typo's price, and after A1 was ordered it must not grant 2 more live-price units.
+func TestLivePriceKeepOnPauseReplacementPausedAfterRedeem(t *testing.T) {
+	e := ltgNew(t)
+	const typoPrice = int64(17000)
+	s, typo, repl, bundle, link := e.typoPair(t, typoPrice)
+	kim := e.buyerCap()
+	pv, err := e.h.preview(kim.cap, link.Token)
+	if err != nil || len(pv.Lines) != 2 {
+		t.Fatalf("preview: %+v %v", pv, err)
+	}
+	r1, err := e.h.redeem(kim.cap, t04Key("kop-kim-1"), link.Token, pv.BundleVersion)
+	if err != nil || !reflect.DeepEqual(lcItems(r1.Applied), map[string]int64{e.money: 3}) || len(r1.Skipped) != 1 {
+		t.Fatalf("first redeem while the replacement is active: %+v %v", r1, err)
+	}
+	q, l := e.line(kim, "")
+	e.wantLive("cart x3 at the replacement's live price", l, ltgLive, bundle, repl.ID)
+	if l.Quantity != 3 {
+		t.Fatalf("quantity %d, want 3", l.Quantity)
+	}
+
+	// End-of-live batch deactivate: the replacement is paused too.
+	e.setOfferActive(s, repl, repl.Version, false)
+	pv2, err := e.h.preview(kim.cap, link.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, pl := range pv2.Lines {
+		if pl.Keyword == "A11" && (pl.Available || !pl.Pending) {
+			t.Fatalf("the superseded typo line must stay pending and unavailable: %+v", pv2.Lines)
+		}
+	}
+	r2, err := e.h.redeem(kim.cap, t04Key("kop-kim-2"), link.Token, pv2.BundleVersion)
+	if err != nil || len(r2.Applied) != 0 || len(r2.Skipped) != 1 || r2.Skipped[0].Reason != "offer_inactive" || !reflect.DeepEqual(lcItems(r2.Cart.Items), map[string]int64{e.money: 3}) {
+		t.Fatalf("second redeem after the replacement was paused must apply nothing and keep the cart at x3: %+v %v", r2, err)
+	}
+	q, l = e.line(kim, "")
+	e.wantLive("still x3 at A1's live price after A1 was paused", l, ltgLive, bundle, repl.ID)
+	if l.Quantity != 3 {
+		t.Fatalf("cart flipped to quantity %d (the typo claim was applied)", l.Quantity)
+	}
+
+	// The replacement is ordered at its live price; the superseded typo claim must not grant more units afterwards.
+	res, err := e.placeHome(kim, q)
+	if err != nil || e.total(res.OrderID) != q.Amount.TotalMinor {
+		t.Fatalf("order at the live price: %v", err)
+	}
+	if qty, rows := e.held(bundle, repl.ID); qty != 3 || rows != 1 {
+		t.Fatalf("ledger of the replacement: %d / %d", qty, rows)
+	}
+	pv3, err := e.h.preview(kim.cap, link.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r3, err := e.h.redeem(kim.cap, t04Key("kop-kim-3"), link.Token, pv3.BundleVersion)
+	if err != nil || len(r3.Applied) != 0 {
+		t.Fatalf("after the order the typo claim must not be redeemable at a live price: %+v %v", r3, err)
+	}
+	if qty, rows := e.held(bundle, typo.ID); qty != 0 || rows != 0 {
+		t.Fatalf("the typo claim consumed units: %d / %d", qty, rows)
+	}
 }
 
 // TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice: the merchant order-for-buyer prefill (claims.for_buyer_lines, LC-B6) follows the same rule. A bundle holds
@@ -307,5 +422,37 @@ func TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice(t *testing.T) {
 	}
 	if qty, rows := e.held(b2, paused.ID); qty != 0 || rows != 0 {
 		t.Fatalf("the paused offer's claim must stay untouched: %d rows %d", qty, rows)
+	}
+}
+
+// TestLiveConsoleOrderForBuyerSupersededPausedLineIsNotUsed (Opus review P2-5): the bundle holds a claim on a PAUSED offer (A1, 5 units at 17000) and on its ACTIVE
+// replacement on the same SKU (B1, 1 unit at the live price). The merchant orders 2 units: the buyer's own redeem would carry the SKU through B1 (the winner), which
+// does not cover 2 units, so the order is priced at the catalog price (never a partial live price). It must NOT fall through to the superseded paused line, which
+// would grant 2 units at 17000 that the buyer's own checkout never could (claims.for_buyer_lines reports no live price for a line that lost its SKU).
+func TestLiveConsoleOrderForBuyerSupersededPausedLineIsNotUsed(t *testing.T) {
+	e := lbuNew(t)
+	token := e.token()
+	const pausedPrice = int64(17000)
+	s, paused := e.session("A1", pausedPrice, 5)
+	bundle := e.h.accepted(t, s, "", "kim-"+t04Tag(), "A1+5").BundleID
+	e.h.setOffer(t, s, paused, 5, false)
+	active := e.h.livePriceOffer(t, s, "B1", e.money, 5, ltgLive)
+	e.h.accepted(t, s, bundle, "", "B1+1")
+	e.h.closeWindow(t, s)
+	conv := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+	e.linkPeer(bundle, conv)
+
+	st, out := e.post(token, t04Key("kop-lbu-superseded"), e.body(2, []string{bundle}, conv, false))
+	if st != 201 || out["live_price"] != "not_applied" {
+		t.Fatalf("order for 2 units above the active claim of 1: %d %v", st, out)
+	}
+	if p, r := e.unit(lbuStr(out, "order_id")); p != ltgCatalog || r != "" {
+		t.Fatalf("priced %d rule %q, want the catalog price %d (the superseded paused line must not be used)", p, r, ltgCatalog)
+	}
+	if qty, rows := e.held(bundle, paused.ID); qty != 0 || rows != 0 {
+		t.Fatalf("the superseded paused line consumed units: %d / %d", qty, rows)
+	}
+	if qty, rows := e.held(bundle, active.ID); qty != 0 || rows != 0 {
+		t.Fatalf("a catalog order consumed the active claim: %d / %d", qty, rows)
 	}
 }

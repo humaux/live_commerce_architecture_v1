@@ -2,7 +2,7 @@
 // Depends on: buyer scope/commands, claims definers (claims.preview_link, claims.preview_live_prices, claims.redeem_link, claims.mark_applied), storefront cart and inventory availability.
 // Used by: buyerhttp B1/B2 handlers and claims acceptance tests.
 // Invariants: live-keyword-claims-v1 amendment "Live price kept on pause" (owner decision 2026-10-07): a claim line of a paused offer is previewed and redeemed like
-//   any other (the pause refuses only NEW claims); one SKU is carried into the cart by one claim line only (skuWinners).
+//   any other (the pause refuses only NEW claims); one SKU is carried into the cart by one claim line only (skuWinners: active, then already applied, then lowest offer id).
 // buyer.go owns the buyer side of a claim link: PreviewLink (read-only) and RedeemLink
 // (bind, then apply pending claim lines to the buyer's own cart) (contract §4.4, §6).
 //
@@ -130,7 +130,7 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 			&c.offerID, &c.offerActive); err != nil {
 			return Preview{}, mapError(err)
 		}
-		c.skuID = line.SKUID
+		c.skuID, c.pending = line.SKUID, line.Pending
 		contenders = append(contenders, c)
 		out.Lines = append(out.Lines, line)
 	}
@@ -360,11 +360,17 @@ func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimL
 	return available, nil
 }
 
-// skuWinners picks, per SKU, the one claim line of the bundle that may carry the SKU into the cart (the cart holds one claim origin per SKU): the line of the
-// ACTIVE offer (typo recovery: a paused A11 and its active replacement A1 on one SKU; live_offer_active_sku makes the active one unique, so two is a broken
-// invariant = ErrConflict), else the line with the lowest offer id (a buyer holding claims on two paused offers of one SKU: deterministic, never an error).
-// ALL lines of the SKU compete, applied or not: otherwise a repeated redeem would let a paused line overwrite the cart line its active replacement already
-// set. The map holds the winning offer id per SKU. Pure.
+// skuWinners picks, per SKU, the one claim line of the bundle that may carry the SKU into the cart (the cart holds one claim origin per SKU). Rank:
+//  1. the line of the ACTIVE offer (typo recovery: a paused A11 and its active replacement A1 on one SKU; live_offer_active_sku makes the active one unique, so two
+//     is a broken invariant = ErrConflict);
+//  2. else the line ALREADY APPLIED into the cart (!pending): the line that already carries the SKU keeps it. Without this, pausing the replacement after its redeem
+//     (an end-of-live batch deactivate) would let a lower-id superseded typo line flip the cart to the typo claim, and after the replacement's order grant 2 more
+//     live-price units (Opus review P1-1);
+//  3. else the lowest offer id (deterministic final tie-break; it only decides when nothing is active and nothing was applied yet, e.g. the reminder flow. The claim
+//     time is not exposed by claims.preview_link / claims.redeem_link, so "earliest claim" would need a signature change: open owner choice, see the contract).
+//
+// ALL lines of the SKU compete, applied or not. Every line stays within its own claimed quantity, so no outcome grants units the buyer did not claim. The map holds
+// the winning offer id per SKU. claims.for_buyer_lines (0158) applies the same ranking in SQL for the merchant order-for-buyer prefill. Pure.
 func skuWinners(lines []claimLine) (map[string]string, error) {
 	winners := map[string]claimLine{}
 	for _, line := range lines {
@@ -374,7 +380,15 @@ func skuWinners(lines []claimLine) (map[string]string, error) {
 			winners[line.skuID] = line
 		case line.offerActive && cur.offerActive:
 			return nil, command.ErrConflict
-		case line.offerActive, !cur.offerActive && line.offerID < cur.offerID:
+		case line.offerActive != cur.offerActive:
+			if line.offerActive {
+				winners[line.skuID] = line
+			}
+		case line.pending != cur.pending:
+			if !line.pending {
+				winners[line.skuID] = line
+			}
+		case line.offerID < cur.offerID:
 			winners[line.skuID] = line
 		}
 	}

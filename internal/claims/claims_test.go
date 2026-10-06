@@ -458,6 +458,13 @@ func TestRedeemPlanningOneLinePerSKU(t *testing.T) {
 		"two paused: the lowest offer id":           {[]claimLine{paused, {offerID: "a-paused", skuID: "s", quantity: 7, version: 1, pending: true, offerActive: false}}, "a-paused", 1},
 		"two paused, the lowest is already applied": {[]claimLine{paused, {offerID: "a-paused", skuID: "s", quantity: 7, version: 1, pending: false, offerActive: false}}, "", 1},
 		"another SKU is independent":                {[]claimLine{paused, {offerID: "c", skuID: "t", quantity: 1, version: 1, pending: true, offerActive: false}}, "b-paused", 0},
+		// Opus review P1-1 (2026-10-07): the replacement was redeemed while active, then paused (end-of-live batch deactivate). The superseded typo
+		// line has the LOWER offer id (ids are random UUIDs) and is still pending: it must NOT flip the cart to the typo claim, and after the
+		// replacement's order it must not grant more live-price units.
+		"two paused, the HIGHER id is applied, the lower is pending": {[]claimLine{{offerID: "z-replacement", skuID: "s", quantity: 3, version: 1, pending: false, offerActive: false},
+			{offerID: "a-typo", skuID: "s", quantity: 2, version: 1, pending: true, offerActive: false}}, "", 1},
+		"an active pending line beats a paused applied line with a lower id": {[]claimLine{{offerID: "a-applied", skuID: "s", quantity: 2, version: 1, pending: false, offerActive: false},
+			{offerID: "z-active", skuID: "s", quantity: 3, version: 1, pending: true, offerActive: true}}, "z-active", 0},
 	} {
 		apply, skipped, err := splitPending(tc.lines, map[string]skuAvailability{"s": avail["s"], "t": {available: true}})
 		if err != nil {
@@ -483,5 +490,16 @@ func TestRedeemPlanningOneLinePerSKU(t *testing.T) {
 	w, err := skuWinners([]claimLine{paused, active})
 	if err != nil || w["s"] != "a-active" {
 		t.Fatalf("skuWinners: %+v %v", w, err)
+	}
+	// Reminder flow (0144 re-issues links for never-opened claims after the live; an end-of-live batch deactivate paused every offer): nothing active, nothing
+	// applied, two pending lines. The winner is deterministic for every input order (the claim time is not exposed by claims.preview_link/redeem_link, so
+	// the lowest offer id is the final tie-break; see amendment "Live price kept on pause" rule 4).
+	a := claimLine{offerID: "a", skuID: "s", quantity: 2, version: 1, pending: true}
+	b := claimLine{offerID: "b", skuID: "s", quantity: 3, version: 1, pending: true}
+	c := claimLine{offerID: "c", skuID: "s", quantity: 4, version: 1, pending: true}
+	for _, in := range [][]claimLine{{a, b, c}, {a, c, b}, {b, a, c}, {b, c, a}, {c, a, b}, {c, b, a}} {
+		if w, err := skuWinners(in); err != nil || w["s"] != "a" {
+			t.Fatalf("all paused and pending, order %v: winner %q %v, want a", []string{in[0].offerID, in[1].offerID, in[2].offerID}, w["s"], err)
+		}
 	}
 }

@@ -4,7 +4,8 @@
 --   granted while the offer was active (ingest rejects a paused offer as OFFER_INACTIVE), so it keeps the price it was granted, for at most the claimed units,
 --   until its link expires under the existing rules. This migration drops the `live.offers.active` clause from the three functions that priced a claim line:
 --   claims.live_prices (quote and checkout.Begin's RevalidateQuote: the authority), claims.preview_live_prices (the link display) and claims.for_buyer_lines
---   (the merchant order-for-buyer prefill, so the merchant-attested origin prices the same lines the buyer's own checkout would).
+--   (the merchant order-for-buyer prefill, so the merchant-attested origin prices the same lines the buyer's own checkout would; a line superseded on its SKU by another
+--   line of the bundle reports no live price, the same ranking as internal/claims skuWinners: active offer, then already applied, then lowest offer id).
 -- Not changed on purpose: claims.consume_live_prices never read `active` (it only re-proves the claim line, the bound owner and the remaining quantity);
 --   claims.preview_link / claims.redeem_link keep returning `offer_active` (a fact about the offer; Go no longer uses it as a gate, internal/claims/buyer.go);
 --   ingest, the sold-out reply and offer recommend/send checks (all about NEW claims or promotion) keep refusing a paused offer.
@@ -149,7 +150,15 @@ BEGIN
  END IF;
  RETURN QUERY
  SELECT l.bundle_id,l.offer_id,l.sku_id,o.keyword,l.quantity,
-  o.live_price_minor, -- 0158: a paused offer keeps its price for the claim lines already granted (owner decision 2026-10-07); NULL only when it has none
+  -- 0158 (owner decision 2026-10-07): a paused offer keeps its price for the claim lines already granted; NULL when the offer has none OR when the line is SUPERSEDED on its SKU by
+  -- another line of the bundle. The cart carries one claim origin per SKU, so one line wins it: rank (1) the line of the ACTIVE offer, (2) the line already applied into the cart
+  -- (applied_version = version), (3) the lowest offer id. This is internal/claims skuWinners (buyer redeem and link preview) written as SQL: a superseded line must not be priced here
+  -- either, or merchanttools.pickOrigins (first qualifying line per SKU) would fall through to it when the winner does not cover the ordered quantity (Opus review P2-5).
+  CASE WHEN NOT EXISTS (SELECT 1 FROM claims.lines x JOIN live.offers xo ON xo.tenant_id=x.tenant_id AND xo.store_id=x.store_id AND xo.id=x.offer_id
+    WHERE x.tenant_id=l.tenant_id AND x.store_id=l.store_id AND x.bundle_id=l.bundle_id AND x.sku_id=l.sku_id AND x.offer_id<>l.offer_id
+     AND (ROW(xo.active,x.applied_version IS NOT DISTINCT FROM x.version)>ROW(o.active,l.applied_version IS NOT DISTINCT FROM l.version)
+      OR (ROW(xo.active,x.applied_version IS NOT DISTINCT FROM x.version)=ROW(o.active,l.applied_version IS NOT DISTINCT FROM l.version) AND x.offer_id<l.offer_id)))
+   THEN o.live_price_minor END,
   greatest(0,l.quantity-(SELECT coalesce(sum(u.quantity),0) FROM claims.live_price_uses u
    JOIN checkout.orders r ON r.tenant_id=u.tenant_id AND r.store_id=u.store_id AND r.id=u.order_id AND r.commercial_state<>'CANCELLED'
    WHERE u.tenant_id=l.tenant_id AND u.store_id=l.store_id AND u.bundle_id=l.bundle_id AND u.offer_id=l.offer_id))::bigint
@@ -157,10 +166,8 @@ BEGIN
  JOIN claims.bundles b ON b.tenant_id=l.tenant_id AND b.store_id=l.store_id AND b.id=l.bundle_id AND b.purged_at IS NULL
  JOIN live.offers o ON o.tenant_id=l.tenant_id AND o.store_id=l.store_id AND o.id=l.offer_id
  WHERE l.tenant_id=v[1] AND l.store_id=v[2] AND l.bundle_id=ANY(v_bundles)
- -- 0158: the active offer's line first within a bundle, so the merchant prefill picks the same claim line as the buyer's redeem when one SKU has a paused and an active
- -- offer (internal/claims skuWinners; merchanttools.pickOrigins takes the first qualifying line per SKU).
- ORDER BY l.bundle_id,o.active DESC,o.keyword,l.offer_id LIMIT 50;
+ ORDER BY l.bundle_id,o.keyword,l.offer_id LIMIT 50;
 END $$;
 ALTER FUNCTION claims.for_buyer_lines(uuid,uuid) OWNER TO commerce_claims_writer;
 COMMENT ON FUNCTION claims.for_buyer_lines(uuid,uuid) IS
- 'internal/claims (0129 LC-B6, GET inbox/order-prefill; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified by identity.principal_holds; the route adds orders:read): the claim lines (capped at 50) of one bundle, or of every bundle whose recorded peer is the conversation''s peer (none = zero rows), with the offer keyword, the live price of the offer (0158: also when the offer is paused, because the claim line was granted while it was active; NULL when the offer has none) and live_remaining = claimed minus units held in claims.live_price_uses by non-CANCELLED orders, ordered by bundle, then active offers first (0158), keyword, offer id. PT404 for a conversation or bundle outside the store. Read-only.';
+ 'internal/claims (0129 LC-B6, GET inbox/order-prefill; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified by identity.principal_holds; the route adds orders:read): the claim lines (capped at 50) of one bundle, or of every bundle whose recorded peer is the conversation''s peer (none = zero rows), with the offer keyword, the live price of the offer (0158: also when the offer is paused, because the claim line was granted while it was active; NULL when the offer has none) and live_remaining = claimed minus units held in claims.live_price_uses by non-CANCELLED orders, ordered by bundle, keyword, offer id. 0158: NULL live price also for a line superseded on its SKU by another line of the bundle (active offer, then already applied, then lowest offer id). PT404 for a conversation or bundle outside the store. Read-only.';
