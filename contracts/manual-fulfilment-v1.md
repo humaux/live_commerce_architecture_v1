@@ -296,7 +296,7 @@ contracts' SQL interfaces are frozen (the MD6 refund check reads `payments.strip
 ## 8. Known limits / NOT_RUN
 
 - Evidence: DESIGN only; MF01–MF08 NOT_RUN.
-- One parcel per order; no split/merge/partial shipment, no package items (§13.2) — R2.
+- One order belongs to at most one parcel group (Amendment W3-07B); a group ships under one tracking number and the shipment is still recorded per order. No split of one order into several parcels, no partial shipment, no package items (§13.2) — R2.
 - No carrier API, label purchase, pickup booking, tracking events, delivery confirmation, RMA or
   returns (§13.3/§13.4) — T13/R2. `MERCHANT_SHIPPED` is merchant attestation only.
 - No built-in carrier tracking URLs until verified (M-2); no tracking import (M-7).
@@ -334,3 +334,41 @@ contracts' SQL interfaces are frozen (the MD6 refund check reads `payments.strip
 | Finding | Resolution |
 | --- | --- |
 | P1 schema USAGE: checkout_writer lacks identity/ops (record_manual_shipment 42501); commerce_auth lacks ops (export audit insert 42501) | Verified against 0001:84, 0013:9, 0016:84, 0027:56, 0060:45. §4 grants bullet (A2), stripe-refund-v1 §4.5 USAGE row, MF02 |
+
+## Amendment W3-07B parcel groups (unit w3-07b-parcel-merge, migration `0146_parcel_groups.sql`)
+
+Owner rulings: merging orders merges **parcels only** — each order keeps its own payment, refund and totals; one order is one
+parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) orders never merge in v1.
+
+- **Tables** (FORCE RLS, written by definers only): `fulfillment.parcel_groups(tenant_id, store_id, id, owner_id, destination_hash,
+  state OPEN|SHIPPED|DISSOLVED, version, created_by, created_at)` and `fulfillment.parcel_group_orders(tenant_id, store_id, group_id,
+  owner_id, order_id)`; PRIMARY KEY `(tenant_id, store_id, order_id)` = one order, at most one group; composite FKs bind the member
+  to the group's owner and to a real order of that owner. A group has 2..20 orders. `destination_hash` = sha256 of the normalized
+  country + recipient + phone digits + region/city/postal/line1/line2 of the order snapshot, computed in SQL (never client-supplied).
+- **Mergeable** (`fulfillment.parcel_merge_block`, shared by suggestions and create): `manual_shipment_eligible`, home delivery with an
+  address, `payment_mode` not `cash_on_delivery`/`pay_at_pickup`, no CVS destination or `cvs_shipments` row, no shipment head yet,
+  not already in a group; all members of one owner and one destination hash.
+- **Routes** (admin, `store_id` from the session): `GET …/orders/merge-suggestions` (`orders:read`; `{items:[{recipient_name,
+  order_ids}]}`); `POST …/parcel-groups` (`fulfillment:write`, `Idempotency-Key`, `{order_ids}` → 201 `{id,state,version,order_ids}`);
+  `DELETE …/parcel-groups/{id}?expected_version=N` (OPEN only → `{id,state:DISSOLVED,version}`; member rows are deleted so the orders
+  may regroup); `PUT …/parcel-groups/{id}/shipment` (`fulfillment:write`, `Idempotency-Key`, the §5.1 eight-key body with
+  `status SHIPPED`, `expected_version 0`) = ONE transaction: lock the group, `RecordShipment` per member in id order with the same
+  carrier + tracking number (per-order key derived from the request key, so a replay replays every member), then group → SHIPPED
+  (`group_incomplete` if any member is not shipped on the shared tracking number). Any member refusing rolls the whole group back.
+- **Error codes** (409 unless noted): `cod_not_mergeable`, `cvs_not_mergeable`, `not_mergeable` (shipment history, no home address,
+  pay-at-pickup), `already_in_group`, `owner_mismatch`, `destination_mismatch`, `group_not_open`, `group_incomplete`,
+  `version_changed`, `in_parcel_group`; `not_shippable` stays 422; missing/other-store ids are 404 (I01).
+- **`in_parcel_group`**: the single `PUT /orders/{id}/shipment` and the W3-01B bulk tracking import refuse (bulk: row code) an order in an
+  OPEN group. The check is Go-side (`merchantorders.GuardNotGrouped`) and runs before `RecordShipment` WITHOUT changing
+  `record_manual_shipment`; the guard locks the named orders in id order, the same order `create_parcel_group` uses, so a group cannot
+  be created between the check and the write. A SHIPPED group no longer blocks per-order correction or void.
+- **Pick list / carrier export** (W3-02B): members of one group are listed side by side; the pick-list order and the `generic` export
+  template carry `parcel_group_id` (the carrier-specific templates stay the fixed upload formats; their rows are only grouped).
+- **I05**: group commands write only the two group tables, `ops.audit_events` (`fulfillment.parcel_group_created|dissolved|shipped`),
+  the command receipt and, through `RecordShipment`, the usual per-order shipment rows, audit and shipped mail; no `payments.*`,
+  amount, shipping-fee or refund row is read for writing or changed.
+- **Non-goals**: merged payment or refund, cross-address merge, splitting one order, COD/CVS merge, automatic merge.
+  OPEN (PG-OPEN-1): a cancelled member should leave its group (W3-08B cancel command removes it; a group left with one order dissolves).
+- **Evidence**: `TestParcelGroup` (PG01–PG08 + pick-list/export adjacency), `TestParcelGroupACL`, MF02/WAS02/`PickListReadAuthority`
+  pins — REAL_PG with MOCK Stripe/ECPay fakes.
+

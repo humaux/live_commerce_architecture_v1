@@ -116,6 +116,17 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"encoding_not_utf8": "The file must be UTF-8 encoded.",
 		"too_many_rows":     "Too many rows.",
 		"required":          "A required column is missing.",
+		// manual-fulfilment-v1 Amendment W3-07B (parcel groups, unit w3-07b-parcel-merge): 409 refusals of the group commands and of a
+		// single/bulk shipment of a grouped order.
+		"in_parcel_group":      "This order is in a parcel group; ship the group instead, or dissolve the group first.",
+		"cod_not_mergeable":    "Cash-on-delivery orders cannot be merged into one parcel.",
+		"cvs_not_mergeable":    "Convenience-store orders cannot be merged into one parcel.",
+		"not_mergeable":        "This order cannot be merged into a parcel.",
+		"already_in_group":     "An order is already in a parcel group.",
+		"owner_mismatch":       "Orders of different buyers cannot share a parcel.",
+		"destination_mismatch": "Orders with different delivery details cannot share a parcel.",
+		"group_not_open":       "This parcel group is no longer open.",
+		"group_incomplete":     "Not every order of the parcel group was shipped.",
 		// manual-fulfilment-v1 Amendment W3-02B (pick list, unit w3-02b-picklist): > 500 order_ids.
 		"too_many": "Too many orders.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
