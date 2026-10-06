@@ -260,11 +260,12 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
           // staff-team (migration 0089, storefront-v2 §D): each item carries the caller's role and effective permissions; the
           // initial-store creator is a full owner = the whole store_grants_permission_check catalogue, sorted by the SQL definer;
           // LC-B3 (0119, live-console-v1 §11 role defaults) adds inbox read/reply and bounded live inventory adjustment to that catalogue.
+          // W6-01B (0139 customer tags/notes) adds customers:write.
           // Keep exact equality: any further catalogue change must remain a deliberate contract edit here.
           role: "owner",
           permissions: [
             "ads:approve", "ads:manage", "ads:read", "audit:read", "audit:write", "billing:manage", "catalog:read",
-            "catalog:write", "customers:privacy", "customers:read", "fulfillment:write", "inbox:read", "inbox:reply", "integration:execute",
+            "catalog:write", "customers:privacy", "customers:read", "customers:write", "fulfillment:write", "inbox:read", "inbox:reply", "integration:execute",
             "integration:manage", "integration:read", "inventory:live_adjust", "inventory:read", "inventory:reserve", "inventory:write", "live:manage",
             "live:read", "orders:export", "orders:read", "payments:refund", "pricing:read", "pricing:write", "store:read",
           ],

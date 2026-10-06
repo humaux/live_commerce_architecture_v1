@@ -1,0 +1,43 @@
+=== RUN   TestSupportGrantSG01ReadAndSG02PackLimits
+    support_grant_test.go:145: operator call: ERROR: permission denied for schema identity (SQLSTATE 42501)
+--- FAIL: TestSupportGrantSG01ReadAndSG02PackLimits (1.33s)
+=== RUN   TestSupportGrantSG02ReadOnlyTransactionAndUseAudit
+    support_grant_test.go:222: operator call: ERROR: permission denied for schema identity (SQLSTATE 42501)
+--- FAIL: TestSupportGrantSG02ReadOnlyTransactionAndUseAudit (0.03s)
+=== RUN   TestSupportGrantSG03ExpiryNeedsNoSweeper
+    support_grant_test.go:264: operator call: ERROR: permission denied for schema identity (SQLSTATE 42501)
+--- FAIL: TestSupportGrantSG03ExpiryNeedsNoSweeper (0.02s)
+=== RUN   TestSupportGrantSG04RevokeImmediateAndIdempotent
+    support_grant_test.go:302: operator call: ERROR: permission denied for schema identity (SQLSTATE 42501)
+--- FAIL: TestSupportGrantSG04RevokeImmediateAndIdempotent (0.02s)
+=== RUN   TestSupportGrantSG05SuspensionStopsSupportToo
+    support_grant_test.go:343: operator call: ERROR: permission denied for schema identity (SQLSTATE 42501)
+--- FAIL: TestSupportGrantSG05SuspensionStopsSupportToo (0.02s)
+=== RUN   TestSupportGrantSG06Limits
+    support_grant_test.go:382: empty list: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: no store:read: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: empty element: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: 73 hours: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: 0 hours: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: negative hours: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: customers:read: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:382: write permission: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:391: operator uppercase: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:391: blank ticket: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:391: null operator: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT400
+    support_grant_test.go:395: unknown store: ERROR: permission denied for schema identity (SQLSTATE 42501)
+    support_grant_test.go:398: unknown principal: ERROR: permission denied for schema identity (SQLSTATE 42501)
+    support_grant_test.go:402: inactive principal: ERROR: permission denied for schema identity (SQLSTATE 42501)
+    support_grant_test.go:405: count rows: ERROR: relation "identity.support_grants" does not exist (SQLSTATE 42P01)
+--- FAIL: TestSupportGrantSG06Limits (0.03s)
+=== RUN   TestSupportGrantSG07RegularPrincipalsUnaffected
+    support_grant_test.go:463: grant to a member: ERROR: permission denied for schema identity (SQLSTATE 42501), want PT409
+--- FAIL: TestSupportGrantSG07RegularPrincipalsUnaffected (0.03s)
+=== RUN   TestSupportGrantSG08AuthorityMatrix
+    support_grant_test.go:513: identity.grant_support(uuid,uuid,integer,text[],text,text) missing: ERROR: function "identity.grant_support(uuid,uuid,integer,text[],text,text)" does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG08AuthorityMatrix (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.552s
+FAIL
+test-focused: top-level PASS=0 FAIL=8 SKIP=0 exit=1
+exit 1

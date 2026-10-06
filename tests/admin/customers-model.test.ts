@@ -17,7 +17,7 @@ const customer = () => ({
   customer_id: id, first_seen_at: "2026-09-01T00:00:00Z", last_activity_at: "2026-09-29T10:20:30.123456Z",
   display_name: "Test Buyer", phone_last3: "123", orders_count: 3, paid_orders_count: 2,
   captured_minor: 300000, refunded_minor: 50000, currency: "TWD", claims_count: 1, platforms: ["facebook", "manual"],
-  consents: { marketing_messages: true, ads_personalization: false }, active: true,
+  consents: { marketing_messages: true, ads_personalization: false }, active: true, imported: false, // W5-02B: Go customerKeys carries imported
   tags: [{ id: "55555555-5555-4555-8555-555555555555", name: "VIP", color: "red" }],
 });
 const summary = () => ({
@@ -43,6 +43,11 @@ test("customer list accepts the frozen row and rejects unknown keys, dup ids, ba
   assert.throws(() => parseCustomerList({ items: [customer(), customer()], next_cursor: "" }));
   assert.throws(() => parseCustomerList({ items: [], next_cursor: "a b" }));
   assert.throws(() => parseCustomerList({ items: [], next_cursor: "", extra: 1 }));
+  // W5-02B: an imported customer parses; the flag is required and boolean (Go internal/customers/types.go customerKeys).
+  assert.equal(parseCustomerList({ items: [{ ...customer(), imported: true }], next_cursor: "" }).items[0].imported, true);
+  const { imported: _drop, ...noImported } = customer();
+  assert.throws(() => parseCustomerList({ items: [noImported], next_cursor: "" }));
+  assert.throws(() => parseCustomerList({ items: [{ ...customer(), imported: "yes" }], next_cursor: "" }));
   const many = Array.from({ length: 101 }, (_, n) => ({ ...customer(), customer_id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}` }));
   assert.throws(() => parseCustomerList({ items: many, next_cursor: "" }));
 });

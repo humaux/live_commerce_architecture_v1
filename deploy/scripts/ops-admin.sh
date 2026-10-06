@@ -44,7 +44,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -57,6 +57,8 @@ stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admi
 stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke) ;;
 # stripe-platform-account-v1: platform-* take no secret input (kill switches need no LIVE pair).
 stripe-admin:platform-designate | stripe-admin:platform-open | stripe-admin:platform-close | stripe-admin:platform-allow | stripe-admin:platform-disallow | stripe-admin:platform-block | stripe-admin:platform-unblock) ;;
+# stripe-platform-account-v1 §6.5: settlement-* take no secret input (sync uses the STORED platform key; close/export/payout do not call Stripe).
+stripe-admin:settlement-sync | stripe-admin:settlement-close | stripe-admin:settlement-export | stripe-admin:settlement-payout) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
 store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set) ;;
 *) usage ;;
@@ -78,7 +80,7 @@ unset COMMERCE_STRIPE_LIVE_ENABLED COMMERCE_STRIPE_LIVE_APPROVAL_REF
 live_needed=0
 case "$tool:$sub" in
 stripe-admin:live-approve | stripe-admin:live-canary) live_needed=1 ;;
-stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:platform-open)
+stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admin:qualify | stripe-admin:platform-open | stripe-admin:settlement-sync)
   for ((i = 0; i < ${#args[@]}; i++)); do
     case "${args[$i]^^}" in
     --PROFILE=LIVE | -PROFILE=LIVE | --ENVIRONMENT=LIVE | -ENVIRONMENT=LIVE) live_needed=1 ;;
@@ -184,6 +186,13 @@ stripe-admin:qualify)
       [[ "${STRIPE_SANDBOX:-}" == 1 ]] || lc_die "STRIPE_SANDBOX=1 is required (qualify creates and expires a real sandbox Checkout Session)"
       forward+=(-e STRIPE_SANDBOX)
     fi
+  fi
+  ;;
+stripe-admin:settlement-sync)
+  # A SANDBOX sync dials api.stripe.com with the stored test key: explicit opt-in. LIVE uses the owner's pair (live_needed above).
+  if ((!live_needed)); then
+    [[ "${STRIPE_SANDBOX:-}" == 1 ]] || lc_die "STRIPE_SANDBOX=1 is required (settlement-sync reads real sandbox balance transactions)"
+    forward+=(-e STRIPE_SANDBOX)
   fi
   ;;
 meta-admin:page-token)

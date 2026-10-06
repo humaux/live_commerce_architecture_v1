@@ -1,0 +1,23 @@
+=== RUN   TestPlatformSettlement
+=== RUN   TestPlatformSettlement/PF09_schema
+    platform_settlement_test.go:189: settlement_lines: rls=false force=false err=ERROR: relation "payments.settlement_lines" does not exist (SQLSTATE 42P01)
+=== RUN   TestPlatformSettlement/PF10_sync
+    platform_settlement_test.go:342: sync [09-07,09-14): stripeadmin: database
+=== RUN   TestPlatformSettlement/PF11_close
+    platform_settlement_test.go:450: period not closable: want a rejection carrying "period_not_closable", got stripeadmin: database
+=== RUN   TestPlatformSettlement/PF12_payout
+    platform_settlement_test.go:555: payout of a negative net: want a rejection carrying "payout_amount_mismatch", got stripeadmin: config
+=== RUN   TestPlatformSettlement/PF13_merchant_read_and_csv
+    platform_settlement_test.go:591: list: 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"994c622f2a7490096f16cb6c8162def9","retryable":true,"details":{}}
+         map[Cache-Control:[private, no-store] Content-Type:[application/json] X-Content-Type-Options:[nosniff] X-Request-Id:[994c622f2a7490096f16cb6c8162def9]]
+--- FAIL: TestPlatformSettlement (14.62s)
+    --- FAIL: TestPlatformSettlement/PF09_schema (0.00s)
+    --- FAIL: TestPlatformSettlement/PF10_sync (0.00s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.00s)
+    --- FAIL: TestPlatformSettlement/PF12_payout (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	15.365s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

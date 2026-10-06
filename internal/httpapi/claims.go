@@ -124,6 +124,8 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 	mux.HandleFunc(base+"/bundles/{bundle_id}/link", noReferrer(studioRoute("", false, nil)))
 	// Comment source (meta-claims-intake-v1 §2, claimsource.go): GET/PUT claim-source of a session.
 	registerClaimSourceRoutes(mux, pool)
+	// Restricted buyers (W3-05B, blocklist.go): list, add, remove, per-bundle check.
+	registerBlocklistRoutes(mux, pool, base)
 	// Methodless fallbacks keep 405 inside the same private response boundary.
 	for _, path := range []string{base, base + "/window", base + "/offers", base + "/offers/{offer_id}", base + "/offer-import", base + "/library", base + "/library/{sku_id}", base + "/manual", base + "/bundles"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
@@ -189,7 +191,7 @@ func claimsRoute(method string, query bool, next http.HandlerFunc) http.HandlerF
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
-		for _, name := range []string{"session_id", "offer_id", "bundle_id", "sku_id"} {
+		for _, name := range []string{"session_id", "offer_id", "bundle_id", "sku_id", "entry_id"} {
 			if value := r.PathValue(name); value != "" && !command.ValidID(value) {
 				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 				return
