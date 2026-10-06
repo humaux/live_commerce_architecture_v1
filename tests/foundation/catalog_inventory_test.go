@@ -75,7 +75,8 @@ func t04Tag() string {
 	b := []byte(strings.ReplaceAll(randomUUID(), "-", "")[:12])
 	for _, i := range []int{3, 8} {
 		if b[i] >= '0' && b[i] <= '9' {
-			b[i] = 'a' + (b[i] - '0')
+			// stay hex (a-f): callers such as local_recovery's lr_boot_<hex> role name decode the tag as hex
+			b[i] = 'a' + (b[i]-'0')%6
 		}
 	}
 	return string(b)

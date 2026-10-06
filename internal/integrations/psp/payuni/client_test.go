@@ -136,6 +136,81 @@ func TestQueryOnlyClientCannotUsePaymentOrNotification(t *testing.T) {
 	}
 }
 
+func TestNotifyOnlyClientAuthenticatesButCannotBuildOrQuery(t *testing.T) {
+	config := Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV}
+	client, err := NewNotify(config)
+	if err != nil || !client.notifyOnly {
+		t.Fatalf("notify-only constructor: %v", err)
+	}
+	if _, err := client.BuildHosted(HostedRequest{}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("notify client built hosted payment: %v", err)
+	}
+	if _, err := client.Query(context.Background(), testExpected("payuni_credit"), 1760000000); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("notify client queried trade: %v", err)
+	}
+	inner := baseObservation()
+	auth, err := client.AuthenticateNotification(notification(t, client, inner, "SUCCESS"))
+	if err != nil || auth.MerTradeNo != "ORDER_1" || auth.TradeNo != "P123" || auth.AmountTWD != 100 ||
+		auth.PaymentType != "1" || auth.Status != "SUCCESS" || auth.TradeStatus != "1" {
+		t.Fatalf("notify client authenticate: %+v %v", auth, err)
+	}
+	if _, err := client.VerifyNotification(notification(t, client, inner, "SUCCESS"), testExpected("payuni_credit")); err != nil {
+		t.Fatalf("notify client verify: %v", err)
+	}
+	for _, callback := range []string{"NotifyURL", "ReturnURL"} {
+		config = Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV}
+		if callback == "NotifyURL" {
+			config.NotifyURL = "https://shop.example.com/notify"
+		} else {
+			config.ReturnURL = "https://shop.example.com/return"
+		}
+		if _, err := NewNotify(config); !errors.Is(err, ErrInvalid) {
+			t.Fatalf("notify-only client accepted %s: %v", callback, err)
+		}
+	}
+}
+
+func TestAuthenticateNotificationBoundedAndRejectsUntrusted(t *testing.T) {
+	c := testClient(t)
+	inner := baseObservation()
+	auth, err := c.AuthenticateNotification(notification(t, c, inner, "SUCCESS"))
+	if err != nil || auth.MerTradeNo != "ORDER_1" || auth.AmountTWD != 100 || auth.TradeStatus != "1" {
+		t.Fatalf("valid notification: %+v %v", auth, err)
+	}
+	for _, tc := range []struct {
+		name string
+		body []byte
+		want error
+	}{
+		{"duplicate decoded key", append(notification(t, c, inner, "SUCCESS"), []byte("&Mer%49D=AAA")...), ErrProtocol},
+		{"unsigned error", []byte("Status=ERROR&MerID=AAA&Version=2.0"), ErrUncertain},
+		{"bad escape", []byte("MerID=%ZZ"), ErrProtocol},
+	} {
+		if _, err := c.AuthenticateNotification(tc.body); !errors.Is(err, tc.want) {
+			t.Errorf("%s: %v", tc.name, err)
+		}
+	}
+	for name, mutate := range map[string]func(url.Values){
+		"non-numeric amount": func(v url.Values) { v.Set("TradeAmt", "abc") },
+		"zero amount":        func(v url.Values) { v.Set("TradeAmt", "0") },
+		"unbound trade":      func(v url.Values) { v.Set("MerTradeNo", "bad&trade") },
+		"unbound provider":   func(v url.Values) { v.Set("TradeNo", "bad&id") },
+	} {
+		row := baseObservation()
+		mutate(row)
+		if _, err := c.AuthenticateNotification(notification(t, c, row, "SUCCESS")); !errors.Is(err, ErrUncertain) {
+			t.Fatalf("%s accepted: %v", name, err)
+		}
+	}
+	query, err := NewQuery(Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := query.AuthenticateNotification(notification(t, c, inner, "SUCCESS")); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("query-only client authenticated notification: %v", err)
+	}
+}
+
 func TestQueryOnlyClientUsesSignedWire(t *testing.T) {
 	config := Config{Environment: "SANDBOX", MerchantID: "AAA", HashKey: testKey, HashIV: testIV}
 	var client *Client

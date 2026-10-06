@@ -6,6 +6,7 @@
 package foundation_test
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"livecommerce/internal/msgtemplates"
@@ -15,7 +16,11 @@ import (
 // ValidatePublicSafe (random hex with >=8 consecutive digits used to read as a phone number and flake LC-N08/K3-B4).
 func TestT04TagIsPublicSafe(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		name := "lb-product-" + t04Tag()
+		tag := t04Tag()
+		if _, err := hex.DecodeString(tag); err != nil {
+			t.Fatalf("%q is not hex (local_recovery's lr_boot_<hex> role name relies on it)", tag)
+		}
+		name := "lb-product-" + tag
 		if r := msgtemplates.ValidatePublicSafe(name, ""); r != "" {
 			t.Fatalf("%q refused as %s", name, r)
 		}
