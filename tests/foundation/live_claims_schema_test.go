@@ -367,6 +367,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.consume_live_prices",
 				// LC-B4 (0128): claims.check_meta_reply resolves the actor's thread through the bundle peers (human_takeover / takeover_changed).
 				"inbox.dm_window_for_bundle",
+				// 0143 (OPS-01B): live.comment_poll_sources (owned by this role) asks the suspension guard predicate.
+				"control.store_serving",
 				// 0110 ACL ruling: domain-owned order provenance projection; only
 				// commerce_auth gets EXECUTE, never consumption-table privileges.
 				"claims.order_live_sources",
