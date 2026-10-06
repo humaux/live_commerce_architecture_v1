@@ -184,9 +184,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
 		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
-		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants; 0151 (W3-04B) adds sold_out_settings.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 11 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)/sold_out_settings (0151)", n)
+		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants; 0151 (W3-04B) adds sold_out_settings; 0154 (W3-05B) adds blocked_actors.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 12 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)/sold_out_settings (0151)/blocked_actors (0154)", n)
 		}
 	})
 
@@ -244,6 +244,12 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// written only by claims.for_buyer_begin/bind_merchant_origin_grant/consume_live_prices, the reservation table only by the for_buyer_* definers,
 		// and the peer comparison reads the conversation and bundle peers and the session lifecycle (all scoped to the tenant/store GUCs).
 		add(wr, "claims.bundles", "SELECT", "purged_at")
+		// 0154 (W3-05B restricted actors): the blocklist definers resolve a bundle's platform and actor_key inside the caller's store (policy bundle_writer_read, GUC scoped),
+		// console_marks reads the one-way reply_kind mark, and the definers are the only readers/writers of claims.blocked_actors (retention deletes through apply_actor_erasure).
+		add(wr, "claims.bundles", "SELECT", "platform", "actor_key")
+		add(wr, "claims.events", "SELECT", "reply_kind")
+		add(wr, "claims.blocked_actors", "SELECT", cols("claims.blocked_actors")...)
+		add(wr, "claims.blocked_actors", "INSERT", cols("claims.blocked_actors")...)
 		add(wr, "claims.merchant_origin_grants", "SELECT", cols("claims.merchant_origin_grants")...)
 		add(wr, "claims.merchant_origin_grants", "INSERT", cols("claims.merchant_origin_grants")...)
 		add(wr, "claims.merchant_origin_grants", "UPDATE", "quote_id", "consumed_at", "expires_at")
@@ -357,7 +363,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			wr + " live.comment_prints SELECT", wr + " live.comment_prints INSERT", wr + " live.comment_prints UPDATE",
 			// 0129 (LC-B6): grants and reservation rows, definers only.
 			wr + " claims.merchant_origin_grants SELECT", wr + " claims.merchant_origin_grants INSERT",
-			wr + " inbox.order_for_buyer SELECT", wr + " inbox.order_for_buyer INSERT"}
+			wr + " inbox.order_for_buyer SELECT", wr + " inbox.order_for_buyer INSERT",
+			// 0154 (W3-05B): the restricted-actor list is read, inserted and deleted by the blocklist definers only (RLS scoped to the transaction's tenant/store).
+			wr + " claims.blocked_actors SELECT", wr + " claims.blocked_actors INSERT", wr + " claims.blocked_actors DELETE"}
 		tableGot := lcStrings(t, f.owner, `SELECT p.grantee::text||' '||p.table_schema||'.'||p.table_name||' '||p.privilege_type
 			FROM information_schema.table_privileges p JOIN pg_class c ON c.oid=format('%I.%I',p.table_schema,p.table_name)::regclass
 			WHERE p.grantee::text<>pg_get_userbyid(c.relowner)
@@ -385,6 +393,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.session_orders", "claims.order_session_counts", "claims.pick_list_session_orders",
 				// 0148 (LC-B7): the console session facts helper it owns (EXECUTE: commerce_auth only).
 				"claims.console_session_facts",
+				// 0154 (W3-05B): the four blocklist definers it owns (EXECUTE: commerce_runtime).
+				"claims.block_actor", "claims.unblock_actor", "claims.list_blocked_actors", "claims.actor_restricted_for_bundle", "claims.bundle_actor_restricted",
 				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
@@ -507,6 +517,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"fail_meta_intake":  {args: "p_intake uuid, p_code text, p_final boolean", result: "void", volatility: "v", acl: "commerce_claims_intake:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_intake"},
 			"issue_system_link": {args: "p_intake uuid, p_hash bytea", result: "timestamp with time zone", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
 			"check_meta_reply":  {args: "p_operation uuid, p_hash bytea", result: "text", volatility: "s", acl: "commerce_claims_worker:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_claims_worker"},
+			// 0154 (W3-05B restricted actors): the merchant blocklist definers (live:manage / live:read re-checked inside; never an actor_key in or out).
+			"block_actor":                 {args: "p_session uuid, p_ref jsonb, p_note text", result: "TABLE(id uuid, platform text, created_at timestamp with time zone, created boolean)", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"unblock_actor":               {args: "p_id uuid", result: "boolean", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"list_blocked_actors":         {args: "p_after_time timestamp with time zone, p_after_id uuid, p_limit integer", result: "TABLE(id uuid, platform text, note text, source_bundle_id uuid, created_at timestamp with time zone)", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"actor_restricted_for_bundle": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			// 0154: predicate of inbox.checkout_reminder_candidates (reminders skip a restricted buyer); EXECUTE for its owner commerce_integration_writer only.
+			"bundle_actor_restricted": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
 		}
 		rows, err := f.owner.Query(ctx, `SELECT p.proname::text,pg_get_function_identity_arguments(p.oid),pg_get_function_result(p.oid),p.prosecdef,pg_get_userbyid(p.proowner)::text,
 			coalesce(array_to_string(p.proconfig,','),''),p.provolatile::text,coalesce(obj_description(p.oid,'pg_proc'),''),
@@ -568,8 +585,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 38 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-eight (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 43 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-three (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -587,11 +604,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
 			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
-			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply')) -- 0151: the owner of the two sold-out settings definers
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply','bundle_actor_restricted')) -- 0154: reminder predicate; 0151: the owner of the two sold-out settings definers
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
 			       -- 0151 (W3-04B): the merchant transaction reads/saves the sold-out reply setting.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('get_sold_out_reply','set_sold_out_reply'))
+			       -- 0154 (W3-05B): the merchant transaction manages and reads the restricted-actor list.
+			       OR (r.rolname='commerce_runtime' AND p.proname IN ('block_actor','unblock_actor','list_blocked_actors','actor_restricted_for_bundle'))
 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
@@ -927,7 +946,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
 				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
-				"claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)"})
+				"claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)",
+				// 0154 (W3-05B): the merchant blocklist definers read a bundle's platform/actor_key (never owner_id, bound_at or a link) to resolve or test one actor.
+				"claims.block_actor(uuid,jsonb,text)", "claims.actor_restricted_for_bundle(uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),

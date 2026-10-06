@@ -37,7 +37,7 @@ const (
 // generation, platform) and what the link issue needs (order id for an unpaid order, current claim-link generation for a claim).
 type ReminderCandidate struct {
 	BundleID       string
-	Verdict        string // send | already_reminded | window_closed | human_takeover | no_peer | capability | link_unavailable
+	Verdict        string // send | already_reminded | window_closed | human_takeover | no_peer | capability | link_unavailable | restricted | restricted
 	State          string // claimed | awaiting_payment
 	OrderID        string
 	LinkGeneration int64
@@ -199,7 +199,7 @@ type ReminderItem struct {
 	Code          *string `json:"code,omitempty"`
 }
 
-// FollowupItem is a buyer the merchant must handle (reason window_closed | human_takeover | no_peer | capability | link_unavailable); copy the
+// FollowupItem is a buyer the merchant must handle (reason window_closed | human_takeover | no_peer | capability | link_unavailable | restricted); copy the
 // link from the report's link field (link_copy_allowed is false when the store has no active storefront domain). The link is the store's
 // non-bearer checkout URL: it never carries a buyer secret.
 type FollowupItem struct {
