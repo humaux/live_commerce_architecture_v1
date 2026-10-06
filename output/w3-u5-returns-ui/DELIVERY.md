@@ -89,3 +89,20 @@ zh-TW + en at 1586px and 390px with no-horizontal-overflow assertion. **Executio
 - Register bodies never send `warehouse_id` (the order detail does not expose it); a multi-warehouse SKU answers
   422 `ambiguous_line`, mapped to merchant copy.
 - No success is rendered from a write response; every step re-GETs (`setTick`/`onChanged`) before showing state.
+
+## Integrator follow-up (Sonnet)
+
+- Trunk merged: `git merge r3/integration` (93233a00, browser-tag build fix) into the branch; no conflicts.
+- TS2741 fixed: `ReturnsList.tsx` passes `scrollHint={c.scrollHint}` to both `TableFrame`s; `scrollHint` added to `returns-copy.ts` in zh-TW, zh-CN, en
+  (same wording as `presentation-copy.ts`). `pnpm exec tsc --noEmit -p apps/admin` -> exit 0.
+- Harness written: `tests/foundation/browser_returns_ui_test.go` `TestBrowserReturnsUI` (tag `browser`, helpers prefixed `bru`; reuses `brfStartAdmin`,
+  `brfPlaywright`, `brfEvidence`, `rt*`). Seeds only through real paths on `tcvEnv{stripe:true}`: `LC_BROWSER_ORDER_SHIPPED` = paid card order + `PUT /shipment`;
+  `LC_BROWSER_ORDER_PAID` = CONFIRMED+CAPTURED; `LC_BROWSER_ORDER_IN_FLIGHT` = `rtPayStarted`; `LC_BROWSER_GAP_ORDER` = paid, refunded, cancelled,
+  provider `refund.failed` webhook (as `TestMerchantCancelRefundGap`); `LC_BROWSER_RESTRICTED_TOKEN` = member with `orders:read` only. After Playwright it
+  asserts PG facts: shipped order has exactly 1 CLOSED + 1 CANCELLED RMA, exactly 1 `returns.rma.restock` ledger row, CAPTURED facts and refund count unchanged,
+  refused orders still CONFIRMED / AWAITING_PAYMENT, no new `orders.merchant_cancelled` audit row, screenshot manifest has zh-TW+en x desktop+mobile.
+- Verified locally (E2, not the browser): `go vet -tags browser ./tests/foundation` -> 0; `gofmt -l tests/foundation` -> empty;
+  `bash scripts/dev/check-gates.sh` -> 0; `node --test --experimental-strip-types tests/admin/returns-*.test.ts` -> 10 pass;
+  seeding path run once through `LC_FOCUSED_TAGS=browser scripts/dev/test-focused.sh` with a throwaway test (deleted): 4 orders in the expected states, gap listed.
+- CI gates (not run locally, heavy): `--browser-returns-ui`, `--browser-click-sweep`, `--browser-visual-lint`.
+- NOT_RUN: the Playwright spec itself; the harness has never driven it. Spec-vs-UI mismatches (selectors, test ordering on `LC_BROWSER_ORDER_SHIPPED`) can only show up on CI.

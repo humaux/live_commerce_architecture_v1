@@ -106,6 +106,7 @@ const zhTW = {
   cancelInvalid: "請填寫取消原因。",
   // 退款失敗待處理
   gapsTitle: "退款失敗待處理",
+  scrollHint: "左右捲動以查看完整表格",
   gapsIntro: "這些訂單已取消，但取消前進行中的退款後來失敗，買家的款項仍扣留中。請到訂單的「退款」重新退款，完成後會從此列表消失。",
   gapsEmpty: "目前沒有待處理的退款。",
   colCaptured: "已收金額",
@@ -243,6 +244,7 @@ const zhCN: typeof zhTW = {
   cancelDone: "订单已取消。",
   cancelInvalid: "请填写取消原因。",
   gapsTitle: "退款失败待处理",
+  scrollHint: "左右滚动以查看完整表格",
   gapsIntro: "这些订单已取消，但取消前进行中的退款后来失败，买家的款项仍扣留中。请到订单的「退款」重新退款，完成后会从此列表消失。",
   gapsEmpty: "目前没有待处理的退款。",
   colCaptured: "已收金额",
@@ -381,6 +383,7 @@ const en: typeof zhTW = {
   cancelDone: "Order cancelled.",
   cancelInvalid: "Please enter a cancellation reason.",
   gapsTitle: "Failed refunds to redo",
+  scrollHint: "Scroll horizontally to view the full table",
   gapsIntro: "These orders were cancelled while a refund was still in flight, and that refund later failed — the buyer's money is still held. Refund again from the order's “Refund” section; the row disappears once the captured amount is covered.",
   gapsEmpty: "No pending failed refunds.",
   colCaptured: "Captured",

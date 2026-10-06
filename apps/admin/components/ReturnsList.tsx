@@ -91,7 +91,7 @@ function ReturnsTable({
         </p>
       )}
       {list.length > 0 && (
-        <TableFrame label={c.pageTitle}>
+        <TableFrame label={c.pageTitle} scrollHint={c.scrollHint}>
           <table>
             <thead>
               <tr>
@@ -163,7 +163,7 @@ function GapsSection({
         </p>
       )}
       {gaps.length > 0 && (
-        <TableFrame label={c.gapsTitle}>
+        <TableFrame label={c.gapsTitle} scrollHint={c.scrollHint}>
           <table>
             <thead>
               <tr>
