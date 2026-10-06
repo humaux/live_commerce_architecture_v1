@@ -1,0 +1,31 @@
+# green-n: committed tree ec76e2f19f2d0052f4fd33ae7307a874417066eb
+=== RUN   TestSupportGrantSG01ReadAndSG02PackLimits
+--- PASS: TestSupportGrantSG01ReadAndSG02PackLimits (2.50s)
+=== RUN   TestSupportGrantSG02ReadOnlyTransactionAndUseAudit
+--- PASS: TestSupportGrantSG02ReadOnlyTransactionAndUseAudit (0.07s)
+=== RUN   TestSupportGrantSG03ExpiryNeedsNoSweeper
+--- PASS: TestSupportGrantSG03ExpiryNeedsNoSweeper (0.05s)
+=== RUN   TestSupportGrantSG04RevokeImmediateAndIdempotent
+--- PASS: TestSupportGrantSG04RevokeImmediateAndIdempotent (0.05s)
+=== RUN   TestSupportGrantSG05SuspensionStopsSupportToo
+--- PASS: TestSupportGrantSG05SuspensionStopsSupportToo (0.05s)
+=== RUN   TestSupportGrantSG06Limits
+--- PASS: TestSupportGrantSG06Limits (0.07s)
+=== RUN   TestSupportGrantSG07RegularPrincipalsUnaffected
+--- PASS: TestSupportGrantSG07RegularPrincipalsUnaffected (0.06s)
+=== RUN   TestSupportGrantSG09RegistryAndSeparation
+--- PASS: TestSupportGrantSG09RegistryAndSeparation (0.07s)
+=== RUN   TestSupportGrantNullPermissionDenied
+--- PASS: TestSupportGrantNullPermissionDenied (0.04s)
+=== RUN   TestSupportGrantWriteVerbRouteWithReadPermissionRefused
+--- PASS: TestSupportGrantWriteVerbRouteWithReadPermissionRefused (0.04s)
+=== RUN   TestSupportGrantSG08AuthorityMatrix
+--- PASS: TestSupportGrantSG08AuthorityMatrix (0.23s)
+=== RUN   TestSupportGrantN1RevokeWaitsForInFlightGrant
+--- PASS: TestSupportGrantN1RevokeWaitsForInFlightGrant (0.78s)
+=== RUN   TestSupportGrantN3DefinerWriteRefusedByReadOnlyTransaction
+--- PASS: TestSupportGrantN3DefinerWriteRefusedByReadOnlyTransaction (0.06s)
+PASS
+ok  	livecommerce/tests/foundation	6.121s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+exit 0

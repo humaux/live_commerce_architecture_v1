@@ -565,6 +565,9 @@ Sequence: B1 frozen and merged → freeze this file → 0062/post_river + RF03 (
   owner-provisioning unit (0065, see below); no backfill of other principals.
 - R-2 Single actor in v1 (no dual control). R-3 Cancel-and-release of a refunded unshipped order
   is a separate R1 follow-up unit, not part of this contract.
+  **R-3 RESOLVED (W3-08B, migration 0155, `returns-v1.md` §3/§5):** the merchant cancel command releases the allocation of a paid
+  card order only after refunds (succeeded + in flight) cover the CAPTURED amount (409 `refund_first` otherwise); the refund itself still
+  writes no stock (RD6 unchanged). Returns of shipped orders restock only through an RMA disposition `sellable` (`returns-v1.md` §2/§5).
 - R-4 The `fraudulent` reason is excluded. R-5 Current key version, frozen into the refund row.
   **Superseded by amendment (A1, RD13):** a frozen version can be revoked by a later rotation, which
   would make same-key resends, retrieves and lists return 401 and strand a SUBMITTING refund with
