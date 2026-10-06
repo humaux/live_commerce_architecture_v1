@@ -31,7 +31,9 @@ export const ordersRoutes = [
     icon: "orders",
     permission: "orders:read",
     template: "list",
-    nav: true,
+    // nav: false — a second rail entry would make the orders group non-singleton and drop the `nav-orders` button every
+    // browser spec clicks (WorkspaceFrame). Reached from the orders list ("退貨與取消" link in OrderListFilters).
+    nav: false,
     spec: "tests/admin/returns-ui.spec.ts",
   },
   {

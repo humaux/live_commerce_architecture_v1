@@ -106,3 +106,11 @@ zh-TW + en at 1586px and 390px with no-horizontal-overflow assertion. **Executio
   seeding path run once through `LC_FOCUSED_TAGS=browser scripts/dev/test-focused.sh` with a throwaway test (deleted): 4 orders in the expected states, gap listed.
 - CI gates (not run locally, heavy): `--browser-returns-ui`, `--browser-click-sweep`, `--browser-visual-lint`.
 - NOT_RUN: the Playwright spec itself; the harness has never driven it. Spec-vs-UI mismatches (selectors, test ordering on `LC_BROWSER_ORDER_SHIPPED`) can only show up on CI.
+
+### CI regression fix (run 37509052114 on 9a3578ad)
+
+- Root cause: `apps/admin/src/features/orders/routes.ts` registered `returns` with `nav: true` in the `orders` group. `WorkspaceFrame.groupView` renders the
+  `nav-orders` button only when the group has a single nav route; with two it renders `nav-group-orders` plus collapsed sub-links, so every browser spec's
+  post-login `getByTestId("nav-orders")` found nothing (returns-ui, MF07, MOU, refund-fulfilment, click-sweep).
+- Fix: `returns` is `nav: false` (the page stays reachable from the orders list link "退貨與取消"; its `shellCopy.returns` label still titles the page).
+- Guard: `tests/admin/shell-registry.test.ts` "Every browser spec clicks nav-orders..." (red before: `['orders','returns']`, green after).
