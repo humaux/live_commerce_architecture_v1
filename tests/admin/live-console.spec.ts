@@ -192,6 +192,9 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
     await page.getByTestId("live-command-retry").click();
     await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+    // The retry control hides at request start, not at acknowledgement. Wait
+    // for the same-key transport receipt before inspecting exact replay/effect counts.
+    await expect.poll(async () => (await facts(request)).receipts.filter((receipt) => receipt.key_hash === unknown.key_hash)).toHaveLength(2);
     const retries = (await facts(request)).receipts.filter((receipt) => receipt.key_hash === unknown.key_hash);
     expect(retries).toHaveLength(2);
     expect(retries.map((receipt) => receipt.body_hash)).toEqual([unknown.body_hash, unknown.body_hash]);
