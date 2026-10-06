@@ -2,10 +2,18 @@
 // Run by scripts/dev/test-node.sh and by `test-local.sh --browser-click-sweep` before any build.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classKey, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
+import { classKey, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
+
+test("storefront cart-line removal is reversible: clicked for real, not guarded", () => {
+  for (const name of ["Remove Sweep Wool Scarf from the cart", "將 Sweep Wool Scarf 移出購物車", "将 Scarf 移出购物车"]) {
+    assert.equal(isCartLineRemoval(name), true, name);
+    assert.equal(isDestructive(name), false, name);
+  }
+  for (const name of ["Remove staff", "將成員移出店鋪"]) assert.equal(isCartLineRemoval(name), false, name);
+});
 
 test("destructive / irreversible / sign-out classification (owner list, en + zh)", () => {
-  for (const name of ["Delete product", "刪除商品", "删除", "Archive", "封存", "Void shipment", "作廢", "Disconnect Page", "斷開連線", "Refund", "退款", "Cancel order", "取消訂單", "Publish", "上架", "Unpublish", "revoke invite", "Remove staff", "取消發佈", "解除綁定", "中斷連接", "Suspend", "Detach"])
+  for (const name of ["Delete product", "刪除商品", "删除", "Archive", "封存", "Void shipment", "作廢", "Disconnect Page", "斷開連線", "Refund", "退款", "Cancel order", "取消訂單", "Publish", "上架", "Unpublish", "revoke invite", "Remove staff", "取消發佈", "解除綁定", "中斷連接", "Suspend", "Detach", "將成員移出店鋪"])
     assert.equal(isDestructive(name), true, name);
   for (const name of ["Save", "儲存", "Cancel", "取消", "Next page", "Add to cart", "Choose delivery", "Search", "Pause", "暫停"]) assert.equal(isDestructive(name), false, name);
   assert.equal(isSignOut("Sign out"), true); assert.equal(isSignOut("登出"), true); assert.equal(isSignOut("Signed in as"), false);
