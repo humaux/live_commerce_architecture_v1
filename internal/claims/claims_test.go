@@ -392,8 +392,9 @@ func TestValidIngestShape(t *testing.T) {
 	}
 }
 
-// §0.1 P2(f): unavailable or inactive pending lines are skipped and stay pending; only
-// applicable lines are merged, as absolute quantities, into the untouched rest of the cart.
+// §0.1 P2(f): unavailable pending lines are skipped and stay pending; only applicable lines are merged, as absolute quantities, into the untouched rest of
+// the cart. Owner decision 2026-10-07 ("already-claimed buyers keep the live price, only new claims are refused"): a pending line of a PAUSED offer
+// (o3, sku-c) is applicable like any other; it used to be skipped as offer_inactive.
 func TestRedeemPlanning(t *testing.T) {
 	lines := []claimLine{
 		{offerID: "o1", skuID: "sku-b", quantity: 3, version: 2, pending: true, offerActive: true},
@@ -402,21 +403,26 @@ func TestRedeemPlanning(t *testing.T) {
 		{offerID: "o4", skuID: "sku-d", quantity: 2, version: 1, pending: true, offerActive: true},
 		{offerID: "o5", skuID: "sku-e", quantity: 9, version: 4, pending: false, offerActive: true},
 	}
-	available := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true, tracked: true, quantity: 0}, "sku-d": {available: false, tracked: true, quantity: 0}, "sku-e": {available: true}}
+	available := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true, tracked: true, quantity: 5}, "sku-d": {available: false, tracked: true, quantity: 0}, "sku-e": {available: true}}
 	apply, skipped, err := splitPending(lines, available)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(apply) != 2 || apply[0].skuID != "sku-a" || apply[1].skuID != "sku-b" {
-		t.Fatalf("apply=%+v", apply)
+	if len(apply) != 3 || apply[0].skuID != "sku-a" || apply[1].skuID != "sku-b" || apply[2].skuID != "sku-c" || apply[2].offerID != "o3" || apply[2].quantity != 5 {
+		t.Fatalf("apply=%+v (the paused offer's line must be applied at its claimed quantity)", apply)
 	}
-	wantSkipped := []Skipped{{SKUID: "sku-c", Reason: "offer_inactive"}, {SKUID: "sku-d", Reason: "unavailable"}}
+	wantSkipped := []Skipped{{SKUID: "sku-d", Reason: "unavailable"}}
 	if !reflect.DeepEqual(skipped, wantSkipped) {
 		t.Fatalf("skipped=%+v", skipped)
 	}
+	// Stock is still the checkout's call: the same paused line with too little stock is sold_out, never offer_inactive.
+	soldOut := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true, tracked: true, quantity: 4}, "sku-d": {available: false}, "sku-e": {available: true}}
+	if _, skipped, err := splitPending(lines, soldOut); err != nil || !reflect.DeepEqual(skipped, []Skipped{{SKUID: "sku-c", Reason: "sold_out"}, {SKUID: "sku-d", Reason: "unavailable"}}) {
+		t.Fatalf("paused line without stock: %+v %v", skipped, err)
+	}
 	cart := []storefront.Item{{SKUID: "sku-b", Quantity: 7}, {SKUID: "sku-z", Quantity: 4}, {SKUID: "sku-e", Quantity: 1}}
 	merged := mergeCart(cart, apply)
-	want := []storefront.Item{{SKUID: "sku-b", Quantity: 3}, {SKUID: "sku-z", Quantity: 4}, {SKUID: "sku-e", Quantity: 1}, {SKUID: "sku-a", Quantity: 1}}
+	want := []storefront.Item{{SKUID: "sku-b", Quantity: 3}, {SKUID: "sku-z", Quantity: 4}, {SKUID: "sku-e", Quantity: 1}, {SKUID: "sku-a", Quantity: 1}, {SKUID: "sku-c", Quantity: 5}}
 	if !reflect.DeepEqual(merged, want) || cart[0].Quantity != 7 {
 		t.Fatalf("merged=%+v (input must stay untouched: %+v)", merged, cart)
 	}
@@ -425,9 +431,57 @@ func TestRedeemPlanning(t *testing.T) {
 	}
 	dupe := append(append([]claimLine{}, lines...), claimLine{offerID: "o6", skuID: "sku-a", quantity: 2, version: 1, pending: true, offerActive: true})
 	if _, _, err := splitPending(dupe, available); !errors.Is(err, command.ErrConflict) {
-		t.Fatalf("two applicable lines on one SKU must conflict: %v", err)
+		t.Fatalf("two ACTIVE offers' lines on one SKU break live_offer_active_sku and must conflict: %v", err)
 	}
 	if apply, skipped, err := splitPending(lines[4:], available); err != nil || len(apply) != 0 || len(skipped) != 0 {
 		t.Fatalf("nothing pending: %+v %+v %v", apply, skipped, err)
+	}
+}
+
+// One SKU has one cart origin, so when a bundle holds several lines on one SKU exactly one may carry it: the ACTIVE offer's line (typo recovery: paused A11 +
+// active A1), else the lowest offer id. The others stay pending and are skipped as offer_inactive. The rule looks at ALL lines of the SKU, applied or not, so a
+// repeated redeem can never let a paused line overwrite the cart line that the active offer's claim already set. Never an error, except two active offers.
+func TestRedeemPlanningOneLinePerSKU(t *testing.T) {
+	avail := map[string]skuAvailability{"s": {available: true}}
+	paused := claimLine{offerID: "b-paused", skuID: "s", quantity: 2, version: 1, pending: true, offerActive: false}
+	active := claimLine{offerID: "a-active", skuID: "s", quantity: 3, version: 1, pending: true, offerActive: true}
+	for name, tc := range map[string]struct {
+		lines []claimLine
+		apply string // offer id applied, "" = none
+		skip  int
+	}{
+		"active wins over a paused line with a lower id": {[]claimLine{active, paused}, "a-active", 1},
+		"order of the input does not matter":             {[]claimLine{paused, active}, "a-active", 1},
+		"active line already applied: paused one stays out": {[]claimLine{{offerID: "a-active", skuID: "s", quantity: 3, version: 1, pending: false, offerActive: true},
+			{offerID: "0-paused", skuID: "s", quantity: 2, version: 1, pending: true, offerActive: false}}, "", 1},
+		"paused alone is applied":                   {[]claimLine{paused}, "b-paused", 0},
+		"two paused: the lowest offer id":           {[]claimLine{paused, {offerID: "a-paused", skuID: "s", quantity: 7, version: 1, pending: true, offerActive: false}}, "a-paused", 1},
+		"two paused, the lowest is already applied": {[]claimLine{paused, {offerID: "a-paused", skuID: "s", quantity: 7, version: 1, pending: false, offerActive: false}}, "", 1},
+		"another SKU is independent":                {[]claimLine{paused, {offerID: "c", skuID: "t", quantity: 1, version: 1, pending: true, offerActive: false}}, "b-paused", 0},
+	} {
+		apply, skipped, err := splitPending(tc.lines, map[string]skuAvailability{"s": avail["s"], "t": {available: true}})
+		if err != nil {
+			t.Errorf("%s: %v", name, err)
+			continue
+		}
+		got := ""
+		for _, l := range apply {
+			if l.skuID == "s" {
+				got = l.offerID
+			}
+		}
+		if got != tc.apply || len(skipped) != tc.skip {
+			t.Errorf("%s: applied %q skipped %+v, want applied %q and %d skipped", name, got, skipped, tc.apply, tc.skip)
+		}
+		for _, sk := range skipped {
+			if sk.Reason != skipOfferInactive {
+				t.Errorf("%s: a superseded line is reported as %q", name, sk.Reason)
+			}
+		}
+	}
+	// The preview shares the rule: the superseded line is not available, the winner is.
+	w, err := skuWinners([]claimLine{paused, active})
+	if err != nil || w["s"] != "a-active" {
+		t.Fatalf("skuWinners: %+v %v", w, err)
 	}
 }

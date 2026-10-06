@@ -61,8 +61,8 @@ func liveClaimPrices(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID strin
 	}
 	// claims.live_prices (definer, EXECUTE commerce_buyer_runtime + commerce_checkout_runtime: Quote and checkout.Begin's
 	// RevalidateQuote both land here; migrations/0092, 0103): returns a row only for origins bound to this buyer with an
-	// unexpired link, a claim line covering the cart quantity (0103: the SQL, not claim_quantity, is the authority) and an
-	// active priced offer of that session.
+	// unexpired link, a claim line covering the cart quantity (0103: the SQL, not claim_quantity, is the authority) and a
+	// priced offer of that session (0158, owner decision 2026-10-07: the offer may be paused; a pause refuses only new claims).
 	priced, err := tx.Query(ctx, `SELECT sku_id::text,bundle_id::text,offer_id::text,live_price_minor
 		FROM claims.live_prices($1::uuid[],$2::uuid[],$3::uuid[],$4::bigint[])`, bundles, offers, skus, quantities)
 	if err != nil {

@@ -79,7 +79,7 @@ classes without fixed days; UI BLOCKED pending composition approval (T10b).
   Keyword and SKU are immutable; `max_quantity_per_claim` 1..999 and `active` change
   with version CAS. Keyword unique per session (active or not); at most one **active**
   offer per SKU per session, so a redeem has at most one applicable line per SKU (a cart
-  merge never sums two claim lines; lines on inactive offers are skipped, §4.4). A keyword
+  merge never sums two claim lines; a line is skipped when another claim line of the bundle wins its SKU, §4.4 and amendment "Live price kept on pause"). A keyword
   typo is fixed by deactivating the offer and creating the right keyword for the same SKU.
   ≤200 offers per session.
 - A **claim window** per session is `CLOSED`/`OPEN` with `match_mode` `EXACT`
@@ -771,10 +771,12 @@ expected_bundle_version}, &out, fn)`, where fn:
 
 1. `claims.redeem_link(hash, expected)`; zero rows → `ErrNotFound`; `PT409` →
    `ErrConflict` (the whole command, including the bind, rolls back).
-2. Pending lines whose offer is inactive or SKU/product unavailable are `skipped` and
+2. Pending lines superseded on their SKU or whose SKU/product is unavailable are `skipped` and
    **stay pending**; the rest override the cart quantity for that SKU (absolute).
-   Non-claim and non-pending lines are untouched. `live_offer_active_sku` leaves at most
-   one applicable line per SKU in the `redeem_link` snapshot; Go asserts it (`ErrConflict`).
+   Non-claim and non-pending lines are untouched. (Owner decision 2026-10-07, amendment "Live price
+   kept on pause": a pending line whose offer is merely paused is applied, not skipped; the active
+   offer's line wins a SKU that two lines compete for.) `live_offer_active_sku` allows at most
+   one ACTIVE offer per SKU; Go asserts it (`ErrConflict` for two active lines on one SKU).
 3. Nothing to apply → `out.Cart = storefront.GetCart` (no cart write).
 4. Otherwise `storefront.LockCartOwner` → `storefront.GetCart` → merged set (>50 SKUs →
    `ErrInvalid`, bind rolled back) → `storefront.SetCart(ctx, tx, s, "clm:" +
@@ -1054,7 +1056,9 @@ delta and gates.
   immutable per offer; a typo is fixed by deactivating it and creating the right keyword
   for the same SKU (SKU uniqueness covers active offers only; KC04). Lines already
   accepted on the deactivated offer stay pending and are skipped; they apply only if that
-  offer is reactivated, which first requires deactivating its replacement.
+  offer is reactivated, which first requires deactivating its replacement. (SUPERSEDED for the skip by
+  amendment "Live price kept on pause": such a line is applied at its live price unless the buyer also
+  holds a claim on the SKU's active replacement offer, which then wins the cart line.)
 - Strict grammar rejects `A1 +2`, `A1+02`, emoji, interior spaces, Chinese numerals;
   merchants should avoid keywords shaped `<keyword>X<digits>` (`a1x2` hazard).
 - One OPEN window per store; window close drops in-flight commands (fail-closed). A
@@ -1180,7 +1184,7 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    `apps/storefront/lib/claim-contract.ts` is exact-keys), so only `unit_price_minor` changes value; showing the struck-out
    catalog price needs a coordinated storefront change (follow-up). The Quote still decides the charged price.
 7. **Gate.** A buyer cannot obtain a live price via a direct cart, via an expired link, via another session's offer on the
-   same SKU, via a bundle bound to another buyer, via an inactive or price-less offer, or by raising the quantity above the
+   same SKU, via a bundle bound to another buyer, via a price-less offer (amended: a paused offer still prices the claim lines granted before the pause, see "Live price kept on pause"), or by raising the quantity above the
    claimed quantity, nor by ordering again after the claimed quantity was ordered (re-sending the same cart after checkout,
    0105): a second order of an already-ordered claim line is priced at catalog until the first order is CANCELLED. KC03 gains
    the 0092 grants/functions and the 0105 ledger, definer and column grants; no other KC03 row changes. Gate:
@@ -1345,9 +1349,8 @@ The simulator always reports the window's actual state and mode (`window_state`,
    buyers' lines, so create a new offer for the new keyword; deactivating the old one has the pause effect below), `sku_unavailable` (as M3), `session_full` (200-offer cap counts the new offers), `same_keyword`, and the check errors `invalid_keyword`, `keyword_taken`,
    `duplicate_in_request`, `normalization_collision` against the session's offers (the old keyword of a renamed offer stays reserved, because it stays in the session as an inactive offer) and the other renames.
    Applied: `deactivate` sets `active=false` (an already inactive offer is reported in `unchanged`, not an error). Deactivating an active offer that has claim lines is allowed and adds the warning
-   `deactivate_has_claims {keyword, offer_id}`: it is exactly one M4 pause ("Live tools (R4)" rule 7, gate LTG03): the live price of those buyers' lines ends at their next quote, a link not yet opened skips the line as
-   `offer_inactive`, and reactivating the offer (M4) restores both because claim lines and links are untouched. Keeping the granted price for existing claimants after a pause would overturn that frozen money rule and
-   is NOT part of this unit (needs its own ruling). Warnings accompany applied results only; `rename` **deactivates the old offer and creates a new offer** with the new canonical keyword and
+   `deactivate_has_claims {keyword, offer_id}`: it is exactly one M4 pause. SUPERSEDED by amendment "Live price kept on pause" (owner decision 2026-10-07): those buyers KEEP the live price their claim
+   granted (quote, checkout and redeem, including a link not yet opened) until the claim or link expires; only NEW claims on the paused offer are refused. The warning stays as information for the merchant. Warnings accompany applied results only; `rename` **deactivates the old offer and creates a new offer** with the new canonical keyword and
    the old SKU, `max_quantity_per_claim` and `live_price_minor` (new offer: version 1, `activated_at` now, principal = caller). It is not an in-place keyword update (keywords are immutable, 0060; ingest dedup compares the
    stored offer's keyword, S03). The old offer keeps its history and its inactive keyword. When the renamed offer is the console's recommended one (the latest `featured` `live.offer_timeline` row of the session), the same transaction appends a `featured`
    row for the new offer, so `recommended` never points at the retired offer (the old rows stay as append-only history). Rename warnings (`quantity_lookalike`, `numeric_in_contains`) are analysed in the session window's mode. `{applied:true, offers:[Offer], unchanged:[offer_id], conflicts:[], warnings:[Finding]}` where `offers` are the
@@ -1358,3 +1361,35 @@ The simulator always reports the window's actual state and mode (`window_state`,
 6. **Privacy / limits**: the simulator and the checks hold the comment or keyword text only in memory for the request: nothing is logged, stored or put in a receipt, and `SimulateInput` has the redacting
    formatters of `ManualClaimInput` (I11). Batch receipts store keywords of offers (merchant data), never comments. Gates: `TestSimulate*`, `TestKeywordTools*` (SIM-PARITY, SIM-KWC, KT conflict/next/batch, `TestKeywordToolsBatchDeactivateIsAPause` pinning the pause effect above),
    `internal/httpapi` keyword-tools transport test. Evidence MOCK (REAL_PG; no Meta call).
+
+
+## Amendment "Live price kept on pause" (2026-10-07, migration 0158)
+
+Owner decision 2026-10-07 (binding; it overrides the frozen behaviour of gate LTG03, "Live tools (R4)" rules 5 and 7, the §12 sentence "Lines already accepted on
+the deactivated offer stay pending and are skipped" and the W3-06B deactivate text): 「已经认领的买家保留直播价，只拒绝新的认领。」 Unit `docs/delivery/units/live-price-keep-on-pause.md`.
+
+1. **New claims are refused, existing claims are not touched.** Ingest rejects a paused offer as `OFFER_INACTIVE` exactly as before (no new line, no bundle). A claim LINE
+   (bundle, offer, SKU) that exists was granted while the offer was active; pausing the offer never changes it. Reactivation (M4) therefore changes nothing for those buyers.
+2. **Quote authority (rule 5, amended).** `claims.live_prices` no longer requires `live.offers.active`. A live price is returned when ALL still hold at `clock_timestamp()`: the bundle
+   is bound to the calling buyer (or the 0129 merchant-origin grant branch) with an unexpired link; the claim line exists for that SKU; the line's quantity minus the quantity held by
+   non-CANCELLED orders covers the cart quantity (the cap per claim line is unchanged: no more than the claimed units, across all orders); the offer belongs to the bundle's session,
+   targets that SKU and has `live_price_minor IS NOT NULL`. The price is still evaluated at quote time (rule 3): clearing or changing `live_price_minor` on a paused or an active offer
+   changes later quotes, a pause alone changes nothing. `checkout.Begin` re-runs the same function through `RevalidateQuote`, so a live-priced quote of a paused offer places at the live price;
+   `claims.consume_live_prices` records the use as before (it never read `active`). Expiry is not extended: an expired or rotated-away link ends the price exactly as in rule 5.
+3. **Link display and redeem.** `claims.preview_live_prices` shows the live price of every priced line of the link whether or not its offer is active. B1 `available` is
+   `SKU/product active and SKU currency = store currency and the line is not superseded` (below); it no longer depends on the offer being active. B2 applies a pending line of a paused
+   offer like any other (it is NOT skipped as `offer_inactive`); stock is still the checkout's decision (`sold_out` precedence is unchanged, claims never reserve stock).
+   `claims.preview_link` / `claims.redeem_link` keep their signatures and keep reporting `offer_active` (a fact about the offer, no longer a gate).
+4. **One SKU, one claim line per cart.** The cart carries one origin per SKU. When a bundle holds several pending lines on one SKU (typo recovery: the paused `A11` and the active `A1`
+   on the same SKU) exactly one of them is applied: the line of the ACTIVE offer (the unique-active-offer-per-SKU index guarantees at most one), otherwise the line with the lowest
+   offer id (deterministic; a buyer holding claims on two paused offers of one SKU is a degenerate case). The others are not applied: they stay pending, `available=false` in B1 and
+   skipped with `reason:"offer_inactive"` in B2 (the only remaining use of that reason, unchanged wire shape). Never `409`.
+5. **Merchant order-for-buyer prefill (LC-B6).** `claims.for_buyer_lines` reports `live_price_minor` whenever the offer has a live price (the former `active` condition is dropped), so the
+   merchant-attested origin prices the same claim lines the buyer's own checkout would.
+6. **Rule 7 gate, amended.** A buyer cannot obtain a live price via a direct cart, an expired link, another session's offer on the same SKU, a bundle bound to another buyer, a
+   price-less offer, by raising the quantity above the claimed quantity, nor by ordering again after the claimed quantity was ordered. A paused offer gives its live price ONLY to
+   a claim line granted before the pause. A buyer without a prior claim pays the catalog price and cannot claim (`OFFER_INACTIVE`). Gates: `TestLivePriceKeepOnPause*`
+   (cases a to g, REAL_PG), LTG03 `TestLiveToolsGateOfferLifecycleAndExpiry`, `TestKeywordToolsBatchDeactivateIsAPause`, `TestRedeemPlanning`, KC04 typo recovery.
+7. **Known limits.** The auto sold-out reply (amendment "W3-04B", `OR NOT o.active`) is unchanged: a claim accepted just before a late deactivation gets the sold-out text and no link, because
+   the reply is planned after the pause; it holds a claim line but no link was issued (a follow-up, not part of this unit). Migration 0158 changes only functions (CREATE OR REPLACE, same
+   owners, EXECUTE lists and volatility): no table, column, grant or role change.

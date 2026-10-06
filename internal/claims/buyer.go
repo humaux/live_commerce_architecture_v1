@@ -1,6 +1,8 @@
 // Purpose: buyer claim preview and delta redemption into the existing cart.
-// Depends on: buyer scope/commands, claims definers, storefront cart and inventory availability.
+// Depends on: buyer scope/commands, claims definers (claims.preview_link, claims.preview_live_prices, claims.redeem_link, claims.mark_applied), storefront cart and inventory availability.
 // Used by: buyerhttp B1/B2 handlers and claims acceptance tests.
+// Invariants: live-keyword-claims-v1 amendment "Live price kept on pause" (owner decision 2026-10-07): a claim line of a paused offer is previewed and redeemed like
+//   any other (the pause refuses only NEW claims); one SKU is carried into the cart by one claim line only (skuWinners).
 // buyer.go owns the buyer side of a claim link: PreviewLink (read-only) and RedeemLink
 // (bind, then apply pending claim lines to the buyer's own cart) (contract §4.4, §6).
 //
@@ -62,7 +64,9 @@ type RedeemInput struct {
 
 // Skipped reports a pending line that B2 did not apply; it remains available to retry later.
 type Skipped struct {
-	SKUID  string `json:"sku_id"`
+	SKUID string `json:"sku_id"`
+	// offer_inactive: only a line superseded on its SKU (skuWinners: a paused offer's line when the bundle also holds the SKU's active replacement, typo
+	// recovery); a paused offer's line on its own is applied (owner decision 2026-10-07).
 	Reason string `json:"reason"` // unavailable | offer_inactive | sold_out
 }
 
@@ -88,9 +92,11 @@ const redeemKeyPrefix = "clm:"
 
 // PreviewLink shows what a link would prefill, in a buyer.WithScope transaction. It calls
 // claims.preview_link (no lock, no write) and enriches lines from buyer-readable catalog
-// columns; Available = offer active ∧ SKU and product active ∧ SKU currency = store
-// currency. Unknown, expired, rotated, other-owner, other-store and other-tenant links are
-// all ErrNotFound. No receipt, event, lock or write. Called by B1.
+// columns; Available = the line is not superseded on its SKU (skuWinners) ∧ SKU and product
+// active ∧ SKU currency = store currency. The offer being paused does NOT make a line
+// unavailable (owner decision 2026-10-07). Unknown, expired, rotated, other-owner,
+// other-store and other-tenant links are all ErrNotFound. No receipt, event, lock or
+// write. Called by B1.
 func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken) (Preview, error) {
 	if ctx == nil || tx == nil {
 		return Preview{}, command.ErrInvalid
@@ -104,7 +110,7 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 	// catalog.skus/products, control.stores: the buyer's own read grants (0007), no lock.
 	rows, err := tx.Query(ctx, `SELECT p.bundle_version,p.bound,p.expires_at,p.keyword,p.sku_id::text,s.code,pr.name,
 		s.currency,s.price_minor,p.quantity,p.pending,
-		p.offer_active AND s.status='active' AND pr.status='active' AND s.currency=st.currency
+		s.status='active' AND pr.status='active' AND s.currency=st.currency,p.offer_id::text,p.offer_active
 		FROM claims.preview_link($1::bytea) p
 		JOIN catalog.skus s ON s.tenant_id=$2 AND s.store_id=$3 AND s.id=p.sku_id
 		JOIN catalog.products pr ON pr.tenant_id=s.tenant_id AND pr.store_id=s.store_id AND pr.id=s.product_id
@@ -115,12 +121,17 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 	}
 	defer rows.Close()
 	out := Preview{Lines: []PreviewLine{}}
+	var contenders []claimLine // every line of the link with its offer, for the one-line-per-SKU rule
 	for rows.Next() {
 		var line PreviewLine
+		var c claimLine
 		if err := rows.Scan(&out.BundleVersion, &out.Bound, &out.ExpiresAt, &line.Keyword, &line.SKUID, &line.SKUCode,
-			&line.ProductName, &line.Currency, &line.UnitPriceMinor, &line.Quantity, &line.Pending, &line.Available); err != nil {
+			&line.ProductName, &line.Currency, &line.UnitPriceMinor, &line.Quantity, &line.Pending, &line.Available,
+			&c.offerID, &c.offerActive); err != nil {
 			return Preview{}, mapError(err)
 		}
+		c.skuID = line.SKUID
+		contenders = append(contenders, c)
 		out.Lines = append(out.Lines, line)
 	}
 	if err := rows.Err(); err != nil {
@@ -128,6 +139,16 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 	}
 	if len(out.Lines) == 0 {
 		return Preview{}, command.ErrNotFound
+	}
+	// A line that loses its SKU to another claim line of the bundle is not available (redeem would skip it as offer_inactive).
+	winners, err := skuWinners(contenders)
+	if err != nil {
+		return Preview{}, err
+	}
+	for i := range out.Lines {
+		if winners[contenders[i].skuID] != contenders[i].offerID {
+			out.Lines[i].Available = false
+		}
 	}
 	// inventory.buyer_sku_availability: read-only stock hint, Direct checkout amendment (I03).
 	lines := make([]claimLine, 0, len(out.Lines))
@@ -145,7 +166,7 @@ func PreviewLink(ctx context.Context, tx pgx.Tx, s buyer.Scope, token LinkToken)
 }
 
 // overlayPreviewPrices shows each line's live price (claims.preview_live_prices: same link guards as
-// preview_link, active priced offers only) as the display unit price, keeping the catalog price beside
+// preview_link, priced offers whether or not they are paused, 0158) as the display unit price, keeping the catalog price beside
 // it. Display only: the Quote re-proves the origin and decides the charge (amendment "Live tools (R4)" rule 6).
 func overlayPreviewPrices(ctx context.Context, tx pgx.Tx, token LinkToken, out *Preview) error {
 	rows, err := tx.Query(ctx, `SELECT keyword,live_price_minor FROM claims.preview_live_prices($1::bytea)`, token.hash())
@@ -188,8 +209,9 @@ type claimLine struct {
 // RedeemLink binds the link's bundle to the caller (first owner wins) and applies its
 // pending lines as absolute cart quantities, in a buyer.WithScope transaction under one
 // buyer receipt ("claims.redeem", request {link_sha256, expected_bundle_version}). Pending
-// lines whose offer is inactive or whose SKU/product is unavailable are skipped and stay
-// pending; non-claim and already-applied lines are untouched. Nothing to apply → the
+// lines superseded on their SKU (skuWinners), whose SKU/product is unavailable or sold out
+// are skipped and stay pending; a line of a PAUSED offer is applied like any other (owner
+// decision 2026-10-07); non-claim and already-applied lines are untouched. Nothing to apply → the
 // current cart, no cart write. Errors: unknown/expired/rotated/other-owner link →
 // ErrNotFound; bundle version changed, a pre-existing unavailable cart item, or a cart
 // post-condition failure → ErrConflict; merged cart above SetCart's 50-SKU bound →
@@ -338,26 +360,51 @@ func availableSKUs(ctx context.Context, tx pgx.Tx, s buyer.Scope, lines []claimL
 	return available, nil
 }
 
-// splitPending decides, per pending line, apply or skip (offer_inactive before
-// unavailable); skipped lines stay pending. live_offer_active_sku leaves at most one
-// applicable line per SKU, which is asserted here (a second one is ErrConflict). Output
-// is ordered by SKU. Pure.
+// skuWinners picks, per SKU, the one claim line of the bundle that may carry the SKU into the cart (the cart holds one claim origin per SKU): the line of the
+// ACTIVE offer (typo recovery: a paused A11 and its active replacement A1 on one SKU; live_offer_active_sku makes the active one unique, so two is a broken
+// invariant = ErrConflict), else the line with the lowest offer id (a buyer holding claims on two paused offers of one SKU: deterministic, never an error).
+// ALL lines of the SKU compete, applied or not: otherwise a repeated redeem would let a paused line overwrite the cart line its active replacement already
+// set. The map holds the winning offer id per SKU. Pure.
+func skuWinners(lines []claimLine) (map[string]string, error) {
+	winners := map[string]claimLine{}
+	for _, line := range lines {
+		cur, ok := winners[line.skuID]
+		switch {
+		case !ok:
+			winners[line.skuID] = line
+		case line.offerActive && cur.offerActive:
+			return nil, command.ErrConflict
+		case line.offerActive, !cur.offerActive && line.offerID < cur.offerID:
+			winners[line.skuID] = line
+		}
+	}
+	out := make(map[string]string, len(winners))
+	for sku, line := range winners {
+		out[sku] = line.offerID
+	}
+	return out, nil
+}
+
+// splitPending decides, per pending line, apply or skip (superseded on its SKU before
+// unavailable before sold out); skipped lines stay pending. A paused offer's line is
+// applicable (owner decision 2026-10-07). skuWinners leaves exactly one line per SKU in
+// play. Output is ordered by SKU. Pure.
 func splitPending(lines []claimLine, available map[string]skuAvailability) ([]claimLine, []Skipped, error) {
+	winners, err := skuWinners(lines)
+	if err != nil {
+		return nil, nil, err
+	}
 	apply, skipped := []claimLine{}, []Skipped{}
-	seen := map[string]bool{}
 	for _, line := range lines {
 		switch {
 		case !line.pending:
-		case !line.offerActive:
+		case winners[line.skuID] != line.offerID:
 			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipOfferInactive})
 		case !available[line.skuID].available:
 			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipUnavailable})
 		case available[line.skuID].soldOut(line.quantity):
 			skipped = append(skipped, Skipped{SKUID: line.skuID, Reason: skipSoldOut})
-		case seen[line.skuID]:
-			return nil, nil, command.ErrConflict
 		default:
-			seen[line.skuID] = true
 			apply = append(apply, line)
 		}
 	}

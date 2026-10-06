@@ -29,8 +29,9 @@ const (
 	FindingCollision       = "normalization_collision" // error: different raw text folds onto an existing or earlier keyword
 	FindingLookalike       = "quantity_lookalike"      // warning: B = A + "X" + digits, so a typed "a1x2" parses to head A1X2 (§12 R09)
 	FindingNumericContains = "numeric_in_contains"     // warning: digits-only keyword under KEYWORD_QTY_CONTAINS
-	// FindingDeactivateHasClaims is a batch warning: the deactivated offer has claim lines. Like a single M4 pause (gate LTG03) it ends the
-	// offer's live price at the buyers' next quote and makes their pending lines skip as offer_inactive until the offer is reactivated.
+	// FindingDeactivateHasClaims is a batch warning (information, not a refusal): the deactivated offer has claim lines. Like a single M4 pause it refuses
+	// NEW claims only; the buyers who already claimed keep the live price they were granted until their link expires (owner decision 2026-10-07,
+	// contract amendment "Live price kept on pause"; it replaced the former LTG03 behaviour).
 	FindingDeactivateHasClaims = "deactivate_has_claims"
 )
 
@@ -450,7 +451,7 @@ func applyBatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 	}
 	claimed, sellable := map[string]bool{}, map[string]bool{}
 	// claims.lines: a rename would strand every buyer line of the old offer, so an offer with any line is refused; a deactivate of an offer
-	// with lines is allowed but warned (it ends the buyers' live price at their next quote, like an M4 pause).
+	// with lines is allowed but warned (information: those buyers keep their granted live price, like after an M4 pause; only new claims are refused).
 	lines, err := tx.Query(ctx, `SELECT DISTINCT offer_id::text FROM claims.lines
 		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND offer_id=ANY($4::uuid[])`, scope.TenantID, scope.StoreID, sessionID, ids)
 	if err != nil {

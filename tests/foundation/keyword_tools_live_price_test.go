@@ -1,8 +1,8 @@
-// Purpose: REAL_PG verification of what a batch deactivate does to buyers who already hold a claim on the offer: it behaves exactly like the single M4 pause (gate LTG03), so the live price ends at the next quote and a link not yet opened skips the line as offer_inactive; reactivation restores both. It also pins the deactivate_has_claims warning the batch returns.
-// Depends on: the ltg harness (live_tools_gate_test.go: ltgNew, session, claimLink, redeemed, line, wantLive, wantCatalog, mjson), lcHarness preview/redeem; POST .../claims/offers/batch and PATCH .../offers/{id} through the real merchant handler.
+// Purpose: REAL_PG verification of what a batch deactivate does to buyers who already hold a claim on the offer: it behaves exactly like the single M4 pause, so (owner decision 2026-10-07) they KEEP the live price they were granted (quote, redeem of an unopened link), new claims are refused, and reactivation changes nothing.
+// Depends on: the ltg harness (live_tools_gate_test.go: ltgNew, session, claimLink, redeemed, line, wantLive, wantCatalog, mjson), lcHarness preview/redeem/claim; POST .../claims/offers/batch and PATCH .../offers/{id} through the real merchant handler.
 // Used by: scripts/dev/test-focused.sh '^(TestSimulate|TestKeywordTools)'; CI foundation suite.
-// Invariants: live-keyword-claims-v1 amendment "Live tools (R4)" rule 7 (an inactive offer earns no live price) and gate LTG03 (pausing ends the price at the NEXT quote, reactivating restores it: the price is evaluated at quote time); the claim line and link are untouched by a deactivate.
-// Status: REAL_PG, MOCK (no PSP, no Meta). NOTE for the integrator: this pins CURRENT behaviour, which does NOT keep the granted live price after a deactivate; keeping it is a money-rule change that overturns LTG03 and needs its own ruling (see output/w3-06b-keyword-tools/DELIVERY.md).
+// Invariants: live-keyword-claims-v1 amendment "Live price kept on pause" (supersedes "Live tools (R4)" rule 7 for paused offers and gate LTG03's catalog-after-pause step); the claim line and link are untouched by a deactivate.
+// Status: REAL_PG, MOCK (no PSP, no Meta). History: W3-06B pinned the former behaviour (catalog price, offer_inactive skip) and asked for a ruling; the owner ruled 2026-10-07 and this file now pins the ruling.
 
 package foundation_test
 
@@ -22,7 +22,7 @@ func TestKeywordToolsBatchDeactivateIsAPause(t *testing.T) {
 	_, line := e.line(amy, "")
 	e.wantLive("baseline", line, ltgLive, bundle1, o1.ID)
 	e.h.open(t, s1, claims.MatchExact)
-	_, l2 := e.claimLink(s1, "bob", "A1+1") // bob holds a link but has not opened it yet
+	bobBundle, l2 := e.claimLink(s1, "bob", "A1+1") // bob holds a link but has not opened it yet
 
 	// Deactivate through the batch route.
 	body := fmt.Sprintf(`{"items":[{"offer_id":%q,"expected_version":%d,"action":"deactivate"}]}`, o1.ID, o1.Version)
@@ -39,21 +39,36 @@ func TestKeywordToolsBatchDeactivateIsAPause(t *testing.T) {
 		t.Fatalf("batch offers: %v", out["offers"])
 	}
 
-	// Verified behaviour (the same as the single PATCH pause, LTG03): amy's next quote is the catalog price ...
+	// Owner decision 2026-10-07 ("already-claimed buyers keep the live price, only new claims are refused") REPLACES the former assertions here
+	// (catalog price for amy, offer_inactive skip for bob): amy's next quote is still the exact live price ...
 	_, line = e.line(amy, "")
-	e.wantCatalog("after a batch deactivate the next quote is the catalog price", line)
-	// ... and bob's pending line is skipped as offer_inactive when he opens his link.
+	e.wantLive("after a batch deactivate the claimed line keeps the live price", line, ltgLive, bundle1, o1.ID)
+	if line.Quantity != 2 {
+		t.Fatalf("amy quantity %d, want 2", line.Quantity)
+	}
+	// ... bob's pending line is applied (not skipped) when he opens his link, and is priced at the live price for exactly his 1 claimed unit ...
 	bob := e.buyerCap()
 	pv, err := e.h.preview(bob.cap, l2.Token)
 	if err != nil {
 		t.Fatalf("bob preview: %v", err)
 	}
 	redeemed, err := e.h.redeem(bob.cap, t04Key("kt-bob"), l2.Token, pv.BundleVersion)
-	if err != nil || !reflect.DeepEqual(lcSkipped(redeemed.Skipped), []claims.Skipped{{SKUID: e.money, Reason: "offer_inactive"}}) || len(redeemed.Cart.Items) != 0 {
+	if err != nil || len(redeemed.Skipped) != 0 || !reflect.DeepEqual(lcItems(redeemed.Applied), map[string]int64{e.money: 1}) || !reflect.DeepEqual(lcItems(redeemed.Cart.Items), map[string]int64{e.money: 1}) {
 		t.Fatalf("bob redeem after the deactivate: %+v %v", redeemed, err)
 	}
+	_, bobLine := e.line(bob, "")
+	e.wantLive("bob after redeeming while the offer is deactivated", bobLine, ltgLive, bobBundle, o1.ID)
+	if bobLine.Quantity != 1 {
+		t.Fatalf("bob quantity %d, want 1", bobLine.Quantity)
+	}
+	// ... but NEW claims are refused (the deactivate still closes the offer to everyone else).
+	e.h.open(t, s1, claims.MatchExact)
+	if r := e.h.claim(t, s1, claims.ManualClaimInput{ActorLabel: "carol", Text: "A1+1"}); r.Outcome != claims.OutcomeRejected || r.Reason != claims.ReasonOfferInactive {
+		t.Fatalf("a new claim on the deactivated offer must be refused: %+v", r)
+	}
+	e.h.closeWindow(t, s1)
 
-	// Nothing of the entitlement is lost: reactivating the offer restores amy's live price at her next quote (claim line and link survive).
+	// Reactivating the offer changes nothing for the claimants: amy keeps the same live price at her next quote (claim line and link survive).
 	v := int64(0)
 	for _, o := range offers {
 		if m := o.(map[string]any); m["offer_id"] == o1.ID {
@@ -65,5 +80,5 @@ func TestKeywordToolsBatchDeactivateIsAPause(t *testing.T) {
 		t.Fatalf("reactivate: %d %v", st, out)
 	}
 	_, line = e.line(amy, "")
-	e.wantLive("after reactivation", line, ltgLive, bundle1, o1.ID)
+	e.wantLive("after reactivation (unchanged)", line, ltgLive, bundle1, o1.ID)
 }

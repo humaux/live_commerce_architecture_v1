@@ -67,8 +67,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0154 (W3-05B buyer blocklist) adds one more: 80 -> 81.
 	// 0157 (perf-dashboard-todos: stats-proof order lookup in order_money_shippable/manual_shipment_eligible) adds one more: 81 -> 82.
 	// 0156 (W5-03B historical order import) adds one more: 82 -> 83.
-	if len(r2) != 83 {
-		t.Fatalf("R2 migration set = %d files %v, want 83", len(r2), r2)
+	// 0158 (live-price-keep-on-pause: claim lines of a paused offer keep the live price, functions only) adds one more: 83 -> 84.
+	if len(r2) != 84 {
+		t.Fatalf("R2 migration set = %d files %v, want 84", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

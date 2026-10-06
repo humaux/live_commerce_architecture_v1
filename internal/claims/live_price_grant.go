@@ -52,7 +52,7 @@ func forBuyerError(err error) error {
 	return mapError(err)
 }
 
-// ForBuyerLine is one claim line of A15: the live price is nil when the offer is inactive or has none; LiveRemaining is the claimed quantity
+// ForBuyerLine is one claim line of A15: the live price is nil only when the offer has none (0158: a paused offer keeps the price of the claim lines granted before the pause); LiveRemaining is the claimed quantity
 // minus the units held by non-CANCELLED orders (never negative).
 type ForBuyerLine struct {
 	BundleID, OfferID, SKUID, Keyword string
