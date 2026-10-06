@@ -1,0 +1,22 @@
+=== RUN   TestPayuniActivationPA02VerifiedMockQualifiesAndEnables
+    payuni_activation_test.go:323: PA03a query without notify issued 1 qualifications
+--- FAIL: TestPayuniActivationPA02VerifiedMockQualifiesAndEnables (1.25s)
+=== RUN   TestPayuniActivationPA03NotifyWithoutCapturedQueryDoesNotQualify
+--- PASS: TestPayuniActivationPA03NotifyWithoutCapturedQueryDoesNotQualify (0.14s)
+=== RUN   TestPayuniActivationPA04CreatesNoOrderStockOrFinanceRow
+--- PASS: TestPayuniActivationPA04CreatesNoOrderStockOrFinanceRow (0.13s)
+=== RUN   TestPayuniActivationPA05PA06RotationAndPlatformSwitch
+--- PASS: TestPayuniActivationPA05PA06RotationAndPlatformSwitch (0.17s)
+=== RUN   TestPayuniActivationPA07LiveProbe
+--- PASS: TestPayuniActivationPA07LiveProbe (1.90s)
+=== RUN   TestPayuniActivationPA08ForgeryCrossStoreAndRawWrites
+    payuni_activation_test.go:631: raw enabled method insert: want 42501, got <nil>
+--- FAIL: TestPayuniActivationPA08ForgeryCrossStoreAndRawWrites (0.15s)
+=== RUN   TestPayuniActivationACLPinned
+    payuni_activation_test.go:740: restrictive enabled-method fence missing: 0 <nil>
+--- FAIL: TestPayuniActivationACLPinned (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.509s
+FAIL
+test-focused: top-level PASS=4 FAIL=3 SKIP=0 exit=1
+exit=1
