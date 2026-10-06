@@ -1,0 +1,211 @@
+// Purpose: LC-U1 exact BFF grammar and browser transport fences (MOCK, no PG/browser).
+// Depends on: console-request.ts, console-client.ts, real Studio authentication transport; Node test hooks.
+// Used by: LC-U1 transport verification and integrator acceptance.
+import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { test } from "node:test";
+import { consoleAny, consoleRoutes, validConsoleBody, validConsoleQuery } from "../../apps/admin/src/features/live/console-request.ts";
+
+const adminRoot = fileURLToPath(new URL("../../apps/admin/", import.meta.url));
+registerHooks({ resolve(specifier, context, next) {
+  if (specifier === "server-only") return { url: "data:text/javascript,", shortCircuit: true };
+  if (specifier === "next/headers") return { url: "data:text/javascript,export function headers(){throw Error('not a page fixture')}", shortCircuit: true };
+  if (specifier.startsWith("@/")) return { url: pathToFileURL(adminRoot + specifier.slice(2) + ".ts").href, shortCircuit: true };
+  if (context.parentURL?.includes("/apps/admin/") && specifier.startsWith(".") && !specifier.endsWith(".ts")) return next(`${specifier}.ts`, context);
+  return next(specifier, context);
+} });
+const client = await import("../../apps/admin/src/features/live/console-client.ts");
+const { sessionBoundary } = await import("../../apps/admin/lib/settings-client.ts");
+const { StudioError } = await import("../../apps/admin/lib/studio-client.ts");
+const store = "11111111-1111-4111-8111-111111111111";
+const sid = "22222222-2222-4222-8222-222222222222";
+const oid = "33333333-3333-4333-8333-333333333333";
+const root = `live-sessions/${sid}`;
+const at = "2026-10-06T00:00:00Z";
+
+test("console BFF admits exactly A1/A7/A6 and A5 read/copy methods", () => {
+  for (const [method, path] of [["GET", `${root}/console`], ["GET", "live-sessions/results"],
+    ["POST", `${root}/copy`], ["POST", `${root}/lifecycle`], ["POST", `${root}/claims/offers/${oid}/recommend`]]) {
+    assert.equal(consoleAny.test(path), true);
+    for (const m of ["GET", "POST", "PUT", "PATCH", "DELETE"]) assert.equal(consoleRoutes[m]?.test(path) ?? false, m === method);
+    assert.equal(consoleAny.test(`${path}/extra`), false);
+  }
+  assert.equal(consoleAny.test(`live-sessions/${sid}/comments`), false);
+  assert.equal(consoleAny.test(`live-sessions/${sid}/console%2f`), false);
+});
+
+test("results query is canonical repeated session_id 1..50, everything else queryless", () => {
+  const url = "http://127.0.0.1/live-sessions/results";
+  assert.equal(validConsoleQuery(`${url}?session_id=${sid}&session_id=${oid}`, "live-sessions/results"), true);
+  for (const query of ["", "?", `?session_id=${sid}&session_id=${sid}`, `?session_id=${sid}&limit=1`,
+    `?session_id=${sid}&`, "?session_id=ABCDEFAB-ABCD-4ABC-8ABC-ABCDEFABCDEF", `?session_id=${sid.replaceAll("-", "%2d")}`,
+    `?session%5fid=${sid}`, `?session_id=${sid}+`, `?session_id=${Array(51).fill(sid).join("&session_id=")}`])
+    assert.equal(validConsoleQuery(url + query, "live-sessions/results"), false, query);
+  for (const path of [`${root}/console`, `${root}/copy`, `${root}/lifecycle`, `${root}/claims/offers/${oid}/recommend`]) {
+    assert.equal(validConsoleQuery(`http://127.0.0.1/${path}`, path), true);
+    assert.equal(validConsoleQuery(`http://127.0.0.1/${path}?`, path), false);
+  }
+});
+
+test("real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors", async (t) => {
+  // Synthetic in-process upstream; no production key, HTTP server, Next process or PostgreSQL.
+  const publicOrigin = "https://admin.example.test";
+  const apiOrigin = "http://127.0.0.1:39999";
+  const token = Buffer.alloc(32, 4).toString("base64url");
+  const csrf = Buffer.alloc(32, 5).toString("base64url");
+  Object.assign(process.env, { COMMERCE_IDENTITY_ENABLED: "1", COMMERCE_FIXTURE_ENABLED: "0", COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
+    COMMERCE_PUBLIC_ORIGIN: publicOrigin, COMMERCE_API_ORIGIN: apiOrigin, COMMERCE_BFF_KEY: Buffer.alloc(32, 6).toString("base64url") });
+  const routes = await import("../../apps/admin/app/api/stores/[store]/[...resource]/route.ts");
+  const calls: { path: string; init?: RequestInit }[] = [];
+  let upstreamStatus = 409;
+  let upstreamBody: unknown = { code: "too_many_open_windows", message: "SENSITIVE upstream diagnostic" };
+  let stores = [store];
+  t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    if (path === `${apiOrigin}/v1/admin/stores`) return Response.json({ items: stores.map((id) => ({ id, name: "Synthetic", currency: "TWD" })) });
+    calls.push({ path: String(path), init });
+    return Response.json(upstreamBody, { status: upstreamStatus });
+  });
+  const invoke = (method: string, path: string, body?: unknown, query = "", headers: Record<string, string> = {}) => {
+    const request = new Request(`${publicOrigin}/api/stores/${store}/${path}${query}`, { method, headers: {
+      cookie: `__Host-commerce_session=${token}; __Host-commerce_csrf=${csrf}`, origin: publicOrigin,
+      ...(method === "POST" ? { "content-type": "application/json", "x-csrf-token": csrf, "idempotency-key": "console-bff-key" } : {}), ...headers,
+    }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+    return (routes as unknown as Record<string, (r: Request, c: { params: Promise<{ store: string; resource: string[] }> }) => Promise<Response>>)[method](request,
+      { params: Promise.resolve({ store, resource: path.split("/") }) });
+  };
+  const body = { action: "start", expected_version: 4 };
+  const answer = await invoke("POST", `${root}/lifecycle`, body);
+  assert.equal(answer.status, 409);
+  assert.equal(answer.headers.get("cache-control"), "private, no-store");
+  const err = await answer.json();
+  assert.equal(err.code, "too_many_open_windows");
+  assert.equal(JSON.stringify(err).includes("SENSITIVE"), false);
+  assert.equal(calls[0].path, `${apiOrigin}/v1/admin/stores/${store}/${root}/lifecycle`);
+  assert.deepEqual(JSON.parse(calls[0].init?.body as string), body);
+  assert.equal(new Headers(calls[0].init?.headers).get("authorization"), `Bearer ${token}`);
+  assert.equal(new Headers(calls[0].init?.headers).has("cookie"), false);
+  assert.equal(new Headers(calls[0].init?.headers).get("idempotency-key"), "console-bff-key");
+  calls.length = 0;
+  for (const [method, path, b, query, h, status] of [
+    ["POST", `${root}/lifecycle`, body, "?", {}, 422],
+    ["POST", `${root}/lifecycle`, { ...body, tenant_id: store }, "", {}, 400],
+    ["POST", `${root}/lifecycle`, body, "", { "idempotency-key": "" }, 422],
+    ["POST", `${root}/lifecycle`, body, "", { origin: "https://attacker.example" }, 403],
+    ["POST", `${root}/lifecycle`, body, "", { "x-csrf-token": "" }, 403],
+    ["GET", `${root}/console`, undefined, "", { "idempotency-key": "should-not-be-here" }, 422],
+    ["GET", `${root}/lifecycle`, undefined, "", {}, 405],
+    ["POST", "live-sessions/results", {}, "", {}, 405],
+    ["GET", "live-sessions/results", undefined, `?session_id=${sid}&session_id=${sid}`, {}, 422],
+  ] as [string, string, unknown, string, Record<string, string>, number][]) {
+    const response = await invoke(method, path, b, query, h);
+    assert.equal(response.status, status, `${method} ${path}${query}`);
+    assert.equal(response.headers.get("cache-control"), "private, no-store");
+  }
+  assert.equal(calls.length, 0);
+  stores = [];
+  assert.equal((await invoke("POST", `${root}/lifecycle`, body)).status, 404);
+  assert.equal(calls.length, 0);
+  stores = [store]; upstreamStatus = 200; upstreamBody = { recommended_at: at };
+  assert.equal((await invoke("POST", `${root}/claims/offers/${oid}/recommend`, { expected_version: 4, post_comment: false })).status, 200);
+  upstreamBody = { recommended_at: at, secret: "SENSITIVE" };
+  assert.equal((await invoke("POST", `${root}/claims/offers/${oid}/recommend`, { expected_version: 4, post_comment: false })).status, 503);
+  upstreamBody = { as_of: at, items: [{ session_id: sid, orders: 0, paid_orders: 0, multi_session_orders: 0, money: [] }] };
+  assert.equal((await invoke("GET", "live-sessions/results", undefined, `?session_id=${sid}`)).status, 200);
+  assert.equal(calls.at(-1)?.path, `${apiOrigin}/v1/admin/stores/${store}/live-sessions/results?session_id=${sid}`);
+});
+
+test("new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body", () => {
+  const bodies: [string, unknown][] = [[`${root}/copy`, { title: "Synthetic", scheduled_at: null, expected_version: 1 }],
+    [`${root}/lifecycle`, { action: "start", expected_version: 1, open_window: false }],
+    [`${root}/claims/offers/${oid}/recommend`, { expected_version: 1, post_comment: false }]];
+  for (const [path, value] of bodies) {
+    assert.equal(validConsoleBody(path, JSON.stringify(value)), true);
+    assert.equal(validConsoleBody(path, JSON.stringify({ ...value as object, tenant_id: store })), false);
+    assert.equal(validConsoleBody(path, "{}"), false);
+    assert.equal(validConsoleBody(path, "null"), false);
+    assert.equal(validConsoleBody(path, "{"), false);
+    assert.equal(validConsoleBody(path, JSON.stringify({ ...value as object, expected_version: 1.5 })), false);
+  }
+});
+
+test("browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes", async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const doc = { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` };
+  Object.defineProperty(globalThis, "document", { configurable: true, value: doc });
+  t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
+  const boundary = await sessionBoundary();
+  const calls: { path: unknown; init?: RequestInit }[] = [];
+  let status = 200;
+  let body: unknown = { recommended_at: at };
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    calls.push({ path, init });
+    return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "private, no-store" } });
+  });
+  await client.recommendOffer(store, sid, oid, 4, "console-key-1", boundary);
+  assert.equal(calls[0].path, `/api/stores/${store}/${root}/claims/offers/${oid}/recommend`);
+  assert.deepEqual(JSON.parse(calls[0].init?.body as string), { expected_version: 4, post_comment: false });
+  assert.equal(calls[0].init?.credentials, "same-origin");
+  assert.equal(calls[0].init?.cache, "no-store");
+  assert.equal(new Headers(calls[0].init?.headers).get("idempotency-key"), "console-key-1");
+  status = 409; body = { code: "version_conflict", message: "must not leak" };
+  await assert.rejects(client.changeLifecycle(store, sid, "start", 4, "console-key-2", boundary),
+    (e: unknown) => e instanceof StudioError && e.code === "conflict" && e.api === "version_conflict");
+  status = 503; body = { code: "retry_later" };
+  await assert.rejects(client.recommendOffer(store, sid, oid, 4, "console-key-1", boundary),
+    (e: unknown) => e instanceof StudioError && e.code === "uncertain");
+  assert.equal(fetch.mock.callCount(), 3);
+  doc.cookie = "";
+  await assert.rejects(client.changeLifecycle(store, sid, "start", 4, "console-key-2", boundary),
+    (e: unknown) => e instanceof StudioError && e.code === "signed-out");
+  assert.equal(fetch.mock.callCount(), 3);
+});
+
+test("results client preserves canonical ids/order and rejects invalid list before fetch", async (t) => {
+  const seen: string[] = [];
+  const ids = [sid, oid];
+  const value = { as_of: at, items: ids.map((session_id) => ({ session_id, orders: 0, paid_orders: 0, multi_session_orders: 0, money: [] })) };
+  const signal = new AbortController().signal;
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    seen.push(String(path));
+    assert.equal(init?.signal, signal);
+    assert.equal(init?.cache, "no-store");
+    assert.equal(init?.credentials, "same-origin");
+    return Response.json(value, { headers: { "cache-control": "private, no-store" } });
+  });
+  assert.deepEqual(await client.readSessionResults(store, ids, signal), value);
+  assert.deepEqual(seen, [`/api/stores/${store}/live-sessions/results?session_id=${sid}&session_id=${oid}`]);
+  for (const invalid of [[], [sid, sid], ["bad"], Array(51).fill(sid)])
+    await assert.rejects(client.readSessionResults(store, invalid, signal), (e: unknown) => e instanceof StudioError && e.code === "invalid");
+  assert.equal(fetch.mock.callCount(), 1);
+});
+
+test("stock client reuses catalog transport/key/parser and fences a changed login without retries", async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
+  const doc = { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` };
+  Object.defineProperty(globalThis, "document", { configurable: true, value: doc });
+  t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
+  const boundary = await sessionBoundary();
+  const body = { warehouse_id: oid, sku_id: sid, delta: 2, expected_version: 0, reason: "live_console_edit" as const };
+  let status = 200;
+  let reply: unknown = { warehouse_id: oid, sku_id: sid, on_hand: 2, reserved: 0, allocated: 0, unavailable: 0, version: 1, available: 2 };
+  let changeLogin = false;
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    assert.equal(path, `/api/stores/${store}/inventory/adjustments`);
+    assert.equal(init?.cache, "no-store");
+    assert.deepEqual(JSON.parse(init?.body as string), body);
+    assert.equal(new Headers(init?.headers).get("idempotency-key"), "stock-console-key");
+    if (changeLogin) doc.cookie = `__Host-commerce_csrf=${"d".repeat(43)}`;
+    return Response.json(reply, { status, headers: { "cache-control": "no-store" } });
+  });
+  assert.deepEqual(await client.adjustLiveStock(store, body, "stock-console-key", boundary), { sku_id: sid });
+  status = 409; reply = { code: "version_conflict" };
+  await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "conflict" && e.api === "version_conflict");
+  status = 503; reply = { code: "retry_later" };
+  await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "uncertain");
+  status = 200; reply = { warehouse_id: oid, sku_id: sid }; changeLogin = true;
+  await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "signed-out");
+  assert.equal(fetch.mock.callCount(), 4);
+  await assert.rejects(client.adjustLiveStock(store, { ...body, delta: 1001 }, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "invalid");
+  assert.equal(fetch.mock.callCount(), 4);
+});
