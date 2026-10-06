@@ -193,7 +193,7 @@ func TestPlatformOperatorOP06IdempotentAndInputBoundaries(t *testing.T) {
 	if got := strings.Join(poAudits(t, b.owner, f.tenant), ","); got != "store_suspend/true,store_suspend/false" {
 		t.Fatalf("refused calls left audit rows: %s", got)
 	}
-	rows, err := p.op.Query(context.Background(), `SELECT operator,action,ticket FROM control.read_operator_audit($1,10) WHERE tenant_id=$2`, time.Now().Add(-time.Hour), f.tenant)
+	rows, err := p.op.Query(context.Background(), `SELECT action FROM control.read_operator_audit($1,10) WHERE tenant_id=$2`, time.Now().Add(-time.Hour), f.tenant)
 	if err != nil {
 		t.Fatal(err)
 	}
