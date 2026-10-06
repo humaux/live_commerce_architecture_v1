@@ -1,3 +1,7 @@
+// Purpose: package documentation of the operator-only platform console (suspend/resume, status, audit).
+// Depends on: main.go (the implementation); SQL definers of migration 0143; env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
+// Used by: deploy/scripts/ops-admin.sh (integrator wiring), tests/foundation/platform_operator_test.go.
+
 // Command platform-admin owns the operator-only platform console (R3 unit OPS-01B; the console is CLI-only by owner ruling):
 // suspend or resume a merchant (tenant) or one store, read their state, and list the operator audit.
 // Subcommands (every mutation needs --operator <name> and --ticket <ref>; suspend also needs --reason):
