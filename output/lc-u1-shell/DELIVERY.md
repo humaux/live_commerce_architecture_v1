@@ -1,11 +1,11 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source e6bc38a5, CI 37501896738 and owner rule 2f596a0c.
+Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source 5012ce96, trunk f8f01b74 and owner focused-local/CI gate rules.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — CI3 driver repairs submitted; GitHub runtime acceptance pending
+# LC-U1 — CI4 focused GREEN; full GitHub acceptance pending
 
-Author source **`e6bc38a5d8898e3e832510da72db05e25accfbb9`**, trunk **`93233a00`** merged. Latest: [CI3-DELIVERY.md](CI3-DELIVERY.md). Console negative probes now explicitly carry their existing signed browser authority; logout waits for its real hard redirect; Studio keeps trace actions/DOM/source but disables automatic picker-interfering screencasts. All original assertions/thresholds remain. Node **496/496**, admin/spec types, check-gates and the original privacy guard exit 0. Browser correction is **NOT_RUN** on this revised source. W2-U2 then W2-U3 are registered but **not started**, pending green LC-U1 and integrator-approved base.
+Author source **`5012ce963db5d88dfd0a9101c4738926c682d218`**, trunk **`f8f01b74`** merged. Latest: [CI4-DELIVERY.md](CI4-DELIVERY.md). Final-source local Console focus **3/3** and Studio main focus **1/1** both exit 0. Signed negative requests reach the unchanged 403 checks, logout/reauth fences pass, replay remains same-key/same-body/one-effect, and native calendar + save/reload + Taipei PG timestamp pass. Node **510/510**, types, check-gates (73 modes) and original privacy guard exit 0. All original assertions/thresholds remain. **E3 for these selected local MOCK/REAL_PG checks only**; full Console/Studio cases and Linux CI remain pending. W2-U2/U3 remain registered, **not started**, until full LC-U1 green and approved base.
 
-The CI2/D3/CI1 and LC-B7 sections below are historical checkpoints, not current-source runtime claims. Current acceptance/rerun requirements are in CI3-DELIVERY; no whole-unit completion is claimed.
+The CI3/CI2/D3/CI1 and LC-B7 sections below are historical checkpoints, not current-source runtime claims. Current acceptance/rerun requirements are in CI4-DELIVERY; no whole-unit completion is claimed.
 
 Latest CI2 follow-up: [CI2-DELIVERY.md](CI2-DELIVERY.md). Trunk `71235fc4` is merged; original TCV09 passes after removing the iframe/CSP exception. Console nil receipts, hidden Account sign-out, alert ambiguity and missing sweep CommentStream are source-fixed. Node **496/496**, types and check-gates pass. Local focused attempts were canceled before PG while waiting for the shared lock and remain **NOT_RUN**. New-source GitHub browser execution is pending; the older failure/ruling records below are historical.
 
