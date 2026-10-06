@@ -133,7 +133,8 @@ type material struct {
 func (a *Activation) loadMaterial(ctx context.Context, tx pgx.Tx, connectionID, verificationID string) (material, error) {
 	var m material
 	var tenant, store, conn, env, account string
-	var version, amount int64
+	var version int64
+	var amount *int64
 	var keyID string
 	var nonce, ciphertext []byte
 	var verID, tradeNo, profile *string

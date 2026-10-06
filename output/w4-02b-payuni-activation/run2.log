@@ -1,0 +1,20 @@
+=== RUN   TestPayuniActivationPA02VerifiedMockQualifiesAndEnables
+--- PASS: TestPayuniActivationPA02VerifiedMockQualifiesAndEnables (1.28s)
+=== RUN   TestPayuniActivationPA03NotifyWithoutCapturedQueryDoesNotQualify
+--- PASS: TestPayuniActivationPA03NotifyWithoutCapturedQueryDoesNotQualify (0.13s)
+=== RUN   TestPayuniActivationPA04CreatesNoOrderStockOrFinanceRow
+--- PASS: TestPayuniActivationPA04CreatesNoOrderStockOrFinanceRow (0.13s)
+=== RUN   TestPayuniActivationPA05PA06RotationAndPlatformSwitch
+--- PASS: TestPayuniActivationPA05PA06RotationAndPlatformSwitch (0.17s)
+=== RUN   TestPayuniActivationPA07LiveProbe
+    payuni_activation_test.go:535: PA07 signature made with another key: can't scan into dest[12] (col: amount_minor): cannot scan NULL into *int64
+--- FAIL: TestPayuniActivationPA07LiveProbe (0.11s)
+=== RUN   TestPayuniActivationPA08ForgeryCrossStoreAndRawWrites
+--- PASS: TestPayuniActivationPA08ForgeryCrossStoreAndRawWrites (0.38s)
+=== RUN   TestPayuniActivationACLPinned
+--- PASS: TestPayuniActivationACLPinned (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.959s
+FAIL
+test-focused: top-level PASS=6 FAIL=1 SKIP=0 exit=1
+exit=1
