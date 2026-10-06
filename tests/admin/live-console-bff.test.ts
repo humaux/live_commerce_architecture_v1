@@ -23,6 +23,45 @@ const sid = "22222222-2222-4222-8222-222222222222";
 const oid = "33333333-3333-4333-8333-333333333333";
 const root = `live-sessions/${sid}`;
 const at = "2026-10-06T00:00:00Z";
+const controlOffer = { offer_id: oid, session_id: sid, keyword: "A1", sku_id: store, sku_code: "S1", product_name: "Synthetic",
+  max_quantity_per_claim: 17, active: true, version: 6, activated_at: at, updated_at: at, sku_price_minor: 2000, currency: "TWD", live_price_minor: 1500 };
+
+test("offer controls read authoritative limits without parsing unrelated CONTAINS window/stats", async (t) => {
+  let reply: unknown = { offers: [controlOffer], window: { match_mode: "CONTAINS" }, stats: { unused: true } };
+  const signal = new AbortController().signal;
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    assert.equal(path, `/api/stores/${store}/${root}/claims`);
+    assert.equal(init?.method, "GET");
+    assert.equal(init?.signal, signal);
+    assert.equal(init?.cache, "no-store");
+    return Response.json(reply, { headers: { "cache-control": "private, no-store" } });
+  });
+  assert.deepEqual(await client.readOfferControls(store, sid, signal), [controlOffer]);
+  for (reply of [null, [], {}, { offers: null }, { offers: [controlOffer, controlOffer] },
+    { offers: Array(101).fill(controlOffer) }, { offers: [{ ...controlOffer, session_id: store }] },
+    { offers: [{ ...controlOffer, max_quantity_per_claim: 0 }] }])
+    await assert.rejects(client.readOfferControls(store, sid, signal), (e: unknown) => e instanceof StudioError && e.code === "unavailable");
+  assert.equal(fetch.mock.callCount(), 9);
+});
+
+test("offer toggle preserves exactly the authoritative maximum in the real M4 payload", async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` } });
+  t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
+  const boundary = await sessionBoundary();
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    assert.equal(path, `/api/stores/${store}/${root}/claims/offers/${oid}`);
+    assert.equal(init?.method, "PATCH");
+    assert.equal(new Headers(init?.headers).get("idempotency-key"), "offer-preserve-key");
+    assert.deepEqual(JSON.parse(init?.body as string), { expected_version: 6, active: false, max_quantity_per_claim: 17 });
+    return Response.json({ ...controlOffer, active: false, version: 7 }, { headers: { "cache-control": "private, no-store" } });
+  });
+  const result = await client.toggleOffer(store, sid, oid, 6, false, 17, "offer-preserve-key", boundary);
+  assert.equal(result.max_quantity_per_claim, 17);
+  for (const limit of [0, -1, 1.2, 1000])
+    await assert.rejects(client.toggleOffer(store, sid, oid, 6, false, limit, "offer-preserve-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "invalid");
+  assert.equal(fetch.mock.callCount(), 1);
+});
 
 test("console BFF admits exactly A1/A7/A6 and A5 read/copy methods", () => {
   for (const [method, path] of [["GET", `${root}/console`], ["GET", "live-sessions/results"],

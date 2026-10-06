@@ -3,7 +3,7 @@
 // Used by: LiveWorkspace and LiveConsole; each user submit owns its supplied idempotency key.
 // Invariants: I01/I02/I03/I05/I06/I11/I14; no automatic retries, secret storage or client inventory truth. A1 backend is currently absent.
 import { read, write, StudioError } from "../../../lib/studio-client";
-import { parseOffer } from "../../../lib/claims-model.ts";
+import { parseOffer, type Offer } from "../../../lib/claims-model.ts";
 import { send } from "../../../lib/catalog-v2-client";
 import { parseBalance } from "../../../lib/catalog-v2-model.ts";
 import { sessionBoundary } from "../../../lib/settings-client";
@@ -22,6 +22,17 @@ async function parsed<T>(work: () => Promise<unknown>, parse: (v: unknown) => T,
 /** Read A1; an unmounted backend reports not-found/unavailable, never a fabricated console. */
 export function readConsole(store: string, sessionID: string, signal: AbortSignal) {
   return parsed(() => read(`${base(store, sessionID)}/console`, signal), (v) => parseConsole(v, sessionID), false);
+}
+/** Read authoritative M4 limits/versions from the claims board; unrelated window/stats are not consumed here. */
+export function readOfferControls(store: string, sessionID: string, signal: AbortSignal): Promise<Offer[]> {
+  return parsed(() => read(`${base(store, sessionID)}/claims`, signal), (value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_offer_controls");
+    const offers = (value as Record<string, unknown>).offers;
+    if (!Array.isArray(offers) || offers.length > 100) throw new Error("invalid_offer_controls");
+    const result = offers.map((offer) => parseOffer(offer, sessionID));
+    if (new Set(result.map((offer) => offer.offer_id)).size !== result.length) throw new Error("invalid_offer_controls");
+    return result;
+  }, false);
 }
 /** Read A5 results once for 1..50 distinct sessions, retaining their request order. */
 export function readSessionResults(store: string, ids: readonly string[], signal: AbortSignal) {
@@ -59,11 +70,12 @@ export function recommendOffer(store: string, id: string, offerID: string, versi
     return write(path, "POST", body, key, boundary);
   }, parseRecommendResult, true);
 }
-/** Toggle the reused claims offer with exactly the §7.2 active/version patch. */
-export function toggleOffer(store: string, id: string, offerID: string, version: number, active: boolean, key: string, boundary: string) {
+/** Toggle an M4 offer while preserving its authoritative quantity limit, required by the existing Go decoder. */
+export function toggleOffer(store: string, id: string, offerID: string, version: number, active: boolean, maxQuantityPerClaim: number, key: string, boundary: string) {
   return parsed(() => {
-    if (!validConsoleID(offerID) || !Number.isSafeInteger(version) || version < 1 || typeof active !== "boolean") throw new StudioError("invalid");
-    return write(`${base(store, id)}/claims/offers/${offerID}`, "PATCH", { expected_version: version, active }, key, boundary);
+    if (!validConsoleID(offerID) || !Number.isSafeInteger(version) || version < 1 || typeof active !== "boolean" ||
+      !Number.isSafeInteger(maxQuantityPerClaim) || maxQuantityPerClaim < 1 || maxQuantityPerClaim > 999) throw new StudioError("invalid");
+    return write(`${base(store, id)}/claims/offers/${offerID}`, "PATCH", { expected_version: version, active, max_quantity_per_claim: maxQuantityPerClaim }, key, boundary);
   }, (v) => parseOffer(v, id), true);
 }
 /** Inventory adjustment through the existing catalog boundary. Go still requires inventory:write until LC-B7 arrives. */
