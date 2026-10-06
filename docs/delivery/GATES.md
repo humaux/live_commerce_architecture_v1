@@ -328,3 +328,5 @@ NOT_RUN: MCH04 lease/stale two-worker gate (claims are lease-fenced with `FOR UP
 | `TestPromoGateIsolation` | same code text in two tenants and two stores; list/create/update refused across tenant and store and never leaked; a buyer only meets his own store's codes (indistinguishable from unknown) |
 `TestPromoGateStripeRefundCap` sets `pgStripeRevoke` (payment_runtime_test.go) to work around BASE defect B1 (two trigger functions keep PUBLIC EXECUTE and every
 Stripe login fails its privilege validation); see `output/promotions/tests/DEFECTS.md`.
+
+| `--browser-tracking-backfill` | `TestBrowserTrackingBackfill` | BROWSER MOCK + REAL_PG | Three locales, desktop/390px; actual upload/paste, preview, confirmation, failure CSV, stale and unknown-result recovery. `tests/admin/tracking-backfill.spec.ts`, `tests/foundation/browser_tracking_backfill_test.go`; pure properties `tests/admin/tracking-backfill-model.test.ts` via `test-node.sh`. No LIVE shipment/mail acceptance. |

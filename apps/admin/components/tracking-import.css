@@ -1,0 +1,49 @@
+/* Purpose: responsive protected-focus tracking workflow inside the existing admin ledger.
+   Depends on: incumbent --ink, --line, --teal and --orders-muted tokens; native dialog.
+   Used by: TrackingImport; all selectors are scoped so existing orders controls stay in place. */
+.trk-dialog { --orders-muted: var(--muted); padding: 0; border: 1px solid var(--line); border-radius: 7px; width: min(1000px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); color: var(--ink); background: #fff; }
+.trk-dialog::backdrop { background: rgba(20, 29, 43, .5); }
+.trk-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; padding: 20px 24px; border-bottom: 1px solid var(--line); }
+.trk-heading h2 { margin: 0; font-size: 22px; line-height: 1.35; }
+.trk-heading p { margin: 6px 0 0; color: var(--orders-muted); font-size: 14px; }
+.trk-body { padding: 20px 24px 24px; }
+.trk-body > p:first-child { margin-top: 0; }
+.trk-body h3 { font-size: 17px; line-height: 1.45; margin: 22px 0 8px; }
+.trk-note { color: var(--orders-muted); font-size: 14px; line-height: 1.55; }
+.trk-dialog button, .trk-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); background: #fff; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+.trk-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+.trk-dialog button:not(:disabled):hover, .trk-button:hover { border-color: var(--teal); }
+.trk-dialog button:focus-visible, .trk-button:focus-visible, .trk-dialog input:focus-visible, .trk-dialog textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.trk-dialog .trk-primary { color: #fff; background: var(--teal); border-color: var(--teal); }
+.trk-tabs { display: flex; gap: 8px; margin: 20px 0 14px; border-bottom: 1px solid var(--line); }
+.trk-tabs button { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.trk-tabs button[aria-selected="true"] { border-color: var(--teal); color: var(--teal); background: #fff5ef; }
+.trk-dialog label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.trk-dialog input, .trk-dialog textarea { width: 100%; box-sizing: border-box; min-height: 44px; border: 1px solid var(--line); border-radius: 5px; padding: 10px; color: var(--ink); background: #fff; font: inherit; }
+.trk-dialog textarea { resize: vertical; }
+.trk-dialog .trk-link { border: 0; padding-left: 0; text-decoration: underline; text-underline-offset: 3px; margin: 8px 0; }
+.trk-notice, .trk-error { padding: 12px 14px; border: 1px solid #ead4b5; border-radius: 5px; color: #744700; background: #fff7e8; line-height: 1.5; }
+.trk-error { color: #842929; border-color: #ecc7c7; background: #fff3f3; }
+.trk-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.trk-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.trk-table th { background: #f2f5f9; text-align: left; padding: 10px; font-size: 13px; }
+.trk-table td { padding: 12px 10px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+.trk-table td:nth-child(2) { max-width: 260px; }
+.trk-row-issue { margin: 6px 0 0; color: #842929; line-height: 1.45; }
+.trk-outcome { font-weight: 600; }
+.trk-failed { color: #842929; }
+.trk-unchanged { color: var(--orders-muted); }
+@media (max-width: 680px) {
+  .trk-dialog { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); border-radius: 6px; }
+  .trk-heading, .trk-body { padding: 16px; }
+  .trk-heading h2 { font-size: 20px; }
+  .trk-dialog input, .trk-dialog textarea { font-size: 16px; }
+  .trk-tabs button { flex: 1 1 0; }
+  .trk-actions button { flex: 1 1 100%; }
+  .trk-table, .trk-table tbody { display: block; }
+  .trk-table thead { display: none; }
+  .trk-table tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .trk-table td, .trk-table td:nth-child(2) { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 8px; border: 0; padding: 5px 0; max-width: none; }
+  .trk-table td::before { content: attr(data-label); color: var(--orders-muted); font-size: 13px; }
+  .trk-row-issue { grid-column: 2; }
+}
