@@ -1,10 +1,10 @@
-✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (255.719333ms)
-✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.355833ms)
-✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (2.219208ms)
-✔ G-UI1 copy key parity: no missing or extra key in any locale (0.085958ms)
-✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.203958ms)
-✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (147.923083ms)
-✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.664416ms)
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (268.757916ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.388042ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (2.1525ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.094959ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.195917ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (70.130708ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.215292ms)
 ℹ tests 7
 ℹ suites 0
 ℹ pass 7
@@ -12,7 +12,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 429.787709
+ℹ duration_ms 435.2825
 WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
 WARN G-UI5 apps/admin/components/Attribution.tsx: >500 lines
 WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
