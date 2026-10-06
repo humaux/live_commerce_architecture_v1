@@ -1,0 +1,12 @@
+tested tree: 32d2742a9a86c583ba70b466287d4300c3c45cee + one injected fault, restored afterwards
+fault: keyword check ignores the window mode (internal/claims/keyword_tools.go)
+command: bash scripts/dev/test-focused.sh '^TestKeywordToolsCheckAndNext$'  (expected: FAIL)
+
+=== RUN   TestKeywordToolsCheckAndNext
+    keyword_tools_test.go:376: CONTAINS window, no mode: {SessionID:26229a80-a863-41b7-99c2-e6e611073ff4 MatchMode:EXACT Items:[{Input:777 Canonical:777 Valid:true Conflicts:[]}] Existing:[{Kind:quantity_lookalike Severity:warning Keyword:A1X2 With:A1 OfferID:}]} <nil>
+--- FAIL: TestKeywordToolsCheckAndNext (1.27s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.005s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

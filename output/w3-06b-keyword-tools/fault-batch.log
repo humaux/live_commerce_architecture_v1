@@ -1,8 +1,12 @@
+tested tree: 32d2742a9a86c583ba70b466287d4300c3c45cee + one injected fault, restored afterwards
+fault: batch applies despite conflicts (internal/claims/keyword_tools.go)
+command: bash scripts/dev/test-focused.sh '^TestKeywordToolsBatch$'  (expected: FAIL)
+
 === RUN   TestKeywordToolsBatch
-    keyword_tools_test.go:397: rename inactive: {Applied:true Offers:[] Unchanged:[] Conflicts:[{Index:0 OfferID:b47ad538-6093-428e-ab06-207d122dfdc5 Keyword:F6 Reason:offer_inactive}] Warnings:[]} <nil>
---- FAIL: TestKeywordToolsBatch (1.70s)
+    keyword_tools_test.go:508: stale version: {Applied:true Offers:[{ID:495ae2a1-b970-4156-be2f-8ebfba990084 SessionID:33241e7e-33e7-46c1-b87d-e725edad237a Keyword:D4 SKUID:4ecd5ca2-6bd8-40a4-8abc-a1b34a43c1df SKUCode:LC-253b2c97a8f2-0004 ProductName:claims gate 253b2c97a8f2 MaxQuantityPerClaim:2 Active:false Version:2 ActivatedAt:2026-10-07 01:55:25.010196 +0800 CST UpdatedAt:2026-10-07 01:55:25.126645 +0800 CST SKUPriceMinor:1004 Currency:USD LivePriceMinor:<nil>}] Unchanged:[] Conflicts:[{Index:0 OfferID:495ae2a1-b970-4156-be2f-8ebfba990084 Keyword: Reason:version_conflict}] Warnings:[]} <nil>
+--- FAIL: TestKeywordToolsBatch (1.30s)
 FAIL
-FAIL	livecommerce/tests/foundation	2.946s
+FAIL	livecommerce/tests/foundation	2.031s
 FAIL
 test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
 exit=1
