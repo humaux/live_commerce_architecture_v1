@@ -55,8 +55,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0143 (OPS-01B platform operator suspend/resume + operator audit) adds one more: 67 -> 68.
 	// 0137 + post-River 0022 (W4-S1 platform Stripe) add two more: 68 -> 70.
 	// 0144 (W3-03B checkout reminders) adds one more: 70 -> 71.
-	if len(r2) != 71 {
-		t.Fatalf("R2 migration set = %d files %v, want 71", len(r2), r2)
+	// 0148 (LC-B7 console read model: console_session_facts + read_live_console_sales) adds one more: 71 -> 72.
+	if len(r2) != 72 {
+		t.Fatalf("R2 migration set = %d files %v, want 72", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
