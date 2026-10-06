@@ -304,7 +304,10 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.meta_audience_authorized(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_ecpay_key_for_status(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.load_ecpay_key_for_selection(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,true),
-	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false))
+	 ('integration.load_ecpay_key_for_merchant(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 -- 0137 (W4-S1 platform Stripe): the two trigger guards of derived Stripe rows; registry-writer definers, no EXECUTE grant to any login.
+	 ('integration.guard_derived_stripe_account()'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false),
+	 ('integration.guard_derived_stripe_credential()'::regprocedure::oid,ARRAY[]::text[],'commerce_payment_registry_writer',false,false,false,false))
 	 SELECT count(*),bool_and(a.oid IS NOT NULL AND p.prosecdef AND p.proconfig = ARRAY['search_path=pg_catalog']
 	 AND pg_get_userbyid(p.proowner)=a.owner
 	 -- every worker authority holds EXACTLY the listed functions; the empty legacy commerce_worker none (T21-02)
@@ -320,7 +323,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 85 || !safe {
+	if err != nil || functions != 87 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

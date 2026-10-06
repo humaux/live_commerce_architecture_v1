@@ -53,6 +53,25 @@ Invariants are unchanged and upheld as follows:
 - **I17**: the capability is labelled `LIVE (owner canary)` until a non-developer Taiwan merchant completes a LIVE order and refund. Only then can it be `production_supported`.
 - **I19**: PostgreSQL stays the single source of truth.
 
+### 0.3 Amendment AD-PF2 (owner 2026-10-06, after legal research): the platform account collects for the platform owner's own stores only
+
+Legal research found that the platform Stripe account collecting card money for **third-party** merchants conflicts with Stripe's
+Services Agreement §3.4(b) and with Taiwan third-party-payment rules. Therefore, until **plan A (a merchant-owned Taiwan PSP)**:
+**third-party merchants: not allowed.** The platform account is used only for stores of the same legal entity as the Stripe
+account (the platform owner's own store(s)).
+
+- **Allowlist.** A store may self-enable card payments (§3.3) only if an operator allowlisted it:
+  `ops-admin.sh stripe-admin platform-allow|platform-disallow --target-tenant --target-store --environment --operator --ticket`
+  (SQL `payments.allow_platform_stripe`, table `payments.platform_stripe_allowlist`, audit `stripe.platform.allow|disallow` in the
+  platform scope with the target ids in `details`). `ops.audit_events` plus the table's own `allowed_by/allowed_ref` are the audit
+  trail; OPS-01B's `control.operator_audit` is not on this base, so the integrator may re-point the audit when it merges.
+- **Gate.** Without an active allowlist row `set_platform_stripe(enabled=true)` is refused with `platform_stripe_not_allowed`
+  (403), before any platform-state check. Disable is never gated. Withdrawing the allowlist does **not** stop sales of an enrolled
+  store: use `platform-block` (§7).
+- `read_platform_stripe` returns `allowed` (boolean) so the admin UI can hide the toggle.
+- Everything else in this file (attribution §4, kill switches §7, per-order cap, refunds limited to the store's own captures, the
+  settlement ledger) is unchanged. Sections that say "every store" / "merchant" read as "every allowlisted store".
+
 ## 1. Model in one paragraph
 
 The owner registers the platform Stripe account **once** with the existing operator flow. That flow covers register,
