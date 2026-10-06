@@ -19,7 +19,6 @@ import (
 
 func TestReminderRoutesMountAndGuards(t *testing.T) {
 	const session = "/v1/admin/stores/" + sendStoreID + "/live-sessions/" + sendSession + "/reminders"
-	const settings = "/v1/admin/stores/" + sendStoreID + "/live-settings/reminder"
 	do := func(h http.Handler, method, path, body string, headers map[string]string) *httptest.ResponseRecorder {
 		var reader io.Reader = http.NoBody // a bodiless GET must look bodiless to the transport guard
 		if body != "" {
@@ -36,28 +35,22 @@ func TestReminderRoutesMountAndGuards(t *testing.T) {
 	}
 	key := map[string]string{"Idempotency-Key": "key-12345678"}
 	authed := map[string]string{"Idempotency-Key": "key-12345678", "Authorization": "Bearer t"}
-	bearer := map[string]string{"Authorization": "Bearer t"}
 
 	// Without the send side nothing mounts: every reminder verb answers 404 (no route), never a send.
 	off := NewHandler(nil, Options{Inbox: rebuildWithoutSend(t, nil)})
 	if res := do(off, http.MethodPost, session, "", key); res.Code != http.StatusNotFound {
 		t.Fatalf("POST reminders without the send side: %d", res.Code)
 	}
-	if res := do(off, http.MethodGet, settings, "", nil); res.Code != http.StatusNotFound {
-		t.Fatalf("GET settings without the send side: %d", res.Code)
-	}
 
 	h := NewHandler(nil, Options{Inbox: sendService(t)})
 	// Mounted: no bearer is 401 after the transport guards.
 	for name, tc := range map[string]struct{ method, path, body string }{
-		"trigger":      {http.MethodPost, session, ""},
-		"trigger one":  {http.MethodPost, session + "/" + sendOffer, ""},
-		"report":       {http.MethodGet, session, ""},
-		"get settings": {http.MethodGet, settings, ""},
-		"put settings": {http.MethodPut, settings, `{"enabled":true,"delay_minutes":30,"expected_version":0}`},
+		"trigger":     {http.MethodPost, session, ""},
+		"trigger one": {http.MethodPost, session + "/" + sendOffer, ""},
+		"report":      {http.MethodGet, session, ""},
 	} {
 		headers := key
-		if tc.method != http.MethodPost { // settings and the report are keyless
+		if tc.method != http.MethodPost { // the report is keyless
 			headers = nil
 		}
 		if res := do(h, tc.method, tc.path, tc.body, headers); res.Code != http.StatusUnauthorized {
@@ -78,27 +71,13 @@ func TestReminderRoutesMountAndGuards(t *testing.T) {
 	if res := do(h, http.MethodPost, badSession, "", authed); res.Code != http.StatusUnprocessableEntity {
 		t.Fatalf("trigger with a malformed session id: %d", res.Code)
 	}
-	for name, body := range map[string]string{
-		"missing delay":   `{"enabled":true,"expected_version":0}`,
-		"missing version": `{"enabled":true,"delay_minutes":30}`,
-		"null enabled":    `{"enabled":null,"delay_minutes":30,"expected_version":0}`,
-		"empty":           `{}`,
-	} {
-		if res := do(h, http.MethodPut, settings, body, bearer); res.Code != http.StatusUnprocessableEntity && res.Code != http.StatusBadRequest {
-			t.Fatalf("%s: status %d", name, res.Code)
-		}
-	}
-	for name, body := range map[string]string{
-		"unknown key":   `{"enabled":true,"delay_minutes":30,"expected_version":0,"tenant_id":"x"}`,
-		"duplicate key": `{"enabled":true,"enabled":false,"delay_minutes":30,"expected_version":0}`,
-	} {
-		if res := do(h, http.MethodPut, settings, body, bearer); res.Code != http.StatusBadRequest {
-			t.Fatalf("%s: status %d", name, res.Code)
-		}
+	// The settings routes are DEFERRED with the automatic path: nothing is mounted for them.
+	if res := do(h, http.MethodGet, "/v1/admin/stores/"+sendStoreID+"/live-settings/reminder", "", nil); res.Code != http.StatusNotFound {
+		t.Fatalf("settings route is mounted: %d", res.Code)
 	}
 	// A wrong verb stays inside the private boundary.
-	if res := do(h, http.MethodDelete, settings, "", nil); res.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("DELETE settings: %d", res.Code)
+	if res := do(h, http.MethodDelete, session, "", nil); res.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("DELETE reminders: %d", res.Code)
 	}
 }
 

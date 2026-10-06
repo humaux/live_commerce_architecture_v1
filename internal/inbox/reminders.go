@@ -1,22 +1,20 @@
-// Purpose: W3-03B checkout reminders as service methods: PlanCheckoutReminders (one merchant-triggered pass over a session's unpaid buyers
-// that plans at most one 24 h-window DM per buyer through the existing LC-B4 send path), ReminderReport (what was sent / is queued / needs a
-// manual follow-up) and the per-store reminder settings. It decides no rule: inbox.checkout_reminder_candidates classifies, inbox.plan_
-// checkout_reminder re-validates and plans; this file renders the fixed checkout-reminder/v1 template, seals both copies and plans in
-// ONE scoped merchant transaction. No network call.
-// Depends on: internal/command, internal/msgtemplates (Resolve checkout-reminder/v1), internal/inbox send.go (prepare, latestSender),
-// send_text.go (checkText), keyring.go (bodyHMAC); SQL migration 0131 (inbox.checkout_reminder_candidates, inbox.plan_checkout_reminder,
-// inbox.reminder_report, live.get_reminder_settings, live.put_reminder_settings) and inbox.store_origins (0128).
-// Used by: internal/httpapi/reminders.go; cmd/api (through the inbox service the send side was enabled on).
-// Invariants: no message tag / no send outside the 24 h window (planner + Check refuse, never retried); one reminder per buyer per session;
-// the reminder link is the store's non-bearer checkout URL (origin + /<locale>/checkout): it is sealed in the dispatch copy and scrubbed from
-// the display copy like every link (send.go prepare); PSID only in memory and the sealed copy.
+// Purpose: W3-03B checkout reminders on the inbox side: ScanCheckoutReminders (the SQL candidate scan: eligibility, follow-up rows, audit),
+// PlanCheckoutReminder (plan ONE 24 h-window DM for ONE scanned buyer through the existing LC-B4 send path) and ReminderReport (what was sent /
+// is queued / failed / needs a manual follow-up). It decides no rule: inbox.checkout_reminder_candidates classifies, inbox.plan_checkout_reminder
+// re-validates and plans; this file renders the fixed template of the buyer's state, seals both copies and calls the planner. The orchestration
+// (one transaction per buyer: issue the link, then plan) lives in internal/merchanttools/checkout_reminders.go. No network call.
+// Depends on: internal/command, internal/msgtemplates (Resolve checkout-reminder/v1 | order-pay-link/v1), internal/inbox send.go (prepare,
+// latestSender), send_text.go (checkText), keyring.go (bodyHMAC); SQL migration 0131 (inbox.checkout_reminder_candidates,
+// inbox.plan_checkout_reminder, inbox.reminder_report) and inbox.store_origins (0128).
+// Used by: internal/merchanttools/checkout_reminders.go (scan + plan), internal/httpapi/reminders.go (report); cmd/api through the inbox service.
+// Invariants: no message tag / no send outside the 24 h window (planner + Check refuse, never retried); one reminder per buyer per session; the
+// bearer link only exists in memory and inside the sealed dispatch copy (the display copy keeps {{連結}}); PSID only in memory and the sealed copy.
 // Status: MOCK (REAL_PG + fake Graph).
 
 package inbox
 
 import (
 	"context"
-	"errors"
 	"slices"
 	"strings"
 
@@ -27,144 +25,85 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// reminderTemplate is the fixed template (0131) every checkout reminder renders; reminderLimit bounds one trigger so the planning
-// transaction stays inside the request budget (the merchant triggers again for the rest; reminded buyers are skipped).
+// Reminder states (inbox.crm_bundle_facts) and the fixed template each one sends: a never-opened claim gets checkout-reminder/v1 (claim link),
+// an unpaid merchant-created order gets the LC-B6 order-pay-link/v1 (order link).
 const (
-	reminderTemplate = "checkout-reminder/v1"
-	reminderLimit    = 100
+	StateClaimed         = "claimed"
+	StateAwaitingPayment = "awaiting_payment"
+	reminderLimit        = 100
 )
 
-// ReminderOutput is the POST …/reminders response: how many DMs were planned and why the others were not.
-type ReminderOutput struct {
-	Queued          int  `json:"queued"`
-	AlreadyReminded int  `json:"already_reminded"`
-	Followup        int  `json:"followup"`
-	Skipped         int  `json:"skipped"`
-	Truncated       bool `json:"truncated"`
+// ReminderCandidate is one row of inbox.checkout_reminder_candidates. Verdict "send" rows carry what the planner needs (conversation, takeover
+// generation, platform) and what the link issue needs (order id for an unpaid order, current claim-link generation for a claim).
+type ReminderCandidate struct {
+	BundleID       string
+	Verdict        string // send | already_reminded | window_closed | human_takeover | no_peer | capability | link_unavailable
+	State          string // claimed | awaiting_payment
+	OrderID        string
+	LinkGeneration int64
+	ConversationID string
+	Generation     int64
+	Platform       string
+	Locale         string
 }
 
-// reminderCandidate is one row of inbox.checkout_reminder_candidates.
-type reminderCandidate struct {
-	bundle, verdict, conversation, platform, locale string
-	generation                                      *int64
+// ReminderScan is one scan: every classified candidate, whether more buyers remain (Truncated) and the store's checkout origin ("" = none).
+type ReminderScan struct {
+	Candidates []ReminderCandidate
+	Truncated  bool
+	Origin     string
 }
 
-// PlanCheckoutReminders runs one reminder pass for a session (inbox:reply): the batch over every eligible buyer, or the single buyer bundleID
-// (non-empty; 409 not_remindable when she is no candidate): it records follow-up rows for buyers that cannot be reached
-// in the window and plans one meta.dm_send (origin=auto) per reachable buyer. Replaying the same Idempotency-Key returns the first answer;
-// a new key re-evaluates (already reminded buyers are never reminded twice). Side effects: command receipt, follow-up rows, and per sent
-// buyer a River job + operation + outbound row + sealed dispatch copy (inbox.plan_checkout_reminder).
-func (s *Service) PlanCheckoutReminders(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, sessionID, bundleID string) (ReminderOutput, error) {
-	var out ReminderOutput
+// ScanCheckoutReminders classifies the session's candidate buyers (inbox:reply and live:manage; bundleID "" = the batch, else that buyer only,
+// 409 not_remindable when she is no candidate). Side effects: follow-up rows for the buyers that cannot be reached and one audit row.
+// Calls inbox.checkout_reminder_candidates (0131) and inbox.store_origins (0128).
+func (s *Service) ScanCheckoutReminders(ctx context.Context, tx pgx.Tx, sessionID, bundleID string) (ReminderScan, error) {
+	var out ReminderScan
 	if !s.SendEnabled() {
 		return out, ErrSendUnavailable
 	}
 	if !command.ValidID(sessionID) || (bundleID != "" && !command.ValidID(bundleID)) {
 		return out, command.ErrInvalid
 	}
-	request := struct {
-		Session string `json:"session_id"`
-		Bundle  string `json:"bundle_id"`
-	}{sessionID, bundleID}
-	err := command.Run(ctx, tx, scope, "inbox.checkout_reminder.trigger", key, request, &out, func() error {
-		body, err := s.reminderBody(ctx, tx)
-		if err != nil {
-			return err
-		}
-		// Calls inbox.checkout_reminder_candidates (0131): classifies every candidate buyer, records the follow-up rows, takes the session lock.
-		// It runs before the storefront check so a foreign session is 404 (not no_storefront); a store without a domain rolls the rows back.
-		cands, truncated, err := s.reminderCandidates(ctx, tx, sessionID, bundleID)
-		if err != nil {
-			return err
-		}
-		origin, err := s.storeOrigin(ctx, tx)
-		if err != nil {
-			return err
-		}
-		out = ReminderOutput{Truncated: truncated}
-		for _, c := range cands {
-			switch c.verdict {
-			case "send":
-				skipped, err := s.planReminder(ctx, tx, scope, sessionID, c, origin, body)
-				switch {
-				case err != nil:
-					return err
-				case skipped:
-					out.Skipped++ // the buyer's thread cannot be read (purged): nothing was written
-				default:
-					out.Queued++
-				}
-			case "already_reminded":
-				out.AlreadyReminded++
-			default:
-				out.Followup++
-			}
-		}
-		return nil
-	})
-	return out, err
-}
-
-// storeOrigin is the store's first active storefront origin; no origin means no link to send (409 no_storefront).
-func (s *Service) storeOrigin(ctx context.Context, tx pgx.Tx) (string, error) {
-	var origins []string
-	// Calls inbox.store_origins (0128): public data, scoped by the transaction GUCs.
-	if err := tx.QueryRow(ctx, `SELECT inbox.store_origins()`).Scan(&origins); err != nil {
-		return "", databaseError(err)
-	}
-	if len(origins) == 0 {
-		return "", &SendError{Status: 409, Code: "no_storefront"}
-	}
-	return origins[0], nil
-}
-
-// reminderBody resolves the fixed template body (it must keep its {{連結}} placeholder and be a dm template).
-func (s *Service) reminderBody(ctx context.Context, tx pgx.Tx) (string, error) {
-	if s.templates == nil {
-		return "", invalidText(0, "template_unavailable")
-	}
-	r, err := s.templates.Resolve(ctx, tx, reminderTemplate, 1)
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text, verdict, reminder_state, order_id::text, link_generation, conversation_id::text, takeover_generation,
+		platform, locale, truncated FROM inbox.checkout_reminder_candidates($1::uuid,'manual',$2,nullif($3,'')::uuid)`, sessionID, reminderLimit, bundleID)
 	if err != nil {
-		if msgtemplates.IsNotFound(err) {
-			return "", invalidText(0, "template_not_found")
-		}
-		return "", err
-	}
-	if !slices.Contains(r.Kinds, KindDM) || !strings.Contains(r.Body, linkPlaceholder) {
-		return "", invalidText(0, "template_kind")
-	}
-	return r.Body, nil
-}
-
-func (s *Service) reminderCandidates(ctx context.Context, tx pgx.Tx, sessionID, bundleID string) ([]reminderCandidate, bool, error) {
-	rows, err := tx.Query(ctx, `SELECT bundle_id::text, verdict, conversation_id::text, takeover_generation, platform, locale, truncated
-		FROM inbox.checkout_reminder_candidates($1::uuid,'manual',$2,nullif($3,'')::uuid)`, sessionID, reminderLimit, bundleID)
-	if err != nil {
-		return nil, false, databaseError(err)
+		return out, databaseError(err)
 	}
 	defer rows.Close()
-	var out []reminderCandidate
-	truncated := false
 	for rows.Next() {
-		var c reminderCandidate
-		var bundle, conv, plat *string
+		var c ReminderCandidate
+		var bundle, state, order, conv, plat *string
+		var linkGen, gen *int64
 		var trunc bool
-		if err := rows.Scan(&bundle, &c.verdict, &conv, &c.generation, &plat, &c.locale, &trunc); err != nil {
-			return nil, false, databaseError(err)
+		if err := rows.Scan(&bundle, &c.Verdict, &state, &order, &linkGen, &conv, &gen, &plat, &c.Locale, &trunc); err != nil {
+			return out, databaseError(err)
 		}
 		if trunc {
-			truncated = true
+			out.Truncated = true
 			continue
 		}
-		c.bundle = deref(bundle)
-		c.conversation = deref(conv)
-		c.platform = deref(plat)
-		out = append(out, c)
+		c.BundleID, c.State, c.OrderID, c.ConversationID, c.Platform = deref(bundle), deref(state), deref(order), deref(conv), deref(plat)
+		if linkGen != nil {
+			c.LinkGeneration = *linkGen
+		}
+		if gen != nil {
+			c.Generation = *gen
+		}
+		out.Candidates = append(out.Candidates, c)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, false, databaseError(err)
+		return out, databaseError(err)
 	}
-	return out, truncated, nil
+	rows.Close()
+	origins, err := s.storeOrigins(ctx, tx)
+	if err != nil {
+		return out, err
+	}
+	if len(origins) > 0 {
+		out.Origin = origins[0]
+	}
+	return out, nil
 }
 
 func deref(p *string) string {
@@ -174,45 +113,79 @@ func deref(p *string) string {
 	return *p
 }
 
-// planReminder plans one DM. It returns skipped=true (nothing written) when the buyer's thread cannot be read; every other refusal of the
-// planner (a window / takeover / capability race after the candidate scan, PT409 with the deny code) aborts the whole trigger and rolls the
-// transaction back, River jobs included: the merchant triggers again and the scan re-classifies. No savepoint: inbox.lcn_emit pins the job
-// row to the top-level transaction id, which a subtransaction insert would not match.
-func (s *Service) planReminder(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, c reminderCandidate, origin, body string) (skipped bool, err error) {
-	text := strings.ReplaceAll(body, linkPlaceholder, origin+"/"+c.locale+"/checkout")
-	text, err = checkText(KindDM, c.platform, text)
-	if err != nil {
-		return false, err
+func (s *Service) storeOrigins(ctx context.Context, tx pgx.Tx) ([]string, error) {
+	var origins []string
+	// Calls inbox.store_origins (0128): public data, scoped by the transaction GUCs.
+	if err := tx.QueryRow(ctx, `SELECT inbox.store_origins()`).Scan(&origins); err != nil {
+		return nil, databaseError(err)
 	}
-	hmac, err := s.keys.bodyHMAC(scope.TenantID, text)
-	if err != nil {
-		return false, err
+	return origins, nil
+}
+
+// reminderTemplate returns the fixed template id of a state (version 1).
+func reminderTemplate(state string) (string, bool) {
+	switch state {
+	case StateClaimed:
+		return msgtemplates.FixedCheckoutReminder, true
+	case StateAwaitingPayment:
+		return msgtemplates.FixedOrderPayLink, true
 	}
-	psid, err := s.latestSender(ctx, tx, c.conversation)
+	return "", false
+}
+
+// PlanCheckoutReminder plans ONE reminder DM for the scanned buyer c (inbox:reply) inside the caller's per-buyer transaction, where the caller has
+// just issued link (a claim link or an order link) — a refusal of the planner (PT409 with the deny code: window_closed, human_takeover,
+// takeover_changed, capability, already_reminded, not_remindable, conversation_gone, rate_limited) rolls that issue back with the transaction.
+// The conversation named by c is verified by the planner to be a peer of the bundle (never re-picked). Side effects: River job, operation,
+// outbound row, sealed dispatch copy, reminder row, audit (inbox.plan_checkout_reminder, 0131).
+func (s *Service) PlanCheckoutReminder(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, c ReminderCandidate, link string) error {
+	if !s.SendEnabled() {
+		return ErrSendUnavailable
+	}
+	tplID, ok := reminderTemplate(c.State)
+	if !ok || !command.ValidID(sessionID) || !command.ValidID(c.BundleID) || !command.ValidID(c.ConversationID) || link == "" {
+		return command.ErrInvalid
+	}
+	if s.templates == nil {
+		return invalidText(0, "template_unavailable")
+	}
+	tpl, err := s.templates.Resolve(ctx, tx, tplID, 1)
 	if err != nil {
-		var se *SendError
-		if errors.As(err, &se) && se.Code == "conversation_gone" {
-			return true, nil
+		if msgtemplates.IsNotFound(err) {
+			return invalidText(0, "template_not_found")
 		}
-		return false, err
+		return err
+	}
+	if strings.Count(tpl.Body, linkPlaceholder) != 1 || !slices.Contains(tpl.Kinds, KindDM) {
+		return invalidText(0, "template_kind")
+	}
+	text, err := checkText(KindDM, c.Platform, strings.Replace(tpl.Body, linkPlaceholder, link, 1))
+	if err != nil {
+		return err
+	}
+	// The digest never contains the link (a bearer secret that differs per issue): the template body and the bundle make it stable, so the
+	// A1.3 lcn-dup lock key is meaningful and the stored hash is not a function of the bearer.
+	hmac, err := s.keys.bodyHMAC(scope.TenantID, "crm|"+c.State+"|"+c.BundleID+"|"+tpl.Body)
+	if err != nil {
+		return err
+	}
+	psid, err := s.latestSender(ctx, tx, c.ConversationID)
+	if err != nil {
+		return err
 	}
 	p, err := s.prepare(ctx, tx, scope, KindDM, psid, text, hmac)
 	if err != nil {
-		return false, err
+		return err
 	}
-	tplID, tplVer := reminderTemplate, int64(1)
-	var gen int64
-	if c.generation != nil {
-		gen = *c.generation
-	}
-	// Calls inbox.plan_checkout_reminder (0131): definer commerce_integration_writer; window/takeover/capability re-check, the once-per-buyer
-	// row, then inbox.lcn_emit (operation, outbound row, sealed secret, audit). Never a takeover (origin=auto).
+	// Calls inbox.plan_checkout_reminder (0131): definer commerce_integration_writer; lcn-dup lock, window/takeover/capability/state re-check, the
+	// once-per-buyer row, then inbox.lcn_emit (operation, outbound row, sealed secret, audit). Never a takeover (origin=auto).
 	var op string
-	if err := tx.QueryRow(ctx, `SELECT inbox.plan_checkout_reminder($1::uuid,$2::uuid,'manual',$3::bigint,$4::uuid,$5::bigint,$6::uuid,$7::bytea,$8,$9::bytea,$10::bytea,$11::bytea,$12::bytea,$13,$14::bigint)::text`,
-		sessionID, c.bundle, gen, p.operation, p.job, p.outbound, p.hmac, p.keyID, p.nonce, p.ciphertext, p.enc, p.sealed, tplID, tplVer).Scan(&op); err != nil {
-		return false, databaseError(err)
+	if err := tx.QueryRow(ctx, `SELECT inbox.plan_checkout_reminder($1::uuid,$2::uuid,$3::uuid,'manual',$4::bigint,$5,$6::uuid,$7::bigint,$8::uuid,$9::bytea,$10,$11::bytea,$12::bytea,$13::bytea,$14::bytea,$15,$16::bigint)::text`,
+		sessionID, c.BundleID, c.ConversationID, c.Generation, c.State, p.operation, p.job, p.outbound, p.hmac, p.keyID, p.nonce, p.ciphertext,
+		p.enc, p.sealed, tplID, int64(1)).Scan(&op); err != nil {
+		return databaseError(err)
 	}
-	return false, nil
+	return nil
 }
 
 // ReminderItem is one buyer of the report: the bundle, the manual label (null for Meta buyers: no names are stored) and, for a queued DM,
@@ -226,8 +199,9 @@ type ReminderItem struct {
 	Code          *string `json:"code,omitempty"`
 }
 
-// FollowupItem is a buyer the merchant must handle (reason window_closed | human_takeover | no_peer | capability); copy the link from the
-// report's link field (link_copy_allowed is false when the store has no active storefront domain).
+// FollowupItem is a buyer the merchant must handle (reason window_closed | human_takeover | no_peer | capability | link_unavailable); copy the
+// link from the report's link field (link_copy_allowed is false when the store has no active storefront domain). The link is the store's
+// non-bearer checkout URL: it never carries a buyer secret.
 type FollowupItem struct {
 	BundleID        string  `json:"bundle_id"`
 	DisplayName     *string `json:"display_name"`
@@ -310,49 +284,4 @@ func (s *Service) ReminderReport(ctx context.Context, tx pgx.Tx, sessionID strin
 		}
 	}
 	return out, nil
-}
-
-func (s *Service) storeOrigins(ctx context.Context, tx pgx.Tx) ([]string, error) {
-	var origins []string
-	if err := tx.QueryRow(ctx, `SELECT inbox.store_origins()`).Scan(&origins); err != nil {
-		return nil, databaseError(err)
-	}
-	return origins, nil
-}
-
-// ReminderSettings is the per-store 「場次結束後自動提醒」 setting (default off, 30 min, version 0 = never saved).
-type ReminderSettings struct {
-	Enabled      bool  `json:"enabled"`
-	DelayMinutes int   `json:"delay_minutes"`
-	Version      int64 `json:"version"`
-}
-
-// ReminderSettingsInput is PUT …/live-settings/reminder: delay 10..1440 minutes; expected_version 0 creates the row.
-type ReminderSettingsInput struct {
-	Enabled         bool  `json:"enabled"`
-	DelayMinutes    int   `json:"delay_minutes"`
-	ExpectedVersion int64 `json:"expected_version"`
-}
-
-// GetReminderSettings reads the store's setting (live:read). Calls live.get_reminder_settings (0131).
-func (s *Service) GetReminderSettings(ctx context.Context, tx pgx.Tx) (ReminderSettings, error) {
-	var out ReminderSettings
-	if err := tx.QueryRow(ctx, `SELECT enabled, delay_minutes, version FROM live.get_reminder_settings()`).Scan(&out.Enabled, &out.DelayMinutes, &out.Version); err != nil {
-		return out, databaseError(err)
-	}
-	return out, nil
-}
-
-// PutReminderSettings stores the setting with an expected_version CAS (live:manage; 409 version_conflict). Calls live.put_reminder_settings
-// (0131); audit live.reminder_settings.updated. Nothing here sends: see DELIVERY.md for the automatic trigger.
-func (s *Service) PutReminderSettings(ctx context.Context, tx pgx.Tx, in ReminderSettingsInput) (ReminderSettings, error) {
-	var out ReminderSettings
-	if in.DelayMinutes < 10 || in.DelayMinutes > 1440 || in.ExpectedVersion < 0 {
-		return out, command.ErrInvalid
-	}
-	var v int64
-	if err := tx.QueryRow(ctx, `SELECT live.put_reminder_settings($1::boolean,$2::integer,$3::bigint)`, in.Enabled, in.DelayMinutes, in.ExpectedVersion).Scan(&v); err != nil {
-		return out, databaseError(err)
-	}
-	return ReminderSettings{Enabled: in.Enabled, DelayMinutes: in.DelayMinutes, Version: v}, nil
 }
