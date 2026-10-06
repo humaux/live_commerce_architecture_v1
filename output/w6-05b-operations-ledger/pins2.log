@@ -1,0 +1,580 @@
+=== RUN   TestCatalogCoreCC01PopulatedUpgrade
+--- PASS: TestCatalogCoreCC01PopulatedUpgrade (2.33s)
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (1.67s)
+=== RUN   TestCheckoutReminderMigration0144ExactACL
+--- PASS: TestCheckoutReminderMigration0144ExactACL (0.03s)
+=== RUN   TestClaimsRetentionCRP02Schema
+=== RUN   TestClaimsRetentionCRP02Schema/fresh-database
+    claims_retention_test.go:3463: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
+=== RUN   TestClaimsRetentionCRP02Schema/non-retention-roles-denied
+=== RUN   TestClaimsRetentionCRP02Schema/writer-policy-behaviour
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker)
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach
+=== RUN   TestClaimsRetentionCRP02Schema/constraints-and-policy-api
+=== RUN   TestClaimsRetentionCRP02Schema/populated-upgrade
+--- PASS: TestClaimsRetentionCRP02Schema (5.33s)
+    --- PASS: TestClaimsRetentionCRP02Schema/fresh-database (0.13s)
+    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (0.61s)
+    --- PASS: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.23s)
+    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (1.97s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_claims_intake (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_meta_consumer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_integration_writer (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_alone (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_definer_owner_with_SET (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_runtime_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_the_owner_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_runtime (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_meta_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_definer_owner (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_with_SET_ROLE (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_definer_owner_alone (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(payment_live_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(expiry_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(ads_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(claims_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_another_authority_(legacy_worker) (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_runtime_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_the_owner_pool (0.00s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_worker_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_payment_live_worker_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_expiry_worker_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach (0.07s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.08s)
+    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.08s)
+    --- PASS: TestClaimsRetentionCRP02Schema/populated-upgrade (2.31s)
+=== RUN   TestCustomersBillingCB02Schema
+=== RUN   TestCustomersBillingCB02Schema/roles_and_schemas
+=== RUN   TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read
+=== RUN   TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers
+=== RUN   TestCustomersBillingCB02Schema/policies
+=== RUN   TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility
+=== RUN   TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5)
+=== RUN   TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one
+=== RUN   TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7)
+=== RUN   TestCustomersBillingCB02Schema/consent_events_rules
+=== RUN   TestCustomersBillingCB02Schema/privacy_actions_rules
+=== RUN   TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8)
+=== RUN   TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2)
+=== RUN   TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5)
+=== RUN   TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array
+--- PASS: TestCustomersBillingCB02Schema (4.69s)
+    --- PASS: TestCustomersBillingCB02Schema/roles_and_schemas (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read (0.12s)
+    --- PASS: TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers (0.07s)
+    --- PASS: TestCustomersBillingCB02Schema/policies (0.13s)
+    --- PASS: TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility (0.03s)
+    --- PASS: TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5) (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7) (1.54s)
+    --- PASS: TestCustomersBillingCB02Schema/consent_events_rules (0.02s)
+    --- PASS: TestCustomersBillingCB02Schema/privacy_actions_rules (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5) (0.04s)
+    --- PASS: TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array (0.65s)
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/running
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/orphan
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_generation
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_version
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/extra_key
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/unique_key
+=== RUN   TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/wrong_queue
+--- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger (4.09s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/running (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/orphan (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_generation (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_version (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/extra_key (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/unique_key (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/wrong_queue (0.01s)
+=== RUN   TestHomeCodReviewACLInventory
+--- PASS: TestHomeCodReviewACLInventory (0.43s)
+=== RUN   TestHomeCodReviewSchemaInvariants
+--- PASS: TestHomeCodReviewSchemaInvariants (0.34s)
+=== RUN   TestLegacyRuntimeIsolationPopulatedUpgrade
+--- PASS: TestLegacyRuntimeIsolationPopulatedUpgrade (5.48s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger
+--- PASS: TestLegacyRuntimeIsolationUpgradeRejectsTamperedLedger (2.46s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeFailClosedRetry
+    legacy_runtime_upgrade_test.go:1004: pg teardown: "cancelled migration attempt still holds the migration advisory lock" backends reached 0 after 29ms (2 polls)
+--- PASS: TestLegacyRuntimeIsolationUpgradeFailClosedRetry (2.68s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs
+--- PASS: TestLegacyRuntimeIsolationUpgradeSequencesDoNotReuseRefs (2.64s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater
+--- PASS: TestLegacyRuntimeIsolationUpgradeMirroredSequenceHighWater (2.70s)
+=== RUN   TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence
+--- PASS: TestLegacyRuntimeIsolationUpgradeCopiedRowsAboveOldSequence (3.49s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (3.39s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.11s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.00s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.17s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.51s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.11s)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[])
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe()
+--- PASS: TestLiveConsoleInboxMigration0122ExactACL (0.02s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[]) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe() (0.00s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.04s)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list()
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint)
+--- PASS: TestLiveConsoleTemplatesMigration0121ExactACL (0.01s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list() (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint) (0.00s)
+=== RUN   TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade
+=== RUN   TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade/populated-0035-forward-upgrade
+--- PASS: TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade (2.52s)
+    --- PASS: TestLiveMediaExecutionLME07NativeLifecycleReadinessAndUpgrade/populated-0035-forward-upgrade (2.24s)
+=== RUN   TestLiveMediaPlanLMP07PopulatedUpgradeAndLegacyControl
+--- PASS: TestLiveMediaPlanLMP07PopulatedUpgradeAndLegacyControl (2.07s)
+=== RUN   TestLiveMediaStopLMR01Populated0036Upgrade
+--- PASS: TestLiveMediaStopLMR01Populated0036Upgrade (3.91s)
+=== RUN   TestManualFulfilmentMF02Schema
+=== RUN   TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK
+=== RUN   TestManualFulfilmentMF02Schema/version_and_head_CHECKs
+=== RUN   TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix
+=== RUN   TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser)
+2026/10/07 01:41:39 INFO orders.export_unshipped store_id=51bdef85-dc7f-42b1-a462-1cbefe429320 rows=1 truncated=false duration_ms=5
+=== RUN   TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT
+=== RUN   TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters
+=== RUN   TestManualFulfilmentMF02Schema/populated_upgrade_after_0062
+    manual_fulfilment_schema_test.go:364: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (4.67s)
+    --- PASS: TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK (0.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/version_and_head_CHECKs (0.09s)
+    --- PASS: TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix (0.08s)
+    --- PASS: TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser) (0.01s)
+    --- PASS: TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT (0.03s)
+    --- PASS: TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters (0.02s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+=== RUN   TestMerchantOrdersUpgradeDoesNotBackfillOldMembership
+--- PASS: TestMerchantOrdersUpgradeDoesNotBackfillOldMembership (2.24s)
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:170: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:170: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:170: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (0.49s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.05s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.06s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.10s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.08s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.09s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.09s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (2.44s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+=== RUN   TestMetaConnectMultiPageUpgrade
+--- PASS: TestMetaConnectMultiPageUpgrade (2.13s)
+=== RUN   TestMetaConsumerPopulated0028Upgrade
+--- PASS: TestMetaConsumerPopulated0028Upgrade (1.38s)
+=== RUN   TestMetaRuntimeIsolationPopulated0030Cutover
+--- PASS: TestMetaRuntimeIsolationPopulated0030Cutover (2.22s)
+=== RUN   TestMetaRuntimePopulated0029Upgrade
+--- PASS: TestMetaRuntimePopulated0029Upgrade (1.29s)
+=== RUN   TestPasswordPA03Schema
+=== RUN   TestPasswordPA03Schema/structure_and_privileges
+=== RUN   TestPasswordPA03Schema/checks
+=== RUN   TestPasswordPA03Schema/comments_on_every_object
+=== RUN   TestPasswordPA03Schema/upgrade_from_populated_0066
+    password_schema_test.go:500: OWNER-POOL DISCLOSURE: drop the eight 0070 functions, the four tables and the 0070 ledger row in a throw-away container to reproduce the 0066 state before the real migrations.Apply
+--- PASS: TestPasswordPA03Schema (3.16s)
+    --- PASS: TestPasswordPA03Schema/structure_and_privileges (0.47s)
+    --- PASS: TestPasswordPA03Schema/checks (0.03s)
+    --- PASS: TestPasswordPA03Schema/comments_on_every_object (0.00s)
+    --- PASS: TestPasswordPA03Schema/upgrade_from_populated_0066 (2.65s)
+=== RUN   TestPayuniNotifySchemaACLPin
+--- PASS: TestPayuniNotifySchemaACLPin (0.01s)
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+--- PASS: TestPlatformOperatorOP08SchemaAndExecuteMatrix (0.01s)
+=== RUN   TestPlatformStripePF01Schema
+=== RUN   TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection
+=== RUN   TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused
+=== RUN   TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded
+=== RUN   TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link
+=== RUN   TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8)
+=== RUN   TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix
+--- PASS: TestPlatformStripePF01Schema (3.12s)
+    --- PASS: TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection (0.01s)
+    --- PASS: TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8) (0.00s)
+    --- PASS: TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix (0.00s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.34s)
+=== RUN   TestStoreDomainsSDW06SchemaAndACLInventory
+--- PASS: TestStoreDomainsSDW06SchemaAndACLInventory (0.11s)
+=== RUN   TestStorefrontPublishSPW01SchemaAndGrants
+--- PASS: TestStorefrontPublishSPW01SchemaAndGrants (0.15s)
+=== RUN   TestStorefrontPublishSPW02UpgradeAfter0080
+--- PASS: TestStorefrontPublishSPW02UpgradeAfter0080 (2.09s)
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/ledger_checksum_and_repeat
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19)
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused
+=== RUN   TestStripeSL02Schema/approval_table_rls_privileges_and_definers
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:336: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:338: OWNER-POOL: direct INSERTs into payments.stripe_live_approvals (rolled back)
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape
+=== NAME  TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:388: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:403: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.store_grants integration:manage
+    stripe_live_schema_test.go:430: OWNER-POOL: payments.stripe_live_approvals canary triple set directly (set-once trigger check)
+    stripe_live_schema_test.go:479: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:495: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:496: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:504: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused
+=== NAME  TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves
+--- PASS: TestStripeSL02Schema (7.96s)
+    --- PASS: TestStripeSL02Schema/ledger_checksum_and_repeat (0.10s)
+    --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table (0.03s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19) (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused (0.01s)
+    --- PASS: TestStripeSL02Schema/approval_table_rls_privileges_and_definers (0.25s)
+    --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active (1.52s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape (0.00s)
+    --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger (1.26s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused (0.00s)
+    --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database (2.81s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3 (0.00s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves (0.00s)
+=== RUN   TestStripeRF03Schema
+=== RUN   TestStripeRF03Schema/migrations,_tables,_RLS,_PUBLIC_and_direct-role_privileges
+=== RUN   TestStripeRF03Schema/widened_constraints_keep_every_prior_value
+=== RUN   TestStripeRF03Schema/stripe_refunds_and_refund_facts_CHECKs
+=== RUN   TestStripeRF03Schema/foreign_keys,_definers,_ACLs_and_the_private_matrix
+=== RUN   TestStripeRF03Schema/runtime_pool_validator_accepts_the_new_grants_and_still_rejects_River_lifecycle_privileges
+=== RUN   TestStripeRF03Schema/post-River_routing_and_job_guards_include_payment_refund_v1
+=== RUN   TestStripeRF03Schema/set-once_trigger
+=== RUN   TestStripeRF03Schema/fact_trigger_and_append-only_facts
+=== RUN   TestStripeRF03Schema/mark_stripe_refund_sent_returns_CLOSED,_not_SEND,_while_REFUND_HISTORY_or_CONFLICTING_REPORT_exists
+=== RUN   TestStripeRF03Schema/the_pre-send_check_of_refund_B_does_not_suppress_after_refund_A_was_sent
+=== RUN   TestStripeRF03Schema/the_webhook_commit_increments_stripe_refunds.signal_count
+=== RUN   TestStripeRF03Schema/the_request_definer_sees_existing_refunds_in_the_capacity_sum_(not_as_superuser)
+=== RUN   TestStripeRF03Schema/populated_upgrade_from_0061
+    stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator
+--- PASS: TestStripeRF03Schema (16.36s)
+    --- PASS: TestStripeRF03Schema/migrations,_tables,_RLS,_PUBLIC_and_direct-role_privileges (0.02s)
+    --- PASS: TestStripeRF03Schema/widened_constraints_keep_every_prior_value (0.02s)
+    --- PASS: TestStripeRF03Schema/stripe_refunds_and_refund_facts_CHECKs (0.09s)
+    --- PASS: TestStripeRF03Schema/foreign_keys,_definers,_ACLs_and_the_private_matrix (0.07s)
+    --- PASS: TestStripeRF03Schema/runtime_pool_validator_accepts_the_new_grants_and_still_rejects_River_lifecycle_privileges (0.13s)
+    --- PASS: TestStripeRF03Schema/post-River_routing_and_job_guards_include_payment_refund_v1 (0.01s)
+    --- PASS: TestStripeRF03Schema/set-once_trigger (0.03s)
+    --- PASS: TestStripeRF03Schema/fact_trigger_and_append-only_facts (0.02s)
+    --- PASS: TestStripeRF03Schema/mark_stripe_refund_sent_returns_CLOSED,_not_SEND,_while_REFUND_HISTORY_or_CONFLICTING_REPORT_exists (2.77s)
+    --- PASS: TestStripeRF03Schema/the_pre-send_check_of_refund_B_does_not_suppress_after_refund_A_was_sent (2.96s)
+    --- PASS: TestStripeRF03Schema/the_webhook_commit_increments_stripe_refunds.signal_count (0.01s)
+    --- PASS: TestStripeRF03Schema/the_request_definer_sees_existing_refunds_in_the_capacity_sum_(not_as_superuser) (0.01s)
+    --- SKIP: TestStripeRF03Schema/populated_upgrade_from_0061 (0.00s)
+=== RUN   TestStripeSP06Schema
+=== RUN   TestStripeSP06Schema/negative/integration.merchant_accounts
+=== RUN   TestStripeSP06Schema/negative/integration.account_credentials
+=== RUN   TestStripeSP06Schema/negative/payments.account_qualifications
+=== RUN   TestStripeSP06Schema/negative/payments.facts
+=== RUN   TestStripeSP06Schema/negative/payments.review_cases
+=== RUN   TestStripeSP06Schema/deadline/expires_at_40_minutes
+=== RUN   TestStripeSP06Schema/deadline/send_deadline_7_minutes
+=== RUN   TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes
+--- PASS: TestStripeSP06Schema (0.09s)
+    --- PASS: TestStripeSP06Schema/negative/integration.merchant_accounts (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/integration.account_credentials (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.account_qualifications (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.facts (0.00s)
+    --- PASS: TestStripeSP06Schema/negative/payments.review_cases (0.00s)
+    --- PASS: TestStripeSP06Schema/deadline/expires_at_40_minutes (0.01s)
+    --- PASS: TestStripeSP06Schema/deadline/send_deadline_7_minutes (0.00s)
+    --- PASS: TestStripeSP06Schema/deadline/handoff_cutoff_5_minutes (0.00s)
+=== RUN   TestTaiwanCvsSchema
+=== RUN   TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON
+=== RUN   TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1)
+=== RUN   TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value
+=== RUN   TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies
+=== RUN   TestTaiwanCvsSchema/uniqueness_and_indexes
+=== RUN   TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards
+=== RUN   TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE
+=== RUN   TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role)
+=== RUN   TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role)
+=== RUN   TestTaiwanCvsSchema/no_PII_columns_(catalog_scan)
+=== RUN   TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2)
+=== RUN   TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login
+=== RUN   TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles
+=== RUN   TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else
+--- PASS: TestTaiwanCvsSchema (1.20s)
+    --- PASS: TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON (0.01s)
+    --- PASS: TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value (0.01s)
+    --- PASS: TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies (0.32s)
+    --- PASS: TestTaiwanCvsSchema/uniqueness_and_indexes (0.03s)
+    --- PASS: TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards (0.01s)
+    --- PASS: TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE (0.10s)
+    --- PASS: TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role) (0.28s)
+    --- PASS: TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role) (0.07s)
+    --- PASS: TestTaiwanCvsSchema/no_PII_columns_(catalog_scan) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2) (0.04s)
+    --- PASS: TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login (0.03s)
+    --- PASS: TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles (0.12s)
+    --- PASS: TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else (0.17s)
+=== RUN   TestTaiwanCvsSchemaColumnComments
+--- PASS: TestTaiwanCvsSchemaColumnComments (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	107.609s
+test-focused: top-level PASS=42 FAIL=0 SKIP=0 exit=0
+exit 0

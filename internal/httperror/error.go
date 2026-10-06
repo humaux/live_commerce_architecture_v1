@@ -263,6 +263,21 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
 		"bundle_already_ordered": "These claims already have an order.",
 		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
+		// external-operation-v1 Amendment W6-05B (unit w6-05b-operations-ledger): the failed / UNKNOWN operations ledger actions. Every
+		// reason code of integration.ledger_capability must be listed or the merchant sees "internal" (internal/httpapi operations_test.go guards the drift).
+		"lane_unsupported":    "This kind of operation cannot be managed here.",
+		"not_in_doubt":        "This operation is not waiting for a provider answer.",
+		"lease_active":        "This operation is being worked on right now; try again shortly.",
+		"binding_changed":     "The connection this operation used was changed or disabled.",
+		"query_in_progress":   "A status check for this operation is already running.",
+		"query_too_soon":      "A status check was already requested in the last minute.",
+		"already_dispatched":  "This operation may already have reached the provider and cannot be cancelled.",
+		"operation_closed":    "This operation is already finished.",
+		"already_succeeded":   "This operation already succeeded.",
+		"reconcile_first":     "Check the provider's status first; an operation with an unknown result is never sent again.",
+		"retry_not_supported": "This kind of operation cannot be retried here; start a new attempt from its own page.",
+		"already_queued":      "This operation is already queued.",
+		"operation_changed":   "This operation changed since it was loaded.",
 	}
 	message, ok := messages[code]
 	if !ok {
