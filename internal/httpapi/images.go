@@ -1,7 +1,8 @@
 package httpapi
 
-// images.go mounts the merchant product-photo routes (docs/delivery/units/catalog-media.md CM3, contract
-// contracts/catalog-inventory-openapi.json): multipart upload, metadata list, bytes preview, delete and reorder.
+// images.go mounts the merchant product-photo routes (docs/delivery/units/catalog-media.md CM3, product-media-v2, contract
+// contracts/catalog-inventory-openapi.json): multipart upload (?role=&option_value=), metadata list, bytes preview, delete, reorder, move,
+// option-value links and the image axis.
 // BFF: apps/admin/app/api/stores/[store]/[...resource]/route.ts (allowlisted exactly these paths) -> here.
 // Domain: internal/catalog images.go (validation by magic bytes, SQL on catalog.product_images). This file owns only
 // transport: body bounds, the single `file` part, the raw-bytes response and error mapping. Scope comes from server
@@ -36,9 +37,17 @@ func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("POST "+images+"/{image_id}/renditions", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, _ struct{}) (any, error) {
 		return catalog.BackfillImageSizes(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), r.PathValue("image_id"))
 	}))
-	mux.HandleFunc("POST "+images, uploadRoute(pool, catalog.MakeImageSizes, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte, sizes []catalog.ImageSize) (any, error) {
-		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), data, sizes)
-	}))
+	upload := uploadRoute(pool, catalog.MakeImageSizes, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, data []byte, sizes []catalog.ImageSize) (any, error) {
+		role, optionValue, _ := imageUploadQuery(r) // validated before the body is read
+		return catalog.UploadImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), role, optionValue, data, sizes)
+	})
+	mux.HandleFunc("POST "+images, func(w http.ResponseWriter, r *http.Request) {
+		if _, _, ok := imageUploadQuery(r); !ok { // product-media-v2: only ?role=main|detail|sku[&option_value=], each once
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		upload(w, r)
+	})
 	mux.HandleFunc("GET "+images, scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return catalog.ListImages(ctx, tx, s, r.PathValue("product_id"))
 	}))
@@ -52,9 +61,35 @@ func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("POST "+images+"/{image_id}/delete", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, _ struct{}) (any, error) {
 		return catalog.DeleteImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), r.PathValue("image_id"))
 	}))
+	mux.HandleFunc("POST "+images+"/{image_id}/move", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.MoveInput) (any, error) {
+		return catalog.MoveImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), r.PathValue("image_id"), in)
+	}))
+	const product = "/v1/admin/stores/{store_id}/products/{product_id}"
+	mux.HandleFunc("POST "+product+"/option-images", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.LinkInput) (any, error) {
+		return catalog.LinkOptionImage(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	}))
+	mux.HandleFunc("POST "+product+"/image-axis", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.AxisInput) (any, error) {
+		return catalog.SetImageAxis(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
+	}))
 	mux.HandleFunc("POST "+images+"/order", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.ReorderInput) (any, error) {
 		return catalog.ReorderImages(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("product_id"), in)
 	}))
+}
+
+// imageUploadQuery reads the upload's ?role= (default main) and ?option_value= (sku only; the domain checks the pairing). ok=false for any
+// other query key or a repeated key, so a typo never silently uploads into the wrong role.
+func imageUploadQuery(r *http.Request) (role, optionValue string, ok bool) {
+	q := r.URL.Query()
+	for k, v := range q {
+		if (k != "role" && k != "option_value") || len(v) != 1 {
+			return "", "", false
+		}
+	}
+	role = q.Get("role")
+	if role == "" {
+		role = catalog.RoleMain
+	}
+	return role, q.Get("option_value"), true
 }
 
 // writeRaw answers an image preview: private cache only (the merchant session is the authority), nosniff comes from

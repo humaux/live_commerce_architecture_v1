@@ -64,7 +64,7 @@ func TestBuyerHTTPCatalogProjectionExactKeys(t *testing.T) {
 	if err = json.Unmarshal(body["items"], &items); err != nil || len(items) != 1 {
 		t.Fatal("missing item")
 	}
-	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"currency", "description", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}) {
+	if !reflect.DeepEqual(sortedKeys(items[0]), []string{"currency", "description", "image_id", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}) {
 		t.Fatal("unexpected item keys")
 	}
 	var images []map[string]json.RawMessage

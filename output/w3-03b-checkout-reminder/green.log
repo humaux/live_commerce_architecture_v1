@@ -1,0 +1,26 @@
+=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
+--- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (11.29s)
+=== RUN   TestCheckoutReminderCR02ConcurrentTriggers
+--- PASS: TestCheckoutReminderCR02ConcurrentTriggers (1.01s)
+=== RUN   TestCheckoutReminderCR03WindowClosesBeforeCheck
+--- PASS: TestCheckoutReminderCR03WindowClosesBeforeCheck (2.68s)
+=== RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
+--- PASS: TestCheckoutReminderCR04GraphFailureIsUnknown (3.11s)
+=== RUN   TestCheckoutReminderCR05CandidateSet
+--- PASS: TestCheckoutReminderCR05CandidateSet (12.96s)
+=== RUN   TestCheckoutReminderCR06PermissionAndScope
+--- PASS: TestCheckoutReminderCR06PermissionAndScope (1.83s)
+=== RUN   TestCheckoutReminderSettingsCAS
+--- PASS: TestCheckoutReminderSettingsCAS (0.38s)
+=== RUN   TestCheckoutReminderNoStorefront
+--- PASS: TestCheckoutReminderNoStorefront (1.39s)
+=== RUN   TestCheckoutReminderCR08NoSecretsPersisted
+--- PASS: TestCheckoutReminderCR08NoSecretsPersisted (1.64s)
+=== RUN   TestCheckoutReminderMigration0131ExactACL
+--- PASS: TestCheckoutReminderMigration0131ExactACL (0.01s)
+=== RUN   TestCheckoutReminderSingleBuyer
+--- PASS: TestCheckoutReminderSingleBuyer (10.74s)
+PASS
+ok  	livecommerce/tests/foundation	48.742s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0
+exit 0
