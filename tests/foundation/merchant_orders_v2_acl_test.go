@@ -71,6 +71,8 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 	}
 }
 
+// 0146 (W3-07B) adds seven parcel-group definers with the same shape (owner commerce_checkout_writer, EXECUTE commerce_runtime only);
+// 0155 (W3-08B) adds the eight returns.* definers and fulfillment.merchant_cancel_order with it.
 // 0130 adds two read-only definers for the pick list: the shared reader (EXECUTE commerce_runtime only,
 // owner commerce_checkout_writer) and the session->orders resolution helper (claims-owned, EXECUTE
 // commerce_checkout_writer only). No worker authority, legacy role, auth login, buyer role or any other
@@ -85,6 +87,22 @@ func TestMerchantOrdersV2PickListReadAuthority(t *testing.T) {
 	}{
 		{"fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},
 		{"claims.pick_list_session_orders(uuid,uuid,uuid)", "commerce_claims_writer", []string{"commerce_checkout_writer"}, true},
+		{"fulfillment.read_merge_suggestions(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                          // 0146 W3-07B
+		{"fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, false},           // 0146 W3-07B
+		{"fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},               // 0146 W3-07B
+		{"fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                // 0146 W3-07B
+		{"fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                  // 0146 W3-07B
+		{"fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                // 0146 W3-07B
+		{"fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                    // 0146 W3-07B
+		{"returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},             // 0155 W3-08B
+		{"returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},            // 0155 W3-08B
+		{"returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},            // 0155 W3-08B
+		{"returns.cancel_rma(bytea,uuid,uuid,text,bytea,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                   // 0155 W3-08B
+		{"returns.close_rma(bytea,uuid,uuid,text,bytea,bigint,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},               // 0155 W3-08B
+		{"returns.read_order_returns(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                             // 0155 W3-08B
+		{"returns.list_returns(bytea,uuid,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                                   // 0155 W3-08B
+		{"fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, false}, // 0155 W3-08B
+		{"returns.list_cancel_refund_gaps(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                             // 0155 W3-08B
 	} {
 		t.Run(helper.signature, func(t *testing.T) {
 			var owner string

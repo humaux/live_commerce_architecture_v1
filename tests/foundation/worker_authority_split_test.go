@@ -183,6 +183,30 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 		if _, err := p.Exec(ctx, `SELECT claims.pick_list_session_orders($1::uuid,$2::uuid,$3::uuid)`, randomUUID(), randomUUID(), randomUUID()); sqlState(err) != "42501" {
 			t.Errorf("%s ran pick_list_session_orders: %v (want 42501)", role, err)
 		}
+		// 0146 (W3-07B): the parcel-group definers are merchant-side only as well.
+		for _, call := range []string{
+			`SELECT fulfillment.read_merge_suggestions($1::bytea,$2::uuid) WHERE $3::uuid IS NOT NULL`,
+			`SELECT fulfillment.create_parcel_group($1::bytea,$2::uuid,'was02-parcel-key',$1::bytea,ARRAY[$3::uuid,$3::uuid])`,
+			`SELECT fulfillment.dissolve_parcel_group($1::bytea,$2::uuid,$3::uuid,1)`,
+			`SELECT fulfillment.begin_parcel_group_shipment($1::bytea,$2::uuid,$3::uuid)`,
+			`SELECT fulfillment.mark_parcel_group_shipped($1::bytea,$2::uuid,$3::uuid)`,
+			`SELECT fulfillment.guard_parcel_group_orders($1::bytea,$2::uuid,ARRAY[$3::uuid])`,
+			`SELECT fulfillment.read_parcel_group_ids($1::bytea,$2::uuid,ARRAY[$3::uuid])`,
+			// 0155 (W3-08B): returns and merchant cancel are merchant-side only as well.
+			`SELECT returns.register_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,'x','[]'::jsonb)`,
+			`SELECT returns.receive_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1,'[]'::jsonb)`,
+			`SELECT returns.inspect_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1,'[]'::jsonb)`,
+			`SELECT returns.close_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1,NULL::uuid)`,
+			`SELECT returns.cancel_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1)`,
+			`SELECT returns.read_order_returns($1::bytea,$2::uuid,$3::uuid)`,
+			`SELECT returns.list_returns($1::bytea,$2::uuid,NULL::text) WHERE $3::uuid IS NOT NULL`,
+			`SELECT returns.list_cancel_refund_gaps($1::bytea,$2::uuid) WHERE $3::uuid IS NOT NULL`,
+			`SELECT fulfillment.merchant_cancel_order($1::bytea,$2::uuid,$3::uuid,'was02-cancel-key',$1::bytea,'CONFIRMED','x')`,
+		} {
+			if _, err := p.Exec(ctx, call, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {
+				t.Errorf("%s ran %s: %v (want 42501)", role, call, err)
+			}
+		}
 	}
 }
 

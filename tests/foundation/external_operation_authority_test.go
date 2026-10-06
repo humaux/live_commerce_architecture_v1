@@ -227,6 +227,10 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 -- loader is the dispatcher's only credential read, the registrar has its own role (not the payment registrar).
 	 ('integration.claim_reply_plannable(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.plan_claim_reply(uuid,uuid,bytea,text,bigint)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 -- 0151 (W3-04B sold-out reply): private helper shared by the two planners above; owner-only, no EXECUTE grant to any login.
+	 ('integration.claim_sold_out_facts(uuid,uuid,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
+	 -- 0154 (W3-05B restricted actors): private helper of claim_reply_plannable; owner-only, no EXECUTE grant to any login.
+	 ('integration.claim_actor_restricted(uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.load_meta_page_token(uuid,bigint,bytea)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 ('integration.register_meta_page_token(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 -- R1 ruling F2 (migration 0066): the Meta registrar's binding definer, same owner/grant shape as the page-token one.
@@ -323,7 +327,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 87 || !safe {
+	if err != nil || functions != 89 || !safe {
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }

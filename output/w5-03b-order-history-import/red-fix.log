@@ -1,0 +1,37 @@
+commit 6086047d5c52e877f46a3dcfdb099097d80c4276 (tests only, pre-fix)
+--- FAIL: TestOrderAggregationAndFields (0.00s)
+    orders_test.go:38: unit 1: {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908289000 loc:<nil>} status:已完成 totalMinor:128000 items:紅茶×2、綠茶×1 city:台北市 outcome: code:}
+--- FAIL: TestOrderRowFailures (0.00s)
+    orders_test.go:82: status is a phone: [{n:1 orderID:O-9 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:0912345678 totalMinor:10000 items:x×1 city:台北市 outcome: code:}] want invalid_status
+    orders_test.go:82: item is an email: [{n:1 orderID:O-9 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:amy@mail.tw×1 city:台北市 outcome: code:}] want invalid_item
+    orders_test.go:82: item is a phone: [{n:1 orderID:O-9 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:0912-345-678×1 city:台北市 outcome: code:}] want invalid_item
+    orders_test.go:82: status is an email: [{n:1 orderID:O-9 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:amy@mail.tw totalMinor:10000 items:x×1 city:台北市 outcome: code:}] want invalid_status
+--- FAIL: TestOrderCityAllowlist (0.00s)
+    orders_test.go:98: city "台北市" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:台北市 outcome: code:}, want city "臺北市" and no failure
+    orders_test.go:98: city "台東縣" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:台東縣 outcome: code:}, want city "臺東縣" and no failure
+    orders_test.go:98: city "王小明" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:王小明 outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "台中市" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:台中市 outcome: code:}, want city "臺中市" and no failure
+    orders_test.go:98: city "台北市大安區忠孝東路四段" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:台北市大安區忠孝東路四段 outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "臺北市中正區重慶南路一段一二二號" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:臺北市中正區重慶南路一段一二二號 outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "amy@mail.tw" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:amy@mail.tw outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "中山路12號" -> {n:1 orderID:O-1 customerID: orderedAt:{wall:0 ext:0 loc:<nil>} status: totalMinor:0 items: city: outcome:failed code:invalid_city}, want city "" and no failure
+    orders_test.go:98: city "台北" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:台北 outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "市市市市市市市市市市市市市市市市市市市市市" -> {n:1 orderID:O-1 customerID: orderedAt:{wall:0 ext:0 loc:<nil>} status: totalMinor:0 items: city: outcome:failed code:invalid_city}, want city "" and no failure
+    orders_test.go:98: city "Zhongxiao East Road" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:Zhongxiao East Road outcome: code:}, want city "" and no failure
+    orders_test.go:98: city "新竹" -> {n:1 orderID:O-1 customerID:C-1 orderedAt:{wall:0 ext:63908236800 loc:<nil>} status:完成 totalMinor:10000 items:x×1 city:新竹 outcome: code:}, want city "" and no failure
+FAIL
+FAIL	livecommerce/internal/migrationimport	1.488s
+FAIL
+4:    order_history_import_test.go:145: OH-1002: "貼紙×3、膠帶×1、卡片×2" "台北市" "已出貨" 30000 "TWD" <nil>
+9:    order_history_import_test.go:263: newest first: map[city:台北市 currency:TWD items_summary:貼紙×3、膠帶×1、卡片×2 order_id:OH-1002 ordered_at:2026-04-01T01:00:00.000000Z status:已出貨 total_minor:30000]
+15:    order_history_import_test.go:398: preview: 200 map[apply_rows:5 erased_rows:0 failed_rows:0 file_sha256:da82d3eba4d4e7e7df33034c89fda0cdcc0233251c8bb47368e2a8977204a8bd headers:[訂單號碼 顧客編號 訂單日期 訂單狀態 訂單總金額 城市] mapping:map[city:城市 customer_id:顧客編號 order_id:訂單號碼 ordered_at:訂單日期 status:訂單狀態 total:訂單總金額] new_rows:5 rows:[map[external_id:OH-9100 outcome:created row:1] map[external_id:OH-9101 outcome:created row:2] map[external_id:OH-9102 outcome:created row:3] map[external_id:OH-9103 outcome:created row:4] map[external_id:OH-9104 outcome:created row:5]] rows_total:5 update_rows:0]
+18:    order_history_import_test.go:473: export of a 2000-row archive: 409 (156 bytes)
+19:--- FAIL: TestOrderHistoryImport (2.81s)
+21:    --- FAIL: TestOrderHistoryImport/OH01_preview_rolls_back;_commit_archives_3_orders_from_7_lines (0.01s)
+25:    --- FAIL: TestOrderHistoryImport/OH09_the_keyset_read_pages_newest_first_with_a_total (0.00s)
+30:    --- FAIL: TestOrderHistoryImport/OH13_only_the_22_cities_are_archived_as_a_city;_anything_else_is_dropped,_counted_and_never_stored (0.00s)
+32:    --- FAIL: TestOrderHistoryImport/OH11_2000_archive_rows_per_customer,_then_order_limit_and_a_bounded_export (0.63s)
+33:FAIL
+34:FAIL	livecommerce/tests/foundation	3.605s
+35:FAIL
+36:test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

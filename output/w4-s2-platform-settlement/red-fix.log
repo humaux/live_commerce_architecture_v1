@@ -1,0 +1,28 @@
+# red run of the W4-S2 fix-round tests against the UNFIXED migration/code
+# base SHA: 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 (tests added on top, uncommitted); command: scripts/dev/test-focused.sh '^TestPlatformSettlement$'; date: 2026-10-06T13:34:26Z
+=== RUN   TestPlatformSettlement
+=== RUN   TestPlatformSettlement/PF09_schema
+    platform_settlement_test.go:380: registry writer columns on payments.stripe_refunds mismatch
+        missing: [amount_minor currency]
+        extra:   []
+=== RUN   TestPlatformSettlement/PF10_sync
+=== RUN   TestPlatformSettlement/PF10_recheck_transient_mismatch
+    platform_settlement_test.go:544: txn_ChargeC1 still blocked after the facts arrived: mismatch=0xc0016b36c0 statement=<nil>
+=== RUN   TestPlatformSettlement/PF11_close
+    platform_settlement_test.go:573: a window ending in the future was accepted by the registrar
+=== RUN   TestPlatformSettlement/PF12_payout
+    platform_settlement_test.go:723: payout of a negative net: want a rejection carrying "payout_amount_mismatch", got stripeadmin: config
+=== RUN   TestPlatformSettlement/PF13_merchant_read_and_csv
+    platform_settlement_test.go:764: list body: {"statements":[]}
+--- FAIL: TestPlatformSettlement (15.47s)
+    --- FAIL: TestPlatformSettlement/PF09_schema (0.03s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.03s)
+    --- FAIL: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.03s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.00s)
+    --- FAIL: TestPlatformSettlement/PF12_payout (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	18.294s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

@@ -4,13 +4,13 @@
 #   K2.8 at 2026-10-01: 1M context, reasoning-only, image/video input) through the Claude Code CLI, which speaks the
 #   Anthropic Messages API that Kimi exposes at https://api.kimi.com/coding/. Used by the integrator to offload work
 #   that does not need the top tier (docs/delivery/PROCESS.md §3 "Third-party models").
-# Usage: [PROVIDER=kimi|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
+# Usage: [PROVIDER=kimi|aliyun|deepseek] [MODEL=...] [RESUME=<session_id from a cut-off run's result.json>] bash scripts/agents/ext-agent.sh <worktree> <prompt-file> <out-dir> [effort low|high|max]
 #   kimi (subscription, 5-hour quota window): MODEL k3 (default) | kimi-for-coding (K2.8)
 #   deepseek (PAY-AS-YOU-GO, owner balance): MODEL deepseek-v4-pro (default) | deepseek-flash; refuses to start below
 #   DEEPSEEK_MIN_BALANCE_CNY (default 10, owner 2026-10-02), and a watchdog checks the balance every 60 s during the run and
 #   stops the run when it falls below the reserve. Either case writes <repo>/output/ext-agents/DEEPSEEK_LOW_BALANCE (balance,
 #   time, task) so the integrator notifies the owner to top up; records the balance before/after in <out>/cost.txt.
-# Reads secrets: ~/.config/livecommerce/kimi.env (KIMI_CODE_API_KEY) or deepseek.env (DEEPSEEK_API_KEY), mode 0600, outside the repo. Never printed,
+# Reads secrets: ~/.config/livecommerce/kimi.env (KIMI_CODE_API_KEY), aliyun.env (ALIYUN_CODING_API_KEY) or deepseek.env (DEEPSEEK_API_KEY), mode 0600, outside the repo. Never printed,
 #   never passed on argv (env only), never written under the repo.
 # Isolation (the reason this script exists — a third-party model must not inherit the owner's powers):
 #   - HOME is a private empty dir (~/.kimi-agent-home): no ~/.claude (no owner CLAUDE.md, no MCP servers such as
@@ -30,7 +30,12 @@ case "$provider" in
     case "$model" in k3|kimi-for-coding) ;; *) echo "kimi MODEL must be k3 or kimi-for-coding" >&2; exit 2 ;; esac ;;
   deepseek) model=${MODEL:-deepseek-v4-pro}; base_url="https://api.deepseek.com/anthropic"; key_file="$HOME/.config/livecommerce/deepseek.env"; key_var=DEEPSEEK_API_KEY
     case "$model" in deepseek-v4-pro|deepseek-flash) ;; *) echo "deepseek MODEL must be deepseek-v4-pro or deepseek-flash" >&2; exit 2 ;; esac ;;
-  *) echo "PROVIDER must be kimi or deepseek" >&2; exit 2 ;;
+  # aliyun = Bailian Token Plan subscription (monthly quota; owner 2026-10-07). Anthropic-compatible endpoint verified 2026-10-07
+  # (200 for all five models below); the coding.dashscope endpoint refuses this key (401). Subscription terms: use only through a
+  # coding tool like this CLI, never as a backend/batch API.
+  aliyun) model=${MODEL:-qwen3.8-max}; base_url="https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic"; key_file="$HOME/.config/livecommerce/aliyun.env"; key_var=ALIYUN_CODING_API_KEY
+    case "$model" in qwen3.8-max|qwen3.8-flash|qwen3.7-max|qwen3.7-plus|qwen3.6-flash) ;; *) echo "aliyun MODEL must be one of qwen3.8-max qwen3.8-flash qwen3.7-max qwen3.7-plus qwen3.6-flash" >&2; exit 2 ;; esac ;;
+  *) echo "PROVIDER must be kimi, aliyun or deepseek" >&2; exit 2 ;;
 esac
 case "$effort" in low) think=4000 ;; high) think=16000 ;; max) think=32000 ;; *) echo "effort must be low|high|max" >&2; exit 2 ;; esac
 wt=$(cd "$wt" && pwd); [[ "$wt" == */.worktrees/* ]] || { echo "refused: $wt is not under .worktrees/" >&2; exit 2; }

@@ -1,0 +1,70 @@
+# green-fix: tested tree = COMMITTED 6ef7d8eebb50bf6a3aeec8909097a20cc1b9470e (clean working tree); focused run exit 0, 53 top-level PASS
+--- PASS: TestHomeCodReviewSharedStateMachine (0.29s)
+--- PASS: TestHomeCodReviewACLInventory (0.37s)
+--- PASS: TestHomeCodReviewIsolation (0.35s)
+--- PASS: TestHomeCodReviewFinanceBoundaries (0.70s)
+--- PASS: TestHomeCodReviewIdempotentRetries (0.35s)
+--- PASS: TestHomeCodReviewSettingsWire (0.30s)
+--- PASS: TestHomeCodReviewSchemaInvariants (0.35s)
+--- PASS: TestHomeCodReviewLedgerGuard (0.43s)
+--- PASS: TestHomeCodLifecycle (0.49s)
+--- PASS: TestHomeCodEligibility (0.70s)
+--- PASS: TestHomeCodReleaseAndACL (0.52s)
+--- PASS: TestHomeCodBuyerOrderCarrier (0.31s)
+--- PASS: TestHomeCodManualCarrierRoundTrip (0.35s)
+--- PASS: TestHomeCodErasureWaitsForShippedUncollected (0.39s)
+--- PASS: TestHomeCodAndUntrackedCoexist (0.38s)
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=4
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=4
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=2
+2026/10/06 23:40:47 INFO orders.export_unshipped store_id=d70fcc56-ddf0-4d60-9096-bc8e6d4ba1a5 rows=2 truncated=false duration_ms=3
+--- PASS: TestManualFulfilmentMF03Transitions (28.47s)
+    manual_fulfilment_guards_test.go:116: DATA shipments.go: no SQL call-site comment naming the definer it calls (PROCESS §5 call sites)
+--- PASS: TestManualFulfilmentMF08Guards (0.12s)
+2026/10/06 23:40:57 INFO orders.export_unshipped store_id=b9017bd0-0d66-4a90-a3df-230ed66b9ee3 rows=3 truncated=false duration_ms=12
+2026/10/06 23:40:57 INFO orders.export_unshipped store_id=b9017bd0-0d66-4a90-a3df-230ed66b9ee3 rows=2 truncated=false duration_ms=4
+--- PASS: TestManualFulfilmentMF04Authority (6.88s)
+--- PASS: TestManualFulfilmentMF05HTTP (6.82s)
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=5 truncated=false duration_ms=20
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=5 truncated=false duration_ms=6
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=5 truncated=false duration_ms=3
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=5 truncated=false duration_ms=3
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=5 truncated=false duration_ms=3
+INFO orders.export_unshipped store_id=59583947-b958-4fdb-9954-4bb4b509d5e4 rows=4 truncated=false duration_ms=5
+--- PASS: TestManualFulfilmentMF06Export (20.44s)
+INFO orders.export_unshipped store_id=ff342624-d07f-4a71-9f28-7ae3c8c9dca7 rows=1 truncated=false duration_ms=5
+    manual_fulfilment_schema_test.go:364: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (4.51s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+--- PASS: TestManualFulfilmentMF01Validation (0.03s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/header_only_for_zero_rows (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/RFC_4180_quoting_round_trip (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/formula_injection_guard (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/phone (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/pickup_code_keeps_leading_zeroes_in_the_file_bytes (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/1000_rows (0.01s)
+--- PASS: TestMerchantOrdersV2PickListReadAuthority (0.03s)
+    parcel_groups_test.go:251: control order shipped-mail rows: 1
+--- PASS: TestParcelGroup (19.94s)
+--- PASS: TestParcelGroupACL (0.04s)
+--- PASS: TestReturns (12.21s)
+--- PASS: TestMerchantCancel (11.86s)
+--- PASS: TestReturnsBankTransfer (0.57s)
+--- PASS: TestReturnsHelperACLAndGuardBodies (0.01s)
+--- PASS: TestMerchantCancelRefundGap (4.46s)
+--- PASS: TestMerchantCancelGroupRace (3.44s)
+    stripe_refund_guards_test.go:398: DATA internal/httpapi: package comment lacks [owns] (pre-existing; reviewer decision)
+--- PASS: TestStripeRF12Guards (11.37s)
+--- PASS: TestCvsCollectionStatus (13.02s)
+--- PASS: TestCvsPayAtPickupRelease (19.40s)
+--- PASS: TestTaiwanCvsSchema (1.20s)
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.15s)
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	194.468s
+test-focused: top-level PASS=53 FAIL=0 SKIP=0 exit=0

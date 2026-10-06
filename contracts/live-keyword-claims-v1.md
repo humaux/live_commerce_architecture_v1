@@ -1212,3 +1212,94 @@ This amendment freezes the additive B1/B2 interface for this unit; shared ACL in
   uniform 404 asks for a replacement link and offers a cart link when non-empty. Claims still never reserve stock.
 - The handoff token stays in memory/header only; fragment is removed before requests and discarded when navigating away.
   New gate `--browser-claim-checkout` and seventh WebKit step `claim-checkout` cover the real-click path (CDC01–CDC05).
+
+## Amendment "W3-04B sold-out reply" (2026-10-06, migration 0151)
+
+Authorized by the W3-04B Integrator ruling (`docs/delivery/units/w3-04b-sold-out-reply.md`). Additive; it changes only what the automatic private
+reply says when the claimed offer has no stock. The claim itself is unchanged.
+
+- **Sold-out predicate** (same rule as "Direct checkout" B1, evaluated in SQL at reply-planning time for the bundle-creating ACCEPTED event):
+  the offer's SKU tracks inventory (A6) and `SUM(on_hand - reserved - allocated - unavailable)` over the store is below the **claimed quantity**
+  (a partial shortfall, 3 claimed with 1 left, counts as sold out: no partial link), **or** the offer is inactive. An untracked SKU is never sold
+  out. Ingest rejects a paused offer as `OFFER_INACTIVE` (no bundle, so no reply of any kind); the inactive clause only closes a late deactivation.
+  `inventory.claim_sku_sold_out(uuid,integer) RETURNS boolean` (owner `commerce_inventory_writer`, EXECUTE `commerce_integration_writer` only, scope
+  from the transaction GUCs) is the boolean-only seam; `integration.claim_sold_out_facts(uuid,uuid,uuid)` is the shared private helper.
+- **Reply**: `integration.plan_claim_reply` (signature, owner and EXECUTE unchanged) plans the same single `meta.private_reply` operation on the same
+  `mpr:` key with `message_type:"sold_out_reply"`, `origin_kind:"auto"`, `offer_id`, `template`, `template_version` and the **rendered `text`
+  frozen into the request** (template body with `{{product.name}}` replaced; <= 400 characters, request still <= 2048 bytes; template text and a
+  product name, never buyer data). No `claims.links` row is created and no token is derived. Audit `claim_reply_sold_out` beside
+  `meta.private_reply.planned`. `claims.check_meta_reply` skips the link proof for this message type only; deadline, source, principal,
+  live window and takeover checks are unchanged. The adapter sends `text` once (never repeated; Graph failure is UNKNOWN, query-only Reconcile).
+- **Quota (hard limit, say it in the UI copy)**: the sold-out reply CONSUMES the comment's one private reply (first writer wins, §4.2 of
+  live-console-v1). A restock cannot re-reply to the same comment: the merchant can only wait for the buyer's DM (24 h window) or a new comment.
+  `inbox.plan_manual_private_reply` therefore answers `409 used` after it, and a manual reply sent first turns the claim into the existing audited
+  `claim_reply_skipped:reply_used` skip.
+- **Switch + template** (`claims.sold_out_settings`, per store, absent row = enabled + fixed template, FORCE RLS, no direct login-role access):
+  `claims.get_sold_out_reply()` (live:read) and `claims.set_sold_out_reply(enabled, template_id, template_version, expected_version)` (live:manage,
+  compare-and-swap, `PT409` on a stale version, `22023` for an unusable template, audit `claims.sold_out_reply.set`), both owned by
+  `commerce_integration_writer`, EXECUTE `commerce_runtime`; Go `claims.GetSoldOutReply/SetSoldOutReply`. Switch OFF: a sold-out claim is committed and the
+  reply is skipped with audit `claim_reply_skipped:sold_out_off` (the comment's budget stays for one manual reply). A usable template is the fixed
+  `sold-out-reply/v1` (zh-TW; kind `private_reply`, not public-safe) or a merchant-published template of the SAME store with kind `private_reply`, one line,
+  <= 280 characters and `{{product.name}}` as its only placeholder (at most once); a chosen template that later cannot render falls back to the fixed one (the claim never fails).
+  The reply text is not localised per `reply_locale` in this slice (the template is the locale).
+- **Race rules (never lose a claim)**: stock and the switch are read twice (`claim_reply_plannable`, then `plan_claim_reply`, separate statements, nothing locked).
+  `plan_claim_reply` takes the sold-out branch only when the offer is sold out AND the switch is ON at that moment; any other combination takes the normal
+  link branch and never raises (a raise is final in the poller and would lose the claim). Consequence: two concurrent claims for the last unit can both get a
+  link; checkout (Begin) decides stock, as before. A rendered text above 400 characters or a template that is not usable falls back to the fixed text.
+- **One text rule in SQL and Go**: a sold-out text is 1..400 characters with no control character (Unicode Cc: C0, DEL, C1, hence no newline); full-width space,
+  ZWJ and NBSP are ordinary text. SQL (`msgtemplates.sold_out_body`: Cc check, `{{product.name}}` at most once, template <= 280 characters; product name: control
+  characters replaced by spaces, clipped to 60 characters) and the adapter (`soldOutTextOK`) apply the same rule, so a frozen text is never refused at send time.
+- **Claim event mark**: `claims.events.reply_kind` (`NULL` | `'sold_out'`, only on ACCEPTED events) is set once by `plan_claim_reply` when the sold-out reply is planned
+  (column UPDATE for `commerce_integration_writer`, intake-scope policy, one-way). With the switch OFF there is no mark (no reply was planned; audit `claim_reply_skipped:sold_out_off`).
+- **Feed**: `live.console_marks.private_reply_kind` reports a `sold_out_reply` operation as `out_of_stock` (the existing enum of live-console-v1 §2.5).
+- Gates: `TestSoldOutReply*` (SO01-SO08, settings/template rules, ACL pins), `internal/integrations/metareply` unit tests. Evidence MOCK (REAL_PG + fake Graph); Meta LIVE NOT_RUN.
+- NOT in this slice: restock notification (no lawful channel), auto-pausing sold-out offers (live-console §7.2), public "sold out" comments, stock holds,
+  an HTTP route/UI for the settings (W3-U2 adds them over `GetSoldOutReply/SetSoldOutReply`).
+
+## Amendment "W3-05B restricted actors" (2026-10-06, migration 0154)
+
+A merchant can mark a social actor (a Facebook / Instagram commenter) as **restricted** for one store. Their later claims are recorded as always, but the system issues
+no claim link and sends no automatic private reply. Nothing is shown to the buyer (no "you are restricted" text, no reason in any Meta message).
+
+- **Key**: `claims.blocked_actors(tenant_id, store_id, actor_key text ^[0-9a-f]{64}$, id uuid, platform, note, source_bundle_id, principal_id, created_at)`,
+  PK `(tenant_id, store_id, actor_key)`, <= 5000 rows per store (I23, `limit_reached`), FORCE RLS. `actor_key` is the keyed `meta-claim-actor/v1` hash of
+  meta-claims-intake-v1 (per object and asset), so an entry never applies in another store or tenant, and the same person on Facebook and Instagram, or on two
+  assets, is a different actor (BL-OPEN-1: accepted, each is restricted on its own). No name, PSID or any other identifier is stored. `note` is merchant-only
+  (<= 200 characters, no control character): never in a buyer message, audit row, receipt or log. No login role reads the table directly.
+- **Writes** (owner `commerce_claims_writer`, EXECUTE `commerce_runtime`, `claims.for_buyer_scope` pins the merchant transaction):
+  `claims.block_actor(session, ref jsonb, note)` (live:manage) accepts exactly ONE server-known reference, `{comment_ref}` (resolved through the intake row of that comment in
+  the session of the caller's store), `{bundle_id}` (a non-manual, non-purged bundle of the store) or `{conversation_id}` (the actors of the bundles whose recorded peer is the
+  thread's peer; none = 404, more than one = `PT409 ambiguous_actor`). **The client can never send an actor_key**: any other key is `22023`, and the HTTP body decoder rejects it as
+  `400 invalid_json` before a transaction opens. Blocking an actor already listed is idempotent (`created:false`, the first note stays, no audit). `claims.unblock_actor(id)`
+  (live:manage) removes one entry by the entry id (the actor_key never leaves the database; unknown id = 404). Audit `claims.actor_blocked` / `claims.actor_unblocked` (Go,
+  same transaction, no note, no key). Go: `claims.BlockActor/UnblockActor/ListBlockedActors/BlockedForBundle`.
+- **Effect on a claim**: `integration.claim_reply_plannable` (patched in place, the 0143/0151 pattern) answers `restricted` FIRST, before every other skip, when the leased intake's actor is
+  listed. The claim commits as ACCEPTED with the audited skip `claim_reply_skipped:restricted`; no `claims.links` row, no `integration.operations` row, therefore **no `mpr:` quota is spent**
+  (the merchant may still answer the comment once by hand, `409 used` afterwards) and `link_pending_manual` is NOT set (no "send the link by hand" prompt for a buyer the merchant
+  restricted). The bundle-creating `claims.events` row gets `reply_kind='restricted'` (closed vocabulary now `NULL | sold_out | restricted`, ACCEPTED only, one-way). `plan_claim_reply`
+  is unchanged: it is only reached after `claim_reply_plannable` returned `OK`, and a RAISE there would be final in the poller and lose the claim.
+- **Race**: `integration.claim_actor_restricted` (called by `claim_reply_plannable`) and `claims.block_actor` take the same per-actor `pg_advisory_xact_lock('claims-blockactor|t|s|actor_key')`
+  (exclusive on both sides). A claim that meets a block in flight **waits** for the key and, once the block commits, sees it (each statement of a volatile plpgsql function takes a fresh READ COMMITTED
+  snapshot); a block that arrives mid-claim waits for that claim transaction (that claim was already answered, the block applies from the next comment). Only when the block holds the key longer than the
+  poller's `lock_timeout` (1 s) does the claim end with 55P03, which the poller records as a retryable failure (nothing half-applied, final only after 10 consecutive failures) and the retry sees the committed block.
+  `block_actor` additionally takes a per-store key for the 5000 bound (order store key -> actor key; the planner takes only the actor key, so no cycle).
+- **Console**: `live.console_marks.claim_reason` is `'restricted'` for such a claim (`claim_outcome` stays ACCEPTED); UI text 「已限制」. Output shape unchanged.
+- **Reads** (live:read): `GET .../live-sessions/{sid}/claims/blocklist?limit&cursor` -> `{items:[{id,platform,note,source_bundle_id,created_at}],next_cursor}` (newest first, keyset `(created_at,id)`, collection
+  `claim-blocklist`); `GET .../claims/blocklist/check?bundle_id=` -> `{restricted:bool}` (boolean only, for the order drawer and buyer panel warning; LC-B6 order creation is NOT blocked, the UI warns).
+  Writes: `POST .../claims/blocklist` body `{comment_ref|conversation_id|bundle_id, note?}` -> `{id,platform,created_at,created}`; `DELETE .../claims/blocklist/entries/{id}` -> `{removed:true}`; both need an `Idempotency-Key`.
+  Errors: `409 limit_reached`, `409 ambiguous_actor`, `404` unknown / foreign reference, `422` malformed or two references, `403` without live:manage. Routes live in the claims family (mounted with it).
+- **Checkout reminders do not bypass the list**: `inbox.checkout_reminder_candidates` (0144, patched in place) asks the definer predicate `claims.bundle_actor_restricted(bundle)` (owner `commerce_claims_writer`,
+  EXECUTE `commerce_integration_writer` only; the actor_key stays in the database). A restricted buyer overrides every other verdict (except `already_reminded`): no claim link is re-issued, no DM planned; the bundle is
+  recorded as the follow-up reason `restricted` (`inbox.checkout_reminders.reason` CHECK widened), audit `inbox.checkout_reminder.skipped:restricted`, and the POST `.../reminders[/{bundle}]` result carries
+  `restricted: n` (a separate count, not part of `followup`; the result row has `outcome:"restricted"`). The single-buyer call answers the same way (200, `queued:0, restricted:1`), not 409.
+- **Erasure and retention**: `claims.apply_actor_erasure` (patched in place) deletes the entry (and its note) of the erased `actor_key` and COUNTS it (`blocked_actors` in the erasure counts, closed count set of
+  `internal/retention` extended), so `claims.erase_actor` succeeds for an actor whose only remaining record is the entry (the steady state after age retention; a zero total would be `PT404 not found`).
+  `commerce_retention_writer` holds `SELECT(actor_key)` + `DELETE` on the table. Age-based retention does not purge entries: the list is the merchant's own safety record, removed by unblock or by erasure of the person.
+  Selectors by comment ref or bundle cannot resolve once intake and bundles are gone; use the actor-key selector.
+- **Deliberate merchant actions are allowed**: the manual claim-link issue/rotate route (`claims.issue_link`), the LC-B4 manual "send the link" DM, manual private replies and manual DMs, and LC-B6
+  order-for-buyer creation are explicit per-buyer choices of a merchant who can see the buyer, so they are NOT blocked for a restricted actor. The console must WARN before them
+  (`GET .../claims/blocklist/check?bundle_id=`; UI in W3-U2). Only the automatic and bulk paths (automatic claim reply, bulk/single checkout reminder) honour the list.
+- **Limits (say them in the UI copy)**: links issued before the block stay valid (storefront checkout is anonymous and cannot identify the actor); a restricted actor's later line on an existing bundle never had
+  an automatic reply and shows no mark; with `private_reply=false` on the source the planner never runs, so such a claim has no `restricted` mark either (no link or reply leaks); a conversation with several
+  actors needs a bundle choice; list, check and unblock routes sit under a session path but are store-level (the session id is only a path prefix there); no cross-store or cross-tenant sharing, no rule-based or phone/address blocking.
+- Gates: `TestBlocklist*` (BL01-BL08, race, erasure, ACL pins), `internal/httpapi` blocklist transport tests. Evidence MOCK (REAL_PG; no Graph call is made for a restricted claim).

@@ -293,6 +293,9 @@ func mapShipmentError(err error) error {
 			if pg.Message == "version_changed" {
 				return ErrVersionChanged
 			}
+			if pg.Message == "has_returns" { // W3-08B: a shipment with a live RMA cannot be voided (the units were already given back)
+				return &ParcelError{Code: "has_returns"}
+			}
 			return command.ErrConflict
 		case "PT422":
 			switch pg.Message {

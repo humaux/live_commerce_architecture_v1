@@ -98,6 +98,8 @@ type Customer struct {
 	Platforms       []string `json:"platforms"`
 	Consents        Consents `json:"consents"`
 	Active          bool     `json:"active"`
+	// Imported is true for a customer created by the CSV import (W5-02B): it has an import profile instead of orders or bundles.
+	Imported bool `json:"imported"`
 	// Tags are the merchant-typed store tags of this customer, name-ordered (W6-01B); never nil.
 	Tags []Tag `json:"tags"`
 }
@@ -304,7 +306,7 @@ func strict(raw []byte, out any) error {
 }
 
 var customerKeys = []string{"customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "tags"}
+	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "imported", "tags"}
 var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions",
 	"tags_revision", "notes")
 
@@ -461,6 +463,24 @@ type exportDoc struct {
 	Consents       []ConsentEvent          `json:"consents"`
 	Claims         []ClaimSummary          `json:"claims"`
 	PrivacyActions []PrivacyAction         `json:"privacy_actions"`
+	// ImportProfile is the profile of a customer created by the CSV import (W5-02B); absent for every other customer.
+	ImportProfile *ImportProfile `json:"import_profile,omitempty"`
+}
+
+// ImportProfile is what the CSV import stored about one customer, as returned by customers.export_import_profile for the merchant
+// privacy export: name, E.164 phone, email, source, timestamps and the merchant's source-system ids.
+type ImportProfile struct {
+	DisplayName string   `json:"display_name"`
+	Phone       *string  `json:"phone"`
+	Email       *string  `json:"email"`
+	Source      string   `json:"source"`
+	ImportedAt  string   `json:"imported_at"`
+	UpdatedAt   string   `json:"updated_at"`
+	ExternalIDs []string `json:"external_ids"`
+	// HistoricalOrders is the NEWEST <= 100 rows of the customer's order-history archive (W5-03B), never nil; HistoricalOrdersTotal is the
+	// full archive size, so a bigger archive never makes the export exceed its size cap.
+	HistoricalOrders      []HistoricalOrder `json:"historical_orders"`
+	HistoricalOrdersTotal int64             `json:"historical_orders_total"`
 }
 
 // buyerExportDoc is the same envelope without customer_id and principal ids (D8); orders are the buyer's own
