@@ -1,18 +1,18 @@
-✔ fragment: exactly #o=<order id>&t=<43-char token>; anything else is null (0.7465ms)
-✔ body is exactly {order_id, token, proof}; the answer is exactly the order the link named (0.237917ms)
-✔ BFF link: no cookie needed, fresh token upstream, cookie only on a 200 naming the same order, link token never echoed (34.6225ms)
-✔ BFF link: strict local denial before any private fetch (1.349416ms)
-✔ copy: three locales, one refusal text, a retry and a lookup path (0.087125ms)
-✔ dashboard: accepts the frozen shape, rejects drift (11.819875ms)
-✔ import result: strict keys, closed error codes, committed never carries errors (0.460959ms)
-✔ csv file guard mirrors the Go bounds (0.097584ms)
-✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (0.997792ms)
-✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.170792ms)
-✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.295459ms)
-✔ draft: first problem, and the body has no price-like field at all (0.461916ms)
-✔ BFF grammar: exactly the seven tools resources (0.079208ms)
-✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.14475ms)
-✔ copy parity: every locale has every key, import rules and error codes (0.680584ms)
+✔ fragment: exactly #o=<order id>&t=<43-char token>; anything else is null (1.155125ms)
+✔ body is exactly {order_id, token, proof}; the answer is exactly the order the link named (0.177791ms)
+✔ BFF link: no cookie needed, fresh token upstream, cookie only on a 200 naming the same order, link token never echoed (32.315958ms)
+✔ BFF link: strict local denial before any private fetch (1.661208ms)
+✔ copy: three locales, one refusal text, a retry and a lookup path (0.093625ms)
+✔ dashboard: accepts the frozen shape, rejects drift (8.859291ms)
+✔ import result: strict keys, closed error codes, committed never carries errors (0.28825ms)
+✔ csv file guard mirrors the Go bounds (0.0725ms)
+✔ manual options: a COD home row parses with its offer (D01: the page used to refuse the whole list) (0.693917ms)
+✔ manual options: only bank_transfer / pay_at_pickup / cash_on_delivery, key must equal market|country|code (0.123208ms)
+✔ manual result: link is https with the order id and a 43-char capability in the fragment only (0.366875ms)
+✔ draft: first problem, and the body has no price-like field at all (0.756458ms)
+✔ BFF grammar: exactly the seven tools resources (0.080209ms)
+✔ regenerate body/result: exactly {order_id, locale} and a fresh https link naming that order (0.132791ms)
+✔ copy parity: every locale has every key, import rules and error codes (0.421084ms)
 ℹ tests 15
 ℹ suites 0
 ℹ pass 15
@@ -20,7 +20,7 @@
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 178.090042
+ℹ duration_ms 173.088709
 
 > live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b6-order-for-buyer
 > pnpm --filter @live-commerce/storefront build
@@ -30,15 +30,15 @@
 > next build
 
 ▲ Next.js 16.3.5 (Turbopack)
-✓ Running next.config.ts took 1341ms
+✓ Running next.config.ts took 165ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 2.4s
+✓ Compiled successfully in 1047ms
   Running TypeScript ...
-  Finished TypeScript in 986ms ...
+  Finished TypeScript in 425ms ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/2) ...
-✓ Generating static pages using 9 workers (2/2) in 90ms
+✓ Generating static pages using 9 workers (2/2) in 65ms
   Finalizing page optimization ...
 
 Route (app)
@@ -88,18 +88,18 @@ Route (app)
 > next build && node ../../scripts/dev/package-admin.mjs
 
 ▲ Next.js 16.3.5 (Turbopack)
-✓ Running next.config.ts took 18ms
+✓ Running next.config.ts took 19ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 2.8s
+✓ Compiled successfully in 1512ms
   Running TypeScript ...
-  Finished TypeScript in 392ms ...
+  Finished TypeScript in 434ms ...
   Collecting page data using 9 workers ...
   Generating static pages using 9 workers (0/15) ...
   Generating static pages using 9 workers (3/15) 
   Generating static pages using 9 workers (7/15) 
   Generating static pages using 9 workers (11/15) 
-✓ Generating static pages using 9 workers (15/15) in 128ms
+✓ Generating static pages using 9 workers (15/15) in 61ms
   Finalizing page optimization ...
 
 Route (app)
@@ -156,9 +156,9 @@ Route (app)
 
 Packaged standalone admin server and static assets.
 === RUN   TestBrowserManualOrderLink
-    browser_manual_order_link_test.go:150: PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=10; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b6-order-for-buyer/output/playwright/manual-order-link-2024157710
---- PASS: TestBrowserManualOrderLink (5.53s)
+    browser_manual_order_link_test.go:150: PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=10; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b6-order-for-buyer/output/playwright/manual-order-link-4065512252
+--- PASS: TestBrowserManualOrderLink (5.59s)
 PASS
-ok  	livecommerce/tests/foundation	7.254s
+ok  	livecommerce/tests/foundation	7.371s
 PASS: isolated merchant UI manual order -> buyer link -> fresh browser exchange -> bank details -> transfer proof; signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance.
 exit=0

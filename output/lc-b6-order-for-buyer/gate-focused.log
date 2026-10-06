@@ -1,49 +1,49 @@
 === RUN   TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode
---- PASS: TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode (1.29s)
+--- PASS: TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode (1.54s)
 === RUN   TestT06DispatcherR7aFinishErrorRollsBackAndReconciles
 --- PASS: TestT06DispatcherR7aFinishErrorRollsBackAndReconciles (5.39s)
 === RUN   TestT06DispatcherR7aFinishRunsOnPolicyBlock
---- PASS: TestT06DispatcherR7aFinishRunsOnPolicyBlock (0.13s)
+--- PASS: TestT06DispatcherR7aFinishRunsOnPolicyBlock (0.14s)
 === RUN   TestT06DispatcherCommittedFrozenIntentAndTerminalReplay
---- PASS: TestT06DispatcherCommittedFrozenIntentAndTerminalReplay (1.13s)
+--- PASS: TestT06DispatcherCommittedFrozenIntentAndTerminalReplay (1.39s)
 === RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect
 === RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied
 === RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed
---- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect (0.49s)
-    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied (0.37s)
+--- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect (0.26s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied (0.14s)
     --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed (0.12s)
 === RUN   TestT06DispatcherBusyDuplicateSnoozesWithoutEffect
---- PASS: TestT06DispatcherBusyDuplicateSnoozesWithoutEffect (1.13s)
+--- PASS: TestT06DispatcherBusyDuplicateSnoozesWithoutEffect (1.36s)
 === RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating
 === RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error
 === RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic
 === RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed
 === RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack
---- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (5.52s)
-    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (1.37s)
-    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.37s)
-    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.37s)
-    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.41s)
+--- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (5.32s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (1.38s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.38s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.14s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.43s)
 === RUN   TestT06DispatcherOneDeadlineAndFreshCompletion
---- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.38s)
+--- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.45s)
 === RUN   TestT06DispatcherUnknownRouteFailsClosedWithoutClaim
 --- PASS: TestT06DispatcherUnknownRouteFailsClosedWithoutClaim (0.11s)
 === RUN   TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown
---- PASS: TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown (2.37s)
+--- PASS: TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown (2.38s)
 === RUN   TestT06DispatcherBudgetPersistsManualRequirement
---- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.14s)
+--- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.39s)
 === RUN   TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob
---- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.38s)
+--- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.41s)
 === RUN   TestT06DispatcherForcedStopPreservesClaimForReconcile
---- PASS: TestT06DispatcherForcedStopPreservesClaimForReconcile (1.16s)
+--- PASS: TestT06DispatcherForcedStopPreservesClaimForReconcile (1.42s)
 === RUN   TestT06DispatcherCrashChild
 --- PASS: TestT06DispatcherCrashChild (0.00s)
 === RUN   TestT06DispatcherRealProcessCrashRescue
 === RUN   TestT06DispatcherRealProcessCrashRescue/before
 === RUN   TestT06DispatcherRealProcessCrashRescue/after
---- PASS: TestT06DispatcherRealProcessCrashRescue (40.01s)
-    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (18.26s)
-    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (21.74s)
+--- PASS: TestT06DispatcherRealProcessCrashRescue (42.51s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (22.99s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (19.52s)
 === RUN   TestT06WorkerAuthorityAndFunctionACL
 --- PASS: TestT06WorkerAuthorityAndFunctionACL (0.50s)
 === RUN   TestT06PolicyOutcomeCannotErasePossibleRemoteEffect
@@ -55,19 +55,19 @@
 === RUN   TestT06SQLEventFailureRollsBackClaimAndCompletion
 --- PASS: TestT06SQLEventFailureRollsBackClaimAndCompletion (0.02s)
 === RUN   TestT06OrdinaryWorkerStartsProcessesAndStops
---- PASS: TestT06OrdinaryWorkerStartsProcessesAndStops (0.07s)
+--- PASS: TestT06OrdinaryWorkerStartsProcessesAndStops (0.08s)
 === RUN   TestT06GoBindingPermissionsScopeAndCAS
 --- PASS: TestT06GoBindingPermissionsScopeAndCAS (0.05s)
 === RUN   TestT06GoPlanAtomicReplayCanonicalAndReadback
 --- PASS: TestT06GoPlanAtomicReplayCanonicalAndReadback (0.07s)
 === RUN   TestT06GoConcurrentReplayForeignBindingAndValidation
-=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
 === RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/trailing
 === RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/oversize
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
 --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation (0.09s)
-    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
     --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/trailing (0.00s)
     --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/oversize (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
 === RUN   TestT06GoAtomicFailuresAndWorkerTokenFence
 === RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/job
 === RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/event
@@ -77,38 +77,38 @@
     --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/event (0.01s)
     --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/audit (0.01s)
 === RUN   TestK3LCB4IdempotencyReplayAndConflict
---- PASS: TestK3LCB4IdempotencyReplayAndConflict (9.21s)
+--- PASS: TestK3LCB4IdempotencyReplayAndConflict (9.25s)
 === RUN   TestK3LCB4ConcurrentDuplicateRecent
     k3_lc_b4_adversarial_test.go:135: stale offer version: public_reply_forbidden_content
---- FAIL: TestK3LCB4ConcurrentDuplicateRecent (0.65s)
+--- FAIL: TestK3LCB4ConcurrentDuplicateRecent (0.64s)
 === RUN   TestK3LCB4ConfirmPreemptAutoGate
---- PASS: TestK3LCB4ConfirmPreemptAutoGate (0.38s)
+--- PASS: TestK3LCB4ConfirmPreemptAutoGate (0.40s)
 === RUN   TestK3LCB4TakeoverExpiryAutoReplyCheck
---- PASS: TestK3LCB4TakeoverExpiryAutoReplyCheck (2.65s)
+--- PASS: TestK3LCB4TakeoverExpiryAutoReplyCheck (2.64s)
 === RUN   TestK3LCB4TakeoverConcurrentTwoStaff
---- PASS: TestK3LCB4TakeoverConcurrentTwoStaff (0.62s)
+--- PASS: TestK3LCB4TakeoverConcurrentTwoStaff (0.65s)
 === RUN   TestK3LCB4CrossTenantStoreIsolation
 --- PASS: TestK3LCB4CrossTenantStoreIsolation (0.62s)
 === RUN   TestK3LCB4PermissionSplit
---- PASS: TestK3LCB4PermissionSplit (0.60s)
+--- PASS: TestK3LCB4PermissionSplit (0.61s)
 === RUN   TestK3LCB4CapabilityDenyPlanAndCheck
---- PASS: TestK3LCB4CapabilityDenyPlanAndCheck (1.40s)
+--- PASS: TestK3LCB4CapabilityDenyPlanAndCheck (1.66s)
 === RUN   TestK3LCB4PrincipalRevokedAtCheck
---- PASS: TestK3LCB4PrincipalRevokedAtCheck (9.00s)
+--- PASS: TestK3LCB4PrincipalRevokedAtCheck (8.81s)
 === RUN   TestK3LCB4RedactedUnknownReconcileZeroHTTP
---- PASS: TestK3LCB4RedactedUnknownReconcileZeroHTTP (1.64s)
+--- PASS: TestK3LCB4RedactedUnknownReconcileZeroHTTP (2.16s)
 === RUN   TestK3LCB4SecretWipeCancelledAndLeaseFence
---- PASS: TestK3LCB4SecretWipeCancelledAndLeaseFence (0.61s)
+--- PASS: TestK3LCB4SecretWipeCancelledAndLeaseFence (0.99s)
 === RUN   TestK3LCB4ManualReplyLinkedPeerTakeover
---- PASS: TestK3LCB4ManualReplyLinkedPeerTakeover (1.38s)
+--- PASS: TestK3LCB4ManualReplyLinkedPeerTakeover (1.72s)
 === RUN   TestK3LCB4ManualReplyPlatformWindows
---- PASS: TestK3LCB4ManualReplyPlatformWindows (0.35s)
+--- PASS: TestK3LCB4ManualReplyPlatformWindows (0.43s)
 === RUN   TestK3LCB4TextValidationBoundaries
---- PASS: TestK3LCB4TextValidationBoundaries (0.82s)
+--- PASS: TestK3LCB4TextValidationBoundaries (0.91s)
 === RUN   TestK3LCB4ReplyUsedBlockedManualRecovery
---- PASS: TestK3LCB4ReplyUsedBlockedManualRecovery (1.65s)
+--- PASS: TestK3LCB4ReplyUsedBlockedManualRecovery (8.88s)
 === RUN   TestLiveClaimsKC06Ingest
---- PASS: TestLiveClaimsKC06Ingest (0.71s)
+--- PASS: TestLiveClaimsKC06Ingest (0.79s)
 === RUN   TestLiveClaimsKC07Concurrency
 === RUN   TestLiveClaimsKC07Concurrency/duplicate-delivery-x20
 === RUN   TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity
@@ -118,23 +118,23 @@
 === RUN   TestLiveClaimsKC07Concurrency/release-vs-redeem
 === RUN   TestLiveClaimsKC07Concurrency/cart-lock-ordering
 === RUN   TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks
---- PASS: TestLiveClaimsKC07Concurrency (1.10s)
+--- PASS: TestLiveClaimsKC07Concurrency (1.08s)
     --- PASS: TestLiveClaimsKC07Concurrency/duplicate-delivery-x20 (0.04s)
-    --- PASS: TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity (0.10s)
+    --- PASS: TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity (0.08s)
     --- PASS: TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave (0.07s)
     --- PASS: TestLiveClaimsKC07Concurrency/deactivate-vs-ingest (0.08s)
     --- PASS: TestLiveClaimsKC07Concurrency/owners-racing-to-redeem (0.10s)
     --- PASS: TestLiveClaimsKC07Concurrency/release-vs-redeem (0.08s)
-    --- PASS: TestLiveClaimsKC07Concurrency/cart-lock-ordering (0.30s)
-    --- PASS: TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks (0.19s)
+    --- PASS: TestLiveClaimsKC07Concurrency/cart-lock-ordering (0.32s)
+    --- PASS: TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks (0.16s)
 === RUN   TestLiveClaimsKC08ManualPrivacy
---- PASS: TestLiveClaimsKC08ManualPrivacy (0.94s)
+--- PASS: TestLiveClaimsKC08ManualPrivacy (1.00s)
 === RUN   TestLiveClaimsP2bLabelPrivacy
 --- PASS: TestLiveClaimsP2bLabelPrivacy (0.23s)
 === RUN   TestLiveClaimsP2cDuplicateReconstructible
---- PASS: TestLiveClaimsP2cDuplicateReconstructible (0.21s)
+--- PASS: TestLiveClaimsP2cDuplicateReconstructible (0.20s)
 === RUN   TestLiveClaimsP2dLabelNormalization
---- PASS: TestLiveClaimsP2dLabelNormalization (0.15s)
+--- PASS: TestLiveClaimsP2dLabelNormalization (0.14s)
 === RUN   TestLiveClaimsP2eModeTransitions
 --- PASS: TestLiveClaimsP2eModeTransitions (0.18s)
 === RUN   TestLiveClaimsKC03Schema
@@ -146,53 +146,53 @@
 === RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
 === RUN   TestLiveClaimsKC03Schema/pool-validator
 === RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
---- PASS: TestLiveClaimsKC03Schema (3.81s)
+--- PASS: TestLiveClaimsKC03Schema (3.93s)
     --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.06s)
     --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.08s)
     --- PASS: TestLiveClaimsKC03Schema/definers (0.00s)
     --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.16s)
-    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.56s)
-    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.08s)
-    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.09s)
-    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.64s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.60s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.09s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.71s)
 === RUN   TestLiveClaimsKC12Isolation
---- PASS: TestLiveClaimsKC12Isolation (0.58s)
+--- PASS: TestLiveClaimsKC12Isolation (0.74s)
 === RUN   TestLiveClaimsP2aPolicyContexts
---- PASS: TestLiveClaimsP2aPolicyContexts (0.19s)
+--- PASS: TestLiveClaimsP2aPolicyContexts (0.21s)
 === RUN   TestLiveClaimsP2gLinkTTLInDatabase
---- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.73s)
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.72s)
 === RUN   TestLiveClaimsCoreSmoke
---- PASS: TestLiveClaimsCoreSmoke (0.21s)
+--- PASS: TestLiveClaimsCoreSmoke (0.22s)
 === RUN   TestLiveClaimsKC02Units
 --- PASS: TestLiveClaimsKC02Units (0.00s)
 === RUN   TestLiveClaimsKC04Offers
---- PASS: TestLiveClaimsKC04Offers (0.49s)
+--- PASS: TestLiveClaimsKC04Offers (0.47s)
 === RUN   TestLiveClaimsKC05Window
---- PASS: TestLiveClaimsKC05Window (0.30s)
+--- PASS: TestLiveClaimsKC05Window (0.28s)
 === RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
---- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (0.26s)
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (0.24s)
 === RUN   TestLiveConsoleLCN02IGFactsFallbackAndUnavailable
---- PASS: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (0.53s)
+--- PASS: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (0.52s)
 === RUN   TestLiveConsoleLCN01LeaseAndTokenFence
---- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.17s)
+--- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.15s)
 === RUN   TestLiveConsoleLCN01CapsAndNoPoll
---- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.20s)
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.19s)
 === RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor
 === RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap
 === RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out
 === RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset
 === RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next
---- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (4.20s)
-    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.17s)
+--- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (4.14s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.15s)
     --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out (0.16s)
-    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.69s)
-    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (0.18s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.66s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (0.17s)
 === RUN   TestLiveConsoleLCN02BridgeStatusesAndFacts
---- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (0.17s)
+--- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (0.15s)
 === RUN   TestLiveConsoleLCN04NoCommentTextPersisted
---- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (0.42s)
+--- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (0.38s)
 === RUN   TestLiveConsoleLCN05PrintAndMarks
---- PASS: TestLiveConsoleLCN05PrintAndMarks (0.18s)
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.16s)
 === RUN   TestLiveConsoleInboxMigration0122ExactACL
 === RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[])
 === RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state()
@@ -239,12 +239,36 @@
 === RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit
 === RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee
 === RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404
---- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink (0.03s)
+--- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink (0.02s)
     --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit (0.01s)
-    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee (0.00s)
     --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404 (0.01s)
 === RUN   TestLiveConsoleInboxCrossStoreIsolation
 --- PASS: TestLiveConsoleInboxCrossStoreIsolation (0.01s)
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_b:_a_crash_between_Place_and_the_record_leaves_a_pending_row_WITH_an_order;_it_is_never_stolen,_however_old;_the_replay_completes
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_a:_staleness_is_updated_at;_a_resumed_row_(old_created_at,_fresh_updated_at)_is_not_stealable,_an_untouched_one_without_an_order_is
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_c:_release_never_frees_a_bundle_whose_request_has_an_order;_finish_raises_when_a_row_of_the_request_is_gone
+--- PASS: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder (0.81s)
+    --- PASS: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_b:_a_crash_between_Place_and_the_record_leaves_a_pending_row_WITH_an_order;_it_is_never_stolen,_however_old;_the_replay_completes (0.17s)
+    --- PASS: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_a:_staleness_is_updated_at;_a_resumed_row_(old_created_at,_fresh_updated_at)_is_not_stealable,_an_untouched_one_without_an_order_is (0.13s)
+    --- PASS: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_c:_release_never_frees_a_bundle_whose_request_has_an_order;_finish_raises_when_a_row_of_the_request_is_gone (0.14s)
+=== RUN   TestLiveConsoleOrderForBuyerKeyBoundToItsBody
+    live_console_order_for_buyer_p2_test.go:150: the same key with another bundle set: claims: bundle_buyer_mismatch
+--- FAIL: TestLiveConsoleOrderForBuyerKeyBoundToItsBody (0.57s)
+=== RUN   TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest
+=== RUN   TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3:_a_grant_of_a_bundle_that_priced_no_line_expires_when_the_request_finishes
+    live_console_order_for_buyer_p2_test.go:168: manual claim "A1+2" not accepted: {Outcome:REJECTED Reason:WINDOW_CLOSED OfferID: Keyword: Quantity:0 PreviousQuantity:0 BundleID: BundleVersion:0 LineVersion:0}
+=== RUN   TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-5:_a_replay_whose_eligibility_now_fails_expires_the_grants_an_earlier_run_wrote
+--- FAIL: TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest (0.43s)
+    --- FAIL: TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3:_a_grant_of_a_bundle_that_priced_no_line_expires_when_the_request_finishes (0.04s)
+    --- PASS: TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-5:_a_replay_whose_eligibility_now_fails_expires_the_grants_an_earlier_run_wrote (0.04s)
+=== RUN   TestLiveConsoleOrderForBuyerAuditAndHelperAuthority
+=== RUN   TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-2:_the_audit_records_the_unit_price_the_ledger_consumed_(not_the_offer's_price_now)_with_full_offer_and_SKU_ids
+=== RUN   TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-6:_the_peer-state_helper_re-checks_inventory:reserve
+--- PASS: TestLiveConsoleOrderForBuyerAuditAndHelperAuthority (0.70s)
+    --- PASS: TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-2:_the_audit_records_the_unit_price_the_ledger_consumed_(not_the_offer's_price_now)_with_full_offer_and_SKU_ids (0.18s)
+    --- PASS: TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-6:_the_peer-state_helper_re-checks_inventory:reserve (0.04s)
 === RUN   TestLiveConsoleOrderForBuyerPrefill
 === RUN   TestLiveConsoleOrderForBuyerPrefill/bundle:_items,_live_price,_remaining_quantity,_nothing_pre-filled,_no_live_price_without_a_thread
 === RUN   TestLiveConsoleOrderForBuyerPrefill/conversation_with_a_linked_peer:_eligible
@@ -252,13 +276,13 @@
 === RUN   TestLiveConsoleOrderForBuyerPrefill/another_store's_conversation_or_bundle_is_404;_bad_queries_are_422;_authority
 === RUN   TestLiveConsoleOrderForBuyerPrefill/I09:_customer_and_delivery_come_only_from_an_explicit_link,_never_from_the_bundle_owner
 === RUN   TestLiveConsoleOrderForBuyerPrefill/the_explicitly_linked_customer's_last_contact_and_delivery_pre-fill_(A14_link)
---- PASS: TestLiveConsoleOrderForBuyerPrefill (0.87s)
+--- PASS: TestLiveConsoleOrderForBuyerPrefill (0.88s)
     --- PASS: TestLiveConsoleOrderForBuyerPrefill/bundle:_items,_live_price,_remaining_quantity,_nothing_pre-filled,_no_live_price_without_a_thread (0.00s)
     --- PASS: TestLiveConsoleOrderForBuyerPrefill/conversation_with_a_linked_peer:_eligible (0.00s)
     --- PASS: TestLiveConsoleOrderForBuyerPrefill/P2-7_c:_a_conversation_with_no_bundle_peer_row_is_200_empty,_not_404 (0.00s)
     --- PASS: TestLiveConsoleOrderForBuyerPrefill/another_store's_conversation_or_bundle_is_404;_bad_queries_are_422;_authority (0.01s)
-    --- PASS: TestLiveConsoleOrderForBuyerPrefill/I09:_customer_and_delivery_come_only_from_an_explicit_link,_never_from_the_bundle_owner (0.15s)
-    --- PASS: TestLiveConsoleOrderForBuyerPrefill/the_explicitly_linked_customer's_last_contact_and_delivery_pre-fill_(A14_link) (0.25s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/I09:_customer_and_delivery_come_only_from_an_explicit_link,_never_from_the_bundle_owner (0.11s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/the_explicitly_linked_customer's_last_contact_and_delivery_pre-fill_(A14_link) (0.22s)
 === RUN   TestLiveConsoleOrderForBuyerLivePrice
 === RUN   TestLiveConsoleOrderForBuyerLivePrice/the_Quote_is_the_only_price:_live_unit_price_on_a_live_claim_line,_the_total_follows
 === RUN   TestLiveConsoleOrderForBuyerLivePrice/ledger,_reservation_row,_single-use_grant,_audit
@@ -266,13 +290,13 @@
 === RUN   TestLiveConsoleOrderForBuyerLivePrice/a_second_order_for_the_bundle_(another_key)_is_409_bundle_already_ordered_with_the_order_id,_no_second_hold
 === RUN   TestLiveConsoleOrderForBuyerLivePrice/cancelling_the_order_frees_the_bundle_and_the_claimed_quantity:_the_next_order_is_live_again
 === RUN   TestLiveConsoleOrderForBuyerLivePrice/a_quantity_above_the_claim_stays_at_the_catalog_price_(fail_closed,_never_a_partial_live_price)
---- PASS: TestLiveConsoleOrderForBuyerLivePrice (0.82s)
+--- PASS: TestLiveConsoleOrderForBuyerLivePrice (0.91s)
     --- PASS: TestLiveConsoleOrderForBuyerLivePrice/the_Quote_is_the_only_price:_live_unit_price_on_a_live_claim_line,_the_total_follows (0.00s)
     --- PASS: TestLiveConsoleOrderForBuyerLivePrice/ledger,_reservation_row,_single-use_grant,_audit (0.00s)
     --- PASS: TestLiveConsoleOrderForBuyerLivePrice/replay_with_the_same_key:_the_same_order,_nothing_new (0.01s)
     --- PASS: TestLiveConsoleOrderForBuyerLivePrice/a_second_order_for_the_bundle_(another_key)_is_409_bundle_already_ordered_with_the_order_id,_no_second_hold (0.01s)
-    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/cancelling_the_order_frees_the_bundle_and_the_claimed_quantity:_the_next_order_is_live_again (0.12s)
-    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/a_quantity_above_the_claim_stays_at_the_catalog_price_(fail_closed,_never_a_partial_live_price) (0.14s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/cancelling_the_order_frees_the_bundle_and_the_claimed_quantity:_the_next_order_is_live_again (0.11s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/a_quantity_above_the_claim_stays_at_the_catalog_price_(fail_closed,_never_a_partial_live_price) (0.13s)
 === RUN   TestLiveConsoleOrderForBuyerFailClosed
 === RUN   TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant
 === RUN   TestLiveConsoleOrderForBuyerFailClosed/no_conversation_(e.g._from_a_comment_with_no_linked_thread):_catalog_price,_no_conversation
@@ -283,28 +307,28 @@
 === RUN   TestLiveConsoleOrderForBuyerFailClosed/P2-7_b:_send_payment_link_without_inbox:reply_is_409_capability,_nothing_created
 === RUN   TestLiveConsoleOrderForBuyerFailClosed/refused_bodies:_a_price_key,_unknown_keys,_bad_ids,_more_than_five_bundles
 === RUN   TestLiveConsoleOrderForBuyerFailClosed/a_plain_manual_order_through_the_same_route:_no_bundle,_no_price,_no_reservation
---- PASS: TestLiveConsoleOrderForBuyerFailClosed (1.13s)
-    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant (0.15s)
+--- PASS: TestLiveConsoleOrderForBuyerFailClosed (1.37s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant (0.16s)
     --- PASS: TestLiveConsoleOrderForBuyerFailClosed/no_conversation_(e.g._from_a_comment_with_no_linked_thread):_catalog_price,_no_conversation (0.14s)
     --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_caller_without_live:manage:_catalog_price,_permission (0.14s)
     --- PASS: TestLiveConsoleOrderForBuyerFailClosed/both_peer_keys_known_and_different:_409_bundle_buyer_mismatch_and_NOTHING_created (0.04s)
     --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_two_peers_where_one_differs_is_a_mismatch_too_(the_server_never_picks_a_peer) (0.04s)
-    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/another_store's_conversation_or_bundle:_404,_nothing_created (0.05s)
-    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/P2-7_b:_send_payment_link_without_inbox:reply_is_409_capability,_nothing_created (0.04s)
-    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/refused_bodies:_a_price_key,_unknown_keys,_bad_ids,_more_than_five_bundles (0.04s)
-    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_plain_manual_order_through_the_same_route:_no_bundle,_no_price,_no_reservation (0.10s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/another_store's_conversation_or_bundle:_404,_nothing_created (0.08s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/P2-7_b:_send_payment_link_without_inbox:reply_is_409_capability,_nothing_created (0.08s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/refused_bodies:_a_price_key,_unknown_keys,_bad_ids,_more_than_five_bundles (0.07s)
+    --- PASS: TestLiveConsoleOrderForBuyerFailClosed/a_plain_manual_order_through_the_same_route:_no_bundle,_no_price,_no_reservation (0.11s)
 === RUN   TestLiveConsoleOrderForBuyerConcurrentStaff
---- PASS: TestLiveConsoleOrderForBuyerConcurrentStaff (0.99s)
+--- PASS: TestLiveConsoleOrderForBuyerConcurrentStaff (2.40s)
 === RUN   TestLiveConsoleOrderForBuyerResume
---- PASS: TestLiveConsoleOrderForBuyerResume (0.57s)
+--- PASS: TestLiveConsoleOrderForBuyerResume (1.75s)
 === RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes
 === RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing
 === RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation
 === RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link
---- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes (0.96s)
-    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing (0.16s)
+--- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes (1.35s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing (0.15s)
     --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation (0.14s)
-    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link (0.29s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link (0.68s)
 === RUN   TestLiveConsoleMerchantOriginGrantBranch
 === RUN   TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once
 === RUN   TestLiveConsoleMerchantOriginGrantBranch/an_unbound_grant_prices_a_quote_but_Begin_refuses_it_(fail_closed):_no_order,_no_hold,_no_ledger_row
@@ -312,13 +336,13 @@
 === RUN   TestLiveConsoleMerchantOriginGrantBranch/a_purged_bundle_and_an_archived_session_price_nothing
 === RUN   TestLiveConsoleMerchantOriginGrantBranch/the_0105_ledger_stays_the_ceiling:_a_grant_never_prices_more_than_the_claimed_quantity_left
 === RUN   TestLiveConsoleMerchantOriginGrantBranch/single_use_under_a_race:_two_Begins_of_one_bound_quote_place_exactly_one_order
---- PASS: TestLiveConsoleMerchantOriginGrantBranch (0.93s)
-    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once (0.12s)
+--- PASS: TestLiveConsoleMerchantOriginGrantBranch (1.03s)
+    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once (0.13s)
     --- PASS: TestLiveConsoleMerchantOriginGrantBranch/an_unbound_grant_prices_a_quote_but_Begin_refuses_it_(fail_closed):_no_order,_no_hold,_no_ledger_row (0.07s)
-    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/no_grant,_an_expired_grant_and_another_buyer's_grant_price_nothing (0.07s)
-    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/a_purged_bundle_and_an_archived_session_price_nothing (0.07s)
-    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/the_0105_ledger_stays_the_ceiling:_a_grant_never_prices_more_than_the_claimed_quantity_left (0.09s)
-    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/single_use_under_a_race:_two_Begins_of_one_bound_quote_place_exactly_one_order (0.09s)
+    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/no_grant,_an_expired_grant_and_another_buyer's_grant_price_nothing (0.06s)
+    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/a_purged_bundle_and_an_archived_session_price_nothing (0.05s)
+    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/the_0105_ledger_stays_the_ceiling:_a_grant_never_prices_more_than_the_claimed_quantity_left (0.12s)
+    --- PASS: TestLiveConsoleMerchantOriginGrantBranch/single_use_under_a_race:_two_Begins_of_one_bound_quote_place_exactly_one_order (0.10s)
 === RUN   TestLiveConsoleOrderPayLinkPlanner
 === RUN   TestLiveConsoleOrderPayLinkPlanner/one_operation,_the_order_key,_the_link_only_in_the_sealed_copy
 === RUN   TestLiveConsoleOrderPayLinkPlanner/the_replay_of_the_same_key_is_the_saved_result;_the_probe_now_finds_it
@@ -327,46 +351,45 @@
 === RUN   TestLiveConsoleOrderPayLinkPlanner/a_different_order_to_the_same_buyer_is_not_duplicate_recent_(the_order_id_is_in_the_body_digest)
 === RUN   TestLiveConsoleOrderPayLinkPlanner/closed_window:_refused_with_window_closed,_probe_says_so_before_any_link_is_issued
 === RUN   TestLiveConsoleOrderPayLinkPlanner/without_inbox:reply_the_planner_refuses_(forbidden)
---- PASS: TestLiveConsoleOrderPayLinkPlanner (9.22s)
+--- PASS: TestLiveConsoleOrderPayLinkPlanner (8.79s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/one_operation,_the_order_key,_the_link_only_in_the_sealed_copy (0.00s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/the_replay_of_the_same_key_is_the_saved_result;_the_probe_now_finds_it (0.01s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/another_key_for_the_same_(conversation,_order)_can_never_plan_a_second_DM (0.01s)
-    --- PASS: TestLiveConsoleOrderPayLinkPlanner/dispatch:_Graph_gets_the_link,_the_display_copy_keeps_the_placeholder (1.03s)
+    --- PASS: TestLiveConsoleOrderPayLinkPlanner/dispatch:_Graph_gets_the_link,_the_display_copy_keeps_the_placeholder (1.05s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/a_different_order_to_the_same_buyer_is_not_duplicate_recent_(the_order_id_is_in_the_body_digest) (0.01s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/closed_window:_refused_with_window_closed,_probe_says_so_before_any_link_is_issued (0.17s)
     --- PASS: TestLiveConsoleOrderPayLinkPlanner/without_inbox:reply_the_planner_refuses_(forbidden) (0.01s)
 === RUN   TestLiveConsoleSendRecommendCapabilityBeforeContent
---- PASS: TestLiveConsoleSendRecommendCapabilityBeforeContent (0.38s)
+--- PASS: TestLiveConsoleSendRecommendCapabilityBeforeContent (0.41s)
 === RUN   TestLiveConsoleSendLCN07Quota
---- PASS: TestLiveConsoleSendLCN07Quota (1.12s)
+--- PASS: TestLiveConsoleSendLCN07Quota (1.11s)
 === RUN   TestLiveConsoleSendLCN07ConfirmGateAndLinkPending
 --- PASS: TestLiveConsoleSendLCN07ConfirmGateAndLinkPending (1.67s)
 === RUN   TestLiveConsoleSendLCN07ConcurrentManual
---- PASS: TestLiveConsoleSendLCN07ConcurrentManual (0.48s)
+--- PASS: TestLiveConsoleSendLCN07ConcurrentManual (0.72s)
 === RUN   TestLiveConsoleSendLCN07AutoManualRace
-    live_console_send_quota_test.go:369: race outcomes over 100 iterations: manual won 14, auto won 86, manual refused 86
---- PASS: TestLiveConsoleSendLCN07AutoManualRace (32.81s)
+    live_console_send_quota_test.go:369: race outcomes over 100 iterations: manual won 10, auto won 90, manual refused 90
+--- PASS: TestLiveConsoleSendLCN07AutoManualRace (32.63s)
 === RUN   TestLiveConsoleSendLCN08PublicReply
-    live_console_send_quota_test.go:427: recommend: public_reply_forbidden_content
---- FAIL: TestLiveConsoleSendLCN08PublicReply (1.74s)
+--- PASS: TestLiveConsoleSendLCN08PublicReply (3.02s)
 === RUN   TestLiveConsoleSendLCN10Takeover
---- PASS: TestLiveConsoleSendLCN10Takeover (5.67s)
+--- PASS: TestLiveConsoleSendLCN10Takeover (12.54s)
 === RUN   TestLiveConsoleSendLCN11Unknown
 === RUN   TestLiveConsoleSendLCN11Unknown/5xx
 === RUN   TestLiveConsoleSendLCN11Unknown/garbled
 === RUN   TestLiveConsoleSendLCN11Unknown/hang
---- PASS: TestLiveConsoleSendLCN11Unknown (15.23s)
-    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.31s)
-    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (2.00s)
+--- PASS: TestLiveConsoleSendLCN11Unknown (8.82s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.29s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (2.25s)
     --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.00s)
 === RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
---- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (2.69s)
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (9.15s)
 === RUN   TestLiveConsoleSendMigration0128ExactACL
---- PASS: TestLiveConsoleSendMigration0128ExactACL (0.03s)
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.10s)
 === RUN   TestLiveConsoleSendLCN06DM
---- PASS: TestLiveConsoleSendLCN06DM (2.91s)
+--- PASS: TestLiveConsoleSendLCN06DM (3.10s)
 === RUN   TestLiveConsoleSendLCN06GraphInvalidRequest
---- PASS: TestLiveConsoleSendLCN06GraphInvalidRequest (8.89s)
+--- PASS: TestLiveConsoleSendLCN06GraphInvalidRequest (1.68s)
 === RUN   TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow
 --- PASS: TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow (0.89s)
 === RUN   TestLiveConsoleTemplatesMigration0121ExactACL
@@ -410,17 +433,17 @@
     --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/resolve_definer_gate_denies_store:read_only_principal (0.00s)
     --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/list_definer_gate_denies_store:read_only_principal (0.00s)
 === RUN   TestLiveToolsGateConsumptionReorderAndExpiry
---- PASS: TestLiveToolsGateConsumptionReorderAndExpiry (0.60s)
+--- PASS: TestLiveToolsGateConsumptionReorderAndExpiry (0.70s)
 === RUN   TestLiveToolsGateConsumptionPartial
---- PASS: TestLiveToolsGateConsumptionPartial (0.53s)
+--- PASS: TestLiveToolsGateConsumptionPartial (0.52s)
 === RUN   TestLiveToolsGateConsumptionPickupCancel
---- PASS: TestLiveToolsGateConsumptionPickupCancel (0.47s)
+--- PASS: TestLiveToolsGateConsumptionPickupCancel (0.50s)
 === RUN   TestLiveToolsGateConsumptionPaidKeeps
---- PASS: TestLiveToolsGateConsumptionPaidKeeps (4.10s)
+--- PASS: TestLiveToolsGateConsumptionPaidKeeps (4.03s)
 === RUN   TestLiveToolsGateConsumptionConcurrentBegins
---- PASS: TestLiveToolsGateConsumptionConcurrentBegins (0.48s)
+--- PASS: TestLiveToolsGateConsumptionConcurrentBegins (0.81s)
 === RUN   TestLiveToolsGateConsumptionLedgerACL
---- PASS: TestLiveToolsGateConsumptionLedgerACL (0.41s)
+--- PASS: TestLiveToolsGateConsumptionLedgerACL (0.50s)
 === RUN   TestMerchantToolsManualOrder
 === RUN   TestMerchantToolsManualOrder/options_list_bank_transfer_and_pay_at_pickup,_never_card
 === RUN   TestMerchantToolsManualOrder/home_delivery_with_bank_transfer:_source,_audit,_reservation,_link
@@ -429,18 +452,18 @@
 === RUN   TestMerchantToolsManualOrder/refusals:_card,_unavailable_mode,_wrong_destination_kind,_unknown_SKU,_insufficient_stock,_any_price_field,_bad_body
 === RUN   TestMerchantToolsManualOrder/authority:_inventory:reserve_only;_scope_from_the_bearer
 === RUN   TestMerchantToolsManualOrder/the_unwired_deployment_answers_503_manual_order_unavailable
---- PASS: TestMerchantToolsManualOrder (1.34s)
-    --- PASS: TestMerchantToolsManualOrder/options_list_bank_transfer_and_pay_at_pickup,_never_card (0.27s)
+--- PASS: TestMerchantToolsManualOrder (1.09s)
+    --- PASS: TestMerchantToolsManualOrder/options_list_bank_transfer_and_pay_at_pickup,_never_card (0.08s)
     --- PASS: TestMerchantToolsManualOrder/home_delivery_with_bank_transfer:_source,_audit,_reservation,_link (0.14s)
     --- PASS: TestMerchantToolsManualOrder/replay:_same_key_and_body_is_the_same_order,_other_body_is_idempotency_conflict (0.01s)
-    --- PASS: TestMerchantToolsManualOrder/CVS_store_entered_by_the_merchant:_pay_at_pickup_is_confirmed_at_placement,_bank_transfer_waits (0.39s)
-    --- PASS: TestMerchantToolsManualOrder/refusals:_card,_unavailable_mode,_wrong_destination_kind,_unknown_SKU,_insufficient_stock,_any_price_field,_bad_body (0.19s)
+    --- PASS: TestMerchantToolsManualOrder/CVS_store_entered_by_the_merchant:_pay_at_pickup_is_confirmed_at_placement,_bank_transfer_waits (0.23s)
+    --- PASS: TestMerchantToolsManualOrder/refusals:_card,_unavailable_mode,_wrong_destination_kind,_unknown_SKU,_insufficient_stock,_any_price_field,_bad_body (0.25s)
     --- PASS: TestMerchantToolsManualOrder/authority:_inventory:reserve_only;_scope_from_the_bearer (0.02s)
     --- PASS: TestMerchantToolsManualOrder/the_unwired_deployment_answers_503_manual_order_unavailable (0.00s)
 === RUN   TestR2IntegrationUpgradeFromReleaseHead
---- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.43s)
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.93s)
 FAIL
-FAIL	livecommerce/tests/foundation	216.623s
+FAIL	livecommerce/tests/foundation	236.360s
 FAIL
-test-focused: top-level PASS=98 FAIL=2 SKIP=0 exit=1
+test-focused: top-level PASS=101 FAIL=3 SKIP=0 exit=1
 exit=1

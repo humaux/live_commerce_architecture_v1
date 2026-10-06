@@ -56,6 +56,19 @@ func (e *lbuEnv) crashAfterPlace(key string, in merchanttools.ForBuyerInput) {
 	}
 }
 
+// twoBundles is one session with two claimed bundles, both linked to the same conversation (one buyer who claimed twice).
+func (e *lbuEnv) twoBundles() (b1, b2, conversation string) {
+	e.t.Helper()
+	session, _ := e.session("A1", ltgLive, 5)
+	b1 = e.h.accepted(e.t, session, "", "una-"+t04Tag(), "A1+2").BundleID
+	b2 = e.h.accepted(e.t, session, "", "dos-"+t04Tag(), "A1+2").BundleID
+	e.h.closeWindow(e.t, session)
+	conversation = lcConversation(e.t, e.p.f, e.tenant(), e.store(), "page")
+	e.linkPeer(b1, conversation)
+	e.linkPeer(b2, conversation)
+	return
+}
+
 func (e *lbuEnv) requestOf(bundle string) (request, buyer string) {
 	e.t.Helper()
 	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT request_id::text,buyer_id::text FROM inbox.order_for_buyer WHERE bundle_id=$1 ORDER BY created_at DESC LIMIT 1`, bundle).Scan(&request, &buyer); err != nil {
@@ -70,13 +83,14 @@ func TestLiveConsoleOrderForBuyerReservationKeepsItsOrder(t *testing.T) {
 	owner := e.p.f.owner
 
 	t.Run("P2-1 b: a crash between Place and the record leaves a pending row WITH an order; it is never stolen, however old; the replay completes", func(t *testing.T) {
-		_, _, bundle, conv := e.scenario()
+		_, _, bundle, _ := e.scenario()
 		key := t04Key("lcn12-p21b")
-		in := e.input([]string{bundle}, conv)
+		// No conversation: a catalog-priced order, so no ledger row exists and only the reservation row can protect the bundle.
+		in := e.input([]string{bundle}, "")
 		e.crashAfterPlace(key, in)
 		ordersBefore := e.orders()
 		mustExec(t, owner, `UPDATE inbox.order_for_buyer SET created_at=clock_timestamp()-interval '2 hours', updated_at=clock_timestamp()-interval '2 hours' WHERE bundle_id=$1`, bundle)
-		st, out := e.post(token, t04Key("lcn12-p21b-other"), e.body(2, []string{bundle}, conv, false))
+		st, out := e.post(token, t04Key("lcn12-p21b-other"), e.body(2, []string{bundle}, "", false))
 		details, _ := out["details"].(map[string]any)
 		if st != 409 || lbuCode(out) != "bundle_already_ordered" || lbuStr(details, "order_id") == "" {
 			t.Fatalf("a second request took a bundle that has an order: %d %v", st, out)
@@ -139,8 +153,7 @@ func TestLiveConsoleOrderForBuyerReservationKeepsItsOrder(t *testing.T) {
 
 func TestLiveConsoleOrderForBuyerKeyBoundToItsBody(t *testing.T) {
 	e := lbuNew(t)
-	_, _, b1, c1 := e.scenario()
-	_, _, b2, _ := e.scenario()
+	b1, b2, c1 := e.twoBundles()
 	key := t04Key("lcn12-p24")
 	e.crashAfterPlace(key, e.input([]string{b1}, c1))
 	ordersBefore := e.orders()
@@ -164,9 +177,7 @@ func TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest(t *testing.T) {
 		return e.count(`SELECT count(*) FROM claims.merchant_origin_grants WHERE request_id=$1 AND consumed_at IS NULL AND expires_at>clock_timestamp()`, request)
 	}
 	t.Run("P2-3: a grant of a bundle that priced no line expires when the request finishes", func(t *testing.T) {
-		session, _, b1, conv := e.scenario()
-		b2 := e.h.accepted(t, session, "", "eve-"+t04Tag(), "A1+2").BundleID
-		e.linkPeer(b2, conv)
+		b1, b2, conv := e.twoBundles()
 		st, out := e.post(token, t04Key("lcn12-p23"), e.body(2, []string{b1, b2}, conv, false))
 		if st != 201 || out["live_price"] != "applied" {
 			t.Fatalf("two-bundle order: %d %v", st, out)
