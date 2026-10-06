@@ -6,6 +6,9 @@
 // browser chose, never retries (a repeated import or order is the caller's explicit, keyed choice), and rebuilds every error locally from an
 // allow-listed code. It is a sibling of the generic stores/[store]/[...resource] BFF because these routes need their own body types and
 // longer upstream budgets (import 75 s, manual order 16 s) than that file's 6 s.
+// Purpose: authenticated, scoped merchant CSV/order transport with bounded bodies and closed tracking replies.
+// Depends on: auth/CSRF/store membership, merchant-tools/tracking models and Go merchanttools HTTP API.
+// Used by: ProductImport, TrackingImport, dashboard and manual-order clients.
 import {
   authConfig,
   authenticatedStores,
@@ -18,6 +21,7 @@ import {
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
 import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
+import { trackingRoute, validTrackingQuery, parseTrackingPreview, parseTrackingCommit, type TrackingRoute } from "@/lib/tracking-import-model";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const keyPattern = /^[A-Za-z0-9_.:-]{8,128}$/;
@@ -25,12 +29,13 @@ const MAX_JSON = 64 * 1024;
 const nostore = { "Cache-Control": "private, no-store" };
 type Context = { params: Promise<{ store: string; resource: string[] }> };
 
-const budgets: Record<ToolsRoute, number> = {
+const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
   "manual-regenerate": 16000,
+  "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
-async function readCapped(request: Request, limit: number): Promise<Uint8Array | null> {
+async function readCapped(request: Request | Response, limit: number): Promise<Uint8Array | null> {
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (!Number.isFinite(declared) || declared > limit) return null;
   const reader = request.body?.getReader();
@@ -83,10 +88,13 @@ async function upstream(path: string, init: RequestInit, token: string | undefin
 async function route(request: Request, context: Context) {
   const { store, resource } = await context.params;
   const path = resource.join("/");
-  const kind = toolsRoute(request.method, path);
+  const tracking = trackingRoute(request.method, path);
+  const kind = tracking ?? toolsRoute(request.method, path);
   if (!uuid.test(store) || !kind) return localError(404, "not_found");
   // Exact resources: no query at all (not even a bare "?").
-  if (request.url.includes("?")) return localError(422, "invalid_request");
+  const search = new URL(request.url).search || (request.url.endsWith("?") ? "?" : "");
+  if (tracking ? !validTrackingQuery(tracking, search) : request.url.includes("?")) return localError(422, "invalid_request");
+  if (tracking && request.headers.has("idempotency-key")) return localError(422, "invalid_request");
   const isGet = request.method === "GET";
   if (isGet && (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
     (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))) return localError(422, "invalid_request");
@@ -119,7 +127,7 @@ async function route(request: Request, context: Context) {
   const init: RequestInit = { method: request.method };
   if (!isGet) {
     const type = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
-    const csv = kind === "import-preview" || kind === "import-commit";
+    const csv = kind === "import-preview" || kind === "import-commit" || kind === "tracking-preview" || kind === "tracking-commit";
     if (type !== (csv ? "text/csv" : "application/json")) return localError(415, csv ? "invalid_request" : "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
     // The import is idempotent by file hash and takes no key; an order is a keyed command.
@@ -144,23 +152,39 @@ async function route(request: Request, context: Context) {
     }
   }
 
-  const response = await upstream(path, init, token, store, budgets[kind]);
+  const response = await upstream(path + (tracking ? search : ""), init, token, store, budgets[kind]);
   if (authConfig && response.status === 401) {
     const denied = await safeError(response);
     clearAuthCookies(denied.headers);
     return denied;
   }
   const requestID = response.headers.get("x-request-id") ?? "";
-  if (kind === "export") {
+  if (kind === "export" || kind === "tracking-result") {
     // The export streams straight through, only as the exact attachment shape; never buffered or stored here.
     const disposition = response.headers.get("content-disposition") ?? "";
     if (!response.ok) return safeError(response);
     if (response.status !== 200 || !response.body || response.headers.get("content-type")?.toLowerCase() !== "text/csv; charset=utf-8" ||
-      !/^attachment; filename="products-[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv"$/.test(disposition)) return localError(503, "retry_later");
+      !(kind === "tracking-result" ? disposition === 'attachment; filename="tracking-import-result.csv"' : /^attachment; filename="products-[0-9]{4}-[0-9]{2}-[0-9]{2}\.csv"$/.test(disposition))) return localError(503, "retry_later");
     return new Response(response.body, {
       status: 200,
       headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": disposition, ...nostore, "X-Content-Type-Options": "nosniff", "X-Request-ID": requestID },
     });
+  }
+  if (kind === "tracking-preview" || kind === "tracking-commit") {
+    // The 409 stale answer is a raw closed Preview, not an error envelope; preserve it before safeError.
+    const data = await readCapped(response, 8 * 1024 * 1024);
+    if (!data) return localError(503, "retry_later");
+    let value: unknown;
+    try { value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(data)); } catch { return localError(503, "retry_later"); }
+    if (response.status === 200) {
+      try { return Response.json(kind === "tracking-preview" ? parseTrackingPreview(value) : parseTrackingCommit(value, Number(new URL(request.url).searchParams.get("expected_apply_rows"))), { status: 200, headers: { ...nostore, "X-Request-ID": requestID } }); }
+      catch { return localError(503, "retry_later"); }
+    }
+    if (kind === "tracking-commit" && response.status === 409) {
+      try { return Response.json(parseTrackingPreview(value), { status: 409, headers: { ...nostore, "X-Request-ID": requestID } }); }
+      catch { /* A coded idempotency conflict is not a stale preview. */ }
+    }
+    return safeError(Response.json(value, { status: response.status }));
   }
   if (kind === "import-preview" || kind === "import-commit") {
     // 200 (preview or commit) and 422 (commit refused) both carry the ImportResult; anything else is a coded error.
