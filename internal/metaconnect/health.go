@@ -34,12 +34,13 @@ func (h Health) reader() CapabilityReader {
 
 // HealthCapability is one CapabilityState rendered for B1 (CheckedAt as RFC3339).
 type HealthCapability struct {
-	BindingID string `json:"binding_id"`
-	Provider  string `json:"provider"`
-	State     string `json:"state"`
-	Reason    string `json:"reason"`
-	Evidence  string `json:"evidence"`
-	CheckedAt string `json:"checked_at,omitempty"`
+	BindingID  string `json:"binding_id"`
+	Capability string `json:"capability"`
+	Provider   string `json:"provider"`
+	State      string `json:"state"`
+	Reason     string `json:"reason"`
+	Evidence   string `json:"evidence"`
+	CheckedAt  string `json:"checked_at,omitempty"`
 }
 
 // HealthPage is one connected Page's row of the B1 response.
@@ -100,7 +101,7 @@ func (h Health) Status(ctx context.Context, tx pgx.Tx, scope platform.Scope) (*H
 			}
 			for _, c := range byBinding[b] {
 				page.Capabilities = append(page.Capabilities, HealthCapability{
-					BindingID: c.BindingID, Provider: c.Provider, State: c.State, Reason: c.Reason,
+					BindingID: c.BindingID, Capability: c.Capability, Provider: c.Provider, State: c.State, Reason: c.Reason,
 					Evidence: c.Evidence, CheckedAt: formatTime(c.CheckedAt),
 				})
 			}

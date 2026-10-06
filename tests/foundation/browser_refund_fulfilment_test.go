@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: shared signed-admin production Next fixture for deterministic browser gates.
+// Depends on: identity/HTTP/rfx fixtures, optional read-only request observers and Playwright.
+// Used by: refund, fulfillment and tracking-backfill browser tests; unchanged production APIs.
 package foundation_test
 
 // MF07 and RF11 (contracts/manual-fulfilment-v1.md §6, contracts/stripe-refund-v1.md §9): real browsers.
@@ -62,7 +65,7 @@ func brfRequire(t *testing.T) {
 
 // brfStartAdmin starts the private Go API (identity + admin routes over the ISOLATED database) and the production
 // admin Next build against it. principal is the store creator that the mock IdP subject maps to.
-func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evidence string) *brfStack {
+func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evidence string, wrappers ...func(http.Handler) http.Handler) *brfStack {
 	t.Helper()
 	root, err := filepath.Abs("../..")
 	if err != nil {
@@ -108,7 +111,11 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(e.f.runtime, httpapi.Options{SessionStoreList: true, RefundJobs: e.jobs}))
-	api := httptest.NewServer(mux)
+	var handler http.Handler = mux
+	for _, wrap := range wrappers {
+		handler = wrap(handler)
+	}
+	api := httptest.NewServer(handler)
 	t.Cleanup(api.Close)
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
