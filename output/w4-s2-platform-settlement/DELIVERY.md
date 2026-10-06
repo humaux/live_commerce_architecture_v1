@@ -1,0 +1,60 @@
+# w4-s2-platform-settlement delivery
+- Branch/commit: unit/w4-s2-platform-settlement @ (see `git log -1`)   Base: 8c3851e4 (r3/integration)   Model: Claude Sonnet 5.5 (backend implementer; DeepSeek out of credit)
+- Summary (anchors are file:line at commit):
+  - `migrations/0150_platform_settlement.sql`: tables settlement_statements :22, settlement_lines :51, settlement_unattributed :83, settlement_sync_runs :102 (FORCE RLS, PUBLIC revoked, no DELETE, only `commerce_payment_registry_writer` holds privileges; set-once triggers :176/:188); helpers settlement_kind :209, settlement_fee_store :223, settlement_statement_json :230; entry points record_settlement_lines :260, close_settlement :447, record_settlement_payout :561, read_settlement_statement :598, read_store_settlements :619.
+  - `internal/integrations/psp/stripe/balance.go`: `Client.ListBalanceTransactions` (exact 21-key projection, <=50 pages, <=8-day window, strict JSON, expanded source parsed for listed ids/amounts only).
+  - `internal/payments/stripeadmin/settlement.go`: SettlementSync (fetch ALL pages first, then record in <=500 chunks, window on the last chunk), SettlementClose, SettlementPayout (record only), SettlementStatement; refusals keep only our own PT409 token.
+  - `internal/payments/settlement/`: Statement types + merchant `Read`, CSV `WriteCSV/WriteFile` (BOM, text-cell formula guard via internal/csvguard, 0600, O_EXCL, absolute path).
+  - `cmd/stripe-admin/settlement.go` (+1 dispatch line in main.go), `deploy/scripts/ops-admin.sh` allowlist (+ STRIPE_SANDBOX=1 / LIVE pair gate for sync), `internal/httpapi/settlements.go` (+1 line in handler.go), `internal/platform/stripe_runtime.go` registrar function list (+4 ABIs; without it the registrar pool refuses to open).
+- Contract/interface changes: none to contract text (I did NOT edit contracts/). Deltas against contract §6 that need an integrator ruling are listed below under "Deltas".
+
+## PF-F5 verification (WebFetch, 2026-10-06; no contradiction, no BLOCKED)
+- docs.stripe.com/api/balance_transactions/object: `id, object, amount, available_on, balance_type, created, currency (lowercase), description, exchange_rate (number|null; amount_in_A x rate = amount_in_B), fee, fee_details, net (= amount - fee), reporting_category, source (string|null, expandable), status, type`. `type` enum includes charge, payment, refund, payment_refund, refund_failure, adjustment, payout, stripe_fee, stripe_fx_fee, payment_failure_refund, ... (full list fetched).
+- docs.stripe.com/api/balance_transactions/list: `created` (object), `currency`, `ending_before`, `limit` 1-100 (default 10), `payout`, `source`, `starting_after`, `type`; response `{object:list, has_more, data}`. `expand[]=data.source` is not named on that page; `source` is "expandable" on the object page and list expansion uses the `data.` prefix (Stripe convention) -> exercised only against the mock; SANDBOX NOT_RUN.
+- docs.stripe.com/reports/balance-transaction-types + reporting-categories: card charge/refund = type charge/refund (reporting_category charge/refund; non-card payment/payment_refund map to the same categories); **disputes and dispute reversals are `type=adjustment` whose `source` is a dispute**; stripe_fee -> reporting_category fee; payout_cancel/failure -> payout_reversal; partial capture -> `partial_capture_reversal`. The page states adjustments are split into "disputes, dispute reversals and failed refunds" but the reference table that names the exact strings (`dispute`, `dispute_reversal`, `refund_failure`) was truncated by the fetch tool: **those three strings are UNCONFIRMED**. SQL therefore treats a dispute-sourced adjustment whose category/sign is not the known pair as `DISPUTE_UNKNOWN` -> unattributed `unmapped_source`, which BLOCKS close (never silently dropped; skipping a dispute would overpay a store).
+- The contract's PF-F5 field list matches the docs. The contract's kind mapping did not state types; disputes being type=adjustment is the one fact the contract text does not carry.
+
+## Deltas against contract §6 (named; integrator to rule or amend the contract)
+1. **Projection is additive** (contract §6.5 lists 16 fields): added `ReportingCategory` (needed to tell dispute / reversal / refund_failure from other adjustments) and the presentment pairs `ChargeAmount/ChargeCurrency`, `RefundAmount/RefundCurrency` (a charge's store-currency amount exists only on its expanded source; `store_minor` must come from Stripe so the `mismatch='amount'` cross-check vs `payments.facts` is not vacuous). `DisputeAmount/DisputeCurrency` as listed.
+2. `ListBalanceTransactions(ctx, gte, lt)` pages internally (the contract signature showed `startingAfter`).
+3. Lines also keep `order_id` (order number for the merchant view) and `payload_sha256` (changed-content detection); unattributed rows also keep tenant/store (the platform scope, for RLS) and `settle_net`.
+4. New table `settlement_sync_runs` + optional `p_window_from/p_window_to` on `record_settlement_lines`: §6.2 requires "a sync covered [period_start-7d, period_end)" but no object recorded it. The window is <=8 days, so close uses the UNION of runs. Only the last 500-line chunk carries the window, so coverage exists only after a complete fetch+record.
+5. `read_store_settlements` has an optional 5th arg `p_statement` (single-statement route). The list returns statements WITHOUT lines (bounded); the detail returns the lines. `read_settlement_statement` is a new operator read for settlement-export.
+6. "Same txn id, changed content -> PT409 and a settlement_unattributed row": the row cannot persist in the transaction the PT409 aborts. Implemented as PT409 `settlement_content_changed`, nothing written, escalate.
+7. CLI flag: `--target-store` (contract `[--store]` collides with the scope flag `--store`). `--ticket` is validated and echoed in the JSON line; the SQL signatures carry the operator only, so the ticket is not in the DB audit row.
+8. Close semantics I had to choose: "previous period closed" = a statement exists for period-7d, or the store has no line/statement before this period (an explicit `--target-store` may close an EMPTY statement to keep the chain). Platform fee is clamped >= 0. round_half_up = floor(x+0.5) on an exact numeric quotient. An all-store close that finds a mismatch for ANY store aborts (use `--target-store` for the clean stores). Replay with no target returns every store's stored statement of the period.
+9. Cross-store reads (duplicate detection by txn id, close/payout lookups, session and refund lookup by Stripe id) are admitted by `app.settlement_op='on'`, set only by the operator definers; the merchant reader never sets it. Column-limited grants added to the registry writer: stripe_sessions(tenant,store,attempt,environment,account,payment_intent), stripe_refunds(stripe_refund_id,account_id), checkout.payment_attempts(order_id); plus `stripe_sessions_payment_intent_idx` (the lookup had no index).
+
+## PF11 fee vector (arithmetic first, then confirmed in SQL and Go)
+HKD 25,640 settled for TWD 100,000 minor, fee 1,046: 1046 x 100000 / 25640 = 4079.56 -> /100 = 40.80 -> half-up 41 -> x100 = 4100 -> `fee_store_minor = -4100`. `payments.settlement_fee_store(1046,100000,25640)` = -4100 and equals the Go reference (exact `big.Rat`) on 6 exact-half vectors (k+1/2 -> k+1) and 300 spread inputs (PF09 subtest). Dispute rows use the original CHARGE line's ratio (week-0 charge, week-1 dispute, week-2 reversal in PF10/PF11).
+
+## Tests
+- Red: migration moved aside, `scripts/dev/test-focused.sh '^TestPlatformSettlement$'` -> exit 1, all five subtests FAIL (`output/w4-s2-platform-settlement/red.log`). Green on the final tree -> exit 0 (`green.log`; the final regression run is `final-regression.log`: `^(TestPlatformSettlement|TestPlatformStripe)` -> 12 top-level PASS, exit 0).
+- Mutation (injected fault -> red): carry-forward disabled + round half-up removed in the SQL -> PF09, PF10, PF11, PF13 red (`mutation.log`), restored -> green.
+- `go test ./internal/integrations/psp/stripe/... ./internal/payments/... ./internal/httpapi/ ./internal/platform/ ./cmd/stripe-admin/` -> exit 0 (new: balance_test.go, settlement_unit_test.go, export_test.go, settlements_test.go, cmd settlement_test.go).
+- Pins touched (updated honestly, nothing weakened): `internal/platform/stripe_runtime.go` registrar ABI list (+4); `tests/foundation/r2_integration_upgrade_test.go` post-release migration count 73 -> 74 (integrator resolves the union with PM-B); `tests/foundation/stripe_live_schema_test.go` (0150 held back with 0137 in the pre-0077 fixture, ledger +4 -> +5, `slsSettlementObject` recognises the 0150 privilege delta); `tests/foundation/stripe_live_rak_test.go` (SL08 list gains a balance_transactions read probe and step; SANDBOX-only, NOT_RUN here).
+- Existing pins re-run and green with 0150: TestStripeAuthority*, TestWAS0*, TestMerchantOrdersV2*, TestT06WorkerAuthority*, TestPoolAuthority*, TestPlatformOperator*, TestR2IntegrationUpgrade*, TestStripeSL02Schema, plus the 53 tests of stripe_schema / stripe_refund_schema / stripe_registrar / stripe_live_registrar / payuni_notify_authority / customers_billing_restricted / home_cod_review / hosted_payment_authority / legacy_runtime_upgrade / stripe_live_shape / stripe_live_rak files (53 PASS, 1 SKIP = SL08 without a key).
+- Gates run: `bash scripts/dev/check-gates.sh` -> exit 0 (includes check-headers). `go build ./...`, `go vet` of touched packages clean, `gofmt -l` clean.
+
+## CI gates (run on GitHub, not on the Mac)
+`focused:^TestPlatformSettlement` and `focused:^TestPlatformStripe`; the full foundation shards (`shard:^Test[A-Z]` set) because 0150 touches shared pins; `--payment` (Stripe pool authority + registrar); K3 independent gate `platform_settlement_gate_test.go` (PF09-PF13) when it lands; `release-gate.sh --strict`.
+
+## Evidence class
+MOCK (fixture balance-transaction list, mock transport) + REAL_PG. SANDBOX NOT_RUN (no test key was in the environment; none requested, none printed). Never LIVE.
+
+## Risks
+- `settlement-sync --connection` is not checked against `stripe_platform.connection_id` (the contract's SQL signature has no connection argument). A wrong connection's charges simply do not attribute (`unmapped_source`/`foreign_connection`) and close stays blocked; the sync report prints the counts.
+- Dispute/refund_failure category strings are unconfirmed (above); fail-closed by design, but the first real dispute must be watched in SANDBOX.
+- `unmapped_source` blocks the whole environment's close and there is no resolution tool (S2-OPEN-1: escalate). The test removes such a row with an owner-pool DELETE only to continue the flow.
+- `settlement-export --out` runs inside the one-shot `ops-admin.sh` container: the path must be on a mounted volume or the file vanishes with the container (runbook).
+- Chunks are separate transactions: a refused later chunk leaves earlier chunks recorded (idempotent; rerun the window).
+- Only TWD stores: another store currency fires `mismatch='currency'` and blocks close (multi-currency is a non-goal).
+
+## NOT_RUN / BLOCKED
+- NOT_RUN: SANDBOX balance-transaction read, SANDBOX settlement of two PF-SBX stores, `expand[]=data.source` against the real API, LIVE anything, the browser/UI (W4-U1), the K3 independent gate file.
+- BLOCKED: none.
+
+## Integrator to-do
+- Migration number 0150 as instructed (0149 is product-media-v2); `r2_integration_upgrade_test.go` count union with PM-B; confirm the `stripe_live_schema_test.go` ledger +5 with other units' held-back files.
+- Add to `docs/runbooks/`: weekly cron line (`settlement-sync` for the two windows of the week, then `settlement-close`, then `settlement-export`/`settlement-payout`), the RAK permission "Balance transactions read" for the owner, the export-volume note, `--target-store`.
+- Decide delta 1 (additive projection) and the contract text for deltas 3-8; GATES.md row if you want a named mode. OQ-3 platform_fee_bps stays data (default 0, set with `platform-open --fee-bps`), nothing hard-coded.

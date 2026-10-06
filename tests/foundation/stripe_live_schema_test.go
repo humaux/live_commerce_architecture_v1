@@ -609,7 +609,9 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 	apply := func(tx pgx.Tx, paths []string, prefix, skip string) {
 		for _, path := range paths {
 			// 0137 / post-River 0022 (platform Stripe) re-create 0077/0016 objects, so the pre-0077 fixture must hold them back too.
-			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" {
+			// 0150 (W4-S2 settlement ledger) needs 0137's platform tables, so it is held back with them.
+			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
+				filepath.Base(path) == "0150_platform_settlement.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -766,9 +768,9 @@ func slsUpgrade(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerAfter); err != nil {
 		t.Fatal(err)
 	}
-	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016 and applied by the same Apply.
-	if ledgerAfter != ledgerBefore+4 {
-		t.Fatalf("ledger grew by %d, want exactly 4 (0077, post_river/0016, 0137 and post_river/0022, once)", ledgerAfter-ledgerBefore)
+	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) with them; the same Apply runs all five.
+	if ledgerAfter != ledgerBefore+5 {
+		t.Fatalf("ledger grew by %d, want exactly 5 (0077, post_river/0016, 0137, post_river/0022 and 0150, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -899,6 +901,17 @@ func slsUpgrade(t *testing.T) {
 	})
 }
 
+// slsSettlementObject recognises the objects migration 0150 (W4-S2 settlement ledger) adds, and the column-limited attribution reads it
+// grants on existing tables (stripe_sessions ids, the Stripe refund id and account, the attempt's order id; every one is gated by the
+// app.settlement_op policy or by the store scope GUC). Its own matrix is pinned by TestPlatformSettlement/PF09_schema.
+func slsSettlementObject(obj string) bool {
+	return strings.HasPrefix(obj, "payments.settlement_") || strings.HasPrefix(obj, "payments.record_settlement_") ||
+		strings.HasPrefix(obj, "payments.close_settlement") || strings.HasPrefix(obj, "payments.read_settlement_statement") ||
+		strings.HasPrefix(obj, "payments.read_store_settlements") || strings.HasPrefix(obj, "payments.guard_settlement_") ||
+		strings.HasPrefix(obj, "payments.stripe_sessions") || obj == "payments.stripe_refunds.stripe_refund_id" ||
+		obj == "payments.stripe_refunds.account_id" || obj == "checkout.payment_attempts.order_id"
+}
+
 // slsPlatformStripeDelta recognises the privileges migration 0137 adds (stripe-platform-account-v1 §3.5 plus the owner amendment
 // allowlist); the SL02 upgrade applies 0137 together with 0077, and PF01 pins this set from the 0137 side.
 func slsPlatformStripeDelta(role, kind, obj, priv string) bool {
@@ -906,7 +919,8 @@ func slsPlatformStripeDelta(role, kind, obj, priv string) bool {
 		strings.HasPrefix(obj, "payments.designate_stripe_platform") || strings.HasPrefix(obj, "payments.set_stripe_platform_open") ||
 		strings.HasPrefix(obj, "payments.block_platform_stripe") || strings.HasPrefix(obj, "payments.allow_platform_stripe") ||
 		strings.HasPrefix(obj, "payments.set_platform_stripe") || strings.HasPrefix(obj, "payments.read_platform_stripe") ||
-		strings.HasPrefix(obj, "payments.platform_stripe") || strings.HasPrefix(obj, "integration.guard_derived_stripe")
+		strings.HasPrefix(obj, "payments.platform_stripe") || strings.HasPrefix(obj, "integration.guard_derived_stripe") ||
+		slsSettlementObject(obj)
 	switch role {
 	case "commerce_payment_registry_writer", "commerce_checkout_writer", "commerce_payment_registrar", "commerce_runtime":
 		if platformObj {

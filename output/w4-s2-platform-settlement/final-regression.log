@@ -1,0 +1,54 @@
+=== RUN   TestPlatformSettlement
+=== RUN   TestPlatformSettlement/PF09_schema
+=== RUN   TestPlatformSettlement/PF10_sync
+=== RUN   TestPlatformSettlement/PF11_close
+=== RUN   TestPlatformSettlement/PF12_payout
+=== RUN   TestPlatformSettlement/PF13_merchant_read_and_csv
+--- PASS: TestPlatformSettlement (18.06s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.55s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.09s)
+    --- PASS: TestPlatformSettlement/PF11_close (0.16s)
+    --- PASS: TestPlatformSettlement/PF12_payout (0.03s)
+    --- PASS: TestPlatformSettlement/PF13_merchant_read_and_csv (0.09s)
+=== RUN   TestPlatformStripePF01Schema
+=== RUN   TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection
+=== RUN   TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused
+=== RUN   TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded
+=== RUN   TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link
+=== RUN   TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8)
+=== RUN   TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix
+--- PASS: TestPlatformStripePF01Schema (14.22s)
+    --- PASS: TestPlatformStripePF01Schema/derived_account_must_mirror_the_designated_platform_connection (0.10s)
+    --- PASS: TestPlatformStripePF01Schema/two_primary_rows_on_one_account_are_still_refused (0.03s)
+    --- PASS: TestPlatformStripePF01Schema/derived_credential_is_a_byte_copy;_pointer_and_bytes_are_guarded (0.02s)
+    --- PASS: TestPlatformStripePF01Schema/REAL_LIVE_qualification_needs_an_approval_or_a_platform_link (0.01s)
+    --- PASS: TestPlatformStripePF01Schema/runtime_cannot_set_the_derived_pointer;_the_guard_refuses_an_invisible_account_(P2-8) (0.01s)
+    --- PASS: TestPlatformStripePF01Schema/FORCE_RLS_and_ACL_matrix (0.03s)
+=== RUN   TestPlatformStripePF02Enable
+--- PASS: TestPlatformStripePF02Enable (15.74s)
+=== RUN   TestPlatformStripePF03Fanout
+--- PASS: TestPlatformStripePF03Fanout (18.46s)
+=== RUN   TestPlatformStripePF04Start
+--- PASS: TestPlatformStripePF04Start (18.67s)
+=== RUN   TestPlatformStripePF05Webhook
+--- PASS: TestPlatformStripePF05Webhook (11.52s)
+=== RUN   TestPlatformStripePF06Refund
+--- PASS: TestPlatformStripePF06Refund (14.48s)
+=== RUN   TestPlatformStripePF07Kill
+--- PASS: TestPlatformStripePF07Kill (9.47s)
+=== RUN   TestPlatformStripePF08Routes
+--- PASS: TestPlatformStripePF08Routes (11.13s)
+=== RUN   TestPlatformStripePF11DisallowBlocks
+--- PASS: TestPlatformStripePF11DisallowBlocks (7.98s)
+=== RUN   TestPlatformStripePF09LiveRevokeRace
+=== RUN   TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification
+=== RUN   TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked
+--- PASS: TestPlatformStripePF09LiveRevokeRace (11.95s)
+    --- PASS: TestPlatformStripePF09LiveRevokeRace/enable_first:_revoke_waits_and_then_revokes_the_new_derived_qualification (6.50s)
+    --- PASS: TestPlatformStripePF09LiveRevokeRace/revoke_first:_the_enable_waits,_then_finds_the_approval_revoked (5.45s)
+=== RUN   TestPlatformStripePF07LivePostRevoke
+--- PASS: TestPlatformStripePF07LivePostRevoke (4.04s)
+PASS
+ok  	livecommerce/tests/foundation	157.692s
+test-focused: top-level PASS=12 FAIL=0 SKIP=0 exit=0
+exit=0

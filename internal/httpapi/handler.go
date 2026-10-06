@@ -211,6 +211,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	}
 	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerPaymentCardRoutes(mux, pool, configured.PaymentProfile) // unit w4-s1-platform-stripe: payment_card.go
+	registerSettlementRoutes(mux, pool)                             // unit w4-s2-platform-settlement: settlements.go (read-only statements)
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
