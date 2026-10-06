@@ -1,3 +1,6 @@
+/* Purpose: storefront shell layout, including inset scroll frames for interactive product rails.
+   Depends on: --sf-gutter responsive tokens, globals.css and storefront sf-* components.
+   Used by: storefront home, catalog, product and cart shell pages. */
 /* Storefront shell styles (unit storefront-shell). Loaded after globals.css, which still styles the checkout screens
    (OrderFlow, CVS, payment) that keep their own class names. Everything new is prefixed .sf-.
    World: a quiet, image-led shop. White page, near-black ink, warm paper bands, ONE merchant accent (--accent, with
@@ -195,13 +198,12 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-section { max-width: 1280px; margin: 0 auto; padding: 44px var(--sf-gutter) 12px; }
 .sf-section__head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
 .sf-section__head h2, .sf-section--prose h2, .sf-split__copy h2 { font-size: 24px; line-height: 1.25; font-weight: 800; text-wrap: balance; }
-.sf-section--rail { padding-right: 0; }
-.sf-section--rail .sf-section__head { padding-right: var(--sf-gutter); }
-.sf-rail { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 0 var(--sf-gutter) 18px 0; scrollbar-width: none; }
+/* Keep the rail clip frame inside the section gutter: rail-end padding alone cannot inset a clipped card link. */
+.sf-rail { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 0 0 18px; scrollbar-width: none; }
 .sf-rail::-webkit-scrollbar { display: none; }
 .sf-rail > li { flex: 0 0 58%; max-width: 250px; scroll-snap-align: start; }
 @media (min-width: 720px) { .sf-rail { gap: 20px; } .sf-rail > li { flex-basis: 24%; max-width: 280px; } }
-/* The rail runs to the viewport edge, so the last visible card is cut there: an edge fade (only on the side that has more) and, on wide
+/* The rail clips inside the section gutter: an edge fade (only on the side that has more) and, on wide
    screens, previous/next buttons say it scrolls (components/Rail.tsx sets data-more-start / data-more-end). */
 .sf-railwrap { position: relative; }
 .sf-railwrap::before, .sf-railwrap::after { content: ""; position: absolute; top: 0; bottom: 18px; width: 64px; z-index: 1; pointer-events: none; opacity: 0; transition: opacity .2s; }

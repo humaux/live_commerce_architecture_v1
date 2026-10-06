@@ -1,0 +1,170 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (2.07s)
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/ledger_checksum_and_repeat
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19)
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused
+=== RUN   TestStripeSL02Schema/approval_table_rls_privileges_and_definers
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:336: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:338: OWNER-POOL: direct INSERTs into payments.stripe_live_approvals (rolled back)
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial
+=== RUN   TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial
+=== NAME  TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active
+    stripe_live_schema_test.go:388: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:403: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.principals/memberships/store_grants of an extra merchant principal
+    stripe_live_schema_test.go:414: OWNER-POOL: identity.store_grants integration:manage
+    stripe_live_schema_test.go:430: OWNER-POOL: payments.stripe_live_approvals canary triple set directly (set-once trigger check)
+    stripe_live_schema_test.go:479: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:495: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:496: OWNER-POOL: identity.store_grants payments:refund,orders:read
+    stripe_live_schema_test.go:504: OWNER-POOL: identity.store_grants payments:refund,orders:read
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused
+=== RUN   TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused
+=== NAME  TestStripeSL02Schema/qualification_revoke_only_trigger
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+    stripe_live_schema_test.go:552: OWNER-POOL: replica-mode tamper/restore: UPDATE payments.account_qualifications SET
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched
+    stripe_live_schema_test.go:778: credentials changed by the upgrade: 1:e8a913fc105cf37a4fa50edaa2a6f4a8 -> 1:f5d7b48889d59786e418ed10d339e85f
+    stripe_live_schema_test.go:778: qualifications changed by the upgrade: 1:3a3c3df53f500b332a2e0785cc907b0b -> 1:fd75171170b170502a689137d357bc92
+    stripe_live_schema_test.go:778: merchant_accounts changed by the upgrade: 1:205d702f5a9482a3b1dd3434ff670cbc -> 1:3dd2cce8aba7762f4d9b876d9e3d6737
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL
+    stripe_live_schema_test.go:788: function payments.stripe_webhook_prepare(p_endpoint uuid, p_key_version bigint, p_event_id text, p_event_type text, p_event_created bigint, p_api_version text, p_object_type text, p_session_id text, p_client_reference text, p_metadata_attempt text, p_account_present boolean, p_livemode boolean, p_probe boolean, p_malformed boolean, p_body_sha256 bytea, p_signed_at bigint, p_payment_intent text, p_metadata_refund text) disappeared
+    stripe_live_schema_test.go:792: function identity.resolve_access(p_hash bytea, p_store uuid, p_permission text) changed owner/config/ACL:
+          before commerce_auth|true|{search_path=pg_catalog}|commerce_ads_writer:EXECUTE,commerce_auth:EXECUTE,commerce_billing_writer:EXECUTE,commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE,commerce_media_writer:EXECUTE,commerce_privacy_writer:EXECUTE,commerce_runtime:EXECUTE,commerce_staff_writer:EXECUTE,commerce_storefront_writer:EXECUTE
+          after  commerce_auth|true|{search_path=pg_catalog}|commerce_ads_writer:EXECUTE,commerce_auth:EXECUTE,commerce_billing_writer:EXECUTE,commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE,commerce_media_writer:EXECUTE,commerce_payment_registry_writer:EXECUTE,commerce_privacy_writer:EXECUTE,commerce_runtime:EXECUTE,commerce_staff_writer:EXECUTE,commerce_storefront_writer:EXECUTE
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3
+    stripe_live_schema_test.go:853: privileges gained beyond contract §3.3:
+          commerce_checkout_writer|column|payments.platform_stripe_enrollments.connection_id|SELECT
+          commerce_checkout_writer|column|payments.platform_stripe_enrollments.descriptor_suffix|SELECT
+          commerce_checkout_writer|column|payments.platform_stripe_enrollments.environment|SELECT
+          commerce_checkout_writer|column|payments.platform_stripe_enrollments.store_id|SELECT
+          commerce_checkout_writer|column|payments.platform_stripe_enrollments.tenant_id|SELECT
+          commerce_checkout_writer|column|payments.stripe_platform.connection_id|SELECT
+          commerce_checkout_writer|column|payments.stripe_platform.descriptor_display|SELECT
+          commerce_checkout_writer|column|payments.stripe_platform.display_name|SELECT
+          commerce_checkout_writer|column|payments.stripe_platform.environment|SELECT
+          commerce_integration_writer|column|river_payment.river_job.scheduled_at|UPDATE
+          commerce_payment_registrar|exec|payments.allow_platform_stripe|EXECUTE
+          commerce_payment_registrar|exec|payments.block_platform_stripe|EXECUTE
+          commerce_payment_registrar|exec|payments.designate_stripe_platform|EXECUTE
+          commerce_payment_registrar|exec|payments.set_stripe_platform_open|EXECUTE
+          commerce_payment_registry_writer|column|payments.platform_stripe_allowlist.allowed_by|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_allowlist.allowed_ref|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_allowlist.allowed|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_allowlist.updated_at|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_allowlist.version|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.accepted_at|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.blocked_at|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.blocked_by|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.blocked_ref|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.descriptor_suffix|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.enrolled_by|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.terms_version|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.updated_at|UPDATE
+          commerce_payment_registry_writer|column|payments.platform_stripe_enrollments.version|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.account_id|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.connection_id|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.descriptor_display|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.display_name|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.enrollment_open|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.platform_fee_bps|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.store_id|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.tenant_id|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.terms_version|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.updated_at|UPDATE
+          commerce_payment_registry_writer|column|payments.stripe_platform.version|UPDATE
+          commerce_payment_registry_writer|column|pricing.policy_versions.country|SELECT
+          ... and 25 more
+=== RUN   TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves
+--- FAIL: TestStripeSL02Schema (10.75s)
+    --- PASS: TestStripeSL02Schema/ledger_checksum_and_repeat (0.08s)
+    --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table (0.04s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_REAL_SANDBOX_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PAYUNi_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/REAL_LIVE_Stripe_without_approval_(SP19) (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/qualification/approval_id_on_a_PROVIDER_MOCK_Stripe_row (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+SANDBOX (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+PROVIDER_MOCK (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/STAGING+LIVE (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/LIVE+STAGING (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/endpoint/SANDBOX_and_PROVIDER_MOCK_still_valid (0.00s)
+        --- PASS: TestStripeSL02Schema/widened_checks_sp19_and_amount_table/refund/LIVE_admitted,_other_environments_refused (0.01s)
+    --- PASS: TestStripeSL02Schema/approval_table_rls_privileges_and_definers (0.27s)
+    --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active (2.17s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoked_by_is_not_a_member (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/connection_unknown (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_differs_from_account (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/currency_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approval_ref_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_cap_must_be_positive (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/approved_at_after_recorded_at (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_without_time (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_ref_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/account_id_shape (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/max_below_canary (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/canary_triple_partial (0.00s)
+        --- PASS: TestStripeSL02Schema/approval_checks_fks_immutability_and_one_active/approval/revoke_triple_partial (0.00s)
+    --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger (1.40s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_LIVE/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/observed_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/id_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/evidence_ref_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/expires_at_change (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/Stripe_SANDBOX/revoke_refused (0.00s)
+        --- PASS: TestStripeSL02Schema/qualification_revoke_only_trigger/PAYUNi/revoke_refused (0.00s)
+    --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database (3.98s)
+        --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database/existing_rows_are_untouched (0.00s)
+        --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database/re-created_functions_keep_signature,_owner,_search_path_and_ACL (0.00s)
+        --- FAIL: TestStripeSL02Schema/upgrade_of_a_populated_database/privilege_delta_equals_section_3.3 (0.01s)
+        --- PASS: TestStripeSL02Schema/upgrade_of_a_populated_database/the_upgraded_database_behaves (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	14.141s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1

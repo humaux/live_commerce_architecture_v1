@@ -812,6 +812,14 @@ func TestCheckoutReminderCR08NoSecretsPersisted(t *testing.T) {
 	e := lbSetup(t)
 	e.crCleanup(t)
 	f := e.h.f
+	// Decoys: other suites leave store-wide rows with URLs and ids in this shared store (full-suite DB). They must not be mistaken for this reminder's rows.
+	mustExec(t, f.owner, `INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id,created_at)
+		VALUES($1,$2,'order.manual_created','cr08-decoy-'||$3::text,sha256('x'),'{"buyer_link":"https://decoy.example.test/zh-TW/order-link#o=1&t=2"}',$4,clock_timestamp()-interval '1 hour')`,
+		f.tenantA, f.storeA1, randomUUID()[:8], e.h.actor)
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `DELETE FROM ops.command_results WHERE idempotency_key LIKE 'cr08-decoy-%'`)
+	})
+	started := time.Now()
 	b := e.crBuyer(t)
 	if out, err := e.crTrigger(t); err != nil || out.Queued != 1 {
 		t.Fatalf("trigger: %+v err=%v", out, err)
@@ -822,13 +830,18 @@ func TestCheckoutReminderCR08NoSecretsPersisted(t *testing.T) {
 	token := crTokenOf(t, e.crSentLink(t, 0))
 	var dump string
 	err := f.owner.QueryRow(context.Background(), `SELECT (SELECT coalesce(string_agg(o.request::text||o.state||coalesce(o.result_code,''),'|'),'') FROM integration.operations o WHERE o.id=$1)
-		|| (SELECT coalesce(string_agg(r::text,'|'),'') FROM inbox.checkout_reminders r WHERE r.tenant_id=$2 AND r.store_id=$3)
+		|| (SELECT coalesce(string_agg(r::text,'|'),'') FROM inbox.checkout_reminders r WHERE r.tenant_id=$2 AND r.store_id=$3 AND r.session_id=$5)
 		|| (SELECT coalesce(string_agg(a.action,'|'),'') FROM ops.audit_events a WHERE a.tenant_id=$2 AND a.store_id=$3)
-		|| (SELECT coalesce(string_agg(c::text,'|'),'') FROM ops.command_results c WHERE c.tenant_id=$2 AND c.store_id=$3)
+		|| (SELECT coalesce(string_agg(c::text,'|'),'') FROM ops.command_results c WHERE c.tenant_id=$2 AND c.store_id=$3 AND c.operation='live.claim.link.issue' AND c.created_at>=$4)
 		|| (SELECT coalesce(string_agg(j.args::text,'|'),'') FROM river.river_job j WHERE j.args->>'operation_id'=$1::text)
-		|| (SELECT coalesce(string_agg(m.template_id,'|'),'') FROM inbox.outbound_messages m WHERE m.operation_id=$1)`, op, f.tenantA, f.storeA1).Scan(&dump)
+		|| (SELECT coalesce(string_agg(m.template_id,'|'),'') FROM inbox.outbound_messages m WHERE m.operation_id=$1)`, op, f.tenantA, f.storeA1, started, e.session).Scan(&dump)
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Scoped to this reminder: its operation, the session's reminder rows, the claim-link receipts written since this test started (a store-wide scan
+	// would also read other suites' receipts, which legitimately hold URLs: the decoy above).
+	if !strings.Contains(dump, `"origin": "auto"`) {
+		t.Fatalf("the scoped scan did not read this reminder's operation: %s", dump)
 	}
 	if strings.Contains(dump, b.psid) || strings.Contains(dump, "http") || strings.Contains(dump, token) || strings.Contains(dump, "#t=") {
 		t.Fatalf("persisted reminder rows leak a PSID, a link or a token: %s", dump)
