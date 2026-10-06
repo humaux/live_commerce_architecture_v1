@@ -163,21 +163,30 @@ func TestPMv2MigrationNineImages(t *testing.T) {
 	tenant, store := randomUUID(), randomUUID()
 	mustExec(t, owner, `INSERT INTO control.tenants(id,name) VALUES ($1,'pm1')`, tenant)
 	mustExec(t, owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES ($1,$2,'PM1 Shop','TWD')`, tenant, store)
-	nine, two, none := randomUUID(), randomUUID(), randomUUID()
-	for _, p := range []string{nine, two, none} {
+	nine, two, none, gap := randomUUID(), randomUUID(), randomUUID(), randomUUID()
+	for _, p := range []string{nine, two, none, gap} {
 		mustExec(t, owner, `INSERT INTO catalog.products(tenant_id,store_id,id,name,description,status) VALUES($1,$2,$3,'p','d','active')`, tenant, store, p)
 	}
 	imageIDs := map[string][]string{}
-	seed := func(product string, n int) {
-		for pos := 0; pos < n; pos++ {
+	seedAt := func(product string, positions ...int) {
+		for _, pos := range positions {
 			id := randomUUID()
 			mustExec(t, owner, `INSERT INTO catalog.product_images(tenant_id,store_id,product_id,id,position,content_type,bytes,sha256) VALUES($1,$2,$3,$4,$5,'image/png','\x01',$6)`,
 				tenant, store, product, id, pos, bytes.Repeat([]byte{byte(pos + 1)}, 32))
 			imageIDs[product] = append(imageIDs[product], id)
 		}
 	}
+	seed := func(product string, n int) {
+		positions := make([]int, n)
+		for i := range positions {
+			positions[i] = i
+		}
+		seedAt(product, positions...)
+	}
 	seed(nine, 9)
 	seed(two, 2)
+	// Review P2-2: a gallery with gaps (0,1,2,5,7) must land on main 0..2 and detail 0..1, not detail 1,3 (position-4).
+	seedAt(gap, 0, 1, 2, 5, 7)
 	for _, version := range held {
 		mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version=$1`, version)
 	}
@@ -212,8 +221,13 @@ func TestPMv2MigrationNineImages(t *testing.T) {
 	if fmt.Sprint(main2) != fmt.Sprint(imageIDs[two]) {
 		t.Fatalf("2-image product changed: %v", main2)
 	}
-	if n := countRows(t, owner, `SELECT count(*) FROM catalog.product_images`); n != 11 {
-		t.Fatalf("%d image rows after the migration, want 11 (nothing deleted)", n)
+	mainGap, _ := read(gap, "main")
+	detailGap, gp := read(gap, "detail")
+	if fmt.Sprint(mainGap) != fmt.Sprint(imageIDs[gap][:3]) || fmt.Sprint(detailGap) != fmt.Sprint(imageIDs[gap][3:]) || fmt.Sprint(gp) != "[0 1]" {
+		t.Fatalf("gap gallery: main %v detail %v %v, want first three main and detail renumbered [0 1]", mainGap, detailGap, gp)
+	}
+	if n := countRows(t, owner, `SELECT count(*) FROM catalog.product_images`); n != 16 {
+		t.Fatalf("%d image rows after the migration, want 16 (nothing deleted)", n)
 	}
 	if n := countRows(t, owner, `SELECT count(*) FROM catalog.product_images WHERE product_id=$1`, none); n != 0 {
 		t.Fatal("product without images gained rows")

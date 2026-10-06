@@ -37,16 +37,23 @@ DO $$
 DECLARE total_before bigint; tail_before bigint; main_after bigint; detail_after bigint;
 BEGIN
  SELECT count(*), count(*) FILTER (WHERE position >= 4) INTO total_before, tail_before FROM catalog.product_images;
- UPDATE catalog.product_images SET role='detail', position=position-4 WHERE role='main' AND position >= 4;
+ -- Renumber the tail from 0 by order, not position-4: a gallery with a gap (e.g. 0,1,2,5) must still land on detail 0..n-1.
+ UPDATE catalog.product_images p SET role='detail', position=t.rn-1
+   FROM (SELECT id, row_number() OVER (PARTITION BY tenant_id,store_id,product_id ORDER BY position) AS rn
+           FROM catalog.product_images WHERE role='main' AND position >= 4) t
+  WHERE p.id=t.id;
  SELECT count(*) FILTER (WHERE role='main'), count(*) FILTER (WHERE role='detail') INTO main_after, detail_after FROM catalog.product_images;
  IF main_after + detail_after <> total_before OR detail_after <> tail_before OR main_after <> total_before - tail_before THEN
     RAISE EXCEPTION 'product-media-v2 data move changed the image count: before=% (tail %) after main=% detail=%', total_before, tail_before, main_after, detail_after;
  END IF;
 END $$;
-SET CONSTRAINTS ALL IMMEDIATE; -- fire the deferred UNIQUE checks now: ALTER TABLE refuses a table with pending trigger events
+-- Fire this table's deferred UNIQUE checks now (ALTER TABLE refuses a table with pending trigger events). Named, not ALL, and reset
+-- below: migrate.go applies every pending version in one transaction, so ALL would change deferral for later migrations.
+SET CONSTRAINTS catalog.product_images_role_position IMMEDIATE;
 ALTER TABLE catalog.product_images FORCE ROW LEVEL SECURITY;
 ALTER TABLE catalog.product_images VALIDATE CONSTRAINT product_images_role_position_range;
 ALTER TABLE catalog.product_images DROP CONSTRAINT product_images_position_check;
+SET CONSTRAINTS catalog.product_images_role_position DEFERRED;
 -- The merchant runtime may move an image between main and detail (role) besides reordering (position, version); bytes stay immutable.
 GRANT UPDATE(role) ON catalog.product_images TO commerce_runtime;
 
