@@ -80,5 +80,7 @@ jobs:
           path: |
             output/ci-gates/
             output/ui-visual-audit/LATEST/
+            output/ui-click-sweep/
+            output/playwright/
           retention-days: 14
           if-no-files-found: ignore
