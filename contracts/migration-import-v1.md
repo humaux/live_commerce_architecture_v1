@@ -1,7 +1,7 @@
 # migration-import-v1 — merchant CSV import framework and the customer import (W5-02B)
 
 Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-06) for integrator freeze. Migration `0152_customer_import.sql`.
-Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-03B) reuses section 2 and is out of scope here.
+Evidence class: REAL_PG + MOCK (synthetic data only). The order-history import (W5-03B, migration `0156`) is section 7.
 
 ## 1. Scope and rulings
 - One import kind exists: `customers` (SHOPLINE customer CSV). `orders` is reserved in the two shared tables for W5-03B.
@@ -81,3 +81,44 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
 ## 6. Gates
 `bash scripts/dev/test-focused.sh '^TestCustomerImport$'` (CI01-CI15), `internal/migrationimport` and `internal/httpapi/imports_test.go`
 (DB-free), the schema/comment/upgrade pins (`TestCustomersBillingCB02*`, `TestR2IntegrationUpgradeFromReleaseHead`).
+
+## 7. Historical order import (W5-03B, migration `0156_order_history_import.sql`) — a READ-ONLY ARCHIVE
+Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator freeze. Evidence class REAL_PG + MOCK (synthetic data).
+- **Rulings.** A historical order is display data of an old SHOPLINE order. It is never a `checkout.orders` row and is never read by
+  payments, inventory, finance, reports, CAPI or attribution (I05; pinned by a static grep over every function body, view and foreign key).
+  It attaches only to a customer imported earlier (`external_ids` kind `customers`); a missing customer fails the row
+  `customer_not_imported` (no customer is created); an erased customer's source id fails the row `erased` (section 5 tombstone).
+  Amount = display `total_minor` (whole NT$ x 100) + `currency='TWD'`. No payment method / card / bank account; no address beyond the
+  city (OH-OPEN-1: city only, <= 20 chars, a cell with a digit or longer is refused `invalid_city`, so a mis-mapped full address is
+  not archived). Unmapped columns (address, phone, email, notes) are never read.
+- **Table** `customers.historical_orders(tenant_id, store_id, id, owner_id, external_order_id 1..64, ordered_at, status 1..40, total_minor
+  0..10^12, currency='TWD', items_summary <= 500, city NULL <= 20, imported_at, updated_at, UNIQUE(tenant,store,external_order_id))`,
+  FORCE RLS, no login-role grant (privacy-writer definers only). <= 2000 rows per customer (`order_limit`). No `imported_batch_id`: the
+  batch row is written after the apply, and batch results carry no order id.
+- **Definers** (owner `commerce_privacy_writer`, SECURITY DEFINER, `search_path=pg_catalog`, EXECUTE `commerce_runtime`):
+  `migrationimport.import_orders(hash, store, rows)` (<= 500 per call, per-store advisory lock, owner row locked FOR UPDATE with its
+  active test, tombstone re-check in a new statement), `customers.read_historical_orders(hash, store, customer, limit, after_ts, after_id)`
+  (`customers:read`). `migrationimport.record_batch` now accepts kind `orders` and audits `customers.orders_imported` (action only; the
+  `privacy_audit_insert` policy lists it). `customers.erase_import_profile` also deletes the owner's historical orders (same transaction,
+  also on `replay_erasures`); `customers.export_import_profile` also returns `historical_orders`.
+- **File rules** as section 3 (UTF-8, <= 2 MiB, RFC 4180, <= 5000 data LINES, the 0152 batch cap; a larger file is `too_many_rows`).
+  Fields: `order_id`, `customer_id`, `ordered_at`, `status`, `total` (required); `item_name`, `item_qty`, `city` (optional); Chinese and
+  English aliases auto-detected, `?mapping=` as in section 3. One order = one unit: lines with the same `order_id` merge (SHOPLINE writes one
+  line per item); `items_summary` = `name x qty` joined with a Chinese enumeration comma (truncated at 500 characters). Order-level cells
+  may be empty on later lines; non-empty cells that disagree fail the whole order `inconsistent_order`. Amounts accept `1280`, `1,280`,
+  `NT$1,280`, `1280.00`; a non-zero fraction is `invalid_amount`. Dates accept `2026-03-05[ 14:30[:00]]`, `/` separators and RFC 3339; no zone
+  = Asia/Taipei. Unit codes: `required`, `invalid_order_id`, `invalid_external_id` (customer id shaped like a phone or email),
+  `invalid_date`, `invalid_amount`, `invalid_status`, `invalid_quantity`, `invalid_city`, `inconsistent_order`, `invalid_request`
+  (field-count mismatch), plus the database codes `customer_not_imported`, `erased`, `order_owner_conflict` (the order number belongs to
+  another customer), `order_limit`. `rows_total / applied / updated / failed` of the batch count units; the row number of a unit is its first line.
+- **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST orders/preview` and
+  `POST orders/commit?expected_apply_rows=N` with the same bodies, answers, 409 `preview_stale` / `idempotency_conflict`, 422
+  `nothing_to_apply` and 60 s budget as section 4 (preview: `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows,
+  failed_rows, erased_rows, rows:[{row, external_id, outcome, code?}]}`; a failed row never echoes an id). `GET {batch_id}/results.csv`
+  serves orders batches too (external_id column empty). Read: `GET /v1/admin/stores/{store_id}/customers/{customer_id}/historical-orders[?limit&after]`
+  (`customers:read`, default 50, newest first, same limit/after grammar as the customer notes) answers
+  `{items:[{order_id, ordered_at, status, total_minor, currency, items_summary, city}], next_cursor, total}`; another store's, an erased or
+  an unknown customer is 404. The merchant privacy export (`POST customers/{id}/exports`) adds `import_profile.historical_orders`.
+- **Not done here (integrator decisions):** `historical_orders_count` on the customer list row (it changes the strict list-row key set of
+  Go `customerKeys`, `apps/admin` `customerKeys` and every browser mock; `total` of the read route serves the detail page meanwhile) and a
+  count of erased archive rows in the erasure summary (the strict four-key summary of `decodeErasure` and the storefront / admin parsers).

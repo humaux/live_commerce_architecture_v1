@@ -95,9 +95,9 @@ type parsedOrders struct {
 
 // orderLine is one data line before grouping (cells already trimmed and unguarded).
 type orderLine struct {
-	n                                       int
+	n                                      int
 	orderID, customerID, at, status, total string
-	item, qty, city                         string
+	item, qty, city                        string
 }
 
 // parseOrderCSV reads the uploaded CSV (UTF-8, optional BOM, comma separated, RFC 4180, blank rows skipped and not counted, unknown
