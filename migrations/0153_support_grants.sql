@@ -155,6 +155,7 @@ BEGIN
  ON CONFLICT (principal_id) DO UPDATE SET added_by=EXCLUDED.added_by,db_user=EXCLUDED.db_user,ticket=EXCLUDED.ticket,added_at=clock_timestamp(),revoked_at=NULL
   WHERE r.revoked_at IS NOT NULL;
  GET DIAGNOSTICS v_rows = ROW_COUNT;
+ IF v_rows=1 THEN PERFORM identity.support_close_grants(p_principal,'re_enrolled'); END IF; -- defence in depth: a (re-)enrolment never inherits an old open grant
  INSERT INTO control.operator_audit(operator,db_user,action,tenant_id,store_id,ticket,reason,detail)
  VALUES(p_operator,session_user,'support_principal_add',NULL,NULL,p_ticket,NULL,jsonb_build_object('changed',v_rows=1,'principal_id',p_principal));
  RETURN jsonb_build_object('principal_id',p_principal,'changed',v_rows=1,'result',CASE WHEN v_rows=1 THEN 'registered' ELSE 'unchanged' END);
@@ -235,6 +236,9 @@ BEGIN
  SELECT p.active INTO v_principal_active FROM identity.principals p WHERE p.id=p_principal;
  IF NOT FOUND OR NOT v_principal_active THEN RAISE EXCEPTION 'principal not found' USING ERRCODE='PT404'; END IF;
  -- Designated + separate: only an enabled registry principal that holds no active membership and no store grant anywhere.
+ -- The registry row is share-locked first: a concurrent revoke_support_principal / regular-access trigger (row UPDATE) waits for
+ -- this grant to commit and then closes it, so no open grant can outlive a revocation and revive on re-enrolment.
+ PERFORM 1 FROM identity.platform_support_principals r WHERE r.principal_id=p_principal AND r.revoked_at IS NULL FOR SHARE;
  IF NOT identity.support_principal_ok(p_principal) THEN
   RAISE EXCEPTION 'principal is not an eligible platform support principal' USING ERRCODE='PT409'; END IF;
  v_now := clock_timestamp();

@@ -678,6 +678,16 @@ func TestSupportGrantSG09RegistryAndSeparation(t *testing.T) {
 	if rv["changed"] != false {
 		t.Fatalf("second registry revoke: %v", rv)
 	}
+	// N1 defence in depth: an open grant left behind (as a lost race would) is closed by re-enrolment, never revived
+	mustExec(t, s.b.owner, `INSERT INTO identity.support_grants(tenant_id,store_id,principal_id,permissions,granted_at,expires_at,operator,db_user,ticket)
+		VALUES($1,$2,$3,'{store:read,orders:read}',clock_timestamp(),clock_timestamp()+interval '4 hours','op.test','x','T')`, s.tenant, s.store, s.supportB)
+	s.registerSupport(s.supportB)
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.support_grants WHERE principal_id=$1 AND revoked_at IS NULL`, s.supportB); n != 0 {
+		t.Fatalf("re-enrolment left %d open grants", n)
+	}
+	if err := s.access(s.supportBTok, s.store, "orders:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("a left-over grant revived after re-enrolment: %v", err)
+	}
 	if _, err := s.json(`SELECT identity.revoke_support_principal($1,'op.test','TICKET-SG')::text`, s.unreg); sqlState(err) != "PT404" {
 		t.Fatalf("revoke of a principal that was never registered: %v", err)
 	}
@@ -848,4 +858,79 @@ func scalarBool(pool *pgxpool.Pool, sql string, args ...any) (bool, error) {
 	var v bool
 	err := pool.QueryRow(context.Background(), sql, args...).Scan(&v)
 	return v, err
+}
+
+// N1: grant_support locks the registry row (FOR SHARE), so a registry revoke that races an in-flight grant waits for it and
+// then closes it: no open grant survives to revive on re-enrolment.
+func TestSupportGrantN1RevokeWaitsForInFlightGrant(t *testing.T) {
+	s := sgrSetup(t)
+	ctx := context.Background()
+	tx, err := s.op.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	var raw string
+	if err := tx.QueryRow(ctx, `SELECT identity.grant_support($1,$2,4,NULL,'op.test','TICKET-SG')::text`, s.store, s.support).Scan(&raw); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		_, e := s.json(`SELECT identity.revoke_support_principal($1,'op.test','TICKET-SG')::text`, s.support)
+		done <- e
+	}()
+	select {
+	case e := <-done:
+		t.Fatalf("registry revoke did not wait for the in-flight grant (err %v)", e)
+	case <-time.After(700 * time.Millisecond):
+	}
+	if err := tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case e := <-done:
+		if e != nil {
+			t.Fatal(e)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("registry revoke never finished")
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM identity.support_grants WHERE principal_id=$1 AND revoked_at IS NULL`, s.support); n != 0 {
+		t.Fatalf("the grant that raced the revoke is still open (%d)", n)
+	}
+	s.registerSupport(s.support)
+	if err := s.access(s.supportTok, s.store, "orders:read"); !errors.Is(err, platform.ErrScopeNotFound) {
+		t.Fatalf("raced grant revived after re-enrolment: %v", err)
+	}
+}
+
+// N3: read-only mode itself refuses a write made by a SECURITY DEFINER function reached with a pack ':read' permission (no
+// Go validator or permission check involved). The probe definer is created by the test and owned by the role that may insert
+// the support audit actions; for a member the same call succeeds (positive control).
+func TestSupportGrantN3DefinerWriteRefusedByReadOnlyTransaction(t *testing.T) {
+	s := sgrSetup(t)
+	ctx := context.Background()
+	mustExec(t, s.b.owner, `CREATE FUNCTION identity.sg_probe_write(p_tenant uuid,p_store uuid,p_principal uuid) RETURNS void
+		LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+		INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(p_tenant,p_store,p_principal,'support.granted') $$`)
+	t.Cleanup(func() { _, _ = s.b.owner.Exec(ctx, `DROP FUNCTION IF EXISTS identity.sg_probe_write(uuid,uuid,uuid)`) })
+	mustExec(t, s.b.owner, `ALTER FUNCTION identity.sg_probe_write(uuid,uuid,uuid) OWNER TO commerce_platform_writer`)
+	mustExec(t, s.b.owner, `GRANT EXECUTE ON FUNCTION identity.sg_probe_write(uuid,uuid,uuid) TO commerce_runtime`)
+	probe := func(token string) error {
+		return platform.WithScope(ctx, s.b.runtime, token, s.store, "orders:read", func(tx pgx.Tx, sc platform.Scope) error {
+			_, err := tx.Exec(ctx, `SELECT identity.sg_probe_write($1,$2,$3)`, sc.TenantID, sc.StoreID, sc.PrincipalID)
+			return err
+		})
+	}
+	if err := probe(s.memberTok); err != nil {
+		t.Fatalf("definer write for a member (positive control): %v", err)
+	}
+	s.must(s.grant(s.store, s.support, 4, nil))
+	err := probe(s.supportTok)
+	if !errors.Is(err, platform.ErrSupportReadOnly) {
+		t.Fatalf("definer write under support: %v, want ErrSupportReadOnly (25006 from the read-only transaction)", err)
+	}
+	if n := countRows(t, s.b.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND action='support.granted' AND principal_id=$2`, s.tenant, s.support); n != 1 {
+		t.Fatalf("support.granted rows for the support principal = %d, want only the real grant", n)
+	}
 }
