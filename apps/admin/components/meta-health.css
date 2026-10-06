@@ -1,0 +1,22 @@
+/* Purpose: incumbent workspace styling for health advice and readable capability rows at 390px.
+ * Depends on: inherited shell color/type tokens and Settings card controls.
+ * Used by: MetaHealthBanner and MetaHealthCapabilities; scoped selectors only. */
+.meta-health-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0;margin:0 0 20px;padding:16px 20px;border:1px solid var(--line,#dcdedb);border-left-width:4px;border-radius:8px;background:var(--surface,#fff);color:var(--ink,#222)}
+.meta-health-banner[data-severity="blocking"]{border-left-color:var(--warning,#945700);background:var(--warning-soft,#fff8e8)}
+.meta-health-banner p{margin:6px 0 0;line-height:1.6;overflow-wrap:anywhere}
+.meta-health-banner a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;flex-shrink:0;padding:8px 16px;border:1px solid currentColor;border-radius:6px;color:inherit;font-weight:600;text-decoration:none}
+.meta-health-banner a:focus-visible,.meta-health-details button:focus-visible{outline:2px solid var(--teal,#1b6858);outline-offset:3px}
+.meta-health-details{min-width:0;margin-top:16px;padding-top:16px;border-top:1px solid var(--line,#dcdedb)}
+.meta-health-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.meta-health-heading h4,.meta-health-heading p{margin:0}
+.meta-health-heading button{min-height:44px}
+.meta-health-rows{margin:12px 0 0;display:grid;gap:12px}
+.meta-health-rows>div{display:grid;grid-template-columns:minmax(170px,.8fr) minmax(0,1.2fr);gap:12px;padding:12px 0;border-bottom:1px solid var(--line,#dcdedb)}
+.meta-health-rows dt{font-weight:600;overflow-wrap:anywhere}
+.meta-health-rows dd{margin:0;min-width:0}.meta-health-rows p{margin:6px 0;line-height:1.5;overflow-wrap:anywhere}.meta-health-rows small{display:block;margin-top:6px;color:var(--muted,#626963)}
+.meta-health-badge{display:inline-block;padding:3px 8px;border:1px solid var(--line,#dcdedb);border-radius:5px;font-size:.875rem}
+.meta-health-badge[data-state="ok"]{color:var(--teal,#1b6858)}
+.meta-health-badge[data-state="review_required"]{color:var(--warning,#945700);background:var(--warning-soft,#fff8e8)}
+@media(max-width:600px){.meta-health-banner{align-items:stretch;flex-direction:column;padding:14px;gap:12px}.meta-health-banner a{align-self:flex-start}.meta-health-rows>div{grid-template-columns:1fr;gap:7px}.meta-health-heading button{font-size:16px}}
+
+#facebook-instagram{scroll-margin-top:6rem}
