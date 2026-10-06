@@ -1,0 +1,45 @@
+=== RUN   TestCustomerTags
+=== RUN   TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging
+=== RUN   TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists
+=== RUN   TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length
+=== RUN   TestCustomerTags/CT04_set_owner_tags_is_compare-and-set
+=== RUN   TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship
+=== RUN   TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body
+=== RUN   TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes
+=== RUN   TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone
+=== RUN   TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body
+--- PASS: TestCustomerTags (3.33s)
+    --- PASS: TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging (0.06s)
+    --- PASS: TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists (0.02s)
+    --- PASS: TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length (0.66s)
+    --- PASS: TestCustomerTags/CT04_set_owner_tags_is_compare-and-set (0.03s)
+    --- PASS: TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship (0.05s)
+    --- PASS: TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body (0.17s)
+    --- PASS: TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes (0.13s)
+    --- PASS: TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone (0.03s)
+    --- PASS: TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body (0.09s)
+=== RUN   TestCustomersBillingCB09HTTP
+=== RUN   TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method
+=== RUN   TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store
+=== RUN   TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict
+=== RUN   TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound
+=== RUN   TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer
+=== RUN   TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv
+=== RUN   TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal
+=== RUN   TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12)
+=== RUN   TestCustomersBillingCB09HTTP/buyer_routes:_privacy_state,_consents,_export,_erasure_(410_erased)
+=== RUN   TestCustomersBillingCB09HTTP/no_error_body_or_response_carries_a_secret,_a_bearer_URL_or_another_domain's_id
+--- PASS: TestCustomersBillingCB09HTTP (2.89s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method (0.08s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store (0.02s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict (0.01s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound (0.45s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer (0.19s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv (0.06s)
+    --- PASS: TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal (0.07s)
+    --- PASS: TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12) (0.39s)
+    --- PASS: TestCustomersBillingCB09HTTP/buyer_routes:_privacy_state,_consents,_export,_erasure_(410_erased) (0.40s)
+    --- PASS: TestCustomersBillingCB09HTTP/no_error_body_or_response_carries_a_secret,_a_bearer_URL_or_another_domain's_id (0.50s)
+PASS
+ok  	livecommerce/tests/foundation	7.947s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

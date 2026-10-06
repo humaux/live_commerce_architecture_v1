@@ -187,6 +187,7 @@ const customer = () => ({
   customer_id: id, first_seen_at: t0, last_activity_at: "2026-09-27T01:00:00.000000Z", display_name: "Synthetic Buyer", phone_last3: "001",
   orders_count: 2, paid_orders_count: 1, captured_minor: 2500, refunded_minor: 500, currency: "TWD", claims_count: 1, platforms: ["manual"],
   consents: { marketing_messages: true, ads_personalization: false }, active: true,
+  tags: [{ id: "55555555-5555-4555-8555-555555555555", name: "VIP", color: "red" }],
 });
 const summary = {
   order_id: other, created_at: t0, updated_at: t0, currency: "TWD", total_minor: 2500, commercial_state: "CONFIRMED", fulfillment_state: "MANUAL_UNASSIGNED",
@@ -199,6 +200,7 @@ const detail = () => ({
   claims: [{ session_id: other, platform: "manual", bound_at: t0, line_count: 2 }],
   consent_history: [{ purpose: "marketing_messages", channel: "meta_dm", granted: true, source: "buyer_checkout", policy_version: "lc-2026-10", occurred_at: t0 }],
   privacy_actions: [{ kind: "EXPORT", via: "merchant", completed_at: t0, summary: { orders: 1 } }],
+  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1 }],
 });
 
 test("customer list and detail decode exactly the frozen Go DTOs", () => {
