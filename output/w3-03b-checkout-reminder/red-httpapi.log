@@ -1,0 +1,5 @@
+--- FAIL: TestReminderRoutesMountAndGuards (0.00s)
+    reminders_test.go:57: trigger mounted? status=404 body={"code":"not_found","message":"Resource not found.","request_id":"62c151b8f21ba3dc77e8febb017af48b","retryable":false,"details":{}}
+FAIL
+FAIL	livecommerce/internal/httpapi	0.665s
+FAIL

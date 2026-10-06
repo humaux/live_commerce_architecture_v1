@@ -1,0 +1,3 @@
+# livecommerce/tests/foundation_test
+# [livecommerce/tests/foundation_test]
+vet: tests/foundation/checkout_reminder_test.go:62:74: undefined: merchanttools.ReminderInbox

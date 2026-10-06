@@ -1,0 +1,40 @@
+=== RUN   TestCustomersBillingCB02Schema
+=== RUN   TestCustomersBillingCB02Schema/roles_and_schemas
+=== RUN   TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read
+=== RUN   TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers
+=== RUN   TestCustomersBillingCB02Schema/policies
+=== RUN   TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility
+=== RUN   TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5)
+=== RUN   TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one
+=== RUN   TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7)
+=== RUN   TestCustomersBillingCB02Schema/consent_events_rules
+=== RUN   TestCustomersBillingCB02Schema/privacy_actions_rules
+=== RUN   TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8)
+=== RUN   TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2)
+=== RUN   TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5)
+=== RUN   TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array
+--- PASS: TestCustomersBillingCB02Schema (6.12s)
+    --- PASS: TestCustomersBillingCB02Schema/roles_and_schemas (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read (0.19s)
+    --- PASS: TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers (0.07s)
+    --- PASS: TestCustomersBillingCB02Schema/policies (0.13s)
+    --- PASS: TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility (0.04s)
+    --- PASS: TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5) (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7) (1.34s)
+    --- PASS: TestCustomersBillingCB02Schema/consent_events_rules (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/privacy_actions_rules (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5) (0.06s)
+    --- PASS: TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array (0.73s)
+=== RUN   TestCustomersBillingCB02Comments
+=== RUN   TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package
+    customers_billing_schema_test.go:731: function identity.read_live_console_sales(bytea,uuid,uuid): COMMENT missing, too short, or not naming "billing": "internal/live Console (0148, LC-B7, A1): fresh live:read authentication, then for ONE session of the store: keyword_comments, buyers, the dominant-currency non-CANCELLED order count and amount, LIVE-environment paid count and amount (net of refunds, I05; SANDBOX never counted) and per-offer ordered/paid quantity and amount over the attributed (order,offer,sku) pairs. Money口径 mirrors identity.read_live_session_results (0118). EXECUTE: commerce_runtime."
+--- FAIL: TestCustomersBillingCB02Comments (2.19s)
+    --- FAIL: TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	9.284s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1
+exit=1
