@@ -1,0 +1,22 @@
+# red-fix: base commit 244a3e9375affff20ed9397c85242a95bec2bd2b (244a3e93 merge) + uncommitted new tests tests/foundation/returns_test.go; code/migration NOT yet fixed
+    returns_test.go:487: void with a live RMA: got 200 map[carrier_code:black_cat carrier_name:<nil> note:<nil> principal_id:7b4183df-6486-4e90-9f38-9dad6b6f7f42 recorded_at:2026-10-06T15:30:43.965486Z status:VOIDED tracking_number:RT93a98157 tracking_url:<nil> version:2 void_reason:wrong_order], want 409 has_returns
+    returns_test.go:514: register: 409 map[code:not_returnable details:map[] message:This order cannot be returned in its current state. request_id:e6dd1357f4063cd7e284ef541599ec47 retryable:false]
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestReturns (18.82s)
+    --- FAIL: TestReturns/P1-1_a_shipment_cannot_be_voided_while_a_live_RMA_exists_(a_return_presumes_the_parcel_left) (2.09s)
+    --- FAIL: TestReturns/P1-2_a_collected_home-COD_order_can_be_returned_(commercial_state_stays_AWAITING_COLLECTION);_uncollected_is_refused (0.06s)
+    returns_test.go:898: cancel AWAITING_TRANSFER: got 422 map[code:invalid_request details:map[] message:Request validation failed. request_id:9366b187bbcef486a8c4f8330692293a retryable:false], want 422 not_cancellable
+    returns_test.go:910: void after a CLOSED RMA: got 200 map[carrier_code:black_cat carrier_name:<nil> note:<nil> principal_id:b3c372d0-1619-4e94-8dd5-787c1e0d2dd8 recorded_at:2026-10-06T15:30:59.139684Z status:VOIDED tracking_number:RTa1b49592 tracking_url:<nil> version:2 void_reason:wrong_order], want 409 has_returns
+--- FAIL: TestReturnsBankTransfer (0.64s)
+    --- FAIL: TestReturnsBankTransfer/AWAITING_TRANSFER_is_422_not_cancellable_(the_expiry_or_the_offline_refund_ends_it) (0.05s)
+    --- FAIL: TestReturnsBankTransfer/RMA_restock_then_an_offline_refund_WITH_restock:_the_second_release_is_refused,_no_phantom_stock (0.13s)
+    returns_test.go:957: returns.order_returnable(text,text,text): no rows in result set
+--- FAIL: TestReturnsHelperACLAndGuardBodies (0.00s)
+    returns_test.go:1004: gaps: 422 {"code":"invalid_request","message":"Request validation failed.","request_id":"93555a3568cabc23a8ccb35c13da9df9","retryable":false,"details":{}}
+--- FAIL: TestMerchantCancelRefundGap (3.89s)
+    returns_test.go:1096: cancel that raced a group creation: got 200 map[commercial_state:CANCELLED order_id:1687a316-c5d2-46d4-a87f-7c5d0df54760 parcel_group:map[id:a7f3ba4f-f964-47ed-9a12-42206123d2ed state:DISSOLVED version:2] reason:x released_lines:1], want 503 retry_later
+--- FAIL: TestMerchantCancelGroupRace (3.76s)
+FAIL
+FAIL	livecommerce/tests/foundation	42.621s
+FAIL
+test-focused: top-level PASS=1 FAIL=5 SKIP=0 exit=1

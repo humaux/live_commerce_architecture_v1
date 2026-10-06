@@ -105,6 +105,9 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 	if strings.HasPrefix(name, "platform-") {
 		return runPlatform(ctx, name, rest, getenv, stdout) // platform.go: stripe-platform-account-v1 operator steps
 	}
+	if strings.HasPrefix(name, "settlement-") {
+		return runSettlement(ctx, name, rest, getenv, stdout) // settlement.go: stripe-platform-account-v1 §6 per-store ledger
+	}
 	c := newCommand(name)
 	var connection, endpoint, profile, currency, returnURL, market, country, qualification, environment string
 	var expected, amount, minMinor, maxMinor int64

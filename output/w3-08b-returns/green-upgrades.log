@@ -1,0 +1,22 @@
+--- PASS: TestCatalogCoreCC01PopulatedUpgrade (3.05s)
+--- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger (4.07s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/running (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/orphan (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_generation (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/decimal_version (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/extra_key (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/unique_key (0.01s)
+    --- PASS: TestBuyerCheckoutExpiryRuntimeMigrationUpgradeRollbackAndLedger/wrong_queue (0.01s)
+--- PASS: TestLegacyRuntimeIsolationPopulatedUpgrade (6.22s)
+--- PASS: TestMerchantOrdersUpgradeDoesNotBackfillOldMembership (3.92s)
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (4.13s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.03s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.01s)
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (6.04s)
+--- PASS: TestStorefrontPublishSPW02UpgradeAfter0080 (33.42s)
+PASS
+ok  	livecommerce/tests/foundation	63.607s
+test-focused: top-level PASS=7 FAIL=0 SKIP=0 exit=0

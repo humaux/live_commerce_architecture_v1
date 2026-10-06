@@ -1,0 +1,24 @@
+# red-cap-mutation: the remaining-allocation bound removed from inventory.guard_returns_ledger (0155:169-174). Mutated (removed) lines:
+# -  IF NEW.kind='DEALLOCATE' THEN
+# -   SELECT coalesce(sum(a.delta_allocated),0) INTO v_alloc FROM inventory.ledger a WHERE a.tenant_id=NEW.tenant_id AND a.store_id=NEW.store_id
+# -    AND a.checkout_id=NEW.checkout_id AND a.warehouse_id=NEW.warehouse_id AND a.sku_id=NEW.sku_id AND a.kind IN ('ALLOCATE','DEALLOCATE');
+# -   IF NEW.checkout_id IS NULL OR NEW.delta_allocated>=0 OR v_alloc<-NEW.delta_allocated THEN
+# -    RAISE EXCEPTION 'deallocate exceeds the remaining allocation of the order line' USING ERRCODE='42501'; END IF;
+# -  END IF;
+# (RT07 'unknown refund id' failure below is an unrelated test flake: the mutated refund id equalled the real one 1 time in 16; fixed with a fixed foreign UUID)
+    returns_test.go:367: unknown refund id: got 200 map[created_at:2026-10-06T15:57:25.21688+00:00 id:742cd244-041d-47d4-9747-1725aff03eb3 lines:[map[qty_received:2 qty_registered:2 qty_restock:2 qty_scrap:0 sku_id:47c545fe-a0c8-4618-ac89-1a231834d196 warehouse_id:4118bea7-a6a8-4b60-b58c-c88540e84059]] order_id:392634f8-c4e8-4254-a0ab-6fd015ad9517 reason:damaged refund_id:6f9f5456-70f1-4361-8470-6
+    returns_test.go:603: second RMA restock of the same units: <nil>, want 42501 'deallocate exceeds the remaining allocation of the order line'
+--- FAIL: TestReturns (14.87s)
+    --- FAIL: TestReturns/RT07_a_refund_neither_restocks_nor_moves_the_order;_the_RMA_only_links_it,_a_foreign_refund_is_refused (0.96s)
+    --- FAIL: TestReturns/the_ledger_refuses_forged_rows_with_the_reserved_operations (1.89s)
+    returns_test.go:971: offline refund with restock after an RMA restock: got 200 map[commercial_state:CONFIRMED confirmed_without_proof:false order_id:6214ea78-59f5-47fa-9ec2-5f2c4db6079c released_lines:1 restocked:true state:REFUNDED_OFFLINE], want 503 unavailable (guard 42501)
+--- FAIL: TestReturnsBankTransfer (0.57s)
+    --- FAIL: TestReturnsBankTransfer/RMA_restock_then_an_offline_refund_WITH_restock:_the_second_release_is_refused,_no_phantom_stock (0.13s)
+    returns_test.go:1019: inventory.guard_returns_ledger() lost "v_alloc<-NEW.delta_allocated"
+    returns_test.go:1019: inventory.guard_returns_ledger() lost "deallocate exceeds the remaining allocation of the order line"
+    returns_test.go:1019: inventory.guard_returns_ledger() lost "a.kind IN ('ALLOCATE','DEALLOCATE')"
+--- FAIL: TestReturnsHelperACLAndGuardBodies (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	16.436s
+FAIL
+test-focused: top-level PASS=0 FAIL=3 SKIP=0 exit=1

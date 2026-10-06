@@ -133,7 +133,7 @@ func rowJSON(t *testing.T, mutate func(map[string]any)) json.RawMessage {
 	m := map[string]any{"customer_id": testUUID, "first_seen_at": testTS, "last_activity_at": testTS, "display_name": "Alice",
 		"phone_last3": "678", "orders_count": 2, "paid_orders_count": 1, "captured_minor": 1200, "refunded_minor": 200,
 		"currency": "TWD", "claims_count": 1, "platforms": []string{"facebook"},
-		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "active": true,
+		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "active": true, "imported": false,
 		"tags": []map[string]string{{"id": testUUID, "name": "VIP", "color": "red"}}}
 	if mutate != nil {
 		mutate(m)
@@ -159,6 +159,7 @@ func TestDecodeCustomerStrict(t *testing.T) {
 	for name, mutate := range map[string]func(map[string]any){
 		"extra key":               func(m map[string]any) { m["actor_key"] = strings.Repeat("a", 64) },
 		"missing key":             func(m map[string]any) { delete(m, "active") },
+		"missing imported key":    func(m map[string]any) { delete(m, "imported") },
 		"bad id":                  func(m map[string]any) { m["customer_id"] = "nope" },
 		"non-canonical time":      func(m map[string]any) { m["last_activity_at"] = "2026-09-30T04:05:06Z" },
 		"negative count":          func(m map[string]any) { m["orders_count"] = -1 },

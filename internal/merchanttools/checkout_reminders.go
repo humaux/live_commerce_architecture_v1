@@ -51,7 +51,7 @@ func NewCheckoutReminders(pool *pgxpool.Pool, manual *ManualOrders, in ReminderI
 	return &CheckoutReminders{pool: pool, manual: manual, inbox: in}, nil
 }
 
-// ReminderOutcome is one buyer's result: queued | followup (code = the follow-up reason) | refused (code = the planner / link refusal).
+// ReminderOutcome is one buyer's result: queued | followup (code = the follow-up reason) | restricted | refused (code = the planner / link refusal).
 type ReminderOutcome struct {
 	BundleID string `json:"bundle_id"`
 	Outcome  string `json:"outcome"`
@@ -60,12 +60,14 @@ type ReminderOutcome struct {
 
 // ReminderResult is the POST …/reminders response. Results lists every buyer handled this pass except the already-reminded ones (counted only).
 type ReminderResult struct {
-	Queued          int               `json:"queued"`
-	AlreadyReminded int               `json:"already_reminded"`
-	Followup        int               `json:"followup"`
-	Refused         int               `json:"refused"`
-	Truncated       bool              `json:"truncated"`
-	Results         []ReminderOutcome `json:"results"`
+	Queued          int `json:"queued"`
+	AlreadyReminded int `json:"already_reminded"`
+	Followup        int `json:"followup"`
+	// Restricted counts buyers skipped because the merchant restricted them (W3-05B blocklist): no link is issued and no DM planned. Not part of Followup.
+	Restricted int               `json:"restricted"`
+	Refused    int               `json:"refused"`
+	Truncated  bool              `json:"truncated"`
+	Results    []ReminderOutcome `json:"results"`
 }
 
 // Trigger runs one pass for the session: the batch over every eligible buyer, or the single buyer bundleID. token is the merchant bearer (the link
@@ -95,6 +97,9 @@ func (r *CheckoutReminders) Trigger(ctx context.Context, token, storeID, key, se
 		switch c.Verdict {
 		case "already_reminded":
 			out.AlreadyReminded++
+		case "restricted":
+			out.Restricted++
+			out.Results = append(out.Results, ReminderOutcome{BundleID: c.BundleID, Outcome: "restricted"})
 		case "send":
 			code, err := r.remind(ctx, token, storeID, key, sessionID, scan.Origin, c)
 			if err != nil {

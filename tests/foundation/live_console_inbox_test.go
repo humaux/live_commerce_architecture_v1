@@ -74,6 +74,18 @@ func lcRoleTx(t *testing.T, f *testFixture, role, tenant, store, principal strin
 	return tx
 }
 
+// lcOwnStores creates a fresh tenant with two stores so a test that reads the first page of
+// social.list_conversations (50 rows, ordered last_at DESC then id DESC; a freshly seeded conversation has no
+// timestamps, so its position is by random id) is not displaced by the hundreds of conversations other tests
+// leave on the shared fixture store.
+func lcOwnStores(t *testing.T, f *testFixture) (tenant, store1, store2 string) {
+	t.Helper()
+	tenant, store1, store2 = randomUUID(), randomUUID(), randomUUID()
+	mustExec(t, f.owner, `INSERT INTO control.tenants(id,name) VALUES($1,'lc-inbox-own-tenant')`, tenant)
+	mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'lc-inbox-store-1','USD'),($1,$3,'lc-inbox-store-2','USD')`, tenant, store1, store2)
+	return tenant, store1, store2
+}
+
 // lcListIDs returns the conversation ids visible through social.list_conversations under the current scope.
 func lcListIDs(ctx context.Context, tx pgx.Tx) ([]string, error) {
 	rows, err := tx.Query(ctx, `SELECT conversation_id::text FROM social.list_conversations('all', NULL, NULL, 50)`)
@@ -249,18 +261,19 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
+	tenantA, storeA1, _ := lcOwnStores(t, f)
 
-	viewerPrincipal, viewerToken := lcPerson(t, f, f.tenantA, f.storeA1)
-	readerPrincipal, readerToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read")
-	replierPrincipal, replierToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read", "inbox:reply")
+	viewerPrincipal, viewerToken := lcPerson(t, f, tenantA, storeA1)
+	readerPrincipal, readerToken := lcPerson(t, f, tenantA, storeA1, "inbox:read")
+	replierPrincipal, replierToken := lcPerson(t, f, tenantA, storeA1, "inbox:read", "inbox:reply")
 
-	convRead := lcConversation(t, f, f.tenantA, f.storeA1, "page")
+	convRead := lcConversation(t, f, tenantA, storeA1, "page")
 	mustExec(t, f.owner, `UPDATE inbox.conversation_state SET last_inbound_seq=7, read_seq=3, last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, convRead)
-	convReply := lcConversation(t, f, f.tenantA, f.storeA1, "page")
+	convReply := lcConversation(t, f, tenantA, storeA1, "page")
 	mustExec(t, f.owner, `UPDATE inbox.conversation_state SET last_inbound_seq=7, read_seq=3, last_inbound_at=clock_timestamp() WHERE conversation_id=$1`, convReply)
 
 	t.Run("viewer cannot open inbox:read scope", func(t *testing.T) {
-		err := platform.WithScope(ctx, f.runtime, viewerToken, f.storeA1, "inbox:read", func(pgx.Tx, platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, viewerToken, storeA1, "inbox:read", func(pgx.Tx, platform.Scope) error {
 			t.Fatal("unauthorized inbox:read callback executed")
 			return nil
 		})
@@ -270,12 +283,12 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 	})
 
 	t.Run("viewer definer gate denies read and mark_read", func(t *testing.T) {
-		tx := lcRoleTx(t, f, "commerce_runtime", f.tenantA, f.storeA1, viewerPrincipal)
+		tx := lcRoleTx(t, f, "commerce_runtime", tenantA, storeA1, viewerPrincipal)
 		_, err := tx.Exec(ctx, `SELECT * FROM social.list_conversations('all', NULL, NULL, 50)`)
 		requirePGCode(t, err, "PT403", "viewer list_conversations")
 		_ = tx.Rollback(ctx)
 
-		tx = lcRoleTx(t, f, "commerce_runtime", f.tenantA, f.storeA1, viewerPrincipal)
+		tx = lcRoleTx(t, f, "commerce_runtime", tenantA, storeA1, viewerPrincipal)
 		_, err = tx.Exec(ctx, `SELECT inbox.mark_read($1, $2)`, convRead, int64(7))
 		requirePGCode(t, err, "PT403", "viewer mark_read")
 		_ = tx.Rollback(ctx)
@@ -284,7 +297,7 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 	t.Run("reader sees the conversation and mark_read stays put without inbox:reply", func(t *testing.T) {
 		var ids []string
 		var got int64
-		err := platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, scope platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, scope platform.Scope) error {
 			if scope.PrincipalID != readerPrincipal {
 				t.Fatalf("scope principal=%s, want %s", scope.PrincipalID, readerPrincipal)
 			}
@@ -314,7 +327,7 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 
 	t.Run("replier mark_read advances to 7", func(t *testing.T) {
 		var got int64
-		err := platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:read", func(tx pgx.Tx, scope platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:read", func(tx pgx.Tx, scope platform.Scope) error {
 			if scope.PrincipalID != replierPrincipal {
 				t.Fatalf("scope principal=%s, want %s", scope.PrincipalID, replierPrincipal)
 			}
@@ -336,15 +349,15 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 	})
 
 	t.Run("A9 thread_opened requires inbox:read and coalesces its audit", func(t *testing.T) {
-		conv := lcConversation(t, f, f.tenantA, f.storeA1, "page")
-		tx := lcRoleTx(t, f, "commerce_runtime", f.tenantA, f.storeA1, viewerPrincipal)
+		conv := lcConversation(t, f, tenantA, storeA1, "page")
+		tx := lcRoleTx(t, f, "commerce_runtime", tenantA, storeA1, viewerPrincipal)
 		_, err := tx.Exec(ctx, `SELECT inbox.thread_opened($1)`, conv)
 		requirePGCode(t, err, "PT403", "viewer thread_opened")
 		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
 			t.Fatal(err)
 		}
 		for i := 0; i < 2; i++ {
-			err := platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
+			err := platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
 				_, err := tx.Exec(ctx, `SELECT inbox.thread_opened($1)`, conv)
 				return err
 			})
@@ -352,7 +365,7 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.thread_opened' AND principal_id=$3`, f.tenantA, f.storeA1, readerPrincipal); n != 1 {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.thread_opened' AND principal_id=$3`, tenantA, storeA1, readerPrincipal); n != 1 {
 			t.Fatalf("thread_opened audit rows=%d, want 1", n)
 		}
 		if n := countRows(t, f.owner, `SELECT count(*) FROM inbox.thread_open_marks WHERE conversation_id=$1 AND principal_id=$2`, conv, readerPrincipal); n != 1 {
@@ -364,15 +377,16 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
+	tenantA, storeA1, storeA2 := lcOwnStores(t, f)
 
-	replierPrincipal, replierToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read", "inbox:reply", "customers:read")
-	readerPrincipal, readerToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read")
+	replierPrincipal, replierToken := lcPerson(t, f, tenantA, storeA1, "inbox:read", "inbox:reply", "customers:read")
+	readerPrincipal, readerToken := lcPerson(t, f, tenantA, storeA1, "inbox:read")
 
 	t.Run("A11 takeover/release CAS and audit", func(t *testing.T) {
-		conv := lcConversation(t, f, f.tenantA, f.storeA1, "page")
+		conv := lcConversation(t, f, tenantA, storeA1, "page")
 		var mode, assignee string
 		var gen int64
-		err := platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,''), takeover_generation FROM inbox.takeover($1, $2)`, conv, int64(0)).Scan(&mode, &assignee, &gen)
 		})
 		if err != nil {
@@ -390,17 +404,17 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 		if rowMode != "human" || rowAssignee != replierPrincipal || rowGen != 1 || !humanNull {
 			t.Fatalf("takeover row=%q/%q/%d/null=%t, want human/%s/1/null", rowMode, rowAssignee, rowGen, humanNull, replierPrincipal)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.takeover' AND principal_id=$3`, f.tenantA, f.storeA1, replierPrincipal); n != 1 {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.takeover' AND principal_id=$3`, tenantA, storeA1, replierPrincipal); n != 1 {
 			t.Fatalf("takeover audit rows=%d, want 1", n)
 		}
 
-		err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			_, err := tx.Exec(ctx, `SELECT * FROM inbox.takeover($1, $2)`, conv, int64(0))
 			return err
 		})
 		requirePGCode(t, err, "PT409", "stale takeover CAS")
 
-		err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,''), takeover_generation FROM inbox.release($1, $2)`, conv, int64(1)).Scan(&mode, &assignee, &gen)
 		})
 		if err != nil {
@@ -409,18 +423,18 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 		if mode != "auto" || assignee != "" || gen != 2 {
 			t.Fatalf("release=%q/%q/%d, want auto//2", mode, assignee, gen)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.release' AND principal_id=$3`, f.tenantA, f.storeA1, replierPrincipal); n != 1 {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.release' AND principal_id=$3`, tenantA, storeA1, replierPrincipal); n != 1 {
 			t.Fatalf("release audit rows=%d, want 1", n)
 		}
 	})
 
 	t.Run("lazy expiry reads auto + generation+1 with cleared assignee", func(t *testing.T) {
-		conv := lcConversation(t, f, f.tenantA, f.storeA1, "page")
+		conv := lcConversation(t, f, tenantA, storeA1, "page")
 		mustExec(t, f.owner, `UPDATE inbox.conversation_state SET mode='human', assignee_principal=$2, human_until=clock_timestamp()-interval '1 hour', takeover_generation=2 WHERE conversation_id=$1`, conv, replierPrincipal)
 
 		var mode, assignee, humanUntil string
 		var gen int64
-		err := platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,''), takeover_generation, coalesce(human_until::text,'') FROM social.conversation_meta($1)`, conv).Scan(&mode, &assignee, &gen, &humanUntil)
 		})
 		if err != nil {
@@ -431,7 +445,7 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 		}
 
 		var listMode, listAssignee string
-		err = platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,'') FROM social.list_conversations('all', NULL, NULL, 50) WHERE conversation_id::text=$1`, conv).Scan(&listMode, &listAssignee)
 		})
 		if err != nil {
@@ -441,11 +455,11 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 			t.Fatalf("expired list mode/assignee=%q/%q, want auto/", listMode, listAssignee)
 		}
 
-		tx := lcRoleTx(t, f, "commerce_claims_worker", f.tenantA, f.storeA1, readerPrincipal)
+		tx := lcRoleTx(t, f, "commerce_claims_worker", tenantA, storeA1, readerPrincipal)
 		defer tx.Rollback(ctx)
 		var dmMode, dmUntil string
 		var dmGen int64
-		if err := tx.QueryRow(ctx, `SELECT mode, takeover_generation, coalesce(human_until::text,'') FROM inbox.dm_window($1,$2,$3)`, f.tenantA, f.storeA1, conv).Scan(&dmMode, &dmGen, &dmUntil); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT mode, takeover_generation, coalesce(human_until::text,'') FROM inbox.dm_window($1,$2,$3)`, tenantA, storeA1, conv).Scan(&dmMode, &dmGen, &dmUntil); err != nil {
 			t.Fatal(err)
 		}
 		if dmMode != "auto" || dmGen != 3 || dmUntil != "" {
@@ -454,15 +468,15 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 	})
 
 	t.Run("A14 customer link CAS, audit and foreign 404", func(t *testing.T) {
-		conv := lcConversation(t, f, f.tenantA, f.storeA1, "page")
+		conv := lcConversation(t, f, tenantA, storeA1, "page")
 		customerID := randomUUID()
-		mustExec(t, f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES ($1,$2,$3)`, customerID, f.tenantA, f.storeA1)
+		mustExec(t, f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES ($1,$2,$3)`, customerID, tenantA, storeA1)
 		foreignCustomer := randomUUID()
-		mustExec(t, f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES ($1,$2,$3)`, foreignCustomer, f.tenantA, f.storeA2)
+		mustExec(t, f.owner, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES ($1,$2,$3)`, foreignCustomer, tenantA, storeA2)
 
 		var linked string
 		var version int64
-		err := platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err := platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT coalesce(customer_id::text,''), version FROM inbox.customer_link($1, $2, $3)`, conv, customerID, int64(0)).Scan(&linked, &version)
 		})
 		if err != nil {
@@ -479,17 +493,17 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 		if rowCustomer != customerID || rowPrincipal != replierPrincipal || rowVersion != 1 {
 			t.Fatalf("customer_link row=%q/%q/%d, want %s/%s/1", rowCustomer, rowPrincipal, rowVersion, customerID, replierPrincipal)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.customer_linked' AND principal_id=$3`, f.tenantA, f.storeA1, replierPrincipal); n != 1 {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.customer_linked' AND principal_id=$3`, tenantA, storeA1, replierPrincipal); n != 1 {
 			t.Fatalf("customer_linked audit rows=%d, want 1", n)
 		}
 
-		err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			_, err := tx.Exec(ctx, `SELECT * FROM inbox.customer_link($1, $2, $3)`, conv, customerID, int64(0))
 			return err
 		})
 		requirePGCode(t, err, "PT409", "stale customer link CAS")
 
-		err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			return tx.QueryRow(ctx, `SELECT coalesce(customer_id::text,''), version FROM inbox.customer_link($1, NULL, $2)`, conv, int64(1)).Scan(&linked, &version)
 		})
 		if err != nil {
@@ -498,11 +512,11 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 		if linked != "" || version != 2 {
 			t.Fatalf("unlink=%q/%d, want /2", linked, version)
 		}
-		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.customer_unlinked' AND principal_id=$3`, f.tenantA, f.storeA1, replierPrincipal); n != 1 {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='inbox.customer_unlinked' AND principal_id=$3`, tenantA, storeA1, replierPrincipal); n != 1 {
 			t.Fatalf("customer_unlinked audit rows=%d, want 1", n)
 		}
 
-		err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+		err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 			_, err := tx.Exec(ctx, `SELECT * FROM inbox.customer_link($1, $2, $3)`, conv, foreignCustomer, int64(2))
 			return err
 		})
@@ -513,16 +527,18 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 func TestLiveConsoleInboxCrossStoreIsolation(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
+	tenantA, storeA1, storeA2 := lcOwnStores(t, f)
+	tenantB, storeB, _ := lcOwnStores(t, f)
 
-	_, readerToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read")
-	_, replierToken := lcPerson(t, f, f.tenantA, f.storeA1, "inbox:read", "inbox:reply")
+	_, readerToken := lcPerson(t, f, tenantA, storeA1, "inbox:read")
+	_, replierToken := lcPerson(t, f, tenantA, storeA1, "inbox:read", "inbox:reply")
 
-	convA1 := lcConversation(t, f, f.tenantA, f.storeA1, "page")
-	convA2 := lcConversation(t, f, f.tenantA, f.storeA2, "page")
-	convB := lcConversation(t, f, f.tenantB, f.storeB, "page")
+	convA1 := lcConversation(t, f, tenantA, storeA1, "page")
+	convA2 := lcConversation(t, f, tenantA, storeA2, "page")
+	convB := lcConversation(t, f, tenantB, storeB, "page")
 
 	var ids []string
-	err := platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
+	err := platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
 		var err error
 		ids, err = lcListIDs(ctx, tx)
 		return err
@@ -538,7 +554,7 @@ func TestLiveConsoleInboxCrossStoreIsolation(t *testing.T) {
 	}
 
 	var leaked bool
-	err = platform.WithScope(ctx, f.runtime, readerToken, f.storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
+	err = platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
 		rows, err := tx.Query(ctx, `SELECT * FROM social.conversation_meta($1)`, convA2)
 		if err != nil {
 			return err
@@ -554,7 +570,7 @@ func TestLiveConsoleInboxCrossStoreIsolation(t *testing.T) {
 		t.Fatal("conversation_meta leaked a cross-store conversation")
 	}
 
-	err = platform.WithScope(ctx, f.runtime, replierToken, f.storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
+	err = platform.WithScope(ctx, f.runtime, replierToken, storeA1, "inbox:reply", func(tx pgx.Tx, _ platform.Scope) error {
 		_, err := tx.Exec(ctx, `SELECT * FROM inbox.takeover($1, $2)`, convA2, int64(0))
 		return err
 	})

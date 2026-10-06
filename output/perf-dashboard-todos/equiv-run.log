@@ -1,0 +1,41 @@
+=== RUN   TestBankTransferLifecycle
+=== RUN   TestBankTransferLifecycle/settings:_defaults,_create,_stale_version,_invalid_body,_idempotent_replay,_audit
+=== RUN   TestBankTransferLifecycle/buyer_options_list_bank_transfer_for_home_and_CVS_rows_with_the_window
+=== RUN   TestBankTransferLifecycle/placement:_AWAITING_TRANSFER,_stock_only_RESERVED,_snapshot_row,_long_hold,_no_payment
+=== RUN   TestBankTransferLifecycle/a_settings_change_after_placement_never_moves_the_order's_bank_account
+=== RUN   TestBankTransferLifecycle/proof:_idempotent_per_key,_editable,_validated,_state_SUBMITTED_never_CONFIRMED
+=== RUN   TestBankTransferLifecycle/reject:_the_submission,_not_the_order;_audited;_idempotent;_the_buyer_sees_the_reason_and_can_resubmit
+=== RUN   TestBankTransferLifecycle/confirm:_merchant_act,_stock_committed_through_MERCHANT_ALLOCATE_rows,_audited,_idempotent,_once
+=== RUN   TestBankTransferLifecycle/shippable_once_confirmed,_listed_as_unshipped;_finance_carries_it_in_its_own_column
+=== RUN   TestBankTransferLifecycle/offline_refund:_recorded,_audited,_idempotent_once,_leaves_finance_and_shippability
+=== RUN   TestBankTransferLifecycle/a_CVS_pickup_order_can_pay_by_transfer_too_(allow_cvs)
+--- PASS: TestBankTransferLifecycle (2.06s)
+    --- PASS: TestBankTransferLifecycle/settings:_defaults,_create,_stale_version,_invalid_body,_idempotent_replay,_audit (0.02s)
+    --- PASS: TestBankTransferLifecycle/buyer_options_list_bank_transfer_for_home_and_CVS_rows_with_the_window (0.07s)
+    --- PASS: TestBankTransferLifecycle/placement:_AWAITING_TRANSFER,_stock_only_RESERVED,_snapshot_row,_long_hold,_no_payment (0.01s)
+    --- PASS: TestBankTransferLifecycle/a_settings_change_after_placement_never_moves_the_order's_bank_account (0.01s)
+    --- PASS: TestBankTransferLifecycle/proof:_idempotent_per_key,_editable,_validated,_state_SUBMITTED_never_CONFIRMED (0.03s)
+    --- PASS: TestBankTransferLifecycle/reject:_the_submission,_not_the_order;_audited;_idempotent;_the_buyer_sees_the_reason_and_can_resubmit (0.03s)
+    --- PASS: TestBankTransferLifecycle/confirm:_merchant_act,_stock_committed_through_MERCHANT_ALLOCATE_rows,_audited,_idempotent,_once (0.03s)
+    --- PASS: TestBankTransferLifecycle/shippable_once_confirmed,_listed_as_unshipped;_finance_carries_it_in_its_own_column (0.02s)
+    --- PASS: TestBankTransferLifecycle/offline_refund:_recorded,_audited,_idempotent_once,_leaves_finance_and_shippability (0.01s)
+    --- PASS: TestBankTransferLifecycle/a_CVS_pickup_order_can_pay_by_transfer_too_(allow_cvs) (0.07s)
+=== RUN   TestHomeCodEligibility
+=== RUN   TestHomeCodEligibility/unavailable:_no_settings_row,_then_a_CVS_destination
+=== RUN   TestHomeCodEligibility/amount:_whole-TWD_only,_and_total_+_surcharge_never_above_the_cap
+=== RUN   TestHomeCodEligibility/limit:_one_open_COD_order_per_owner,_then_the_shared_store-wide_cap
+--- PASS: TestHomeCodEligibility (0.94s)
+    --- PASS: TestHomeCodEligibility/unavailable:_no_settings_row,_then_a_CVS_destination (0.11s)
+    --- PASS: TestHomeCodEligibility/amount:_whole-TWD_only,_and_total_+_surcharge_never_above_the_cap (0.21s)
+    --- PASS: TestHomeCodEligibility/limit:_one_open_COD_order_per_owner,_then_the_shared_store-wide_cap (0.24s)
+=== RUN   TestMerchantToolsDashboard
+=== RUN   TestMerchantToolsDashboard/low_stock_counts_available_<=_5_(boundary_5_low,_6_not)
+=== RUN   TestMerchantToolsDashboard/authority
+--- PASS: TestMerchantToolsDashboard (0.93s)
+    --- PASS: TestMerchantToolsDashboard/low_stock_counts_available_<=_5_(boundary_5_low,_6_not) (0.03s)
+    --- PASS: TestMerchantToolsDashboard/authority (0.01s)
+=== RUN   TestPickListRefundAndReviewExclusion
+--- PASS: TestPickListRefundAndReviewExclusion (6.31s)
+PASS
+ok  	livecommerce/tests/foundation	12.459s
+test-focused: top-level PASS=4 FAIL=0 SKIP=0 exit=0

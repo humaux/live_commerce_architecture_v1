@@ -1,0 +1,20 @@
+=== RUN   TestSupportGrantSG01ReadAndSG02PackLimits
+--- PASS: TestSupportGrantSG01ReadAndSG02PackLimits (1.41s)
+=== RUN   TestSupportGrantSG02ReadOnlyTransactionAndUseAudit
+--- PASS: TestSupportGrantSG02ReadOnlyTransactionAndUseAudit (0.05s)
+=== RUN   TestSupportGrantSG03ExpiryNeedsNoSweeper
+--- PASS: TestSupportGrantSG03ExpiryNeedsNoSweeper (0.04s)
+=== RUN   TestSupportGrantSG04RevokeImmediateAndIdempotent
+--- PASS: TestSupportGrantSG04RevokeImmediateAndIdempotent (0.04s)
+=== RUN   TestSupportGrantSG05SuspensionStopsSupportToo
+--- PASS: TestSupportGrantSG05SuspensionStopsSupportToo (0.04s)
+=== RUN   TestSupportGrantSG06Limits
+--- PASS: TestSupportGrantSG06Limits (0.05s)
+=== RUN   TestSupportGrantSG07RegularPrincipalsUnaffected
+--- PASS: TestSupportGrantSG07RegularPrincipalsUnaffected (0.05s)
+=== RUN   TestSupportGrantSG08AuthorityMatrix
+--- PASS: TestSupportGrantSG08AuthorityMatrix (0.24s)
+PASS
+ok  	livecommerce/tests/foundation	5.443s
+test-focused: top-level PASS=8 FAIL=0 SKIP=0 exit=0
+exit 0
