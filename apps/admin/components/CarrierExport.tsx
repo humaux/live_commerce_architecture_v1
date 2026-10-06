@@ -26,6 +26,7 @@ export function CarrierExport({
   disabled: boolean;
 }) {
   const c = picklistCopy[locale];
+  const dialog = useRef<HTMLDialogElement>(null);
   const [template, setTemplate] = useState<CarrierTemplate>("black_cat");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -70,26 +71,45 @@ export function CarrierExport({
     }
   }
   return (
-    <fieldset className="pick-export" disabled={disabled || busy}>
-      <legend>{c.export}</legend>
-      <label>
-        {c.template}
-        <select
-          value={template}
-          onChange={(e) => setTemplate(e.target.value as CarrierTemplate)}
-        >
-          {carrierTemplates.map((t) => (
-            <option key={t} value={t}>
-              {c[t]}
-            </option>
-          ))}
-        </select>
-      </label>
-      <button type="button" onClick={download} disabled={!selection}>
-        {busy ? c.loading : c.download}
+    <>
+      <button
+        type="button"
+        disabled={disabled || !selection}
+        onClick={() => dialog.current?.showModal()}
+      >
+        {c.export}
       </button>
-      <small>{c.exportHint}</small>
-      {error && <p role="alert">{error}</p>}
-    </fieldset>
+      <dialog
+        ref={dialog}
+        className="pick-dialog"
+        aria-labelledby="carrier-export-title"
+      >
+        <h2 id="carrier-export-title">{c.export}</h2>
+        <button type="button" onClick={() => dialog.current?.close()}>
+          {c.close}
+        </button>
+        <fieldset className="pick-export" disabled={disabled || busy}>
+          <legend>{c.export}</legend>
+          <label>
+            {c.template}
+            <select
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as CarrierTemplate)}
+            >
+              {carrierTemplates.map((t) => (
+                <option key={t} value={t}>
+                  {c[t]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={download} disabled={!selection}>
+            {busy ? c.loading : c.download}
+          </button>
+          <small>{c.exportHint}</small>
+          {error && <p role="alert">{error}</p>}
+        </fieldset>
+      </dialog>
+    </>
   );
 }

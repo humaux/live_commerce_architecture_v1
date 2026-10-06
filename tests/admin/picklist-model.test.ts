@@ -4,6 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  cvsRecoveryResolved,
   validSelection,
   selectOrders,
   parsePickList,
@@ -186,6 +187,61 @@ test("MOCK browser fixture list matches the incumbent closed order parser", asyn
       { headers: { Authorization: `Bearer ${f.token}` } },
     );
     assert.equal(parseOrderListV2(await response.json()).items.length, 10);
+  } finally {
+    await f.close();
+  }
+});
+
+test("recovery never clears an unknown or missing current attempt", () => {
+  const state = (value: string) => ({
+    current_attempt: 1,
+    attempts: [{ attempt: 1, state: value }],
+  });
+  assert.equal(cvsRecoveryResolved([]), false);
+  assert.equal(cvsRecoveryResolved([null]), false);
+  assert.equal(
+    cvsRecoveryResolved([state("CREATED"), state("UNKNOWN")]),
+    false,
+  );
+  assert.equal(
+    cvsRecoveryResolved([
+      { current_attempt: 2, attempts: [{ attempt: 1, state: "CREATED" }] },
+    ]),
+    false,
+  );
+  assert.equal(
+    cvsRecoveryResolved([state("REQUESTED"), state("CREATED")]),
+    true,
+  );
+});
+
+test("recovery and order-detail MOCK fixtures satisfy real read parsers", async () => {
+  const { pickFixture, storeID, orderID } =
+    await import("./picklist-fixture.mjs");
+  const { parseCvsShipment } =
+    await import("../../apps/admin/lib/logistics-model.ts");
+  const { parseOrderDetail } =
+    await import("../../apps/admin/lib/orders-model.ts");
+  const f = await pickFixture();
+  const headers = { Authorization: `Bearer ${f.token}` };
+  try {
+    for (const state of ["unknown", "created"]) {
+      f.state.recovery = state;
+      const r = await fetch(
+        `${f.origin}/v1/admin/stores/${storeID}/orders/${orderID(501)}/cvs-shipment`,
+        { headers },
+      );
+      const value = parseCvsShipment(await r.json());
+      assert.equal(cvsRecoveryResolved([value]), state === "created");
+    }
+    const r = await fetch(
+      `${f.origin}/v1/admin/stores/${storeID}/orders/${orderID(501)}`,
+      { headers },
+    );
+    assert.equal(
+      parseOrderDetail(await r.json(), orderID(501)).items[0].name,
+      "Synthetic frozen item",
+    );
   } finally {
     await f.close();
   }

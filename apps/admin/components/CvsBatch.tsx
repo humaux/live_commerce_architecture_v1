@@ -7,7 +7,11 @@ import type { Locale } from "@live-commerce/i18n";
 import { readCvsShipment } from "@/lib/logistics-client";
 import { sessionBoundary } from "@/lib/settings-client";
 import { createCvsBatch, PickError } from "@/lib/picklist-client";
-import { pickUUID, type BatchResult } from "@/lib/picklist-model";
+import {
+  pickUUID,
+  cvsRecoveryResolved,
+  type BatchResult,
+} from "@/lib/picklist-model";
 import { picklistCopy } from "@/lib/picklist-copy";
 /** Confirm a bounded batch once. An unresolved write stays blocked across page reloads. */
 export function CvsBatch({
@@ -16,15 +20,19 @@ export function CvsBatch({
   boundary,
   ids,
   disabled,
+  onViewOrder,
 }: {
   locale: Locale;
   store: string;
   boundary: string;
   ids: string[];
   disabled: boolean;
+  onViewOrder: (id: string) => void;
 }) {
   const c = picklistCopy[locale],
     journal = `picklist-cvs:${store}:${boundary}`;
+  const [storageBlocked, setStorageBlocked] = useState(false),
+    [checkedCount, setCheckedCount] = useState<number | null>(null);
   const [confirm, setConfirm] = useState(false),
     [busy, setBusy] = useState(false),
     [result, setResult] = useState<BatchResult | null>(null),
@@ -43,11 +51,13 @@ export function CvsBatch({
           saved.length < 1 ||
           saved.length > 100 ||
           saved.some((id) => typeof id !== "string" || !pickUUID.test(id))
-        )
+        ) {
+          setStorageBlocked(true);
           setError(c.storage);
-        else setUnknown(saved);
+        } else setUnknown(saved);
       }
     } catch {
+      setStorageBlocked(true);
       setError(c.storage);
     }
     return () => {
@@ -71,13 +81,11 @@ export function CvsBatch({
           ),
         );
         values.forEach((value, j) => {
-          const current = value?.attempts.find(
-            (a) => a.attempt === value.current_attempt,
-          );
-          if (current && current.state !== "UNKNOWN") found.push(group[j]);
+          if (cvsRecoveryResolved([value])) found.push(group[j]);
         });
       }
       if ((await sessionBoundary()) !== boundary) throw new Error();
+      if (alive.current) setCheckedCount(found.length);
       if (found.length === unknown.length) {
         sessionStorage.removeItem(journal);
         if (alive.current) {
@@ -109,6 +117,7 @@ export function CvsBatch({
     try {
       sessionStorage.setItem(journal, JSON.stringify(submitted));
     } catch {
+      setStorageBlocked(true);
       setError(c.storage);
       setBusy(false);
       flight.current = false;
@@ -156,7 +165,7 @@ export function CvsBatch({
           disabled ||
           busy ||
           !!unknown ||
-          error === c.storage ||
+          storageBlocked ||
           ids.length < 1 ||
           ids.length > 100
         }
@@ -189,15 +198,20 @@ export function CvsBatch({
       {unknown && (
         <div role="status">
           <p>{c.unknown}</p>
+          {checkedCount !== null && (
+            <p>
+              {c.checked}: {checkedCount} / {unknown.length}
+            </p>
+          )}
           <button type="button" disabled={busy} onClick={checkStatus}>
             {c.checkStatus}
           </button>
           <ul>
             {unknown.map((id) => (
               <li key={id}>
-                <a href={`/${locale}/orders?store=${store}&order=${id}`}>
+                <button type="button" onClick={() => onViewOrder(id)}>
                   {c.check} · {id.slice(-8)}
-                </a>
+                </button>
               </li>
             ))}
           </ul>
@@ -209,11 +223,9 @@ export function CvsBatch({
           <ul>
             {result.results.map((r) => (
               <li key={r.order_id}>
-                <a
-                  href={`/${locale}/orders?store=${store}&order=${r.order_id}`}
-                >
+                <button type="button" onClick={() => onViewOrder(r.order_id)}>
                   {c.check} · {r.order_id.slice(-8)}
-                </a>{" "}
+                </button>{" "}
                 —{" "}
                 {r.outcome === "queued"
                   ? c.queued
@@ -221,7 +233,15 @@ export function CvsBatch({
                     ? c.already
                     : r.code === "retry"
                       ? c.unknown
-                      : c.failed}
+                      : r.code === "not_cvs"
+                        ? c.notCvs
+                        : r.code === "order_not_found"
+                          ? c.notFound
+                          : r.code === "invalid_order"
+                            ? c.invalidOrder
+                            : r.code === "version_changed"
+                              ? c.changed
+                              : c.failed}
               </li>
             ))}
           </ul>

@@ -38,7 +38,7 @@ import {
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
-import { appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
+import { emptyFilters, appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -607,7 +607,8 @@ export function MerchantOrders({
         {store && session.current && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <PickList key={`${store.id}:${session.current}`} locale={locale} store={store.id} boundary={session.current}
           ids={selectedIDs} cvsIDs={selectedIDs.filter(id=>bulkRows[id])} sessionID={filters.session_id}
           canExport={!!actions?.orders_export} canShip={!!actions?.fulfillment_write} disabled={current.status !== "ready"}
-          onClear={()=>setBulk({scope:bulkScope,rows:{}})} />}
+          onClear={()=>setBulk({scope:bulkScope,rows:{}})}
+          onViewOrder={id=>{previous.current=[];navigate(store.id,"all","",id,{...emptyFilters,q:`LC-${id.replaceAll("-","").toUpperCase()}`});}} />}
         {current.status === "ready" && current.page && (
           <>
             <TabStrip label={v2.counts} previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next} data-testid="orders-tabs">

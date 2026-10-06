@@ -2,7 +2,7 @@
  * Depends on: existing admin tokens and native dialog/print media.
  * Used by: PickList, CarrierExport, CvsBatch and row-selection controls. */
 .pick-toolbar {
-  border-block: 1px solid var(--border, #ddd);
+  border-block: 1px solid var(--line);
   padding-block: 12px;
   margin-block: 12px;
 }
@@ -39,13 +39,13 @@
 .pick-cvs small {
   display: block;
   flex-basis: 100%;
-  color: var(--text-muted, #555);
+  color: var(--muted);
 }
 .pick-cvs {
   margin-top: 12px;
 }
 .pick-confirm {
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--line);
   padding: 8px 12px;
   margin-top: 8px;
 }
@@ -81,10 +81,10 @@
   overflow: auto;
   padding: 24px;
   box-sizing: border-box;
-  border: 1px solid var(--border, #ddd);
+  border: 1px solid var(--line);
   border-radius: 12px;
-  color: var(--text, #222);
-  background: var(--surface, white);
+  color: var(--ink);
+  background: #fff;
 }
 .pick-dialog::backdrop {
   background: rgb(0 0 0 / 0.35);
@@ -168,4 +168,31 @@
   .pick-order h4 {
     break-after: avoid;
   }
+}
+
+.pick-toolbar button,
+.pick-toolbar select,
+.pick-dialog button,
+.pick-dialog select {
+  font: inherit;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 9px 14px;
+}
+.pick-toolbar button:not(:disabled),
+.pick-dialog button:not(:disabled) {
+  cursor: pointer;
+}
+.pick-toolbar button:disabled,
+.pick-dialog button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.pick-toolbar :is(button, select):focus-visible,
+.pick-dialog :is(button, select):focus-visible,
+.pick-row-check input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }

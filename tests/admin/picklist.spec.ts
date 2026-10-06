@@ -14,7 +14,7 @@ test(
   "W3-U1b real clicks: selection, print, CSV, confirmation, unknown and scope",
   { timeout: 900000 },
   async () => {
-    const output = "output/w3-u1b-picklist-ui/browser";
+    const output = "output/ci-gates/picklist";
     await mkdir(output, { recursive: true });
     const fixture = await pickFixture();
     const probe = createServer();
@@ -77,6 +77,13 @@ test(
           );
           const toolbar = page.getByTestId("pick-toolbar");
           await expect(toolbar).toBeVisible();
+          const rowCheck = page
+            .getByRole("checkbox", { name: new RegExp(`^${c.select}:`) })
+            .first();
+          await rowCheck.check();
+          await expect(page.getByTestId("pick-count")).toHaveText("1");
+          await rowCheck.uncheck();
+          await expect(page.getByTestId("pick-count")).toHaveText("0");
           await page
             .getByRole("checkbox", { name: c.page, exact: true })
             .check();
@@ -126,8 +133,7 @@ test(
             .getByRole("button", { name: c.close, exact: true })
             .click();
           await toolbar
-            .locator("summary")
-            .filter({ hasText: c.export })
+            .getByRole("button", { name: c.export, exact: true })
             .click();
           for (const template of [
             "black_cat",
@@ -154,6 +160,10 @@ test(
               fixture.state.exports.at(-1)!.csv,
             );
           }
+          await page
+            .getByRole("dialog")
+            .getByRole("button", { name: c.close, exact: true })
+            .click();
           const before = fixture.state.batches.length;
           await toolbar
             .getByRole("button", { name: `${c.cvs} (10)`, exact: true })
@@ -204,7 +214,7 @@ test(
             .click();
           await expect(page.getByTestId("pick-count")).toHaveText("0");
           ledger.push({
-            case: `${locale}/${width}: page select/cross-page/print/4 CSV/cancel/confirm/session/clear`,
+            case: `${locale}/${width}: row select/page select/cross-page/print/4 CSV/cancel/confirm/session/clear`,
             result: "PASS",
           });
           await context.close();
@@ -223,6 +233,34 @@ test(
       );
       const page = await context.newPage(),
         c = picklistCopy.en;
+      const deniedBefore = fixture.state.requests.length;
+      for (const [path, headers, expected] of [
+        [`orders/pick-list`, {}, 403],
+        [
+          `orders/pick-list`,
+          { "X-CSRF-Token": fixture.token, "Idempotency-Key": "forbidden-key" },
+          422,
+        ],
+        [
+          `orders/export?template=generic&extra=1`,
+          { "X-CSRF-Token": fixture.token },
+          422,
+        ],
+      ] as const) {
+        const response = await context.request.post(
+          `${base}/api/stores/${storeID}/${path}`,
+          {
+            headers: { Origin: base, ...headers },
+            data: { order_ids: ["33333333-3333-4333-8333-000000000001"] },
+          },
+        );
+        assert.equal(response.status(), expected);
+      }
+      assert.equal(fixture.state.requests.length, deniedBefore);
+      ledger.push({
+        case: "BFF invalid key/query/CSRF probes: no backend dispatch",
+        result: "PASS",
+      });
       fixture.state.count = 510;
       await page.goto(`${base}/en/orders?store=${storeID}`);
       for (let n = 1; n <= 50; n++) {
@@ -266,13 +304,46 @@ test(
         case: "HTTP unknown persists across reload; zero automatic resend",
         result: "PASS",
       });
+      fixture.state.recovery = "unknown";
+      await page
+        .getByRole("button", { name: c.checkStatus, exact: true })
+        .click();
+      await expect(
+        page.getByText(`${c.checked}: 0 / 5`, { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: /Convenience-store labels \(/ }),
+      ).toBeDisabled();
+      fixture.state.recovery = "created";
+      await page
+        .getByRole("button", { name: c.checkStatus, exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: c.done, exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText(c.unknown, { exact: true })).toHaveCount(0);
+      assert.equal(fixture.state.batches.length, count + 1);
+      await page
+        .getByRole("button", { name: new RegExp(`^${c.check} ·`) })
+        .first()
+        .click();
+      await expect(page.getByTestId("order-detail")).toBeVisible();
+      await expect(page.getByTestId("order-detail")).toContainText(
+        "Synthetic frozen item",
+      );
+      ledger.push({
+        case: "recovery GET: UNKNOWN remains blocked, CREATED clears; cross-page order opens via scoped search",
+        result: "PASS",
+      });
       fixture.state.unknown = false;
       fixture.state.canExport = false;
       fixture.state.canShip = false;
       await page.reload();
       await expect(page.getByTestId("pick-toolbar")).toBeVisible();
       await expect(
-        page.getByTestId("pick-toolbar").locator("details"),
+        page
+          .getByTestId("pick-toolbar")
+          .getByRole("button", { name: c.export, exact: true }),
       ).toHaveCount(0);
       await expect(
         page.getByRole("button", { name: /Convenience-store labels \(/ }),

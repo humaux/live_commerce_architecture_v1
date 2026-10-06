@@ -36,6 +36,8 @@ export async function pickFixture() {
     canShip: true,
     canExport: true,
     unknown: false,
+    recovery: "missing",
+    reads: [],
     retry: false,
     pickMalformed: process.env.LC_PICKLIST_INJECT_FAULT === "missing_totals",
     requests: [],
@@ -83,16 +85,131 @@ export async function pickFixture() {
         fulfillment_write: state.canShip,
         orders_export: state.canExport,
       });
-    if (route === "orders" && req.method === "GET") {
+    if (
+      /^orders\/[0-9a-f-]{36}\/cvs-shipment$/.test(route) &&
+      req.method === "GET"
+    ) {
+      state.reads.push(route);
+      if (state.recovery === "missing") return json({ code: "not_found" }, 404);
+      return json({
+        current_attempt: 1,
+        expected_version: 2,
+        validity_days: 5,
+        attempts: [
+          {
+            attempt: 1,
+            state: state.recovery === "unknown" ? "UNKNOWN" : "CREATED",
+            subtype: "UNIMARTC2C",
+            environment: "SANDBOX",
+            receiver_store_id: "131386",
+            goods_amount: 25,
+            collection_amount: null,
+            provider_logistics_id: null,
+            code: null,
+            print_available: false,
+            result_code: null,
+            last_status_code: null,
+            last_status_at: null,
+            alerts: [],
+            created_at: stamp,
+            updated_at: stamp,
+            version: 2,
+            events: [],
+          },
+        ],
+      });
+    }
+    if (/^orders\/[0-9a-f-]{36}$/.test(route) && req.method === "GET") {
+      const id = route.slice(7);
+      return json({
+        order_id: id,
+        created_at: stamp,
+        updated_at: stamp,
+        currency: "TWD",
+        total_minor: 2500,
+        commercial_state: "CONFIRMED",
+        fulfillment_state: "MANUAL_UNASSIGNED",
+        payment_state: "NOT_STARTED",
+        test_mode: false,
+        work_state: "NONE",
+        refunded_minor: 0,
+        refund_pending_minor: 0,
+        source: "storefront",
+        pickup_source: "merchant_attested",
+        payment_mode: "bank_transfer",
+        collection_state: null,
+        cod_surcharge_minor: null,
+        cod_collect_minor: null,
+        shipment: null,
+        country: "TW",
+        service_code: "cvs_711",
+        items: [
+          {
+            sku_id: sku,
+            code: "SYNTHETIC-ONE",
+            name: "Synthetic frozen item",
+            quantity: 2,
+            unit_price_minor: 1250,
+            amount: {
+              subtotal_minor: 2500,
+              discount_minor: 0,
+              tax_minor: 0,
+              total_minor: 2500,
+            },
+          },
+        ],
+        totals: {
+          subtotal_minor: 2500,
+          discount_minor: 0,
+          shipping_minor: 0,
+          shipping_tax_minor: 0,
+          tax_minor: 0,
+          total_minor: 2500,
+        },
+        destination: {
+          kind: "cvs_711",
+          country: "TW",
+          recipient_name: "Synthetic Recipient",
+          phone: "+886900000002",
+          home_address: {
+            region: "",
+            city: "",
+            postal_code: "",
+            line1: "",
+            line2: "",
+          },
+          pickup: {
+            kind: "cvs_711",
+            namespace: "fixture.case",
+            code: "131386",
+            name: "Synthetic pickup",
+            address: "Synthetic address",
+            verification_kind: "MANUAL_ATTESTED",
+          },
+        },
+      });
+    }
+    if (
+      (route === "orders" && req.method === "GET") ||
+      (route === "orders/search" && req.method === "POST")
+    ) {
+      let search = null;
+      if (route === "orders/search") {
+        let text = "";
+        for await (const chunk of req) text += chunk;
+        search = JSON.parse(text).q;
+        state.reads.push({ route, q: search });
+      }
       const offset = url.searchParams.has("cursor")
         ? Number(
             Buffer.from(url.searchParams.get("cursor"), "base64url").toString(),
           )
         : 0;
+      const pageCount = search ? 1 : state.count;
       const items = Array.from(
-        { length: Math.min(10, state.count - offset) },
+        { length: search ? 1 : Math.min(10, state.count - offset) },
         (_, i) => {
-          const n = offset + i + 1,
+          const n = search ? Number(search.slice(-12)) : offset + i + 1,
             id = orderID(n);
           return {
             order_id: id,
@@ -123,15 +240,15 @@ export async function pickFixture() {
       return json({
         items,
         next_cursor:
-          offset + 10 < state.count
+          !search && offset + 10 < state.count
             ? Buffer.from(String(offset + 10)).toString("base64url")
             : "",
-        total: state.count,
+        total: pageCount,
         counts: {
-          all: state.count,
+          all: pageCount,
           unpaid: 0,
           transfer_review: 0,
-          ready_to_ship: state.count,
+          ready_to_ship: pageCount,
           ready_to_consign: 0,
           shipped: 0,
           completed: 0,
@@ -162,13 +279,11 @@ export async function pickFixture() {
             ? { orders: [] }
             : {
                 generated_at: "2026-10-06T06:00:00Z",
-                orders: ids
-                  .slice(0, -1)
-                  .map((id) => ({
-                    order_id: id,
-                    order_number: number(id),
-                    lines: [line],
-                  })),
+                orders: ids.slice(0, -1).map((id) => ({
+                  order_id: id,
+                  order_number: number(id),
+                  lines: [line],
+                })),
                 totals:
                   ids.length > 1
                     ? [{ ...line, qty: 2 * (ids.length - 1) }]
@@ -194,8 +309,10 @@ export async function pickFixture() {
                     : col === "order_number"
                       ? number(id)
                       : col === "collect_minor"
-                        ? "25"
-                        : "synthetic",
+                        ? ""
+                        : col === "total_minor"
+                          ? "25"
+                          : "synthetic",
                 )
                 .join(","),
             )

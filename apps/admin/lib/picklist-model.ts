@@ -228,3 +228,21 @@ export function carrierFilename(
     return fail();
   return match[1];
 }
+
+/** Resolve only when every read proves a current, non-UNKNOWN attempt; absence proves nothing. */
+export function cvsRecoveryResolved(
+  values: readonly ({
+    current_attempt: number | null;
+    attempts: { attempt: number; state: string }[];
+  } | null)[],
+): boolean {
+  return (
+    values.length > 0 &&
+    values.every((value) => {
+      const current = value?.attempts.find(
+        (a) => a.attempt === value.current_attempt,
+      );
+      return !!current && current.state !== "UNKNOWN";
+    })
+  );
+}

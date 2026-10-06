@@ -29,6 +29,7 @@ export function PickList({
   canShip,
   disabled,
   onClear,
+  onViewOrder,
 }: {
   locale: Locale;
   store: string;
@@ -40,6 +41,7 @@ export function PickList({
   canShip: boolean;
   disabled: boolean;
   onClear: () => void;
+  onViewOrder: (id: string) => void;
 }) {
   const c = picklistCopy[locale];
   const [scope, setScope] = useState("chosen"),
@@ -116,16 +118,13 @@ export function PickList({
           {busy ? c.loading : c.pick}
         </button>
         {canExport && (
-          <details>
-            <summary>{c.export}</summary>
-            <CarrierExport
-              locale={locale}
-              store={store}
-              boundary={boundary}
-              selection={selection}
-              disabled={disabled}
-            />
-          </details>
+          <CarrierExport
+            locale={locale}
+            store={store}
+            boundary={boundary}
+            selection={selection}
+            disabled={disabled}
+          />
         )}
       </div>
       {ids.length === 500 && <p role="status">{c.limit}</p>}
@@ -137,6 +136,7 @@ export function PickList({
           store={store}
           boundary={boundary}
           ids={cvsIDs}
+          onViewOrder={onViewOrder}
           disabled={disabled}
         />
       )}

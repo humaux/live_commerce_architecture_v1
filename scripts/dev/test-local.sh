@@ -38,8 +38,8 @@ if [[ "$test_mode" == --browser-picklist ]]; then
   source scripts/dev/test-lock.sh
   lc_lock_acquire "${LC_TEST_LOCK_WAIT:-300}" || exit 2
   trap lc_lock_release EXIT
-  mkdir -p output/w3-u1b-picklist-ui/browser
-  pnpm --filter @live-commerce/admin build > output/w3-u1b-picklist-ui/browser/build.log 2>&1
+  mkdir -p output/ci-gates/picklist
+  pnpm --filter @live-commerce/admin build > output/ci-gates/picklist/build.log 2>&1
   node --test --test-reporter=spec --experimental-strip-types tests/admin/picklist.spec.ts
   exit 0
 fi

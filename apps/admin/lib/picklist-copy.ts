@@ -2,6 +2,10 @@
 // Depends on: the three supported admin locales; no provider jargon in buyer-facing controls.
 // Used by: PickList, CarrierExport, CvsBatch and MerchantOrders checkboxes.
 const en = {
+  checked: "Orders with a confirmed request",
+  notCvs: "This order does not use convenience-store delivery",
+  invalidOrder: "Check this order’s delivery details",
+  changed: "This order changed. Refresh it before trying again",
   checkStatus: "Check label status",
   select: "Select order",
   page: "Select this page",
@@ -58,6 +62,10 @@ const en = {
 };
 type Copy = typeof en;
 const tw: Copy = {
+  checked: "已確認有申請紀錄的訂單",
+  notCvs: "這筆訂單不是超商取貨",
+  invalidOrder: "請檢查這筆訂單的配送資料",
+  changed: "訂單已變更，請重新整理後再處理",
   checkStatus: "重新查看寄件單狀態",
   select: "選取訂單",
   page: "選取本頁",
@@ -108,6 +116,10 @@ const tw: Copy = {
   connection: "請先到開店設定連接物流服務。",
 };
 const cn: Copy = {
+  checked: "已确认有申请记录的订单",
+  notCvs: "这笔订单不是便利店取货",
+  invalidOrder: "请检查这笔订单的配送资料",
+  changed: "订单已变更，请刷新后再处理",
   checkStatus: "重新查看寄件单状态",
   select: "选择订单",
   page: "选择本页",
