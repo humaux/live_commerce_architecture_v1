@@ -21,6 +21,7 @@ node --test --experimental-strip-types tests/admin/attribution.test.ts tests/adm
 node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
+node --test --experimental-strip-types tests/admin/claims-backend-parity.test.ts tests/admin/claims-model.test.ts tests/admin/claims-request.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then
   node --test tests/media/r04-input-runner.test.mjs
 else

@@ -1,0 +1,20 @@
+✔ claims window modes match Go constants and every SQL match_mode CHECK (35.700458ms)
+✔ contains prompt requires explicit quantity and removes the exact-only instruction (1.33375ms)
+✔ Japanese is copy-only and never widens Meta reply_locale (1.28775ms)
+✔ bundle parser accepts manual (labelled) and Meta (unlabelled) bundles (0.84925ms)
+✔ bundle parser rejects unknown platforms and label/platform mismatches (0.18175ms)
+✔ offer parser carries the live price and rejects every out-of-range or missing field (0.351458ms)
+✔ library and import parsers are closed; removal receipt is the only version-0 shape (0.295209ms)
+✔ price input: exact decimal minor units, never float, bounded to the currency's places (48.022917ms)
+✔ live-tools copy exists in all three locales with the same conflict reasons (0.510541ms)
+✔ claims BFF allowlist is exactly M1–M7 per method (2.810292ms)
+✔ M7 link response shape is closed (1.242208ms)
+✔ host prompt copy is the frozen text, verbatim (0.122ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 401.239083
