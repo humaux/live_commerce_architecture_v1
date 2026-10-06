@@ -1,12 +1,16 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source df8c6a2e, LC-B7 contract 585600b7 and owner rule 2f596a0c.
+Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source c743b465, CI 37443892071 and owner rule 2f596a0c.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — candidate ready for CI, not runtime-accepted
+# LC-U1 — CI repairs submitted; privacy ruling blocks acceptance
 
-- Branch: `unit/lc-u1-shell`; current source commit: `df8c6a2e7f3e52b45f23225cb055118d473081a6`.
+Current source **`c743b465472a657f7652cc80934055d9e1b9577d`** includes trunk **`685d465c`**, the Next proxy repair, settings scene selector, updated leaf/title drivers and CI display/serial-fixture configuration. Local Node **465/465**, scoped **25/25**, both typechecks and check-gates exit 0. **TCV09 is still RED**, pending the explicit Facebook-preview/CSP ruling; it has not been weakened. Full per-failure attribution, command exits and rerun modes: [CI-37443892071.md](CI-37443892071.md).
+
+The earlier LC-B7 alignment and initial candidate receipts below remain historical evidence. No current browser PASS is claimed.
+
+- Branch: `unit/lc-u1-shell`; previous LC-B7 alignment source: `df8c6a2e7f3e52b45f23225cb055118d473081a6`.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell`.
 - Integrated base: `8a08656a46ab98db4497240e1ffc6c27b6e697b8`, including GitHub-only heavy-gate rule `2f596a0c`; merge `d50953a8` preserves both `--browser-live-console` and `--browser-tracking-backfill` and both Node registrations.
-- Evidence level: **E1 overall** (typed/registered candidate); **E3 for the local Node regressions**. The 23 focused assertions and 462 registered Node tests have automated evidence; browser, SQL and provider acceptance remain pending.
+- Evidence level: **E1 overall with a known blocking source guard**; **E3 for the local regressions and reproduced failures**. Browser, SQL and provider acceptance remain pending.
 - Root runtime model/effort: NOT_EXPOSED. Child transport/browser/safety roles requested `gpt-6.1-sol`, high; actual runtime telemetry NOT_EXPOSED. Raw author reports are retained as reports, not independent acceptance.
 
 ## Implemented
@@ -93,6 +97,6 @@ Historical `depmap.sh --check` returned **1** at the pre-CI candidate because in
 - `red-resume-20261006T060525Z/result.tsv`: **137**, canceled while waiting and owning no PG/container. PID/cwd/parent and absence of its exact container were verified; TERM only ran the existing cleanup trap without exiting, so only that owned waiter was stopped. Other locks/PIDs were untouched.
 - `console-current-20261006T061501Z/merge.log`: launcher returned **2 before testing** due to merge conflicts; those are now resolved. No current console browser result exists.
 - New owner rule: **no further local browser/full-foundation/visual/sweep/batch starts**. The old local wrapper is archived as `historical-local-runner.txt`, not an active runner. No own browser waiters or the two named local PG containers remain.
-- **Integration prerequisite:** LC-B7 `585600b7` supplies A1 and narrow stock authorization and has since been merged into `r3/integration` at `685d465c` (read-only Git verification). This unit keeps its existing `8a08656a` base; the integrator combines the branches and reruns CI. The former backend gaps are no longer reported as missing on trunk, and this UI handoff does not certify that backend.
+- **Integration prerequisite satisfied in source:** LC-B7 `585600b7` supplies A1 and narrow stock authorization on trunk `685d465c`, now merged into this unit as `6dd556a5`. Current-source CI is pending; this UI handoff does not certify the backend.
 - CI exits, actual screenshots at both sizes/three locales, independent screenshot review, production/SANDBOX/Meta validation: **NOT_RUN**. Existing unrelated integration visual findings must be identified by baseline comparison, not suppressed.
 - Helper worktrees and source commits remain available for review; no push, deployment, live credential access, real message, money or production change occurred.
