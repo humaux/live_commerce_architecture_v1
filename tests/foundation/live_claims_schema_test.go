@@ -394,7 +394,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0148 (LC-B7): the console session facts helper it owns (EXECUTE: commerce_auth only).
 				"claims.console_session_facts",
 				// 0154 (W3-05B): the four blocklist definers it owns (EXECUTE: commerce_runtime).
-				"claims.block_actor", "claims.unblock_actor", "claims.list_blocked_actors", "claims.actor_restricted_for_bundle",
+				"claims.block_actor", "claims.unblock_actor", "claims.list_blocked_actors", "claims.actor_restricted_for_bundle", "claims.bundle_actor_restricted",
 				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
@@ -522,6 +522,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"unblock_actor":               {args: "p_id uuid", result: "boolean", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"list_blocked_actors":         {args: "p_after_time timestamp with time zone, p_after_id uuid, p_limit integer", result: "TABLE(id uuid, platform text, note text, source_bundle_id uuid, created_at timestamp with time zone)", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"actor_restricted_for_bundle": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			// 0154: predicate of inbox.checkout_reminder_candidates (reminders skip a restricted buyer); EXECUTE for its owner commerce_integration_writer only.
+			"bundle_actor_restricted": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
 		}
 		rows, err := f.owner.Query(ctx, `SELECT p.proname::text,pg_get_function_identity_arguments(p.oid),pg_get_function_result(p.oid),p.prosecdef,pg_get_userbyid(p.proowner)::text,
 			coalesce(array_to_string(p.proconfig,','),''),p.provolatile::text,coalesce(obj_description(p.oid,'pg_proc'),''),
@@ -583,8 +585,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 42 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-two (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + four 0154 blocklist definers)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 43 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-three (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -602,7 +604,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
 			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
-			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply')) -- 0151: the owner of the two sold-out settings definers
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply','bundle_actor_restricted')) -- 0154: reminder predicate; 0151: the owner of the two sold-out settings definers
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
 			       -- 0151 (W3-04B): the merchant transaction reads/saves the sold-out reply setting.

@@ -1088,8 +1088,8 @@ policy is unverified (EVIDENCE_GAP; message tags were removed 2026-02-09), so th
 - **Locks / cap (A1.3).** The planner takes the `lcn-dup|store|conversation|body_hmac` advisory lock first (hmac of template + bundle, never of the link), then the per-session `crm|` lock;
   reminders count toward the same 60 sends / store / minute as human sends (`rate_limited`, a per-buyer refusal).
 - **Routes** (`/v1/admin/stores/{store_id}`): `POST /live-sessions/{sid}/reminders[/{bundle_id}]` (`inbox:reply` AND `live:manage`, Idempotency-Key; with a bundle id only that buyer,
-  409 `not_remindable` when she is no candidate; 409 `no_storefront` without an active domain) -> `{queued, already_reminded, followup, refused, truncated, results:[{bundle_id, outcome:
-  queued|followup|refused, code}]}`. One scan transaction (follow-up rows + one audit row `inbox.checkout_reminder.triggered`, also when nothing is sent), then ONE TRANSACTION PER BUYER:
+  409 `not_remindable` when she is no candidate; 409 `no_storefront` without an active domain) -> `{queued, already_reminded, followup, restricted, refused, truncated, results:[{bundle_id, outcome:
+  queued|followup|restricted|refused, code}]}` (`restricted`: W3-05B, a buyer on the store's blocklist is skipped with no link and no DM; follow-up reason `restricted`, see live-keyword-claims-v1 Amendment W3-05B). One scan transaction (follow-up rows + one audit row `inbox.checkout_reminder.triggered`, also when nothing is sent), then ONE TRANSACTION PER BUYER:
   a refusal (window closed since the scan, takeover, rate cap, state changed, link generation moved) refuses only that buyer. At most 100 SENDABLE buyers per call (follow-up and
   reminded buyers cost nothing, so a later call always reaches the rest). `GET /live-sessions/{sid}/reminders` (`inbox:read`) -> `{sent, queued, failed, followup:[{bundle_id,
   display_name, reminder_state, reason, link_copy_allowed}], link}`.

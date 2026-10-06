@@ -23,6 +23,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/retention"
 )
 
 func (e *mciEnv) blockWith(t *testing.T, token, store, session string, in claims.BlockInput) (claims.BlockResult, error) {
@@ -445,4 +446,144 @@ func TestBlocklistErasureRemovesEntry(t *testing.T) {
 	if n := miCount(t, f.owner, `SELECT count(*) FROM claims.blocked_actors WHERE tenant_id=$1 AND store_id=$2`, f.tenantA, f.storeA1); n != 1 {
 		t.Fatalf("another actor's entry must stay: %d rows", n)
 	}
+}
+
+// P1-1 (review): a bulk or single checkout reminder must not re-issue a claim link or DM to a restricted buyer. The buyer has an unpaid (claimed) bundle with a
+// known thread, is restricted AFTER the claim, then the merchant bulk-reminds: no link, no operation, one 'restricted' skip the merchant sees in the counts and the report.
+func TestBlocklistCheckoutReminderSkipsRestricted(t *testing.T) {
+	e := lbSetup(t)
+	e.crCleanup(t)
+	blCleanup(t, e.mciEnv)
+	f := e.h.f
+	blocked, normal := e.crBuyer(t), e.crBuyer(t)
+	if _, err := e.blockWith(t, e.h.token, f.storeA1, e.session, claims.BlockInput{BundleID: blocked.bundle, Note: "crm-note"}); err != nil {
+		t.Fatal(err)
+	}
+	linkState := func() string {
+		return miText(t, f.owner, `SELECT count(*)::text||'/'||coalesce(max(generation),0)::text FROM claims.links WHERE bundle_id=$1`, blocked.bundle)
+	}
+	dms := func() int64 {
+		return miCount(t, f.owner, `SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send' AND request->>'bundle_id'=$3`, f.tenantA, f.storeA1, blocked.bundle)
+	}
+	before, auditBefore := linkState(), e.blAudit(t, "inbox.checkout_reminder.skipped:restricted")
+
+	out, err := e.crTrigger(t)
+	if err != nil {
+		t.Fatalf("bulk reminder: %v", err)
+	}
+	if out.Queued != 1 || out.Restricted != 1 || out.Followup != 0 || out.Refused != 0 {
+		t.Fatalf("bulk reminder result %+v, want queued 1 (the unrestricted buyer) and restricted 1", out)
+	}
+	if got := linkState(); got != before {
+		t.Fatalf("a restricted buyer's claim link changed during the reminder: %s -> %s", before, got)
+	}
+	if n := dms(); n != 0 {
+		t.Fatalf("%d DM operations for the restricted buyer", n)
+	}
+	if ops := e.crOps(t); len(ops) != 1 {
+		t.Fatalf("reminder operations = %d, want only the unrestricted buyer's", len(ops))
+	}
+	if got := e.blAudit(t, "inbox.checkout_reminder.skipped:restricted"); got != auditBefore+1 {
+		t.Fatalf("restricted reminder skip audit +%d, want +1", got-auditBefore)
+	}
+	reasons := map[string]string{}
+	for _, it := range e.crReport(t).Followup {
+		reasons[it.BundleID] = it.Reason
+	}
+	if reasons[blocked.bundle] != "restricted" || reasons[normal.bundle] != "" {
+		t.Fatalf("report follow-up reasons %v, want the restricted buyer listed as restricted", reasons)
+	}
+	// The single-buyer path answers the same way (not a send, not an error).
+	if one, err := e.crTriggerAs(t, e.h.token, nil, blocked.bundle); err != nil || one.Queued != 0 || one.Restricted != 1 {
+		t.Fatalf("single reminder: %+v err=%v", one, err)
+	}
+	if got := linkState(); got != before || dms() != 0 {
+		t.Fatalf("single reminder issued a link or DM to the restricted buyer")
+	}
+	// Unblocking restores the reminder.
+	page, err := e.listBlocked(t, e.h.token, f.storeA1, pagination.Request{})
+	if err != nil || len(page.Items) != 1 {
+		t.Fatalf("list: %+v %v", page, err)
+	}
+	if err := e.unblock(t, page.Items[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	if again, err := e.crTrigger(t); err != nil || again.Queued != 1 || again.Restricted != 0 {
+		t.Fatalf("after unblock: %+v err=%v", again, err)
+	}
+}
+
+// P1-2 (review): erasure through the PUBLIC entry point (retention.Erase -> claims.erase_actor) succeeds when the blocklist entry is the only record left of the
+// actor (the normal state after age retention) and removes the entry with its note; a repeat of the request replays, a new request finds nothing.
+func TestBlocklistErasureWithOnlyTheEntryLeft(t *testing.T) {
+	e := lbSetup(t)
+	e.onlySource(t, "facebook")
+	blCleanup(t, e.mciEnv)
+	f := e.h.f
+	ctx := context.Background()
+	c0 := e.planReply(t, false, "", "hello")
+	key := c0.intake.ActorKey
+	e.block(t, c0.s.comment, "erase-note-PII")
+	other := e.planReply(t, false, "", "hello")
+	e.block(t, other.s.comment, "other-note")
+	// What age retention leaves: the intake row of that actor is gone, only the blocklist row still carries the key.
+	mustExec(t, f.owner, `DELETE FROM claims.meta_intake WHERE actor_key=$1`, key)
+	if n := miCount(t, f.owner, `SELECT count(*) FROM claims.meta_intake WHERE actor_key=$1`, key); n != 0 {
+		t.Fatalf("setup: %d intake rows left", n)
+	}
+	pool, err := platform.OpenRetentionOperatorPool(ctx, miRole(t, f, "commerce_retention_operator"))
+	if err != nil {
+		t.Fatalf("retention operator login: %v", err)
+	}
+	t.Cleanup(pool.Close)
+	sel := retention.Selector{Request: randomUUID(), Object: "page", Asset: e.pageAsset, ActorKey: key}
+	counts, held, err := retention.Erase(ctx, pool, sel)
+	if err != nil || held.IsHeld() {
+		t.Fatalf("erase with only the blocklist entry left: counts=%v held=%v err=%v", counts, held.IsHeld(), err)
+	}
+	if counts["blocked_actors"] != 1 {
+		t.Fatalf("erasure counts %v, want blocked_actors=1", counts)
+	}
+	if n := miCount(t, f.owner, `SELECT count(*) FROM claims.blocked_actors WHERE tenant_id=$1 AND store_id=$2 AND actor_key=$3`, f.tenantA, f.storeA1, key); n != 0 {
+		t.Fatalf("the entry (and its note) survived the erasure: %d", n)
+	}
+	if n := miCount(t, f.owner, `SELECT count(*) FROM claims.blocked_actors WHERE tenant_id=$1 AND store_id=$2`, f.tenantA, f.storeA1); n != 1 {
+		t.Fatalf("another actor's entry must stay: %d rows", n)
+	}
+	if again, _, err := retention.Erase(ctx, pool, sel); err != nil || again["replayed"] != 1 {
+		t.Fatalf("repeat of the same request: %v %v", again, err)
+	}
+	sel.Request = randomUUID()
+	if _, _, err := retention.Erase(ctx, pool, sel); !errors.Is(err, retention.ErrNotFound) {
+		t.Fatalf("a new request for an actor with nothing left: %v, want not found", err)
+	}
+}
+
+// P2-5 (review): the grants and policies the reply-planner role (commerce_integration_writer) and the retention role hold on the blocklist are pinned as an exact set,
+// so widening any of them fails here.
+func TestBlocklistPlannerACLPin(t *testing.T) {
+	f := fixture(t)
+	acl := lcStrings(t, f.owner, `SELECT pg_get_userbyid(a.grantee)||' '||a.privilege_type||' *' FROM pg_class c CROSS JOIN LATERAL aclexplode(c.relacl) a
+		WHERE c.oid='claims.blocked_actors'::regclass AND a.grantee<>c.relowner
+		UNION ALL SELECT pg_get_userbyid(a.grantee)||' '||a.privilege_type||' '||att.attname FROM pg_attribute att CROSS JOIN LATERAL aclexplode(att.attacl) a
+		WHERE att.attrelid='claims.blocked_actors'::regclass AND att.attacl IS NOT NULL`)
+	lcSameSet(t, "claims.blocked_actors privileges", acl, []string{
+		"commerce_claims_writer SELECT *", "commerce_claims_writer INSERT *", "commerce_claims_writer DELETE *",
+		"commerce_integration_writer SELECT tenant_id", "commerce_integration_writer SELECT store_id", "commerce_integration_writer SELECT actor_key",
+		"commerce_retention_writer DELETE *", "commerce_retention_writer SELECT actor_key"})
+	policies := lcStrings(t, f.owner, `SELECT policyname||' '||cmd||' '||roles::text FROM pg_policies WHERE schemaname='claims' AND tablename='blocked_actors'`)
+	lcSameSet(t, "claims.blocked_actors policies", policies, []string{
+		"blocked_writer_rw ALL {commerce_claims_writer}", "blocked_reply_read SELECT {commerce_integration_writer}",
+		"blocked_retention_read SELECT {commerce_retention_writer}", "blocked_retention_delete DELETE {commerce_retention_writer}"})
+	// The planner's meta_intake read stays SELECT-only; the two audit policies it received are exactly these.
+	for _, priv := range []string{"INSERT", "UPDATE", "REFERENCES"} {
+		var ok bool
+		if err := f.owner.QueryRow(context.Background(), `SELECT has_column_privilege('commerce_integration_writer','claims.meta_intake','actor_key',$1)`, priv).Scan(&ok); err != nil || ok {
+			t.Errorf("commerce_integration_writer holds %s on claims.meta_intake.actor_key: %v %v", priv, ok, err)
+		}
+	}
+	audit := lcStrings(t, f.owner, `SELECT policyname||' '||cmd||' '||roles::text FROM pg_policies WHERE schemaname='ops' AND tablename='audit_events'
+		AND policyname IN ('claim_reply_restricted_audit','crm_restricted_audit')`)
+	lcSameSet(t, "blocklist audit policies", audit, []string{
+		"claim_reply_restricted_audit INSERT {commerce_integration_writer}", "crm_restricted_audit INSERT {commerce_integration_writer}"})
 }

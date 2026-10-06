@@ -15,11 +15,15 @@
 --   * integration.claim_actor_restricted + a patch of claim_reply_plannable (the 0143/0151 in-place pattern): a restricted actor is the FIRST audited skip
 --     (claim_reply_skipped:restricted). The decision lives in claim_reply_plannable, not plan_claim_reply, because only the plannable skip path can end a claim
 --     without an operation and without a RAISE; plan_claim_reply is therefore unchanged (the poller calls it only after plannable returned OK).
---     Race: claim_actor_restricted and block_actor take the same per-actor advisory key. A block that commits first is seen by the next claim; a block that
---     arrives mid-claim waits for the claim transaction (that claim was already answered; the block applies from the next comment); a claim that meets a block
---     in flight ends with lock_timeout 55P03, which the poller records as a retryable failure (nothing is half-applied) and the retry sees the committed block.
+--     Race: claim_actor_restricted and block_actor take the same per-actor advisory key (exclusive on both sides). A claim that meets a block in flight WAITS for the key and,
+--     once the block commits, sees it (every statement of a volatile plpgsql function takes a fresh READ COMMITTED snapshot); a block that arrives mid-claim waits for the claim
+--     transaction (that claim was already answered; the block applies from the next comment). Only when the block holds the key longer than the poller's lock_timeout (1 s)
+--     does the claim end with 55P03, which the poller records as a retryable failure (nothing is half-applied) and the retry sees the committed block.
 --   * claims.events.reply_kind accepts 'restricted' (set once by the skip); live.console_marks shows such a claim with claim.reason 'restricted'.
---   * claims.apply_actor_erasure deletes the actor's blocklist entry (erasure of the person removes the marker); age-based retention does not purge entries (a merchant safety list; unblock or erasure removes them).
+--   * claims.apply_actor_erasure deletes the actor's blocklist entry and COUNTS it (counts key blocked_actors), so an erasure of an actor whose only remaining record is the entry
+--     succeeds (claims.erase_actor treats a zero total as 'not found'); age-based retention does not purge entries (a merchant safety list; unblock or erasure removes them).
+--   * Checkout reminders (0144 inbox.checkout_reminder_candidates, patched in place): a restricted buyer's bundle gets the audited follow-up reason 'restricted' (no link re-issue,
+--     no DM), through the definer predicate claims.bundle_actor_restricted (the actor_key stays in the database).
 -- Limits (contract Amendment W3-05B): links issued before the block stay valid (storefront checkout is anonymous and cannot identify the actor); a restricted actor's
 -- later line on an existing bundle never had an automatic reply and shows no mark; FB and IG identities of one person are different actors (BL-OPEN-1).
 
@@ -90,6 +94,62 @@ CREATE POLICY event_sold_out_mark ON claims.events FOR UPDATE TO commerce_integr
     WITH CHECK (reply_kind IN ('sold_out', 'restricted'));
 
 -- ---------------------------------------------------------------------------------------
+-- Checkout reminders (0144). Predicate claims.bundle_actor_restricted(bundle): owner commerce_claims_writer, EXECUTE commerce_integration_writer only (the owner of
+-- inbox.checkout_reminder_candidates). No permission check of its own: its only caller already requires inbox:reply AND live:manage; the tenant/store/principal GUCs pin the scope.
+-- ---------------------------------------------------------------------------------------
+CREATE FUNCTION claims.bundle_actor_restricted(p_bundle uuid) RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+DECLARE v uuid[]; b record;
+BEGIN
+    v := claims.for_buyer_scope();
+    SELECT x.platform, x.actor_key INTO b FROM claims.bundles x
+     WHERE x.tenant_id = v[1] AND x.store_id = v[2] AND x.id = p_bundle AND x.purged_at IS NULL;
+    IF NOT FOUND OR b.platform NOT IN ('facebook', 'instagram') THEN RETURN false; END IF;
+    RETURN EXISTS (SELECT 1 FROM claims.blocked_actors d WHERE d.tenant_id = v[1] AND d.store_id = v[2] AND d.actor_key = b.actor_key);
+END $$;
+ALTER FUNCTION claims.bundle_actor_restricted(uuid) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.bundle_actor_restricted(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.bundle_actor_restricted(uuid) TO commerce_integration_writer;
+COMMENT ON FUNCTION claims.bundle_actor_restricted(uuid) IS
+ 'W3-05B (0154). internal/claims helper of inbox.checkout_reminder_candidates (caller commerce_integration_writer inside the merchant transaction): whether the bundle''s actor is restricted; boolean only, no permission check of its own (the caller holds inbox:reply and live:manage).';
+
+-- The reminder's follow-up reason set gains 'restricted' (the CHECK is re-declared; existing rows are unaffected).
+DO $$
+DECLARE c text;
+BEGIN
+    SELECT conname INTO c FROM pg_constraint
+     WHERE conrelid = 'inbox.checkout_reminders'::regclass AND contype = 'c' AND pg_get_constraintdef(oid) LIKE '%link_unavailable%';
+    IF c IS NULL THEN RAISE EXCEPTION 'inbox.checkout_reminders reason CHECK not found (0144 missing?)'; END IF;
+    EXECUTE format('ALTER TABLE inbox.checkout_reminders DROP CONSTRAINT %I', c);
+END $$;
+ALTER TABLE inbox.checkout_reminders ADD CONSTRAINT checkout_reminders_reason_check
+    CHECK (reason IN ('window_closed', 'human_takeover', 'no_peer', 'capability', 'link_unavailable', 'restricted'));
+CREATE POLICY crm_restricted_audit ON ops.audit_events FOR INSERT TO commerce_integration_writer
+    WITH CHECK (inbox.lcn_in_scope(tenant_id, store_id) AND action = 'inbox.checkout_reminder.skipped:restricted');
+
+-- inbox.checkout_reminder_candidates, patched in place from the live definition (exactly-once anchor, loud failure otherwise; ownership and ACL re-asserted): a restricted
+-- buyer overrides every other verdict (including 'send' and the other follow-up reasons), is recorded as the follow-up reason 'restricted' like the other unreachable
+-- buyers, and one audit row names the skip. A buyer already reminded stays 'already_reminded' (decided before the anchor).
+DO $$
+DECLARE v_fn text; v_needle text; v_repl text;
+BEGIN
+    v_needle := '        IF v_verdict IS NULL THEN' || chr(10) || '            v_sends := v_sends + 1;';
+    v_repl := '        -- 0154 W3-05B: a restricted buyer is never sent a claim link or DM, whatever the verdict above says.' || chr(10)
+           || '        IF claims.bundle_actor_restricted(b.id) THEN' || chr(10)
+           || '            v_verdict := ''restricted'';' || chr(10)
+           || '            INSERT INTO ops.audit_events(tenant_id, store_id, principal_id, action) VALUES (v_t, v_s, v_p, ''inbox.checkout_reminder.skipped:restricted'');' || chr(10)
+           || '        END IF;' || chr(10) || v_needle;
+    v_fn := pg_get_functiondef('inbox.checkout_reminder_candidates(uuid,text,int,uuid)'::regprocedure);
+    IF (length(v_fn) - length(replace(v_fn, v_needle, ''))) <> length(v_needle) THEN
+        RAISE EXCEPTION 'inbox.checkout_reminder_candidates has an unexpected shape for the restricted-actor patch';
+    END IF;
+    EXECUTE replace(v_fn, v_needle, v_repl);
+END $$;
+ALTER FUNCTION inbox.checkout_reminder_candidates(uuid,text,int,uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.checkout_reminder_candidates(uuid,text,int,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.checkout_reminder_candidates(uuid,text,int,uuid) TO commerce_runtime;
+
+-- ---------------------------------------------------------------------------------------
 -- Planner side. claim_actor_restricted: owner commerce_integration_writer, no EXECUTE grant (only claim_reply_plannable of the same owner calls it).
 -- It serialises on the per-actor key block_actor also takes, then answers from a fresh statement snapshot.
 -- ---------------------------------------------------------------------------------------
@@ -154,18 +214,24 @@ ALTER FUNCTION live.console_marks(uuid,text[]) OWNER TO commerce_claims_writer;
 -- Erasure: the actor's blocklist entry goes with the actor (claims.apply_actor_erasure, patched in place; the 0127 definition is the latest).
 -- ---------------------------------------------------------------------------------------
 DO $$
-DECLARE v_fn text; v_needle text; v_repl text;
+DECLARE v_fn text; v_needle text; v_repl text; v_n2 text; v_r2 text;
 BEGIN
     v_needle := ' -- RD1: random key/label (never derived from the bundle id), binding cleared, purged_at set; label only for manual.';
     v_repl := ' IF NOT v_single THEN' || chr(10)
-           || '  -- 0154 W3-05B: the merchant''s restricted-buyer entry names this actor_key; erasure of the person removes it.' || chr(10)
+           || '  -- 0154 W3-05B: the merchant''s restricted-buyer entry (and its internal note) names this actor_key; erasure of the person removes it and COUNTS it,' || chr(10)
+           || '  -- so an actor whose only remaining record is the entry (the state after age retention) is erased, not reported as not found.' || chr(10)
            || '  DELETE FROM claims.blocked_actors d WHERE d.actor_key=p_actor_key;' || chr(10)
+           || '  GET DIAGNOSTICS v_n=ROW_COUNT;' || chr(10)
+           || ' ELSE' || chr(10) || '  v_n:=0;' || chr(10)
            || ' END IF;' || chr(10) || v_needle;
+    v_n2 := 'CASE WHEN n_defer>0 THEN jsonb_build_object(''social_deferred'',n_defer) ELSE ''{}''::jsonb END;';
+    v_r2 := 'CASE WHEN n_defer>0 THEN jsonb_build_object(''social_deferred'',n_defer) ELSE ''{}''::jsonb END'
+         || ' || CASE WHEN v_n>0 THEN jsonb_build_object(''blocked_actors'',v_n) ELSE ''{}''::jsonb END;';
     v_fn := pg_get_functiondef('claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[])'::regprocedure);
-    IF (length(v_fn) - length(replace(v_fn, v_needle, ''))) <> length(v_needle) THEN
+    IF (length(v_fn) - length(replace(v_fn, v_needle, ''))) <> length(v_needle) OR (length(v_fn) - length(replace(v_fn, v_n2, ''))) <> length(v_n2) THEN
         RAISE EXCEPTION 'claims.apply_actor_erasure has an unexpected shape for the blocklist patch';
     END IF;
-    EXECUTE replace(v_fn, v_needle, v_repl);
+    EXECUTE replace(replace(v_fn, v_needle, v_repl), v_n2, v_r2);
 END $$;
 ALTER FUNCTION claims.apply_actor_erasure(text,text,uuid,uuid,uuid,text[]) OWNER TO commerce_retention_writer;
 

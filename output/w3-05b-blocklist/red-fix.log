@@ -1,0 +1,21 @@
+base SHA: 62c607c059fff31911f6adcdd33dd98fdce5f2e4 (+ uncommitted new tests; migration 0154 as reviewed)
+    blocklist_test.go:475: bulk reminder result {Queued:2 AlreadyReminded:0 Followup:0 Restricted:0 Refused:0 Truncated:false Results:[{BundleID:ea8abc78-0c77-451c-9aac-8e88f50bcfb8 Outcome:queued Code:} {BundleID:6c25f3de-7307-4d6f-be7c-71b9754525e4 Outcome:queued Code:}]}, want queued 1 (the unres
+--- FAIL: TestBlocklistCheckoutReminderSkipsRestricted (9.39s)
+    blocklist_test.go:542: erase with only the blocklist entry left: counts= held=false err=retention_not_found
+--- FAIL: TestBlocklistErasureWithOnlyTheEntryLeft (0.93s)
+    blocklist_test.go:587: blocklist audit policies mismatch
+        missing: [crm_restricted_audit INSERT {commerce_integration_writer}]
+        extra:   []
+--- FAIL: TestBlocklistPlannerACLPin (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.835s
+FAIL
+test-focused: top-level PASS=0 FAIL=3 SKIP=0 exit=1
+
+=== P2(d) behavioural red: TestBlocklistRestrictedClaim with the claim_reply_plannable patch REMOVED from 0154 (base SHA 62c607c059fff31911f6adcdd33dd98fdce5f2e4) ===
+    blocklist_test.go:133: BL01 restricted actor got an operation: "f1e97b3f-c7f9-4587-9b31-669894229bd8"
+--- FAIL: TestBlocklistRestrictedClaim (9.13s)
+FAIL
+FAIL	livecommerce/tests/foundation	10.349s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

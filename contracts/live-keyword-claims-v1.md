@@ -1278,17 +1278,28 @@ no claim link and sends no automatic private reply. Nothing is shown to the buye
   (the merchant may still answer the comment once by hand, `409 used` afterwards) and `link_pending_manual` is NOT set (no "send the link by hand" prompt for a buyer the merchant
   restricted). The bundle-creating `claims.events` row gets `reply_kind='restricted'` (closed vocabulary now `NULL | sold_out | restricted`, ACCEPTED only, one-way). `plan_claim_reply`
   is unchanged: it is only reached after `claim_reply_plannable` returned `OK`, and a RAISE there would be final in the poller and lose the claim.
-- **Race**: `integration.claim_actor_restricted` (called by `claim_reply_plannable`) and `claims.block_actor` take the same per-actor `pg_advisory_xact_lock('claims-blockactor|t|s|actor_key')`.
-  A block that commits first is seen by the next claim; a block that arrives mid-claim waits for that claim transaction (that claim was already answered, the block applies from the next comment);
-  a claim that meets a block in flight ends with `lock_timeout` (55P03), which the poller records as a retryable failure (nothing half-applied) and the retry sees the committed block.
+- **Race**: `integration.claim_actor_restricted` (called by `claim_reply_plannable`) and `claims.block_actor` take the same per-actor `pg_advisory_xact_lock('claims-blockactor|t|s|actor_key')`
+  (exclusive on both sides). A claim that meets a block in flight **waits** for the key and, once the block commits, sees it (each statement of a volatile plpgsql function takes a fresh READ COMMITTED
+  snapshot); a block that arrives mid-claim waits for that claim transaction (that claim was already answered, the block applies from the next comment). Only when the block holds the key longer than the
+  poller's `lock_timeout` (1 s) does the claim end with 55P03, which the poller records as a retryable failure (nothing half-applied, final only after 10 consecutive failures) and the retry sees the committed block.
   `block_actor` additionally takes a per-store key for the 5000 bound (order store key -> actor key; the planner takes only the actor key, so no cycle).
 - **Console**: `live.console_marks.claim_reason` is `'restricted'` for such a claim (`claim_outcome` stays ACCEPTED); UI text 「已限制」. Output shape unchanged.
 - **Reads** (live:read): `GET .../live-sessions/{sid}/claims/blocklist?limit&cursor` -> `{items:[{id,platform,note,source_bundle_id,created_at}],next_cursor}` (newest first, keyset `(created_at,id)`, collection
   `claim-blocklist`); `GET .../claims/blocklist/check?bundle_id=` -> `{restricted:bool}` (boolean only, for the order drawer and buyer panel warning; LC-B6 order creation is NOT blocked, the UI warns).
   Writes: `POST .../claims/blocklist` body `{comment_ref|conversation_id|bundle_id, note?}` -> `{id,platform,created_at,created}`; `DELETE .../claims/blocklist/entries/{id}` -> `{removed:true}`; both need an `Idempotency-Key`.
   Errors: `409 limit_reached`, `409 ambiguous_actor`, `404` unknown / foreign reference, `422` malformed or two references, `403` without live:manage. Routes live in the claims family (mounted with it).
-- **Erasure and retention**: `claims.apply_actor_erasure` (patched in place) deletes the entry of the erased `actor_key` (`commerce_retention_writer` holds `SELECT(actor_key)` + `DELETE` on the table). Age-based
-  retention does not purge entries: the list is the merchant's own safety record, removed by unblock or by erasure of the person.
+- **Checkout reminders do not bypass the list**: `inbox.checkout_reminder_candidates` (0144, patched in place) asks the definer predicate `claims.bundle_actor_restricted(bundle)` (owner `commerce_claims_writer`,
+  EXECUTE `commerce_integration_writer` only; the actor_key stays in the database). A restricted buyer overrides every other verdict (except `already_reminded`): no claim link is re-issued, no DM planned; the bundle is
+  recorded as the follow-up reason `restricted` (`inbox.checkout_reminders.reason` CHECK widened), audit `inbox.checkout_reminder.skipped:restricted`, and the POST `.../reminders[/{bundle}]` result carries
+  `restricted: n` (a separate count, not part of `followup`; the result row has `outcome:"restricted"`). The single-buyer call answers the same way (200, `queued:0, restricted:1`), not 409.
+- **Erasure and retention**: `claims.apply_actor_erasure` (patched in place) deletes the entry (and its note) of the erased `actor_key` and COUNTS it (`blocked_actors` in the erasure counts, closed count set of
+  `internal/retention` extended), so `claims.erase_actor` succeeds for an actor whose only remaining record is the entry (the steady state after age retention; a zero total would be `PT404 not found`).
+  `commerce_retention_writer` holds `SELECT(actor_key)` + `DELETE` on the table. Age-based retention does not purge entries: the list is the merchant's own safety record, removed by unblock or by erasure of the person.
+  Selectors by comment ref or bundle cannot resolve once intake and bundles are gone; use the actor-key selector.
+- **Deliberate merchant actions are allowed**: the manual claim-link issue/rotate route (`claims.issue_link`), the LC-B4 manual "send the link" DM, manual private replies and manual DMs, and LC-B6
+  order-for-buyer creation are explicit per-buyer choices of a merchant who can see the buyer, so they are NOT blocked for a restricted actor. The console must WARN before them
+  (`GET .../claims/blocklist/check?bundle_id=`; UI in W3-U2). Only the automatic and bulk paths (automatic claim reply, bulk/single checkout reminder) honour the list.
 - **Limits (say them in the UI copy)**: links issued before the block stay valid (storefront checkout is anonymous and cannot identify the actor); a restricted actor's later line on an existing bundle never had
-  an automatic reply and shows no mark; a conversation with several actors needs a bundle choice; no cross-store or cross-tenant sharing, no rule-based or phone/address blocking.
+  an automatic reply and shows no mark; with `private_reply=false` on the source the planner never runs, so such a claim has no `restricted` mark either (no link or reply leaks); a conversation with several
+  actors needs a bundle choice; list, check and unblock routes sit under a session path but are store-level (the session id is only a path prefix there); no cross-store or cross-tenant sharing, no rule-based or phone/address blocking.
 - Gates: `TestBlocklist*` (BL01-BL08, race, erasure, ACL pins), `internal/httpapi` blocklist transport tests. Evidence MOCK (REAL_PG; no Graph call is made for a restricted claim).
