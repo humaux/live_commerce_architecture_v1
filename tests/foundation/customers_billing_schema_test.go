@@ -169,6 +169,8 @@ var cbsFunctions = []cbsFn{
 	{"customers.tn_notes_json(uuid,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
 	{"customers.erase_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
 	{"customers.export_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
+	// W5-02B (0152): erasure hook of the customer import (EXECUTE nobody; the import definers live in schema migrationimport).
+	{"customers.erase_import_profile(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
 	{"identity.read_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	// 0147 (W6-02B): the report read definers and the audited export (volatile like finance: they call resolve_access / the audit fence).
@@ -210,7 +212,13 @@ var cbsPrivacyFrozen = []cbsPriv{
 	{"customers.tags", "SELECT", nil}, {"customers.tags", "INSERT", nil}, {"customers.tags", "UPDATE", []string{"name", "color"}},
 	{"customers.owner_tags", "SELECT", nil}, {"customers.owner_tags", "INSERT", nil},
 	{"customers.notes", "SELECT", nil}, {"customers.notes", "INSERT", nil}, {"customers.notes", "UPDATE", []string{"body", "edited_at", "version"}},
-	{"buyer.owners", "SELECT", nil}, {"buyer.owners", "UPDATE", []string{"active"}},
+	// W5-02B (0152): imported customers are real owner rows (INSERT of the two scope columns, policy-scoped) with a profile, an external
+	// id and a batch record, all written by the migrationimport / erase definers only.
+	{"customers.import_profiles", "SELECT", nil}, {"customers.import_profiles", "INSERT", nil},
+	{"customers.import_profiles", "UPDATE", []string{"display_name", "phone_e164", "email", "updated_at"}},
+	{"migrationimport.batches", "SELECT", nil}, {"migrationimport.batches", "INSERT", nil}, {"migrationimport.batches", "UPDATE", []string{"results"}},
+	{"migrationimport.external_ids", "SELECT", nil}, {"migrationimport.external_ids", "INSERT", nil},
+	{"buyer.owners", "SELECT", nil}, {"buyer.owners", "UPDATE", []string{"active"}}, {"buyer.owners", "INSERT", []string{"tenant_id", "store_id"}},
 	{"buyer.capability_sessions", "SELECT", nil}, {"buyer.capability_sessions", "UPDATE", []string{"revoked_at"}},
 	{"buyer.capability_events", "INSERT", nil},
 	{"storefront.destination_snapshots", "SELECT", nil},
@@ -435,8 +443,9 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		for _, r := range []string{"commerce_privacy_writer", "commerce_billing_writer"} {
 			// W6-01B: DELETE is allowed on exactly customers.tags / owner_tags / notes (tag delete, set replacement, erasure) and ops.command_results (erasure of receipts).
+			// W5-02B: plus customers.import_profiles and migrationimport.batches / external_ids (erasure, 90-day batch prune).
 			if e.bool(`SELECT EXISTS(SELECT 1 FROM information_schema.table_privileges WHERE grantee=$1 AND privilege_type IN ('DELETE','TRUNCATE','TRIGGER','REFERENCES')
-			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
+			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes','import_profiles')) OR (table_schema='migrationimport' AND table_name IN ('batches','external_ids')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
 				t.Errorf("%s holds DELETE/TRUNCATE/TRIGGER/REFERENCES somewhere", r)
 			}
 		}
@@ -543,7 +552,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// audit inserts are limited to the contract's actions
 		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased",
-			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted"}, "commerce_billing_writer": {"billing.customer_pinned"}}
+			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported"}, "commerce_billing_writer": {"billing.customer_pinned"}}
 		for role, actions := range auditRe {
 			ps := covers("ops.audit_events", role, "INSERT")
 			if len(ps) == 0 {

@@ -1,0 +1,31 @@
+=== RUN   TestCustomerImport
+=== RUN   TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers
+=== RUN   TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts
+=== RUN   TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner
+=== RUN   TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written
+=== RUN   TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv
+=== RUN   TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match
+=== RUN   TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results
+    customer_import_test.go:370: profile or external id survived the erasure
+=== RUN   TestCustomerImport/CI08_limits_and_drift
+    customer_import_test.go:442: 5000-row preview + commit: 13.127199625s
+=== RUN   TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs
+=== RUN   TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted
+=== RUN   TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners
+--- FAIL: TestCustomerImport (32.75s)
+    --- PASS: TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers (0.18s)
+    --- PASS: TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts (0.05s)
+    --- PASS: TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner (0.11s)
+    --- PASS: TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written (0.13s)
+    --- PASS: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv (0.08s)
+    --- PASS: TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match (0.06s)
+    --- FAIL: TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results (0.03s)
+    --- PASS: TestCustomerImport/CI08_limits_and_drift (13.31s)
+    --- PASS: TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs (0.14s)
+    --- PASS: TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted (0.37s)
+    --- PASS: TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	33.816s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

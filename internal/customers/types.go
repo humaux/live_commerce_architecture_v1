@@ -98,6 +98,8 @@ type Customer struct {
 	Platforms       []string `json:"platforms"`
 	Consents        Consents `json:"consents"`
 	Active          bool     `json:"active"`
+	// Imported is true for a customer created by the CSV import (W5-02B): it has an import profile instead of orders or bundles.
+	Imported bool `json:"imported"`
 	// Tags are the merchant-typed store tags of this customer, name-ordered (W6-01B); never nil.
 	Tags []Tag `json:"tags"`
 }
@@ -304,7 +306,7 @@ func strict(raw []byte, out any) error {
 }
 
 var customerKeys = []string{"customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "tags"}
+	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "imported", "tags"}
 var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions",
 	"tags_revision", "notes")
 
