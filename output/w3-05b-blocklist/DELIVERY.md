@@ -1,0 +1,28 @@
+# w3-05b-blocklist delivery
+- Branch/commit: unit/w3-05b-blocklist (SHA in the commit; see `git log -1`)   Base: 71235fc4   Model: Claude Sonnet 5.5
+- Summary: restricted-buyer list per store. `migrations/0154_buyer_blocklist.sql`: table `claims.blocked_actors` (PK tenant,store,actor_key; <=5000/store; note<=200 no control chars; FORCE RLS; no runtime access),
+  four merchant definers owned by `commerce_claims_writer` (`block_actor` by ONE server-known ref comment_ref|bundle_id|conversation_id, `unblock_actor` by entry id, `list_blocked_actors`, `actor_restricted_for_bundle`),
+  `integration.claim_actor_restricted` + in-place patch of `claim_reply_plannable` (restricted = FIRST skip, audit `claim_reply_skipped:restricted`, event `reply_kind='restricted'`, no operation/link, no mpr: quota, no link_pending_manual),
+  `console_marks` shows claim_reason `restricted` (shape unchanged), `apply_actor_erasure` deletes the entry. Go: `internal/claims/blocklist.go`, `internal/httpapi/blocklist.go` (4 routes, wired in `registerClaimRoutes`),
+  `internal/pagination` collection `claim-blocklist`. Contract Amendment appended to `contracts/live-keyword-claims-v1.md`.
+- Deviations from the integrator note / brief (reasons):
+  1. `plan_claim_reply` is NOT replaced. A branch there cannot end a claim without an operation or a RAISE (poller scans a uuid; a RAISE is final and loses the claim); the skip belongs to `claim_reply_plannable`, which already owns the audited skips. 0154 therefore patches plannable in place (the 0143/0151 pattern, loud failure on unexpected shape) and leaves plan_claim_reply byte-identical. Still numbered 0154 (after 0151).
+  2. `actor_key` is `text ^[0-9a-f]{64}$` (as claims.bundles/meta_intake), not bytea.
+  3. Unblock is by entry `id` (not actor_key); the key never leaves the DB. List shows platform/note/source_bundle_id/created_at (meta bundles carry no display name; a name would need the encrypted social facts: separate unit).
+  4. Audit (`claims.actor_blocked/unblocked`) is written by Go in the same tx (command.Audit), so the claims_writer role gets no audit grant. A body with an `actor_key` key is `400 invalid_json` (Studio strict decoder), not 422; two/no references are 422.
+  5. A claim that meets an in-flight block ends with lock_timeout 55P03 (poller records a retryable failure, nothing half-applied); the retry sees the block (test `TestBlocklistClaimBlockRace`).
+- Contract/interface changes: live-keyword-claims-v1 Amendment W3-05B (appended). `live-console-v1 §5.1` (order drawer restricted warning, uses `GET .../claims/blocklist/check`) is the integrator's.
+- Tests: `bash scripts/dev/test-focused.sh 'TestBlocklist'` -> exit 0 (6 tests: restricted claim BL01-03+mark, check/list BL04/06, definer rules+privacy BL04/05/08, limit BL07, claim-vs-block race, erasure);
+  `go test ./internal/httpapi ./internal/pagination ./internal/claims` -> ok (DB-free route test builds the full NewHandler).
+  red evidence: `output/w3-05b-blocklist/red.log` (migration absent: 6/6 FAIL, SQLSTATE 42883/42P01); green: `output/w3-05b-blocklist/green.log`.
+- Pins updated honestly (additions only, never relaxed): `r2_integration_upgrade_test.go` 76->77; `live_claims_schema_test.go` KC03 (claims tables 11->12, column/table matrix rows for claims_writer, 4 definers + EXECUTE sets, claims_writer owned objects 38->42, binding/links reach set +2);
+  `external_operation_authority_test.go` T06 (88->89 + `claim_actor_restricted`); `claims_retention_test.go` CRP02 (retention matrix `claims.blocked_actors` SELECT(actor_key)+DELETE, two policies; populated-upgrade holds 0154 back with 0144/0151 and re-applies it).
+- Gates run (local focused; 222 tests in one batch, PASS=220): KC03, MCI02, T06, WAS01-06, R2IntegrationUpgrade, CRP02, CRP06, CRP08, SoldOut*, LiveConsole*, LiveClaims*, MetaClaims*, CheckoutReminder, AdsAttribution, LiveTools, Blocklist -> only 2 FAIL:
+  `TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink` and `TestLiveConsoleInboxCrossStoreIsolation`, which are ORDER-DEPENDENT and fail identically WITHOUT the blocklist tests (`nobl-order.log`: Ads+CheckoutReminder+Database+Identity+LiveConsoleInbox) and pass alone / inside `TestLiveConsole` (47/47). Pre-existing, not touched.
+  `bash scripts/dev/check-headers.sh 71235fc4` / `check-gates.sh` -> see integrator run (exit codes in commit message footer if any).
+- Evidence class: MOCK (REAL_PG; a restricted claim makes no Graph call). Meta LIVE NOT_RUN.
+- Risks: (a) links issued BEFORE a block stay valid (anonymous checkout cannot identify the actor); (b) a restricted actor's later line on an existing bundle never had an auto reply and shows no mark; (c) FB vs IG of one person are different actors (BL-OPEN-1);
+  (d) retention does not age-purge entries (erasure/unblock removes); (e) one extra advisory lock + PK lookup per bundle-creating private-reply claim.
+- NOT_RUN / BLOCKED: no UI (W3-U2 owns list page + buyer-panel button); LC-B6 order drawer warning wiring; Playwright; full foundation suite (CI); `release-gate.sh --strict --only G07` (CI).
+- CI gates (GitHub `.github/workflows/gates.yml`): full foundation suite (shards touching KC03/MCI/CRP/T06/WAS/R2 upgrade); `--meta-consumer`; `--browser-live-claims` (claims routes unchanged for it, regression only); `release-gate.sh --strict --only G07`.
+- Integrator to-do: confirm migration number 0154 unclaimed; add `live-console-v1 §5.1` drawer warning text; pagination collection `claim-blocklist` is the only change outside claims/httpapi; OpenAPI/BFF forwarding of the 4 new routes under `/live-sessions/{sid}/claims/blocklist*`; docs/delivery GATES row for `TestBlocklist*`.
