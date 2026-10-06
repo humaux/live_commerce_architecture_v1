@@ -31,6 +31,7 @@ var allowedCounts = map[string]bool{
 	"enforced": true, "links": true, "bundles": true, "intake": true, "operations": true,
 	"comment_events": true, "messages": true, "conversations": true, "more": true, "busy": true,
 	"lines": true, "replayed": true, "tombstones": true, "inserted": true, "social_deferred": true,
+	"blocked_actors": true, // 0154 (W3-05B): restricted-buyer entries removed by an actor erasure
 }
 
 // Counts is a set of row counts (booleans as 0/1). Every formatting path prints numbers only.

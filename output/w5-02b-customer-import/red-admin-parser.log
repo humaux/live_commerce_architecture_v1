@@ -1,0 +1,69 @@
+✖ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (0.668208ms)
+✖ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.077458ms)
+✖ customer detail: bounded lists, order summaries reuse the orders parser, id must match (0.131042ms)
+✔ erasure summary is four counts only (0.607834ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.56275ms)
+✔ financeDay is the UTC+8 day (5.403667ms)
+✖ tags and notes are parsed strictly (W6-01B) (0.137625ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 3
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 130.582584
+
+✖ failing tests:
+
+test at tests/admin/customers-model.test.ts:39:1
+✖ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (0.668208ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:93:82)
+      at parseCustomer (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:159:23)
+      at Array.map (<anonymous>)
+      at parseCustomerList (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:166:25)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/tests/admin/customers-model.test.ts:40:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+
+test at tests/admin/customers-model.test.ts:55:1
+✖ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.077458ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:93:82)
+      at parseCustomer (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:159:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/tests/admin/customers-model.test.ts:58:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3)
+
+test at tests/admin/customers-model.test.ts:72:1
+✖ customer detail: bounded lists, order summaries reuse the orders parser, id must match (0.131042ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:93:82)
+      at parseCustomerDetail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:195:13)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/tests/admin/customers-model.test.ts:73:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/customers-model.test.ts:121:1
+✖ tags and notes are parsed strictly (W6-01B) (0.137625ms)
+  Error: unavailable
+      at object (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:93:82)
+      at parseCustomer (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/apps/admin/lib/customers-model.ts:159:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-02b-customer-import/tests/admin/customers-model.test.ts:122:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

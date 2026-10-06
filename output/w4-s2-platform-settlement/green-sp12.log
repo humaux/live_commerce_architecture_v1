@@ -1,0 +1,17 @@
+# green on COMMITTED tree SHA 4343ca69c90abf99ac08a4e196f2b92840eeeb3f (clean tree): test-focused.sh '^(TestStripeSP12MoneyChecks|TestPlatformSettlement|TestPlatformStripe|TestStripeSL02)' (prefix match: all PF01-PF11 and SL02 tests); 2026-10-06T14:59:11Z
+--- PASS: TestPlatformSettlement (14.36s)
+--- PASS: TestPlatformStripePF01Schema (4.61s)
+--- PASS: TestPlatformStripePF02Enable (4.16s)
+--- PASS: TestPlatformStripePF03Fanout (4.41s)
+--- PASS: TestPlatformStripePF04Start (4.97s)
+--- PASS: TestPlatformStripePF05Webhook (6.32s)
+--- PASS: TestPlatformStripePF06Refund (8.70s)
+--- PASS: TestPlatformStripePF07Kill (5.11s)
+--- PASS: TestPlatformStripePF08Routes (3.30s)
+--- PASS: TestPlatformStripePF11DisallowBlocks (5.81s)
+--- PASS: TestPlatformStripePF09LiveRevokeRace (9.97s)
+--- PASS: TestPlatformStripePF07LivePostRevoke (5.24s)
+--- PASS: TestStripeSP12MoneyChecks (102.67s)
+--- PASS: TestStripeSL02Schema (11.51s)
+test-focused: top-level PASS=14 FAIL=0 SKIP=0 exit=0
+exit=0

@@ -211,16 +211,20 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	}
 	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
 	registerPaymentCardRoutes(mux, pool, configured.PaymentProfile) // unit w4-s1-platform-stripe: payment_card.go
+	registerSettlementRoutes(mux, pool)                             // unit w4-s2-platform-settlement: settlements.go (read-only statements)
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
 	registerMetaHealthRoutes(mux, pool, configured.MetaHealth)
 	registerCustomerRoutes(mux, pool)
+	registerImportRoutes(mux, pool) // unit w5-02b-customer-import: imports.go, contracts/migration-import-v1.md
 	registerFinanceRoutes(mux, pool)
 	registerReportRoutes(mux, pool, paymentEnvironment) // unit w6-02b-reports: product / channel / funnel / manual-order reports, reports.go
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerPickListRoutes(mux, pool, configured.CVS) // unit w3-02b-picklist: pick list, carrier export, cvs-batch
+	registerParcelRoutes(mux, pool)                   // unit w3-07b-parcel-merge: merge suggestions, parcel groups, group shipment
+	registerReturnRoutes(mux, pool)                   // unit w3-08b-returns: merchant cancel, RMA (returns.go)
 	registerOfflinePaymentRoutes(mux, pool)
 	registerCodPaymentRoutes(mux, pool)                                                  // unit home-cod: cash-on-delivery settings, cod.go
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders, configured.ForBuyer) // unit merchant-tools: storefront-v2 section G, merchanttools.go

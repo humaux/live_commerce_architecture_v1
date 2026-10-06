@@ -1,0 +1,73 @@
+## mutation: carry (one fault only), base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + fix; 2026-10-06T13:42:38Z
+    platform_settlement_test.go:694: week 2: captured=2500 refunded=0 dispute=-2500 fee=5800(5800) bps=500 pfee=100(100) carried=0(-6800) net=10700
+    platform_settlement_test.go:798: list body: {"statements":[{"statement_id":"2a8da5e9-c51a-42cb-b9bf-f0c7acbf37e1","period_start":"2026-09-14","period_end":"2026-09-21","currency":"TWD","captured_minor":2500,"refunded
+--- FAIL: TestPlatformSettlement (13.87s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.12s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.02s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- PASS: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.02s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.02s)
+    --- PASS: TestPlatformSettlement/PF12_payout (0.01s)
+    --- PASS: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+exit=1
+## mutation: recheck (one fault only), base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + fix; 2026-10-06T13:43:16Z
+    platform_settlement_test.go:556: re-sync after the facts arrived: {Fetched:4 Inserted:0 Duplicate:4 Unattributed:0 Mismatch:0 Rechecked:0 StripeNet:map[HKD:1222] RecordedNet:map[HKD:-498165] Difference:map[HKD:-49938
+    platform_settlement_test.go:648: close week 1 (all stores): [] stripeadmin: rejected: settlement_mismatch
+    platform_settlement_test.go:749: payout of a negative net: want a rejection carrying "payout_amount_mismatch", got stripeadmin: config
+    platform_settlement_test.go:780: no stripe.settlement.payout audit row carries the operator ticket
+    platform_settlement_test.go:798: list body: {"statements":[{"statement_id":"d9e47bbe-558f-450a-a1ae-813751f85eca","period_start":"2026-08-31","period_end":"2026-09-07","currency":"TWD","captured_minor":2500,"refunded
+--- FAIL: TestPlatformSettlement (15.24s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.16s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.03s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- FAIL: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.02s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.02s)
+    --- FAIL: TestPlatformSettlement/PF12_payout (0.00s)
+    --- FAIL: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+exit=1
+## mutation: future (one fault only), base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + fix; 2026-10-06T13:43:53Z
+    platform_settlement_test.go:602: SQL accepted a window ending at 2026-10-06T22:43:53+08:00: <nil>
+    platform_settlement_test.go:749: payout of a negative net: want a rejection carrying "payout_amount_mismatch", got stripeadmin: config
+    platform_settlement_test.go:780: no stripe.settlement.close audit row carries the operator ticket
+    platform_settlement_test.go:798: list body: {"statements":[]}
+--- FAIL: TestPlatformSettlement (14.43s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.10s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.03s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- PASS: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.02s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.01s)
+    --- FAIL: TestPlatformSettlement/PF12_payout (0.00s)
+    --- FAIL: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+exit=1
+## mutation: quiet (one fault only), base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + fix; 2026-10-06T13:44:31Z
+    platform_settlement_test.go:681: close week 2 (all stores, quiet week): [{StatementID:1ae69605-943e-43ad-8c76-8ddb8d70e784 StoreID:da7fb0a9-5cf1-4061-aadf-81215e2f2b81 NetPayableMinor:3900 LineCount:2 Replayed:false}
+    platform_settlement_test.go:798: list body: {"statements":[{"statement_id":"1ae69605-943e-43ad-8c76-8ddb8d70e784","period_start":"2026-09-14","period_end":"2026-09-21","currency":"TWD","captured_minor":2500,"refunded
+--- FAIL: TestPlatformSettlement (13.98s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.10s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.03s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- PASS: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.02s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.02s)
+    --- PASS: TestPlatformSettlement/PF12_payout (0.01s)
+    --- PASS: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.00s)
+exit=1
+## mutation: terminal (one fault only), base SHA 123dd0d9bb3392b0b0b4b296b308b5cdc417c7c5 + fix; 2026-10-06T13:45:07Z
+    platform_settlement_test.go:556: re-sync after the facts arrived: {Fetched:4 Inserted:0 Duplicate:2 Unattributed:0 Mismatch:0 Rechecked:2 StripeNet:map[HKD:1222] RecordedNet:map[HKD:-498165] Difference:map[HKD:-49938
+    platform_settlement_test.go:648: close week 1 (all stores): [] stripeadmin: rejected: settlement_mismatch
+    platform_settlement_test.go:749: payout of a negative net: want a rejection carrying "payout_amount_mismatch", got stripeadmin: config
+    platform_settlement_test.go:780: no stripe.settlement.payout audit row carries the operator ticket
+    platform_settlement_test.go:798: list body: {"statements":[{"statement_id":"ffaaa962-867a-4459-a533-ab38be234268","period_start":"2026-08-31","period_end":"2026-09-07","currency":"TWD","captured_minor":2500,"refunded
+--- FAIL: TestPlatformSettlement (14.84s)
+    --- PASS: TestPlatformSettlement/PF09_schema (0.13s)
+    --- PASS: TestPlatformSettlement/PF10_sync (0.04s)
+    --- PASS: TestPlatformSettlement/PF10_platform_connection_assertion (0.00s)
+    --- FAIL: TestPlatformSettlement/PF10_recheck_transient_mismatch (0.05s)
+    --- FAIL: TestPlatformSettlement/PF11_close (0.02s)
+    --- FAIL: TestPlatformSettlement/PF12_payout (0.00s)
+    --- FAIL: TestPlatformSettlement/PF12_ticket_in_audit (0.00s)
+    --- FAIL: TestPlatformSettlement/PF13_merchant_read_and_csv (0.01s)
+exit=1

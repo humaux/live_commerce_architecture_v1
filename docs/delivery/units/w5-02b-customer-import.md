@@ -77,3 +77,9 @@ REAL_PG/MOCK（合成数据）。DeepSeek；K3（写「同意不被补造」反�
 ## OPEN
 - CI-OPEN-1 owner 需提供去识别化 SHOPLINE 顾客导出**表头**（只要列名即可）以定自动映射；没有 → 映射全手动。
 - CI-OPEN-2 SHOPLINE 备注列：**推荐**本单元忽略；W6-01B 合并后若 owner 需要，另开 S 单元导入为备注。
+
+## Integrator 裁决（2026-10-06，Opus 隐私评审后；覆盖上文正文）
+- 迁移号 **0152**（不是 0140）；`apply_erasure` 内挂钩 `customers.erase_import_profile`（不是 `erase_owner`，`replay_erasures` 因此同样覆盖）。
+- 提交 **不带** `Idempotency-Key` 头：幂等键 = 文件哈希 + 映射 + expected_apply_rows（同 tracking-import 先例，已接受的偏差）；同档换映射 → 409 `idempotency_conflict`。
+- 擦除留 **盐化墓碑**（`store_salts` + `erased_external_ids`，`sha256(salt||external_id)`）；之后同源 id 的行失败 `erased`，预览计 `erased_rows`，结果档不含该 id。已知局限：换新 id 的同一人、自行擦除的买家 → B24。
+- 商家隐私导出含 `import_profile`（`customers.export_import_profile`）；`commerce_auth` 读策略按店铺 GUC 限定；`external_id` 形似邮箱/手机的行被拒（`invalid_external_id`）。

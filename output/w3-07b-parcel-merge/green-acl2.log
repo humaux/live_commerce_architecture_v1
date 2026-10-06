@@ -1,0 +1,203 @@
+=== RUN   TestManualFulfilmentMF03Transitions
+=== RUN   TestManualFulfilmentMF03Transitions/record,_correct,_void,_re-record
+=== RUN   TestManualFulfilmentMF03Transitions/every_refused_source_state:_422_not_shippable,_zero_rows,_absent_from_unshipped_and_export
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=5
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=3
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=5
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=2
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=2
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=3
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=2
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=2
+2026/10/06 17:59:31 INFO orders.export_unshipped store_id=d137055c-23fb-4783-bb2b-cc87ce46c9a3 rows=2 truncated=false duration_ms=2
+=== RUN   TestManualFulfilmentMF03Transitions/a_partial_refund_still_ships
+=== RUN   TestManualFulfilmentMF03Transitions/two_concurrent_records:_exactly_one_version_1_(real_two-transaction_witness)
+=== RUN   TestManualFulfilmentMF03Transitions/void_of_an_order_that_was_never_shipped
+--- PASS: TestManualFulfilmentMF03Transitions (30.04s)
+    --- PASS: TestManualFulfilmentMF03Transitions/record,_correct,_void,_re-record (0.99s)
+    --- PASS: TestManualFulfilmentMF03Transitions/every_refused_source_state:_422_not_shippable,_zero_rows,_absent_from_unshipped_and_export (0.23s)
+    --- PASS: TestManualFulfilmentMF03Transitions/a_partial_refund_still_ships (0.83s)
+    --- PASS: TestManualFulfilmentMF03Transitions/two_concurrent_records:_exactly_one_version_1_(real_two-transaction_witness) (0.91s)
+    --- PASS: TestManualFulfilmentMF03Transitions/void_of_an_order_that_was_never_shipped (0.86s)
+=== RUN   TestManualFulfilmentMF08Guards
+=== RUN   TestManualFulfilmentMF08Guards/COMMENT_ON_for_every_0063_object_and_column
+=== RUN   TestManualFulfilmentMF08Guards/no_provider_dial,_River_insert_or_integration.operations_write_reachable_from_shipment/export_code
+=== RUN   TestManualFulfilmentMF08Guards/package_comments_of_the_fulfilment_files_(PROCESS_§5),_reported_as_data
+    manual_fulfilment_guards_test.go:116: DATA shipments.go: no SQL call-site comment naming the definer it calls (PROCESS §5 call sites)
+--- PASS: TestManualFulfilmentMF08Guards (0.12s)
+    --- PASS: TestManualFulfilmentMF08Guards/COMMENT_ON_for_every_0063_object_and_column (0.01s)
+    --- PASS: TestManualFulfilmentMF08Guards/no_provider_dial,_River_insert_or_integration.operations_write_reachable_from_shipment/export_code (0.11s)
+    --- PASS: TestManualFulfilmentMF08Guards/package_comments_of_the_fulfilment_files_(PROCESS_§5),_reported_as_data (0.00s)
+=== RUN   TestManualFulfilmentMF04Authority
+=== RUN   TestManualFulfilmentMF04Authority/other-store_and_cross-tenant_orders_are_indistinguishable_from_missing_ones
+2026/10/06 17:59:41 INFO orders.export_unshipped store_id=16f68d39-3ef0-4da9-8932-5067cbeef62a rows=3 truncated=false duration_ms=9
+=== RUN   TestManualFulfilmentMF04Authority/permission_matrix:_neither_orders:read,_fulfillment:write_nor_orders:export_implies_another
+2026/10/06 17:59:41 INFO orders.export_unshipped store_id=16f68d39-3ef0-4da9-8932-5067cbeef62a rows=2 truncated=false duration_ms=3
+=== RUN   TestManualFulfilmentMF04Authority/a_session_or_grant_revoked_while_the_command_waits_on_the_order_lock_is_rejected_by_the_fresh_final_auth
+    manual_fulfilment_http_test.go:187: revoked session: 403 map[code:forbidden details:map[] message:Operation not permitted. request_id:71f9ec0432990708ba089e8671b3ad10 retryable:false], want 401
+=== RUN   TestManualFulfilmentMF04Authority/a_buyer_cannot_read_another_buyer's_shipment
+--- FAIL: TestManualFulfilmentMF04Authority (6.66s)
+    --- PASS: TestManualFulfilmentMF04Authority/other-store_and_cross-tenant_orders_are_indistinguishable_from_missing_ones (0.03s)
+    --- PASS: TestManualFulfilmentMF04Authority/permission_matrix:_neither_orders:read,_fulfillment:write_nor_orders:export_implies_another (0.06s)
+    --- FAIL: TestManualFulfilmentMF04Authority/a_session_or_grant_revoked_while_the_command_waits_on_the_order_lock_is_rejected_by_the_fresh_final_auth (0.02s)
+    --- PASS: TestManualFulfilmentMF04Authority/a_buyer_cannot_read_another_buyer's_shipment (0.03s)
+=== RUN   TestManualFulfilmentMF05HTTP
+=== RUN   TestManualFulfilmentMF05HTTP/error_codes_of_§5.1
+=== RUN   TestManualFulfilmentMF05HTTP/strict_body,_query_and_method_rules_write_nothing
+=== RUN   TestManualFulfilmentMF05HTTP/CSV_response_headers_and_audit
+=== RUN   TestManualFulfilmentMF05HTTP/merchant_list_and_detail_decode_shipped,_refunded_and_reviewed_orders;_buyer_sees_the_shipment
+=== RUN   TestManualFulfilmentMF05HTTP/no_PII_in_logs
+--- PASS: TestManualFulfilmentMF05HTTP (6.68s)
+    --- PASS: TestManualFulfilmentMF05HTTP/error_codes_of_§5.1 (0.04s)
+    --- PASS: TestManualFulfilmentMF05HTTP/strict_body,_query_and_method_rules_write_nothing (0.00s)
+    --- PASS: TestManualFulfilmentMF05HTTP/CSV_response_headers_and_audit (0.01s)
+    --- PASS: TestManualFulfilmentMF05HTTP/merchant_list_and_detail_decode_shipped,_refunded_and_reviewed_orders;_buyer_sees_the_shipment (0.51s)
+    --- PASS: TestManualFulfilmentMF05HTTP/no_PII_in_logs (0.00s)
+=== RUN   TestManualFulfilmentMF06Export
+=== RUN   TestManualFulfilmentMF06Export/eligibility_is_exactly_MD6_and_oldest_first
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=5 truncated=false duration_ms=11
+=== RUN   TestManualFulfilmentMF06Export/columns_carry_the_frozen_destination,_pickup_and_item_values
+=== RUN   TestManualFulfilmentMF06Export/frozen_values_survive_catalog,_address_and_pickup_edits
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=5 truncated=false duration_ms=4
+=== RUN   TestManualFulfilmentMF06Export/row_limit_bounds_the_SQL_export_oldest_first
+=== RUN   TestManualFulfilmentMF06Export/audit_row_per_export,_nothing_persisted
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=5 truncated=false duration_ms=3
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=5 truncated=false duration_ms=3
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=5 truncated=false duration_ms=2
+=== RUN   TestManualFulfilmentMF06Export/the_record_predicate_agrees:_an_eligible_order_ships,_then_leaves_the_export
+INFO orders.export_unshipped store_id=2c5ec51e-ac44-485b-8b79-0d1ef6a322d9 rows=4 truncated=false duration_ms=3
+--- PASS: TestManualFulfilmentMF06Export (18.76s)
+    --- PASS: TestManualFulfilmentMF06Export/eligibility_is_exactly_MD6_and_oldest_first (0.05s)
+    --- PASS: TestManualFulfilmentMF06Export/columns_carry_the_frozen_destination,_pickup_and_item_values (0.02s)
+    --- PASS: TestManualFulfilmentMF06Export/frozen_values_survive_catalog,_address_and_pickup_edits (0.02s)
+    --- PASS: TestManualFulfilmentMF06Export/row_limit_bounds_the_SQL_export_oldest_first (0.01s)
+    --- PASS: TestManualFulfilmentMF06Export/audit_row_per_export,_nothing_persisted (0.14s)
+    --- PASS: TestManualFulfilmentMF06Export/the_record_predicate_agrees:_an_eligible_order_ships,_then_leaves_the_export (0.01s)
+=== RUN   TestManualFulfilmentMF02Schema
+=== RUN   TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK
+=== RUN   TestManualFulfilmentMF02Schema/version_and_head_CHECKs
+=== RUN   TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix
+=== RUN   TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser)
+INFO orders.export_unshipped store_id=4bb73d3e-b147-41b1-b723-554ebb10523c rows=1 truncated=false duration_ms=4
+=== RUN   TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT
+=== RUN   TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters
+=== RUN   TestManualFulfilmentMF02Schema/populated_upgrade_after_0062
+    manual_fulfilment_schema_test.go:355: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (4.99s)
+    --- PASS: TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK (0.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/version_and_head_CHECKs (0.10s)
+    --- PASS: TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix (0.05s)
+    --- PASS: TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser) (0.01s)
+    --- PASS: TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT (0.03s)
+    --- PASS: TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters (0.02s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+=== RUN   TestManualFulfilmentMF01Validation
+=== RUN   TestManualFulfilmentMF01Validation/csv
+=== RUN   TestManualFulfilmentMF01Validation/csv/header_only_for_zero_rows
+=== RUN   TestManualFulfilmentMF01Validation/csv/RFC_4180_quoting_round_trip
+=== RUN   TestManualFulfilmentMF01Validation/csv/formula_injection_guard
+=== RUN   TestManualFulfilmentMF01Validation/csv/phone
+=== RUN   TestManualFulfilmentMF01Validation/csv/pickup_code_keeps_leading_zeroes_in_the_file_bytes
+=== RUN   TestManualFulfilmentMF01Validation/csv/1000_rows
+=== RUN   TestManualFulfilmentMF01Validation/carrier_codes
+=== RUN   TestManualFulfilmentMF01Validation/carrier_name_unicode
+=== RUN   TestManualFulfilmentMF01Validation/tracking_number
+=== RUN   TestManualFulfilmentMF01Validation/tracking_url
+=== RUN   TestManualFulfilmentMF01Validation/note
+=== RUN   TestManualFulfilmentMF01Validation/status_and_void_body
+--- PASS: TestManualFulfilmentMF01Validation (0.02s)
+    --- PASS: TestManualFulfilmentMF01Validation/csv (0.01s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/header_only_for_zero_rows (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/RFC_4180_quoting_round_trip (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/formula_injection_guard (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/phone (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/pickup_code_keeps_leading_zeroes_in_the_file_bytes (0.00s)
+        --- PASS: TestManualFulfilmentMF01Validation/csv/1000_rows (0.01s)
+    --- PASS: TestManualFulfilmentMF01Validation/carrier_codes (0.00s)
+    --- PASS: TestManualFulfilmentMF01Validation/carrier_name_unicode (0.00s)
+    --- PASS: TestManualFulfilmentMF01Validation/tracking_number (0.00s)
+    --- PASS: TestManualFulfilmentMF01Validation/tracking_url (0.00s)
+    --- PASS: TestManualFulfilmentMF01Validation/note (0.00s)
+    --- PASS: TestManualFulfilmentMF01Validation/status_and_void_body (0.00s)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])
+--- PASS: TestMerchantOrdersV2PickListReadAuthority (0.03s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean) (0.01s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[]) (0.00s)
+=== RUN   TestTaiwanCvsSchema
+=== RUN   TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON
+=== RUN   TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1)
+=== RUN   TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value
+=== RUN   TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies
+=== RUN   TestTaiwanCvsSchema/uniqueness_and_indexes
+=== RUN   TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards
+=== RUN   TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE
+=== RUN   TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role)
+=== RUN   TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role)
+=== RUN   TestTaiwanCvsSchema/no_PII_columns_(catalog_scan)
+=== RUN   TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2)
+=== RUN   TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login
+=== RUN   TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles
+=== RUN   TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else
+--- PASS: TestTaiwanCvsSchema (1.43s)
+    --- PASS: TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON (0.03s)
+    --- PASS: TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value (0.02s)
+    --- PASS: TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies (0.39s)
+    --- PASS: TestTaiwanCvsSchema/uniqueness_and_indexes (0.04s)
+    --- PASS: TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards (0.00s)
+    --- PASS: TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE (0.13s)
+    --- PASS: TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role) (0.31s)
+    --- PASS: TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role) (0.09s)
+    --- PASS: TestTaiwanCvsSchema/no_PII_columns_(catalog_scan) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2) (0.06s)
+    --- PASS: TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login (0.03s)
+    --- PASS: TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles (0.12s)
+    --- PASS: TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else (0.20s)
+=== RUN   TestTaiwanCvsSchemaColumnComments
+--- PASS: TestTaiwanCvsSchemaColumnComments (0.00s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.00s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.15s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.00s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.23s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.07s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.06s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.10s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	69.981s
+FAIL
+test-focused: top-level PASS=15 FAIL=1 SKIP=0 exit=1

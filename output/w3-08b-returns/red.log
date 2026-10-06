@@ -1,0 +1,15 @@
+    --- FAIL: TestReturnRoutesTransportRules/list_other_query (0.00s)
+        returns_test.go:67: status=404 want=422 body={"code":"not_found","message":"Resource not found.","request_id":"2de98a19e60844675e5f30fc3695e803","retryable":false,"details":{}}
+    --- FAIL: TestReturnRoutesTransportRules/list_key (0.00s)
+        returns_test.go:67: status=404 want=422 body={"code":"not_found","message":"Resource not found.","request_id":"4555b530264d3668111c420712056021","retryable":false,"details":{}}
+    --- FAIL: TestReturnRoutesTransportRules/receive_no_key (0.00s)
+        returns_test.go:67: status=404 want=422 body={"code":"not_found","message":"Resource not found.","request_id":"b40f9bd130c981157d263e35cf8ab5f9","retryable":false,"details":{}}
+    --- FAIL: TestReturnRoutesTransportRules/receive_bad_rma_id (0.00s)
+        returns_test.go:67: status=404 want=422 body={"code":"not_found","message":"Resource not found.","request_id":"9a54c924bc64549de29dbf1a800a20fb","retryable":false,"details":{}}
+    --- FAIL: TestReturnRoutesTransportRules/close_unknown_key (0.00s)
+        returns_test.go:67: status=404 want=400 body={"code":"not_found","message":"Resource not found.","request_id":"b01baca63a38bf28a93969f3906675ec","retryable":false,"details":{}}
+    --- FAIL: TestReturnRoutesTransportRules/rma_cancel_wrong_method (0.00s)
+        returns_test.go:67: status=404 want=405 body={"code":"not_found","message":"Resource not found.","request_id":"831f98114bda72b6355f45a1d3090785","retryable":false,"details":{}}
+FAIL
+FAIL	livecommerce/internal/httpapi	0.429s
+FAIL
