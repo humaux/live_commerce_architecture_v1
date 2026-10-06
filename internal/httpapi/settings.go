@@ -34,7 +34,7 @@ func registerSettingsRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("GET "+settingsBase+"/payment-methods/{code}", exactResourceRoute(scoped(pool, "integration:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return payments.GetMethod(ctx, tx, s, bearerToken(r), r.PathValue("market_id"), r.PathValue("country"), r.PathValue("code"))
 	})))
-	mux.HandleFunc("PUT "+settingsBase+"/payment-methods/{code}", exactResourceRoute(bodyRoute(pool, "integration:manage", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in payments.MethodInput) (any, error) {
+	mux.HandleFunc("PUT "+settingsBase+"/payment-methods/{code}", exactResourceRoute(bodyRouteAs(pool, "integration:manage", activationClassify, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in payments.MethodInput) (any, error) {
 		if !matchesSettingsTarget(r, in.MarketID, in.Country, in.Code) {
 			return nil, command.ErrInvalid
 		}

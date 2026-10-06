@@ -163,12 +163,13 @@ func TestMerchantSettingsHTTPAuthorityAndDiagnostics(t *testing.T) {
 	for _, version := range []int64{1, 999} {
 		check.ExpectedVersion = version
 		got := settingsRead[payments.Availability](t, adminRequest(h, "POST", path+"/inspect", f.otherToken, settingsBody(t, check), "application/json", nil))
-		if got.Available || !slices.Contains(got.Reasons, "ADAPTER_UNAVAILABLE") || !slices.Contains(got.Reasons, "METHOD_DISABLED") || (version == 999 && !slices.Contains(got.Reasons, "METHOD_VERSION_CHANGED")) {
+		if got.Available || !slices.Contains(got.Reasons, "NOT_QUALIFIED") || !slices.Contains(got.Reasons, "METHOD_DISABLED") || (version == 999 && !slices.Contains(got.Reasons, "METHOD_VERSION_CHANGED")) {
 			t.Fatalf("diagnostic claimed payment capability or lost reason: %+v", got)
 		}
 	}
 	putBody.Enabled = true
-	assertAdminError(t, adminRequest(h, "PUT", path, f.token, settingsBody(t, putBody), "application/json", map[string]string{"Idempotency-Key": t04Key("unsafe-enable")}), 409, "conflict")
+	// w4-02b: with the platform switch off (default) the refusal is the stable platform_disabled code, still 409 and still no write.
+	assertAdminError(t, adminRequest(h, "PUT", path, f.token, settingsBody(t, putBody), "application/json", map[string]string{"Idempotency-Key": t04Key("unsafe-enable")}), 409, "platform_disabled")
 	mustExec(t, f.base.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='integration:read'`, f.tenant, f.store, f.otherPrincipal)
 	assertAdminError(t, adminRequest(h, "GET", path, f.otherToken, nil, "", nil), 403, "forbidden")
 	if p.counts(t) != before {

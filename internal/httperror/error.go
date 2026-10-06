@@ -121,7 +121,7 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
 		"ecpay_probe_failed": "ECPay rejected the keys or could not be reached.", "invalid_sender": "Sender name or mobile number is not valid.",
 		"ecpay_environment_not_allowed": "This ECPay environment is not allowed on this deployment.",
-		"not_qualified":                 "The ECPay connection has not passed its check with the current keys.",
+		"not_qualified":                 "The connection has not passed its check with the current keys.",
 		"another_profile_enabled":       "Another ECPay connection of this store is enabled.", "merchant_id_changed": "The ECPay merchant id cannot change on rotation.",
 		"connection_unavailable": "No usable ECPay connection for this store.", "no_cvs_destination": "The order has no ECPay-verified pickup store.",
 		"cvs_recipient_rejected":   "The recipient name or mobile number does not meet the ECPay rules.",
@@ -141,6 +141,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"bad_store_code": "The store number is not valid for this chain.", "bad_store_name": "The store name is not valid.",
 		"bad_store_address": "The store address is not valid.", "pay_at_pickup_unavailable": "Pay at pickup is not available for this order.",
 		"pay_at_pickup_amount_exceeds": "The amount is outside the pay-at-pickup limit.", "card_unavailable": "Card payment is not available for this store.", "pay_at_pickup_limit": "Too many pay-at-pickup orders are open.",
+		// payment-methods-v1 Amendment W4-02B (PAYUNi self-serve activation); not_qualified is shared, declared with the CVS codes above.
+		"platform_disabled": "Card payments are not enabled on this platform yet.", "profile_not_allowed": "This step is not available in this deployment.",
+		"payuni_probe_failed": "PAYUNi did not confirm the keys, or could not be reached.",
 		// storefront-v2 §C (unit checkout-offline): bank_transfer placement, proof, merchant confirm/reject/refund. Coded 422/409 of the 0088 definers.
 		"bank_transfer_unavailable": "Bank transfer is not available for this order.", "not_bank_transfer": "The order is not a bank-transfer order.",
 		"transfer_not_open": "This transfer is no longer open.", "transfer_window_closed": "The transfer window has ended.",

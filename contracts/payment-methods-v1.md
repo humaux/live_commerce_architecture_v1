@@ -98,3 +98,44 @@ or rewritten by method hide/disable/relink.
 
 MS01–MS08 remain NOT_RUN_PRODUCT: no settings HTTP/UI, buyer API, actual payment,
 refund or settlement; local config is not merchant connectivity.
+
+## Amendment W4-02B activation (PAYUNi merchant self-serve; migration 0137)
+
+2026-10-06. Supersedes the "SQL also rejects enabled=true / no application qualification issuer exists / SetMethod still rejects
+enabling" statements above (0016 already replaced the SQL guard by a qualification reference; this amendment adds the issuers).
+Evidence: PROVIDER_MOCK (REAL_PG + MOCK transport); SANDBOX and LIVE are NOT_RUN. Owner rulings 2026-10-06: Taiwan card payments =
+PAYUNi merchant self-serve; Stripe stays operator-registered for the owner's HK store; the platform switch `LC_PAYUNI_ENABLED`
+(default 0) stays off until W4-02B and W4-03B (refund) are both merged and the PAYUNI-SANDBOX gate passes.
+
+- **State machine** per connection (a connection already has exactly one environment): `CONFIGURED_UNVERIFIED -> VERIFYING ->
+  VERIFIED_SANDBOX` (SANDBOX connection) or `VERIFIED_LIVE_PROBE` (LIVE connection). Only `payuni_credit` is activatable; the other
+  four codes remain disabled drafts (`ADAPTER_UNAVAILABLE`).
+- **SANDBOX/MOCK verification** (`payments.payuni_verifications`, not `checkout.payment_attempts`: a verification has no order, session
+  or query job). NT$1 hosted trade, `merchant_trade_no` = `V`+base64url(uuid). A qualification is issued **iff** (1) the merchant-
+  triggered query of that trade, authenticated with the connection's key, projects to the payment-capture-v1 CAPTURED rule (TradeNo,
+  DataSource A, TradeStatus 1, CloseStatus 2, CloseAmt = NT$1, no refund hint; re-derived in SQL), **and** (2) a signed notify receipt
+  (W4-01B: SUCCESS, TradeStatus 1, NT$1, same connection, trade and endpoint profile) exists, **and** (3) the connection still has the
+  credential version the verification pinned. Two independent channels: the merchant API role can record the query but cannot forge
+  the notify receipt (ingress role). Issuer `payments.issue_payuni_qualification` is EXECUTE-able by `commerce_payment_worker` only
+  (the worker sweeps every 5 s); proof class is derived (`PROVIDER_MOCK` for a PROVIDER_MOCK profile, else `REAL_SANDBOX`), never a
+  parameter; valid 180 days. A verification expires after 2 h.
+- **LIVE probe**: one read-only signed query for a MerTradeNo that must not exist (payuni-wire amendment); only when the reply
+  authenticates with the LIVE HashKey/HashIV and carries no trade row is a probe row written (`signature_verified` pinned true) and
+  `payments.issue_payuni_live_qualification` (commerce_runtime; row must be <= 10 min old, same credential version) issues
+  `REAL_LIVE` with `evidence_ref='live-probe:<probe id>'`. No transaction is ever created. Deployment profile must be LIVE.
+- **Enabling**: `SetMethod(Enabled=true)` requires `payuni_credit`, a connection, `LC_PAYUNI_ENABLED=1` (Go; else `409
+  platform_disabled`) and then `payments.enable_payuni_method` (the only writer of an enabled revision; a RESTRICTIVE RLS policy
+  refuses `enabled=true` INSERTs by `commerce_runtime`) which finds the latest unrevoked, unexpired qualification of the connection's
+  CURRENT credential version and environment (LIVE: REAL_LIVE; SANDBOX: REAL_SANDBOX or PROVIDER_MOCK) else `409 not_qualified`.
+  Disabling/editing keeps the plain draft INSERT.
+- **Rotation**: a credential rotation changes `integration.merchant_accounts.credential_version`; the qualification is not rewritten
+  (account_qualifications is revoke-only, 0077) but every consumer compares versions: `InspectMethod` reports `CREDENTIAL_ROTATED`
+  and `checkout.start_payment` / the buyer view already refuse `q.credential_version <> a.credential_version`.
+- **Diagnostics** `Reasons` order now: ... `BINDING_DISABLED`, `CREDENTIALS_UNVERIFIED` (no current valid qualification), `NOT_QUALIFIED`,
+  `CREDENTIAL_ROTATED`, `QUALIFICATION_EXPIRED`, `PLATFORM_DISABLED`, `ADAPTER_UNAVAILABLE` (code other than payuni_credit).
+  `Available` is true iff the list is empty. `Method` gains `qualification_id` (enabled revisions only).
+- **HTTP** (integration:manage unless noted): `POST /v1/admin/stores/{store}/payments/payuni/verify` {connection_id} + Idempotency-Key;
+  `POST .../verify/{id}/check` {connection_id}; `POST .../live-probe` {connection_id}; `GET .../connections/{id}/status`
+  (integration:read). Codes: `not_qualified`, `platform_disabled`, `profile_not_allowed`, `payuni_probe_failed`.
+- NOT_VERIFIED against official PAYUNi docs (docs.payuni.com.tw is a JS SPA; fetch 2026-10-06 returned no content): the wire shape of
+  the "no such trade" reply and whether PAYUNi signs it. The probe fails closed on anything but an authenticated reply with no trade row.

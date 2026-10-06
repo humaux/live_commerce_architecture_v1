@@ -1,9 +1,16 @@
 // Purpose: exported PAYUNi notify-credential custody helpers (SealPayuni / OpenPayuniNotify) bound to the credential AAD.
 // Depends on: this package's credentialAAD/seal primitives (AES-GCM); no network, no DB.
-// Used by: internal/payments/payuninotify (inbox), tests/foundation payuni notify fixtures, the registrar seal path.
+// Used by: internal/payments/payuninotify (inbox), internal/payments (payuni_activation.go: opens the scoped activation
+//   material and derives the verification notify token), tests/foundation payuni fixtures, the registrar seal path.
 // Invariants: AAD binds tenant/store/connection/environment/account/version so a sealed envelope opens in one scope only.
 
 package accounts
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+)
 
 // PAYUNi credentials are one HashKey/HashIV per connection: the hosted, query and notify
 // paths all bind to the same credentialAAD, so a notification is verified with the exact
@@ -46,4 +53,24 @@ func (k *Keyring) OpenPayuniNotify(scope PayuniCredentialScope, keyID string, no
 		return Credentials{}, errInvalidSecret
 	}
 	return k.open(payuniAAD(scope), keyID, nonce, ciphertext)
+}
+
+// OpenPayuniActivation opens the sealed envelope returned by payments.load_payuni_activation_material
+// (w4-02b) for exactly one verification query/hosted form or one LIVE probe; same AAD binding as the notify path.
+func (k *Keyring) OpenPayuniActivation(scope PayuniCredentialScope, keyID string, nonce, ciphertext []byte) (Credentials, error) {
+	return k.OpenPayuniNotify(scope, keyID, nonce, ciphertext)
+}
+
+// PayuniVerifyNotifyToken derives the notify endpoint token of one connection+profile from the keyring's independent
+// replay key (HMAC-SHA256, domain separated), so the plaintext token can be rebuilt for every verification form while only
+// its sha256 is stored (payments.payuni_notify_endpoints.token_hash). The token routes a callback; it is not authentication.
+func (k *Keyring) PayuniVerifyNotifyToken(connectionID, profile string) (token string, tokenHash []byte, err error) {
+	if k == nil || len(k.replayKey) != 32 || connectionID == "" || (profile != "PROVIDER_MOCK" && profile != "SANDBOX") {
+		return "", nil, errInvalidSecret
+	}
+	mac := hmac.New(sha256.New, k.replayKey)
+	_, _ = mac.Write([]byte("payuni-verify-notify-endpoint-v1|" + connectionID + "|" + profile))
+	token = base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	sum := sha256.Sum256([]byte(token))
+	return token, sum[:], nil
 }

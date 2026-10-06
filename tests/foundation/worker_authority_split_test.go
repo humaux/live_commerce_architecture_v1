@@ -105,6 +105,10 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 		"integration.finish_stripe_refund(uuid,bigint,bytea,text,text)", "integration.record_stripe_refund_observation(uuid,bigint,bytea,text,jsonb,bigint)",
 		"integration.record_stripe_charge_observation(uuid,bigint,bytea,text,jsonb,bigint)", "integration.load_payment_query(uuid,bigint,bytea,text)",
 		"integration.payment_queue_ready()",
+		// w4-02b (0137): only commerce_payment_worker issues SANDBOX/MOCK qualifications; no other worker authority may.
+		"payments.issue_payuni_qualification(uuid)", "payments.sweep_payuni_verifications(integer)",
+		"payments.issue_payuni_live_qualification(uuid)", "payments.start_payuni_verification(uuid,text,text,bytea)",
+		"payments.load_payuni_activation_material(uuid,uuid)", "payments.enable_payuni_method(uuid,text,text,bigint,text,uuid,bigint,text,text,text,boolean,integer,bigint,bigint)",
 	}
 	for _, role := range []string{waAds, waClaims, waExpiry, waLegacy} {
 		t.Run("no payment privilege "+strings.TrimPrefix(role, "commerce_"), func(t *testing.T) {

@@ -1,0 +1,17 @@
+## base 651c5744 + new tests only (red = does not compile: unit not implemented)
+### go vet ./internal/integrations/psp/payuni
+# livecommerce/internal/integrations/psp/payuni
+# [livecommerce/internal/integrations/psp/payuni]
+vet: internal/integrations/psp/payuni/probe_test.go:33:11: c.Probe undefined (type *Client has no field or method Probe)
+### go vet ./internal/httpapi
+# livecommerce/internal/httpapi
+# [livecommerce/internal/httpapi]
+vet: internal/httpapi/payment_activation_test.go:22:45: undefined: payments.Activation
+### go vet ./cmd/api
+# livecommerce/cmd/api
+# [livecommerce/cmd/api]
+vet: cmd/api/payuni_activation_test.go:32:30: undefined: payments.SetPayuniEnabled
+### go vet ./tests/foundation
+# livecommerce/tests/foundation_test
+# [livecommerce/tests/foundation_test]
+vet: tests/foundation/payuni_activation_test.go:120:20: undefined: payments.Activation

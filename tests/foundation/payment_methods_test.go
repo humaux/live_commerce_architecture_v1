@@ -163,7 +163,7 @@ func TestPaymentMethodsDiagnosticsAndCredentialRotation(t *testing.T) {
 	}
 	check := p.check(1)
 	baseline, e := p.inspect(check)
-	want := []string{"METHOD_DISABLED", "CREDENTIALS_UNVERIFIED", "ADAPTER_UNAVAILABLE"}
+	want := []string{"METHOD_DISABLED", "CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED", "PLATFORM_DISABLED"} // w4-02b: no qualification, switch off
 	if e != nil || baseline.Available || baseline.MethodVersion != 1 || baseline.CredentialVersion != 1 || !reflect.DeepEqual(baseline.Reasons, want) {
 		t.Fatalf("diagnostics: %+v %v", baseline, e)
 	}
@@ -436,9 +436,16 @@ func TestPaymentMethodsSQLGuardAndScopedTargets(t *testing.T) {
 	enabled := p.in
 	enabled.ExpectedVersion = 1
 	enabled.Enabled = true
-	if _, e := p.set(f.token, f.store, t04Key("pm-not-ready"), enabled); !errors.Is(e, command.ErrConflict) {
-		t.Fatalf("Go admission guard: %v", e)
+	// w4-02b: the platform switch (default off) refuses first; with it on, a missing qualification is not_qualified.
+	if _, e := p.set(f.token, f.store, t04Key("pm-not-ready"), enabled); !errors.Is(e, payments.ErrPlatformDisabled) {
+		t.Fatalf("Go admission guard (switch off): %v", e)
 	}
+	payments.SetPayuniEnabled(true)
+	t.Cleanup(func() { payments.SetPayuniEnabled(false) })
+	if _, e := p.set(f.token, f.store, t04Key("pm-not-ready-on"), enabled); !errors.Is(e, payments.ErrNotQualified) {
+		t.Fatalf("Go admission guard (no qualification): %v", e)
+	}
+	payments.SetPayuniEnabled(false)
 	for _, q := range []string{`UPDATE payments.method_versions SET visible=false WHERE false`, `DELETE FROM payments.method_versions WHERE false`, `DELETE FROM payments.method_heads WHERE false`, `UPDATE payments.method_heads SET code=code WHERE false`} {
 		e := f.scoped(context.Background(), f.token, f.store, func(tx pgx.Tx, s platform.Scope) error { _, e := tx.Exec(context.Background(), q); return e })
 		var pg *pgconn.PgError
@@ -452,9 +459,9 @@ func TestPaymentMethodsSQLGuardAndScopedTargets(t *testing.T) {
 		t.Fatalf("worker acquired settings: %v", e)
 	}
 	for _, tc := range []struct{ name, expr, sqlstate, constraint string }{
-		// 0016 replaces the disabled-only guard with a required scoped proof;
-		// this ordinary merchant still cannot enable an unqualified method.
-		{"enabled", "true,connection_id,environment,store_id,market_id", "23514", "method_admission_reference"},
+		// 0016 replaces the disabled-only guard with a required scoped proof; 0137 (w4-02b) adds a restrictive RLS fence so this
+		// ordinary merchant cannot write ANY enabled row, qualified or not (only payments.enable_payuni_method can).
+		{"enabled", "true,connection_id,environment,store_id,market_id", "42501", ""},
 		{"environment", "false,connection_id,'LIVE',store_id,market_id", "23503", "method_account_target_fk"},
 		{"connection", "false,gen_random_uuid(),environment,store_id,market_id", "23503", "method_account_target_fk"},
 		{"market", "false,connection_id,environment,store_id,gen_random_uuid()", "23503", "method_market_target_fk"},

@@ -615,47 +615,7 @@ func (c *Client) Query(ctx context.Context, expected ExpectedTrade, timestamp in
 	if c == nil || c.notifyOnly || !validExpected(expected) || !validTimestamp(timestamp) || ctx == nil {
 		return Observation{}, ErrInvalid
 	}
-	inner := url.Values{"MerID": {c.config.MerchantID}, "Timestamp": {strconv.FormatInt(timestamp, 10)}}
-	if expected.TradeNo != "" {
-		inner.Set("TradeNo", expected.TradeNo)
-	} else {
-		inner.Set("MerTradeNo", expected.MerTradeNo)
-	}
-	encryptInfo, hashInfo, err := c.seal(inner.Encode())
-	if err != nil {
-		return Observation{}, err
-	}
-	form := url.Values{"MerID": {c.config.MerchantID}, "Version": {"2.0"},
-		"EncryptInfo": {encryptInfo}, "HashInfo": {hashInfo}}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("/api/trade/query"), strings.NewReader(form.Encode()))
-	if err != nil {
-		return Observation{}, ErrTransport
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("User-Agent", "payuni")
-	response, err := c.httpClient.Do(req)
-	if err != nil {
-		if ctx.Err() != nil {
-			return Observation{}, ctx.Err()
-		}
-		return Observation{}, ErrTransport
-	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		return Observation{}, ErrTransport
-	}
-	body, err := io.ReadAll(io.LimitReader(response.Body, maxWireBytes+1))
-	if err != nil {
-		if ctx.Err() != nil {
-			return Observation{}, ctx.Err()
-		}
-		return Observation{}, ErrTransport
-	}
-	outer, err := parseJSONEnvelope(body)
-	if err != nil {
-		return Observation{}, err
-	}
-	innerResponse, err := c.authenticate(outer, true)
+	outer, innerResponse, err := c.queryInner(ctx, expected.MerTradeNo, expected.TradeNo, timestamp)
 	if err != nil {
 		return Observation{}, err
 	}
@@ -671,6 +631,57 @@ func (c *Client) Query(ctx context.Context, expected ExpectedTrade, timestamp in
 	}
 	row["Status"] = innerResponse["Status"]
 	return project(row, expected, true)
+}
+
+// queryInner sends one signed /api/trade/query for a MerTradeNo (or TradeNo) and returns the outer envelope plus the inner
+// response, authenticated with this client's HashKey/HashIV. It decides nothing about the trade (Query projects, Probe
+// classifies); callers must validate the identifiers first.
+func (c *Client) queryInner(ctx context.Context, merTradeNo, tradeNo string, timestamp int64) (outer, innerResponse map[string]string, err error) {
+	inner := url.Values{"MerID": {c.config.MerchantID}, "Timestamp": {strconv.FormatInt(timestamp, 10)}}
+	if tradeNo != "" {
+		inner.Set("TradeNo", tradeNo)
+	} else {
+		inner.Set("MerTradeNo", merTradeNo)
+	}
+	encryptInfo, hashInfo, err := c.seal(inner.Encode())
+	if err != nil {
+		return nil, nil, err
+	}
+	form := url.Values{"MerID": {c.config.MerchantID}, "Version": {"2.0"},
+		"EncryptInfo": {encryptInfo}, "HashInfo": {hashInfo}}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint("/api/trade/query"), strings.NewReader(form.Encode()))
+	if err != nil {
+		return nil, nil, ErrTransport
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("User-Agent", "payuni")
+	response, err := c.httpClient.Do(req)
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, nil, ErrTransport
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, nil, ErrTransport
+	}
+	body, err := io.ReadAll(io.LimitReader(response.Body, maxWireBytes+1))
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, nil, ctx.Err()
+		}
+		return nil, nil, ErrTransport
+	}
+	outer, err = parseJSONEnvelope(body)
+	if err != nil {
+		return nil, nil, err
+	}
+	innerResponse, err = c.authenticate(outer, true)
+	if err != nil {
+		return nil, nil, err
+	}
+	return outer, innerResponse, nil
 }
 
 func project(fields map[string]string, expected ExpectedTrade, query bool) (Observation, error) {

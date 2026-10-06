@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
@@ -61,12 +62,18 @@ func TestMethodInputValidation(t *testing.T) {
 	}
 }
 
-func TestEnabledDraftRejected(t *testing.T) {
+// Only payuni_credit with a connection can ever be enabled (v1); the rest stay disabled drafts, refused before any database use.
+func TestEnabledOnlyPayuniCreditWithConnection(t *testing.T) {
 	in := validInput()
+	in.ConnectionID, in.BindingVersion = "", 0
 	in.Enabled = true
-	_, err := SetMethod(context.Background(), nil, platform.Scope{}, "", "", in)
-	if !errors.Is(err, command.ErrConflict) {
-		t.Fatalf("enabled draft error = %v, want conflict", err)
+	if _, err := SetMethod(context.Background(), nil, platform.Scope{}, "", "", in); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("enabled without connection error = %v, want conflict", err)
+	}
+	in = validInput()
+	in.Code, in.Enabled = "payuni_installment", true
+	if _, err := SetMethod(context.Background(), nil, platform.Scope{}, "", "", in); !errors.Is(err, command.ErrConflict) {
+		t.Fatalf("enabled installment error = %v, want conflict", err)
 	}
 }
 
@@ -101,14 +108,15 @@ func TestCheckInputValidation(t *testing.T) {
 }
 
 func TestDiagnosticReasonsOrderAndFailClosed(t *testing.T) {
-	method := Method{Version: 2, Environment: "LIVE", Currency: "TWD",
+	now := time.Now()
+	method := Method{Version: 2, Environment: "LIVE", Currency: "TWD", Code: "payuni_credit",
 		ConnectionID: testConnectionID, BindingVersion: 3,
 		MinAmountMinor: 100, MaxAmountMinor: 200}
 	check := CheckInput{ExpectedVersion: 1, Environment: "SANDBOX", Currency: "USD", AmountMinor: 50}
-	got := diagnose(method, false, check, 4, 5, false)
+	got := diagnose(method, false, check, 4, 5, false, nil, now, false)
 	want := []string{"METHOD_VERSION_CHANGED", "METHOD_DISABLED", "METHOD_HIDDEN",
 		"MARKET_INACTIVE", "ENVIRONMENT_MISMATCH", "CURRENCY_MISMATCH", "AMOUNT_OUT_OF_RANGE",
-		"BINDING_VERSION_CHANGED", "BINDING_DISABLED", "CREDENTIALS_UNVERIFIED", "ADAPTER_UNAVAILABLE"}
+		"BINDING_VERSION_CHANGED", "BINDING_DISABLED", "CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED", "PLATFORM_DISABLED"}
 	if got.Available || got.MethodVersion != 2 || got.BindingVersion != 4 ||
 		got.CredentialVersion != 5 || !reflect.DeepEqual(got.Reasons, want) {
 		t.Fatalf("diagnosis = %+v, want reasons %v", got, want)
@@ -116,14 +124,43 @@ func TestDiagnosticReasonsOrderAndFailClosed(t *testing.T) {
 	method.Enabled, method.Visible = true, true
 	method.ConnectionID, method.BindingVersion = "", 0
 	check.ExpectedVersion, check.Environment, check.Currency, check.AmountMinor = 2, "LIVE", "TWD", 150
-	got = diagnose(method, true, check, 0, 0, false)
-	if got.Available || !reflect.DeepEqual(got.Reasons, []string{"CONNECTION_MISSING", "ADAPTER_UNAVAILABLE"}) {
+	got = diagnose(method, true, check, 0, 0, false, nil, now, true)
+	if got.Available || !reflect.DeepEqual(got.Reasons, []string{"CONNECTION_MISSING"}) {
 		t.Fatalf("unlinked diagnosis = %+v", got)
 	}
 	method.ConnectionID, method.BindingVersion = testConnectionID, 3
-	got = diagnose(method, true, check, 3, 8, true)
-	if got.Available || !reflect.DeepEqual(got.Reasons, []string{"CREDENTIALS_UNVERIFIED", "ADAPTER_UNAVAILABLE"}) ||
-		got.CredentialVersion != 8 {
-		t.Fatalf("linked diagnosis = %+v", got)
+	good := &qualState{ConnectionID: testConnectionID, CredentialVersion: 8, Environment: "LIVE", Code: "payuni_credit",
+		ProofClass: "REAL_LIVE", ExpiresAt: now.Add(time.Hour)}
+	got = diagnose(method, true, check, 3, 8, true, good, now, true)
+	if !got.Available || len(got.Reasons) != 0 || got.CredentialVersion != 8 {
+		t.Fatalf("qualified diagnosis = %+v", got)
+	}
+	cases := map[string]struct {
+		mutate func(q *qualState)
+		want   []string
+	}{
+		"rotated":       {func(q *qualState) { q.CredentialVersion = 7 }, []string{"CREDENTIALS_UNVERIFIED", "CREDENTIAL_ROTATED"}},
+		"expired":       {func(q *qualState) { q.ExpiresAt = now }, []string{"CREDENTIALS_UNVERIFIED", "QUALIFICATION_EXPIRED"}},
+		"revoked":       {func(q *qualState) { q.Revoked = true }, []string{"CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED"}},
+		"mock for LIVE": {func(q *qualState) { q.ProofClass = "PROVIDER_MOCK" }, []string{"CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED"}},
+		"sandbox proof for LIVE": {func(q *qualState) { q.ProofClass = "REAL_SANDBOX" },
+			[]string{"CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED"}},
+		"other connection": {func(q *qualState) { q.ConnectionID = "00000000-0000-4000-8000-000000000000" },
+			[]string{"CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED"}},
+	}
+	for name, c := range cases {
+		q := *good
+		c.mutate(&q)
+		if got = diagnose(method, true, check, 3, 8, true, &q, now, true); got.Available || !reflect.DeepEqual(got.Reasons, c.want) {
+			t.Fatalf("%s diagnosis = %+v, want %v", name, got, c.want)
+		}
+	}
+	if got = diagnose(method, true, check, 3, 8, true, good, now, false); got.Available || !reflect.DeepEqual(got.Reasons, []string{"PLATFORM_DISABLED"}) {
+		t.Fatalf("platform switch off must be the only reason: %+v", got)
+	}
+	method.Code = "payuni_installment"
+	got = diagnose(method, true, check, 3, 8, true, good, now, true)
+	if got.Available || !reflect.DeepEqual(got.Reasons, []string{"CREDENTIALS_UNVERIFIED", "NOT_QUALIFIED", "ADAPTER_UNAVAILABLE"}) {
+		t.Fatalf("non-credit code must stay unavailable: %+v", got)
 	}
 }

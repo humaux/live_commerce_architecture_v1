@@ -35,6 +35,7 @@ import (
 	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/pagination"
+	"livecommerce/internal/payments"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/storefrontadmin"
 	"livecommerce/internal/storefrontdomains"
@@ -97,6 +98,9 @@ type Options struct {
 	// Inbox is the merchant inbox read/write service (live-console-v1 §11 A8-A11/A13/A14; cmd/api builds it with
 	// inbox.LoadKeyring). nil leaves the inbox routes unmounted, like every other nil-able service in Options.
 	Inbox *inbox.Service
+	// PayuniActivation is the PAYUNi self-serve activation service (w4-02b; cmd/api builds it from COMMERCE_PAYMENT_PROFILE,
+	// LC_PAYUNI_NOTIFY_BASE_URL and LC_PAYUNI_VERIFY_RETURN_URL). nil leaves the verify/check/live-probe/status routes unmounted.
+	PayuniActivation *payments.Activation
 	// MsgTemplates is the merchant message-template publish/list service (live-console-v1 §11 /message-templates, unit
 	// W2-05B; cmd/api builds it with msgtemplates.NewService). nil leaves the routes unmounted.
 	MsgTemplates *msgtemplates.Service
@@ -197,6 +201,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerSettingsDiscoveryRoutes(mux, pool)
 	registerStorefrontRoutes(mux, pool, configured.StoreBaseDomain)
 	registerAccountRoutes(mux, pool, configured.Accounts)
+	registerPaymentActivationRoutes(mux, pool, configured.PayuniActivation)
 	registerOrderRoutes(mux, pool)
 	registerStudioRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.Live, configured.BrowserInput)
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)

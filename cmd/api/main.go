@@ -167,6 +167,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// w4-02b: LC_PAYUNI_ENABLED platform switch + the self-serve activation routes (nil until LC_PAYUNI_NOTIFY_BASE_URL is set).
+	payuniActivation, err := loadPayuniActivation(os.Getenv)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -177,7 +182,7 @@ func run() error {
 		}
 		paymentEnvironment = env
 	}
-	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
+	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, PayuniActivation: payuniActivation, Studio: studioConfig.enabled, Live: studioPlanner,
 		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual, ForBuyer: forBuyer,
 		LiveFlowJobs:    liveFlowJobs,
 		CommentStream:   commentStream,

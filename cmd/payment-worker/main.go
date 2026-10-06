@@ -1,3 +1,10 @@
+// Purpose: cmd/payment-worker process: River payment queue worker (PAYUNi query/reconcile, Stripe) plus, on the SANDBOX profile,
+//   the PAYUNi activation issuer sweep.
+// Depends on: internal/payments (workers, RunVerificationSweeper), internal/platform (worker pool authority), internal/jobqueue,
+//   internal/integrations/accounts (keyring); env COMMERCE_PAYMENT_WORKER_*, COMMERCE_STRIPE_*; SQL payments.sweep_payuni_verifications (0137).
+// Used by: deploy compose/systemd unit of the payment worker; main_test.go.
+// Invariants: a worker never serves HTTP; the LIVE worker never issues SANDBOX/MOCK qualifications.
+
 package main
 
 import (
@@ -8,6 +15,9 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"livecommerce/internal/integrations/accounts"
 	"livecommerce/internal/integrations/psp/stripe"
@@ -100,6 +110,17 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	return config, nil
 }
 
+// startVerificationSweeper runs the PAYUNi activation issuer loop (w4-02b, payments.sweep_payuni_verifications) on the SANDBOX
+// worker only: commerce_payment_live holds no EXECUTE on it and the LIVE worker must never issue SANDBOX/MOCK proof. It makes no
+// provider call; it reports whether it started.
+func startVerificationSweeper(ctx context.Context, pool *pgxpool.Pool, profile string) bool {
+	if profile != "SANDBOX" {
+		return false
+	}
+	go payments.RunVerificationSweeper(ctx, pool, 5*time.Second)
+	return true
+}
+
 func run(ctx context.Context, getenv func(string) string) error {
 	config, err := loadConfig(getenv)
 	if err != nil || !config.enabled {
@@ -130,6 +151,7 @@ func run(ctx context.Context, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
+	startVerificationSweeper(ctx, pool, config.profile)
 	// Fixed local startup witness; never implies provider access or payment.
 	switch err := jobqueue.Run(ctx, client, "payment_worker_ready"); {
 	case errors.Is(err, jobqueue.ErrStart):

@@ -125,3 +125,14 @@ func TestWorkerLiveStripeNeedsThePairAndOthersReadNoLiveName(t *testing.T) {
 		t.Fatalf("noncanonical Stripe flag accepted: %v", err)
 	}
 }
+
+// w4-02b: the activation issuer sweep runs on the SANDBOX worker only; the LIVE worker holds no EXECUTE on it.
+func TestVerificationSweeperStartsOnSandboxWorkerOnly(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // the loop exits on its first select; a nil pool is never touched
+	for profile, want := range map[string]bool{"SANDBOX": true, "LIVE": false, "": false} {
+		if got := startVerificationSweeper(ctx, nil, profile); got != want {
+			t.Errorf("profile %q: started=%v, want %v", profile, got, want)
+		}
+	}
+}

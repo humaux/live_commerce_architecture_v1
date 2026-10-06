@@ -151,3 +151,11 @@ freeze the exact account/environment/credential version, attempt identity/deadli
 and move stock to PAYMENT_PENDING atomically before
 exposing hosted form; query/notification facts require separate idempotent reconciliation.
 Method enabled guard stays until that integration and real supplier admission pass.
+
+## Amendment W4-02B read-only credential probe
+
+2026-10-06. `Client.Probe` (internal/integrations/psp/payuni/probe.go) is an allowed call: one signed `/api/trade/query` for a
+MerTradeNo that was never used to create a trade. It proves MerID/HashKey/HashIV only when the reply authenticates (HashInfo + AES)
+and carries no `Result` row; a reply with a row, an unsigned reply, SUCCESS without a row, a transport error or a timeout is not
+proof (UNKNOWN is never retried by the package). It starts no transaction and builds no hosted page. NOT_VERIFIED: PAYUNi's
+documented "no such trade" shape and whether it is signed (official docs unreachable as static text, 2026-10-06).

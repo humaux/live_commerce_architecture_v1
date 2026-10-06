@@ -77,3 +77,10 @@ PS05 old expiry preserves pending stock; generic Dispatcher never dispatches the
 
 Full PG/race/vet and independent review required. These gates are NOT the global
 commerce/provider/UI acceptance gates; no production service is changed.
+
+## Amendment W4-02B (verification attempts)
+
+2026-10-06. The merchant-initiated NT$1 PAYUNi verification is NOT a `checkout.payment_attempts` row (no `purpose` column was added):
+it lives in `payments.payuni_verifications` (migration 0137), creating no order, reservation, inventory ledger row, payment fact, review
+case or River job, so it can never enter finance summaries. `checkout.start_payment` is unchanged; it keeps refusing a method whose
+qualification credential version, proof class (profile) or expiry does not match, which is what retires a rotated credential.
