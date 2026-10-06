@@ -1,0 +1,64 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+    operations_queue_flow_test.go:151: retry must say reconcile_first for UNKNOWN: true ""
+--- FAIL: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.53s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+    operations_queue_flow_test.go:235: retry UNKNOWN: 200 {"operation_id":"066b7c89-1cd9-4132-ac6d-a42dc73633d4","state":"READY","attempts":3}
+--- FAIL: TestOperationsQueueAppliedEffectIsNeverRetried (2.40s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.37s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 10, claim won 10 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.33s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.14s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.11s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.19s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.25s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.16s)
+=== RUN   TestOperationsQueueRetryRules
+    operations_queue_test.go:697: retry UNKNOWN/ on effect kind: 200 {"operation_id":"ee89001b-3965-46e9-80ea-a707f9dfb6b1","state":"READY","attempts":3}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed UNKNOWN: state=UNKNOWN generation=3 jobs=1->2
+    operations_queue_test.go:697: retry UNKNOWN/ on read kind: 200 {"operation_id":"6d8707a3-df55-4e5e-85cd-8aa3f52512c7","state":"READY","attempts":3}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed UNKNOWN: state=UNKNOWN generation=3 jobs=1->2
+    operations_queue_test.go:697: retry ACKNOWLEDGED/ on effect kind: 200 {"operation_id":"02ba773a-282a-46e5-9e02-5fc84081fda2","state":"READY","attempts":2}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed ACKNOWLEDGED: state=ACKNOWLEDGED generation=2 jobs=1->2
+    operations_queue_test.go:697: retry ACKNOWLEDGED/ on read kind: 200 {"operation_id":"2f0067aa-6185-4d39-8691-8461b4aca453","state":"READY","attempts":2}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed ACKNOWLEDGED: state=ACKNOWLEDGED generation=2 jobs=1->2
+    operations_queue_test.go:697: retry DISPATCHING/expired on effect kind: 200 {"operation_id":"f77e6ff8-2646-44a4-a38a-9131539efc86","state":"READY","attempts":1}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed DISPATCHING: state=DISPATCHING generation=1 jobs=1->2
+    operations_queue_test.go:697: retry DISPATCHING/expired on read kind: 200 {"operation_id":"4d20a6ad-704e-4cd9-9302-80ab4c9fb3ab","state":"READY","attempts":1}
+        , want 409 reconcile_first
+    operations_queue_test.go:700: refused retry changed DISPATCHING: state=DISPATCHING generation=1 jobs=1->2
+    operations_queue_test.go:697: retry DISPATCHING/active on effect kind: 200 {"operation_id":"e99bc231-bf40-4b42-abd6-2c51574557dd","state":"READY","attempts":1}
+        , want 409 lease_active
+    operations_queue_test.go:700: refused retry changed DISPATCHING: state=DISPATCHING generation=1 jobs=1->2
+    operations_queue_test.go:697: retry DISPATCHING/active on read kind: 200 {"operation_id":"8a040300-c9eb-4924-bb20-21b974db3c8a","state":"READY","attempts":1}
+        , want 409 lease_active
+    operations_queue_test.go:700: refused retry changed DISPATCHING: state=DISPATCHING generation=1 jobs=1->2
+    operations_queue_test.go:697: retry UNKNOWN/active on effect kind: 200 {"operation_id":"0171015a-6923-4038-b04e-a9b43aa747ee","state":"READY","attempts":2}
+        , want 409 lease_active
+    operations_queue_test.go:700: refused retry changed UNKNOWN: state=UNKNOWN generation=2 jobs=1->2
+    operations_queue_test.go:697: retry UNKNOWN/active on read kind: 200 {"operation_id":"1a6d8d91-1dcd-41ea-9b51-b7fbde561074","state":"READY","attempts":2}
+        , want 409 lease_active
+    operations_queue_test.go:700: refused retry changed UNKNOWN: state=UNKNOWN generation=2 jobs=1->2
+    operations_queue_test.go:731: events=1 audits=11
+--- FAIL: TestOperationsQueueRetryRules (0.39s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.09s)
+FAIL
+FAIL	livecommerce/tests/foundation	10.888s
+FAIL
+test-focused: top-level PASS=10 FAIL=3 SKIP=0 exit=1

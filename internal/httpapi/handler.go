@@ -100,6 +100,9 @@ type Options struct {
 	// Inbox is the merchant inbox read/write service (live-console-v1 §11 A8-A11/A13/A14; cmd/api builds it with
 	// inbox.LoadKeyring). nil leaves the inbox routes unmounted, like every other nil-able service in Options.
 	Inbox *inbox.Service
+	// OperationJobs is the insert-only main-schema river client the operations-ledger query/retry routes use to enqueue the follow-up
+	// external_operation_v1 job (W6-05B; cmd/api buildOperationJobs). nil leaves those two POSTs unmounted; list, detail and cancel stay mounted.
+	OperationJobs *river.Client[pgx.Tx]
 	// MsgTemplates is the merchant message-template publish/list service (live-console-v1 §11 /message-templates, unit
 	// W2-05B; cmd/api builds it with msgtemplates.NewService). nil leaves the routes unmounted.
 	MsgTemplates *msgtemplates.Service
@@ -234,6 +237,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
 	registerReminderRoutes(mux, pool, configured.Inbox, configured.ManualOrders)   // W3-03B: checkout reminders (reminders.go)
 	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
+	registerOperationRoutes(mux, pool, configured.OperationJobs) // unit w6-05b-operations-ledger: failed/UNKNOWN operations ledger, operations.go
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
 		mux.Handle("GET /v1/admin/stores", foundation)
@@ -392,6 +396,10 @@ func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int
 		if err != nil {
 			if errors.Is(err, errAccountRateLimited) {
 				w.Header().Set("Retry-After", "60")
+			}
+			var timed interface{ RetryAfterSeconds() int } // a domain refusal that knows its own wait (operations ledger query cap)
+			if errors.As(err, &timed) && timed.RetryAfterSeconds() > 0 {
+				w.Header().Set("Retry-After", strconv.Itoa(timed.RetryAfterSeconds()))
 			}
 			status, code := classifier(err)
 			respondErrorDetails(w, err, status, code)

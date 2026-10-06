@@ -1,0 +1,33 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.43s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.21s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.25s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.32s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.09s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+    operations_queue_test.go:503: stale attempts: 200 {"operation_id":"8aa31002-ef83-44a8-bc57-2ba0a68c17c8","state":"CANCELLED","attempts":1}
+--- FAIL: TestOperationsQueueCancelRules (0.05s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.14s)
+=== RUN   TestOperationsQueueRetryRules
+    operations_queue_test.go:717: stale attempts: 200 {"operation_id":"fe3b1a50-4080-472e-8133-18192c309059","state":"READY","attempts":2}
+--- FAIL: TestOperationsQueueRetryRules (0.34s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.08s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.202s
+FAIL
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1

@@ -100,7 +100,14 @@ type Operation struct {
 	ProviderReference string          `json:"provider_reference"`
 	CreatedAt         time.Time       `json:"created_at"`
 	UpdatedAt         time.Time       `json:"updated_at"`
+	// GenerationFloor is the dispatcher's budget base (migration 0159): claimed generations count as Generation-GenerationFloor.
+	// Only the dispatcher's own read fills it; Get leaves it zero and never serialises it.
+	GenerationFloor int64 `json:"-"`
 }
+
+// budgetUsed is how many claimed generations count against the dispatcher's MaxGenerations: generation minus the floor an operator
+// query/retry raised (external-operation-v1 Amendment W6-05B). Generation itself stays monotonic and keeps fencing every lease.
+func (o Operation) budgetUsed() int64 { return o.Generation - o.GenerationFloor }
 
 type ClaimResult struct {
 	Disposition string `json:"disposition"`

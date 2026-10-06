@@ -1,0 +1,35 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.54s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.23s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.24s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 10, claim won 10 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.34s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.12s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.19s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.15s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.35s)
+=== RUN   TestOperationsQueueSQLFences
+    operations_queue_test.go:785: other operation's job: err=<nil>, want invalid_job
+    operations_queue_test.go:785: earlier committed job: err=ERROR: query_too_soon (SQLSTATE PT409), want invalid_job
+    operations_queue_test.go:785: wrong queue: err=ERROR: query_too_soon (SQLSTATE PT409), want invalid_job
+    operations_queue_test.go:789: a refused query wrote an event
+--- FAIL: TestOperationsQueueSQLFences (0.08s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.503s
+FAIL
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1

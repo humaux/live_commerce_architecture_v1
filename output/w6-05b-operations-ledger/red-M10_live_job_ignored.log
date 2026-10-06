@@ -1,0 +1,37 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.51s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.25s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+    operations_queue_flow_test.go:330: 8 concurrent queries: ok=1 others=map[409 query_too_soon:7] jobs 1->2
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect (0.30s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.31s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.10s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.19s)
+=== RUN   TestOperationsQueueQueryRules
+    operations_queue_test.go:584: live job: 200 {"operation_id":"c4d21977-f200-47fb-9eba-a7b4bca17f9d","state":"UNKNOWN","attempts":2}
+    operations_queue_test.go:628: UNKNOWN second query while job live: 409 {"code":"query_too_soon","message":"A status check was already requested in the last minute.","request_id":"8baa7c40a57444e039c0ad05f7853463","retryable":false,"details":{}}
+    operations_queue_test.go:628: ACKNOWLEDGED second query while job live: 409 {"code":"query_too_soon","message":"A status check was already requested in the last minute.","request_id":"79de09debd352640b592b6e19b7f6417","retryable":false,"details":{}}
+    operations_queue_test.go:628: DISPATCHING second query while job live: 409 {"code":"query_too_soon","message":"A status check was already requested in the last minute.","request_id":"520c0da2e80f762d72e7e4b0af6aece6","retryable":false,"details":{}}
+    operations_queue_test.go:636: query audits = 4, want 3
+--- FAIL: TestOperationsQueueQueryRules (0.21s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.13s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.33s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.711s
+FAIL
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1

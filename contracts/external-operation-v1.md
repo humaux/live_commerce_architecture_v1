@@ -88,3 +88,87 @@ Recorded from `contracts/claims-retention-purge-v1.md` §6 (FROZEN 2026-09-30); 
 - Clause 6 (IR-3): a terminal `meta.private_reply` operation's `request.comment_ref` and `semantic_key` may be redacted
   by U08 only (`commerce_retention_writer`, `semantic_key LIKE 'mpr-%'`); `request_hash` stays the hash of the original
   request.
+
+## Amendment W6-05B operations ledger (unit w6-05b-operations-ledger, migration `0159_operations_ledger.sql`, 2026-10-07)
+
+Status: IMPLEMENTED on REAL_PG with a MOCK provider (evidence class `REAL_PG`); awaiting independent (Opus) review. Source: owner decision 2026-10-07, IMPLEMENTATION-PLAN W6-05B (M21 #3, M07 #5, D6).
+This amendment is the "reviewed policy/transition" the base text above says v1 does not guess. It adds a merchant surface over the existing ledger; it adds no provider client and
+changes no adapter. Everything in the base contract still holds: UNKNOWN is never blindly retried, no same-action redispatch of a possibly-sent effect, no retry under another
+semantic key, ACKNOWLEDGED is not success, cancellation never claims remote reversal.
+
+### Scope and visibility
+The ledger lists the caller's store's operations with `actor_kind='MERCHANT'` and `integration.operation_lane` in (`default`, `ads`), through the existing `operation_read` RLS policy and
+fixed definers. The `ads` lane (providers `meta_ads`, `meta_dataset`) is read + cancel only (cancel never for a protective operation, see below): `query` and `retry` answer `409 lane_unsupported` there, because post_river/0015
+`guard_ads_job_link` admits exactly one job per ads operation (the one in the immutable `operations.job_id`), so a follow-up job could not commit; opening the lane needs a reviewed
+amendment of that guard. Payment (`BUYER_PAYMENT_QUERY`, `PAYMENT_REFUND`) and media (`MEDIA_ATTEMPT`) operations are not in the ledger (RLS hides them from the merchant; refunds keep their own
+state machine). The store comes from the server-side authenticated scope, never from a request field. Reads need `integration:read`; the three actions need `integration:execute`
+(both existing permissions; no automatic grant/backfill, tests grant explicitly).
+
+### Read model (exact keys; nothing else is serialised)
+`operation_id, provider, action, purpose, state, reason_code (= result_code), attempts (= generation), created_at, updated_at, object, actions`. `object` is `{kind,id}` or `null`, derived
+only from internal ids already frozen in the request: `ecpay.cvs_create` -> `order`; `meta.private_reply|meta.public_reply|meta.offer_recommend|meta.dm_send` -> `conversation` (from
+`inbox.outbound_messages.conversation_id`) else `claim_bundle` (`request.bundle_id`); `meta.ads.*` -> `ad_draft`; `meta.capi.purchase` -> `payment_attempt`; `meta.live_videos` -> `binding`;
+`meta.live_insights` -> `live_session`; anything else, a missing key or a non-UUID value -> `null`. `actions` is `{query,cancel,retry}`, each `{available: bool, reason: <code>}`
+(`reason` is `""` when available). The detail adds `events` (newest 50: `generation, state, reason_code, created_at`). Never exposed: request, semantic_key, request_hash, external_asset_id,
+provider_reference, principal_id, binding ids (the single exception: the object id of a `meta.live_videos` operation is the Page binding the merchant asked to read, `request.binding_id`), lease token/digest/mode, provider bodies, comment or message text, buyer names/addresses.
+List order is `(created_at DESC, id DESC)`; `state` filter: `attention` (default: FAILED_FINAL, UNKNOWN, ACKNOWLEDGED, BLOCKED_POLICY, STALE_BINDING, READY), or exactly one of
+`FAILED|FAILED_FINAL|UNKNOWN|ACKNOWLEDGED|BLOCKED_POLICY|STALE_BINDING|READY` (`FAILED` is `FAILED_FINAL`). The detail read works for any state of the store's visible operations.
+
+### Actions: states and transitions (the only transitions this unit adds)
+Every action: one transaction under `platform.WithScope`; `integration:execute`; `Idempotency-Key` (existing `command.Run` replay, same key + same body = same stored answer, different body =
+conflict); body exactly `{"expected_attempts": n}` which must equal the locked row's generation (else `409 operation_changed`); lock order binding FOR SHARE -> operation FOR UPDATE (the worker
+order); the decision uses `clock_timestamp()` after the lock; one `integration.operation_events` row and one `ops.audit_events` row; `409 <reason>` when unavailable. A new River job
+(`external_operation_v1`, args exactly `{operation_id, version:1}`, queue `default`, River default priority) is inserted by the API in the same transaction and
+verified by SQL (`xmin = current transaction`, exact args/queue/priority); any refusal rolls the job back with everything else.
+
+| Action | From state | Extra guard | Result | Event reason |
+|---|---|---|---|---|
+| `query` | UNKNOWN, ACKNOWLEDGED, DISPATCHING with expired lease | no active lease; binding enabled at the frozen version/provider/asset; no other live job; at most 5 `query_requested` events per operation in the rolling 24 h; last one older than 60 s | state unchanged; `generation_floor := generation`; one new job | `query_requested` |
+| `cancel` | READY | not a protective operation (below); READY means no dispatch claim exists since the last READY | CANCELLED, generation + 1 (the table CHECK needs generation > 0 outside READY, as claim_operation's READY -> STALE_BINDING), result_code `cancelled_by_merchant`; the existing job, if any, finishes as a terminal no-op | `cancelled_by_merchant` |
+| `retry` (re-open) | FAILED_FINAL | kind is in the retry registry below; binding unchanged | READY, generation kept, `generation_floor := generation`, result_code `retry_authorized`; one new job | `retry_authorized` |
+| `retry` (re-queue) | READY | no live job for the operation | state unchanged; one new job | `requeue_authorized` |
+
+Refusals (`409` unless noted; `reason` is the machine code): an operation of a payment/media lane or a non-MERCHANT row is invisible (`404 not_found`, like another store's id); `query`/`retry` of an ads-lane operation -> `lane_unsupported`; `query` on READY or a terminal state -> `not_in_doubt`;
+`query` with a lease -> `lease_active`; binding disabled/changed (including a stored `binding_changed`) -> `binding_changed`; `query` with a live job -> `query_in_progress`; a 6th query within 24 h -> `429 query_limit` with a `Retry-After` of the seconds until the oldest counted query leaves the window; a second query
+within 60 s -> `query_too_soon`; `cancel` of a protective operation (any state) -> `protective_operation`; `cancel` on DISPATCHING/UNKNOWN/ACKNOWLEDGED -> `already_dispatched`, on a terminal state -> `operation_closed`; `retry` on UNKNOWN, ACKNOWLEDGED or expired
+DISPATCHING -> `reconcile_first`, on an active DISPATCHING lease -> `lease_active`, on SUCCEEDED -> `already_succeeded`, on CANCELLED/BLOCKED_POLICY/STALE_BINDING -> `operation_closed`, on FAILED_FINAL of an
+unregistered kind -> `retry_not_supported`, on READY with a live job -> `already_queued`; unknown id or another store's id -> `404 not_found`; missing/insufficient permission -> `403`.
+
+### Protective operations (never cancellable)
+An operation whose action has a segment starting with `pause`, `stop`, `disable`, `revoke` or `unsubscribe` (today `meta.ads.pause`; `livekit.egress.stop` is outside the ledger lanes) is a protective, stop-class
+operation. `cancel` answers `409 protective_operation` for it in every state, decided in SQL (`ledger_capability`), because cancelling a pending stop is not "a local fact that never reached the provider": its effect is that
+a remote action keeps running. The case that matters is the ads budget guard: the advance sweeper plans `meta.ads.pause` when spend reaches the approved `lifetime_budget_minor`, when the ad is disapproved or the draft
+ended (0074), re-plans a pause that did not succeed only after 15 minutes, and the approved budget is an `ads:approve` control that the generic `integration:execute` ledger must not bypass. The rule is by name and fail-safe:
+a stop-class kind added later must follow the naming or be listed here.
+
+### Retry registry (policy, not a mechanism: extending it needs a reviewed row)
+A FAILED_FINAL operation may be re-opened only for a kind (provider, action) listed here. What makes that safe is not the provider idempotency key (the dispatcher always sends `lc:<operation_id>`, but Meta adapters
+ignore it and only ECPay has natural provider dedupe through its trade number): the registered kinds perform no remote effect at all (read-only Graph calls with idempotent latest-wins Finish), and the only SQL that ever
+writes READY after a dispatch is this re-open, so an effect kind can never become dispatchable again. The re-open reuses the same operation id and semantic key and must also be unable to resurrect deleted custody:
+
+| provider | action | basis |
+|---|---|---|
+| `facebook` | `meta.live_videos` | read-only Graph call; Finish is a latest-wins idempotent snapshot upsert (0118) |
+| `facebook` | `meta.live_insights` | read-only Graph call; Finish is a latest-wins idempotent snapshot upsert (0113) |
+
+Deliberately NOT registered (each needs its own reviewed amendment; the owning domain surface creates a fresh attempt instead): `meta.dm_send|meta.private_reply|meta.public_reply|meta.offer_recommend`
+(the sealed dispatch copy is wiped by `inbox.wipe_send_secret` on every terminal state, so a re-opened send could not even be dispatched), `meta.capi.purchase` (`orders.clear_terminal_capi_ip` clears
+the single-send identifiers on terminal states), `meta.ads.*` (publish chain steps and `ads.remote_objects` are driven by the draft state machine), `ecpay.cvs_create`
+(`fulfillment.settle_cvs_attempt` marks the old attempt FAILED and allows a new attempt; re-opening the old operation would create a second parcel). The re-queue row above applies to every kind because a
+READY operation has never been claimed for dispatch since it became READY.
+
+UNKNOWN has no retry at all: `retry` answers `409 reconcile_first`. The proof that an action was NOT performed is exactly an adapter's reconcile-mode completion to FAILED_FINAL (reached through
+`query`); a FAILED_FINAL of a registered kind may then be re-opened. A reconcile that finds the effect completes SUCCEEDED, which is terminal and not retryable.
+
+### Dispatcher budget (amends external-dispatcher-v1 "bounded number of claimed generations")
+`integration.operations.generation_floor bigint NOT NULL DEFAULT 0 CHECK (0 <= generation_floor <= generation)`, writable only by `commerce_integration_writer`. The dispatcher's budget comparisons use
+`generation - generation_floor` instead of `generation`. Default 0 leaves every existing operation byte-for-byte unchanged. `query` and `retry` raise the floor to the current generation, which is what lets
+a `reconcile_budget_exhausted` operation be queried again (otherwise an exhausted operation is cancelled by the dispatcher before any claim and a merchant could never ask again) and gives a
+re-opened operation a fresh budget. Fencing is untouched: generation stays monotonic and every claim/complete keeps its generation + lease-token check.
+
+### Gates (real isolated PostgreSQL, MOCK provider)
+Store isolation of list/detail/actions (another store's id is 404, another store's grants are not enough); ads lane read + cancel only; exact DTO keys with a secret/PII canary never present; cancel refused after dispatch and after
+terminal; retry refused for UNKNOWN without proof and for unregistered FAILED_FINAL; query -> reconcile proof -> retry on a registered kind runs the fake provider exactly once more with the same idempotency
+key and never a second effect; two concurrent retries yield one success and one provider call; audit and operation_event rows per action; budget-exhausted operation recovers through `query`; River job
+verification refuses a job of the wrong queue/args; permission `integration:read` vs `integration:execute` split. Pins: R2 migration count (81 -> 82), the external authority function inventory (89 -> 96: three private helpers + four merchant definers),
+the legacy-upgrade historical-row equality (`integration.operations` gains `generation_floor:0`). Gate: `bash scripts/dev/test-local.sh --operations-queue`. NOT_RUN: real Meta/ECPay/ads providers, the admin UI (W6-U2), LIVE traffic.

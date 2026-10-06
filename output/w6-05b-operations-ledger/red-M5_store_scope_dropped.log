@@ -1,0 +1,37 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.61s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.31s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.26s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.32s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+    operations_queue_test.go:351: query of another store's operation = 409 ({"code":"query_in_progress","message":"A status check for this operation is already running.","request_id":"f58b0a516ca3442325e47fdd70007a02","retryable":false,"details":{}}
+        ), want 404
+    operations_queue_test.go:351: cancel of another store's operation = 409 ({"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"e2fc6db7cac75705eac429ac95632bd7","retryable":false,"details":{}}
+        ), want 404
+    operations_queue_test.go:351: retry of another store's operation = 409 ({"code":"reconcile_first","message":"Check the provider's status first; an operation with an unknown result is never sent again.","request_id":"9ad1c3cb7b4c058a8ede884101d1d02d","retryable":false,"details":{}}
+        ), want 404
+--- FAIL: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.12s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.21s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.25s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.15s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.36s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.09s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.940s
+FAIL
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1

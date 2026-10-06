@@ -1,0 +1,58 @@
+# W6-05B red evidence (mutation runs of the real-PG gate, base 6277731e + unit diff)
+# Each run: bash scripts/dev/test-focused.sh '^TestOperationsQueue' with ONE mutation applied to migrations/0159_operations_ledger.sql / internal/integrations/core/{dispatcher,ledger}.go (files restored after every run); mutation list in this header.
+# M1 dispatcher ignores generation_floor | M2 UNKNOWN retry allowed | M3 cancel allowed for UNKNOWN/ACKNOWLEDGED | M4 SQL DTO adds semantic_key (masked by the Go DTO struct: exit 0, defence in depth) | M4b same in SQL AND Go DTO | M5 store scope dropped from lookups | M6 retry registry widened to an effect kind | M7 generation CAS removed | M8 same-transaction job check removed | M9 ads lane opened to query/retry | M10 live River job ignored | M11 operation row lock removed
+
+M1_floor_ignored exit 1
+M2_unknown_retry_allowed exit 1
+M3_cancel_after_dispatch exit 1
+M4_dto_leaks_semantic_key exit 0
+M5_store_scope_dropped exit 1
+M6_registry_too_wide exit 1
+M7_no_cas exit 1
+M8_job_unchecked exit 1
+M9_ads_lane_open exit 1
+M10_live_job_ignored exit 1
+M4b exit 1
+M11 exit 1
+
+== M1_floor_ignored
+--- FAIL: TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- FAIL: TestOperationsQueueAppliedEffectIsNeverRetried
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1
+== M2_unknown_retry_allowed
+--- FAIL: TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- FAIL: TestOperationsQueueAppliedEffectIsNeverRetried
+--- FAIL: TestOperationsQueueRetryRules
+test-focused: top-level PASS=10 FAIL=3 SKIP=0 exit=1
+== M3_cancel_after_dispatch
+--- FAIL: TestOperationsQueueCancelRules
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M4_dto_leaks_semantic_key
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+== M4b
+--- FAIL: TestOperationsQueueDTOHasExactKeysAndNoSecrets
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M5_store_scope_dropped
+--- FAIL: TestOperationsQueueListIsStoreScopedAndFiltered
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M6_registry_too_wide
+--- FAIL: TestOperationsQueueRetryRules
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M7_no_cas
+--- FAIL: TestOperationsQueueCancelRules
+--- FAIL: TestOperationsQueueRetryRules
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1
+== M8_job_unchecked
+--- FAIL: TestOperationsQueueSQLFences
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M9_ads_lane_open
+--- FAIL: TestOperationsQueueAdsLaneIsReadAndCancelOnly
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1
+== M10_live_job_ignored
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect
+--- FAIL: TestOperationsQueueQueryRules
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1
+== M11
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect
+--- FAIL: TestOperationsQueueCancelRacesDispatchClaim
+test-focused: top-level PASS=11 FAIL=2 SKIP=0 exit=1
