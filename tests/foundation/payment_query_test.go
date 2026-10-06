@@ -691,7 +691,9 @@ func TestBuyerPaymentQueryCrossAttemptTokenAndMerchantJob(t *testing.T) {
 	mustExec(t, q.f.owner, `ALTER TABLE river_payment.river_job ENABLE TRIGGER payment_job_family`)
 	pqStartWorker(t, q, opts)
 	var e error
-	deadline := time.Now().Add(5 * time.Second)
+	// Wait for the worker's first fetch of the corrupted job (an eventual condition, not a latency bound). 5 s was too short on a
+	// loaded CI runner (trunk 1991a49d, shard B-K: cancelled=false with every other assertion holding); the assertions are unchanged.
+	deadline := time.Now().Add(30 * time.Second)
 	cancelled := false
 	for time.Now().Before(deadline) {
 		var state string
