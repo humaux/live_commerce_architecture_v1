@@ -53,7 +53,7 @@ type querier interface {
 }
 
 // withDB opens a one-connection pool for the operator login and runs fn; replaceable by tests.
-var withDB = func(ctx context.Context, dsn string, fn func(querier) ([]byte, error)) ([]byte, error) {
+var withDB = func(ctx context.Context, dsn string, fn func(context.Context, querier) ([]byte, error)) ([]byte, error) {
 	cfg, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, errDatabase // parse errors can echo the DSN
@@ -64,7 +64,7 @@ var withDB = func(ctx context.Context, dsn string, fn func(querier) ([]byte, err
 		return nil, errDatabase
 	}
 	defer pool.Close()
-	return fn(pool)
+	return fn(ctx, pool)
 }
 
 func main() {
@@ -76,11 +76,12 @@ func main() {
 	}
 }
 
-// call runs one definer that returns a single jsonb document.
-func call(sql string, args ...any) func(querier) ([]byte, error) {
-	return func(q querier) ([]byte, error) {
+// call runs one definer that returns a single jsonb document under the caller's context (the 30 s deadline of main
+// bounds connect and query alike).
+func call(sql string, args ...any) func(context.Context, querier) ([]byte, error) {
+	return func(ctx context.Context, q querier) ([]byte, error) {
 		var raw []byte
-		err := q.QueryRow(context.Background(), sql, args...).Scan(&raw)
+		err := q.QueryRow(ctx, sql, args...).Scan(&raw)
 		return raw, err
 	}
 }
@@ -121,7 +122,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		return errUsage
 	}
 	// Everything the operation needs is validated before any connection opens; the SQL re-validates the same rules.
-	var fn func(querier) ([]byte, error)
+	var fn func(context.Context, querier) ([]byte, error)
 	switch cmd {
 	case "store-suspend", "store-resume", "tenant-suspend", "tenant-resume":
 		resume := strings.HasSuffix(cmd, "-resume")

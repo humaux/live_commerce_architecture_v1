@@ -324,8 +324,22 @@ func TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned(t *testing.T) {
 	if n := skips(); n != 1 {
 		t.Fatalf("claim_reply_skipped:store_suspended audit rows = %d, want 1", n)
 	}
+	// Like reply_used: the bundle is flagged so the merchant is prompted to send the link by hand after resume.
+	if miCount(t, f.owner, `SELECT count(*) FROM claims.bundles WHERE id=$1 AND link_pending_manual`, r.bundleID) != 1 {
+		t.Fatal("a suspension skip did not set claims.bundles.link_pending_manual")
+	}
+	// The comment poller serves no source of a suspended store (no Graph polling with the merchant token) and serves it again after resume.
+	polled := func() int64 {
+		return miCount(t, f.owner, `SELECT count(*) FROM live.comment_poll_sources() WHERE store_id=$1`, f.storeA1)
+	}
+	if polled() != 0 {
+		t.Fatal("live.comment_poll_sources still lists a suspended store")
+	}
 	// OP05: after resume the next claim plans its reply again.
 	p.must(p.setStore(f.storeA1, true, nil))
+	if polled() == 0 {
+		t.Fatal("live.comment_poll_sources does not list the store after resume (open window, active source)")
+	}
 	s2 := e.postFB(t, "", "", "A1", mciAt(4*time.Second), nil)
 	e.apply(t)
 	if e.opCount(t, s2.comment) != 1 {
@@ -344,13 +358,14 @@ func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
 	mustExec(t, b.owner, `INSERT INTO control.tenants(id,name) VALUES($1,'po-mail-tenant')`, tenant)
 	mustExec(t, b.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'po-sus','USD'),($1,$3,'po-ok','USD')`, tenant, sus, ok)
 	t.Cleanup(func() {
+		_, _ = b.owner.Exec(ctx, `DELETE FROM notify.merchant_alerts WHERE tenant_id=$1`, tenant)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM notify.outbox WHERE tenant_id=$1`, tenant)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM control.stores WHERE tenant_id=$1`, tenant)
 		_, _ = b.owner.Exec(ctx, `DELETE FROM control.tenants WHERE id=$1`, tenant)
 	})
 	// Oldest rows first: the suspended store's rows would fill the claim window if the predicate sat in the loop.
-	susBuyer, susMerchant, okBuyer := randomUUID(), randomUUID(), randomUUID()
-	for _, r := range []struct{ store, order, kind string }{{sus, susBuyer, "placed"}, {sus, susMerchant, "merchant_new"}, {ok, okBuyer, "placed"}} {
+	susBuyer, susMerchant, okBuyer, susPaid, susRefunded := randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()
+	for _, r := range []struct{ store, order, kind string }{{sus, susBuyer, "placed"}, {sus, susMerchant, "merchant_new"}, {sus, susPaid, "paid"}, {sus, susRefunded, "refunded"}, {ok, okBuyer, "placed"}} {
 		mustExec(t, b.owner, `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind) VALUES($1,$2,$3,$4)`, tenant, r.store, r.order, r.kind)
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -364,9 +379,21 @@ func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
 	claim := func() {
 		t.Helper()
 		var raw []byte
-		if err := worker.QueryRow(ctx, `SELECT notify.claim_batch(1,100000,1000)`).Scan(&raw); err != nil {
+		if err := worker.QueryRow(ctx, `SELECT notify.claim_batch(10,100000,1000)`).Scan(&raw); err != nil {
 			t.Fatal(err)
 		}
+		if err := worker.QueryRow(ctx, `SELECT notify.claim_merchant_alerts(10,100000)`).Scan(&raw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	alert := randomUUID()
+	mustExec(t, b.owner, `INSERT INTO notify.merchant_alerts(id,tenant_id,store_id,kind,subject,episode) VALUES($1,$2,$3,'meta_health','123456',1)`, alert, tenant, sus)
+	alertState := func() string {
+		var s string
+		if err := b.owner.QueryRow(ctx, `SELECT state||':'||coalesce(skip_reason,'') FROM notify.merchant_alerts WHERE id=$1`, alert).Scan(&s); err != nil {
+			t.Fatal(err)
+		}
+		return s
 	}
 	p.must(p.setStore(sus, false, "non_payment"))
 	claim()
@@ -374,14 +401,21 @@ func TestPlatformOperatorOP03MailNotClaimedForSuspendedStore(t *testing.T) {
 	if got := state(okBuyer); got != "SKIPPED:no_order" {
 		t.Fatalf("serving store's row = %s, want SKIPPED:no_order (starved by the suspended store?)", got)
 	}
-	if state(susBuyer) != "PENDING:" || state(susMerchant) != "PENDING:" {
-		t.Fatalf("suspended store's mail rows = %s / %s, want PENDING (untouched)", state(susBuyer), state(susMerchant))
+	if state(susBuyer) != "PENDING:" || state(susMerchant) != "PENDING:" || alertState() != "PENDING:" {
+		t.Fatalf("suspended store's mail rows = %s / %s / alert %s, want PENDING (untouched)", state(susBuyer), state(susMerchant), alertState())
+	}
+	// Money already in flight is still confirmed to the buyer: paid / refunded mail is claimed (here: considered, no order behind it).
+	if state(susPaid) != "SKIPPED:no_order" || state(susRefunded) != "SKIPPED:no_order" {
+		t.Fatalf("paid/refunded confirmations of a suspended store = %s / %s, want them considered (SKIPPED:no_order)", state(susPaid), state(susRefunded))
 	}
 	p.must(p.setStore(sus, true, nil))
 	claim()
 	claim()
 	if got := state(susBuyer); got != "SKIPPED:no_order" {
 		t.Fatalf("after resume the buyer row = %s, want it considered again (SKIPPED:no_order)", got)
+	}
+	if got := alertState(); got != "SKIPPED:no_owner" {
+		t.Fatalf("after resume the merchant alert = %s, want it considered again (SKIPPED:no_owner)", got)
 	}
 	if got := state(susMerchant); got != "SKIPPED:no_owner" {
 		t.Fatalf("after resume the merchant row = %s, want it considered again (SKIPPED:no_owner)", got)

@@ -53,3 +53,6 @@ permission catalogue) hold it; existing owner/admin staff are backfilled; viewer
 Status of the role matrix (integrator note, W6-01B review): the unit brief listed an "owner/admin + 客服包" bundle, but no customer-service role exists
 yet, so `customers:write` is owner/admin only for now. The note rule "author, or a `customers:privacy` holder, may edit/delete a note" is reserved for the
 day a non-privacy role (e.g. a customer-service bundle) receives `customers:write`; until then every writer is also a privacy holder.
+
+## Amendment OPS-01B: suspended store or tenant (migration 0143)
+`identity.resolve_access` is unchanged: it already joins `control.stores.active` and `control.tenants.active`, so a suspended store or tenant yields the same "no access" outcome as an unknown scope (the routes' existing refusal; there is no distinct `store_suspended` code, and none is planned for v1). Suspension and resume are performed only by the platform operator CLI, see `contracts/platform-operator-v1.md`.

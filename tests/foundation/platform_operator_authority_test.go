@@ -39,7 +39,7 @@ func TestPlatformOperatorOP08SchemaAndExecuteMatrix(t *testing.T) {
 		}
 		want := []string{"commerce_platform_operator", "commerce_platform_writer"}
 		if fn == poGuardFn {
-			want = []string{"commerce_checkout_writer", "commerce_integration_writer", "commerce_platform_writer"}
+			want = []string{"commerce_checkout_writer", "commerce_claims_writer", "commerce_integration_writer", "commerce_platform_writer"}
 		}
 		lcSameSet(t, fn+" EXECUTE grantees", acl, want)
 	}

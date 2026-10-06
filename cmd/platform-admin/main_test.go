@@ -41,10 +41,11 @@ type querier0 struct {
 	r    row
 	sql  string
 	args []any
+	ctx  context.Context
 }
 
-func (q *querier0) QueryRow(_ context.Context, sql string, args ...any) pgx.Row {
-	q.sql, q.args = sql, args
+func (q *querier0) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	q.ctx, q.sql, q.args = ctx, sql, args
 	return q.r
 }
 
@@ -54,9 +55,9 @@ func fake(t *testing.T, q *querier0) *int {
 	orig := withDB
 	t.Cleanup(func() { withDB = orig })
 	opened := new(int)
-	withDB = func(_ context.Context, _ string, fn func(querier) ([]byte, error)) ([]byte, error) {
+	withDB = func(ctx context.Context, _ string, fn func(context.Context, querier) ([]byte, error)) ([]byte, error) {
 		*opened++
-		return fn(q)
+		return fn(ctx, q)
 	}
 	return opened
 }
@@ -190,5 +191,16 @@ func TestFailuresReduceToFixedCodes(t *testing.T) {
 	var out bytes.Buffer
 	if err := run(context.Background(), []string{"status", "--store", cliStore}, good, &out); err != errFailed || out.Len() != 0 {
 		t.Fatalf("non-JSON result: %v %q", err, out.String())
+	}
+}
+
+// The run context (main's 30 s deadline) bounds the query as well as the connect.
+func TestRunContextReachesTheQuery(t *testing.T) {
+	q := &querier0{r: row{raw: []byte(`{}`)}}
+	fake(t, q)
+	type key struct{}
+	ctx := context.WithValue(context.Background(), key{}, "marker")
+	if err := run(ctx, []string{"status", "--store", cliStore}, goodEnv, &bytes.Buffer{}); err != nil || q.ctx == nil || q.ctx.Value(key{}) != "marker" {
+		t.Fatalf("query context not derived from the run context: %v %v", err, q.ctx)
 	}
 }
