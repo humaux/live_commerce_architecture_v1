@@ -1,0 +1,106 @@
+=== RUN   TestK3W401BForgedBodiesLeaveNoRows
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+2026/10/06 16:10:50 WARN payuni_notify_rejected code=invalid_signature token_hash=1d2db186f7b77b0e
+--- PASS: TestK3W401BForgedBodiesLeaveNoRows (5.81s)
+=== RUN   TestK3W401BConcurrentReplayExactlyOneReceipt
+--- PASS: TestK3W401BConcurrentReplayExactlyOneReceipt (3.32s)
+=== RUN   TestK3W401BRotationGraceBoundary
+2026/10/06 16:10:57 WARN payuni_notify_rejected code=invalid_signature token_hash=419da33c93d427be
+--- PASS: TestK3W401BRotationGraceBoundary (3.29s)
+=== RUN   TestK3W401BCrossStoreSameCredentialReplayScoped
+--- PASS: TestK3W401BCrossStoreSameCredentialReplayScoped (3.20s)
+=== RUN   TestK3W401BDisabledStoreStillRecordsAndWakes
+--- PASS: TestK3W401BDisabledStoreStillRecordsAndWakes (3.44s)
+=== RUN   TestK3W401BEndpointDisableRotateAndLiveRefusal
+--- PASS: TestK3W401BEndpointDisableRotateAndLiveRefusal (6.04s)
+=== RUN   TestK3W401BWakeOnlyMatchingJobNeverInserts
+--- PASS: TestK3W401BWakeOnlyMatchingJobNeverInserts (4.19s)
+=== RUN   TestK3W401BProfileMismatchReviewedNotWoken
+--- PASS: TestK3W401BProfileMismatchReviewedNotWoken (3.03s)
+=== RUN   TestK3W401BIngressAuthorityCeiling
+--- PASS: TestK3W401BIngressAuthorityCeiling (2.91s)
+=== RUN   TestK3W401BBodyAndHeaderBoundaries
+2026/10/06 16:11:23 WARN payuni_notify_rejected code=invalid_signature token_hash=399f93beb77842a9
+2026/10/06 16:11:23 WARN payuni_notify_rejected code=invalid_signature token_hash=399f93beb77842a9
+--- PASS: TestK3W401BBodyAndHeaderBoundaries (2.91s)
+=== RUN   TestMerchantAccountsRoundTripPrivacyAndRotation
+--- PASS: TestMerchantAccountsRoundTripPrivacyAndRotation (0.20s)
+=== RUN   TestMerchantAccountsSQLColumnAndMutationBoundaries
+--- PASS: TestMerchantAccountsSQLColumnAndMutationBoundaries (0.10s)
+=== RUN   TestMerchantAccountsAtomicFaultRollback
+=== RUN   TestMerchantAccountsAtomicFaultRollback/integration.bindings
+=== RUN   TestMerchantAccountsAtomicFaultRollback/integration.merchant_accounts
+=== RUN   TestMerchantAccountsAtomicFaultRollback/integration.account_credentials
+=== RUN   TestMerchantAccountsAtomicFaultRollback/ops.audit_events
+=== RUN   TestMerchantAccountsAtomicFaultRollback/ops.command_results
+--- PASS: TestMerchantAccountsAtomicFaultRollback (0.32s)
+    --- PASS: TestMerchantAccountsAtomicFaultRollback/integration.bindings (0.10s)
+    --- PASS: TestMerchantAccountsAtomicFaultRollback/integration.merchant_accounts (0.07s)
+    --- PASS: TestMerchantAccountsAtomicFaultRollback/integration.account_credentials (0.05s)
+    --- PASS: TestMerchantAccountsAtomicFaultRollback/ops.audit_events (0.05s)
+    --- PASS: TestMerchantAccountsAtomicFaultRollback/ops.command_results (0.05s)
+=== RUN   TestMerchantAccountsReplayConflictsAndAuthorization
+--- PASS: TestMerchantAccountsReplayConflictsAndAuthorization (0.12s)
+=== RUN   TestMerchantAccountsConcurrentReplayAndRotationCAS
+--- PASS: TestMerchantAccountsConcurrentReplayAndRotationCAS (0.07s)
+=== RUN   TestMerchantAccountsBindingTargetConstraints
+=== RUN   TestMerchantAccountsBindingTargetConstraints/foreign_store
+=== RUN   TestMerchantAccountsBindingTargetConstraints/wrong_provider
+=== RUN   TestMerchantAccountsBindingTargetConstraints/wrong_account
+=== RUN   TestMerchantAccountsBindingTargetConstraints/wrong_environment
+--- PASS: TestMerchantAccountsBindingTargetConstraints (0.06s)
+    --- PASS: TestMerchantAccountsBindingTargetConstraints/foreign_store (0.01s)
+    --- PASS: TestMerchantAccountsBindingTargetConstraints/wrong_provider (0.01s)
+    --- PASS: TestMerchantAccountsBindingTargetConstraints/wrong_account (0.01s)
+    --- PASS: TestMerchantAccountsBindingTargetConstraints/wrong_environment (0.01s)
+=== RUN   TestMerchantAccountsRotationAtomicFaultRollback
+=== RUN   TestMerchantAccountsRotationAtomicFaultRollback/integration.merchant_accounts
+=== RUN   TestMerchantAccountsRotationAtomicFaultRollback/integration.account_credentials
+=== RUN   TestMerchantAccountsRotationAtomicFaultRollback/ops.audit_events
+=== RUN   TestMerchantAccountsRotationAtomicFaultRollback/ops.command_results
+--- PASS: TestMerchantAccountsRotationAtomicFaultRollback (0.24s)
+    --- PASS: TestMerchantAccountsRotationAtomicFaultRollback/integration.merchant_accounts (0.06s)
+    --- PASS: TestMerchantAccountsRotationAtomicFaultRollback/integration.account_credentials (0.05s)
+    --- PASS: TestMerchantAccountsRotationAtomicFaultRollback/ops.audit_events (0.06s)
+    --- PASS: TestMerchantAccountsRotationAtomicFaultRollback/ops.command_results (0.07s)
+=== RUN   TestCvsBeginGuards
+=== RUN   TestCvsBeginGuards/API_service_+_verified_pickup_succeeds
+=== RUN   TestCvsBeginGuards/amount_boundaries_in_TWD_minor_units_(0061_x100_convention)
+=== RUN   TestCvsBeginGuards/recipient_rule_(F5)_refuses_before_any_hold
+=== RUN   TestCvsBeginGuards/environment:_LIVE_deployment_with_a_SANDBOX_ECPay_profile_refuses,_zero_holds_and_payment_attempts
+=== RUN   TestCvsBeginGuards/disabled_profile,_unqualified_credential,_stale_pickup:_refused_with_zero_holds
+=== RUN   TestCvsBeginGuards/regressions:_MANUAL_home_and_MANUAL_ATTESTED_CVS_still_Begin
+--- PASS: TestCvsBeginGuards (1.51s)
+    --- PASS: TestCvsBeginGuards/API_service_+_verified_pickup_succeeds (0.09s)
+    --- PASS: TestCvsBeginGuards/amount_boundaries_in_TWD_minor_units_(0061_x100_convention) (0.37s)
+    --- PASS: TestCvsBeginGuards/recipient_rule_(F5)_refuses_before_any_hold (0.28s)
+    --- PASS: TestCvsBeginGuards/environment:_LIVE_deployment_with_a_SANDBOX_ECPay_profile_refuses,_zero_holds_and_payment_attempts (0.08s)
+    --- PASS: TestCvsBeginGuards/disabled_profile,_unqualified_credential,_stale_pickup:_refused_with_zero_holds (0.17s)
+    --- PASS: TestCvsBeginGuards/regressions:_MANUAL_home_and_MANUAL_ATTESTED_CVS_still_Begin (0.11s)
+=== RUN   TestCvsOptions
+=== RUN   TestCvsOptions/no_profile:_buyer_entered_rows,_payment_modes_card_only
+=== RUN   TestCvsOptions/payment_modes_includes_pay_at_pickup_only_when_enabled;_only_enabled_chains_are_listed
+=== RUN   TestCvsOptions/hidden_/_disabled_service_variants_are_not_listed
+=== RUN   TestCvsOptions/enabled_qualified_profile:_ecpay_map_rows;_OK_and_Hi-Life_coming_soon_until_verified
+=== RUN   TestCvsOptions/CVS_ECPAY_ENABLED=0_with_an_enabled_profile:_temporarily_unavailable,_never_buyer_entered_(X9)
+=== RUN   TestCvsOptions/disabling_the_profile_falls_back_to_buyer_entered_(X9:_mode_is_SQL-only)
+--- PASS: TestCvsOptions (0.78s)
+    --- PASS: TestCvsOptions/no_profile:_buyer_entered_rows,_payment_modes_card_only (0.04s)
+    --- PASS: TestCvsOptions/payment_modes_includes_pay_at_pickup_only_when_enabled;_only_enabled_chains_are_listed (0.20s)
+    --- PASS: TestCvsOptions/hidden_/_disabled_service_variants_are_not_listed (0.04s)
+    --- PASS: TestCvsOptions/enabled_qualified_profile:_ecpay_map_rows;_OK_and_Hi-Life_coming_soon_until_verified (0.02s)
+    --- PASS: TestCvsOptions/CVS_ECPAY_ENABLED=0_with_an_enabled_profile:_temporarily_unavailable,_never_buyer_entered_(X9) (0.02s)
+    --- PASS: TestCvsOptions/disabling_the_profile_falls_back_to_buyer_entered_(X9:_mode_is_SQL-only) (0.01s)
+=== RUN   TestCvsCloseOperationInsertScope
+--- PASS: TestCvsCloseOperationInsertScope (0.47s)
+PASS
+ok  	livecommerce/tests/foundation	43.739s
+test-focused: top-level PASS=20 FAIL=0 SKIP=0 exit=0

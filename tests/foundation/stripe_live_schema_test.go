@@ -608,7 +608,8 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 	sort.Strings(post)
 	apply := func(tx pgx.Tx, paths []string, prefix, skip string) {
 		for _, path := range paths {
-			if filepath.Base(path) == skip {
+			// 0137 / post-River 0022 (platform Stripe) re-create 0077/0016 objects, so the pre-0077 fixture must hold them back too.
+			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -714,10 +715,10 @@ func slsUpgrade(t *testing.T) {
 	digest := func() map[string]string {
 		out := map[string]string{}
 		for name, q := range map[string]string{
-			"merchant_accounts": `SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'') FROM integration.merchant_accounts x`,
-			"credentials":       `SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'') FROM integration.account_credentials x`,
+			"merchant_accounts": `SELECT count(*)||':'||coalesce(md5(string_agg((to_jsonb(x)-'platform_connection_id')::text,E'\n' ORDER BY (to_jsonb(x)-'platform_connection_id')::text)),'') FROM integration.merchant_accounts x`,
+			"credentials":       `SELECT count(*)||':'||coalesce(md5(string_agg((to_jsonb(x)-'sealed_version')::text,E'\n' ORDER BY (to_jsonb(x)-'sealed_version')::text)),'') FROM integration.account_credentials x`,
 			"endpoints":         `SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'') FROM payments.stripe_webhook_endpoints x`,
-			"qualifications":    `SELECT count(*)||':'||coalesce(md5(string_agg((to_jsonb(x)-'live_approval_id')::text,E'\n' ORDER BY (to_jsonb(x)-'live_approval_id')::text)),'') FROM payments.account_qualifications x`,
+			"qualifications":    `SELECT count(*)||':'||coalesce(md5(string_agg((to_jsonb(x)-'live_approval_id'-'platform_qualification_id')::text,E'\n' ORDER BY (to_jsonb(x)-'live_approval_id'-'platform_qualification_id')::text)),'') FROM payments.account_qualifications x`,
 			"audit":             `SELECT count(*)||':'||coalesce(md5(string_agg(x::text,E'\n' ORDER BY x::text)),'') FROM ops.audit_events x`,
 		} {
 			var d string
@@ -765,8 +766,9 @@ func slsUpgrade(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerAfter); err != nil {
 		t.Fatal(err)
 	}
-	if ledgerAfter != ledgerBefore+2 {
-		t.Fatalf("ledger grew by %d, want exactly 2 (0077 and post_river/0016, once)", ledgerAfter-ledgerBefore)
+	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016 and applied by the same Apply.
+	if ledgerAfter != ledgerBefore+4 {
+		t.Fatalf("ledger grew by %d, want exactly 4 (0077, post_river/0016, 0137 and post_river/0022, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -785,8 +787,16 @@ func slsUpgrade(t *testing.T) {
 		for k, was := range beforeFn {
 			got, ok := after[k]
 			if !ok {
+				// 0137/post_river/0022 replaced the 18-argument webhook prepare by the 19-argument one (lc_store cross-check).
+				if strings.HasPrefix(k, "payments.stripe_webhook_prepare(") {
+					continue
+				}
 				t.Errorf("function %s disappeared", k)
 				continue
+			}
+			// 0137: the registry writer now resolves merchant access for set/read_platform_stripe.
+			if strings.HasPrefix(k, "identity.resolve_access(") {
+				got = strings.Replace(got, "commerce_payment_registry_writer:EXECUTE,", "", 1)
 			}
 			if got != was {
 				t.Errorf("function %s changed owner/config/ACL:\n  before %s\n  after  %s", k, was, got)
@@ -809,7 +819,14 @@ func slsUpgrade(t *testing.T) {
 		}
 	})
 	t.Run("privilege delta equals section 3.3", func(t *testing.T) {
-		if lost := mciDiff(pre.acl, post1.acl); len(lost) != 0 {
+		var lost []string
+		for _, k := range mciDiff(pre.acl, post1.acl) {
+			// 0137 P2-8: the runtime's table-level INSERT on merchant_accounts becomes a column-list grant (no platform_connection_id)
+			if k != "commerce_runtime|table|integration.merchant_accounts|INSERT" {
+				lost = append(lost, k)
+			}
+		}
+		if len(lost) != 0 {
 			t.Errorf("the upgrade removed privileges:\n  %s", mciHead(lost))
 		}
 		delta := mciDiff(post1.acl, pre.acl)
@@ -845,6 +862,9 @@ func slsUpgrade(t *testing.T) {
 				ok = true
 				sawFn[obj] = true
 			}
+			if !ok && slsPlatformStripeDelta(role, kind, obj, priv) {
+				ok = true // 0137 (platform Stripe) is applied by the same Apply; its own delta is pinned by PF01
+			}
 			if !ok {
 				bad = append(bad, k)
 			}
@@ -877,4 +897,26 @@ func slsUpgrade(t *testing.T) {
 			t.Fatalf("ledger rows with a checksum: %d", got)
 		}
 	})
+}
+
+// slsPlatformStripeDelta recognises the privileges migration 0137 adds (stripe-platform-account-v1 §3.5 plus the owner amendment
+// allowlist); the SL02 upgrade applies 0137 together with 0077, and PF01 pins this set from the 0137 side.
+func slsPlatformStripeDelta(role, kind, obj, priv string) bool {
+	platformObj := strings.HasPrefix(obj, "payments.stripe_platform") || strings.HasPrefix(obj, "payments.platform_stripe_") ||
+		strings.HasPrefix(obj, "payments.designate_stripe_platform") || strings.HasPrefix(obj, "payments.set_stripe_platform_open") ||
+		strings.HasPrefix(obj, "payments.block_platform_stripe") || strings.HasPrefix(obj, "payments.allow_platform_stripe") ||
+		strings.HasPrefix(obj, "payments.set_platform_stripe") || strings.HasPrefix(obj, "payments.read_platform_stripe") ||
+		strings.HasPrefix(obj, "payments.platform_stripe") || strings.HasPrefix(obj, "integration.guard_derived_stripe")
+	switch role {
+	case "commerce_payment_registry_writer", "commerce_checkout_writer", "commerce_payment_registrar", "commerce_runtime":
+		if platformObj {
+			return true
+		}
+		// pricing.policy_versions(country...) read for the card heads, and identity.resolve_access EXECUTE
+		return (role == "commerce_payment_registry_writer" && priv == "SELECT" && strings.HasPrefix(obj, "pricing.policy_versions")) ||
+			(role == "commerce_runtime" && kind == "column" && priv == "INSERT" && strings.HasPrefix(obj, "integration.merchant_accounts.")) ||
+			(role == "commerce_payment_registry_writer" && kind == "exec" && obj == "identity.resolve_access") ||
+			(role == "commerce_payment_registry_writer" && kind == "column" && strings.HasPrefix(obj, "integration.account_credentials.sealed_version"))
+	}
+	return false
 }

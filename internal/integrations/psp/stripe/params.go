@@ -37,13 +37,17 @@ const (
 	pMetaOrder       = "metadata[lc_order]"
 	pMetaProfile     = "metadata[lc_profile]"
 	pMetaVersion     = "metadata[lc_v]"
-	pMode            = "mode"
-	pPIMetaAttempt   = "payment_intent_data[metadata][lc_attempt]"
-	pPIMetaOrder     = "payment_intent_data[metadata][lc_order]"
-	pMethodTypes     = "payment_method_types[0]" // Q3: card only
-	pSubmitType      = "submit_type"
-	pSuccessURL      = "success_url"
-	pUIMode          = "ui_mode" // F1: hosted_page
+	// platform Stripe (contracts/stripe-platform-account-v1.md §4.1): the store tag is readable context only, never authority.
+	pMetaStore     = "metadata[lc_store]"
+	pPIMetaStore   = "payment_intent_data[metadata][lc_store]"
+	pDescSuffix    = "payment_intent_data[statement_descriptor_suffix]" // PF-F4: joined to the card prefix, <=22 chars in all
+	pMode          = "mode"
+	pPIMetaAttempt = "payment_intent_data[metadata][lc_attempt]"
+	pPIMetaOrder   = "payment_intent_data[metadata][lc_order]"
+	pMethodTypes   = "payment_method_types[0]" // Q3: card only
+	pSubmitType    = "submit_type"
+	pSuccessURL    = "success_url"
+	pUIMode        = "ui_mode" // F1: hosted_page
 )
 
 // fixedValues are the keys whose value is a constant of the contract.
@@ -71,6 +75,9 @@ var (
 	uuidPattern    = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 	decimalPattern = regexp.MustCompile(`^[1-9][0-9]{0,18}$`)
 	expireKeyGen   = regexp.MustCompile(`^lc:stripe:cs-expire:v1:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(0|[1-9][0-9]{0,18})$`)
+	// descriptor suffix grammar = payments.platform_stripe_enrollments.descriptor_suffix CHECK (letter required)
+	suffixPattern  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9 .-]{1,9}$`)
+	suffixLetter   = regexp.MustCompile(`[A-Za-z]`)
 	allowedLocales = map[string]bool{"zh-TW": true, "zh": true, "en": true}
 	allowedProfile = map[string]bool{"PROVIDER_MOCK": true, "SANDBOX": true, "LIVE": true}
 )
@@ -79,7 +86,22 @@ var (
 // parameters (§5.4 "never sent") fail simply because they are not in the set.
 func validateCreate(p CreateParams) error {
 	f := p.Fields
-	if len(f) != len(fixedValues)+len(variableKeys) {
+	// The three platform keys are optional ONLY as a set rule: lc_store keys come as a pair (sessions created before the
+	// amendment have none), and the suffix needs them. ponytail: make the pair mandatory after one release of drained sessions.
+	extra := 0
+	if _, ok := f[pMetaStore]; ok {
+		extra = 2
+		if !uuidPattern.MatchString(f[pMetaStore]) || f[pPIMetaStore] != f[pMetaStore] {
+			return ErrInvalid
+		}
+		if suffix, ok := f[pDescSuffix]; ok {
+			extra = 3
+			if !suffixPattern.MatchString(suffix) || !suffixLetter.MatchString(suffix) {
+				return ErrInvalid
+			}
+		}
+	}
+	if len(f) != len(fixedValues)+len(variableKeys)+extra {
 		return ErrInvalid
 	}
 	for k, v := range fixedValues {

@@ -310,6 +310,8 @@ func TestStripeSP07Start(t *testing.T) {
 		exp := sstExpectedParams(res.AttemptID, p.hold.OrderID, "PROVIDER_MOCK", "twd", "2500", "zh-TW", sstReturnURL)
 		exp["line_items[0][price_data][product_data][name]"] = got["line_items[0][price_data][product_data][name]"]
 		exp["expires_at"] = got["expires_at"]
+		// stripe-platform-account-v1 §4.1: the store tag is sent for every attempt (readable context, never authority).
+		exp["metadata[lc_store]"], exp["payment_intent_data[metadata][lc_store]"] = p.f.storeA1, p.f.storeA1
 		if len(got) != len(exp) {
 			keys := make([]string, 0, len(got))
 			for k := range got {

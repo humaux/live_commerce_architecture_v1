@@ -222,3 +222,56 @@ func jsonResponse(status int, body string, header http.Header) *http.Response {
 	header.Set("Content-Type", "application/json")
 	return &http.Response{StatusCode: status, Header: header, Body: io.NopCloser(strings.NewReader(body))}
 }
+
+// TestStripeSP03PlatformKeys: stripe-platform-account-v1 §4.1 adds metadata[lc_store], payment_intent_data[metadata][lc_store] and
+// payment_intent_data[statement_descriptor_suffix]. The store tag comes as an equal pair of uuids (pre-amendment sessions have none),
+// the suffix only with the pair; each new key has an ErrInvalid vector.
+func TestStripeSP03PlatformKeys(t *testing.T) {
+	const store = "11111111-2222-4333-8444-55555555555a"
+	with := func(mutate func(map[string]string)) CreateParams {
+		p := fixtureParams()
+		p.Fields["metadata[lc_store]"], p.Fields["payment_intent_data[metadata][lc_store]"] = store, store
+		if mutate != nil {
+			mutate(p.Fields)
+		}
+		return p
+	}
+	body, err := EncodeCreateBody(with(nil))
+	if err != nil || !strings.Contains(string(body), "metadata%5Blc_store%5D="+store) {
+		t.Fatalf("lc_store pair rejected or missing from the body: %v", err)
+	}
+	if _, err := EncodeCreateBody(with(func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "SHOP A" })); err != nil {
+		t.Fatalf("descriptor suffix with the store pair: %v", err)
+	}
+	bad := map[string]func(map[string]string){
+		"pair differs": func(f map[string]string) { f["payment_intent_data[metadata][lc_store]"] = fxOrder },
+		"store not a uuid": func(f map[string]string) {
+			f["metadata[lc_store]"], f["payment_intent_data[metadata][lc_store]"] = "shop", "shop"
+		},
+		"only one key": func(f map[string]string) { delete(f, "payment_intent_data[metadata][lc_store]") },
+		"uppercase uuid": func(f map[string]string) {
+			f["metadata[lc_store]"] = strings.ToUpper(store)
+			f["payment_intent_data[metadata][lc_store]"] = strings.ToUpper(store)
+		},
+		"suffix 11 chars":  func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "ABCDEFGHIJK" },
+		"suffix no letter": func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "12345" },
+		"suffix bad chars": func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "SHOP<A>" },
+		"suffix one char":  func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "A" },
+		"suffix empty":     func(f map[string]string) { f["payment_intent_data[statement_descriptor_suffix]"] = "" },
+		"suffix extra key": func(f map[string]string) {
+			f["payment_intent_data[statement_descriptor_suffix]"] = "SHOP"
+			f["extra"] = "x"
+		},
+	}
+	for name, mutate := range bad {
+		if _, err := EncodeCreateBody(with(mutate)); !errors.Is(err, ErrInvalid) {
+			t.Fatalf("%s admitted: %v", name, err)
+		}
+	}
+	// a suffix without the store pair is invalid
+	p := fixtureParams()
+	p.Fields["payment_intent_data[statement_descriptor_suffix]"] = "SHOP A"
+	if _, err := EncodeCreateBody(p); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("suffix without the lc_store pair admitted: %v", err)
+	}
+}
