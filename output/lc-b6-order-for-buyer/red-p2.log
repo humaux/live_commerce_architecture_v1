@@ -1,0 +1,38 @@
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_b:_a_crash_between_Place_and_the_record_leaves_a_pending_row_WITH_an_order;_it_is_never_stolen,_however_old;_the_replay_completes
+    live_console_order_for_buyer_p2_test.go:96: a second request took a bundle that has an order: 201 map[buyer_link:https://tcv-0f40fd38b2ce.example/zh-TW/order-link#o=ec56f6dc-dc64-4613-bb74-920a9e73890f&t=k9FF1zxUauzdr6vQQ3J2C7i5i7nxOy84Bz4KquNhJk4 commercial_state:AWAITING_TRANSFER currency:TWD expires_at:2026-10-09T02:47:48.397966Z link_state:configured live_price:not_applied live_price_reason:no_conversation order_id:ec56f6dc-dc64-4613-bb74-920a9e73890f payment_mode:bank_transfer send:map[reason:not_requested state:not_sent] source:merchant_manual total_minor:60000]
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_a:_staleness_is_updated_at;_a_resumed_row_(old_created_at,_fresh_updated_at)_is_not_stealable,_an_untouched_one_without_an_order_is
+    live_console_order_for_buyer_p2_test.go:111: exec test setup: ERROR: column "request_hash" of relation "order_for_buyer" does not exist (SQLSTATE 42703)
+=== RUN   TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_c:_release_never_frees_a_bundle_whose_request_has_an_order;_finish_raises_when_a_row_of_the_request_is_gone
+=== NAME  TestLiveConsoleOrderForBuyerReservationKeepsItsOrder
+    live_console_order_for_buyer_p2_test.go:129: ERROR: column "buyer_id" does not exist (SQLSTATE 42703)
+=== NAME  TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_c:_release_never_frees_a_bundle_whose_request_has_an_order;_finish_raises_when_a_row_of_the_request_is_gone
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder (2.20s)
+    --- FAIL: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_b:_a_crash_between_Place_and_the_record_leaves_a_pending_row_WITH_an_order;_it_is_never_stolen,_however_old;_the_replay_completes (0.26s)
+    --- FAIL: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_a:_staleness_is_updated_at;_a_resumed_row_(old_created_at,_fresh_updated_at)_is_not_stealable,_an_untouched_one_without_an_order_is (0.04s)
+    --- FAIL: TestLiveConsoleOrderForBuyerReservationKeepsItsOrder/P2-1_c:_release_never_frees_a_bundle_whose_request_has_an_order;_finish_raises_when_a_row_of_the_request_is_gone (0.18s)
+=== RUN   TestLiveConsoleOrderForBuyerKeyBoundToItsBody
+    live_console_order_for_buyer_p2_test.go:163: the same key with another bundle set: <nil>
+--- FAIL: TestLiveConsoleOrderForBuyerKeyBoundToItsBody (1.18s)
+=== RUN   TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest
+=== RUN   TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3:_a_grant_of_a_bundle_that_priced_no_line_expires_when_the_request_finishes
+=== NAME  TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest
+    live_console_order_for_buyer_p2_test.go:185: ERROR: column "buyer_id" does not exist (SQLSTATE 42703)
+=== NAME  TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3:_a_grant_of_a_bundle_that_priced_no_line_expires_when_the_request_finishes
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest (0.88s)
+    --- FAIL: TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest/P2-3:_a_grant_of_a_bundle_that_priced_no_line_expires_when_the_request_finishes (0.17s)
+=== RUN   TestLiveConsoleOrderForBuyerAuditAndHelperAuthority
+=== RUN   TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-2:_the_audit_records_the_unit_price_the_ledger_consumed_(not_the_offer's_price_now)_with_full_offer_and_SKU_ids
+=== NAME  TestLiveConsoleOrderForBuyerAuditAndHelperAuthority
+    taiwan_cvs_env_test.go:456: count rows: ERROR: column "unit_price_minor" does not exist (SQLSTATE 42703)
+=== NAME  TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-2:_the_audit_records_the_unit_price_the_ledger_consumed_(not_the_offer's_price_now)_with_full_offer_and_SKU_ids
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveConsoleOrderForBuyerAuditAndHelperAuthority (0.56s)
+    --- FAIL: TestLiveConsoleOrderForBuyerAuditAndHelperAuthority/P2-2:_the_audit_records_the_unit_price_the_ledger_consumed_(not_the_offer's_price_now)_with_full_offer_and_SKU_ids (0.16s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.576s
+FAIL
+test-focused: top-level PASS=0 FAIL=4 SKIP=0 exit=1
+exit=1

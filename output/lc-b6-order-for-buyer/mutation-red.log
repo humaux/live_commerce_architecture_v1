@@ -1,0 +1,61 @@
+=== RUN   TestLiveConsoleOrderForBuyerPrefill
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/bundle:_items,_live_price,_remaining_quantity,_nothing_pre-filled,_no_live_price_without_a_thread
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/conversation_with_a_linked_peer:_eligible
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/P2-7_c:_a_conversation_with_no_bundle_peer_row_is_200_empty,_not_404
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/another_store's_conversation_or_bundle_is_404;_bad_queries_are_422;_authority
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/I09:_customer_and_delivery_come_only_from_an_explicit_link,_never_from_the_bundle_owner
+=== RUN   TestLiveConsoleOrderForBuyerPrefill/the_explicitly_linked_customer's_last_contact_and_delivery_pre-fill_(A14_link)
+--- PASS: TestLiveConsoleOrderForBuyerPrefill (1.89s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/bundle:_items,_live_price,_remaining_quantity,_nothing_pre-filled,_no_live_price_without_a_thread (0.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/conversation_with_a_linked_peer:_eligible (0.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/P2-7_c:_a_conversation_with_no_bundle_peer_row_is_200_empty,_not_404 (0.00s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/another_store's_conversation_or_bundle_is_404;_bad_queries_are_422;_authority (0.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/I09:_customer_and_delivery_come_only_from_an_explicit_link,_never_from_the_bundle_owner (0.11s)
+    --- PASS: TestLiveConsoleOrderForBuyerPrefill/the_explicitly_linked_customer's_last_contact_and_delivery_pre-fill_(A14_link) (0.24s)
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/the_Quote_is_the_only_price:_live_unit_price_on_a_live_claim_line,_the_total_follows
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/ledger,_reservation_row,_single-use_grant,_audit
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/replay_with_the_same_key:_the_same_order,_nothing_new
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/a_second_order_for_the_bundle_(another_key)_is_409_bundle_already_ordered_with_the_order_id,_no_second_hold
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/cancelling_the_order_frees_the_bundle_and_the_claimed_quantity:_the_next_order_is_live_again
+=== RUN   TestLiveConsoleOrderForBuyerLivePrice/a_quantity_above_the_claim_stays_at_the_catalog_price_(fail_closed,_never_a_partial_live_price)
+--- PASS: TestLiveConsoleOrderForBuyerLivePrice (0.82s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/the_Quote_is_the_only_price:_live_unit_price_on_a_live_claim_line,_the_total_follows (0.00s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/ledger,_reservation_row,_single-use_grant,_audit (0.00s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/replay_with_the_same_key:_the_same_order,_nothing_new (0.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/a_second_order_for_the_bundle_(another_key)_is_409_bundle_already_ordered_with_the_order_id,_no_second_hold (0.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/cancelling_the_order_frees_the_bundle_and_the_claimed_quantity:_the_next_order_is_live_again (0.11s)
+    --- PASS: TestLiveConsoleOrderForBuyerLivePrice/a_quantity_above_the_claim_stays_at_the_catalog_price_(fail_closed,_never_a_partial_live_price) (0.14s)
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed
+=== RUN   TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant
+=== NAME  TestLiveConsoleOrderForBuyerFailClosed
+    live_console_order_for_buyer_test.go:455: unknown bundle peer: 201 map[buyer_link:https://tcv-7680b15ab7e8.example/zh-TW/order-link#o=f49d0c1d-d908-4cb9-94f8-5204545846b7&t=RuSp4-YmbVD60OegWEvzlsHeX-sVfeuMXTaUkc5FDEI commercial_state:AWAITING_TRANSFER currency:TWD expires_at:2026-10-09T01:15:18.491909Z link_state:configured live_price:applied live_price_reason: order_id:f49d0c1d-d908-4cb9-94f8-5204545846b7 payment_mode:bank_transfer send:map[reason:not_requested state:not_sent] source:merchant_manual total_minor:40000]
+=== NAME  TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveConsoleOrderForBuyerFailClosed (0.55s)
+    --- FAIL: TestLiveConsoleOrderForBuyerFailClosed/a_bundle_with_no_peer_key:_catalog_price,_bundle_buyer_unverified,_no_grant (0.16s)
+=== RUN   TestLiveConsoleOrderForBuyerConcurrentStaff
+--- PASS: TestLiveConsoleOrderForBuyerConcurrentStaff (1.03s)
+=== RUN   TestLiveConsoleOrderForBuyerResume
+--- PASS: TestLiveConsoleOrderForBuyerResume (0.56s)
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation
+=== RUN   TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link
+--- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes (1.01s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/window_closed:_the_order_is_created,_send_says_window_closed,_no_link_was_re-issued_for_nothing (0.15s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/no_conversation:_not_sent_no_conversation (0.13s)
+    --- PASS: TestLiveConsoleOrderForBuyerPayLinkOutcomes/not_requested:_not_sent_not_requested;_the_first-run_DM_carries_Place's_own_link (0.27s)
+=== RUN   TestLiveConsoleMerchantOriginGrantBranch
+=== RUN   TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once
+=== NAME  TestLiveConsoleMerchantOriginGrantBranch
+    live_console_order_for_buyer_test.go:787: second quote on a bound grant: want catalog price 30000 with no live evidence, got {SKUID:6cad358b-6179-42df-8a1c-f1d62209cbda ProductID:00303d4b-a1d2-4374-9ab4-25f7e1e61518 Code:TCV-65cca15fd114 Name:t04-105bc54fd89a Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:20000 Amount:{SubtotalMinor:40000 DiscountMinor:0 TaxMinor:0 TotalMinor:40000} PriceRule:live_claim CatalogUnitPriceMinor:30000 ClaimBundleID:7815d467-4459-4677-90c6-24610c370462 ClaimOfferID:a0aced55-f09d-462a-87cd-d5721b9def6f}
+=== NAME  TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once
+    testing.go:2062: test executed panic(nil) or runtime.Goexit: subtest may have called FailNow on a parent test
+--- FAIL: TestLiveConsoleMerchantOriginGrantBranch (0.46s)
+    --- FAIL: TestLiveConsoleMerchantOriginGrantBranch/bound_to_one_quote:_the_second_quote_on_the_same_grant_is_catalog;_Begin_of_the_first_is_live,_consumes_the_grant_once (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	7.278s
+FAIL
+test-focused: top-level PASS=5 FAIL=2 SKIP=0 exit=1
+exit=1

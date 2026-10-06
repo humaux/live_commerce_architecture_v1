@@ -57,6 +57,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	payuniNotifyConfig, err := loadPayuniNotifyConfig(os.Getenv, addr)
+	if err != nil {
+		return err
+	}
 	studioConfig, err := loadStudioConfig(os.Getenv, identityConfig.enabled, addr)
 	if err != nil {
 		return err
@@ -101,6 +105,11 @@ func run() error {
 		return err
 	}
 	defer closeStripe()
+	payuniNotifyHandler, closePayuniNotify, err := buildPayuniNotifyHandler(startup, pool, payuniNotifyConfig)
+	if err != nil {
+		return err
+	}
+	defer closePayuniNotify()
 	// billing-core (customers-billing-v1 T17): nil service + nil webhook while LC_BILLING_ENABLED is unset.
 	billingService, billingWebhook, closeBilling, err := buildPlatformBilling(startup, pool, os.Getenv)
 	if err != nil {
@@ -153,6 +162,11 @@ func run() error {
 	if err := enableInboxSend(inboxService, pool, os.Getenv); err != nil {
 		return err
 	}
+	// order for a buyer (LC-B6: A15/A16): the manual-order pipeline + the inbox pay-link planner; nil without the buyer surface.
+	forBuyer, err := buildForBuyer(cvs.Manual, inboxService)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -164,7 +178,7 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual, ForBuyer: forBuyer,
 		LiveFlowJobs:    liveFlowJobs,
 		CommentStream:   commentStream,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
@@ -189,6 +203,7 @@ func run() error {
 	handler = mountBuyer(handler, buyerHandler)
 	handler = mountMeta(handler, metaHandler)
 	handler = mountStripe(handler, stripeHandler)
+	handler = mountPayuniNotify(handler, payuniNotifyHandler)
 	handler = mountPlatformBilling(handler, billingWebhook)
 	handler = mountTLSAsk(handler, tlsAskHandler)
 	handler = mountStoreDomainNonce(handler, storeDomainNonceHandler)

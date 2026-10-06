@@ -57,6 +57,25 @@ const (
 // errNeedWork is the sentinel the replay probe returns from command.Run's function: "no receipt yet, run the pipeline".
 var errNeedWork = errors.New("no receipt yet")
 
+// pipelineHooks are the two server-only inputs an order made FOR a buyer (order_for_buyer.go) adds to the unchanged pipeline: the claim origins of
+// the cart lines (CartInput.Origins is json:"-", never a client value) and a step that runs right after CreateQuote on the buyer pool to bind the
+// quote's merchant-origin grant to that quote (migration 0129). A plain manual order carries none, so Place behaves exactly as before.
+type pipelineHooks struct {
+	origins    map[string]storefront.ClaimOrigin
+	afterQuote func(ctx context.Context, capability, storeID, quoteID string) error
+}
+
+type pipelineHooksKey struct{}
+
+func withPipelineHooks(ctx context.Context, h *pipelineHooks) context.Context {
+	return context.WithValue(ctx, pipelineHooksKey{}, h)
+}
+
+func hooksFrom(ctx context.Context) *pipelineHooks {
+	h, _ := ctx.Value(pipelineHooksKey{}).(*pipelineHooks)
+	return h
+}
+
 var (
 	optionKeyRx = regexp.MustCompile(`^[0-9a-f-]{36}\|[A-Z]{2}\|[a-z][a-z0-9_-]{0,39}$`)
 	// The SQL twin is checkout.set_order_buyer_email's regexp.
@@ -503,9 +522,14 @@ func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key st
 	if err != nil {
 		return zero, err
 	}
+	hooks := hooksFrom(ctx)
+	cartInput := storefront.CartInput{ExpectedVersion: 0, Items: items}
+	if hooks != nil {
+		cartInput.Origins = hooks.origins // for-buyer only: server-derived claim origins; the Quote below still decides every price
+	}
 	var cart storefront.Cart
 	if err = buyer.WithScope(ctx, m.buyerPool, capability, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (e error) {
-		cart, e = storefront.SetCart(c, tx, s, stepKey(key, "cart"), storefront.CartInput{ExpectedVersion: 0, Items: items})
+		cart, e = storefront.SetCart(c, tx, s, stepKey(key, "cart"), cartInput)
 		return e
 	}); err != nil {
 		return zero, err
@@ -518,6 +542,11 @@ func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key st
 		return e
 	}); err != nil {
 		return zero, err
+	}
+	if hooks != nil && hooks.afterQuote != nil {
+		if err = hooks.afterQuote(ctx, capability, storeID, quote.ID); err != nil {
+			return zero, err
+		}
 	}
 	destination := storefront.DestinationInput{ExpectedVersion: 0, CartVersion: cart.Version, Kind: option.DeliveryKind, Country: option.Country,
 		RecipientName: in.Customer.Name, Phone: in.Customer.Phone}

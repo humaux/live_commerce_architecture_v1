@@ -1,0 +1,8 @@
+== go vet ./tests/foundation (unchanged code df6be6ce + the LCN12 tests) ==
+# livecommerce/tests/foundation_test
+# [livecommerce/tests/foundation_test]
+vet: tests/foundation/live_console_order_for_buyer_test.go:82:25: undefined: merchanttools.ForBuyer
+== go vet ./internal/httpapi ==
+# livecommerce/internal/httpapi
+# [livecommerce/internal/httpapi]
+vet: internal/httpapi/for_buyer_test.go:70:12: undefined: claims.ForBuyerError

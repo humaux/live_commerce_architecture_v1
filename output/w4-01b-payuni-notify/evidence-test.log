@@ -1,0 +1,478 @@
+=== RUN   TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode
+--- PASS: TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode (1.21s)
+=== RUN   TestT06DispatcherR7aFinishErrorRollsBackAndReconciles
+--- PASS: TestT06DispatcherR7aFinishErrorRollsBackAndReconciles (5.65s)
+=== RUN   TestT06DispatcherR7aFinishRunsOnPolicyBlock
+--- PASS: TestT06DispatcherR7aFinishRunsOnPolicyBlock (0.15s)
+=== RUN   TestT06DispatcherCommittedFrozenIntentAndTerminalReplay
+--- PASS: TestT06DispatcherCommittedFrozenIntentAndTerminalReplay (1.39s)
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed
+--- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect (0.26s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied (0.14s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed (0.12s)
+=== RUN   TestT06DispatcherBusyDuplicateSnoozesWithoutEffect
+--- PASS: TestT06DispatcherBusyDuplicateSnoozesWithoutEffect (1.41s)
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack
+--- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (5.35s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (1.40s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.41s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.14s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.40s)
+=== RUN   TestT06DispatcherOneDeadlineAndFreshCompletion
+--- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.41s)
+=== RUN   TestT06DispatcherUnknownRouteFailsClosedWithoutClaim
+--- PASS: TestT06DispatcherUnknownRouteFailsClosedWithoutClaim (0.14s)
+=== RUN   TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown
+--- PASS: TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown (2.40s)
+=== RUN   TestT06DispatcherBudgetPersistsManualRequirement
+--- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.39s)
+=== RUN   TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob
+--- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.41s)
+=== RUN   TestT06DispatcherForcedStopPreservesClaimForReconcile
+--- PASS: TestT06DispatcherForcedStopPreservesClaimForReconcile (1.21s)
+=== RUN   TestT06DispatcherCrashChild
+--- PASS: TestT06DispatcherCrashChild (0.00s)
+=== RUN   TestT06DispatcherRealProcessCrashRescue
+=== RUN   TestT06DispatcherRealProcessCrashRescue/before
+=== RUN   TestT06DispatcherRealProcessCrashRescue/after
+--- PASS: TestT06DispatcherRealProcessCrashRescue (36.57s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (19.03s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (17.53s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.50s)
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_runtime
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_identity
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_runtime
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_issuer
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_claims_worker
+=== RUN   TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_payment_worker
+--- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole (0.08s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_runtime (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_identity (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_runtime (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_buyer_issuer (0.01s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_claims_worker (0.02s)
+    --- PASS: TestPoolAuthorityCannotBeDisguisedWithStartupRole/commerce_payment_worker (0.02s)
+=== RUN   TestT06PolicyOutcomeCannotErasePossibleRemoteEffect
+--- PASS: TestT06PolicyOutcomeCannotErasePossibleRemoteEffect (0.02s)
+=== RUN   TestT06SQLLeaseOwnershipExpiryAndNoRedispatch
+--- PASS: TestT06SQLLeaseOwnershipExpiryAndNoRedispatch (0.02s)
+=== RUN   TestT06SQLConcurrentClaimAndBindingOutcomeFacts
+--- PASS: TestT06SQLConcurrentClaimAndBindingOutcomeFacts (0.03s)
+=== RUN   TestT06SQLEventFailureRollsBackClaimAndCompletion
+--- PASS: TestT06SQLEventFailureRollsBackClaimAndCompletion (0.02s)
+=== RUN   TestT06OrdinaryWorkerStartsProcessesAndStops
+--- PASS: TestT06OrdinaryWorkerStartsProcessesAndStops (0.08s)
+=== RUN   TestT06GoBindingPermissionsScopeAndCAS
+--- PASS: TestT06GoBindingPermissionsScopeAndCAS (0.05s)
+=== RUN   TestT06GoPlanAtomicReplayCanonicalAndReadback
+--- PASS: TestT06GoPlanAtomicReplayCanonicalAndReadback (0.07s)
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/trailing
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/oversize
+--- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation (0.09s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/trailing (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/oversize (0.00s)
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/job
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/event
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/audit
+--- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence (0.08s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/job (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/event (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/audit (0.01s)
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_auth_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_auth_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_billing_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_billing_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_issuer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_issuer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_runtime_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_runtime_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_catalog_media_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_catalog_media_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_runtime_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_runtime_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_intake_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_intake_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_design_reader_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_design_reader_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_expiry_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_expiry_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_hosted_runtime_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_hosted_runtime_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inbox_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inbox_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_integration_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_integration_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inventory_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inventory_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_executor_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_executor_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_recovery_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_recovery_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_registrar_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_registrar_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_consumer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_consumer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_curator_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_curator_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_ingress_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_ingress_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_registrar_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_registrar_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_msgtemplates_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_msgtemplates_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_live_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_live_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registrar_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registrar_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registry_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registry_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_privacy_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_privacy_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_job_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_job_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_operator_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_operator_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_runtime_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_runtime_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_staff_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_staff_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_registrar_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_registrar_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_verifier_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_verifier_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_writer_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_writer_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_stripe_ingress_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_stripe_ingress_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_worker_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_worker_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_read_all_data_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_read_all_data_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_write_all_data_inherit
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_write_all_data_set-only
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_live_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_expiry_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_ads_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_claims_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_runtime_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_integration_writer_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_registry_writer_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_hosted_runtime_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_meta_ingress_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_media_worker_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_registrar_granted_into_commerce_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/SET_TRUE_on_own_role
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/ADMIN_option_on_own_role
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/ADMIN_on_schema-owner_role,_no_inherit_no_set
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/ADMIN_on_table-owner_role,_no_inherit_no_set
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_table-owner_role
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/BYPASSRLS
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/CREATEROLE
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_table_grant
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_column_grant
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_the_other_Stripe_role's_function
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_UPDATE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_UPDATE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_UPDATE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_DELETE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_DELETE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_DELETE_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_UPDATE(state)_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_UPDATE(args)_on_river_payment.river_job
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_payments
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_payments
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_payments
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_integration
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_integration
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_integration
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_checkout
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_checkout
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_checkout
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_registrar
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_runtime
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_worker
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_live
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_expiry_worker
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_ads_worker
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_claims_worker
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_worker
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_integration_writer
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_registry_writer
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_hosted_runtime
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_commerce_meta_ingress
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/only_postgres
+=== RUN   TestPayuniNotifyAuthorityIngressMatrix/bad_password_is_masked
+--- PASS: TestPayuniNotifyAuthorityIngressMatrix (15.54s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_worker_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_worker_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_ads_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_auth_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_auth_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_billing_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_billing_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_issuer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_issuer_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_runtime_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_runtime_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_buyer_writer_set-only (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_catalog_media_inherit (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_catalog_media_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_runtime_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_runtime_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_checkout_writer_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_intake_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_intake_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_worker_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_worker_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_claims_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_design_reader_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_design_reader_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_expiry_worker_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_expiry_worker_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_hosted_runtime_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_hosted_runtime_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_identity_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inbox_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inbox_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_integration_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_integration_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inventory_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_inventory_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_executor_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_executor_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_recovery_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_recovery_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_registrar_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_registrar_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_worker_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_worker_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_media_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_consumer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_consumer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_curator_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_curator_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_ingress_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_ingress_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_registrar_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_registrar_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_worker_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_worker_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_meta_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_msgtemplates_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_msgtemplates_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_live_inherit (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_live_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registrar_inherit (0.25s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registrar_set-only (0.12s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registry_writer_inherit (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_registry_writer_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_worker_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_payment_worker_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_privacy_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_privacy_writer_set-only (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_job_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_job_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_operator_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_operator_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_retention_writer_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_runtime_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_runtime_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_staff_writer_inherit (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_staff_writer_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_registrar_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_registrar_set-only (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_verifier_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_verifier_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_writer_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_storefront_writer_set-only (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_stripe_ingress_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_stripe_ingress_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_worker_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_commerce_worker_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_read_all_data_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_read_all_data_set-only (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_write_all_data_inherit (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/extra_member_pg_write_all_data_set-only (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_worker_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_live_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_expiry_worker_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_ads_worker_granted_into_commerce_payuni_ingress (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_claims_worker_granted_into_commerce_payuni_ingress (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_worker_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_runtime_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_integration_writer_granted_into_commerce_payuni_ingress (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_registry_writer_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_hosted_runtime_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_meta_ingress_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_media_worker_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/reverse:_commerce_payment_registrar_granted_into_commerce_payuni_ingress (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/SET_TRUE_on_own_role (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/ADMIN_option_on_own_role (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/ADMIN_on_schema-owner_role,_no_inherit_no_set (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/ADMIN_on_table-owner_role,_no_inherit_no_set (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_table-owner_role (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/BYPASSRLS (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/CREATEROLE (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_table_grant (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_column_grant (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_the_other_Stripe_role's_function (0.09s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_UPDATE_on_river_payment.river_job (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_UPDATE_on_river_payment.river_job (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_UPDATE_on_river_payment.river_job (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_DELETE_on_river_payment.river_job (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_DELETE_on_river_payment.river_job (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_DELETE_on_river_payment.river_job (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_UPDATE(state)_on_river_payment.river_job (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_UPDATE(args)_on_river_payment.river_job (0.10s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_payments (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_payments (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_payments (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_integration (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_integration (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_integration (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/PUBLIC_EXECUTE_on_non-catalog_function_in_checkout (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/direct_EXECUTE_on_non-catalog_function_in_checkout (0.11s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/inherited_EXECUTE_on_non-catalog_function_in_checkout (0.12s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_registrar (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_runtime (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_worker (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_live (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_expiry_worker (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_ads_worker (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_claims_worker (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_worker (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_integration_writer (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_payment_registry_writer (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_hosted_runtime (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_commerce_meta_ingress (0.02s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/only_postgres (0.01s)
+    --- PASS: TestPayuniNotifyAuthorityIngressMatrix/bad_password_is_masked (0.01s)
+=== RUN   TestPayuniNotifyAuthorityIngressPositive
+--- PASS: TestPayuniNotifyAuthorityIngressPositive (2.59s)
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenPool_plus_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenBuyerPool_plus_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenCheckoutPool_plus_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenHostedPool_plus_payuni_ingress
+=== RUN   TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenWorkerPool(payment)_plus_payuni_ingress
+--- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress (0.27s)
+    --- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenPool_plus_payuni_ingress (0.08s)
+    --- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenBuyerPool_plus_payuni_ingress (0.06s)
+    --- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenCheckoutPool_plus_payuni_ingress (0.05s)
+    --- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenHostedPool_plus_payuni_ingress (0.04s)
+    --- PASS: TestPayuniNotifyAuthorityLegacyPoolsRejectPayuniIngress/OpenWorkerPool(payment)_plus_payuni_ingress (0.04s)
+=== RUN   TestPayuniNotifyAuthorityNoExecuteElsewhere
+--- PASS: TestPayuniNotifyAuthorityNoExecuteElsewhere (0.01s)
+=== RUN   TestPayuniNotifySchemaACLPin
+--- PASS: TestPayuniNotifySchemaACLPin (0.00s)
+=== RUN   TestPayuniNotifyQueuedWakesQueryJobAndDedups
+--- PASS: TestPayuniNotifyQueuedWakesQueryJobAndDedups (2.25s)
+=== RUN   TestPayuniNotifyMismatchOpensReviewCaseNoWake
+--- PASS: TestPayuniNotifyMismatchOpensReviewCaseNoWake (2.29s)
+=== RUN   TestPayuniNotifyUnknownTradeReceiptOnly
+--- PASS: TestPayuniNotifyUnknownTradeReceiptOnly (2.25s)
+=== RUN   TestPayuniNotifyRejectionsLeaveNoRows
+2026/10/06 07:21:26 WARN payuni_notify_rejected code=invalid_signature token_hash=0952b9bcd91e248e
+2026/10/06 07:21:26 WARN payuni_notify_rejected code=invalid_request token_hash=0952b9bcd91e248e
+--- PASS: TestPayuniNotifyRejectionsLeaveNoRows (2.25s)
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/short_token_hash
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/short_payload_hash
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/bad_merchant_trade_no
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/zero_amount
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/bad_status
+=== RUN   TestPayuniNotifyDefinerRejectsMalformedInput/bad_trade_status
+--- PASS: TestPayuniNotifyDefinerRejectsMalformedInput (2.25s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/short_token_hash (0.00s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/short_payload_hash (0.00s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/bad_merchant_trade_no (0.00s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/zero_amount (0.00s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/bad_status (0.00s)
+    --- PASS: TestPayuniNotifyDefinerRejectsMalformedInput/bad_trade_status (0.00s)
+=== RUN   TestPayuniNotifyResolveEndpointMaterialAndGrace
+--- PASS: TestPayuniNotifyResolveEndpointMaterialAndGrace (2.21s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.01s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.00s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.19s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.01s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.22s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.06s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.06s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.07s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.09s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	100.515s
+test-focused: top-level PASS=44 FAIL=0 SKIP=0 exit=0
+exit=0
