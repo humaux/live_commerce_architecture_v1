@@ -1,5 +1,10 @@
 //go:build browser
 
+// Purpose: STU04 real signed Studio browser, Go/PG authority and MOCK media-worker acceptance.
+// Depends on: production Next/BFF, foundation fixtures, signed MOCK IdP, native Playwright and optional LC_BROWSER_STUDIO_GREP.
+// Used by: scripts/dev/test-local.sh --browser-studio-ui; focused main-case runs are explicitly not full-mode acceptance.
+// Invariants: Full mode retains every readback; focus changes only totals attributable to excluded cases.
+
 package foundation_test
 
 import (
@@ -233,6 +238,17 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	mrReadyLog(t, worker, "media_worker_ready")
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	grep := os.Getenv("LC_BROWSER_STUDIO_GREP")
+	focused := grep != ""
+	if focused {
+		// A single known main case preserves its real chain while giving exact
+		// cohort totals below. Arbitrary subsets cannot bypass full readbacks.
+		if grep != "^STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker$" {
+			t.Fatal("LC_BROWSER_STUDIO_GREP only supports the exact STU04 main case")
+		}
+		browser.Args = append(browser.Args, "--grep", grep)
+		t.Log("FOCUSED_SPEC_ONLY: STU04 main case; full-mode acceptance remains NOT_RUN")
+	}
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{
 		"LC_BROWSER_SUITE": "studio-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL,
@@ -244,13 +260,17 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	browserErr := browser.Run()
 	mrStop(t, worker, syscall.SIGTERM, true)
-	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != 3 || h.starts.Load() != 1 || h.stops.Load() != 1 {
+	wantFaults, wantKeys, wantIssued := int64(3), 5, 5
+	if focused {
+		wantFaults, wantKeys, wantIssued = 2, 4, 2 // no separate native-uncertain or STU05 logins
+	}
+	if studioCalls.Load() < 12 || badAuthority.Load() != 0 || faultCount.Load() != wantFaults || h.starts.Load() != 1 || h.stops.Load() != 1 {
 		t.Errorf("real chain counters calls=%d authority=%d lost_ack=%d starts=%d stops=%d evidence=%s", studioCalls.Load(), badAuthority.Load(), faultCount.Load(), h.starts.Load(), h.stops.Load(), evidence)
 	}
 	faultKeysMu.Lock()
 	keys := append([]string(nil), faultKeys...)
 	faultKeysMu.Unlock()
-	if len(keys) != 5 || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] || keys[4] == keys[1] || keys[4] == keys[3] {
+	if len(keys) != wantKeys || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] || (!focused && (keys[4] == keys[1] || keys[4] == keys[3])) {
 		t.Errorf("lost-ACK retry changed command key: requests=%d evidence=%s", len(keys), evidence)
 	}
 	var duplicateCount int
@@ -260,15 +280,17 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 swapped login scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
 		t.Errorf("swapped-login effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
 	}
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 native uncertain scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
-		t.Errorf("native uncertain committed effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
+	if !focused {
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 native uncertain scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
+			t.Errorf("native uncertain committed effect count=%d err=%v evidence=%s", duplicateCount, err, evidence)
+		}
 	}
 	var scheduled time.Time
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT scheduled_at FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 phone-edited scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&scheduled); err != nil || scheduled.UTC().Format(time.RFC3339) != "2030-01-01T00:00:00Z" {
 		t.Errorf("UTC schedule shifted on title edit: instant=%s err=%v evidence=%s", scheduled.UTC().Format(time.RFC3339), err, evidence)
 	}
 	var issued int
-	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != 5 { // 5: STU04 x2 native + swapped login + the main case, and STU05 (bare Studio route, D02)
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.sessions s JOIN identity.session_events ev ON ev.session_id=s.id AND ev.action='session.issued' JOIN identity.external_identities e ON e.principal_id=s.principal_id WHERE e.issuer=$1 AND e.subject='browser-subject' AND s.token_hash<>$2`, idp.server.URL, tokenHash(h.lp.token)).Scan(&issued); err != nil || issued != wantIssued {
 		t.Errorf("signed browser login count=%d err=%v evidence=%s", issued, err, evidence)
 	}
 	var resource string
@@ -278,7 +300,11 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	if raw, err := os.ReadFile(worker.logPath); err != nil || bytes.Contains(raw, []byte(h.lp.token)) || bytes.Contains(raw, []byte(h.streamURL)) {
 		t.Errorf("worker log secret/read error: %v", err)
 	}
-	t.Logf("STU04 signed UI, BFF, Go/PG and MOCK worker readbacks completed; evidence=%s", evidence)
+	if focused {
+		t.Logf("FOCUSED_SPEC_ONLY: STU04 main-case signed UI/BFF/PG/worker readbacks; excluded native/STU05 cases NOT_RUN; evidence=%s", evidence)
+	} else {
+		t.Logf("STU04 signed UI, BFF, Go/PG and MOCK worker readbacks completed; evidence=%s", evidence)
+	}
 	if browserErr != nil {
 		log, err := os.ReadFile(playwrightLog.Name())
 		nativeFailed := 0
