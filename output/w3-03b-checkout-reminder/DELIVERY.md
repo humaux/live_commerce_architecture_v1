@@ -20,9 +20,9 @@
   amendment. (10) skipped per ruling; for the UI unit: the report's `display_name` is null for Meta buyers (no names are stored).
 - Contract/interface changes: contracts/live-console-v1.md "Amendment W3-03B" (revised; auto leg + settings DEFERRED: keyring custody).
 - Tests (local, focused): `bash scripts/dev/test-focused.sh '^(TestCheckoutReminder|TestLiveClaimsKC03Schema|TestT06WorkerAuthorityAndFunctionACL|TestR2IntegrationUpgradeFromReleaseHead|
-  TestLiveConsoleSendMigration0128ExactACL|TestLiveConsoleTemplates|TestWAS)'` -> exit 0 (29 tests; TestCheckoutReminder = 14: CR01 window/takeover/once/claim link, CR02 concurrent, CR03
+  TestLiveConsoleSendMigration0128ExactACL|TestLiveConsoleTemplates|TestWAS)'` -> exit 0 (36 tests incl. TestPlatformOperator; TestCheckoutReminder = 15: CR01 window/takeover/once/claim link, CR02 concurrent, CR03
   Check re-checks, CR04 UNKNOWN, CR05 candidate set + order link, CR06 scope, CR08 no secrets persisted, CR09 livelock, no_storefront, single buyer, young claims, per-buyer refusal,
-  send cap, follow-up-only audit/permissions, 0144 ACL); `bash scripts/dev/test-local.sh --inbox-send` -> exit 0; `bash scripts/dev/check-gates.sh` -> exit 0;
+  send cap, follow-up-only audit/permissions, suspended store -> store_suspended, 0144 ACL); `bash scripts/dev/test-local.sh --inbox-send` -> exit 0; `bash scripts/dev/check-gates.sh` -> exit 0;
   `go test ./internal/inbox ./internal/httpapi ./internal/merchanttools ./internal/httperror ./internal/msgtemplates` -> ok. Red: output/w3-03b-checkout-reminder/red.log, red-httpapi.log,
   red2.log (the review-fix gates do not compile against the pre-review code: no per-buyer link-issuing pass existed). Green: gates.log, inbox-send.log.
 - CI gates (NOT run locally per the owner's RAM rule; run on GitHub gates.yml): the broad regression

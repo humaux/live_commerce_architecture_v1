@@ -962,7 +962,9 @@ func TestCheckoutReminderSuspendedStoreBlocksQueued(t *testing.T) {
 	}
 	op := e.crOps(t)[0]
 	mustExec(t, f.owner, `UPDATE control.stores SET active=false WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1)
-	t.Cleanup(func() { mustExec(t, f.owner, `UPDATE control.stores SET active=true WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1) })
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `UPDATE control.stores SET active=true WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1)
+	})
 	before := e.g.count()
 	e.run(t, op)
 	code, _ := e.awaitOp(t, op, "BLOCKED_POLICY", 10*time.Second, "completed")
