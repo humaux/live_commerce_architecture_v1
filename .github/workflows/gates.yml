@@ -71,6 +71,9 @@ jobs:
             shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+            # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
+            # Xvfb comes with `playwright install --with-deps`.
+            --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
             --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
             *) echo "unknown mode: $MODE" >&2; exit 2 ;;
           esac
