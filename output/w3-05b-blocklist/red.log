@@ -1,0 +1,42 @@
+=== RUN   TestBlocklistRestrictedClaim
+    blocklist_test.go:118: BlockActor(501345606297358_1986444117): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistRestrictedClaim (9.32s)
+=== RUN   TestBlocklistCheckAndList
+    blocklist_test.go:201: before blocking: false ERROR: function claims.actor_restricted_for_bundle(uuid) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistCheckAndList (1.10s)
+=== RUN   TestBlocklistDefinerRulesAndPrivacy
+    blocklist_test.go:269: BL04 bad bundle: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want invalid
+    blocklist_test.go:269: BL04 bad comment: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want invalid
+    blocklist_test.go:269: BL04 too long note: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want invalid
+    blocklist_test.go:269: BL04 control in note: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want invalid
+    blocklist_test.go:273: BL04 unknown comment_ref: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want not found
+    blocklist_test.go:282: BL04 actor_key reference: ERROR: function claims.block_actor(uuid, jsonb, unknown) does not exist (SQLSTATE 42883), want SQLSTATE 22023
+    blocklist_test.go:289: runtime role read claims.blocked_actors directly: ERROR: relation "claims.blocked_actors" does not exist (SQLSTATE 42P01), want permission denied
+    blocklist_test.go:294: BL04 manual bundle: ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883), want invalid
+    blocklist_test.go:307: live:read principal cannot list: ERROR: function claims.list_blocked_actors(timestamp with time zone, uuid, integer) does not exist (SQLSTATE 42883)
+    blocklist_test.go:312: BlockActor(493673228429325_4569753772): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistDefinerRulesAndPrivacy (0.83s)
+=== RUN   TestBlocklistLimit
+    blocklist_test.go:341: BlockActor(549015290680033_2066182259): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistLimit (0.90s)
+=== RUN   TestBlocklistClaimBlockRace
+=== RUN   TestBlocklistClaimBlockRace/a_block_holding_the_actor_key_is_seen_by_the_waiting_claim
+    blocklist_test.go:377: ERROR: relation "claims.blocked_actors" does not exist (SQLSTATE 42P01)
+=== RUN   TestBlocklistClaimBlockRace/concurrent_claim_and_block_stay_consistent
+    blocklist_test.go:412: BlockActor(695684691964175_8329533638): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+    blocklist_test.go:412: BlockActor(652141737536322_7049027867): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+    blocklist_test.go:412: BlockActor(616891249809204_2546290127): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+    blocklist_test.go:412: BlockActor(870115768198525_2149009835): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+    blocklist_test.go:412: BlockActor(182240479613656_2838435147): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+    blocklist_test.go:412: BlockActor(786894189361500_3548217369): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistClaimBlockRace (3.71s)
+    --- FAIL: TestBlocklistClaimBlockRace/a_block_holding_the_actor_key_is_seen_by_the_waiting_claim (0.25s)
+    --- FAIL: TestBlocklistClaimBlockRace/concurrent_claim_and_block_stay_consistent (3.01s)
+=== RUN   TestBlocklistErasureRemovesEntry
+    blocklist_test.go:437: BlockActor(655344101289281_8103905398): ERROR: function claims.block_actor(uuid, jsonb, text) does not exist (SQLSTATE 42883)
+--- FAIL: TestBlocklistErasureRemovesEntry (0.91s)
+FAIL
+FAIL	livecommerce/tests/foundation	20.334s
+FAIL
+test-focused: top-level PASS=0 FAIL=6 SKIP=0 exit=1
+exit 1
