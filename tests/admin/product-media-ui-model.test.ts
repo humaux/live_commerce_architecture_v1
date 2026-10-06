@@ -16,6 +16,7 @@ import {
   mediaRecoveryKey,
   optionImageMatches,
   persistMediaPending,
+  needsMainImage,
 } from "../../apps/admin/lib/product-media-model.ts";
 const uuid = "11111111-1111-4111-8111-111111111111";
 test("main/detail/sku caps use the existing frozen image contract", () => {
@@ -190,4 +191,24 @@ test("failed durable recovery storage cannot authorize a media write", () => {
     true,
   );
   assert.equal(saved.get("journal"), "key");
+});
+
+test("an active product needs a main image after canonical media is known; repair paths stay possible", () => {
+  assert.equal(
+    needsMainImage("active", null),
+    false,
+    "pending read is not an empty media list",
+  );
+  assert.equal(needsMainImage("active", []), true);
+  assert.equal(
+    needsMainImage("active", [{ role: "detail" }, { role: "sku" }]),
+    true,
+  );
+  assert.equal(needsMainImage("active", [{ role: "main" }]), false);
+  assert.equal(
+    needsMainImage("draft", []),
+    false,
+    "unpublish can repair an empty active product",
+  );
+  assert.equal(needsMainImage("archived", []), false);
 });

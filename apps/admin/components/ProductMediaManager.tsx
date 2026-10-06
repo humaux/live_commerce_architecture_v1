@@ -58,7 +58,7 @@ export function ProductMediaManager({
   boundary: string;
   axes: OptionAxis[];
   disabled: boolean;
-  onChanged: () => void;
+  onChanged: (list: ProductImageList | null) => void;
   onLocked: (locked: boolean) => void;
 }) {
   const c = productMediaCopy[locale],
@@ -73,7 +73,8 @@ export function ProductMediaManager({
     [message, setMessage] = useState("");
   const current = useRef(scope),
     alive = useRef(true),
-    running = useRef(false);
+    running = useRef(false),
+    readEpoch = useRef(0);
   current.current = scope;
   const axis = effectiveMediaAxis(axes, list?.image_axis ?? null);
   const group = (role: MediaRole) =>
@@ -88,19 +89,28 @@ export function ProductMediaManager({
   };
   async function read(): Promise<ProductImageList | null> {
     const before = current.current;
+    const epoch = ++readEpoch.current;
     const result = await listImages(store, productID);
-    if (before !== current.current || !alive.current) return null;
+    if (
+      before !== current.current ||
+      !alive.current ||
+      epoch !== readEpoch.current
+    )
+      return null;
     if (result.list) {
       setList(result.list);
+      onChanged(result.list);
       return result.list;
     }
     setList(null);
+    onChanged(null);
     setMessage(c.failed);
     return null;
   }
   useEffect(() => {
     alive.current = true;
     setList(null);
+    onChanged(null);
     try {
       setLost(!!sessionStorage.getItem(journal));
       setReady(true);
@@ -110,10 +120,20 @@ export function ProductMediaManager({
       setMessage(c.storageFailed);
     }
     const controller = new AbortController();
+    const epoch = ++readEpoch.current;
     void listImages(store, productID, controller.signal).then((result) => {
-      if (!controller.signal.aborted && current.current === scope) {
-        if (result.list) setList(result.list);
-        else setMessage(c.failed);
+      if (
+        !controller.signal.aborted &&
+        current.current === scope &&
+        epoch === readEpoch.current
+      ) {
+        if (result.list) {
+          setList(result.list);
+          onChanged(result.list);
+        } else {
+          onChanged(null);
+          setMessage(c.failed);
+        }
       }
     });
     return () => {
@@ -121,10 +141,10 @@ export function ProductMediaManager({
       controller.abort();
       onLocked(false);
     };
-  }, [scope, store, productID, journal, onLocked, c.failed]);
+  }, [scope, store, productID, journal, onLocked, onChanged, c.failed]);
   useEffect(() => {
-    onLocked(busy || !!pending || lost || !ready);
-  }, [busy, pending, lost, ready, onLocked]);
+    onLocked(busy || !!pending || lost || !ready || !list);
+  }, [busy, pending, lost, ready, list, onLocked]);
   const remember = (value: string | null) => {
     try {
       const saved = persistMediaPending(sessionStorage, journal, value);
@@ -143,6 +163,7 @@ export function ProductMediaManager({
   };
   async function execute(op: Pending): Promise<boolean> {
     const before = current.current;
+    ++readEpoch.current; // A delayed pre-mutation read cannot replace the new canonical head.
     setPending(op);
     if (!remember(op.kind === "upload" ? op.key : op.request.key)) return false;
     if (op.kind === "upload" && op.role === "sku") {
@@ -185,6 +206,7 @@ export function ProductMediaManager({
       }
       if (answer.reconcile) {
         setList(null);
+        onChanged(null);
         return false;
       }
       const canonical = await read();
@@ -215,7 +237,6 @@ export function ProductMediaManager({
     }
     setLost(false);
     const canonical = await read();
-    onChanged();
     if (!canonical) return false;
     if (
       op.kind === "upload" &&
@@ -366,6 +387,11 @@ export function ProductMediaManager({
   return (
     <div className="pm-media" data-testid="photo-manager">
       {!list && <p role="status">{c.loading}</p>}
+      {!list && !busy && (
+        <button type="button" onClick={() => void read()}>
+          {c.refresh}
+        </button>
+      )}
       {busy && <p role="status">{c.saving}</p>}
       {message && <p role="status">{message}</p>}
       {pending && (

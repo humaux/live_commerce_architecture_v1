@@ -93,6 +93,14 @@ export function mainPhotoCount(photos: readonly { role?: string }[]): number {
   return photos.filter((photo) => (photo.role ?? "main") === "main").length;
 }
 
+/** A known active media list needs a main cover; unknown reads must not be mistaken for a zero-image product. */
+export function needsMainImage(
+  status: string,
+  photos: readonly { role?: string }[] | null,
+): boolean {
+  return status === "active" && photos !== null && mainPhotoCount(photos) === 0;
+}
+
 /** Keep UNKNOWN recovery across re-authentication; session authority remains a separate transport fence. */
 export function mediaRecoveryKey(store: string, product: string): string {
   if (!uuid.test(store) || !uuid.test(product))

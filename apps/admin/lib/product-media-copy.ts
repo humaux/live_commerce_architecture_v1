@@ -3,6 +3,8 @@
 // Used by: draft/server media editors and local refusal rendering.
 const en = {
   title: "Product images",
+  activeMainMissing:
+    "This published product needs a main image. Add one, or unpublish it to save as a draft.",
   main: "Main images",
   mainHelp:
     "Up to 4 images. The first is the cover. Square photos 800px or larger are recommended.",
@@ -58,6 +60,8 @@ const en = {
 type Copy = typeof en;
 const tw: Copy = {
   title: "商品圖片",
+  activeMainMissing:
+    "已上架商品需要至少 1 張主圖。請新增主圖，或先下架為草稿。",
   main: "主圖",
   mainHelp: "最多4張，第一張為封面。建議使用800px以上的正方形照片。",
   detail: "詳情圖",
@@ -105,6 +109,8 @@ const tw: Copy = {
 };
 const ja: Copy = {
   title: "商品画像",
+  activeMainMissing:
+    "公開中の商品にはメイン画像が必要です。画像を追加するか、非公開にして下書きに戻してください。",
   main: "メイン画像",
   mainHelp:
     "4枚まで。最初の画像がカバーです。800px以上の正方形写真をおすすめします。",
@@ -164,6 +170,8 @@ const ja: Copy = {
 const cn: Copy = {
   ...tw,
   title: "商品图片",
+  activeMainMissing:
+    "已上架商品需要至少 1 张主图。请新增主图，或先下架为草稿。",
   main: "主图",
   mainHelp: "最多4张，第一张为封面。建议使用800px以上的正方形照片。",
   detail: "详情图",

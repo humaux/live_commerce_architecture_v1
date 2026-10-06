@@ -19,6 +19,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy";
 import { bankTransferCopy } from "../../apps/storefront/lib/bank-transfer-copy";
+import { productMediaCopy } from "../../apps/admin/lib/product-media-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -383,6 +384,83 @@ test.describe("PM-U product media v2", () => {
       "reload",
       "uploads and status survive",
       "4/6/2 images + active",
+    );
+    // Move the published product's last main image away through real buttons, then restore its original main order.
+    // This covers the backend's legal active/zero-main state without a fixture-only API shortcut.
+    const mediaCopy = productMediaCopy["zh-TW"];
+    const mainIDs = byRole("main").map((image) => image.id);
+    async function moveImage(
+      id: string,
+      from: "main" | "detail",
+      label: string,
+    ) {
+      const response = page.waitForResponse(
+        (r) =>
+          r.request().method() === "POST" &&
+          new URL(r.url()).pathname ===
+            `/api/stores/${store}/products/${product.id}/images/${id}/move`,
+      );
+      await page
+        .getByTestId(`media-${from}-list`)
+        .locator(`[data-image-id="${id}"]`)
+        .getByRole("button", { name: label, exact: true })
+        .click();
+      expect((await response).status(), "role move accepted").toBe(200);
+      await expect(
+        page
+          .getByTestId(`media-${from === "main" ? "detail" : "main"}-list`)
+          .locator(`[data-image-id="${id}"]`),
+        "canonical destination contains the moved image",
+      ).toHaveCount(1);
+      pass(
+        name,
+        "move image role",
+        "click",
+        `${from} image moves to the other section`,
+        id,
+      );
+    }
+    for (const id of mainIDs) await moveImage(id, "main", mediaCopy.toDetail);
+    await expect(
+      page.getByTestId("product-main-required"),
+      "active zero-main blocking hint",
+    ).toHaveText(mediaCopy.activeMainMissing);
+    await expect(
+      page.getByTestId("product-save"),
+      "saving as active is blocked",
+    ).toBeDisabled();
+    await expect(
+      page.getByTestId("product-publish"),
+      "publishing is blocked",
+    ).toBeDisabled();
+    await expect(
+      page.getByTestId("photo-input"),
+      "upload repair remains possible",
+    ).toBeEnabled();
+    await expect(
+      page.getByTestId("product-unpublish"),
+      "draft repair remains possible",
+    ).toBeEnabled();
+    await shot(page, "merchant-active-zero-main");
+    for (const id of mainIDs) await moveImage(id, "detail", mediaCopy.toMain);
+    await expect(
+      page.getByTestId("product-main-required"),
+      "main restoration clears the hint",
+    ).toHaveCount(0);
+    await expect(page.getByTestId("product-save")).toBeEnabled();
+    await expect(page.getByTestId("product-publish")).toBeEnabled();
+    await expect(
+      page.getByTestId("media-main-list").locator("img"),
+    ).toHaveCount(4);
+    await expect(
+      page.getByTestId("media-detail-list").locator("img"),
+    ).toHaveCount(6);
+    pass(
+      name,
+      "active-zero-main recovery",
+      "move and restore",
+      "blocking hint and active intents recover; upload/unpublish remain usable",
+      "four mains restored",
     );
     await shot(page, "merchant-editor");
   });

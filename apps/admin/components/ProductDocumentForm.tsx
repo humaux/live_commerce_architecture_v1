@@ -1,11 +1,11 @@
-// Purpose: Product create/edit form — the single writer of the product document (details, media, variants, price, stock, live keyword, visibility) and its save flow.
+// Purpose: product create/edit form, readiness and document save flow; committed media state comes from ProductMediaManager.
 // Depends on: React/Next; use-product-document and catalog-v2/images clients (admin BFF → Go catalog); product-document draft/money helpers; ProductDocumentVariants, ProductBulkFill, ProductReadiness, useProductEditorLayout and product-editor-copy.
 // Used by: ProductEditor (routes /[locale]/products/new and /[locale]/products/[product]).
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
-import type { Store, ProductImage } from "@/lib/model";
+import type { Store, ProductImageList } from "@/lib/model";
 import { currencySign } from "@/lib/client";
 import { readCollections, readWarehouses } from "@/lib/catalog-v2-client";
 import {
@@ -15,7 +15,7 @@ import {
   type OptionAxis,
   type ProductDetail,
 } from "@/lib/catalog-v2-model";
-import { imageURL, listImages } from "@/lib/images-client";
+import { imageURL } from "@/lib/images-client";
 import {
   newRow,
   emptyDraft,
@@ -31,7 +31,7 @@ import { productEditorCopy } from "@/lib/product-editor-copy";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductMediaManager } from "./ProductMediaManager";
-import { effectiveMediaAxis, mainPhotoCount } from "@/lib/product-media-model";
+import { effectiveMediaAxis, mainPhotoCount, needsMainImage } from "@/lib/product-media-model";
 import { productMediaCopy } from "@/lib/product-media-copy";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
@@ -71,11 +71,13 @@ export function ProductDocumentForm({
     [section, setSection] = useState("media"),
     [axisError, setAxisError] = useState(""),
     [imageAxis, setImageAxis] = useState<string|null>(null),
-    [mediaBusy, setMediaBusy] = useState(false);
+    [mediaBusy, setMediaBusy] = useState(false),
+    [mediaKnown, setMediaKnown] = useState(false);
   const initial = useRef(JSON.stringify(initialDraft(detail))),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
   const disabled =
+    (!!detail && !mediaKnown) ||
     mediaBusy ||
     !referencesReady ||
     !write.fenceReady ||
@@ -116,14 +118,17 @@ export function ProductDocumentForm({
       rowArchive.current = [];
     }
   }, [write.savedDetail]);
-  const photoRows = (images:ProductImage[], id:string):DraftPhoto[] => images.map(p=>({key:p.id,id:p.id,role:p.role,width:p.width,height:p.height,url:imageURL(store.id,id,p.id)}));
-  const refreshPhotos = () => {
-    if (detail)
-      void listImages(store.id, detail.id).then((r) => {
-        if (r.items)
-          setPhotos(photoRows(r.items, detail.id));
-      });
-  };
+  const productID = detail?.id;
+  const acceptMedia = useCallback((list: ProductImageList | null) => {
+    setMediaKnown(list !== null);
+    if (productID) setPhotos((list?.items ?? []).filter(p => p.role === 'main').map(p => ({
+      key: p.id, id: p.id, role: p.role, width: p.width, height: p.height,
+      url: imageURL(store.id, productID, p.id),
+    })));
+  }, [store.id, productID]);
+  const mainMissing = needsMainImage(
+    (write.savedDetail ?? detail)?.status ?? 'draft', mediaKnown ? photos : null,
+  );
   useEffect(() => {
     urlPhotos.current = photos;
   }, [photos]);
@@ -151,11 +156,6 @@ export function ProductDocumentForm({
       })
       .catch(() => {
         if (!abort.signal.aborted) write.setMessage(c.failed);
-      });
-    if (detail)
-      void listImages(store.id, detail.id, abort.signal).then((result) => {
-        if (!abort.signal.aborted && result.items)
-          setPhotos(photoRows(result.items, detail.id));
       });
     return () => abort.abort();
   }, [store.id, detail, c.failed]);
@@ -229,6 +229,10 @@ export function ProductDocumentForm({
       write.setMessage(productMediaCopy[locale].staleOption); focus("media"); noteSaveAttempt(); return;
     }
     if (disabled) return;
+    if (mainMissing && (publish || requestedStatus === 'active')) {
+      write.setMessage(productMediaCopy[locale].activeMainMissing);
+      focus('media'); noteSaveAttempt(); return;
+    }
     if (axisError) {
       write.setMessage(axisError);
       noteSaveAttempt();
@@ -325,6 +329,9 @@ export function ProductDocumentForm({
         </section>
       </aside>
       <div className="pe-fields" ref={fields} data-testid="product-fields">
+        {mainMissing && <p role="alert" data-testid="product-main-required">
+          {productMediaCopy[locale].activeMainMissing}
+        </p>}
         {detail ? (
           <section id="media" className="product-section pe-media">
             <ProductMediaManager
@@ -336,7 +343,7 @@ export function ProductDocumentForm({
               axes={(write.savedDetail ?? detail).options}
               disabled={disabled}
               onLocked={setMediaBusy}
-              onChanged={refreshPhotos}
+              onChanged={acceptMedia}
             />
           </section>
         ) : (
@@ -753,7 +760,7 @@ export function ProductDocumentForm({
           <button
             type="submit"
             data-testid={mode === "create" ? "product-create" : "product-save"}
-            disabled={disabled}
+            disabled={disabled || (mainMissing && targetStatus==='active')}
           >
             {mode === "create" ? c.saveDraft : c.save}
           </button>
@@ -771,7 +778,7 @@ export function ProductDocumentForm({
             className="product-primary"
             type="button"
             data-testid="product-publish"
-            disabled={disabled}
+            disabled={disabled || mainMissing}
             onClick={() => save(true)}
           >
             {c.publish}

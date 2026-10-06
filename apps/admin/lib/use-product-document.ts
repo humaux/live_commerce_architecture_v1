@@ -22,7 +22,11 @@ import {
 import { uploadDocumentImage } from "./product-media-client";
 import type { ProductEditorCopy } from "./product-editor-copy";
 import type { DraftPhoto } from "../components/ProductDocumentMedia";
-import { effectiveMediaAxis, optionImageMatches } from "./product-media-model";
+import {
+  effectiveMediaAxis,
+  optionImageMatches,
+  needsMainImage,
+} from "./product-media-model";
 type Workflow = {
   edit?: boolean;
   expectedStatus?: string;
@@ -265,9 +269,10 @@ export function useProductDocument(
     )
       return;
     if (
-      publish &&
-      baseline?.status !== "active" &&
-      !photos.some((p) => (p.role ?? "main") === "main")
+      needsMainImage(
+        publish ? "active" : (status ?? baseline?.status ?? "draft"),
+        photos,
+      )
     ) {
       setMessage(c.imageRequired);
       return;
