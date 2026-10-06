@@ -91,7 +91,8 @@ func (c *ohEnv) moneySnapshot() map[string]int {
 func TestOrderHistoryImport(t *testing.T) {
 	c := ohSetup(t)
 	f := c.f
-	custFile := ciFixture(t)
+	// Own customer ids: TestCustomerImport leaves an erasure tombstone and receipts for SL-0002 in the shared store.
+	custFile := "顧客編號,姓名,手機\nOHC-0001,歷史顧客一,0900-000-101\nOHC-0002,歷史顧客二,0900-000-102\nOHC-0003,Historic Three,0900-000-103\n"
 	file := ohFixture(t)
 	const addrSecret = "SECRET-ADDR"
 	var firstBatch, owner1, owner2 string
@@ -100,7 +101,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		if st, cm := c.commit(c.adminTok, custFile, 3, ""); st != 200 || cm["created"] != float64(3) {
 			t.Fatalf("customer commit: %d %v", st, cm)
 		}
-		owner1, owner2 = c.ownerOf("SL-0001"), c.ownerOf("SL-0002")
+		owner1, owner2 = c.ownerOf("OHC-0001"), c.ownerOf("OHC-0002")
 		ownersBefore := c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA)
 		only := "訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\nOH-9001,NOBODY-1,2026-03-05,已完成,100\n"
 		st, pv := c.opreview(c.adminTok, only, "")
@@ -233,7 +234,7 @@ func TestOrderHistoryImport(t *testing.T) {
 
 	t.Run("OH05 the same order again is updated; another customer's order number is refused", func(t *testing.T) {
 		changed := strings.ReplaceAll(file, ",已完成,\"1,280\"", ",已退貨,\"1,280\"")
-		changed = strings.ReplaceAll(changed, "OH-1003,SL-0002", "OH-1003,SL-0003") // OH-1003 belongs to SL-0002: conflict
+		changed = strings.ReplaceAll(changed, "OH-1003,OHC-0002", "OH-1003,OHC-0003") // OH-1003 belongs to OHC-0002: conflict
 		st, pv := c.opreview(c.adminTok, changed, "")
 		if st != 200 || pv["update_rows"] != float64(2) || pv["failed_rows"] != float64(1) || pv["new_rows"] != float64(0) {
 			t.Fatalf("preview: %d %v", st, pv)
@@ -274,7 +275,7 @@ func TestOrderHistoryImport(t *testing.T) {
 			t.Fatalf("bad cursor: %d", st)
 		}
 		// A customer without an archive is an empty page; a plain id is 404.
-		if st, p := c.archive(c.ownerOf("SL-0003"), ""); st != 200 || p["total"] != float64(0) || len(p["items"].([]any)) != 0 {
+		if st, p := c.archive(c.ownerOf("OHC-0003"), ""); st != 200 || p["total"] != float64(0) || len(p["items"].([]any)) != 0 {
 			t.Fatalf("empty archive: %d %v", st, p)
 		}
 		if st, _ := c.archive("00000000-0000-4000-8000-000000000000", ""); st != 404 {
@@ -304,7 +305,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		if st, _, _ := c.call("GET", "/v1/admin/stores/"+c.store+"/customers/"+owner1+"/historical-orders", c.otok, ""); st != 403 && st != 404 {
 			t.Fatalf("other tenant on A1: %d", st)
 		}
-		// Tenant B imports orders for ids it has not imported: customer_not_imported even though tenant A has SL-0001.
+		// Tenant B imports orders for ids it has not imported: customer_not_imported even though tenant A has OHC-0001.
 		st, raw, _ := c.call("POST", c.imports(f.storeB)+"/orders/preview", c.otok, file)
 		if pv := sraJSON(raw); st != 200 || pv["failed_rows"] != float64(3) || pv["apply_rows"] != float64(0) {
 			t.Fatalf("tenant B preview: %d %s", st, raw)
@@ -342,7 +343,7 @@ func TestOrderHistoryImport(t *testing.T) {
 
 	t.Run("OH12 the batch and results.csv carry row numbers and codes only", func(t *testing.T) {
 		body := c.resultsCSV(firstBatch)
-		if !strings.Contains(body, "row,external_id,outcome,code") || strings.Contains(body, "OH-") || strings.Contains(body, "SL-") || strings.Count(body, "created") != 3 {
+		if !strings.Contains(body, "row,external_id,outcome,code") || strings.Contains(body, "OH-") || strings.Contains(body, "OHC-") || strings.Count(body, "created") != 3 {
 			t.Fatalf("results.csv: %q", body)
 		}
 	})
@@ -364,7 +365,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		if st != 200 || pv["erased_rows"] != float64(2) || pv["update_rows"] != float64(1) || pv["failed_rows"] != float64(2) || pv["apply_rows"] != float64(1) {
 			t.Fatalf("preview after erasure: %d %v", st, pv)
 		}
-		if strings.Contains(fmt.Sprint(pv), "SL-0001") || strings.Contains(fmt.Sprint(pv["rows"]), "OH-1001") {
+		if strings.Contains(fmt.Sprint(pv), "OHC-0001") || strings.Contains(fmt.Sprint(pv["rows"]), "OH-1001") {
 			t.Fatalf("an erased customer's ids are echoed: %v", pv)
 		}
 		st, cm := c.ocommit(c.adminTok, stale, 1, "")
@@ -374,7 +375,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		if c.n(`SELECT count(*) FROM customers.historical_orders WHERE owner_id=$1`, owner1) != 0 {
 			t.Fatal("an erased customer's order was archived again")
 		}
-		if body := c.resultsCSV(cm["batch_id"].(string)); strings.Count(body, "erased") != 2 || strings.Contains(body, "OH-") || strings.Contains(body, "SL-0001") {
+		if body := c.resultsCSV(cm["batch_id"].(string)); strings.Count(body, "erased") != 2 || strings.Contains(body, "OH-") || strings.Contains(body, "OHC-0001") {
 			t.Fatalf("results.csv after erasure: %q", body)
 		}
 		// restore replay (CD8): an archive row that reappears is deleted again.
@@ -391,7 +392,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額,城市\n")
 		for i, cell := range append(strings.Split(samples, "|"), "台中市") {
-			fmt.Fprintf(&b, "OH-91%02d,SL-0002,2026-05-0%d,已完成,100,%s\n", i, i+1, cell)
+			fmt.Fprintf(&b, "OH-91%02d,OHC-0002,2026-05-0%d,已完成,100,%s\n", i, i+1, cell)
 		}
 		st, pv := c.opreview(c.adminTok, b.String(), "")
 		if st != 200 || pv["new_rows"] != float64(5) || pv["failed_rows"] != float64(0) || pv["city_dropped_rows"] != float64(4) {
@@ -442,7 +443,7 @@ func TestOrderHistoryImport(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\n")
 		for i := 0; i < 5001; i++ {
-			fmt.Fprintf(&b, "OH-L%d,SL-0003,2026-03-05,已完成,100\n", i)
+			fmt.Fprintf(&b, "OH-L%d,OHC-0003,2026-03-05,已完成,100\n", i)
 		}
 		if st, pv := c.opreview(c.adminTok, b.String(), ""); st != 422 || pv["code"] != "too_many_rows" {
 			t.Fatalf("5001 lines: %d %v", st, pv)
@@ -450,16 +451,16 @@ func TestOrderHistoryImport(t *testing.T) {
 		if st, _, _ := c.call("POST", c.imports(c.store)+"/orders/preview", c.adminTok, strings.Repeat("a", 2<<20+1)); st != http.StatusRequestEntityTooLarge {
 			t.Fatalf("2 MiB + 1: %d", st)
 		}
-		if st, pv := c.opreview(c.adminTok, "訂單號碼,顧客編號\nO1,SL-0003\n", ""); st != 422 || pv["code"] != "required" {
+		if st, pv := c.opreview(c.adminTok, "訂單號碼,顧客編號\nO1,OHC-0003\n", ""); st != 422 || pv["code"] != "required" {
 			t.Fatalf("missing required columns: %d %v", st, pv)
 		}
 	})
 
 	t.Run("OH11 2000 archive rows per customer, then order_limit and a bounded export", func(t *testing.T) {
-		owner3 := c.ownerOf("SL-0003")
+		owner3 := c.ownerOf("OHC-0003")
 		mustExec(t, f.owner, `INSERT INTO customers.historical_orders(tenant_id,store_id,owner_id,external_order_id,ordered_at,status,total_minor,currency,items_summary)
 		 SELECT $1,$2,$3,'FILL-'||g,'2026-01-01T00:00:00Z'::timestamptz+g*interval '1 second','x',100,'TWD',repeat('商',500) FROM generate_series(1,2000) g`, f.tenantA, c.store, owner3)
-		one := "訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\nOH-LIMIT,SL-0003,2026-03-05,已完成,100\n"
+		one := "訂單號碼,顧客編號,訂單日期,訂單狀態,訂單總金額\nOH-LIMIT,OHC-0003,2026-03-05,已完成,100\n"
 		st, pv := c.opreview(c.adminTok, one, "")
 		if st != 200 || pv["failed_rows"] != float64(1) || pv["rows"].([]any)[0].(map[string]any)["code"] != "order_limit" {
 			t.Fatalf("2001st order: %d %v", st, pv)
