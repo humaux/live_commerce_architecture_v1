@@ -1,31 +1,26 @@
 === RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
-    checkout_reminder_test.go:147: trigger: inbox: database unavailable
---- FAIL: TestCheckoutReminderCR01WindowTakeoverAndOnce (9.97s)
+--- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (11.29s)
 === RUN   TestCheckoutReminderCR02ConcurrentTriggers
---- PASS: TestCheckoutReminderCR02ConcurrentTriggers (1.07s)
+--- PASS: TestCheckoutReminderCR02ConcurrentTriggers (1.01s)
 === RUN   TestCheckoutReminderCR03WindowClosesBeforeCheck
-    checkout_reminder_test.go:278: code=capability graph 0->0 secrets=0
---- FAIL: TestCheckoutReminderCR03WindowClosesBeforeCheck (1.40s)
+--- PASS: TestCheckoutReminderCR03WindowClosesBeforeCheck (2.68s)
 === RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
-    checkout_reminder_test.go:309: operation job not available for the dispatcher queue: <nil>
---- FAIL: TestCheckoutReminderCR04GraphFailureIsUnknown (0.89s)
+--- PASS: TestCheckoutReminderCR04GraphFailureIsUnknown (3.11s)
 === RUN   TestCheckoutReminderCR05CandidateSet
-    checkout_reminder_test.go:361: no_peer trigger: {Queued:0 AlreadyReminded:0 Followup:0 Skipped:0 Truncated:false} err=inbox: database unavailable
---- FAIL: TestCheckoutReminderCR05CandidateSet (3.36s)
+--- PASS: TestCheckoutReminderCR05CandidateSet (12.96s)
 === RUN   TestCheckoutReminderCR06PermissionAndScope
-    checkout_reminder_test.go:391: sister store trigger on a foreign session: no_storefront
---- FAIL: TestCheckoutReminderCR06PermissionAndScope (8.36s)
+--- PASS: TestCheckoutReminderCR06PermissionAndScope (1.83s)
 === RUN   TestCheckoutReminderSettingsCAS
 --- PASS: TestCheckoutReminderSettingsCAS (0.38s)
 === RUN   TestCheckoutReminderNoStorefront
-    checkout_reminder_test.go:491: a reminder was planned without a link
---- FAIL: TestCheckoutReminderNoStorefront (0.86s)
+--- PASS: TestCheckoutReminderNoStorefront (1.39s)
 === RUN   TestCheckoutReminderCR08NoSecretsPersisted
---- PASS: TestCheckoutReminderCR08NoSecretsPersisted (0.88s)
+--- PASS: TestCheckoutReminderCR08NoSecretsPersisted (1.64s)
 === RUN   TestCheckoutReminderMigration0131ExactACL
 --- PASS: TestCheckoutReminderMigration0131ExactACL (0.01s)
-FAIL
-FAIL	livecommerce/tests/foundation	28.594s
-FAIL
-test-focused: top-level PASS=4 FAIL=6 SKIP=0 exit=1
-exit 1
+=== RUN   TestCheckoutReminderSingleBuyer
+--- PASS: TestCheckoutReminderSingleBuyer (10.74s)
+PASS
+ok  	livecommerce/tests/foundation	48.742s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0
+exit 0
