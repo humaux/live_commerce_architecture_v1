@@ -847,10 +847,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
-					// LC-B4 (0128): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
+					// LC-B4 (0128) + W3-03B (0131, claims.links generation only; the token hash stays unreadable): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
 					// (rows stay GUC- or intake-scoped by policy; every write statement stays 42501 except the pinned flag/updated_at columns,
 					// which the `SET tenant_id=tenant_id` probe does not touch).
-					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows") && strings.HasPrefix(q, "SELECT") {
+					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows" || table == "claims.links") && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
 					// customers-billing-v1 §3.1 (0078): commerce_auth holds column SELECT on claims.bundles (customer list

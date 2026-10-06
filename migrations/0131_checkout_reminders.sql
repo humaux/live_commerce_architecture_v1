@@ -354,16 +354,18 @@ CREATE FUNCTION inbox.plan_checkout_reminder(p_session uuid, p_bundle uuid, p_co
  p_display_ciphertext bytea, p_secret_enc bytea, p_secret_sealed bytea, p_template_id text, p_template_version bigint)
 RETURNS uuid LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog AS $$
 DECLARE v uuid[]; v_t uuid; v_s uuid; v_p uuid; v_now timestamptz := clock_timestamp(); b record; c record; st record; z record; f record;
- v_key text; v_provider text; v_req jsonb; v_mode text; v_gen bigint;
+ v_key text; v_provider text; v_req jsonb; v_mode text; v_gen bigint; v_tpl text;
 BEGIN
     v := inbox.lcn_scope(); v_t := v[1]; v_s := v[2]; v_p := v[3];
     IF p_session IS NULL OR p_bundle IS NULL OR p_conversation IS NULL OR p_trigger IS NULL OR p_trigger NOT IN ('manual', 'auto')
        OR p_expected_generation IS NULL OR p_expected_generation < 0 OR p_body_hmac IS NULL OR octet_length(p_body_hmac) <> 32
        OR p_reminder_state IS NULL OR p_reminder_state NOT IN ('claimed', 'awaiting_payment')
-       OR p_template_version IS DISTINCT FROM 1
-       OR p_template_id IS DISTINCT FROM CASE p_reminder_state WHEN 'claimed' THEN 'checkout-reminder/v1' ELSE 'order-pay-link/v1' END THEN
+       OR p_template_version IS DISTINCT FROM 1 THEN
         RAISE EXCEPTION 'invalid reminder plan' USING ERRCODE = '22023';
     END IF;
+    -- The template is the one of the buyer's state (a CASE inside an IF condition would confuse the plpgsql parser, hence the separate assignment).
+    v_tpl := CASE p_reminder_state WHEN 'claimed' THEN 'checkout-reminder/v1' ELSE 'order-pay-link/v1' END;
+    IF p_template_id IS DISTINCT FROM v_tpl THEN RAISE EXCEPTION 'invalid reminder plan' USING ERRCODE = '22023'; END IF;
     IF NOT identity.principal_holds(v_t, v_s, v_p, ARRAY['inbox:reply']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403'; END IF;
     -- A1.3 clause 1: the lcn-dup lock comes first, before any read for duplicates and before any insert (same key shape as inbox.plan_dm).
     PERFORM pg_advisory_xact_lock(hashtextextended('lcn-dup|' || v_s::text || '|' || p_conversation::text || '|' || encode(p_body_hmac, 'hex'), 0));

@@ -1,0 +1,126 @@
+=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
+--- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (11.16s)
+=== RUN   TestCheckoutReminderCR02ConcurrentTriggers
+--- PASS: TestCheckoutReminderCR02ConcurrentTriggers (1.23s)
+=== RUN   TestCheckoutReminderCR03CheckReChecks
+--- PASS: TestCheckoutReminderCR03CheckReChecks (3.81s)
+=== RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
+--- PASS: TestCheckoutReminderCR04GraphFailureIsUnknown (10.03s)
+=== RUN   TestCheckoutReminderCR05CandidateSetAndOrderLink
+--- PASS: TestCheckoutReminderCR05CandidateSetAndOrderLink (5.26s)
+=== RUN   TestCheckoutReminderCR09BatchDoesNotLivelock
+    checkout_reminder_test.go:595: second pass: sends=2 already=100 followups=3 truncated=false (the first 100 must not be re-counted)
+--- FAIL: TestCheckoutReminderCR09BatchDoesNotLivelock (8.10s)
+=== RUN   TestCheckoutReminderYoungClaimsAreNotNagged
+--- PASS: TestCheckoutReminderYoungClaimsAreNotNagged (1.06s)
+=== RUN   TestCheckoutReminderPerBuyerRefusalDoesNotAbortTheBatch
+--- PASS: TestCheckoutReminderPerBuyerRefusalDoesNotAbortTheBatch (1.45s)
+=== RUN   TestCheckoutReminderCountsTowardTheSendCap
+--- PASS: TestCheckoutReminderCountsTowardTheSendCap (1.50s)
+=== RUN   TestCheckoutReminderFollowupOnlyAuditAndPermissions
+--- PASS: TestCheckoutReminderFollowupOnlyAuditAndPermissions (0.97s)
+=== RUN   TestCheckoutReminderCR06Scope
+--- PASS: TestCheckoutReminderCR06Scope (0.95s)
+=== RUN   TestCheckoutReminderNoStorefront
+--- PASS: TestCheckoutReminderNoStorefront (0.91s)
+=== RUN   TestCheckoutReminderSingleBuyer
+--- PASS: TestCheckoutReminderSingleBuyer (2.20s)
+=== RUN   TestCheckoutReminderCR08NoSecretsPersisted
+--- PASS: TestCheckoutReminderCR08NoSecretsPersisted (8.55s)
+=== RUN   TestCheckoutReminderMigration0131ExactACL
+--- PASS: TestCheckoutReminderMigration0131ExactACL (0.04s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.88s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (4.23s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.07s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.33s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.69s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.14s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.12s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.66s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.05s)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean)
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list()
+=== RUN   TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint)
+--- PASS: TestLiveConsoleTemplatesMigration0121ExactACL (0.01s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.publish(text,text,text,text[],boolean) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.list() (0.00s)
+    --- PASS: TestLiveConsoleTemplatesMigration0121ExactACL/msgtemplates.resolve(text,bigint) (0.00s)
+=== RUN   TestLiveConsoleTemplatesPublishVersionAuditIdempotency
+--- PASS: TestLiveConsoleTemplatesPublishVersionAuditIdempotency (0.05s)
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_safe_template_with_a_URL_is_refused_§3.5
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_reply/recommend_kind_without_public_safe_is_refused
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/publishing_a_fixed_id_is_a_409_template_fixed
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/inbox:reply_principal_cannot_publish_(definer_gate)
+=== RUN   TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/store:read_only_principal_cannot_open_live:manage_scope
+--- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission (0.02s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_safe_template_with_a_URL_is_refused_§3.5 (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/public_reply/recommend_kind_without_public_safe_is_refused (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/publishing_a_fixed_id_is_a_409_template_fixed (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/inbox:reply_principal_cannot_publish_(definer_gate) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesPublicSafeFixedIDAndPermission/store:read_only_principal_cannot_open_live:manage_scope (0.00s)
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/fixed_order-pay-link_resolves_with_the_sealed_link_placeholder
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/fixed_offer-recommend_resolves_public_safe
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/merchant_template_resolves_by_version
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/unknown_id_and_unknown_version_are_not_found
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_resolve_is_not_found_(RLS_isolation)
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_list_is_empty
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/resolve_definer_gate_denies_store:read_only_principal
+=== RUN   TestLiveConsoleTemplatesResolveAndCrossStore/list_definer_gate_denies_store:read_only_principal
+--- PASS: TestLiveConsoleTemplatesResolveAndCrossStore (0.02s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/fixed_order-pay-link_resolves_with_the_sealed_link_placeholder (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/fixed_offer-recommend_resolves_public_safe (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/merchant_template_resolves_by_version (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/unknown_id_and_unknown_version_are_not_found (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_resolve_is_not_found_(RLS_isolation) (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/cross-store_list_is_empty (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/resolve_definer_gate_denies_store:read_only_principal (0.00s)
+    --- PASS: TestLiveConsoleTemplatesResolveAndCrossStore/list_definer_gate_denies_store:read_only_principal (0.00s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.34s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.00s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.23s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.02s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.01s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.01s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.29s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.09s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.09s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.08s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.07s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.12s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	69.278s
+FAIL
+test-focused: top-level PASS=28 FAIL=1 SKIP=0 exit=1
+exit 1

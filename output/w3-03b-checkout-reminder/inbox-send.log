@@ -1,38 +1,38 @@
 === RUN   TestLiveConsoleSendRecommendCapabilityBeforeContent
---- PASS: TestLiveConsoleSendRecommendCapabilityBeforeContent (9.40s)
+--- PASS: TestLiveConsoleSendRecommendCapabilityBeforeContent (8.51s)
 === RUN   TestLiveConsoleSendLCN07Quota
---- PASS: TestLiveConsoleSendLCN07Quota (1.14s)
+--- PASS: TestLiveConsoleSendLCN07Quota (1.34s)
 === RUN   TestLiveConsoleSendLCN07ConfirmGateAndLinkPending
 --- PASS: TestLiveConsoleSendLCN07ConfirmGateAndLinkPending (1.68s)
 === RUN   TestLiveConsoleSendLCN07ConcurrentManual
---- PASS: TestLiveConsoleSendLCN07ConcurrentManual (0.47s)
+--- PASS: TestLiveConsoleSendLCN07ConcurrentManual (0.50s)
 === RUN   TestLiveConsoleSendLCN07AutoManualRace
-    live_console_send_quota_test.go:369: race outcomes over 100 iterations: manual won 9, auto won 91, manual refused 91
---- PASS: TestLiveConsoleSendLCN07AutoManualRace (32.68s)
+    live_console_send_quota_test.go:369: race outcomes over 100 iterations: manual won 18, auto won 82, manual refused 82
+--- PASS: TestLiveConsoleSendLCN07AutoManualRace (42.95s)
 === RUN   TestLiveConsoleSendLCN08PublicReply
---- PASS: TestLiveConsoleSendLCN08PublicReply (2.90s)
+--- PASS: TestLiveConsoleSendLCN08PublicReply (3.02s)
 === RUN   TestLiveConsoleSendLCN10Takeover
---- PASS: TestLiveConsoleSendLCN10Takeover (13.23s)
+--- PASS: TestLiveConsoleSendLCN10Takeover (12.59s)
 === RUN   TestLiveConsoleSendLCN11Unknown
 === RUN   TestLiveConsoleSendLCN11Unknown/5xx
 === RUN   TestLiveConsoleSendLCN11Unknown/garbled
 === RUN   TestLiveConsoleSendLCN11Unknown/hang
---- PASS: TestLiveConsoleSendLCN11Unknown (8.16s)
-    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.30s)
-    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (1.98s)
-    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.27s)
+--- PASS: TestLiveConsoleSendLCN11Unknown (8.20s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.29s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (2.00s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.25s)
 === RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
---- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (9.55s)
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (9.31s)
 === RUN   TestLiveConsoleSendMigration0128ExactACL
---- PASS: TestLiveConsoleSendMigration0128ExactACL (0.04s)
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.06s)
 === RUN   TestLiveConsoleSendLCN06DM
---- PASS: TestLiveConsoleSendLCN06DM (2.94s)
+--- PASS: TestLiveConsoleSendLCN06DM (3.00s)
 === RUN   TestLiveConsoleSendLCN06GraphInvalidRequest
---- PASS: TestLiveConsoleSendLCN06GraphInvalidRequest (1.73s)
+--- PASS: TestLiveConsoleSendLCN06GraphInvalidRequest (1.76s)
 === RUN   TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow
---- PASS: TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow (0.85s)
+--- PASS: TestLiveConsoleSendLCN06NonMessageUnitsNeverOpenAWindow (0.89s)
 PASS
-ok  	livecommerce/tests/foundation	86.762s
+ok  	livecommerce/tests/foundation	95.476s
 === RUN   TestCheckTextLimitsPerPlatform
 --- PASS: TestCheckTextLimitsPerPlatform (0.00s)
 === RUN   TestPublicReplyForbiddenContent
@@ -44,7 +44,7 @@ ok  	livecommerce/tests/foundation	86.762s
 === RUN   TestBodyHMACIsKeyedAndTenantSeparated
 --- PASS: TestBodyHMACIsKeyedAndTenantSeparated (0.00s)
 PASS
-ok  	livecommerce/internal/inbox	2.273s
+ok  	livecommerce/internal/inbox	2.026s
 === RUN   TestInboxSendRoutesMountOnlyWhenEnabled
 --- PASS: TestInboxSendRoutesMountOnlyWhenEnabled (0.01s)
 === RUN   TestInboxSendClassify
@@ -56,7 +56,7 @@ ok  	livecommerce/internal/inbox	2.273s
 === RUN   TestPrivateReplyFactsMapping
 --- PASS: TestPrivateReplyFactsMapping (0.00s)
 PASS
-ok  	livecommerce/internal/httpapi	1.740s
+ok  	livecommerce/internal/httpapi	1.519s
 === RUN   TestSendRequestShapes
 --- PASS: TestSendRequestShapes (0.01s)
 === RUN   TestSendOutcomeMapping
@@ -88,6 +88,6 @@ ok  	livecommerce/internal/httpapi	1.740s
 === RUN   TestSendRoutesCoverTheActions
 --- PASS: TestSendRoutesCoverTheActions (0.00s)
 PASS
-ok  	livecommerce/internal/integrations/metareply	1.697s
+ok  	livecommerce/internal/integrations/metareply	2.802s
 PASS: isolated live-console sends + takeover (LCN06/07/08/10/11, display-copy half of LCN13) only; MOCK Graph, retention halves of LCN13 and LIVE sends (LCN16) not claimed.
 exit 0
