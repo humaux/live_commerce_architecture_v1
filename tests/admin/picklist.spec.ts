@@ -1,5 +1,5 @@
 // Purpose: real-click W3-U1b acceptance against isolated contract-shaped MOCK HTTP, run only in CI.
-// Depends on: packaged Next admin, Playwright Chromium, picklist-fixture and node:test.
+// Depends on: packaged Next admin, Playwright Chromium/API requests, picklist-fixture TLS facade and node:test.
 // Used by: test-local.sh --browser-picklist; no evaluate writes, provider effects or PG.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import { chromium, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { mkdir, open, readFile, writeFile } from "node:fs/promises";
-import { pickFixture, storeID, sessionID } from "./picklist-fixture.mjs";
+import { pickFixture, picklistTLS, storeID, sessionID } from "./picklist-fixture.mjs";
 import { picklistCopy } from "../../apps/admin/lib/picklist-copy.ts";
 
 test(
@@ -21,33 +21,39 @@ test(
     await new Promise<void>((r) => probe.listen(0, "127.0.0.1", r));
     const port = (probe.address() as { port: number }).port;
     await new Promise<void>((r) => probe.close(() => r()));
-    const base = `http://127.0.0.1:${port}`,
+    const upstreamBase = `http://127.0.0.1:${port}`,
       log = await open(`${output}/server.log`, "w");
-    const server = spawn(
-      process.execPath,
-      ["apps/admin/.next/standalone/apps/admin/server.js"],
-      {
-        stdio: ["ignore", log.fd, log.fd],
-        env: {
-          ...process.env,
-          COMMERCE_UI_PORT: String(port),
-          PORT: String(port),
-          HOSTNAME: "127.0.0.1",
-          COMMERCE_IDENTITY_ENABLED: "1",
-          COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
-          COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
-          COMMERCE_PUBLIC_ORIGIN: base,
-          COMMERCE_API_ORIGIN: fixture.origin,
-          COMMERCE_BFF_KEY: fixture.key,
-        },
-      },
-    );
     const ledger: { case: string; result: string }[] = [];
     let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined;
+    let edge: Awaited<ReturnType<typeof picklistTLS>> | undefined;
+    let server: ReturnType<typeof spawn> | undefined;
     try {
+      // Both browser and APIRequestContext use HTTPS; Secure __Host cookies remain automatic in every probe.
+      edge = await picklistTLS(upstreamBase);
+      const base = edge.origin;
+      server = spawn(
+        process.execPath,
+        ["apps/admin/.next/standalone/apps/admin/server.js"],
+        {
+          stdio: ["ignore", log.fd, log.fd],
+          env: {
+            ...process.env,
+            COMMERCE_UI_PORT: String(port),
+            PORT: String(port),
+            HOSTNAME: "127.0.0.1",
+            COMMERCE_IDENTITY_ENABLED: "1",
+            COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS: "1",
+            COMMERCE_PASSWORD_LOGIN_ENABLED: "1",
+            COMMERCE_PUBLIC_ORIGIN: base,
+            COMMERCE_API_ORIGIN: fixture.origin,
+            COMMERCE_BFF_KEY: fixture.key,
+          },
+        },
+      );
       for (let n = 0; ; n++) {
         try {
-          if ((await fetch(`${base}/en/reset`)).ok) break;
+          // Readiness checks the owned internal HTTP listener, without relaxing Node TLS verification globally.
+          if ((await fetch(`${upstreamBase}/en/reset`)).ok) break;
         } catch {}
         if (n === 119) throw new Error("Next readiness timeout");
         await new Promise((r) => setTimeout(r, 500));
@@ -59,6 +65,7 @@ test(
             context = await browser.newContext({
               viewport: { width, height: 900 },
               acceptDownloads: true,
+              ignoreHTTPSErrors: true, // Test-only ephemeral certificate; public origin itself remains HTTPS.
             });
           await context.addCookies(
             ["session", "csrf"].map((kind) => ({
@@ -220,7 +227,7 @@ test(
           });
           await context.close();
         }
-      const context = await browser.newContext();
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
       await context.addCookies(
         ["session", "csrf"].map((kind) => ({
           name: `__Host-commerce_${kind}`,
@@ -372,13 +379,17 @@ test(
         JSON.stringify({ tier: "MOCK", ledger }, null, 2),
       );
       await browser?.close();
-      server.kill("SIGTERM");
-      await Promise.race([
-        new Promise((r) => server.once("exit", r)),
-        new Promise((r) => setTimeout(r, 5000)),
-      ]);
-      if (server.exitCode === null && server.signalCode === null)
-        server.kill("SIGKILL");
+      await edge?.close();
+      if (server) {
+        const owned = server;
+        owned.kill("SIGTERM");
+        await Promise.race([
+          new Promise((r) => owned.once("exit", r)),
+          new Promise((r) => setTimeout(r, 5000)),
+        ]);
+        if (owned.exitCode === null && owned.signalCode === null)
+          owned.kill("SIGKILL");
+      }
       await log.close();
       await fixture.close();
     }
