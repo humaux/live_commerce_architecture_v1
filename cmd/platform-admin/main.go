@@ -1,7 +1,9 @@
-// Purpose: operator-only CLI that suspends/resumes a tenant or store, reports their state and lists the operator audit.
+// Purpose: operator-only CLI that suspends/resumes a tenant or store, reports their state, lists the operator audit and
+// manages read-only platform support grants (support-grant / support-revoke / support-list).
 // Depends on: pgx (one-connection pool); SQL definers control.set_store_active / set_tenant_active / platform_status /
 //
-//	read_operator_audit (migration 0143, EXECUTE commerce_platform_operator); env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
+//	read_operator_audit (migration 0143) and identity.grant_support / revoke_support / list_support_grants (0153), all
+//	EXECUTE commerce_platform_operator; env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
 //
 // Used by: deploy/scripts/ops-admin.sh (integrator), tests/foundation/platform_operator_test.go; never the API or a worker.
 // Invariants: stderr is one fixed code and stdout one JSON line; no DSN/driver text is ever printed; all inputs are
@@ -40,11 +42,14 @@ var (
 	errFailed   = errors.New("platform_admin_failed")
 	errNotFound = errors.New("platform_admin_not_found")
 	errDenied   = errors.New("platform_admin_denied")
+	errConflict = errors.New("platform_admin_conflict")
 )
 
 var (
 	operatorPattern = regexp.MustCompile(`^[a-z0-9._-]{1,40}$`)
 	reasons         = map[string]bool{"fraud": true, "non_payment": true, "legal": true, "owner_request": true, "other": true}
+	// supportPack is the only permission set a support grant may hold (SQL CHECK in migration 0153 re-validates it).
+	supportPack = map[string]bool{"store:read": true, "orders:read": true, "catalog:read": true, "inventory:read": true, "live:read": true, "integration:read": true}
 )
 
 // querier is the part of the pool the commands use (QueryRow of one JSON document).
@@ -93,14 +98,30 @@ func validTicket(s string) bool {
 	return strings.IndexFunc(s, unicode.IsControl) < 0
 }
 
+// parsePerms splits a comma list of support permissions; empty means "the default pack" (nil, the SQL default).
+// Anything outside supportPack is refused before a connection opens.
+func parsePerms(list string) ([]string, bool) {
+	if list == "" {
+		return nil, true
+	}
+	var out []string
+	for _, p := range strings.Split(list, ",") {
+		if !supportPack[p] {
+			return nil, false
+		}
+		out = append(out, p)
+	}
+	return out, true
+}
+
 func run(ctx context.Context, args []string, getenv func(string) string, stdout io.Writer) error {
 	if ctx == nil || getenv == nil || stdout == nil || len(args) < 1 {
 		return errUsage
 	}
 	fs := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	fs.SetOutput(io.Discard) // flag errors echo the offending value; usage errors are fixed instead
-	var store, tenant, operator, ticket, reason, since string
-	limit := 100
+	var store, tenant, operator, ticket, reason, since, principal, grant, perm string
+	limit, hours := 100, 4
 	cmd := args[0]
 	switch cmd {
 	case "store-suspend", "store-resume", "tenant-suspend", "tenant-resume":
@@ -109,6 +130,21 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		fs.StringVar(&reason, "reason", "", "")
 		fs.StringVar(&store, "store", "", "")
 		fs.StringVar(&tenant, "tenant", "", "")
+	case "support-grant":
+		fs.StringVar(&store, "store", "", "")
+		fs.StringVar(&principal, "principal", "", "")
+		fs.IntVar(&hours, "hours", 4, "")
+		fs.StringVar(&perm, "perm", "", "")
+		fs.StringVar(&operator, "operator", "", "")
+		fs.StringVar(&ticket, "ticket", "", "")
+	case "support-revoke":
+		fs.StringVar(&grant, "grant", "", "")
+		fs.StringVar(&store, "store", "", "")
+		fs.StringVar(&principal, "principal", "", "")
+		fs.StringVar(&operator, "operator", "", "")
+		fs.StringVar(&ticket, "ticket", "", "")
+	case "support-list":
+		fs.StringVar(&store, "store", "", "")
 	case "status":
 		fs.StringVar(&store, "store", "", "")
 		fs.StringVar(&tenant, "tenant", "", "")
@@ -144,6 +180,33 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout 
 		} else {
 			fn = call(`SELECT control.set_tenant_active($1::uuid,$2,$3,$4,$5)::text`, target, resume, operator, ticket, reasonArg)
 		}
+	case "support-grant":
+		perms, ok := parsePerms(perm)
+		if !ok || !command.ValidID(store) || !command.ValidID(principal) || hours < 1 || hours > 72 ||
+			!operatorPattern.MatchString(operator) || !validTicket(ticket) {
+			return errUsage
+		}
+		fn = call(`SELECT identity.grant_support($1::uuid,$2::uuid,$3::integer,$4::text[],$5,$6)::text`,
+			store, principal, int32(hours), perms, operator, ticket)
+	case "support-revoke":
+		// exactly one form: --grant, or --store with --principal
+		byGrant := grant != "" && store == "" && principal == "" && command.ValidID(grant)
+		byPair := grant == "" && command.ValidID(store) && command.ValidID(principal)
+		if !(byGrant || byPair) || !operatorPattern.MatchString(operator) || !validTicket(ticket) {
+			return errUsage
+		}
+		var g, s, p any // NULL for the form not used
+		if byGrant {
+			g = grant
+		} else {
+			s, p = store, principal
+		}
+		fn = call(`SELECT identity.revoke_support($1::uuid,$2::uuid,$3::uuid,$4,$5)::text`, g, s, p, operator, ticket)
+	case "support-list":
+		if !command.ValidID(store) {
+			return errUsage
+		}
+		fn = call(`SELECT identity.list_support_grants($1::uuid)::text`, store)
 	case "status":
 		if (store == "") == (tenant == "") || (store != "" && !command.ValidID(store)) || (tenant != "" && !command.ValidID(tenant)) {
 			return errUsage
@@ -199,6 +262,8 @@ func mapFailure(err error) error {
 			return errUsage
 		case "PT404":
 			return errNotFound
+		case "PT409": // support grant refused: already open, store not serving, principal has regular access
+			return errConflict
 		case "42501":
 			return errDenied
 		}

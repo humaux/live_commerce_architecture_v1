@@ -1,5 +1,5 @@
 // Purpose: package documentation of the operator-only platform console (suspend/resume, status, audit).
-// Depends on: main.go (the implementation); SQL definers of migration 0143; env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
+// Depends on: main.go (the implementation); SQL definers of migrations 0143 and 0153 (support grants); env COMMERCE_PLATFORM_OPERATOR_DATABASE_URL.
 // Used by: deploy/scripts/ops-admin.sh (integrator wiring), tests/foundation/platform_operator_test.go.
 
 // Command platform-admin owns the operator-only platform console (R3 unit OPS-01B; the console is CLI-only by owner ruling):
@@ -11,6 +11,10 @@
 //   - tenant-resume  --tenant <uuid>
 //   - status --store <uuid> | --tenant <uuid>             (active flags only)
 //   - audit [--since <RFC 3339>] [--limit 1..500]         (newest first)
+//   - support-grant  --store <uuid> --principal <uuid> [--hours 1..72 (default 4)] [--perm store:read,orders:read,...]
+//     (0153: read-only access of one named principal to one store; default pack = the six :read permissions; never PII/write)
+//   - support-revoke --grant <uuid> | --store <uuid> --principal <uuid>   (immediate; idempotent)
+//   - support-list   --store <uuid>                                       (newest 50 grants with status)
 //
 // Suspension flips control.stores.active / control.tenants.active (migration 0143): the merchant API, buyer capabilities,
 // the published-store resolver, stored-principal sends/ads Checks, automatic claim replies and mail claiming stop at
