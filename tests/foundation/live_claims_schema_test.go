@@ -268,7 +268,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
 		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
 		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
-		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at")
+		// W3-03B (0131): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).
+		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at",
+			"owner_id", "label", "line_count", "purged_at")
 		add(iw, "claims.bundles", "UPDATE", "link_pending_manual")
 		add(iw, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "sku_id", "active", "version")
 		add(iw, "live.offers", "UPDATE", "updated_at")
@@ -853,7 +855,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text,uuid)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
 				"claims.order_live_sources(uuid,uuid,uuid[])",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
-				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)"})
+				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
+				// W3-03B (0131): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
+				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
+				"inbox.plan_checkout_reminder(uuid,uuid,text,bigint,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),
