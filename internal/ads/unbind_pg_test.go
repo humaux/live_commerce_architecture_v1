@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -293,7 +294,10 @@ func TestAdsUnbindRealPG(t *testing.T) {
 			if e := tx.QueryRow(u.f.ctx, `SELECT integration.meta_ads_unbind($1,$2,$3)::text`, u.hash2, u.store, "9002").Scan(&raw); e != nil {
 				return e
 			}
-			if !strings.Contains(raw, `"unbound":true`) {
+			var step struct {
+				Unbound bool `json:"unbound"`
+			}
+			if e := json.Unmarshal([]byte(raw), &step); e != nil || !step.Unbound {
 				return errors.New("definer did not unbind: " + raw)
 			}
 			// The Go caller's CAS disable (the exact statement Service.Unbind runs) must hit bindings_ads_disable_guard.
@@ -313,8 +317,9 @@ func TestAdsUnbindRealPG(t *testing.T) {
 		if enabled := f.str(`SELECT enabled::text FROM integration.bindings WHERE id=$1`, u.adBinding); enabled != "true" {
 			t.Fatal("binding disabled despite binding_in_use")
 		}
-		// Fixture cleanup: park the activate op (BLOCKED_POLICY makes the draft non-counting again, AD6).
-		f.must(`UPDATE integration.operations SET state='BLOCKED_POLICY' WHERE id=$1`, activateOp)
+		// Fixture cleanup: park the activate op (BLOCKED_POLICY makes the draft non-counting again, AD6). The
+		// generation bump is what the real claim path does and what operations_check3 requires off READY.
+		f.must(`UPDATE integration.operations SET state='BLOCKED_POLICY', generation=generation+1 WHERE id=$1`, activateOp)
 	})
 
 	t.Run("unbind detaches, destroys the token and keeps history", func(t *testing.T) {
@@ -379,8 +384,12 @@ func TestAdsUnbindRealPG(t *testing.T) {
 		if err != nil {
 			t.Fatalf("no-op unbind: %v", err)
 		}
-		if !strings.Contains(raw, `"already_unbound":true`) || strings.Contains(raw, `"unbound":true`) {
-			t.Fatalf("no-op result: %s", raw)
+		var out struct {
+			Unbound        bool `json:"unbound"`
+			AlreadyUnbound bool `json:"already_unbound"`
+		}
+		if err = json.Unmarshal([]byte(raw), &out); err != nil || out.Unbound || !out.AlreadyUnbound {
+			t.Fatalf("no-op result: %v %s", err, raw)
 		}
 	})
 
@@ -393,8 +402,12 @@ func TestAdsUnbindRealPG(t *testing.T) {
 		}); err != nil {
 			t.Fatalf("cross-store call: %v", err)
 		}
-		if !strings.Contains(raw, `"already_unbound":true`) {
-			t.Fatalf("cross-store result: %s", raw)
+		var out struct {
+			Unbound        bool `json:"unbound"`
+			AlreadyUnbound bool `json:"already_unbound"`
+		}
+		if err := json.Unmarshal([]byte(raw), &out); err != nil || out.Unbound || !out.AlreadyUnbound {
+			t.Fatalf("cross-store result: %v %s", err, raw)
 		}
 		if f.adBinding != "" { // the shared connect/bind test ran in this selection
 			if enabled := f.str(`SELECT enabled::text FROM integration.bindings WHERE id=$1`, f.adBinding); enabled != "true" {
@@ -420,14 +433,183 @@ func TestAdsUnbindRealPG(t *testing.T) {
 		}
 		// ads:manage WITHOUT integration:manage is sufficient (the brief's permission rule; the binding is already
 		// unbound here, so the proof is that the call authenticates and answers the no-op instead of refusing).
-		if raw, err = u.definer(u.token4, u.hash4, "9002"); err != nil || !strings.Contains(raw, `"already_unbound":true`) {
+		if raw, err = u.definer(u.token4, u.hash4, "9002"); err != nil {
 			t.Fatalf("ads:manage-only principal: %v %s", err, raw)
+		}
+		var noop struct {
+			Unbound        bool `json:"unbound"`
+			AlreadyUnbound bool `json:"already_unbound"`
+		}
+		if err = json.Unmarshal([]byte(raw), &noop); err != nil || noop.Unbound || !noop.AlreadyUnbound {
+			t.Fatalf("ads:manage-only principal result: %v %s", err, raw)
 		}
 		// Input shape: a non-numeric ad account is refused AD422.
 		if _, err = u.definer(u.token2, u.hash2, "act_9002"); err == nil {
 			t.Fatal("non-numeric ad account accepted")
 		} else if code, msg := pgCodeAndMessage(err); code != "AD422" || msg != "invalid_request" {
 			t.Fatalf("want AD422 invalid_request, got %s %s", code, msg)
+		}
+	})
+}
+
+// TestAdsUnbindServiceRealPG is the Go half of Amendment W6-06B: Service.Unbind (409 operations_in_flight with the
+// transport details, receipt + replay, idempotent no-op, the ads.account_unbound audit row, re-bind through the frozen
+// connect flow) and Service.CatalogFeed. It provisions its OWN store via setupUnbindFx (a fresh 9002 binding), so it
+// never depends on the state TestAdsUnbindRealPG left behind.
+func TestAdsUnbindServiceRealPG(t *testing.T) {
+	u := setupUnbindFx(t)
+	f := u.f
+	f.must(`INSERT INTO control.storefront_publications(tenant_id,store_id,published) VALUES($1,$2,true)`, f.tenant, u.store)
+	f.must(`INSERT INTO control.storefront_domains(tenant_id,store_id,origin,state,ownership_verified_at,tls_verified_at,valid_until,evidence_ref)
+		VALUES($1,$2,'https://shop-w606b-svc.example.test','ACTIVE',now()-interval '2 days',now()-interval '1 day',now()+interval '300 days','platform-subdomain')`,
+		f.tenant, u.store)
+
+	t.Run("in-flight operation refuses with a detailed 409 and writes nothing", func(t *testing.T) {
+		op := u.insertOp(t, u.adBinding, "meta.ads.pause", "DISPATCHING", "u6-svc-inflight-01")
+		var got UnbindResult
+		err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			got, e = u.svc.Unbind(f.ctx, tx, s, u.token2, "u6-svc-unbind-key-01", UnbindInput{AdAccountID: "9002"})
+			return e
+		})
+		var refused *Refusal
+		if !errors.As(err, &refused) || refused.Code != "operations_in_flight" || refused.Status != 409 {
+			t.Fatalf("want 409 operations_in_flight, got %v (%+v)", err, got)
+		}
+		d := refused.ErrorDetails()
+		ops, _ := d["operations"].([]map[string]any)
+		if d["operations_total"] != 1 || len(ops) != 1 || ops[0]["operation_id"] != op || ops[0]["state"] != "DISPATCHING" {
+			t.Fatalf("details: %v", d)
+		}
+		if creds, heads := u.credentialCount(u.adBinding); creds != "1" || heads != "1" {
+			t.Fatalf("credentials destroyed despite refusal: %s/%s", creds, heads)
+		}
+		if enabled := f.str(`SELECT enabled::text FROM integration.bindings WHERE id=$1`, u.adBinding); enabled != "true" {
+			t.Fatal("binding disabled despite refusal")
+		}
+		// The refused transaction left NO receipt: the same key performs the real unbind below.
+		if n := f.str(`SELECT count(*)::text FROM ops.command_results WHERE store_id=$1 AND operation='ads.meta.unbind'`, u.store); n != "0" {
+			t.Fatalf("refused unbind left a receipt: %s", n)
+		}
+		f.must(`DELETE FROM integration.operations WHERE id=$1`, op) // fixture cleanup: the op never dispatched
+	})
+
+	t.Run("unbind writes the receipt and the audit row, replays, then no-ops", func(t *testing.T) {
+		var first UnbindResult
+		if err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			first, e = u.svc.Unbind(f.ctx, tx, s, u.token2, "u6-svc-unbind-key-01", UnbindInput{AdAccountID: "9002"})
+			return e
+		}); err != nil {
+			t.Fatalf("unbind: %v", err)
+		}
+		if !first.Unbound || first.AlreadyUnbound || first.AdAccountID != "9002" ||
+			len(first.BindingIDs) != 1 || first.BindingIDs[0] != u.adBinding {
+			t.Fatalf("result: %+v", first)
+		}
+		if enabled, version := f.str(`SELECT enabled::text FROM integration.bindings WHERE id=$1`, u.adBinding),
+			f.str(`SELECT semantic_version::text FROM integration.bindings WHERE id=$1`, u.adBinding); enabled != "false" || version != "2" {
+			t.Fatalf("binding: enabled=%s version=%s", enabled, version)
+		}
+		if creds, heads := u.credentialCount(u.adBinding); creds != "0" || heads != "0" {
+			t.Fatalf("token material survived: %s/%s", creds, heads)
+		}
+		if n := f.str(`SELECT count(*)::text FROM ops.audit_events WHERE store_id=$1 AND action='ads.account_unbound'`, u.store); n != "1" {
+			t.Fatalf("audit rows: %s", n)
+		}
+		// Same key: the stored receipt, byte-equal result.
+		var replay UnbindResult
+		if err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			replay, e = u.svc.Unbind(f.ctx, tx, s, u.token2, "u6-svc-unbind-key-01", UnbindInput{AdAccountID: "9002"})
+			return e
+		}); err != nil || !reflect.DeepEqual(first, replay) {
+			t.Fatalf("replay: %v %+v vs %+v", err, replay, first)
+		}
+		// New key: the idempotent no-op, without a second audit row.
+		var second UnbindResult
+		if err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			second, e = u.svc.Unbind(f.ctx, tx, s, u.token2, "u6-svc-unbind-key-02", UnbindInput{AdAccountID: "9002"})
+			return e
+		}); err != nil || second.Unbound || !second.AlreadyUnbound || len(second.BindingIDs) != 0 {
+			t.Fatalf("no-op: %v %+v", err, second)
+		}
+		if n := f.str(`SELECT count(*)::text FROM ops.audit_events WHERE store_id=$1 AND action='ads.account_unbound'`, u.store); n != "1" {
+			t.Fatalf("no-op audited again: %s", n)
+		}
+		// Local validation before any SQL: a non-numeric asset is refused invalid_request.
+		err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			_, e = u.svc.Unbind(f.ctx, tx, s, u.token2, "u6-svc-unbind-key-03", UnbindInput{AdAccountID: "act_9002"})
+			return e
+		})
+		if !isRefusal(err, "invalid_request") {
+			t.Fatalf("non-numeric asset: %v", err)
+		}
+	})
+
+	t.Run("re-bind works through the existing connect flow", func(t *testing.T) {
+		var start ConnectStart
+		if err := u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			start, e = u.svc.Connect(f.ctx, tx, s, u.token2, "u6-svc-connect-key-1")
+			return e
+		}); err != nil {
+			t.Fatalf("connect: %v", err)
+		}
+		dialog, err := url.Parse(start.DialogURL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		stateID, err := u.svc.Callback(f.ctx, f.runtime, u.token2, u.store, "fake-code-u6", dialog.Query().Get("state"))
+		if err != nil {
+			t.Fatalf("callback: %v", err)
+		}
+		var bound BindResult
+		if err = u.scoped(u.token2, "ads:manage", func(tx pgx.Tx, s platform.Scope) (e error) {
+			bound, e = u.svc.Bind(f.ctx, tx, s, u.token2, "u6-svc-bind-key-0001", BindInput{StateID: stateID, AdAccountID: "9002"})
+			return e
+		}); err != nil {
+			t.Fatalf("bind: %v", err)
+		}
+		if bound.AdBindingID == "" || bound.AdBindingID == u.adBinding {
+			t.Fatalf("rebind reused the disabled binding: %q", bound.AdBindingID)
+		}
+		if enabled := f.str(`SELECT enabled::text FROM integration.bindings WHERE id=$1`, bound.AdBindingID); enabled != "true" {
+			t.Fatal("rebound binding is not enabled")
+		}
+		if creds, heads := u.credentialCount(bound.AdBindingID); creds != "1" || heads != "1" {
+			t.Fatalf("rebound credentials: %s/%s", creds, heads)
+		}
+		// Both connection rows survive: the unbind detached, it never deleted history.
+		if n := f.str(`SELECT count(*)::text FROM ads.connections WHERE store_id=$1`, u.store); n != "2" {
+			t.Fatalf("connection history: %s", n)
+		}
+	})
+
+	t.Run("catalog feed through the service", func(t *testing.T) {
+		var raw json.RawMessage
+		if err := u.scoped(u.token3, "ads:read", func(tx pgx.Tx, s platform.Scope) (e error) {
+			raw, e = u.svc.CatalogFeed(f.ctx, tx, s, u.token3)
+			return e
+		}); err != nil {
+			t.Fatalf("catalog feed: %v", err)
+		}
+		var feed struct {
+			FeedURL string `json:"feed_url"`
+			Path    string `json:"path"`
+			Domains []struct {
+				Origin  string `json:"origin"`
+				FeedURL string `json:"feed_url"`
+			} `json:"domains"`
+		}
+		if err := json.Unmarshal(raw, &feed); err != nil || feed.Path != "/feeds/meta.csv" ||
+			feed.FeedURL != "https://shop-w606b-svc.example.test/feeds/meta.csv" || len(feed.Domains) != 1 ||
+			feed.Domains[0].Origin != "https://shop-w606b-svc.example.test" {
+			t.Fatalf("feed: %v %s", err, raw)
+		}
+		// Without ads:read the WithScope layer refuses before the definer ever runs.
+		err := u.scoped(u.token4, "ads:read", func(tx pgx.Tx, s platform.Scope) error {
+			_, e := u.svc.CatalogFeed(f.ctx, tx, s, u.token4)
+			return e
+		})
+		if !errors.Is(err, platform.ErrForbidden) {
+			t.Fatalf("feed without ads:read: %v", err)
 		}
 	})
 }
