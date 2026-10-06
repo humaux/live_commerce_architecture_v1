@@ -242,7 +242,7 @@ BEGIN
    'message_type','sold_out_reply','origin_kind','auto','text',v_text,'conversation_known',v_known,'takeover_generation',v_gen,
    'app_id',i.app_id,
    'deadline_at',to_char(v_deadline AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),'live_media',i.live_media);
-  IF octet_length(v_request::text)>2048 THEN -- unreachable with the 280/60/400 bounds; kept so this branch can never raise
+  IF octet_length(v_request::text)>2048 THEN -- reachable: a max-length merchant template in 4-byte characters + max ids is ~2061 bytes (review P2)
    v_request:=v_request||jsonb_build_object('template','sold-out-reply/v1','template_version',1,
     'text','抱歉，此商品已售完，補貨時會在直播中通知，請留意直播。');
   END IF;
