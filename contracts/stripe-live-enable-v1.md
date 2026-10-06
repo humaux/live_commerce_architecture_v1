@@ -544,3 +544,14 @@ Amendment 2026-09-30b (r2 close-out of lane `stripe-live`, integrator-side; no c
   refuses register/rotate on a LIVE-pair host without it (`stripe_live_environment_required`). Gate: SL06.
 - Preflight P06: `LC_STRIPE_CHECKOUT_ENABLED=1` requires `LC_STRIPE_ENABLED=1` (checkout without worker/webhook
   strands held stock). Gate: SL06 `shell_preflight_P06`.
+
+## Amendment pointer (2026-10-06, owner decision: platform Stripe for all stores)
+
+[stripe-platform-account-v1](stripe-platform-account-v1.md) supersedes LQ1's default and the §13 limit "one Stripe
+account per store; other merchants need their own account".
+- The approval, readiness check and canary (LD2/LD5) run **once**, on the designated platform connection, in TWD.
+- Stores enable themselves under that approval, which carries the LQ3 cap.
+- LD7's refund authority becomes the platform approval plus the store's accepted terms.
+- §9 gains four codes: `platform_stripe_terms`, `merchant_terms`, `tax_invoice` and `payout_ops`.
+
+Primary per-store connections (this file, unchanged) remain valid for the platform store itself.
