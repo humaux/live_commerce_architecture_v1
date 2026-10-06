@@ -32,7 +32,8 @@ jobs:
     timeout-minutes: 150
     concurrency:
       group: gates-${{ github.ref }}-${{ matrix.mode }}
-      cancel-in-progress: true
+      # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
+      cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
       GOTOOLCHAIN: go1.27.1
       GOFLAGS: -mod=readonly
