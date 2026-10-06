@@ -1,0 +1,47 @@
+testing: warning: no tests to run
+PASS
+ok  	livecommerce/internal/live	1.418s [no tests to run]
+=== RUN   TestLiveConsoleLCN02IGFactsBridgeGraphBranch
+--- PASS: TestLiveConsoleLCN02IGFactsBridgeGraphBranch (1.39s)
+=== RUN   TestLiveConsoleLCN02IGFactsFallbackAndUnavailable
+--- PASS: TestLiveConsoleLCN02IGFactsFallbackAndUnavailable (0.58s)
+=== RUN   TestLiveConsoleLCN01LeaseAndTokenFence
+--- PASS: TestLiveConsoleLCN01LeaseAndTokenFence (0.19s)
+=== RUN   TestLiveConsoleLCN01CapsAndNoPoll
+--- PASS: TestLiveConsoleLCN01CapsAndNoPoll (0.25s)
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset
+=== RUN   TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next
+--- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor (4.38s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/ring-cap (0.18s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/age-out (0.19s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/idle-drop-reset (3.70s)
+    --- PASS: TestLiveConsoleLCN01BufferCapAgeAndCursor/cursor-tamper-and-paging-next (0.32s)
+=== RUN   TestLiveConsoleLCN02BridgeStatusesAndFacts
+--- PASS: TestLiveConsoleLCN02BridgeStatusesAndFacts (0.24s)
+=== RUN   TestLiveConsoleLCN04NoCommentTextPersisted
+--- PASS: TestLiveConsoleLCN04NoCommentTextPersisted (0.56s)
+=== RUN   TestLiveConsoleLCN05PrintAndMarks
+--- PASS: TestLiveConsoleLCN05PrintAndMarks (0.18s)
+=== RUN   TestLiveConsoleLCN17ReadModelStockClaimsSales
+--- PASS: TestLiveConsoleLCN17ReadModelStockClaimsSales (0.67s)
+=== RUN   TestLiveConsoleLCN17SandboxPaidNotCounted
+--- PASS: TestLiveConsoleLCN17SandboxPaidNotCounted (4.54s)
+=== RUN   TestLiveConsoleLCN03ConsoleAuthority
+--- PASS: TestLiveConsoleLCN03ConsoleAuthority (0.70s)
+=== RUN   TestLiveConsoleLCN17StreamStateAndTotal
+--- PASS: TestLiveConsoleLCN17StreamStateAndTotal (0.31s)
+=== RUN   TestLiveConsoleLCN03InventoryLiveAdjustBounds
+--- PASS: TestLiveConsoleLCN03InventoryLiveAdjustBounds (0.64s)
+=== RUN   TestLiveConsoleLCN17DefinerACL
+=== RUN   TestLiveConsoleLCN17DefinerACL/claims.console_session_facts(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleLCN17DefinerACL/identity.read_live_console_sales(bytea,uuid,uuid)
+--- PASS: TestLiveConsoleLCN17DefinerACL (0.00s)
+    --- PASS: TestLiveConsoleLCN17DefinerACL/claims.console_session_facts(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleLCN17DefinerACL/identity.read_live_console_sales(bytea,uuid,uuid) (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	16.704s
+test-focused: top-level PASS=14 FAIL=0 SKIP=0 exit=0
+exit=0

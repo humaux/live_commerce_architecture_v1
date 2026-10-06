@@ -213,6 +213,7 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_cursor":                 "The page cursor is not valid.",
 		"invalid_ref":                    "The comment reference is not valid.",
 		"invalid_filter":                 "The filter is not valid.",
+		"below_reserved":                 "Stock cannot be set below what is already reserved.", // live-console-v1 §7.2 (LC-B7): bounded live stock edit
 		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
 		"bundle_already_ordered": "These claims already have an order.",
 		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
