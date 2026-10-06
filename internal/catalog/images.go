@@ -1,8 +1,8 @@
 package catalog
 
-// images.go owns merchant product photos (docs/delivery/units/catalog-media.md CM1-CM3): validation of an
+// images.go owns merchant product photos (docs/delivery/units/catalog-media.md CM1-CM3, product-media-v2): validation of an
 // uploaded file at the trust boundary and the upload/list/read/delete/reorder commands on catalog.product_images
-// (migrations/0082). Original bytes stay exactly as validated; S1 image_sizes.go generates separate children (0111). Never serves buyers
+// (migrations/0082, roles + per-role caps from 0149; move / option-value links live in image_roles.go). Original bytes stay exactly as validated; S1 image_sizes.go generates separate children (0111). Never serves buyers
 // (the buyer side reads through the catalog.buyer_* definers in internal/storefront and internal/buyerhttp), and
 // never trusts a client-supplied filename or Content-Type: the type is derived from the magic bytes.
 //
@@ -28,16 +28,47 @@ import (
 const (
 	// MaxImageBytes is the per-photo cap (CM1); the SQL CHECK octet_length(bytes) repeats it.
 	MaxImageBytes = 2 << 20
-	// MaxImagesPerProduct matches the position CHECK 0..11 in migrations/0082 (widened by 0109, product-editor §f).
-	MaxImagesPerProduct = 12
-	maxImageDimension   = 20000
+	// MaxMainImages, MaxDetailImages and MaxOptionImages are the per-role caps of product-media-v2 (contracts/
+	// catalog-inventory-v1.md); migration 0149 repeats them as the position CHECKs and the frontend parsers pin the same numbers.
+	MaxMainImages   = 4
+	MaxDetailImages = 20
+	MaxOptionImages = maxAxisValues
+	// maxDetailRatio: a detail image may be at most this many times taller than wide (contract: tall images allowed, not endless strips).
+	maxDetailRatio    = 6
+	maxImageDimension = 20000
 )
+
+// Image roles (product-media-v2): main gallery (position 0 = cover), detail-page stack, option-value (sku) images.
+const (
+	RoleMain   = "main"
+	RoleDetail = "detail"
+	RoleSKU    = "sku"
+)
+
+// roleCap is the per-role cap, 0 for an unknown role. The SQL position CHECK (0149) repeats these numbers.
+func roleCap(role string) int {
+	switch role {
+	case RoleMain:
+		return MaxMainImages
+	case RoleDetail:
+		return MaxDetailImages
+	case RoleSKU:
+		return MaxOptionImages
+	}
+	return 0
+}
+
+// tooTall reports whether known dimensions break the detail ratio rule (WebP has no dimensions and passes).
+func tooTall(width, height *int) bool {
+	return width != nil && height != nil && *height > maxDetailRatio**width
+}
 
 // Image is one photo's metadata. Bytes are served only by GetImage.
 type Image struct {
 	ID          string `json:"id"`
 	ProductID   string `json:"product_id"`
-	Position    int    `json:"position"`
+	Role        string `json:"role"`
+	Position    int    `json:"position"` // inside the role, contiguous from 0
 	ContentType string `json:"content_type"`
 	SizeBytes   int    `json:"size_bytes"`
 	Width       *int   `json:"width"`
@@ -45,9 +76,19 @@ type Image struct {
 	Version     int64  `json:"version"`
 }
 
-// ImageList is the response of list, delete and reorder: the product's photos in display order.
+// ImageList is the response of list, delete, reorder, move, link and axis commands: the product's photos ordered main, detail,
+// sku then position, plus the effective image axis (nil without options) and the option-value links on it.
 type ImageList struct {
-	Items []Image `json:"items"`
+	Items        []Image       `json:"items"`
+	ImageAxis    *string       `json:"image_axis"`
+	OptionImages []OptionImage `json:"option_images"`
+}
+
+// OptionImage links one value of the image axis to its sku-role image.
+type OptionImage struct {
+	OptionName  string `json:"option_name"`
+	OptionValue string `json:"option_value"`
+	ImageID     string `json:"image_id"`
 }
 
 // ImageBytes is the merchant preview payload of GetImage.
@@ -57,9 +98,10 @@ type ImageBytes struct {
 	Bytes       []byte
 }
 
-// ReorderInput is POST .../images/order: the complete new order, a permutation of the current ids.
+// ReorderInput is POST .../images/order: the complete new order of ONE role (default main), a permutation of that role's current ids.
 type ReorderInput struct {
-	IDs []string `json:"ids"`
+	Role string   `json:"role"`
+	IDs  []string `json:"ids"`
 }
 
 // SniffImage validates an uploaded file (CM2): size 1..2 MiB, a JPEG, PNG or WebP magic signature, and for
@@ -104,23 +146,25 @@ func validWebP(data []byte) bool {
 	return size+8 <= int64(len(data)) && size >= 12
 }
 
-const imageColumns = `id::text,product_id::text,position,content_type,octet_length(bytes),width,height,version`
+const imageColumns = `id::text,product_id::text,position,content_type,octet_length(bytes),width,height,version,role`
 
 func scanImage(row pgx.Row, out *Image) error {
-	return row.Scan(&out.ID, &out.ProductID, &out.Position, &out.ContentType, &out.SizeBytes, &out.Width, &out.Height, &out.Version)
+	return row.Scan(&out.ID, &out.ProductID, &out.Position, &out.ContentType, &out.SizeBytes, &out.Width, &out.Height, &out.Version, &out.Role)
 }
 
-// UploadImage stores one validated photo at the next free position of a draft or active product (CM3). The command
-// request is the file's SHA-256 + size, not its bytes (command.Run caps the request at 64 KiB), so a retry of the
+// UploadImage stores one validated photo at the next free position of its role on a draft or active product (CM3). role is
+// main (<= 4), detail (<= 20, height <= 6x width) or sku (one per value of the image axis; optionValue is REQUIRED and linked
+// atomically, and only sku takes one). A full role or an already-linked value is ErrConflict; an optionValue off the image axis is
+// ErrInvalid. The command request is the file's SHA-256 + size, not its bytes (command.Run caps the request at 64 KiB), so a retry of the
 // same file under the same key replays the first Image and the same key with another file is ErrConflict. sizes are
 // MakeImageSizes(data), computed by the caller BEFORE the transaction opens (decoding must not hold a pool connection).
-func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID string, data []byte, sizes []ImageSize) (out Image, err error) {
-	if !command.ValidID(productID) {
+func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID, role, optionValue string, data []byte, sizes []ImageSize) (out Image, err error) {
+	if !command.ValidID(productID) || roleCap(role) == 0 || (role == RoleSKU) != (optionValue != "") {
 		return out, command.ErrInvalid
 	}
 	contentType, width, height, err := SniffImage(data)
-	if err != nil {
-		return out, err
+	if err != nil || (role == RoleDetail && tooTall(width, height)) {
+		return out, command.ErrInvalid
 	}
 	digest := sha256.Sum256(data)
 	request := struct {
@@ -128,26 +172,51 @@ func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 		SHA256      string `json:"sha256"`
 		Size        int    `json:"size"`
 		ContentType string `json:"content_type"`
-	}{productID, hex.EncodeToString(digest[:]), len(data), contentType}
+		Role        string `json:"role"`
+		OptionValue string `json:"option_value"`
+	}{productID, hex.EncodeToString(digest[:]), len(data), contentType, role, optionValue}
 	err = command.Run(ctx, tx, scope, "catalog.image.upload", key, request, &out, func() error {
 		// editableProduct locks the product row: every image mutation of this product serializes here, so the count
 		// below cannot race another upload, delete or reorder.
-		if _, err := editableProduct(ctx, tx, scope, productID); err != nil {
+		axes, err := editableProduct(ctx, tx, scope, productID)
+		if err != nil {
 			return err
+		}
+		var axis string
+		if role == RoleSKU {
+			if axis, err = checkOptionValue(ctx, tx, scope, productID, axes, optionValue); err != nil {
+				return err
+			}
+			var taken bool
+			// catalog.product_option_images (commerce_runtime): one image per value; the PK repeats this check.
+			if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM catalog.product_option_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND option_name=$4 AND option_value=$5)`,
+				scope.TenantID, scope.StoreID, productID, axis, optionValue).Scan(&taken); err != nil {
+				return err
+			}
+			if taken {
+				return command.ErrConflict
+			}
 		}
 		var count int
-		// catalog.product_images (commerce_runtime): positions are contiguous 0..n-1, so n is the next free one.
-		if err := tx.QueryRow(ctx, `SELECT count(*) FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3`,
-			scope.TenantID, scope.StoreID, productID).Scan(&count); err != nil {
+		// catalog.product_images (commerce_runtime): positions are contiguous 0..n-1 inside a role, so n is the next free one.
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND role=$4`,
+			scope.TenantID, scope.StoreID, productID, role).Scan(&count); err != nil {
 			return err
 		}
-		if count >= MaxImagesPerProduct {
+		if count >= roleCap(role) {
 			return command.ErrConflict
 		}
-		if err := scanImage(tx.QueryRow(ctx, `INSERT INTO catalog.product_images(tenant_id,store_id,product_id,position,content_type,bytes,sha256,width,height)
-			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING `+imageColumns,
-			scope.TenantID, scope.StoreID, productID, count, contentType, data, digest[:], width, height), &out); err != nil {
+		if err := scanImage(tx.QueryRow(ctx, `INSERT INTO catalog.product_images(tenant_id,store_id,product_id,role,position,content_type,bytes,sha256,width,height)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING `+imageColumns,
+			scope.TenantID, scope.StoreID, productID, role, count, contentType, data, digest[:], width, height), &out); err != nil {
 			return err
+		}
+		if role == RoleSKU {
+			// catalog.product_option_images (commerce_runtime): composite FK pins same product + role sku; the trigger re-checks the axis.
+			if _, err := tx.Exec(ctx, `INSERT INTO catalog.product_option_images(tenant_id,store_id,product_id,option_name,option_value,image_id) VALUES($1,$2,$3,$4,$5,$6)`,
+				scope.TenantID, scope.StoreID, productID, axis, optionValue, out.ID); err != nil {
+				return err
+			}
 		}
 		if err := storeImageSizes(ctx, tx, scope, out.ID, sizes); err != nil {
 			return err
@@ -157,10 +226,10 @@ func UploadImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 	return out, mapError(err)
 }
 
-// ListImages returns the product's photos (metadata only) in display order. A product of another store is
-// ErrNotFound through the scoped lookup, never an empty list.
+// ListImages returns the product's photos (metadata only) ordered main, detail, sku then position, with the image axis and links. A
+// product of another store is ErrNotFound through the scoped lookup, never an empty list.
 func ListImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string) (ImageList, error) {
-	list := ImageList{Items: make([]Image, 0)}
+	list := ImageList{Items: make([]Image, 0), OptionImages: make([]OptionImage, 0)}
 	if !validScope(tx, scope) || !command.ValidID(productID) {
 		return list, command.ErrInvalid
 	}
@@ -173,9 +242,10 @@ func ListImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID 
 }
 
 func readImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID string) (ImageList, error) {
-	list := ImageList{Items: make([]Image, 0)}
+	list := ImageList{Items: make([]Image, 0), OptionImages: make([]OptionImage, 0)}
 	// catalog.product_images (commerce_runtime): metadata projection, octet_length instead of the bytes themselves.
-	rows, err := tx.Query(ctx, `SELECT `+imageColumns+` FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 ORDER BY position`,
+	rows, err := tx.Query(ctx, `SELECT `+imageColumns+` FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3
+		ORDER BY CASE role WHEN 'main' THEN 0 WHEN 'detail' THEN 1 ELSE 2 END, position`,
 		scope.TenantID, scope.StoreID, productID)
 	if err != nil {
 		return list, mapError(err)
@@ -188,7 +258,38 @@ func readImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID 
 		}
 		list.Items = append(list.Items, img)
 	}
-	return list, mapError(rows.Err())
+	if err := rows.Err(); err != nil {
+		return list, mapError(err)
+	}
+	rows.Close()
+	axes, stored, err := productImageAxis(ctx, tx, scope, productID)
+	if err != nil {
+		return list, err
+	}
+	axis, ok := effectiveAxis(axes, stored)
+	if !ok {
+		return list, nil
+	}
+	list.ImageAxis = &axis
+	// catalog.product_option_images (commerce_runtime): links of the effective axis only (other axes stay dormant), in image order.
+	links, err := tx.Query(ctx, `SELECT oi.option_name,oi.option_value,oi.image_id::text FROM catalog.product_option_images oi
+		JOIN catalog.product_images i ON i.tenant_id=oi.tenant_id AND i.store_id=oi.store_id AND i.id=oi.image_id
+		WHERE oi.tenant_id=$1 AND oi.store_id=$2 AND oi.product_id=$3 AND oi.option_name=$4 ORDER BY i.position`,
+		scope.TenantID, scope.StoreID, productID, axis)
+	if err != nil {
+		return list, mapError(err)
+	}
+	defer links.Close()
+	for links.Next() {
+		var o OptionImage
+		if err := links.Scan(&o.OptionName, &o.OptionValue, &o.ImageID); err != nil {
+			return list, err
+		}
+		if axisHasValue(axes, axis, o.OptionValue) { // a value removed from the axis since linking is not shown
+			list.OptionImages = append(list.OptionImages, o)
+		}
+	}
+	return list, mapError(links.Err())
 }
 
 // GetImage reads one photo's bytes for the merchant preview. The product id in the path must own the image.
@@ -203,8 +304,8 @@ func GetImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, i
 	return out, mapError(err)
 }
 
-// DeleteImage removes one photo and closes the gap so positions stay contiguous (position 0 stays the cover).
-// Deleting is allowed on an archived product. Returns the remaining list.
+// DeleteImage removes one photo and closes the gap inside ITS role so positions stay contiguous (main position 0 stays the cover). A
+// linked sku image loses its link with it (FK cascade). Deleting is allowed on an archived product. Returns the remaining list.
 func DeleteImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID, imageID string) (out ImageList, err error) {
 	if !command.ValidID(productID) || !command.ValidID(imageID) {
 		return out, command.ErrInvalid
@@ -218,14 +319,14 @@ func DeleteImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 			return err
 		}
 		var removed int
+		var role string
 		// catalog.product_images (commerce_runtime): DELETE then renumber; positions are UNIQUE DEFERRABLE, so the
 		// transient state inside this statement pair is legal and checked at commit.
-		if err := tx.QueryRow(ctx, `DELETE FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND id=$4 RETURNING position`,
-			scope.TenantID, scope.StoreID, productID, imageID).Scan(&removed); err != nil {
+		if err := tx.QueryRow(ctx, `DELETE FROM catalog.product_images WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND id=$4 RETURNING position,role`,
+			scope.TenantID, scope.StoreID, productID, imageID).Scan(&removed, &role); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, `UPDATE catalog.product_images SET position=position-1,version=version+1
-			WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND position>$4`, scope.TenantID, scope.StoreID, productID, removed); err != nil {
+		if err := closeGap(ctx, tx, scope, productID, role, removed); err != nil {
 			return err
 		}
 		if err := command.Audit(ctx, tx, scope, "catalog.product.image_deleted"); err != nil {
@@ -237,10 +338,22 @@ func DeleteImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, prod
 	return out, mapError(err)
 }
 
-// ReorderImages applies a complete new order. ids must be exactly the product's current image ids (a permutation:
-// no missing, extra or repeated id) so a stale client can never drop or resurrect a photo; otherwise ErrConflict.
+// closeGap renumbers the images of one role behind a removed position so positions stay contiguous.
+func closeGap(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, role string, removed int) error {
+	_, err := tx.Exec(ctx, `UPDATE catalog.product_images SET position=position-1,version=version+1
+		WHERE tenant_id=$1 AND store_id=$2 AND product_id=$3 AND role=$4 AND position>$5`, scope.TenantID, scope.StoreID, productID, role, removed)
+	return err
+}
+
+// ReorderImages applies a complete new order of one role (main or detail; empty role = main). ids must be exactly that role's
+// current image ids (a permutation: no missing, extra or repeated id, none of another role) so a stale client can never drop or
+// resurrect a photo; otherwise ErrConflict.
 func ReorderImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID string, in ReorderInput) (out ImageList, err error) {
-	if !command.ValidID(productID) || len(in.IDs) < 1 || len(in.IDs) > MaxImagesPerProduct {
+	role := in.Role
+	if role == "" {
+		role = RoleMain
+	}
+	if !command.ValidID(productID) || (role != RoleMain && role != RoleDetail) || len(in.IDs) < 1 || len(in.IDs) > roleCap(role) {
 		return out, command.ErrInvalid
 	}
 	for _, id := range in.IDs {
@@ -250,8 +363,9 @@ func ReorderImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, pr
 	}
 	request := struct {
 		ProductID string   `json:"product_id"`
+		Role      string   `json:"role"`
 		IDs       []string `json:"ids"`
-	}{productID, in.IDs}
+	}{productID, role, in.IDs}
 	err = command.Run(ctx, tx, scope, "catalog.image.reorder", key, request, &out, func() error {
 		if err := lockProduct(ctx, tx, scope, productID); err != nil {
 			return err
@@ -260,9 +374,11 @@ func ReorderImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, pr
 		if err != nil {
 			return err
 		}
-		have := make(map[string]bool, len(current.Items))
+		have := map[string]bool{}
 		for _, img := range current.Items {
-			have[img.ID] = true
+			if img.Role == role {
+				have[img.ID] = true
+			}
 		}
 		if len(have) != len(in.IDs) {
 			return command.ErrConflict
@@ -278,8 +394,8 @@ func ReorderImages(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, pr
 		// lets two rows swap inside this one statement.
 		if _, err := tx.Exec(ctx, `UPDATE catalog.product_images i SET position=(v.ord-1)::smallint,version=i.version+1
 			FROM unnest($4::uuid[]) WITH ORDINALITY AS v(id,ord)
-			WHERE i.tenant_id=$1 AND i.store_id=$2 AND i.product_id=$3 AND i.id=v.id AND i.position<>(v.ord-1)::smallint`,
-			scope.TenantID, scope.StoreID, productID, in.IDs); err != nil {
+			WHERE i.tenant_id=$1 AND i.store_id=$2 AND i.product_id=$3 AND i.role=$5 AND i.id=v.id AND i.position<>(v.ord-1)::smallint`,
+			scope.TenantID, scope.StoreID, productID, in.IDs, role); err != nil {
 			return err
 		}
 		if err := command.Audit(ctx, tx, scope, "catalog.product.images_reordered"); err != nil {

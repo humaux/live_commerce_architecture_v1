@@ -408,6 +408,10 @@ reply, then out-of-stock auto reply W3-04B) wherever they can still be planned:
   clause 2), it commits the claim, writes audit `claim_reply_skipped:reply_used` **and sets
   `claims.bundles.link_pending_manual = true`** (new column, 0123); the console shows 「此買家的認領連結尚未送出，請在私訊中補發」
   and the bundle's thread appears under A8 `unreplied`. The flag clears when a claim link is issued for the bundle.
+- W3-04B (migration 0151): the automatic reply of a **sold-out** claim is a `meta.private_reply` of message_type `sold_out_reply`, the same single
+  operation on the same `mpr:` key as the claim-link reply (rank "auto"): it consumes the comment's one private reply, so a manual reply after it is
+  `409 used` and a restock cannot re-reply to that comment (only a DM inside the 24 h window or a new comment can). With the store switch off the
+  claim is skipped (`claim_reply_skipped:sold_out_off`) and the budget stays for the merchant. See live-keyword-claims-v1 Amendment "W3-04B sold-out reply".
 - `used` counts the key only while its operation is READY, DISPATCHING, SUCCEEDED, UNKNOWN or FAILED_FINAL. When the
   existing `mpr:` operation ended BLOCKED_POLICY or STALE_BINDING (zero HTTP calls, provably unsent), one manual
   private reply may use the second key class `mpr:` + `:m1` (same partial unique index, now `semantic_key LIKE
@@ -1059,3 +1063,38 @@ Skipped:
   migration (integrator-numbered), `internal/retention/**`, `tests/foundation/claims_retention_*_test.go`.
 - **LC-U2 (UI)**: the A1.1 copy and confirm dialog, the A1.2 disabled-reason text, bundle-only A8 items (copy-link only).
 - LC-B1, LC-B3, LC-B5, LC-B7: no change (P2-9 and P2-10 are text-only; P2-6 already satisfied in 0119).
+
+## Amendment W3-03B checkout reminders (2026-10-06; migration 0144; revised after the independent review)
+
+Owner ruling: a reminder is sent **only within 24 h of the buyer's last inbound message** (`messaging_type=RESPONSE`). Meta's fixed-format / utility
+policy is unverified (EVIDENCE_GAP; message tags were removed 2026-02-09), so there is no tag, no UPDATE type, no utility template, no send outside the window.
+
+- **Action.** `meta.dm_send`, purpose `service`, request `origin=auto`, `message_type=checkout_reminder`, `reminder_state`. Same ledger, same `inbox.check_send` (window +
+  takeover + capability re-checked at dispatch: BLOCKED_POLICY `window_closed` / `human_takeover`, never retried; UNKNOWN never re-sent), same sealed dispatch copy and Finish
+  hook (§3.4, §4.3). Check also re-reads the bundle state (`inbox.crm_bundle_facts`): paid / cancelled / expired / ordered since planning -> BLOCKED_POLICY `not_remindable`,
+  zero HTTP. §4.4 `send_state` is reused unchanged. An auto send never takes a conversation over (§3.6); a conversation in human mode is skipped.
+- **Candidates** (per session; facebook/instagram bundles with claim lines; a bundle is a candidate only when the session's claim window is CLOSED or its claim is ≥ 10 min old):
+  `awaiting_payment` = an unexpired `AWAITING_PAYMENT` order of the bundle; `claimed` = no order at all. Paid, cancelled, expired-unpaid, fully-ordered, purged and line-less
+  buyers are never reminded (the planner refuses `line_count = 0`).
+- **The link completes the purchase; no new bearer type.** Per buyer, in the SAME merchant transaction as the plan (a refusal rolls the issue back):
+  `claimed` and never opened (bundle has no owner) -> a re-issued CLAIM link (`claims.issue_link`, CAS on the scanned generation, old token dies, `origin/<locale>/claim#t=…`,
+  template `checkout-reminder/v1`); `awaiting_payment` of a `merchant_manual` order -> a re-issued ORDER link (`fulfillment.regenerate_order_link`, the RegenerateLink rules,
+  `origin/<locale>/order-link#o=…&t=…`, template `order-pay-link/v1`). Buyers whose link cannot be re-issued — an unpaid storefront-source order, or a claim already opened (its
+  link only works in the owner's own browser) — are `link_unavailable` follow-ups. The bearer exists only in memory and the sealed dispatch copy; the display copy keeps `{{連結}}`.
+- **Once per buyer per session.** Semantic key `crm:` + hex(sha256(session | owner_id-or-bundle_id))[:48]; unique among queued reminders and the operation's ledger key. A second
+  trigger reports `already_reminded` (no second link is issued). A follow-up row is not a reminder: it becomes the queued one when the buyer becomes reachable.
+- **Not reachable -> follow-up list**, `reason` in `window_closed | human_takeover | no_peer | capability | link_unavailable`. `no_peer`: the bundle has no `inbox.bundle_peers`
+  link (no private reply reached the buyer); no private-reply quota is spent. The report's `link` is the store's non-bearer checkout URL for the merchant to copy.
+- **Locks / cap (A1.3).** The planner takes the `lcn-dup|store|conversation|body_hmac` advisory lock first (hmac of template + bundle, never of the link), then the per-session `crm|` lock;
+  reminders count toward the same 60 sends / store / minute as human sends (`rate_limited`, a per-buyer refusal).
+- **Routes** (`/v1/admin/stores/{store_id}`): `POST /live-sessions/{sid}/reminders[/{bundle_id}]` (`inbox:reply` AND `live:manage`, Idempotency-Key; with a bundle id only that buyer,
+  409 `not_remindable` when she is no candidate; 409 `no_storefront` without an active domain) -> `{queued, already_reminded, followup, refused, truncated, results:[{bundle_id, outcome:
+  queued|followup|refused, code}]}`. One scan transaction (follow-up rows + one audit row `inbox.checkout_reminder.triggered`, also when nothing is sent), then ONE TRANSACTION PER BUYER:
+  a refusal (window closed since the scan, takeover, rate cap, state changed, link generation moved) refuses only that buyer. At most 100 SENDABLE buyers per call (follow-up and
+  reminded buyers cost nothing, so a later call always reaches the rest). `GET /live-sessions/{sid}/reminders` (`inbox:read`) -> `{sent, queued, failed, followup:[{bundle_id,
+  display_name, reminder_state, reason, link_copy_allowed}], link}`.
+- **Templates are not localised** (msgtemplates has no locale): the text is zh-TW for every `reply_locale`; only the link's locale path follows the claim source. A per-locale
+  template set is a W3-U2 / template follow-up.
+- **DEFERRED: automatic trigger and settings** (integrator ruling 2026-10-06). The PSID and the display copy need the inbox payload ring, which stays API-only: claims-worker
+  does not get it and there is no second sealing path. v1 = merchant-triggered only (single buyer or batch). No River kind `checkout_reminder_v1`, and the settings routes
+  (`GET|PUT /live-settings/reminder`) are removed until an automatic path exists; the empty table `live.reminder_settings` is kept for it (no definer, no grant to a login).

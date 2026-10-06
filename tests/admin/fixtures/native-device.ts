@@ -1,6 +1,7 @@
 // Purpose: own a headed Chromium default context for trusted tab visibility/focus checks.
 // Depends on: Playwright CDP, child_process and per-run filesystem evidence; requires an X display on Linux.
 // Used by: orders-ui.spec.ts and studio-ui.spec.ts; keeps startup diagnostics outside the temporary profile.
+
 import { chromium, expect, type Browser } from "@playwright/test";
 import { mkdtemp, open, readFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -16,13 +17,16 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     diagnostics = await open(`${profile}.log`, "w");
     child = spawn(chromium.executablePath(), [
       `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
+      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
+      // Linux CI blocks unprivileged user namespaces; retain the trunk native-device fix.
+      ...(process.platform === "linux" ? ["--no-sandbox"] : []), "about:blank",
     ], { stdio: ["ignore", diagnostics.fd, diagnostics.fd] });
   } catch (error) {
     await diagnostics?.close().catch(() => {});
     await rm(profile, { recursive: true, force: true });
     throw error;
   }
+
   let browser: Browser | undefined;
   let launchError: Error | undefined;
   child.once("error", (error) => { launchError = error; });
@@ -55,7 +59,10 @@ export async function nativePage(evidence: string, profilePrefix: string) {
       if (Number.isInteger(port) && port > 0 && port < 65_536) break;
       await delay(100);
     }
-    if (!port) throw new Error("owned Chromium did not expose loopback CDP");
+    if (!port) {
+      const stderr = await readFile(`${profile}.log`, "utf8").catch(() => "diagnostics unavailable");
+      throw new Error(`owned Chromium did not expose loopback CDP (exit ${child.exitCode ?? child.signalCode ?? "running"}); stderr tail:\n${stderr.slice(-2048)}`);
+    }
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
     if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
     const context = browser.contexts()[0];

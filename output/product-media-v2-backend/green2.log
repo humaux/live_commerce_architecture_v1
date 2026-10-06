@@ -1,0 +1,243 @@
+=== RUN   TestBuyerHTTPCatalogPaginationScopeAndReadOnly
+--- PASS: TestBuyerHTTPCatalogPaginationScopeAndReadOnly (1.54s)
+=== RUN   TestBuyerHTTPCatalogCurrentPriceAndArchive
+--- PASS: TestBuyerHTTPCatalogCurrentPriceAndArchive (0.27s)
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=0
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=-1
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=101
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1.0
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=%2B1
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1&limit=1
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=null
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1;cursor=x
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=%GG
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id=
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id=bad
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id=ea960e98-da27-40f2-af24-de61f26bbbe0&
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/tenant_id=be747afb-2b14-47ca-b0c5-663b35b27e6a
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/unknown=x
+=== RUN   TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa#01
+--- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority (0.27s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=0 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=-1 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=101 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1.0 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=%2B1 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1&limit=1 (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit= (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor= (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=null (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/limit=1;cursor=x (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=%GG (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id= (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id=bad (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/product_id=ea960e98-da27-40f2-af24-de61f26bbbe0& (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/tenant_id=be747afb-2b14-47ca-b0c5-663b35b27e6a (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/unknown=x (0.00s)
+    --- PASS: TestBuyerHTTPCatalogStrictQueryAndAuthority/cursor=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa#01 (0.00s)
+=== RUN   TestBuyerHTTPOptionsPaginationScopeAndNoWrites
+--- PASS: TestBuyerHTTPOptionsPaginationScopeAndNoWrites (0.64s)
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/hidden
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/disabled
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/api-draft
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/stale-policy
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/disabled-policy
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/empty-allocation
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/inactive-warehouse
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/inactive-market
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/store-currency
+=== RUN   TestBuyerHTTPOptionsCurrentEligibility/rename
+--- PASS: TestBuyerHTTPOptionsCurrentEligibility (3.55s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/hidden (0.34s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/disabled (0.33s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/api-draft (0.33s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/stale-policy (0.38s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/disabled-policy (0.33s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/empty-allocation (0.34s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/inactive-warehouse (0.33s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/inactive-market (0.48s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/store-currency (0.35s)
+    --- PASS: TestBuyerHTTPOptionsCurrentEligibility/rename (0.34s)
+=== RUN   TestBuyerHTTPOptionsDriveHomeCheckout
+--- PASS: TestBuyerHTTPOptionsDriveHomeCheckout (0.39s)
+=== RUN   TestBuyerHTTPOptionsCVSIsConfigurationOnly
+--- PASS: TestBuyerHTTPOptionsCVSIsConfigurationOnly (0.32s)
+=== RUN   TestBuyerHTTPOptionsStrictQueryAndAuthority
+--- PASS: TestBuyerHTTPOptionsStrictQueryAndAuthority (0.30s)
+=== RUN   TestCatalogCoreCC04bSKUPatchOptionValues
+--- PASS: TestCatalogCoreCC04bSKUPatchOptionValues (0.32s)
+=== RUN   TestCatalogCoreCC10bUnpublishedStore
+--- PASS: TestCatalogCoreCC10bUnpublishedStore (0.30s)
+=== RUN   TestCatalogCoreCC12aAdminList
+--- PASS: TestCatalogCoreCC12aAdminList (0.37s)
+=== RUN   TestCatalogCoreCC12bAdminSearchLiteral
+--- PASS: TestCatalogCoreCC12bAdminSearchLiteral (0.28s)
+=== RUN   TestCatalogCoreCC02DraftLifecycle
+--- PASS: TestCatalogCoreCC02DraftLifecycle (0.54s)
+=== RUN   TestCatalogCoreCC03SlugRules
+--- PASS: TestCatalogCoreCC03SlugRules (0.33s)
+=== RUN   TestCatalogCoreCC04OptionsAndVariants
+--- PASS: TestCatalogCoreCC04OptionsAndVariants (0.36s)
+=== RUN   TestCatalogCoreCC05CompareAt
+--- PASS: TestCatalogCoreCC05CompareAt (0.35s)
+=== RUN   TestCatalogCoreCC06BuyerList
+--- PASS: TestCatalogCoreCC06BuyerList (0.57s)
+=== RUN   TestCatalogCoreCC07StockHints
+    catalog_core_gate_test.go:1154: detail keys [collections description detail_images id image_axis images option_images options seo slug title variants] want [collections description id images options seo slug title variants]
+--- FAIL: TestCatalogCoreCC07StockHints (0.46s)
+=== RUN   TestCatalogCoreCC08Collections
+--- PASS: TestCatalogCoreCC08Collections (0.55s)
+=== RUN   TestCatalogCoreCC09CollectionImage
+--- PASS: TestCatalogCoreCC09CollectionImage (0.42s)
+=== RUN   TestCatalogCoreCC10IsolationAndAuthority
+--- PASS: TestCatalogCoreCC10IsolationAndAuthority (0.39s)
+=== RUN   TestCatalogCoreCC11Idempotency
+--- PASS: TestCatalogCoreCC11Idempotency (0.40s)
+=== RUN   TestCatalogMediaSchemaSurface
+--- PASS: TestCatalogMediaSchemaSurface (0.53s)
+=== RUN   TestCatalogMediaRLSScope
+--- PASS: TestCatalogMediaRLSScope (0.25s)
+=== RUN   TestCatalogMediaLifecycle
+--- PASS: TestCatalogMediaLifecycle (0.42s)
+=== RUN   TestCatalogMediaSniff
+--- PASS: TestCatalogMediaSniff (0.43s)
+=== RUN   TestCatalogMediaBuyer404
+--- PASS: TestCatalogMediaBuyer404 (0.36s)
+=== RUN   TestCatalogMediaBuyerAuthority
+--- PASS: TestCatalogMediaBuyerAuthority (0.25s)
+=== RUN   TestCatalogMediaArchivedProduct
+--- PASS: TestCatalogMediaArchivedProduct (0.28s)
+=== RUN   TestCatalogV2Smoke
+--- PASS: TestCatalogV2Smoke (0.51s)
+=== RUN   TestMediaSizesLifecycleAndIsolation
+--- PASS: TestMediaSizesLifecycleAndIsolation (10.92s)
+=== RUN   TestMetaAdsMA03Consent
+=== RUN   TestMetaAdsMA03Consent/no_consent:_no_op,_no_row,_no_event
+=== RUN   TestMetaAdsMA03Consent/granted:_exactly_one_op_per_attempt,_stable_event_id_and_key,_merchant_actor_+_capi_enabled_by,_queue_ads,_one_event
+=== RUN   TestMetaAdsMA03Consent/consent_withdrawn_before_the_sweeper:_no_op_and_the_context_row_is_deleted
+=== RUN   TestMetaAdsMA03Consent/owner_erased:_no_op_and_the_context_row_is_deleted
+=== RUN   TestMetaAdsMA03Consent/withdraw_after_planning:_Check_answers_BLOCKED_POLICY_consent_withdrawn_with_zero_HTTP_(G09)
+=== RUN   TestMetaAdsMA03Consent/fact_environment_must_equal_the_store_environment_and_PROVIDER_MOCK_facts_are_never_sent
+=== RUN   TestMetaAdsMA03Consent/PROVIDER_MOCK_fact_in_a_matching_environment_is_skipped
+=== RUN   TestMetaAdsMA03Consent/capi_enabled_by_lost_ads:manage_->_capi_principal_revoked
+=== RUN   TestMetaAdsMA03Consent/CAPI_switched_off_after_planning_->_capi_disabled
+=== RUN   TestMetaAdsMA03Consent/op_that_sat_READY_for_7_days_(frozen_event_time_aged,_hash_kept_consistent)_->_event_too_old
+=== RUN   TestMetaAdsMA03Consent/dataset_binding_re-pointed_after_planning:_STALE_BINDING,_zero_HTTP
+=== RUN   TestMetaAdsMA03Consent/billing_RESTRICTED_never_blocks_CAPI_(BD5)
+=== RUN   TestMetaAdsMA03Consent/a_fact_older_than_6_days_is_never_planned;_a_context_older_than_7_days_does_not_make_an_owner_eligible;_8-day_contexts_are_purged
+=== RUN   TestMetaAdsMA03Consent/consent_without_a_browser_context_(no_user_agent):_not_eligible
+=== RUN   TestMetaAdsMA03Consent/CAPI_off_or_no_dataset:_nothing_is_planned
+--- PASS: TestMetaAdsMA03Consent (16.00s)
+    --- PASS: TestMetaAdsMA03Consent/no_consent:_no_op,_no_row,_no_event (0.89s)
+    --- PASS: TestMetaAdsMA03Consent/granted:_exactly_one_op_per_attempt,_stable_event_id_and_key,_merchant_actor_+_capi_enabled_by,_queue_ads,_one_event (1.95s)
+    --- PASS: TestMetaAdsMA03Consent/consent_withdrawn_before_the_sweeper:_no_op_and_the_context_row_is_deleted (1.29s)
+    --- PASS: TestMetaAdsMA03Consent/owner_erased:_no_op_and_the_context_row_is_deleted (1.22s)
+    --- PASS: TestMetaAdsMA03Consent/withdraw_after_planning:_Check_answers_BLOCKED_POLICY_consent_withdrawn_with_zero_HTTP_(G09) (0.90s)
+    --- PASS: TestMetaAdsMA03Consent/fact_environment_must_equal_the_store_environment_and_PROVIDER_MOCK_facts_are_never_sent (0.83s)
+    --- PASS: TestMetaAdsMA03Consent/PROVIDER_MOCK_fact_in_a_matching_environment_is_skipped (0.84s)
+    --- PASS: TestMetaAdsMA03Consent/capi_enabled_by_lost_ads:manage_->_capi_principal_revoked (1.11s)
+    --- PASS: TestMetaAdsMA03Consent/CAPI_switched_off_after_planning_->_capi_disabled (0.89s)
+    --- PASS: TestMetaAdsMA03Consent/op_that_sat_READY_for_7_days_(frozen_event_time_aged,_hash_kept_consistent)_->_event_too_old (0.83s)
+    --- PASS: TestMetaAdsMA03Consent/dataset_binding_re-pointed_after_planning:_STALE_BINDING,_zero_HTTP (0.91s)
+    --- PASS: TestMetaAdsMA03Consent/billing_RESTRICTED_never_blocks_CAPI_(BD5) (0.80s)
+    --- PASS: TestMetaAdsMA03Consent/a_fact_older_than_6_days_is_never_planned;_a_context_older_than_7_days_does_not_make_an_owner_eligible;_8-day_contexts_are_purged (1.94s)
+    --- PASS: TestMetaAdsMA03Consent/consent_without_a_browser_context_(no_user_agent):_not_eligible (0.77s)
+    --- PASS: TestMetaAdsMA03Consent/CAPI_off_or_no_dataset:_nothing_is_planned (0.82s)
+=== RUN   TestMetaAdsMA08CAPI
+=== RUN   TestMetaAdsMA08CAPI/wire_body:_exact_keys,_values,_hashing,_SANDBOX_test_event_code,_no_phone_(CD5)
+=== RUN   TestMetaAdsMA08CAPI/user_data_only_through_the_lease-fenced_definer_ads.capi_user_data;_the_worker_authorities_cannot_read_the_source_tables
+=== RUN   TestMetaAdsMA08CAPI/hashed_fields_never_reach_PG_or_logs;_raw_phone_only_where_the_order_snapshot_lives_(sentinel_scan)
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_timeout_after_the_event_was_received
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_503
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_unparseable_200
+=== RUN   TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_200_without_events_received
+=== RUN   TestMetaAdsMA08CAPI/a_Graph_4xx_error_body_ends_FAILED_FINAL_and_is_not_resent_either
+--- PASS: TestMetaAdsMA08CAPI (21.63s)
+    --- PASS: TestMetaAdsMA08CAPI/wire_body:_exact_keys,_values,_hashing,_SANDBOX_test_event_code,_no_phone_(CD5) (0.77s)
+    --- PASS: TestMetaAdsMA08CAPI/user_data_only_through_the_lease-fenced_definer_ads.capi_user_data;_the_worker_authorities_cannot_read_the_source_tables (0.80s)
+    --- PASS: TestMetaAdsMA08CAPI/hashed_fields_never_reach_PG_or_logs;_raw_phone_only_where_the_order_snapshot_lives_(sentinel_scan) (1.35s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_timeout_after_the_event_was_received (4.26s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_503 (4.36s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_unparseable_200 (4.35s)
+    --- PASS: TestMetaAdsMA08CAPI/UNKNOWN_is_never_resent:_200_without_events_received (4.38s)
+    --- PASS: TestMetaAdsMA08CAPI/a_Graph_4xx_error_body_ends_FAILED_FINAL_and_is_not_resent_either (1.35s)
+=== RUN   TestMetaAdsFeed
+--- PASS: TestMetaAdsFeed (0.45s)
+=== RUN   TestProductEditorPE01SingleTransaction
+--- PASS: TestProductEditorPE01SingleTransaction (0.31s)
+=== RUN   TestProductEditorPE02Idempotency
+--- PASS: TestProductEditorPE02Idempotency (0.28s)
+=== RUN   TestProductEditorPE03KeywordAndSlugConflict
+--- PASS: TestProductEditorPE03KeywordAndSlugConflict (0.28s)
+=== RUN   TestProductEditorPE04TWDWholeDollar
+--- PASS: TestProductEditorPE04TWDWholeDollar (0.25s)
+=== RUN   TestProductEditorPE05UntrackedTrackedFlags
+--- PASS: TestProductEditorPE05UntrackedTrackedFlags (0.26s)
+=== RUN   TestProductEditorPE06ImagesCap
+    product_document_test.go:513: image 5 status=409 body={"code":"conflict","message":"Request conflicts with current state.","request_id":"54e3bb3fc2d48987fb020afb81eeda5b","retryable":false,"details":{}}
+--- FAIL: TestProductEditorPE06ImagesCap (0.27s)
+=== RUN   TestProductEditorPE07DraftVisibility
+--- PASS: TestProductEditorPE07DraftVisibility (0.29s)
+=== RUN   TestProductEditorPE08AxisChangeArchives
+--- PASS: TestProductEditorPE08AxisChangeArchives (0.27s)
+=== RUN   TestProductEditorPE09StaleVersion
+--- PASS: TestProductEditorPE09StaleVersion (0.34s)
+=== RUN   TestProductEditorPE10Isolation
+--- PASS: TestProductEditorPE10Isolation (0.26s)
+=== RUN   TestProductEditorCopyCommand
+--- PASS: TestProductEditorCopyCommand (0.28s)
+=== RUN   TestProductEditorPE11BulkStatus
+--- PASS: TestProductEditorPE11BulkStatus (0.46s)
+=== RUN   TestProductEditorListSummaries
+--- PASS: TestProductEditorListSummaries (0.28s)
+=== RUN   TestProductEditorPE18PriceOnlyEditPreservesEverything
+--- PASS: TestProductEditorPE18PriceOnlyEditPreservesEverything (0.27s)
+=== RUN   TestProductEditorPE19TargetQtyZero
+--- PASS: TestProductEditorPE19TargetQtyZero (0.27s)
+=== RUN   TestProductEditorPE20AxisChangeRequiresExplicitArchive
+--- PASS: TestProductEditorPE20AxisChangeRequiresExplicitArchive (0.27s)
+=== RUN   TestProductEditorPE21LiveWindowEditRefusals
+--- PASS: TestProductEditorPE21LiveWindowEditRefusals (0.27s)
+=== RUN   TestProductEditorPE22DetailFields
+--- PASS: TestProductEditorPE22DetailFields (0.26s)
+=== RUN   TestProductEditorPE23TopLevelLogisticsInvalid
+--- PASS: TestProductEditorPE23TopLevelLogisticsInvalid (0.26s)
+=== RUN   TestPMv2ConstantsParity
+--- PASS: TestPMv2ConstantsParity (0.00s)
+=== RUN   TestPMv2MigrationNineImages
+--- PASS: TestPMv2MigrationNineImages (2.82s)
+=== RUN   TestPMv2SQLStructure
+--- PASS: TestPMv2SQLStructure (0.36s)
+=== RUN   TestPMv2MerchantRolesAndCaps
+--- PASS: TestPMv2MerchantRolesAndCaps (5.46s)
+=== RUN   TestPMv2OptionImages
+--- PASS: TestPMv2OptionImages (0.54s)
+=== RUN   TestPMv2CrossStoreRefused
+--- PASS: TestPMv2CrossStoreRefused (0.38s)
+=== RUN   TestPMv2BuyerShapes
+--- PASS: TestPMv2BuyerShapes (0.61s)
+=== RUN   TestPMv2FeedLinks
+--- PASS: TestPMv2FeedLinks (0.40s)
+=== RUN   TestPMv2ACLPins
+--- PASS: TestPMv2ACLPins (0.41s)
+=== RUN   TestStorefrontIntegrationSmoke
+=== RUN   TestStorefrontIntegrationSmoke/SI01_return_path_allowlist:_/{locale}/checkout_in_Go_and_SQL,_every_near_miss_refused
+=== RUN   TestStorefrontIntegrationSmoke/SI02_every_checkout-options_row_carries_free_shipping_threshold_minor_(number_or_null,_0_reads_as_null)
+=== RUN   TestStorefrontIntegrationSmoke/SI03_collection_reads_carry_the_collection_id
+=== RUN   TestStorefrontIntegrationSmoke/SI04_no_business-schema_function_is_executable_by_PUBLIC_(the_restricted-pool_authority_scan_depends_on_it)
+--- PASS: TestStorefrontIntegrationSmoke (1.30s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI01_return_path_allowlist:_/{locale}/checkout_in_Go_and_SQL,_every_near_miss_refused (0.65s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI02_every_checkout-options_row_carries_free_shipping_threshold_minor_(number_or_null,_0_reads_as_null) (0.22s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI03_collection_reads_carry_the_collection_id (0.02s)
+    --- PASS: TestStorefrontIntegrationSmoke/SI04_no_business-schema_function_is_executable_by_PUBLIC_(the_restricted-pool_authority_scan_depends_on_it) (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	83.792s
+FAIL
+test-focused: top-level PASS=61 FAIL=2 SKIP=0 exit=1
+exit 1

@@ -1,0 +1,177 @@
+=== RUN   TestCustomersBillingCB02Schema
+=== RUN   TestCustomersBillingCB02Schema/roles_and_schemas
+=== RUN   TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read
+=== RUN   TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers
+=== RUN   TestCustomersBillingCB02Schema/policies
+=== RUN   TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility
+=== RUN   TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5)
+=== RUN   TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one
+=== RUN   TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7)
+=== RUN   TestCustomersBillingCB02Schema/consent_events_rules
+=== RUN   TestCustomersBillingCB02Schema/privacy_actions_rules
+=== RUN   TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8)
+=== RUN   TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2)
+=== RUN   TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5)
+=== RUN   TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array
+--- PASS: TestCustomersBillingCB02Schema (7.62s)
+    --- PASS: TestCustomersBillingCB02Schema/roles_and_schemas (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/tables:_owner,_FORCE_RLS,_ACL,_no_public/buyer/worker_read (0.12s)
+    --- PASS: TestCustomersBillingCB02Schema/effective_column_privileges_of_the_two_writers (0.09s)
+    --- PASS: TestCustomersBillingCB02Schema/policies (0.12s)
+    --- PASS: TestCustomersBillingCB02Schema/functions:_owner,_SECURITY_DEFINER,_search_path,_EXECUTE,_volatility (0.03s)
+    --- PASS: TestCustomersBillingCB02Schema/claim-window_guard_trigger_shape_(BD5) (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/permission_CHECK_holds_each_new_value_exactly_once_and_every_old_one (0.00s)
+    --- PASS: TestCustomersBillingCB02Schema/no_R3_role_is_referenced_by_0078/0079_(C-7) (1.30s)
+    --- PASS: TestCustomersBillingCB02Schema/consent_events_rules (0.02s)
+    --- PASS: TestCustomersBillingCB02Schema/privacy_actions_rules (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/store_customers_rules_(BD1,_BD8) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/subscriptions_rules_and_the_set-once/terminal_trigger_(F-B1,_§3.2) (0.01s)
+    --- PASS: TestCustomersBillingCB02Schema/a_fresh_creator_gets_the_three_permissions_once;_nobody_else_gains_any_(C-5) (0.05s)
+    --- PASS: TestCustomersBillingCB02Schema/create_initial_store_body_differs_from_its_0065_definition_only_by_the_permission_array (0.65s)
+=== RUN   TestCustomersBillingCB02Comments
+=== RUN   TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package
+--- PASS: TestCustomersBillingCB02Comments (2.41s)
+    --- PASS: TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package (0.02s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (5.55s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.02s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.21s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.62s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.12s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.16s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (3.95s)
+=== RUN   TestLiveConsoleSendMigration0128ExactACL
+--- PASS: TestLiveConsoleSendMigration0128ExactACL (0.27s)
+=== RUN   TestManualFulfilmentMF02Schema
+=== RUN   TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK
+=== RUN   TestManualFulfilmentMF02Schema/version_and_head_CHECKs
+=== RUN   TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix
+=== RUN   TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser)
+2026/10/06 11:50:45 INFO orders.export_unshipped store_id=e11c7a5a-1de5-45e7-bba3-2b5db6e1cb87 rows=1 truncated=false duration_ms=4
+=== RUN   TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT
+=== RUN   TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters
+=== RUN   TestManualFulfilmentMF02Schema/populated_upgrade_after_0062
+    manual_fulfilment_schema_test.go:348: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (5.39s)
+    --- PASS: TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK (0.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/version_and_head_CHECKs (0.08s)
+    --- PASS: TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix (0.04s)
+    --- PASS: TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser) (0.01s)
+    --- PASS: TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT (0.03s)
+    --- PASS: TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters (0.02s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:170: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:170: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:170: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (0.86s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.02s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.07s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.06s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.14s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.15s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.33s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.09s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (4.05s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+=== RUN   TestMetaClaimsMCI02PoolValidator
+--- PASS: TestMetaClaimsMCI02PoolValidator (0.50s)
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only
+--- PASS: TestMetaClaimsMCI02PolicyBehaviour (7.87s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window (0.02s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only (0.00s)
+=== RUN   TestTaiwanCvsSchema
+=== RUN   TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON
+=== RUN   TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1)
+=== RUN   TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value
+=== RUN   TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies
+=== RUN   TestTaiwanCvsSchema/uniqueness_and_indexes
+=== RUN   TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards
+=== RUN   TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE
+=== RUN   TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role)
+=== RUN   TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role)
+=== RUN   TestTaiwanCvsSchema/no_PII_columns_(catalog_scan)
+=== RUN   TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2)
+=== RUN   TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login
+=== RUN   TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles
+=== RUN   TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else
+--- PASS: TestTaiwanCvsSchema (1.38s)
+    --- PASS: TestTaiwanCvsSchema/objects:_migrations,_FORCE_RLS,_no_PUBLIC_grant,_COMMENT_ON (0.01s)
+    --- PASS: TestTaiwanCvsSchema/exactly_one_checkout.begin_hold_with_10_arguments_(post_river_ordering,_C1) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/widened_CHECKs_keep_every_prior_value (0.02s)
+    --- PASS: TestTaiwanCvsSchema/column_CHECK_behaviour_on_LIKE-copies (0.49s)
+    --- PASS: TestTaiwanCvsSchema/uniqueness_and_indexes (0.04s)
+    --- PASS: TestTaiwanCvsSchema/triggers:_order<->shipment_guard_from_both_sides,_immutability,_append-only,_ledger_guards (0.00s)
+    --- PASS: TestTaiwanCvsSchema/ledger_CHECK_branches:_BUYER_ALLOCATE_and_MERCHANT_DEALLOCATE (0.10s)
+    --- PASS: TestTaiwanCvsSchema/definers:_owner,_SECURITY_DEFINER,_search_path,_ACL_matrix_(PUBLIC_revoked,_no_other_commerce_*_role) (0.25s)
+    --- PASS: TestTaiwanCvsSchema/grant_matrix_and_policies_(one_negative_per_role) (0.09s)
+    --- PASS: TestTaiwanCvsSchema/no_PII_columns_(catalog_scan) (0.00s)
+    --- PASS: TestTaiwanCvsSchema/Go_and_SQL_trade_number_agree_over_generated_UUIDs_(C2/E2) (0.05s)
+    --- PASS: TestTaiwanCvsSchema/merchant-plant_negatives_under_a_real_commerce_runtime_login (0.03s)
+    --- PASS: TestTaiwanCvsSchema/buyer_entered_own_hides_buyer_A's_rows_from_buyer_B_under_both_buyer_roles (0.12s)
+    --- PASS: TestTaiwanCvsSchema/pool_note:_buyer_definers_run_from_a_real_checkout-pool_login_and_nowhere_else (0.18s)
+=== RUN   TestTaiwanCvsSchemaColumnComments
+--- PASS: TestTaiwanCvsSchemaColumnComments (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	38.482s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0
+exit 0

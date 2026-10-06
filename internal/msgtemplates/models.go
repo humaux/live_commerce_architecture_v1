@@ -1,4 +1,4 @@
-// Purpose: the frozen message-template shapes — the §3.4 outbound kind vocabulary, the two system-fixed template ids,
+// Purpose: the frozen message-template shapes — the §3.4 outbound kind vocabulary, the system-fixed template ids,
 // and the publish/list/resolve input/output structs. The contract fixes {template_id, version, public_safe, kinds}
 // for this unit; name/body and the rest are W2-05B-owned fields.
 // Depends on: nothing (plain data shapes).
@@ -20,10 +20,12 @@ var validKind = map[string]bool{
 	KindDM: true, KindPrivateReply: true, KindPublicReply: true, KindRecommend: true,
 }
 
-// System-fixed template ids (migration 0121 seeds these; merchants can never republish them — publish raises PT409).
+// System-fixed template ids (migrations 0121 and 0144 seed these; merchants can never republish them — publish raises PT409).
 const (
-	FixedOrderPayLink   = "order-pay-link/v1"
-	FixedOfferRecommend = "offer-recommend/v1"
+	FixedOrderPayLink     = "order-pay-link/v1"
+	FixedOfferRecommend   = "offer-recommend/v1"
+	FixedCheckoutReminder = "checkout-reminder/v1" // W3-03B (0144): dm-only, carries {{連結}}, rendered by internal/inbox/reminders.go
+	FixedSoldOutReply     = "sold-out-reply/v1"    // W3-04B (0151): private_reply, {{product.name}} only, rendered in SQL by integration.plan_claim_reply
 )
 
 // PublishInput is POST /message-templates. template_id, name, kinds, public_safe and body are all required; null is

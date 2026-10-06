@@ -1,0 +1,51 @@
+=== RUN   TestSoldOutReplyPlanShape
+=== RUN   TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out
+=== RUN   TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable
+--- PASS: TestSoldOutReplyPlanShape (9.88s)
+    --- PASS: TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link (0.21s)
+    --- PASS: TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link (0.25s)
+    --- PASS: TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out (0.26s)
+    --- PASS: TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable (0.25s)
+=== RUN   TestSoldOutReplyPausedOffer
+--- PASS: TestSoldOutReplyPausedOffer (0.97s)
+=== RUN   TestSoldOutReplyBudget
+=== RUN   TestSoldOutReplyBudget/SO04_manual_after_the_sold-out_reply_is_refused
+=== RUN   TestSoldOutReplyBudget/SO05_switch_off_keeps_the_budget_for_the_merchant
+=== RUN   TestSoldOutReplyBudget/SO06_manual_first,_then_the_sold-out_claim
+--- PASS: TestSoldOutReplyBudget (1.43s)
+    --- PASS: TestSoldOutReplyBudget/SO04_manual_after_the_sold-out_reply_is_refused (0.28s)
+    --- PASS: TestSoldOutReplyBudget/SO05_switch_off_keeps_the_budget_for_the_merchant (0.47s)
+    --- PASS: TestSoldOutReplyBudget/SO06_manual_first,_then_the_sold-out_claim (0.26s)
+=== RUN   TestSoldOutReplyConcurrentReplay
+--- PASS: TestSoldOutReplyConcurrentReplay (0.79s)
+=== RUN   TestSoldOutReplySendAndUnknown
+=== RUN   TestSoldOutReplySendAndUnknown/SO08_Graph_failure_is_UNKNOWN_and_never_re-sent
+--- PASS: TestSoldOutReplySendAndUnknown (3.89s)
+    --- PASS: TestSoldOutReplySendAndUnknown/SO08_Graph_failure_is_UNKNOWN_and_never_re-sent (1.99s)
+=== RUN   TestSoldOutReplyCheckDenial
+--- PASS: TestSoldOutReplyCheckDenial (8.97s)
+=== RUN   TestSoldOutReplySettingsAndTemplates
+--- PASS: TestSoldOutReplySettingsAndTemplates (0.90s)
+=== RUN   TestSoldOutReplyACL
+--- PASS: TestSoldOutReplyACL (0.30s)
+=== RUN   TestSoldOutReplyTextMatchesAdapter
+=== RUN   TestSoldOutReplyTextMatchesAdapter/full-width_space,_ZWJ_and_newline_in_the_name
+=== RUN   TestSoldOutReplyTextMatchesAdapter/120-character_name_is_clipped_by_characters_and_still_sends
+=== RUN   TestSoldOutReplyTextMatchesAdapter/multi-placeholder_or_C1-control_templates_are_refused_and_a_stored_one_falls_back
+--- PASS: TestSoldOutReplyTextMatchesAdapter (3.63s)
+    --- PASS: TestSoldOutReplyTextMatchesAdapter/full-width_space,_ZWJ_and_newline_in_the_name (1.30s)
+    --- PASS: TestSoldOutReplyTextMatchesAdapter/120-character_name_is_clipped_by_characters_and_still_sends (1.00s)
+    --- PASS: TestSoldOutReplyTextMatchesAdapter/multi-placeholder_or_C1-control_templates_are_refused_and_a_stored_one_falls_back (0.99s)
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim/switch_OFF,_stock_disappears_between_the_two_checks
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim/switch_ON,_stock_returns_between_the_two_checks
+--- PASS: TestSoldOutReplyDisagreementKeepsTheClaim (0.85s)
+    --- PASS: TestSoldOutReplyDisagreementKeepsTheClaim/switch_OFF,_stock_disappears_between_the_two_checks (0.34s)
+    --- PASS: TestSoldOutReplyDisagreementKeepsTheClaim/switch_ON,_stock_returns_between_the_two_checks (0.23s)
+=== RUN   TestSoldOutReplyEventMark
+--- PASS: TestSoldOutReplyEventMark (0.86s)
+PASS
+ok  	livecommerce/tests/foundation	34.252s
+test-focused: top-level PASS=11 FAIL=0 SKIP=0 exit=0

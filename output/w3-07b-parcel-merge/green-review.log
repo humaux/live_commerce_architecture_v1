@@ -1,0 +1,48 @@
+=== RUN   TestManualFulfilmentMF02Schema
+=== RUN   TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK
+=== RUN   TestManualFulfilmentMF02Schema/version_and_head_CHECKs
+=== RUN   TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix
+=== RUN   TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser)
+2026/10/06 18:16:19 INFO orders.export_unshipped store_id=3c662ca9-78b0-407c-a3eb-354c377ecf86 rows=1 truncated=false duration_ms=5
+=== RUN   TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT
+=== RUN   TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters
+=== RUN   TestManualFulfilmentMF02Schema/populated_upgrade_after_0062
+    manual_fulfilment_schema_test.go:355: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (6.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK (0.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/version_and_head_CHECKs (0.07s)
+    --- PASS: TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix (0.05s)
+    --- PASS: TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser) (0.01s)
+    --- PASS: TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT (0.03s)
+    --- PASS: TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters (0.02s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+=== RUN   TestParcelGroup
+=== RUN   TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+=== RUN   TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown
+=== RUN   TestParcelGroup/PG03_one_order,_at_most_one_group
+=== RUN   TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id
+=== RUN   TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched
+    parcel_groups_test.go:251: control order shipped-mail rows: 1
+=== RUN   TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back
+=== RUN   TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import
+=== RUN   TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone
+=== RUN   TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins
+=== RUN   TestParcelGroup/PG09_same_Idempotency-Key,_disjoint_order_sets,_concurrently:_one_group,_the_loser_is_a_conflict_(not_already_in_group)
+=== RUN   TestParcelGroup/PG10_mark_parcel_group_shipped_on_a_partly_shipped_group_refuses_(group_incomplete)_and_stays_OPEN
+--- PASS: TestParcelGroup (19.37s)
+    --- PASS: TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create (0.03s)
+    --- PASS: TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown (1.00s)
+    --- PASS: TestParcelGroup/PG03_one_order,_at_most_one_group (0.00s)
+    --- PASS: TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id (0.01s)
+    --- PASS: TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched (0.04s)
+    --- PASS: TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back (0.02s)
+    --- PASS: TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import (0.01s)
+    --- PASS: TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone (0.02s)
+    --- PASS: TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins (1.76s)
+    --- PASS: TestParcelGroup/PG09_same_Idempotency-Key,_disjoint_order_sets,_concurrently:_one_group,_the_loser_is_a_conflict_(not_already_in_group) (3.44s)
+    --- PASS: TestParcelGroup/PG10_mark_parcel_group_shipped_on_a_partly_shipped_group_refuses_(group_incomplete)_and_stays_OPEN (2.59s)
+=== RUN   TestParcelGroupACL
+--- PASS: TestParcelGroupACL (0.06s)
+PASS
+ok  	livecommerce/tests/foundation	28.200s
+test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0

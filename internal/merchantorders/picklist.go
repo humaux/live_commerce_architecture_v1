@@ -1,7 +1,8 @@
 // Purpose: the pick list (contract amendment W3-02B §1) — one read-only projection over
 //   fulfillment.read_pick_list that summarises SKU quantities and per-order lines for browser printing.
 //   It never writes, never changes state and never logs recipient data.
-// Depends on: fulfillment.read_pick_list + claims.pick_list_session_orders (0130), identity.resolve_access
+// Depends on: fulfillment.read_pick_list + claims.pick_list_session_orders (0130), fulfillment.read_parcel_group_ids (0146, parcel group
+//   annotation via parcels.go), identity.resolve_access
 //   (orders:read), platform.WithScope, command (id validation), the shared row decoder also used by carrier_export.go.
 // Used by: internal/httpapi/picklist.go (pick-list route). Tests: TestPickList/TestPickList500.
 // Invariants: collection rule CONFIRMED|AWAITING_COLLECTION AND MANUAL_UNASSIGNED (0130); skipped codes
@@ -46,10 +47,13 @@ type PickListLine struct {
 	Qty         int64   `json:"qty"`
 }
 
+// PickListOrder is one order of the list; ParcelGroupID is set (and the group's orders are adjacent) when the order sits in a
+// W3-07B parcel group, so the picker packs them into one parcel.
 type PickListOrder struct {
-	OrderID     string         `json:"order_id"`
-	OrderNumber string         `json:"order_number"`
-	Lines       []PickListLine `json:"lines"`
+	OrderID       string         `json:"order_id"`
+	OrderNumber   string         `json:"order_number"`
+	ParcelGroupID string         `json:"parcel_group_id,omitempty"`
+	Lines         []PickListLine `json:"lines"`
 }
 
 type PickListSkipped struct {
@@ -91,6 +95,7 @@ type pickListRow struct {
 	Currency        string         `json:"currency"`
 	CollectMinor    int64          `json:"collect_minor"`
 	Lines           []PickListLine `json:"lines"`
+	ParcelGroupID   string         `json:"-"` // W3-07B: filled by groupAdjacent, never by the SQL reader
 }
 
 type pickListJSON struct {
@@ -145,7 +150,7 @@ func PickList(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string
 		out.Skipped = []PickListSkipped{}
 	}
 	for _, row := range raw.Orders {
-		out.Orders = append(out.Orders, PickListOrder{OrderID: row.OrderID, OrderNumber: row.OrderNumber, Lines: row.Lines})
+		out.Orders = append(out.Orders, PickListOrder{OrderID: row.OrderID, OrderNumber: row.OrderNumber, ParcelGroupID: row.ParcelGroupID, Lines: row.Lines})
 	}
 	return out, nil
 }
@@ -176,6 +181,16 @@ func readPickListJSON(ctx context.Context, tx pgx.Tx, scope platform.Scope, toke
 	if err := json.Unmarshal(raw, &out); err != nil || !validPickListJSON(out) {
 		return pickListJSON{}, ErrUnavailable
 	}
+	// W3-07B: members of one parcel group are listed side by side and carry parcel_group_id (fulfillment.read_parcel_group_ids).
+	ids := make([]string, len(out.Orders))
+	for i, row := range out.Orders {
+		ids[i] = row.OrderID
+	}
+	groups, err := parcelGroupIDs(ctx, tx, scope, token, ids)
+	if err != nil {
+		return pickListJSON{}, err
+	}
+	out.Orders = groupAdjacent(out.Orders, groups)
 	return out, nil
 }
 

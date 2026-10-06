@@ -343,7 +343,7 @@ func TestCarrierExport(t *testing.T) {
 		{"black_cat", "order_id,recipient_name,phone,region,city,line1,line2,items,collect_minor", true, false},
 		{"hsinchu", "order_id,order_number,recipient_name,phone,region,city,line1,line2,items,collect_minor", true, false},
 		{"chunghwa_post", "order_id,recipient_name,phone,country,region,city,postal_code,line1,line2,items,total_minor", false, true},
-		{"generic", "order_id,order_number,created_at_utc,destination_kind,recipient_name,phone,region,city,line1,line2,pickup_code,items,total_minor,collect_minor", true, true},
+		{"generic", "order_id,order_number,created_at_utc,destination_kind,recipient_name,phone,region,city,line1,line2,pickup_code,items,total_minor,collect_minor,parcel_group_id", true, true},
 	}
 	for _, tc := range templates {
 		t.Run(tc.name, func(t *testing.T) {

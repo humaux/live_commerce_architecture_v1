@@ -1,0 +1,14 @@
+=== RUN   TestReportEnvironmentProfiles
+=== RUN   TestReportEnvironmentProfiles/LIVE
+    reports_test.go:665: LIVE deployment, channel instagram_live orders/cancelled = [1 0], want [0 0]
+=== RUN   TestReportEnvironmentProfiles/SANDBOX
+    reports_test.go:665: SANDBOX deployment, channel facebook_live orders/cancelled = [2 1], want [1 1]
+    reports_test.go:665: SANDBOX deployment, channel storefront orders/cancelled = [3 0], want [0 0]
+    reports_test.go:690: SANDBOX deployment funnel: {From:2026-09-01 To:2026-09-30 Timezone:Asia/Taipei SessionID:0xc00004dd60 Claimed:5 LinkSent:3 Ordered:2 Paid:2 OrderedWithoutLink:1} want paid 1
+--- FAIL: TestReportEnvironmentProfiles (1.97s)
+    --- FAIL: TestReportEnvironmentProfiles/LIVE (1.71s)
+    --- FAIL: TestReportEnvironmentProfiles/SANDBOX (0.12s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.971s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

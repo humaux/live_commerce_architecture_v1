@@ -18,7 +18,7 @@
 // expected_version CAS, MD6 eligibility, audit and shipped-mail outbox as the single PUT.
 //
 // Per-row decisions: CSV parse/normalize (tracking_csv.go) -> in-file duplicate -> lock-free precheck
-// (fulfillment.tracking_import_precheck) -> unchanged / already_shipped / cvs_order / order_not_found /
+// (fulfillment.tracking_import_precheck) -> unchanged / already_shipped / cvs_order / in_parcel_group (W3-07B: ships only via its group) / order_not_found /
 // apply -> RecordShipment in a savepoint. A failed row is skipped and reported; a file-level defect
 // refuses the whole file. The commit is one command (operation fulfillment.tracking_import, key
 // trk-<sha256[:32]>) so the same bytes with the same expected_apply_rows replay the first batch and
@@ -306,6 +306,7 @@ func runTrackingImport(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	}
 	// Lock-free precheck for every still-pending unique order.
 	pre := map[string]trackingPrecheckEntry{}
+	var grouped map[string]string
 	seen := map[string]bool{}
 	var orderIDs []string
 	for i := range rows {
@@ -322,6 +323,12 @@ func runTrackingImport(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 		for i := range entries {
 			pre[entries[i].OrderID] = entries[i]
 		}
+		// W3-07B: an order in an OPEN parcel group ships only through the group shipment; the guard locks the orders in id
+		// order, so a group cannot be created between this check and the shipment writes below.
+		grouped, err = merchantorders.GuardNotGrouped(ctx, tx, scope, token, orderIDs)
+		if err != nil {
+			return out, err
+		}
 	}
 	for i := range rows {
 		r := &rows[i]
@@ -335,6 +342,8 @@ func runTrackingImport(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 			r.outcome, r.code = trackingOutcomeFailed, "order_not_found"
 		case entry.CVS:
 			r.outcome, r.code = trackingOutcomeFailed, "cvs_order"
+		case grouped[r.orderID] != "":
+			r.outcome, r.code = trackingOutcomeFailed, "in_parcel_group"
 		case entry.HeadStatus != nil && *entry.HeadStatus == "SHIPPED":
 			if sameShipment(entry, *r) {
 				r.outcome = trackingOutcomeUnchanged

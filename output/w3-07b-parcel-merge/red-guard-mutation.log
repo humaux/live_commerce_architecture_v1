@@ -1,0 +1,27 @@
+=== RUN   TestParcelGroup
+=== RUN   TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+=== RUN   TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown
+=== RUN   TestParcelGroup/PG03_one_order,_at_most_one_group
+=== RUN   TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id
+=== RUN   TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched
+    parcel_groups_test.go:249: control order shipped-mail rows: 1
+=== RUN   TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back
+=== RUN   TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import
+    parcel_groups_test.go:322: single shipment: got 200 map[carrier_code:black_cat carrier_name:<nil> note:<nil> principal_id:72616c8f-20b2-4010-af34-a079b285d67b recorded_at:2026-10-06T09:51:46.269961Z status:SHIPPED tracking_number:SOLO0001 tracking_url:<nil> version:1 void_reason:<nil>], want 409 in_parcel_group
+=== RUN   TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone
+    parcel_groups_test.go:357: shipment after dissolve: 409 {"code":"version_changed","message":"This item changed since it was loaded.","request_id":"e78d944cfdbb3dd6ec572fee125174ac","retryable":false,"details":{}}
+=== RUN   TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins
+--- FAIL: TestParcelGroup (15.58s)
+    --- PASS: TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create (0.07s)
+    --- PASS: TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown (1.03s)
+    --- PASS: TestParcelGroup/PG03_one_order,_at_most_one_group (0.00s)
+    --- PASS: TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id (0.01s)
+    --- PASS: TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched (0.03s)
+    --- PASS: TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back (0.05s)
+    --- FAIL: TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import (0.01s)
+    --- FAIL: TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone (0.03s)
+    --- PASS: TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins (1.94s)
+FAIL
+FAIL	livecommerce/tests/foundation	16.319s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

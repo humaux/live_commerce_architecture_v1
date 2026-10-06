@@ -127,6 +127,17 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"encoding_not_utf8": "The file must be UTF-8 encoded.",
 		"too_many_rows":     "Too many rows.",
 		"required":          "A required column is missing.",
+		// manual-fulfilment-v1 Amendment W3-07B (parcel groups, unit w3-07b-parcel-merge): 409 refusals of the group commands and of a
+		// single/bulk shipment of a grouped order.
+		"in_parcel_group":      "This order is in a parcel group; ship the group instead, or dissolve the group first.",
+		"cod_not_mergeable":    "Cash-on-delivery orders cannot be merged into one parcel.",
+		"cvs_not_mergeable":    "Convenience-store orders cannot be merged into one parcel.",
+		"not_mergeable":        "This order cannot be merged into a parcel.",
+		"already_in_group":     "An order is already in a parcel group.",
+		"owner_mismatch":       "Orders of different buyers cannot share a parcel.",
+		"destination_mismatch": "Orders with different delivery details cannot share a parcel.",
+		"group_not_open":       "This parcel group is no longer open.",
+		"group_incomplete":     "Not every order of the parcel group was shipped.",
 		// manual-fulfilment-v1 Amendment W3-02B (pick list, unit w3-02b-picklist): > 500 order_ids.
 		"too_many": "Too many orders.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
@@ -224,6 +235,11 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_cursor":                 "The page cursor is not valid.",
 		"invalid_ref":                    "The comment reference is not valid.",
 		"invalid_filter":                 "The filter is not valid.",
+		"human_takeover":                 "A staff member is handling this conversation, so no automatic reminder was sent.",
+		"already_reminded":               "This buyer was already reminded for this session.",
+		"not_remindable":                 "This buyer has nothing left to remind.",
+		"no_storefront":                  "The store has no active storefront domain to link to.", // W3-03B checkout reminders
+		"below_reserved":                 "Stock cannot be set below what is already reserved.",   // live-console-v1 §7.2 (LC-B7): bounded live stock edit
 		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
 		"bundle_already_ordered": "These claims already have an order.",
 		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",

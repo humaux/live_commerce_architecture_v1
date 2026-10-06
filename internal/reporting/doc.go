@@ -8,4 +8,9 @@
 // the rows from payments.facts and payments.refund_facts. Profit/COGS reporting is deferred. Pay-at-pickup money collected by the
 // carrier (ops-polish OP3) is a separate pair of columns, and so is bank-transfer money the merchant confirmed (storefront-v2 §C,
 // migration 0088, which supersedes 0085's definition): neither is ever added to captured or net. A row carries 7, 9 or 11 keys (each pair is all or nothing).
+//
+// W6-02B adds four more read-only reports (products.go, channels.go, funnel.go, manual.go; shared plumbing in report.go): per-SKU money, money per sales
+// channel, the claim -> link -> order -> paid funnel and the merchant-created orders per staff and session, all over at most 92 Taipei days through
+// identity.read_report_* / export_report (migrations/0147, contracts/reporting-v2.md). Their money is the finance rows spread over the frozen order snapshot;
+// sums equal the finance summary, and offline money is never part of captured or net.
 package reporting

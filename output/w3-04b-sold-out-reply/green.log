@@ -1,0 +1,35 @@
+=== RUN   TestSoldOutReplyPlanShape
+=== RUN   TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link
+=== RUN   TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out
+=== RUN   TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable
+--- PASS: TestSoldOutReplyPlanShape (9.93s)
+    --- PASS: TestSoldOutReplyPlanShape/SO02_untracked_SKU_sells_the_link (0.20s)
+    --- PASS: TestSoldOutReplyPlanShape/stocked_SKU_sells_the_link (0.26s)
+    --- PASS: TestSoldOutReplyPlanShape/SO-OPEN-1_partial_stock_counts_as_sold_out (0.23s)
+    --- PASS: TestSoldOutReplyPlanShape/counters_reserved/allocated/unavailable_are_not_sellable (0.27s)
+=== RUN   TestSoldOutReplyPausedOffer
+--- PASS: TestSoldOutReplyPausedOffer (0.98s)
+=== RUN   TestSoldOutReplyBudget
+=== RUN   TestSoldOutReplyBudget/SO04_manual_after_the_sold-out_reply_is_refused
+=== RUN   TestSoldOutReplyBudget/SO05_switch_off_keeps_the_budget_for_the_merchant
+=== RUN   TestSoldOutReplyBudget/SO06_manual_first,_then_the_sold-out_claim
+--- PASS: TestSoldOutReplyBudget (1.43s)
+    --- PASS: TestSoldOutReplyBudget/SO04_manual_after_the_sold-out_reply_is_refused (0.30s)
+    --- PASS: TestSoldOutReplyBudget/SO05_switch_off_keeps_the_budget_for_the_merchant (0.45s)
+    --- PASS: TestSoldOutReplyBudget/SO06_manual_first,_then_the_sold-out_claim (0.25s)
+=== RUN   TestSoldOutReplyConcurrentReplay
+--- PASS: TestSoldOutReplyConcurrentReplay (0.87s)
+=== RUN   TestSoldOutReplySendAndUnknown
+    sold_out_reply_test.go:341: console mark kind="auto" state="" err=can't scan into dest[1] (col: private_reply_state): cannot scan NULL into *string
+--- FAIL: TestSoldOutReplySendAndUnknown (1.72s)
+=== RUN   TestSoldOutReplyCheckDenial
+--- PASS: TestSoldOutReplyCheckDenial (1.50s)
+=== RUN   TestSoldOutReplySettingsAndTemplates
+--- PASS: TestSoldOutReplySettingsAndTemplates (8.44s)
+=== RUN   TestSoldOutReplyACL
+--- PASS: TestSoldOutReplyACL (0.38s)
+FAIL
+FAIL	livecommerce/tests/foundation	26.025s
+FAIL
+test-focused: top-level PASS=7 FAIL=1 SKIP=0 exit=1

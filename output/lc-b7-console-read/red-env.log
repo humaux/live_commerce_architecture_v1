@@ -1,0 +1,11 @@
+=== RUN   TestLiveConsoleLCN17ReadModelStockClaimsSales
+    live_console_read_test.go:188: SANDBOX-profile console counted LIVE money: {Comments:{Total:<nil> Source:unavailable} KeywordComments:1 Buyers:1 Orders:{Count:1 AmountMinor:40000} Paid:{Count:1 AmountMinor:40000} Currency:TWD AsOf:2026-10-06 10:07:35.451083 +0000 UTC} / {OfferID:333e3dc7-e788-4193-9d63-5e4e5505bbbb Keyword:A1 SKUID:a874142a-d46e-4df2-b66b-cc3471fb15bf ProductName:t04-2f5a5686e03d VariantLabel: Active:true Version:1 LivePriceMinor:0xc0006860f8 SKUPriceMinor:30000 Stock:{Tracked:true Sellable:498 Reserved:2 WarehouseID:0xc000a0ad70 BalanceVersion:2} Claimed:{Buyers:1 Quantity:2} OrderedQty:2 PaidQty:2 PaidAmount:40000 SoldOut:false LowStock:false}
+--- FAIL: TestLiveConsoleLCN17ReadModelStockClaimsSales (1.50s)
+=== RUN   TestLiveConsoleLCN17PaidFollowsDeploymentEnvironment
+    live_console_read_test.go:285: unset profile must count the SANDBOX capture: {Comments:{Total:<nil> Source:unavailable} KeywordComments:1 Buyers:1 Orders:{Count:1 AmountMinor:40000} Paid:{Count:0 AmountMinor:0} Currency:TWD AsOf:2026-10-06 10:07:39.155152 +0000 UTC} / {OfferID:7e94efc8-d7dd-4a99-89dc-0c3bfbdd9075 Keyword:A1 SKUID:926fa48b-0c1a-42c9-849b-6eee5ac3de65 ProductName:t04-633d2bcba48e VariantLabel: Active:true Version:1 LivePriceMinor:0xc0003ea128 SKUPriceMinor:30000 Stock:{Tracked:true Sellable:498 Reserved:0 WarehouseID:0xc0003f0220 BalanceVersion:3} Claimed:{Buyers:1 Quantity:2} OrderedQty:2 PaidQty:0 PaidAmount:0 SoldOut:false LowStock:false}
+--- FAIL: TestLiveConsoleLCN17PaidFollowsDeploymentEnvironment (3.99s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.672s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1
+exit=1

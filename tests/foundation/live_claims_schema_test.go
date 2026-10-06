@@ -184,9 +184,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
 		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
-		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 10 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)", n)
+		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants; 0151 (W3-04B) adds sold_out_settings.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 11 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)/sold_out_settings (0151)", n)
 		}
 	})
 
@@ -279,10 +279,17 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "claims.events", "SELECT", cols("claims.events")...)
 		add(ci, "claims.events", "INSERT", cols("claims.events")...)
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
+		// 0151 (W3-04B): the sold-out predicate reads the claimed offer and quantity of the bundle-creating event (no actor, text or payload).
+		add(iw, "claims.events", "SELECT", "offer_id", "quantity", "reply_kind")
+		add(iw, "claims.events", "UPDATE", "reply_kind") // 0151: the one-way sold_out mark plan_claim_reply sets on the bundle-creating event
 		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
 		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
-		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at")
+		// W3-03B (0144): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).
+		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at",
+			"owner_id", "label", "line_count", "purged_at")
 		add(iw, "claims.bundles", "UPDATE", "link_pending_manual")
+		// W3-03B (0144): the current claim-link generation only (the merchant link issue is a CAS on it); never the token hash.
+		add(iw, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "generation")
 		add(iw, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "sku_id", "active", "version")
 		add(iw, "live.offers", "UPDATE", "updated_at")
 		add(iw, "live.claim_windows", "SELECT", "tenant_id", "store_id", "session_id", "state")
@@ -376,11 +383,15 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.order_comment_posts", "claims.capture_order_origins", "claims.attribution_session_orders", "claims.attribution_funnel", "claims.attribution_sources",
 				// 0118 (A5): the session-results attribution seams it owns (EXECUTE: commerce_auth only).
 				"claims.session_orders", "claims.order_session_counts", "claims.pick_list_session_orders",
+				// 0148 (LC-B7): the console session facts helper it owns (EXECUTE: commerce_auth only).
+				"claims.console_session_facts",
 				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
-				"claims.for_buyer_release", "claims.bind_merchant_origin_grant"})
+				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
+				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
+				"claims.report_order_bundles", "claims.report_funnel_bundles"})
 		lcSameSet(t, "schema claims ACL", lcStrings(t, f.owner, `SELECT CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END||' '||a.privilege_type
 			FROM pg_namespace n CROSS JOIN LATERAL aclexplode(n.nspacl) a WHERE n.nspname='claims' AND a.grantee<>n.nspowner`),
 			[]string{"commerce_buyer_runtime USAGE", "commerce_claims_writer USAGE", "commerce_runtime USAGE",
@@ -408,7 +419,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake','commerce_retention_writer') -- retention_writer: §4 rows asserted above
-			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) column grants, asserted above
+			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','claims.links','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) + W3-03B (0144) column grants, asserted above
 			  AND NOT (r.rolname IN ('commerce_auth','commerce_privacy_writer') AND c.oid::regclass::text='claims.bundles') -- 0078 column grants, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
@@ -465,6 +476,14 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
 			"order_session_counts": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, sessions bigint)",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			// 0148 (LC-B7): console counts + attributed (order,offer,sku) pairs, read only through identity.read_live_console_sales.
+			"console_session_facts": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "jsonb",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			// 0147 (W6-02B): report seams, read only through identity.read_report_channels / read_report_manual_orders / read_report_funnel.
+			"report_order_bundles": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, bundle_id uuid, session_id uuid)",
+				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
+			"report_funnel_bundles": {args: "p_tenant uuid, p_store uuid, p_t0 timestamp with time zone, p_t1 timestamp with time zone, p_session uuid",
+				result: "TABLE(bundle_id uuid, link_sent boolean, order_ids uuid[])", volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
 			// 0130 (W3-02B): session -> order ids for the pick list, read only through fulfillment.read_pick_list.
 			"pick_list_session_orders": {args: "p_tenant uuid, p_store uuid, p_session uuid", result: "TABLE(order_id uuid)", volatility: "s",
 				acl: "commerce_checkout_writer:EXECUTE,commerce_claims_writer:EXECUTE", comment: "W3-02B session->orders resolution (PL-OPEN-1: live_price_uses UNION order_origins). commerce_claims_writer-only read; called by fulfillment.read_pick_list for {session_id} selections."},
@@ -513,6 +532,14 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				retention[r.name] = true
 				continue
 			}
+			if r.name == "get_sold_out_reply" || r.name == "set_sold_out_reply" {
+				// 0151 (W3-04B): merchant settings definers owned by commerce_integration_writer (it owns the claim-reply planners they share a table with); the
+				// exact ACL, volatility and owner are also pinned by TestSoldOutReplyACL.
+				if !definer || r.owner != "commerce_integration_writer" || r.config != "search_path=pg_catalog" || r.acl != "commerce_integration_writer:EXECUTE,commerce_runtime:EXECUTE" || !strings.Contains(r.comment, "internal/claims") {
+					t.Fatalf("claims.%s definer shape %+v (definer=%t)", r.name, r, definer)
+				}
+				continue
+			}
 			w, ok := want[r.name]
 			if !ok {
 				t.Fatalf("unexpected function claims.%s", r.name)
@@ -539,9 +566,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0118 adds exactly two attribution functions (session_orders, order_session_counts).
 		// 0123 (LC-B2) adds exactly four: comment_poll_sources, console_source, console_marks, comment_print.
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
+		// 0148 (LC-B7) adds exactly one: console_session_facts.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 35 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-five functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 38 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its thirty-eight (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -553,15 +581,17 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname IN ('commerce_checkout_runtime','commerce_hosted_runtime') AND p.proname='consume_live_prices')
 			       -- 0110 ACL ruling: authenticated merchant projection only; not runtime-callable.
 			       -- 0118 (A5): the two attribution seams keep the same commerce_auth-only shape.
-			       OR (r.rolname='commerce_auth' AND p.proname IN ('order_live_sources','session_orders','order_session_counts'))
+			       OR (r.rolname='commerce_auth' AND p.proname IN ('order_live_sources','session_orders','order_session_counts','console_session_facts','report_order_bundles','report_funnel_bundles'))
 			       -- 0113: exact internal checkout/ads/media/integration capabilities, no raw table rights.
 			       OR (r.rolname='commerce_checkout_writer' AND p.proname IN ('capture_order_origins','order_comment_posts','attribution_session_orders','pick_list_session_orders'))
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
 			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
-			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply')) -- 0151: the owner of the two sold-out settings definers
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
+			       -- 0151 (W3-04B): the merchant transaction reads/saves the sold-out reply setting.
+			       OR (r.rolname='commerce_runtime' AND p.proname IN ('get_sold_out_reply','set_sold_out_reply'))
 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
@@ -845,10 +875,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
-					// LC-B4 (0128): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
+					// LC-B4 (0128) + W3-03B (0144, claims.links generation only; the token hash stays unreadable): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
 					// (rows stay GUC- or intake-scoped by policy; every write statement stays 42501 except the pinned flag/updated_at columns,
 					// which the `SET tenant_id=tenant_id` probe does not touch).
-					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows") && strings.HasPrefix(q, "SELECT") {
+					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows" || table == "claims.links") && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
 					// customers-billing-v1 §3.1 (0078): commerce_auth holds column SELECT on claims.bundles (customer list
@@ -889,8 +919,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// customers-billing-v1 §3.1 (0078): read-only projections of bound-bundle counts/time, no binding write.
 				"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text,uuid)", "customers.buyer_read_privacy(bytea,uuid,boolean)",
 				"claims.order_live_sources(uuid,uuid,uuid[])",
+				// 0147 (W6-02B): the channel report reads the platform of consumed origin bundles (commerce_auth holds SELECT(platform), 0078); read-only, no binding write.
+				"identity.read_report_channels(bytea,uuid,date,date,text)",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
+				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
+				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
+				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
 				"claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
