@@ -108,6 +108,7 @@ type stripeRefundSnapshot struct {
 	SendCount                                                                   int
 	BodySHA256                                                                  []byte
 	StripeRefundID, LatestStatus                                                string
+	AAD                                                                         accounts.StripeAADScope // scope the envelope was sealed under (derived rows: the platform connection)
 	HasSucceeded, HasTerminal, HasRejected                                      bool
 }
 
@@ -137,14 +138,16 @@ func (s *StripeRuntime) loadRefund(ctx context.Context, id string, claim core.Cl
 	if err := s.pool.QueryRow(bounded, `SELECT tenant_id::text,store_id::text,attempt_id::text,order_id::text,
 		connection_id::text,environment,account_id,credential_version,key_id,nonce,ciphertext,payment_intent_id,
 		currency,amount_minor,reason,requested_at,resend_until,first_sent_at,last_sent_at,send_count,body_sha256,
-		suppressed_at,stripe_refund_id,pinned_at,has_succeeded,has_terminal,has_rejected,latest_status,db_now
+		suppressed_at,stripe_refund_id,pinned_at,has_succeeded,has_terminal,has_rejected,latest_status,db_now,
+		aad_tenant_id::text,aad_store_id::text,aad_connection_id::text,aad_version
 		FROM integration.load_stripe_refund($1::uuid,$2::bigint,$3::bytea,$4::text)`,
 		id, claim.Generation, claim.LeaseToken, s.profile).
 		Scan(&out.TenantID, &out.StoreID, &out.AttemptID, &out.OrderID, &out.ConnectionID, &out.Environment,
 			&out.AccountID, &out.CredentialVersion, &out.KeyID, &out.Nonce, &out.Ciphertext, &out.PaymentIntentID,
 			&out.Currency, &out.AmountMinor, &out.Reason, &out.RequestedAt, &out.ResendUntil, &out.FirstSentAt,
 			&out.LastSentAt, &out.SendCount, &out.BodySHA256, &out.SuppressedAt, &refundID, &out.PinnedAt,
-			&out.HasSucceeded, &out.HasTerminal, &out.HasRejected, &out.LatestStatus, &out.DBNow); err != nil {
+			&out.HasSucceeded, &out.HasTerminal, &out.HasRejected, &out.LatestStatus, &out.DBNow,
+			&out.AAD.TenantID, &out.AAD.StoreID, &out.AAD.ConnectionID, &out.AAD.Version); err != nil {
 		return stripeRefundSnapshot{}, errStripeMaterial
 	}
 	if refundID != nil {
@@ -161,7 +164,7 @@ func (s *StripeRuntime) loadRefund(ctx context.Context, id string, claim core.Cl
 func (s *StripeRuntime) clientForRefund(ctx context.Context, snap stripeRefundSnapshot) (*stripe.Client, error) {
 	scope := accounts.StripeAPIScope{TenantID: snap.TenantID, StoreID: snap.StoreID, ConnectionID: snap.ConnectionID,
 		Environment: snap.Environment, AccountID: snap.AccountID, CredentialVersion: snap.CredentialVersion}
-	credentials, err := s.keys.OpenStripeAPI(scope, snap.KeyID, snap.Nonce, snap.Ciphertext)
+	credentials, err := s.keys.OpenStripeAPIFor(scope, snap.AAD, snap.KeyID, snap.Nonce, snap.Ciphertext)
 	if err != nil {
 		return nil, errStripeMaterial
 	}

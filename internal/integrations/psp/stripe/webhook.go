@@ -68,7 +68,9 @@ type Event struct {
 	ID, Type, APIVersion, ObjectType, SessionID, ClientReferenceID, MetadataAttempt string
 	// PaymentIntentID and MetadataRefund are projected only from refund and charge objects
 	// (stripe-refund-v1 §3): the PaymentIntent maps a charge, lc_refund maps an unpinned refund.
-	PaymentIntentID, MetadataRefund                   string
+	PaymentIntentID, MetadataRefund string
+	// MetadataStore is metadata.lc_store (platform Stripe, §4.2): only ever a cross-check against the attempt's store.
+	MetadataStore                                     string
 	Livemode, AccountPresent, ProbeSession, Malformed bool
 	Created, SignedAt                                 int64
 	BodySHA256                                        [32]byte
@@ -245,6 +247,11 @@ func projectEvent(raw []byte) (Event, bool) {
 			return Event{}, false
 		}
 		ev.MetadataAttempt = boundedRef(attempt)
+		store, _, okS := md.str("lc_store")
+		if !okS {
+			return Event{}, false
+		}
+		ev.MetadataStore = boundedRef(store)
 		ev.ProbeSession = probePresent && probe != ""
 		if objType == "refund" {
 			refund, _, okF := md.str("lc_refund")

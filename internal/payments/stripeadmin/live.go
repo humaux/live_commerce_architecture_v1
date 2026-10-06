@@ -34,10 +34,17 @@ type LiveApproveInput struct {
 	Checklist                                       []string
 }
 
+// PlatformChecklist are the four extra attestation codes of the PLATFORM approval (stripe-platform-account-v1 §8).
+// An approval may carry them (15 codes); set_stripe_platform_open on LIVE requires them.
+var PlatformChecklist = []string{"merchant_terms", "payout_ops", "platform_stripe_terms", "tax_invoice"}
+
 func validChecklist(codes []string) bool {
 	sorted := slices.Clone(codes)
 	slices.Sort(sorted)
-	return slices.Equal(sorted, LiveChecklist) // sorted copy equal => no missing, extra or duplicate code
+	full := slices.Concat(LiveChecklist, PlatformChecklist)
+	slices.Sort(full)
+	// sorted copy equal => no missing, extra or duplicate code; the base 11 or the platform 15
+	return slices.Equal(sorted, LiveChecklist) || slices.Equal(sorted, full)
 }
 
 // LiveApprove reads GET /v1/account with the stored key (OpenLive only), projects the L12 readiness fields and
