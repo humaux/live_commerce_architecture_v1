@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { accentText, contrast, defaultDesign, internalHref, normalizeDesign, onAccent, resolveNav, safeExternal, withPreview } from "../lib/design.ts";
-import { freeShippingProgress, initialChoice, parseCollections, parseProductDetail, parseProductList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
+import { MAX_DETAIL_IMAGES, MAX_MAIN_IMAGES, freeShippingProgress, initialChoice, parseCollections, parseProductDetail, parseProductList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
 import { parseListQuery } from "../lib/shop-query.ts";
 import { productJsonLd, robotsTxt, sitemapXml } from "../lib/seo.ts";
 import { formatMoney, majorToMinor, minorToMajor } from "../lib/money.ts";
@@ -95,6 +95,11 @@ test("catalog-v2 parsers accept the frozen shapes and refuse drift", () => {
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], stock: "plenty" }] }), null);
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], option_values: ["M"] }] }), null, "values must align with the axes");
   assert.equal(parseProductDetail({ ...detail, options: [{}, {}, {}, {}] }), null);
+  // Pilot bug 2026-10-06: a 9-image product broke the page because this parser capped below the backend. Since product-media-v2
+  // the backend caps `images` (main) at MaxMainImages and 0149 moves positions >= 4 to detail, so the parser cap must equal it.
+  const img = (n) => ({ id: U(100 + n), width: 1512, height: 2016, sizes: [{ width: 360, pixel_width: 360 }, { width: 720, pixel_width: 720 }, { width: 1080, pixel_width: 1080 }] });
+  for (const n of [1, MAX_MAIN_IMAGES]) assert.equal(parseProductDetail({ ...detail, images: Array.from({ length: n }, (_, i) => img(i)) })?.images.length, n, `${n} images must parse`);
+  assert.equal(parseProductDetail({ ...detail, images: Array.from({ length: MAX_MAIN_IMAGES + 1 }, (_, i) => img(i)) }), null, "over the backend main cap");
   assert.deepEqual(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }] }), [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }]);
   assert.equal(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: -1 }] }), null);
   assert.equal(parseCollections({ collections: [{ slug: "c", title: "C", image_id: null, product_count: 2 }] }), null, "contract A: the id is required");
@@ -195,4 +200,30 @@ test("no-image placeholder copy: exactly the locale label a photo-less card or g
     assert.equal(typeof shopCopy[locale].noImage, "string");
     assert.ok(shopCopy[locale].noImage.length > 0);
   }
+});
+
+test("storefront image caps equal the Go catalog caps (internal/catalog MaxMainImages, MaxDetailImages)", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const go = await readFile(new URL("../../../internal/catalog/images.go", import.meta.url), "utf8");
+  for (const [name, value] of [["MaxMainImages", MAX_MAIN_IMAGES], ["MaxDetailImages", MAX_DETAIL_IMAGES]]) {
+    const m = go.match(new RegExp(`${name}\\s*=\\s*(\\d+)`));
+    assert.ok(m, `${name} not found in internal/catalog/images.go`);
+    assert.equal(value, Number(m[1]), name);
+  }
+});
+
+// Drift audit D2: Go counts design text limits in runes (internal/design/schema.go w.text/w.markdown); the storefront clipped by UTF-16 units, so a valid
+// announcement of 100 emoji (100 runes, 200 units) lost half its text (and a cut inside a surrogate pair leaves a lone surrogate).
+test("design text limits count code points like Go, never splitting a surrogate pair", () => {
+  const emoji = "😀";
+  const d = normalizeDesign({
+    profile: { name: "Shop", announcement: emoji.repeat(100), tagline: emoji.repeat(120) },
+    pages: [{ slug: "about", title: "About", body: emoji.repeat(10000) }],
+  });
+  assert.equal([...d.profile.announcement].length, 100);
+  assert.equal([...d.profile.tagline].length, 120);
+  assert.equal([...d.pages[0].body].length, 10000);
+  const over = normalizeDesign({ profile: { name: "Shop", announcement: emoji.repeat(141) } });
+  assert.equal([...over.profile.announcement].length, 140);
+  assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(over.profile.announcement), "no lone surrogate");
 });
