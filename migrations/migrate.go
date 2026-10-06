@@ -201,6 +201,14 @@ func apply(ctx context.Context, pool *pgxpool.Pool, baseDomain string) error {
 	if _, err = postTx.Exec(ctx, `GRANT UPDATE(kind) ON river_payment.river_job TO commerce_stripe_ingress`); err != nil {
 		return err
 	}
+	// PAYUNi notify never inserts a payment job: integration.payment_job_queue pins each
+	// attempt to its single query job (a.job_id=j.id), so the notify definer wakes that
+	// job by rescheduling scheduled_at (see migrations/0136). The guard function forbids
+	// id/kind/args/unique_key/queue changes, so column-level UPDATE(scheduled_at) is the
+	// only privilege the definer owner needs. Re-asserted on every Apply, same as above.
+	if _, err = postTx.Exec(ctx, `GRANT UPDATE(scheduled_at) ON river_payment.river_job TO commerce_integration_writer`); err != nil {
+		return err
+	}
 	// Reapply only lifecycle grants after future upstream additions, and only in
 	// the final transaction: no Meta privileges leak from a partial cutover.
 	if _, err = postTx.Exec(ctx, `GRANT USAGE ON SCHEMA river_meta TO commerce_meta_worker;
