@@ -1,3 +1,6 @@
+// Purpose: Exercises merchant catalog, inventory, collections and shopper visibility in the browser harness.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ./catalog-document-driver, ../../apps/admin/lib/catalog-v2-copy, ../../apps/admin/lib/copy, ./product-editor.acceptance, ./product-review.acceptance, ./product-visual.acceptance, ./product-feedback.acceptance; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_TAG, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_DIAGNOSTIC, PRODUCT_EDITOR_ACCEPTANCE, PRODUCT_VISUAL_PHASE
+// Used by: apps/admin/src/features/catalog/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_catalog_core_test.go, tests/foundation/catalog_core_gate_test.go
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages, merchant side, in real Chromium.
 // BFF routes exercised through the UI: GET catalog-products, GET|POST|PATCH products*, POST skus, PATCH skus/{id}, POST skus/{id}/price,
 // POST skus/{id}/archive, GET warehouses, GET catalog-ledger, POST inventory/adjustments, products/{id}/images, GET|POST|PATCH collections*,
@@ -20,6 +23,7 @@ import { copy } from "../../apps/admin/lib/copy";
 import { registerProductEditorAcceptance } from "./product-editor.acceptance";
 import { registerProductReviewAcceptance } from "./product-review.acceptance";
 import { registerProductVisualAcceptance } from "./product-visual.acceptance";
+import { registerProductFeedbackAcceptance } from "./product-feedback.acceptance";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -95,6 +99,7 @@ const variants = [
 if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") {
   registerProductEditorAcceptance();
   registerProductReviewAcceptance();
+  registerProductFeedbackAcceptance();
   if (process.env.PRODUCT_VISUAL_PHASE) registerProductVisualAcceptance();
 }
 
@@ -253,10 +258,17 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await page.getByTestId("products-search-submit").click();
       const productRows = page.locator('[data-testid^="product-row-"]');
       await expect(productRows).toHaveCount(25);
+      await expect(productRows.first()).toContainText(`${tag} paging`);
       await expect(page.getByTestId("products-next")).toBeEnabled();
+      const firstPageRow = await productRows.first().getAttribute("data-testid");
       await page.getByTestId("products-next").click();
+      // Both pages contain 25 rows. Count alone can accept the stale first page
+      // before the route/read completes and click the same cursor twice.
+      await expect(productRows.first()).not.toHaveAttribute("data-testid", firstPageRow!);
       await expect(productRows).toHaveCount(25);
+      const secondPageRow = await productRows.first().getAttribute("data-testid");
       await page.getByTestId("products-next").click();
+      await expect(productRows.first()).not.toHaveAttribute("data-testid", secondPageRow!);
       await expect(productRows).toHaveCount(10);
       await expect(page.getByTestId("products-next")).toBeDisabled();
       await expect(page.getByTestId("products-previous")).toBeEnabled();

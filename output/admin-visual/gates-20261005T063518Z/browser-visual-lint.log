@@ -1,0 +1,164 @@
+✔ thresholds are the named constants of the brief (1.887709ms)
+✔ R1: document wider than the viewport, and the outermost element past the edge (0.233708ms)
+✔ R2: label tops, control tops and control heights of one visual row (0.513959ms)
+✔ R2: what is one row and what is not (0.159875ms)
+✔ R2: a button beside a field has to line up with its control (0.160458ms)
+✔ R3: a row made tall by stacked controls, a control wider than its cell (0.473291ms)
+✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (0.198916ms)
+✔ R4: small text, helper text apart, icons and duplicates excepted (0.121875ms)
+✔ R5: tap targets on the 390 viewport only (0.497916ms)
+✔ R6: interactive elements and text boxes that overlap (0.48325ms)
+✔ R7: clipped labels, buttons and links (0.34375ms)
+✔ R8: the same visible label twice in one list (0.127583ms)
+✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (0.558833ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 83.146209
+PASS visual-lint canary: bad page trips R1,R2,R3,R4,R6,R7,R8 (+R5 at 390), good page trips none (desktop and 390)
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 112ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1083ms
+  Running TypeScript ...
+  Finished TypeScript in 509ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 200ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 59ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1399ms
+  Running TypeScript ...
+  Finished TypeScript in 372ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 320ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserClickSweep
+    browser_click_sweep_test.go:477: G-UI8 click sweep passed; ledger=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-click-sweep evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/click-sweep/20261005T063811.836581000
+--- PASS: TestBrowserClickSweep (404.51s)
+PASS
+ok  	livecommerce/tests/foundation	407.174s
+G-UI9: shots 294/294; instances R1 0, R2 0, R3 0, R4 0, R5 368, R6 0, R7 66, R8 0; blocking 0; no blocking finding
+G-UI9 evidence: output/ui-visual-audit/20261005T063819Z (lint.md, lint.json, index.json, shots/, crops/)
+PASS: G-UI9 visual lint (every admin registry route, buyer storefront route and platform-site page at 1586x992 + 390x844 in zh-TW, zh-CN and en, shot and measured against R1-R8); signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.

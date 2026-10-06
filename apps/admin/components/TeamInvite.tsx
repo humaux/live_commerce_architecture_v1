@@ -1,3 +1,6 @@
+// Purpose: Owns the invitation acceptance view and sign-in guidance.
+// Depends on: react, @live-commerce/i18n, @/lib/invite-next, @/lib/settings-client, @/lib/team-client, @/lib/team-copy, @/lib/company, ./OperatorFooter, ./orders.css, ./customers.css
+// Used by: apps/admin/app/[locale]/invite/[token]/page.tsx
 "use client";
 
 // Invitation page body (/{locale}/invite/{token}): signed out -> how to sign in or sign up with the invited address, then reopen
@@ -11,9 +14,12 @@ import { inviteNextHash } from "@/lib/invite-next";
 import { sessionBoundary } from "@/lib/settings-client";
 import { acceptInvite } from "@/lib/team-client";
 import { teamCopy } from "@/lib/team-copy";
+import { company } from "@/lib/company";
+import { OperatorFooter } from "./OperatorFooter";
 import "./orders.css";
 import "./customers.css";
 
+/** Owns the invitation acceptance view and sign-in guidance. User acceptance submits the token through team-client. */
 export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale: Locale; token: string; signedIn: boolean; passwordLogin: boolean }) {
   const c = teamCopy[locale];
   const [phase, setPhase] = useState<"idle" | "busy" | "done">("idle");
@@ -42,6 +48,7 @@ export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale:
   return (
     <main className="orders-page customers-page" data-testid="invite-page" style={{ maxWidth: 560, margin: "48px auto", padding: "0 16px" }}>
       <section className="customers-section">
+        <p className="invite-brand">{company.productName}</p>
         <h1>{c.title}</h1>
         <p>{c.inviteIntro}</p>
         {phase === "done" ? (
@@ -73,6 +80,7 @@ export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale:
           </>
         )}
       </section>
+      <OperatorFooter locale={locale} />
     </main>
   );
 }

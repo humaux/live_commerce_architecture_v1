@@ -1,0 +1,479 @@
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 160ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.0s
+  Running TypeScript ...
+  Finished TypeScript in 1073ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 493ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestMerchantAccountAPIProcessRestart
+    account_process_test.go:235: PASS: actual API PIDs 90917 -> 90922, same isolated PG and key config; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/account-process-20261005T065518.680754000
+--- PASS: TestMerchantAccountAPIProcessRestart (8.53s)
+=== RUN   TestBrowserIdentityRealChain
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/start -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/complete -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 409
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/dashboard -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/warehouses -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/catalog-ledger -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/warehouses -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 409
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts/da86520b-352d-40f3-a708-00c095898f0b -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts/da86520b-352d-40f3-a708-00c095898f0b/rotate -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts/da86520b-352d-40f3-a708-00c095898f0b/rotate -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts/da86520b-352d-40f3-a708-00c095898f0b/rotate -> 409
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 422
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit/inspect -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit/inspect -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/markets/99999999-9999-4999-8999-999999999999/countries/TW/payment-methods/payuni_credit -> 409
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts -> 429
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/70f8195d-31b0-4b93-b609-0e549e67f2c1/provider-accounts/da86520b-352d-40f3-a708-00c095898f0b -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/logout -> 204
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 401
+    browser_identity_chain_test.go:43: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/identity-real-20261005T065525.829772000
+--- PASS: TestBrowserIdentityRealChain (8.89s)
+=== RUN   TestBrowserSettingsWizardRealChain
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/start -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/login/complete -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/initial-store -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/dashboard -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 409
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods/payuni_credit/inspect -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport POST /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods/payuni_credit -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts/8177e85c-f8f3-4038-8d67-c0102560b3a0 -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/logistics/ecpay -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/logistics/cvs-settings -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/bank-transfer-settings -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/cash-on-delivery-settings -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/notification-settings -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/logistics/ecpay -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home/policy -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home/policy -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport PUT /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home/policy -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/payment-methods -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services/home -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/provider-accounts -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/markets/256ac1b3-f1e8-4a4c-abf4-59cba3e85a51/countries/TW/delivery-services -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/billing/standing -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/meta-connect/status -> 404
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/storefront/domains -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores -> 200
+    browser_identity_chain_test.go:143: Go transport GET /v1/admin/stores/97844203-945b-450c-a699-22cd5dfc0438/logistics/ecpay -> 404
+    browser_identity_chain_test.go:143: Go transport POST /v1/identity/logout -> 204
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/settings-real-20261005T065534.811162000
+--- PASS: TestBrowserSettingsWizardRealChain (6.83s)
+PASS
+ok  	livecommerce/tests/foundation	26.275s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.

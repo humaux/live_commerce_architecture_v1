@@ -1,0 +1,19 @@
+✔ ADM10 operator sentence is localized while product and company facts stay authoritative (0.371333ms)
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.228584ms)
+✔ PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels (0.103542ms)
+✔ PS1 legal identity is one untranslated source (0.046833ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.323291ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (0.372458ms)
+✔ PS4 optional Meta verification value never has a fake default (0.123583ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.065041ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.230833ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (0.277292ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.130167ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 105.286959

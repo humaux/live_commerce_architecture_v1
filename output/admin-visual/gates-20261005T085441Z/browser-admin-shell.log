@@ -1,0 +1,20 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (379.929875ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.493875ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (2.912083ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (1.483333ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.591709ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (4.938084ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.186416ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.236084ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (170.594833ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.269583ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 596.45775
+PASS G-UI2/G-UI4: 24 matrix cases, role negative, store switch, axe shell audit
+PASS platform-brand: 24 real-click/reload cases, 18 screenshots; MOCK not platform-site PS2

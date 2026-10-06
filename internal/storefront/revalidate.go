@@ -1,3 +1,9 @@
+// Purpose: RevalidateQuote, the read-only re-proof of an immutable quote against locked current inputs inside checkout.Begin's transaction.
+// Depends on: internal/buyer (scope), internal/pricing (policy/market locks), claims.live_prices through applyLivePrices (claim_price.go); sets the
+//   transaction-local GUC app.quote_id (migration 0129) before it so a merchant-origin grant prices only the quote it is bound to.
+// Used by: internal/checkout Begin (checkout.go); tests/foundation live-price and for-buyer gates.
+// Invariants: I05 (the quote is the only charge authority); this function never writes a row.
+
 package storefront
 
 import (
@@ -60,6 +66,12 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 	}
 	// The same overlay as CreateQuote: if the claim link expired (or the offer changed) since the quote,
 	// the live price no longer applies, the line differs from the snapshot and the buyer must re-quote.
+	// claims.live_prices (migration 0129) honours a merchant-origin grant bound to a quote only for the quote named here; CreateQuote
+	// leaves app.quote_id unset, so a grant that already priced one quote prices no second one. Transaction-local, set from the quote id
+	// this function was asked to re-price (not a client value: the id was validated above and readQuote proved it is this buyer's).
+	if _, err = tx.Exec(ctx, `SELECT set_config('app.quote_id',$1,true)`, quoteID); err != nil {
+		return Quote{}, err
+	}
 	if err = applyLivePrices(ctx, tx, s, cart.ID, currentLines); err != nil {
 		return Quote{}, err
 	}

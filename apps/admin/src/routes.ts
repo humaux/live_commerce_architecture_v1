@@ -1,3 +1,6 @@
+// Purpose: Owns admin navigation and access visibility; authorization remains server-side.
+// Depends on: ./route-types.ts, ./features/overview/routes.ts, ./features/live/routes.ts, ./features/orders/routes.ts, ./features/catalog/routes.ts, ./features/customers/routes.ts, ./features/marketing/routes.ts, ./features/storefront/routes.ts, ./features/finance/routes.ts, ./features/settings/routes.ts, ./features/identity/routes.ts
+// Used by: apps/admin/components/AttributionPanels.tsx, apps/admin/components/WorkspaceFrame.tsx, apps/admin/src/page-title.ts, apps/admin/src/route-metadata.ts, tests/admin/attribution.test.ts, tests/admin/shell-registry.test.ts
 // Single route registry. No network calls; permissions here are navigation UX, never Go authorization.
 import type { Access, GroupID, RouteEntry } from "./route-types.ts";
 import { overviewRoutes } from "./features/overview/routes.ts";
@@ -31,9 +34,10 @@ export const groups: readonly { id: GroupID; icon: string }[] = [
   { id: "customers", icon: "support" },
   { id: "marketing", icon: "meta" },
   { id: "storefront", icon: "inventory" },
-  { id: "finance", icon: "orders" },
+  { id: "finance", icon: "wallet" },
   { id: "settings", icon: "settings" },
 ];
+/** Finds the registered route matching a path. */
 export function matchRoute(path: string): RouteEntry | undefined {
   const clean = path.replace(/\/$/, "") || "/";
   return (
@@ -47,6 +51,7 @@ export function matchRoute(path: string): RouteEntry | undefined {
     )
   );
 }
+/** Checks supplied navigation access without authorizing server requests. */
 export function canOpen(route: RouteEntry, access: Access): boolean {
   if (route.public) return true;
   if (!access) return false;
@@ -54,6 +59,7 @@ export function canOpen(route: RouteEntry, access: Access): boolean {
     access.role === "owner" || access.permissions.includes(route.permission)
   );
 }
+/** Returns navigation groups visible to the supplied access. */
 export function visibleGroups(access: Access) {
   return groups
     .map((group) => ({

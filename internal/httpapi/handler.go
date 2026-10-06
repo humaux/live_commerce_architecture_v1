@@ -87,6 +87,10 @@ type Options struct {
 	// ManualOrders is the merchant-created order pipeline (merchant-tools, contract G3); cmd/api builds it with the buyer surface. nil
 	// (buyer surface off) keeps the route mounted and answering 503 manual_order_unavailable, so the admin page can say why.
 	ManualOrders *merchanttools.ManualOrders
+	// ForBuyer is the order-for-a-buyer service (live-console-v1 §5, A15/A16; unit LC-B6): the claim prefill and the order made from the inbox with
+	// an optional pay-link DM. cmd/api builds it on ManualOrders and the inbox service. nil keeps both routes mounted and answering 503
+	// manual_order_unavailable.
+	ForBuyer *merchanttools.ForBuyer
 	// StoreBaseDomain is the platform base zone (LC_STORE_BASE_DOMAIN) the merchant domain request builds CNAME targets from
 	// and refuses hostnames under (R5 unit store-domains). Empty leaves the request route mounted and answering 422.
 	StoreBaseDomain string
@@ -214,11 +218,12 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerPickListRoutes(mux, pool, configured.CVS) // unit w3-02b-picklist: pick list, carrier export, cvs-batch
 	registerOfflinePaymentRoutes(mux, pool)
-	registerCodPaymentRoutes(mux, pool)                             // unit home-cod: cash-on-delivery settings, cod.go
-	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders) // unit merchant-tools: storefront-v2 section G, merchanttools.go
+	registerCodPaymentRoutes(mux, pool)                                                  // unit home-cod: cash-on-delivery settings, cod.go
+	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders, configured.ForBuyer) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)
 	registerInboxRoutes(mux, pool, configured.Inbox)
+	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
 	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {
@@ -380,7 +385,7 @@ func scopedAs(pool *pgxpool.Pool, permission string, classifier func(error) (int
 				w.Header().Set("Retry-After", "60")
 			}
 			status, code := classifier(err)
-			respondError(w, status, code)
+			respondErrorDetails(w, err, status, code)
 			return
 		}
 		respond(w, http.StatusOK, result)
@@ -455,6 +460,17 @@ func catalogClassify(err error) (int, string) {
 
 func respondError(w http.ResponseWriter, status int, code string) {
 	httperror.Write(w, status, code)
+}
+
+// respondErrorDetails is respondError plus the bounded details object of an error that declares one (inbox.SendError: the exceeded limit
+// and/or a fixed reason code, never a request value).
+func respondErrorDetails(w http.ResponseWriter, err error, status int, code string) {
+	var detailed interface{ ErrorDetails() map[string]any }
+	if errors.As(err, &detailed) {
+		httperror.WriteDetails(w, status, code, detailed.ErrorDetails())
+		return
+	}
+	respondError(w, status, code)
 }
 func respond(w http.ResponseWriter, status int, value any) {
 	if raw, ok := value.(rawResponse); ok { // product-photo preview bytes (images.go)

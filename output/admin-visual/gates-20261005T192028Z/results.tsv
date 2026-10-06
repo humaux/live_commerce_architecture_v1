@@ -1,0 +1,5 @@
+source	mode	exit	seconds	log
+23e08490937c6d22d1192a9e63ad26532657d40e	--browser-identity	0	80	output/admin-visual/gates-20261005T192028Z/browser-identity.log
+23e08490937c6d22d1192a9e63ad26532657d40e	--browser-meta-connect	0	38	output/admin-visual/gates-20261005T192028Z/browser-meta-connect.log
+23e08490937c6d22d1192a9e63ad26532657d40e	--browser-visual-lint	1	455	output/admin-visual/gates-20261005T192028Z/browser-visual-lint.log
+23e08490937c6d22d1192a9e63ad26532657d40e	--browser-click-sweep	1	380	output/admin-visual/gates-20261005T192028Z/browser-click-sweep.log

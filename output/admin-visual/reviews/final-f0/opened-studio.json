@@ -1,0 +1,58 @@
+[
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/en-1586x992.png",
+    "sha256": "db7e22e84fad618d1b1d7253a324b449c6799a4af792540d2034fa9047f89eb3",
+    "width": 1586,
+    "height": 1077,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/en-390x844.png",
+    "sha256": "4de00ddbedf9492d7e17fc7f1726c81f618ff4d6ce7c26d4bd47c2a1c2308868",
+    "width": 390,
+    "height": 1315,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/zh-CN-1586x992.png",
+    "sha256": "e05b6698286633225be9cce5808a4037828c9ff27c3353e21936be40e5ea2307",
+    "width": 1586,
+    "height": 1077,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/zh-CN-390x844.png",
+    "sha256": "bdb0ce990becd55b10d7c516dfd73d55e558d6bf1a911d4e03ea1abaadd89b88",
+    "width": 390,
+    "height": 1269,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/zh-TW-1586x992.png",
+    "sha256": "02fa6802857daece191131f5a52b36552f6f4ab5f3722285322b3e7f165b9830",
+    "width": 1586,
+    "height": 1077,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T105217Z/shots/admin/studio/zh-TW-390x844.png",
+    "sha256": "f9980ee345ccee894f7469c6e3a6f7893e52ef65d1bcd7a90ee95f17835b0b2d",
+    "width": 390,
+    "height": 1269,
+    "kind": "final READY capture",
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/studio-readiness-red-green/red.png",
+    "sha256": "94429426e6ec394c340e64c5651f0fe1640896c1b604f6a23d6edb39ecd331f7",
+    "width": 1586,
+    "height": 992,
+    "kind": "historical RED old source",
+    "opened": true
+  }
+]

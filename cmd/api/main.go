@@ -149,6 +149,15 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	// manual sends (LC-B4: A4/A5/A6/A12): needs the Page HPKE public ring (merchant connect's) and a River client.
+	if err := enableInboxSend(inboxService, pool, os.Getenv); err != nil {
+		return err
+	}
+	// order for a buyer (LC-B6: A15/A16): the manual-order pipeline + the inbox pay-link planner; nil without the buyer surface.
+	forBuyer, err := buildForBuyer(cvs.Manual, inboxService)
+	if err != nil {
+		return err
+	}
 	// stripe-live-enable-v1 §5.2: the refund routes need the deployment's payment environment. An unset profile keeps
 	// the pre-LIVE SANDBOX behavior (payment-free deployments); a set but unknown profile is refused at start.
 	paymentEnvironment := ""
@@ -160,7 +169,7 @@ func run() error {
 		paymentEnvironment = env
 	}
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
-		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual,
+		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, ManualOrders: cvs.Manual, ForBuyer: forBuyer,
 		LiveFlowJobs:    liveFlowJobs,
 		CommentStream:   commentStream,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})

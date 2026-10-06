@@ -1,0 +1,11 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/gate-ledger.mjs:10
+  throw new Error("Pass --source with the full pinned source SHA; never inherit an old checkpoint.");
+        ^
+
+Error: Pass --source with the full pinned source SHA; never inherit an old checkpoint.
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/admin-visual/gate-ledger.mjs:10:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0

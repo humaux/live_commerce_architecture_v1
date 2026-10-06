@@ -1,9 +1,13 @@
+// Purpose: Runs shell navigation, branding and responsive/access checks; writes local evidence.
+// Depends on: Node assert/fs/module, shell-fixture, shell/company copy and frozen ../ui/visual-lint-lib.mjs arrow measurement.
+// Used by: apps/admin/src/features/catalog/routes.ts, apps/admin/src/features/orders/routes.ts, apps/admin/src/features/overview/routes.ts, scripts/dev/release-gate.sh
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { otherID } from "./shell-fixture.mjs";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
-import { company, operatedBy, brandedTitle } from "../../apps/admin/lib/company.ts";
+import { company, operatorSentence, brandedTitle } from "../../apps/admin/lib/company.ts";
+import { T } from "../ui/visual-lint-lib.mjs";
 const require = createRequire(import.meta.url);
 const sizes = [
   [1366, 768],
@@ -15,6 +19,7 @@ const sizes = [
   [375, 812],
   [360, 740],
 ];
+/** Runs browser shell checks and writes evidence using the supplied isolated fixture. */
 export async function runShellGate({
   page,
   context,
@@ -38,7 +43,8 @@ export async function runShellGate({
       .locator('[data-testid="nav-group-overview"]')
       .waitFor({ state: "attached" });
     assert.equal(await page.getByTestId("shell-platform-brand").textContent(), company.productName);
-    assert.equal(await page.getByTestId("operator-footer").innerText(), operatedBy);
+    const locale = new URL(page.url()).pathname.split("/")[1];
+    assert.equal(await page.getByTestId("operator-footer").innerText(), operatorSentence(locale));
   };
   const openMenu = async () => {
     if (
@@ -162,6 +168,19 @@ export async function runShellGate({
         },
       );
       await geometry();
+      // READ/MEASURE only: use the frozen native-arrow allowance, never change the control for this check.
+      const localeFit = await page.getByTestId("locale-switch").evaluate((select, arrow) => {
+        const style = getComputedStyle(select);
+        const context = document.createElement("canvas").getContext("2d");
+        context.font = style.font;
+        return {
+          label: select.selectedOptions[0].textContent,
+          text: context.measureText(select.selectedOptions[0].textContent).width,
+          available: select.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+            - (style.appearance === "none" ? 0 : arrow),
+        };
+      }, T.SELECT_ARROW_PX);
+      assert.ok(localeFit.available >= localeFit.text, `R7 locale value fits at ${width}/${locale}: ${JSON.stringify(localeFit)}`);
       await shot(`shell-${locale}-${width}x${height}`);
       // Browser-level audit of shell only. Old page-body findings belong to later domain units.
       await page.addScriptTag({

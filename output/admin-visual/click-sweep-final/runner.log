@@ -1,0 +1,213 @@
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:61952, storefront https://buyer.example (Next :61968); 24 registry routes; workers=1 sample=3
+[   3s] / desktop/zh-TW [skip] 1 controls, 1 classes sampled
+[  13s] / desktop/zh-TW [topbar] 3 controls, 3 classes sampled
+[  22s] / desktop/zh-TW [rail] 9 controls, 9 classes sampled
+[  35s] / desktop/zh-TW [main] 15 controls, 15 classes sampled
+[  56s] admin / desktop/zh-TW done
+[  57s] / mobile/zh-TW [skip] 1 controls, 1 classes sampled
+[  67s] / mobile/zh-TW [topbar] 4 controls, 4 classes sampled
+[  77s] / mobile/zh-TW [rail] 10 controls, 10 classes sampled
+[  94s] / mobile/zh-TW [main] 15 controls, 15 classes sampled
+[ 115s] admin / mobile/zh-TW done
+[ 116s] / desktop/en [skip] 1 controls, 1 classes sampled
+[ 126s] / desktop/en [topbar] 3 controls, 3 classes sampled
+[ 135s] / desktop/en [rail] 9 controls, 9 classes sampled
+[ 148s] / desktop/en [main] 15 controls, 15 classes sampled
+[ 169s] admin / desktop/en done
+[ 170s] /studio desktop/zh-TW [main] 6 controls, 6 classes sampled
+[ 178s] admin /studio desktop/zh-TW done
+[ 178s] /studio mobile/zh-TW [main] 6 controls, 6 classes sampled
+[ 187s] admin /studio mobile/zh-TW done
+[ 187s] /studio desktop/en [main] 6 controls, 6 classes sampled
+[ 195s] admin /studio desktop/en done
+[ 196s] /studio/claims desktop/zh-TW [main] 16 controls, 16 classes sampled
+[ 218s] admin /studio/claims desktop/zh-TW done
+[ 218s] /studio/claims mobile/zh-TW [main] 16 controls, 16 classes sampled
+[ 240s] admin /studio/claims mobile/zh-TW done
+[ 241s] /studio/claims desktop/en [main] 16 controls, 16 classes sampled
+[ 262s] admin /studio/claims desktop/en done
+[ 263s] /orders desktop/zh-TW [main] 19 controls, 17 classes sampled
+[ 286s] admin /orders desktop/zh-TW done
+[ 287s] /orders mobile/zh-TW [main] 16 controls, 14 classes sampled
+[ 307s] admin /orders mobile/zh-TW done
+[ 307s] /orders desktop/en [main] 19 controls, 17 classes sampled
+[ 330s] admin /orders desktop/en done
+[ 331s] /orders/new desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 338s] admin /orders/new desktop/zh-TW done
+[ 338s] /orders/new mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 345s] admin /orders/new mobile/zh-TW done
+[ 345s] /orders/new desktop/en [main] 5 controls, 5 classes sampled
+[ 351s] admin /orders/new desktop/en done
+[ 352s] admin /orders/cvs-print desktop/zh-TW done
+[ 353s] admin /orders/cvs-print mobile/zh-TW done
+[ 353s] admin /orders/cvs-print desktop/en done
+[ 354s] /products desktop/zh-TW [main] 27 controls, 27 classes sampled
+[ 395s] admin /products desktop/zh-TW done
+[ 396s] /products mobile/zh-TW [main] 27 controls, 27 classes sampled
+[ 435s] admin /products mobile/zh-TW done
+[ 435s] /products desktop/en [main] 27 controls, 27 classes sampled
+[ 476s] admin /products desktop/en done
+[ 477s] /products/[product] desktop/zh-TW [main] 33 controls, 33 classes sampled
+[ 535s] admin /products/[product] desktop/zh-TW done
+[ 536s] /products/[product] mobile/zh-TW [main] 23 controls, 23 classes sampled
+[ 574s] admin /products/[product] mobile/zh-TW done
+[ 575s] /products/[product] desktop/en [main] 33 controls, 33 classes sampled
+[ 632s] admin /products/[product] desktop/en done
+[ 633s] /collections desktop/zh-TW [main] 4 controls, 4 classes sampled
+[ 639s] admin /collections desktop/zh-TW done
+[ 639s] /collections mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 645s] admin /collections mobile/zh-TW done
+[ 645s] /collections desktop/en [main] 4 controls, 4 classes sampled
+[ 651s] admin /collections desktop/en done
+[ 652s] /inventory desktop/zh-TW [main] 16 controls, 16 classes sampled
+[ 673s] admin /inventory desktop/zh-TW done
+[ 674s] /inventory mobile/zh-TW [main] 13 controls, 13 classes sampled
+[ 692s] admin /inventory mobile/zh-TW done
+[ 692s] /inventory desktop/en [main] 16 controls, 16 classes sampled
+[ 714s] admin /inventory desktop/en done
+[ 715s] /products/import desktop/zh-TW [main] 2 controls, 2 classes sampled
+[ 717s] admin /products/import desktop/zh-TW done
+[ 718s] /products/import mobile/zh-TW [main] 2 controls, 2 classes sampled
+[ 721s] admin /products/import mobile/zh-TW done
+[ 721s] /products/import desktop/en [main] 2 controls, 2 classes sampled
+[ 724s] admin /products/import desktop/en done
+[ 725s] /customers desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 737s] admin /customers desktop/zh-TW done
+[ 738s] /customers mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 750s] admin /customers mobile/zh-TW done
+[ 751s] /customers desktop/en [main] 9 controls, 9 classes sampled
+[ 764s] admin /customers desktop/en done
+[ 764s] /customers/[customer] desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 771s] admin /customers/[customer] desktop/zh-TW done
+[ 772s] /customers/[customer] mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 779s] admin /customers/[customer] mobile/zh-TW done
+[ 779s] /customers/[customer] desktop/en [main] 5 controls, 5 classes sampled
+[ 786s] admin /customers/[customer] desktop/en done
+[ 787s] /ads/attribution desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 793s] admin /ads/attribution desktop/zh-TW done
+[ 794s] /ads/attribution mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 801s] admin /ads/attribution mobile/zh-TW done
+[ 801s] /ads/attribution desktop/en [main] 5 controls, 5 classes sampled
+[ 808s] admin /ads/attribution desktop/en done
+[ 809s] /promotions desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 815s] admin /promotions desktop/zh-TW done
+[ 816s] /promotions mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 820s] admin /promotions mobile/zh-TW done
+[ 820s] /promotions desktop/en [main] 5 controls, 5 classes sampled
+[ 827s] admin /promotions desktop/en done
+[ 827s] /ads desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 839s] admin /ads desktop/zh-TW done
+[ 840s] /ads mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 852s] admin /ads mobile/zh-TW done
+[ 852s] /ads desktop/en [main] 9 controls, 9 classes sampled
+[ 864s] admin /ads desktop/en done
+[ 865s] /design desktop/zh-TW [main] 9 controls, 9 classes sampled
+[ 880s] admin /design desktop/zh-TW done
+[ 881s] /design mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 896s] admin /design mobile/zh-TW done
+[ 897s] /design desktop/en [main] 9 controls, 9 classes sampled
+[ 912s] admin /design desktop/en done
+[ 913s] /finance desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 917s] admin /finance desktop/zh-TW done
+[ 918s] /finance mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 922s] admin /finance mobile/zh-TW done
+[ 922s] /finance desktop/en [main] 3 controls, 3 classes sampled
+[ 927s] admin /finance desktop/en done
+[ 927s] /settings desktop/zh-TW [main] 14 controls, 14 classes sampled
+[ 953s] admin /settings desktop/zh-TW done
+[ 953s] /settings mobile/zh-TW [main] 14 controls, 14 classes sampled
+[ 979s] admin /settings mobile/zh-TW done
+[ 980s] /settings desktop/en [main] 14 controls, 14 classes sampled
+[1006s] admin /settings desktop/en done
+[1006s] /team desktop/zh-TW [main] 5 controls, 5 classes sampled
+[1012s] admin /team desktop/zh-TW done
+[1013s] /team mobile/zh-TW [main] 4 controls, 4 classes sampled
+[1018s] admin /team mobile/zh-TW done
+[1019s] /team desktop/en [main] 5 controls, 5 classes sampled
+[1025s] admin /team desktop/en done
+[1025s] /billing desktop/zh-TW [main] 2 controls, 2 classes sampled
+[1028s] admin /billing desktop/zh-TW done
+[1029s] /billing mobile/zh-TW [main] 3 controls, 3 classes sampled
+[1033s] admin /billing mobile/zh-TW done
+[1034s] /billing desktop/en [main] 3 controls, 3 classes sampled
+[1038s] admin /billing desktop/en done
+[1038s] /invite/[token] desktop/zh-TW [main] 2 controls, 2 classes sampled
+[1041s] admin /invite/[token] desktop/zh-TW done
+[1041s] /invite/[token] mobile/zh-TW [main] 2 controls, 2 classes sampled
+[1044s] admin /invite/[token] mobile/zh-TW done
+[1044s] /invite/[token] desktop/en [main] 2 controls, 2 classes sampled
+[1047s] admin /invite/[token] desktop/en done
+[1048s] /reset desktop/zh-TW [main] 3 controls, 3 classes sampled
+[1051s] admin /reset desktop/zh-TW done
+[1052s] /reset mobile/zh-TW [main] 3 controls, 3 classes sampled
+[1056s] admin /reset mobile/zh-TW done
+[1056s] /reset desktop/en [main] 3 controls, 3 classes sampled
+[1060s] admin /reset desktop/en done
+[1061s] /signup desktop/zh-TW [main] 3 controls, 3 classes sampled
+[1064s] admin /signup desktop/zh-TW done
+[1065s] /signup mobile/zh-TW [main] 3 controls, 3 classes sampled
+[1069s] admin /signup mobile/zh-TW done
+[1069s] /signup desktop/en [main] 3 controls, 3 classes sampled
+[1073s] admin /signup desktop/en done
+[1082s] /cart desktop/zh-TW [main] 5 controls, 5 classes sampled
+[1112s] /checkout desktop/zh-TW [main] 4 controls, 4 classes sampled
+[1133s] /orders/[orderID] desktop/zh-TW [main] 1 controls, 1 classes sampled
+[1142s] / desktop/zh-TW [chrome] 18 controls, 18 classes sampled
+[1194s] / desktop/zh-TW [main] 7 controls, 7 classes sampled
+[1212s] /products desktop/zh-TW [main] 9 controls, 9 classes sampled
+[1230s] /collections desktop/zh-TW [main] 3 controls, 3 classes sampled
+[1235s] /collections/[slug] desktop/zh-TW [main] 9 controls, 9 classes sampled
+[1251s] /products/[slug] desktop/zh-TW [main] 9 controls, 9 classes sampled
+[1265s] /search desktop/zh-TW [main] 7 controls, 7 classes sampled
+[1280s] /orders/lookup desktop/zh-TW [main] 1 controls, 1 classes sampled
+[1282s] /order-link desktop/zh-TW [main] 1 controls, 1 classes sampled
+[1284s] /claim desktop/zh-TW [main] 1 controls, 1 classes sampled
+[1285s] /legal/anti-fraud desktop/zh-TW [main] 2 controls, 2 classes sampled
+[1289s] /legal/[slug] desktop/zh-TW [main] 2 controls, 2 classes sampled
+[1292s] /privacy desktop/zh-TW [main] 5 controls, 5 classes sampled
+[1321s] /data-deletion desktop/zh-TW [main] 2 controls, 2 classes sampled
+[1324s] /pages/[slug] desktop/zh-TW [main] 1 controls, 1 classes sampled
+[1334s] /cart mobile/zh-TW [main] 5 controls, 5 classes sampled
+[1364s] /checkout mobile/zh-TW [main] 4 controls, 4 classes sampled
+[1385s] /orders/[orderID] mobile/zh-TW [main] 1 controls, 1 classes sampled
+[1394s] / mobile/zh-TW [chrome] 16 controls, 16 classes sampled
+[1450s] / mobile/zh-TW [main] 7 controls, 7 classes sampled
+[1460s] /products mobile/zh-TW [main] 9 controls, 9 classes sampled
+[1478s] /collections mobile/zh-TW [main] 3 controls, 3 classes sampled
+[1484s] /collections/[slug] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[1507s] /products/[slug] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[1520s] /search mobile/zh-TW [main] 7 controls, 7 classes sampled
+[1542s] /orders/lookup mobile/zh-TW [main] 1 controls, 1 classes sampled
+[1544s] /order-link mobile/zh-TW [main] 1 controls, 1 classes sampled
+[1546s] /claim mobile/zh-TW [main] 1 controls, 1 classes sampled
+[1547s] /legal/anti-fraud mobile/zh-TW [main] 2 controls, 2 classes sampled
+[1551s] /legal/[slug] mobile/zh-TW [main] 2 controls, 2 classes sampled
+[1554s] /privacy mobile/zh-TW [main] 5 controls, 5 classes sampled
+[1583s] /data-deletion mobile/zh-TW [main] 2 controls, 2 classes sampled
+[1586s] /pages/[slug] mobile/zh-TW [main] 1 controls, 1 classes sampled
+[1596s] /cart desktop/en [main] 5 controls, 5 classes sampled
+[1626s] /checkout desktop/en [main] 4 controls, 4 classes sampled
+[1647s] /orders/[orderID] desktop/en [main] 1 controls, 1 classes sampled
+[1656s] / desktop/en [chrome] 18 controls, 18 classes sampled
+[1715s] / desktop/en [main] 7 controls, 7 classes sampled
+[1725s] /products desktop/en [main] 9 controls, 9 classes sampled
+[1751s] /collections desktop/en [main] 3 controls, 3 classes sampled
+[1757s] /collections/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[1781s] /products/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[1794s] /search desktop/en [main] 7 controls, 7 classes sampled
+[1823s] /orders/lookup desktop/en [main] 1 controls, 1 classes sampled
+[1825s] /order-link desktop/en [main] 1 controls, 1 classes sampled
+[1827s] /claim desktop/en [main] 1 controls, 1 classes sampled
+[1829s] /legal/anti-fraud desktop/en [main] 2 controls, 2 classes sampled
+[1832s] /legal/[slug] desktop/en [main] 2 controls, 2 classes sampled
+[1835s] /privacy desktop/en [main] 5 controls, 5 classes sampled
+[1864s] /data-deletion desktop/en [main] 2 controls, 2 classes sampled
+[1867s] /pages/[slug] desktop/en [main] 1 controls, 1 classes sampled
+[1870s] J1 catalog response 200 /api/stores/8daf0ef2-530e-4107-bece-7f4c5360df7f/warehouses: {"items":[{"id":"e3f0edfe-1e81-45c4-adb0-97cd5dab6ec5","name":"t04-64977906744e"}],"next_cursor":""}
+[1870s] J1 catalog response 200 /api/stores/8daf0ef2-530e-4107-bece-7f4c5360df7f/products/document: {"id":"5c209a53-440e-4b9f-91c7-37f934753ab5","name":"Sweep Journey Tee 23532e85250c","description":"Synthetic click-sweep journey product","status":"draft","version":1,"slug":"sweep-journey-tee-23532e85250c","seo_title":"","seo_description":"","options":[{"name":"Size","values":["S","M"]}],"skus":[{"id":"58e9a735-4996-4dfc-9184-aaf02842f308","product_id":"5c209a53-440e-4b9f-91c7-37f934753ab5","code":"sweep-journey-tee-23532e85250c","status":"active","currency":"TWD","price_minor":45000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["S"],"title":"S","compare_at_minor":null,"inventory_tracked":true},{"id":"a92ca379-028e-449f-b60e-ddd2cbf2e257","product_id":"5c209a53-440e-4b9f-91c7-37f934753ab5","code":"sweep-journey-tee-23532e85250c-2","status":"active","currency":"TWD","price_minor":48000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["M"],"title":"M","compare_at_minor":null,"inventory_tracked":true}]}
+[1870s] J1 catalog response 200 /api/stores/8daf0ef2-530e-4107-bece-7f4c5360df7f/warehouses: null
+[1870s] J1 catalog response 200 /api/stores/8daf0ef2-530e-4107-bece-7f4c5360df7f/warehouses: {"items":[{"id":"e3f0edfe-1e81-45c4-adb0-97cd5dab6ec5","name":"t04-64977906744e"}],"next_cursor":""}
+[1870s] J1 catalog response 200 /api/stores/8daf0ef2-530e-4107-bece-7f4c5360df7f/warehouses: null
+[1873s] 123 page/viewport/locale units opened (0 with a page-load failure), 978 control clicks (954 pass, 0 fail, 24 skip), 18 journey steps (18 pass, 0 fail); failures: known 0, new 0; stale known-defect entries 0.
+PASS G-UI8 click sweep

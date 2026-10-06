@@ -18,6 +18,7 @@ const customer = () => ({
   display_name: "Test Buyer", phone_last3: "123", orders_count: 3, paid_orders_count: 2,
   captured_minor: 300000, refunded_minor: 50000, currency: "TWD", claims_count: 1, platforms: ["facebook", "manual"],
   consents: { marketing_messages: true, ads_personalization: false }, active: true,
+  tags: [{ id: "55555555-5555-4555-8555-555555555555", name: "VIP", color: "red" }],
 });
 const summary = () => ({
   order_id: "22222222-2222-4222-8222-222222222222", created_at: "2026-09-20T00:00:00.000000Z",
@@ -32,6 +33,7 @@ const detail = () => ({
   consent_history: [{ purpose: "marketing_messages", channel: "meta_dm", granted: true, source: "buyer_checkout",
     policy_version: "lc-2026-10", occurred_at: "2026-09-10T00:00:00Z" }],
   privacy_actions: [{ kind: "EXPORT", via: "merchant", completed_at: "2026-09-11T00:00:00Z", summary: null }],
+  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1 }],
 });
 
 test("customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize", () => {
@@ -108,4 +110,32 @@ test("financeDay is the UTC+8 day", () => {
   assert.equal(financeDay(new Date("2026-09-29T16:30:00Z")), "2026-09-30");
   assert.equal(financeDay(new Date("2026-09-29T15:30:00Z")), "2026-09-29");
   assert.equal(financeDay(new Date("2026-09-29T15:30:00Z"), -30), "2026-08-30");
+});
+
+// W6-01B: the backend now always sends `tags` on rows and `tags_revision` + `notes` on the detail.
+test("tags and notes are parsed strictly (W6-01B)", () => {
+  assert.equal(parseCustomer(customer()).tags[0].name, "VIP");
+  assert.deepEqual(parseCustomer({ ...customer(), tags: [] }).tags, []);
+  const tagBad: unknown[] = [
+    null, [{ id, name: "VIP", color: "pink" }], [{ id, name: "", color: "red" }], [{ id, name: "x".repeat(21), color: "red" }],
+    [{ id, name: "VIP", color: "red", extra: 1 }], [{ id, name: "VIP", color: "red" }, { id, name: "B", color: "red" }],
+    Array.from({ length: 21 }, (_, n) => ({ id: `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`, name: `t${n}`, color: "red" })),
+  ];
+  for (const tags of tagBad) assert.throws(() => parseCustomer({ ...customer(), tags }), JSON.stringify(tags));
+  const { tags: _drop, ...noTags } = customer();
+  assert.throws(() => parseCustomer(noTags), "a row without tags is drift");
+  const d = parseCustomerDetail(detail(), id);
+  assert.equal(d.notes[0].body, "only 7-11\nfixed");
+  assert.equal(d.tags_revision.length, 64);
+  const n0 = detail().notes[0];
+  const noteBad: unknown[] = [
+    null, [{ ...n0, body: "" }], [{ ...n0, body: " \n " }], [{ ...n0, body: "x".repeat(1001) }], [{ ...n0, body: "a\u0000b" }],
+    [{ ...n0, version: 0 }], [{ ...n0, edited_at: "yesterday" }], [{ ...n0, owner_id: id }], Array.from({ length: 51 }, () => n0),
+  ];
+  for (const notes of noteBad) assert.throws(() => parseCustomerDetail({ ...detail(), notes }, id), JSON.stringify(notes).slice(0, 80));
+  assert.throws(() => parseCustomerDetail({ ...detail(), tags_revision: "abc" }, id));
+  const { notes: _n, ...noNotes } = detail();
+  assert.throws(() => parseCustomerDetail(noNotes, id), "a detail without notes is drift");
+  const { tags_revision: _r, ...noRev } = detail();
+  assert.throws(() => parseCustomerDetail(noRev, id), "a detail without tags_revision is drift");
 });

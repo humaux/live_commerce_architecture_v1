@@ -1,3 +1,6 @@
+// Purpose: Checks MOCK attribution parsing, BFF request grammar and localized presentation.
+// Depends on: node:assert/strict, node:test, ../../apps/admin/lib/attribution-model.ts, ../../apps/admin/lib/attribution-copy.ts, ../../apps/admin/lib/ads-request.ts, ../../apps/admin/src/routes.ts, ./attribution.fixture.ts, node:fs, node:module, node:vm, typescript-api, ../../packages/format/src/index.ts, ../../apps/admin/lib/attribution-format.ts, ../../apps/admin/src/page-title.ts, ../../apps/admin/lib/presentation-copy.ts
+// Used by: scripts/dev/test-local.sh, scripts/dev/test-node.sh
 // MOCK parser / BFF grammar / route tests. Browser click coverage is attribution.spec.ts; these do not close AT4/AT5/AT9.
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -17,6 +20,8 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 import { money, displayTime } from "../../packages/format/src/index.ts";
 import { formatROAS } from "../../apps/admin/lib/attribution-format.ts";
+import { pageTitle } from "../../apps/admin/src/page-title.ts";
+import { presentationCopy } from "../../apps/admin/lib/presentation-copy.ts";
 
 // MOCK SSR: execute the actual panel JSX; only navigation and the separate read control are stubbed.
 // This supplements, never replaces, the real PG click gate in attribution.spec.ts.
@@ -25,6 +30,21 @@ const requireApp = createRequire(
 );
 const React = requireApp("react"),
   { renderToStaticMarkup } = requireApp("react-dom/server");
+// Execute the frozen presentation primitives too: only CSS class names and pathname are supplied by this SSR harness.
+const presentation: Record<string, any> = {};
+runInNewContext(ts.transpileModule(readFileSync(new URL("../../packages/ui/src/Presentation.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText, {
+  exports: presentation,
+  require: (name: string) => name.endsWith(".css") ? { __esModule: true, default: new Proxy({}, { get: (_, key) => String(key) }) } : requireApp(name),
+});
+const header: Record<string, any> = {};
+runInNewContext(ts.transpileModule(readFileSync(new URL("../../apps/admin/components/AdminPageHeader.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText, {
+  exports: header,
+  require: (name: string) => name === "@live-commerce/ui" ? presentation : name === "@/src/page-title" ? { pageTitle } : name === "next/navigation" ? { usePathname: () => "/en/ads/attribution" } : requireApp(name),
+});
 const exports: Record<string, any> = {};
 let reportForRender: any = null,
   stateCalls = 0;
@@ -42,7 +62,14 @@ const code = ts.transpileModule(
 ).outputText;
 runInNewContext(code, {
   exports,
-  require: (name: string) => {
+  require: function resolveRenderImport(name: string) {
+    if (name === "./AttributionPanels") {
+      const panels: Record<string, any> = {};
+      runInNewContext(ts.transpileModule(readFileSync(new URL("../../apps/admin/components/AttributionPanels.tsx", import.meta.url), "utf8"), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+      }).outputText, { exports: panels, require: resolveRenderImport });
+      return panels;
+    }
     if (name === "react")
       return {
         ...React,
@@ -67,8 +94,11 @@ runInNewContext(code, {
           React.createElement("a", props, children),
       };
     if (name === "@live-commerce/format") return { money, displayTime };
+    if (name === "@live-commerce/ui") return presentation;
+    if (name === "./AdminPageHeader") return header;
     if (name === "@/lib/attribution-format") return { formatROAS };
     if (name === "@/lib/attribution-copy") return { attributionCopy };
+    if (name === "@/lib/presentation-copy") return { presentationCopy };
     if (name === "@/src/routes") return { matchRoute };
     if (name === "./AttributionAudienceRead")
       return {
@@ -86,6 +116,27 @@ const renderPanel = (name: string, props: object) =>
   renderToStaticMarkup(React.createElement(exports[name], props));
 
 for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`shared presentation preserves registry title and one empty buyer message in ${locale}`, () => {
+    const session = structuredClone(attributionFixture.sessions[0]);
+    session.buyers.counties = [];
+    session.buyers.top_products = [];
+    session.buyers.orders_per_minute = [];
+    session.timeline = [];
+    const html = renderPanel("SessionPanel", { c: attributionCopy[locale], locale, session, store: "test-store" });
+    assert.equal(html.split(attributionCopy[locale].noBuyers).length - 1, 1);
+    assert.equal(html.split(attributionCopy[locale].noTimeline).length - 1, 1);
+    assert.ok(html.includes(attributionCopy[locale].newBuyers));
+    assert.ok(html.includes(attributionCopy[locale].average));
+    assert.match(html, /role="region"[^>]*aria-label=/);
+    reportForRender = structuredClone(attributionFixture);
+    stateCalls = 0;
+    const page = renderPanel("Attribution", { locale, store: { id: "test-store", name: "Synthetic", currency: "TWD" }, from: "2026-10-01", to: "2026-10-03", draftID: "", sessionID: "", initialError: null });
+    assert.ok(page.includes(`<h1>${pageTitle(locale, "/ads/attribution")}</h1>`));
+    assert.match(page, /id="attribution-from"[^>]*lang=/);
+    assert.ok(page.includes('for="attribution-session"'));
+    reportForRender = null;
+  });
+
   test(`R11 large linked-draft list is complete but collapsed in ${locale}`, () => {
     const session = structuredClone(attributionFixture.sessions[0]);
     session.draft_ids = Array.from(

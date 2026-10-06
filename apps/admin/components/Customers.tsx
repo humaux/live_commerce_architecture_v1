@@ -1,3 +1,6 @@
+// Purpose: Owns the paginated merchant customer search page.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
 
 // Merchant customers list (/{locale}/customers, U1 audit-first: one table, no card grid, orders table classes).
@@ -8,6 +11,7 @@ import { useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readCustomers, useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -15,6 +19,7 @@ import type { Customer } from "@/lib/customers-model";
 import { displayTime } from "@/lib/orders-model";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
@@ -27,9 +32,11 @@ function url(locale: Locale, store: string, q: string, after: string) {
   if (after) params.set("after", after);
   return `/${locale}/customers${params.size ? `?${params}` : ""}`;
 }
+/** Owns the paginated merchant customer search page. Loads customer results through customers-client. */
 export const detailHref = (locale: Locale, store: string, id: string) =>
   `/${locale}/customers/${id}${store ? `?store=${store}` : ""}`;
 
+/** Owns the paginated merchant customer search page. Loads customer results through customers-client. */
 export function Customers({
   locale,
   stores,
@@ -72,28 +79,8 @@ export function Customers({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customers-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         <form className="orders-controls" role="search" onSubmit={search}>
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select
-                data-testid="store-selector"
-                value={store?.id ?? ""}
-                onChange={(event) => {
-                  previous.current = [];
-                  go(event.target.value, "", "");
-                }}
-              >
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
           <label className="customers-search">
             {c.search}
             <input
@@ -203,7 +190,7 @@ function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCop
           <strong>{name}</strong>
           {row.phone_last3 && <small>{c.phoneEnding} {row.phone_last3}</small>}
         </Link>
-        {!row.active && <span className="orders-badge orders-tone-neutral">{c.erased}</span>}
+        {!row.active && <Badge tone="neutral">{c.erased}</Badge>}
       </td>
       <td data-label={c.orders}>{c.ordersPaid(row.orders_count, row.paid_orders_count)}</td>
       <td data-label={c.spent}>
@@ -224,12 +211,12 @@ function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCop
 // Text + tone, never colour alone; the full purpose name is the accessible label.
 function ConsentChip({ label, short, on, c }: { label: string; short: string; on: boolean; c: CustomersCopy }) {
   return (
-    <span
-      className={`orders-badge ${on ? "orders-tone-success" : "orders-tone-neutral"}`}
+    <Badge
+      tone={on ? "success" : "neutral"}
       title={label}
       aria-label={`${label}: ${on ? c.consentGranted : c.consentNone}`}
     >
       {short}: {on ? c.consentGranted : c.consentNone}
-    </span>
+    </Badge>
   );
 }

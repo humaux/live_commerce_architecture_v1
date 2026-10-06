@@ -1,0 +1,11 @@
+# AV4 independent final visual review
+- Pin: admin-visual HEAD 0e2b5c55b7f01225c0f3fd3960ad37aa063c7fb1; snapshot 20261005T101319Z; independent reviewer did not author app changes.
+- Coverage: 36/36 exact target PNGs individually opened (6 routes × 3 locales × desktop/mobile); dimensions/hashes in opened-screenshots.json.
+- Findings: no new scoped P1/P2 observed in these captures; original ADM15 offer fields/Add offer clipping and ADM23 product status overlap absent in current representative states.
+- ADM04: disabled SKU reason directly below selector in all 6 claims captures; source StudioClaims.tsx:653 binds reason with aria-describedby at 655.
+- ADM06: create/edit H1 and breadcrumb agree; Collections/分类/分類 agree across route, nav and editor; no phantom Next product page inferred.
+- ADM34: current required/recommended Readiness distinction and outlined pale selected state legible; “At least 3 images” visible in desktop variants, distinct from required Images; ProductDocumentForm.tsx:309 uses photos.length >= 3. Variant labels align; visible matrix controls and save tray do not overlap; hidden internal-scroll content not visually certified.
+- Mobile: 18 captures show full English/简体中文/繁體中文 locale label; AppShell.module.css:301 max-width 96px matches source. Horizontal section navigation intentionally exposes partial next item; screenshot review does not verify scrolling or keyboard focus.
+- Exact counts.json pin: admin blocking 0 / R4 0; whole blocking 3 is storefront R9 (outside scope); R10 team 10 warnings retained. Three tiny R10 crops opened, insufficient geometry for waiver; team runtime interaction NOT_RUN.
+- Evidence level E2 screenshot/source review, with hashes; root owns E3 gate conclusion. NOT_RUN by reviewer: browser/build/tests/33 gate execution, providers/PG/LIVE, full original-35 retirement, contrast computation, keyboard/zoom/screen reader.
+- Skills: impeccable audit + web-design-guidelines; latest rules fetched HTTP success 2026-10-05 (receipt); project gates override generic criteria. Impeccable context script target was missing, so no target-resolved context claim; DESIGN sidecar drift reported, no edit. Read-only app/source/HEAD preserved.

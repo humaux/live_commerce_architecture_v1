@@ -1,0 +1,181 @@
+✔ billing status accepts the frozen shape (incl. UNBILLED with no customer, plans []) (1.451416ms)
+✔ billing status rejects unknown keys, unknown enums, bad money and duplicate plans (1.539875ms)
+✔ standing endpoint is exactly {standing} (0.220583ms)
+✔ banner shows only for GRACE and RESTRICTED (U5) (1.087333ms)
+✔ live subscription rule mirrors 409 subscription_exists (0.342375ms)
+✔ redirect URL: https on the two hosted Stripe hosts only, no credentials/port, never echoed on failure (0.759ms)
+✔ exactly the eleven contract §5 resources are admitted, each only under its own method (0.779792ms)
+✔ near misses are refused (no generic proxying) (0.134709ms)
+✔ customers list query: limit 1..100, opaque after, q 1..40, nothing else (0.638583ms)
+✔ finance query: from and to are required calendar dates, 0..91 days apart (0.143041ms)
+✔ every other resource takes no query at all (0.071208ms)
+✔ Idempotency-Key: required (and well-formed) on the three customer POSTs, forbidden everywhere else (22.90375ms)
+✔ bodies: JSON content type where a body is read, none where it is not, never chunked (0.32175ms)
+✔ body content: the frozen shapes only (0.538083ms)
+✔ customer list and detail decode exactly the frozen Go DTOs (1.723666ms)
+✔ decoders refuse: unknown key, missing key, wrong type, impossible values, actor-level leakage (0.68025ms)
+✔ finance and erasure summaries decode; anything else is refused (0.624458ms)
+✔ billing status, standing and redirect decode exactly the frozen DTOs (B3, BD4) (1.177416ms)
+✔ a checkout/portal redirect is followed only to a hosted Stripe page (bearer links, I11) (0.262625ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (3.611708ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.739917ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (2.311958ms)
+✔ erasure summary is four counts only (0.108583ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.33375ms)
+✔ financeDay is the UTC+8 day (0.063958ms)
+✔ route table admits exactly the eleven contract resources (1.607709ms)
+✔ list query: limit/after/q grammar, no duplicates, no unknown keys (0.901667ms)
+✔ finance query: both dates required, real calendar days, 0..91 day range (0.148958ms)
+✔ exact resources refuse any query, even a bare question mark (0.05575ms)
+✔ key rules: required on the three customer POSTs, forbidden everywhere else (18.362084ms)
+✔ export and portal must declare an empty body (0.387666ms)
+✔ bodies are exact and closed (0.631958ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.130541
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 14ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1001ms
+  Running TypeScript ...
+  Finished TypeScript in 271ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 112ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 29ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1285ms
+  Running TypeScript ...
+  Finished TypeScript in 196ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 68ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserCustomersBilling
+    browser_customers_billing_test.go:335: CB11 BROWSER (MOCK Stripe): admin half passed; screenshots hashed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/customers-billing/20261005T110947.659014000
+    browser_customers_billing_test.go:380: CB11 BROWSER buyer half passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/customers-billing/20261005T110947.659014000
+--- PASS: TestBrowserCustomersBilling (40.18s)
+PASS
+ok  	livecommerce/tests/foundation	41.883s
+PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.

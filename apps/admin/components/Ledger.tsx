@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant inventory ledger page and product inspection.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/copy, @/lib/model, @/lib/client, @/lib/images-client, ./ProductPhoto, ./Icon, ./WorkspaceFrame, ./AdminPageHeader, ./LedgerTable
+// Used by: apps/admin/app/[locale]/inventory/page.tsx
 "use client";
 
 // Stock ledger (/[locale]/inventory). BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
@@ -10,6 +13,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type Locale } from "@live-commerce/i18n";
+import { Badge } from "@live-commerce/ui";
 import { copy, type Copy } from "@/lib/copy";
 import type { APIError, PurchaseEntry, WorkspaceData } from "@/lib/model";
 import { money, sendCommand, validJournalCommand, type PendingCommand } from "@/lib/client";
@@ -17,6 +21,8 @@ import { imageURL } from "@/lib/images-client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { LedgerTable } from "./LedgerTable";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -94,6 +100,7 @@ function purchaseReadError(error: unknown, c: Copy) {
   return c.purchaseFailed;
 }
 
+/** Owns the merchant inventory ledger page and product inspection. Reads the workspace through the BFF and submits journal commands through lib/client. */
 export function Ledger({
   locale,
   initial,
@@ -430,11 +437,7 @@ export function Ledger({
     >
       {/* Only products and inventory live here; the other nav entries are separate pages (WorkspaceFrame). */}
       <>
-          <div className="heading-row">
-            <div>
-              <h1>{c.heading}</h1>
-              <p>{c.subtitle}</p>
-            </div>
+          <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
             {/* One way to create a product: the full editor (product-editor §c9); no inline quick-add on this page. */}
             {initial.storeID && (
               <Link
@@ -447,7 +450,7 @@ export function Ledger({
                 {c.create}
               </Link>
             )}
-          </div>
+          </>} />
           <div className="section-bar">
             <span>
               {section === "inventory" ? c.inventory : c.products} / SKU
@@ -561,113 +564,23 @@ export function Ledger({
                 {c.refresh}
               </button>
             </form>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="selection-col">
-                      <span className="sr-only">{c.edit}</span>
-                    </th>
-                    <th>{c.product}</th>
-                    <th className="sku-col">SKU</th>
-                    <th className="numeric">{c.price}</th>
-                    <th className="numeric stock-col">{c.onHand}</th>
-                    <th className="numeric stock-col">{c.reserved}</th>
-                    <th className="numeric">{c.available}</th>
-                    <th className="status-col">{c.status}</th>
-                    <th className="action-col">{c.actions}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {initial.rows.items.map((row) => (
-                    <tr
-                      key={row.sku_id}
-                      className={row.sku_id === selectedID ? "selected" : ""}
-                    >
-                      <td className="selection-col">
-                        <input
-                          type="radio"
-                          name="sku"
-                          aria-label={`${c.edit} ${row.code}`}
-                          checked={row.sku_id === selectedID}
-                          disabled={locked}
-                          onChange={() => {
-                            select(row.sku_id);
-                            setDelta("0");
-                            setReason("");
-                            setError(null);
-                          }}
-                        />
-                      </td>
-                      <th scope="row">
-                        <div className="product-cell">
-                          <ProductPhoto
-                            code={row.code}
-                            name={row.product_name}
-                            demo={initial.fixture}
-                            imageSrc={
-                              row.cover_image_id
-                                ? imageURL(initial.storeID, row.product_id, row.cover_image_id)
-                                : undefined
-                            }
-                          />
-                          <div>
-                            <button
-                              className="product-name"
-                              disabled={locked}
-                              onClick={() => select(row.sku_id)}
-                            >
-                              {row.product_name}
-                            </button>
-                            <small>{initial.fixture ? c.demo : row.code}</small>
-                            <small className="mobile-sku">
-                              {row.code}
-                              {/* status-col is display:none ≤680px; this badge is
-                                  the only mobile-visible active/archived signal */}
-                              <span className={`status mobile-status ${row.status}`}>
-                                {row.status === "active" ? c.active : c.archived}
-                              </span>
-                            </small>
-                          </div>
-                        </div>
-                      </th>
-                      <td className="sku-col">
-                        <code>{row.code}</code>
-                      </td>
-                      <td className="numeric">
-                        {money(locale, row.currency, row.price_minor)}
-                      </td>
-                      <td className="numeric stock-col">{row.on_hand}</td>
-                      <td className="numeric stock-col">{row.reserved}</td>
-                      <td className="numeric available-value">
-                        {row.available}
-                      </td>
-                      <td className="status-col">
-                        <span className={`status ${row.status}`}>
-                          {row.status === "active" ? c.active : c.archived}
-                        </span>
-                      </td>
-                      <td className="action-col">
-                        <button
-                          className="text-button"
-                          disabled={locked}
-                          onClick={() => select(row.sku_id)}
-                        >
-                          {c.edit}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {!initial.rows.items.length && (
-                <div className="empty-state">
-                  <Icon name="product" size={30} />
-                  <h2>{initial.error ? c.noSession : c.empty}</h2>
-                  <p>{initial.error ? c.noSessionHint : c.emptyHint}</p>
-                </div>
-              )}
-            </div>
+            <LedgerTable
+              locale={locale}
+              c={c}
+              rows={initial.rows.items}
+              storeID={initial.storeID}
+              fixture={initial.fixture}
+              readError={Boolean(initial.error)}
+              selectedID={selectedID}
+              locked={locked}
+              onSelect={select}
+              onRadioSelect={(skuID) => {
+                select(skuID);
+                setDelta("0");
+                setReason("");
+                setError(null);
+              }}
+            />
             {(initial.rows.next_cursor || search.get("cursor")) && (
               <div className="pagination">
                 <button
@@ -717,9 +630,12 @@ export function Ledger({
                   <p data-testid="tray-price">
                     {c.price}: {money(locale, selected.currency, selected.price_minor)}
                   </p>
-                  <span className={`status ${selected.status}`}>
+                  <Badge
+                    className={`status ${selected.status}`}
+                    tone={selected.status === "active" ? "success" : "neutral"}
+                  >
                     {selected.status === "active" ? c.active : c.archived}
-                  </span>
+                  </Badge>
                   <Link className="tray-edit" href={`/${locale}/products/${selected.product_id}${initial.storeID ? `?store=${initial.storeID}` : ""}`}>
                     {c.editProduct}
                   </Link>

@@ -1,3 +1,6 @@
+// Purpose: Exercise product-document create/edit, SKU matrix, inventory and publishing through real admin interactions.
+// Depends on: Playwright, catalog acceptance fixtures, Node evidence I/O and the caller's production Next/Go/isolated PG stack.
+// Used by: catalog-core browser mode PE12–PE17 and --browser-product-editor; provider writes remain MOCK.
 // PE12–PE17: real merchant clicks through the production BFF/Go/isolated PG fixture.
 // evaluate is read-only geometry; control HTTP is buyer readback, never a substitute for UI writes.
 import { expect, test, type Page } from "@playwright/test";
@@ -6,6 +9,9 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import axe from "axe-core";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
+import { assertProductEditorReservedLayout } from "./product-editor-layout.acceptance";
+import { assertProductListLayout } from "./product-list-layout.acceptance";
+/** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
   test("PE12-17 document workflow, matrix, list actions and click ledger", async ({
     page,
@@ -103,6 +109,7 @@ export function registerProductEditorAcceptance() {
         for (const [width, height] of [
           [1366, 768],
           [1586, 992],
+          [390, 844],
           [375, 812],
         ]) {
           await page.setViewportSize({ width, height });
@@ -141,6 +148,12 @@ export function registerProductEditorAcceptance() {
                 : "隔離驗收用的虛構商品。",
             );
           await page.getByTestId("product-keyword").fill("P12");
+          await assertProductEditorReservedLayout(
+            page,
+            (width === 1586 || width === 390)
+              ? (section) => shot(`editor-${locale}-${width}-${section}`)
+              : undefined,
+          );
           await page
             .getByRole("navigation", {
               name: productEditorCopy[locale].progress,
@@ -308,6 +321,7 @@ export function registerProductEditorAcceptance() {
       await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(
         12,
       );
+      await assertProductEditorReservedLayout(page);
       expect(writes.length).toBe(networkBefore);
       await page.getByTestId("bulk-open").click();
       await page.getByTestId("bulk-value").fill("80");
@@ -405,6 +419,16 @@ export function registerProductEditorAcceptance() {
       await expect(page.getByTestId("products-tab-draft")).toHaveText(
         "Draft 2",
       );
+      for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+        await page.getByTestId("locale-switch").selectOption(locale);
+        await expect(page).toHaveURL(new RegExp(`/${locale}/products`));
+        for (const [width, height] of [[1586, 992], [390, 844]]) {
+          await page.setViewportSize({ width, height });
+          await assertProductListLayout(page);
+          await shot(`list-populated-${locale}-${width}`);
+        }
+      }
+      await page.setViewportSize({ width: 1586, height: 992 });
       await page.getByRole("checkbox", { name: "All", exact: true }).check();
       await page
         .getByTestId("product-batch")
@@ -412,7 +436,7 @@ export function registerProductEditorAcceptance() {
         .click();
       await expect(page.getByTestId("product-batch-results")).toBeVisible();
       await page.reload();
-      await expect(page.locator(".product-status-draft")).toHaveCount(3);
+      await expect(page.locator(".product-status").filter({ hasText: /^Draft$/ })).toHaveCount(3);
       await expect(page.getByTestId("products-tab-active")).toHaveText(
         "Active 0",
       );
