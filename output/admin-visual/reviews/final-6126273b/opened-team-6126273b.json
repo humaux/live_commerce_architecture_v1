@@ -1,0 +1,44 @@
+[
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/en-1586x992.png",
+    "sha256": "ad84b7b018bc60b0c90d4b2c57bbecd87497ad1931acf7cfe8bc27b679408f6d",
+    "width": 1586,
+    "height": 992,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/en-390x844.png",
+    "sha256": "3e59e98e4d07ab9f986bd5b5c240de8de468aa32e38fc907120b4e1cc9ec5669",
+    "width": 390,
+    "height": 1072,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/zh-CN-1586x992.png",
+    "sha256": "9e933d394f2cf72cf6c5a981cd21decebdc2007c983c79f5d36fabca4dd81a5c",
+    "width": 1586,
+    "height": 992,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/zh-CN-390x844.png",
+    "sha256": "2417444470de5d19d25e9d073481a8fb2deacf5970941f53c1c451b9eee27505",
+    "width": 390,
+    "height": 1052,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/zh-TW-1586x992.png",
+    "sha256": "85c7a131c314eda59037d8c676c5b1d468776534dc8b32c928adaf868e68b389",
+    "width": 1586,
+    "height": 992,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T195027Z/shots/admin/team/zh-TW-390x844.png",
+    "sha256": "b242ecd8f3f69bf3392ab2321b20281fcf936b30f2001289eacd6e5392342b80",
+    "width": 390,
+    "height": 1052,
+    "opened": true
+  }
+]

@@ -1,0 +1,172 @@
+✔ fragment grammar accepts only one canonical token (0.924083ms)
+✔ claim projections are closed (0.324583ms)
+✔ claim token rides only its header on B1/B2 and is never echoed (46.670333ms)
+✔ claim-source BFF allowlist is exactly GET and PUT on the scene (21.720208ms)
+✔ pasted input: one link or id, trimmed, no whitespace or controls, bounded (2.263875ms)
+✔ PUT body is exactly five keys with the trimmed input, plus platform only when chosen (ruling p) (0.17125ms)
+✔ source response parser is closed (1.016458ms)
+✔ every refusal code and source label is worded in all three locales (4.461042ms)
+✔ ruling t: defaults and replaced MOCK banner copy (1.094875ms)
+✔ bundle parser accepts manual (labelled) and Meta (unlabelled) bundles (0.593041ms)
+✔ bundle parser rejects unknown platforms and label/platform mismatches (0.160334ms)
+✔ offer parser carries the live price and rejects every out-of-range or missing field (0.252458ms)
+✔ library and import parsers are closed; removal receipt is the only version-0 shape (0.197958ms)
+✔ price input: exact decimal minor units, never float, bounded to the currency's places (42.499833ms)
+✔ live-tools copy exists in all three locales with the same conflict reasons (0.505125ms)
+✔ claims BFF allowlist is exactly M1–M7 per method (17.854792ms)
+✔ M7 link response shape is closed (0.550917ms)
+✔ host prompt copy is the frozen text, verbatim (1.042333ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.391959
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 123ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 904ms
+  Running TypeScript ...
+  Finished TypeScript in 312ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 55ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 44ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1548ms
+  Running TypeScript ...
+  Finished TypeScript in 457ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 201ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserLiveClaimsRealChain
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61668: remote error: tls: unknown certificate
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61678: remote error: tls: unknown certificate
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61683: remote error: tls: unknown certificate
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61682: remote error: tls: unknown certificate
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61680: remote error: tls: unknown certificate
+2026/10/05 14:45:28 http: TLS handshake error from 127.0.0.1:61681: remote error: tls: unknown certificate
+    browser_live_claims_test.go:354: PASS KC16: admin Next + storefront Next + Go + PG (incl. claim-source), signed MOCK IdP, MOCK manual ingress; cases=20 locales=[en zh-CN zh-TW]; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/live-claims-1619571415
+--- PASS: TestBrowserLiveClaimsRealChain (19.09s)
+PASS
+ok  	livecommerce/tests/foundation	21.036s
+PASS: KC16 isolated admin + storefront Next, Go and PG claims chain; signed MOCK IdP, MOCK manual ingress; no provider or deployment acceptance.

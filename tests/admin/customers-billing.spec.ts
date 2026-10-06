@@ -1,3 +1,6 @@
+// Purpose: Exercises customer, finance and billing UI with the real harness and MOCK billing provider.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN
+// Used by: apps/admin/src/features/customers/routes.ts, apps/admin/src/features/finance/routes.ts, apps/admin/src/features/settings/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_customers_billing_test.go
 // CB11 admin half (contracts/customers-billing-v1.md §5 "Admin screens", §8 CB11; customers-billing-ui.md U1-U6, U9).
 // BFF routes exercised through the UI: GET|POST /api/stores/{store}/customers*, GET finance/summary[.csv],
 // GET billing[/standing], POST billing/checkout|portal -> Go /v1/admin/stores/{store}/{customers,finance,billing}*.
@@ -96,7 +99,7 @@ test("CB11 customers list: table, phone last 3 only, search by name and phone di
   await expect(page).toHaveURL(/\/en\/customers/);
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId("customers-table")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.title);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.customerList);
   const row = page.getByTestId(`customer-row-${main}`);
   await expect(row).toBeVisible();
   await expect(row).toContainText(`${en.phoneEnding} ${phoneTail}`);
@@ -421,7 +424,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await page.goto(`/${locale}/customers?store=${store}`);
         await expect(page.getByTestId("customers-table")).toBeVisible();
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.title);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].customerList);
         await expect(page.getByTestId("billing-banner")).toBeVisible();
         await shot(page, "customers", locale, viewport);
         await page.goto(`/${locale}/customers/${main}?store=${store}`);
@@ -430,7 +433,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await shot(page, "customer-detail", locale, viewport);
         await page.goto(`/${locale}/finance?store=${store}`);
         await expect(page.getByTestId("finance-page")).toBeVisible();
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.financeTitle);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].financePage);
         await shot(page, "finance", locale, viewport);
         await page.goto(`/${locale}/billing?store=${store}`);
         await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "RESTRICTED");

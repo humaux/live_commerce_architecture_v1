@@ -19,6 +19,7 @@ import (
 
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/integrations/meta/pagetoken"
+	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/msgtemplates"
 )
 
@@ -66,4 +67,18 @@ func enableInboxSend(svc *inbox.Service, pool *pgxpool.Pool, getenv func(string)
 	}
 	svc.EnableSend(seal, jobs, msgtemplates.NewService())
 	return nil
+}
+
+// buildForBuyer builds the order-for-a-buyer service (live-console-v1 §5, A15/A16, unit LC-B6) on the manual-order pipeline and the inbox service
+// (the pay-link DM planner). nil when the buyer surface is off (no pipeline): the routes then answer 503 manual_order_unavailable. A nil inbox
+// service keeps orders working and makes every DM "not_sent: send_unavailable".
+func buildForBuyer(manual *merchanttools.ManualOrders, svc *inbox.Service) (*merchanttools.ForBuyer, error) {
+	if manual == nil {
+		return nil, nil
+	}
+	var planner merchanttools.PayLinkPlanner
+	if svc != nil {
+		planner = svc // an untyped nil interface when the inbox is off, never a typed nil pointer
+	}
+	return merchanttools.NewForBuyer(manual, planner)
 }

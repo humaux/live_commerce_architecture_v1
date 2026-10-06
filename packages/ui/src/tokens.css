@@ -1,6 +1,17 @@
+/*
+ * Purpose: Defines shared UI color, spacing, typography and control-size tokens.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: packages/ui/src/AppShell.tsx, apps/admin/app/globals.css
+ */
 :root {
-  --ui-brand: #ff6a00;
-  --ui-brand-text: #a84300;
+  --ui-primary: #247965;
+  --ui-primary-hover: #1c6554;
+  --ui-primary-soft: #e5f2ed;
+  --ui-brand: var(--ui-primary);
+  --ui-brand-text: var(--ui-primary);
+  --ui-link: var(--ui-primary-hover);
+  --ui-rail-active: #b4e8d6;
+  --ui-rail-selected: #263e39;
   --ui-page: #f5f6f8;
   --ui-surface: #fff;
   --ui-border: #e5e7eb;
@@ -11,6 +22,11 @@
   --ui-success: #166534;
   --ui-warning: #854d0e;
   --ui-info: #1d4ed8;
+  --ui-neutral-soft: #edf0f3;
+  --ui-success-soft: #e4f3e9;
+  --ui-warning-soft: #fff4d9;
+  --ui-danger-soft: #fdebe9;
+  --ui-info-soft: #eaf0fc;
   --ui-focus: #1d4ed8;
   --ui-radius: 8px;
   --ui-space-1: 4px;
@@ -19,5 +35,14 @@
   --ui-space-4: 16px;
   --ui-space-6: 24px;
   --ui-target: 44px;
+  --ui-control-compact: 40px;
+  --ui-text-body: 14px;
+  --ui-text-helper: 12px;
+  --ui-heading-page: 29px;
+  --ui-heading-section: 18px;
+  --ui-heading-subsection: 14px;
+  --ui-field-short: 220px;
+  --ui-field-medium: 400px;
+  --ui-field-long: 640px;
   --ui-rail-width: 220px;
 }

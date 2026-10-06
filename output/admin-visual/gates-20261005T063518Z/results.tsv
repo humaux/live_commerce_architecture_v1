@@ -1,0 +1,4 @@
+source	mode	exit	seconds	log
+5a895dea2c20b3942abcfb37364eac8999b6edb5	--browser-product-editor	0	150	output/admin-visual/gates-20261005T063518Z/browser-product-editor.log
+5a895dea2c20b3942abcfb37364eac8999b6edb5	--browser-visual-lint	0	429	output/admin-visual/gates-20261005T063518Z/browser-visual-lint.log
+5a895dea2c20b3942abcfb37364eac8999b6edb5	--browser-live-claims	0	40	output/admin-visual/gates-20261005T063518Z/browser-live-claims.log

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Purpose: isolated local backend and real-browser acceptance modes.
+# Depends on: Docker PG, Go, pnpm/Next, Node browser runners and test-owned fixtures.
+# Used by: unit acceptance and release-gate.sh; no production writes.
 set -euo pipefail
 # stripe-live-enable-v1 §11 harness guard: tests never run with a live Stripe key in the environment
 # (value never printed).
@@ -12,8 +15,8 @@ command -v node >/dev/null
 test_mode="${1:-foundation}"
 # Public-site build-only configuration. Synthetic fixture data, never production defaults.
 export LC_PLATFORM_HOST=platform.example.invalid LC_ADMIN_HOST=admin.example.invalid LC_COMPANY_CONTACT_EMAIL=contact@example.invalid
-if [[ "$#" -gt 1 ]] || [[ "$test_mode" != --browser-platform-site && "$test_mode" != foundation && "$test_mode" != --meta-health && "$test_mode" != --browser-admin-shell && "$test_mode" != --browser-click-sweep && "$test_mode" != --browser-visual-lint && "$test_mode" != --browser-buyer-comms && "$test_mode" != --browser-checkout-offline && "$test_mode" != --browser-home-cod && "$test_mode" != --browser-identity && "$test_mode" != --browser-product-editor && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-ads-attribution && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-store-domains && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --inbox && "$test_mode" != --inbox-send && "$test_mode" != --msg-templates && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --live-console && "$test_mode" != --studio-backend && "$test_mode" != --ops-disk-guard ]]; then
-  printf 'Usage: bash scripts/dev/test-local.sh [--browser-platform-site|--meta-health|--browser-admin-shell|--browser-click-sweep|--browser-visual-lint|--browser-identity|--browser-buyer-comms|--browser-checkout-offline|--browser-home-cod|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-ads-attribution|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-store-domains|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--inbox|--inbox-send|--msg-templates|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--live-console|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-product-editor|--browser-catalog-core|--ops-disk-guard]\n' >&2
+if [[ "$#" -gt 1 ]] || [[ "$test_mode" != --browser-platform-site && "$test_mode" != foundation && "$test_mode" != --meta-health && "$test_mode" != --browser-admin-shell && "$test_mode" != --browser-click-sweep && "$test_mode" != --browser-visual-lint && "$test_mode" != --browser-buyer-comms && "$test_mode" != --browser-checkout-offline && "$test_mode" != --browser-home-cod && "$test_mode" != --browser-identity && "$test_mode" != --browser-product-editor && "$test_mode" != --browser-catalog-core && "$test_mode" != --browser-meta-connect && "$test_mode" != --browser-promotions && "$test_mode" != --browser-ops-polish && "$test_mode" != --browser-design && "$test_mode" != --browser-password-auth && "$test_mode" != --browser-admin-legacy && "$test_mode" != --browser-buyer && "$test_mode" != --browser-merchant-buyer && "$test_mode" != --browser-manual-order && "$test_mode" != --browser-merchant-orders-bff && "$test_mode" != --browser-merchant-orders-ui && "$test_mode" != --browser-input-delivery && "$test_mode" != --browser-studio-bff && "$test_mode" != --browser-studio-ui && "$test_mode" != --browser-live-claims && "$test_mode" != --browser-claim-checkout && "$test_mode" != --browser-order && "$test_mode" != --browser-payment && "$test_mode" != --stripe-browser && "$test_mode" != --browser-refund-fulfilment && "$test_mode" != --browser-customers-billing && "$test_mode" != --browser-meta-ads && "$test_mode" != --browser-ads-attribution && "$test_mode" != --browser-cvs && "$test_mode" != --browser-catalog-media && "$test_mode" != --browser-storefront-publish && "$test_mode" != --browser-store-domains && "$test_mode" != --browser-storefront && "$test_mode" != --browser-webkit && "$test_mode" != --browser-e2e && "$test_mode" != --checkout && "$test_mode" != --payment && "$test_mode" != --payment-worker && "$test_mode" != --expiry-worker && "$test_mode" != --storefront-resolver && "$test_mode" != --buyer-http && "$test_mode" != --purchase-entry && "$test_mode" != --merchant-orders && "$test_mode" != --inbox && "$test_mode" != --inbox-send && "$test_mode" != --msg-templates && "$test_mode" != --meta-inbox && "$test_mode" != --meta-consumer && "$test_mode" != --meta-runtime && "$test_mode" != --legacy-isolation && "$test_mode" != --local-recovery && "$test_mode" != --live-planning && "$test_mode" != --live-authority && "$test_mode" != --live-media-plan && "$test_mode" != --live-media-execution && "$test_mode" != --live-browser-input && "$test_mode" != --live-media-input && "$test_mode" != --live-media-crash && "$test_mode" != --live-media-stop && "$test_mode" != --live-media-recovery && "$test_mode" != --live-media-runtime && "$test_mode" != --live-console && "$test_mode" != --studio-backend && "$test_mode" != --ops-disk-guard ]]; then
+  printf 'Usage: bash scripts/dev/test-local.sh [--browser-platform-site|--meta-health|--browser-admin-shell|--browser-click-sweep|--browser-visual-lint|--browser-identity|--browser-buyer-comms|--browser-checkout-offline|--browser-home-cod|--browser-promotions|--browser-password-auth|--browser-admin-legacy|--browser-buyer|--browser-merchant-buyer|--browser-manual-order|--browser-merchant-orders-bff|--browser-merchant-orders-ui|--browser-input-delivery|--browser-studio-bff|--browser-studio-ui|--browser-claim-checkout|--browser-live-claims|--browser-order|--browser-payment|--stripe-browser|--browser-refund-fulfilment|--browser-customers-billing|--browser-meta-ads|--browser-ads-attribution|--browser-cvs|--browser-catalog-media|--browser-storefront-publish|--browser-store-domains|--browser-storefront|--browser-webkit|--browser-e2e|--checkout|--payment|--payment-worker|--expiry-worker|--storefront-resolver|--buyer-http|--purchase-entry|--merchant-orders|--inbox|--inbox-send|--msg-templates|--meta-inbox|--meta-consumer|--meta-runtime|--legacy-isolation|--local-recovery|--live-planning|--live-authority|--live-media-plan|--live-media-execution|--live-browser-input|--live-media-input|--live-media-crash|--live-media-stop|--live-media-recovery|--live-media-runtime|--live-console|--studio-backend|--browser-design|--browser-ops-polish|--browser-meta-connect|--browser-product-editor|--browser-catalog-core|--ops-disk-guard]\n' >&2
   exit 2
 fi
 
@@ -208,6 +211,11 @@ if [[ "$test_mode" == --browser-admin-legacy ]]; then
   grep -q '^func TestBrowserAdminLedgerFixtureChain' tests/foundation/browser_admin_legacy_test.go
   grep -q '^func TestBrowserAdminIdentityMock' tests/foundation/browser_admin_legacy_test.go
   grep -q '^func TestBrowserAdminEntryMock' tests/foundation/browser_admin_legacy_test.go
+  mkdir -p output/playwright
+fi
+if [[ "$test_mode" == --browser-claim-checkout ]]; then
+  test -f tests/storefront/claim-checkout.mjs
+  test -f tests/foundation/browser_claim_checkout_test.go
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-live-claims ]]; then
@@ -426,7 +434,7 @@ if [[ "$test_mode" == --browser-buyer-comms ]]; then
   grep -q '^func TestBrowserBuyerComms' tests/foundation/browser_buyer_comms_test.go
   test -f tests/storefront/buyer-comms-gate.mjs
 fi
-if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-ads-attribution || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-store-domains || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline || "$test_mode" == --browser-buyer-comms || "$test_mode" == --browser-home-cod || "$test_mode" == --browser-click-sweep || "$test_mode" == --browser-visual-lint ]]; then
+if [[ "$test_mode" == --browser-buyer || "$test_mode" == --browser-merchant-buyer || "$test_mode" == --browser-manual-order || "$test_mode" == --browser-order || "$test_mode" == --browser-payment || "$test_mode" == --stripe-browser || "$test_mode" == --browser-refund-fulfilment || "$test_mode" == --browser-customers-billing || "$test_mode" == --browser-meta-ads || "$test_mode" == --browser-ads-attribution || "$test_mode" == --browser-storefront || "$test_mode" == --browser-cvs || "$test_mode" == --browser-catalog-media || "$test_mode" == --browser-storefront-publish || "$test_mode" == --browser-store-domains || "$test_mode" == --browser-webkit || "$test_mode" == --browser-live-claims || "$test_mode" == --browser-claim-checkout || "$test_mode" == --browser-e2e || "$test_mode" == --browser-ops-polish || "$test_mode" == --browser-promotions || "$test_mode" == --browser-checkout-offline || "$test_mode" == --browser-buyer-comms || "$test_mode" == --browser-home-cod || "$test_mode" == --browser-click-sweep || "$test_mode" == --browser-visual-lint ]]; then
   command -v pnpm >/dev/null
   command -v openssl >/dev/null
   COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront
@@ -467,10 +475,11 @@ POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 # recovery mode"). 1g keeps the same tmpfs/shared_buffers/max_connections gate.
 # Disk: the whole foundation suite shares this one data directory. PostgreSQL's default max_wal_size (1GB) lets pg_wal outgrow the
 # tmpfs during bulk fixtures (R4 gate: "No space left on device" cascaded ~240 G07 failures), so WAL is capped at 96MB (checkpoints
-# recycle it) and the tmpfs is 320 MiB; both stay well inside --memory=1g.
+# recycle it) and the tmpfs is 640 MiB (2026-10-06: the ~1060-test suite outgrew 320 MiB → "No space left on device" → recovery-mode
+# cascade); memory 1536m keeps tmpfs + server inside the memcg. One test PG at a time (scripts/dev/test-lock.sh) on the 8 GB Docker VM.
 docker run -d --pull=never --name "$test_container" \
-  --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-  --tmpfs /var/lib/postgresql:rw,size=335544320 \
+  --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+  --tmpfs /var/lib/postgresql:rw,size=671088640 \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
@@ -500,8 +509,8 @@ fresh_pg() {
     docker rm -f "$test_container" >/dev/null
   fi
   docker run -d --pull=never --name "$test_container" \
-    --label "livecommerce.fixture=$test_container" --memory=1g --cpus=1 --pids-limit=128 \
-    --tmpfs /var/lib/postgresql:rw,size=335544320 \
+    --label "livecommerce.fixture=$test_container" --memory=1536m --cpus=1 --pids-limit=128 \
+    --tmpfs /var/lib/postgresql:rw,size=671088640 \
     -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
     -p 127.0.0.1::5432 \
     postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \
@@ -554,6 +563,9 @@ elif [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
 elif [[ "$test_mode" == --browser-studio-ui ]]; then
   LC_BROWSER_STUDIO_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^TestBrowserStudioUIRealChain$' -v ./tests/foundation
   printf 'PASS: isolated Studio B UI with signed MOCK IdP and local MOCK Egress; not Cloud or production acceptance.\n'
+elif [[ "$test_mode" == --browser-claim-checkout ]]; then
+  LC_BROWSER_CLAIM_CHECKOUT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=900s -run '^TestBrowserClaimDirectCheckout$' -v ./tests/foundation
+  printf 'PASS: claim direct checkout real-click BROWSER + MOCK manual claims, real PG; no PSP/Meta/LIVE acceptance.\n'
 elif [[ "$test_mode" == --browser-live-claims ]]; then
   LC_BROWSER_LIVE_CLAIMS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=360s -run '^TestBrowserLiveClaimsRealChain$' -v ./tests/foundation
   printf 'PASS: KC16 isolated admin + storefront Next, Go and PG claims chain; signed MOCK IdP, MOCK manual ingress; no provider or deployment acceptance.\n'
@@ -739,8 +751,8 @@ elif [[ "$test_mode" == --browser-webkit ]]; then
   mkdir -p "$webkit_out"
   webkit_sha="$(git rev-parse --short=12 HEAD)"
   webkit_status=0
-  # Steps can be narrowed while fixing one flow (LC_WEBKIT_STEPS=payment,cvs); the default is all six and release-gate.sh requires all six.
-  webkit_steps=",${LC_WEBKIT_STEPS:-buyer,order,payment,merchant-buyer,cvs,password-auth},"
+  # Steps can be narrowed while fixing one flow (LC_WEBKIT_STEPS=payment,cvs); the default is all seven and release-gate.sh requires all seven.
+  webkit_steps=",${LC_WEBKIT_STEPS:-buyer,order,payment,merchant-buyer,cvs,password-auth,claim-checkout},"
   # run_webkit_step <label> <acceptance env var> <go -run regex> <timeout> <min leaf cases>
   run_webkit_step() {
     local label="$1" accept="$2" regex="$3" tmo="$4" min="$5"
@@ -760,8 +772,9 @@ elif [[ "$test_mode" == --browser-webkit ]]; then
   run_webkit_step merchant-buyer LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE '^TestBrowserMerchantBuyerRealChain$' 900s 0
   run_webkit_step cvs LC_BROWSER_CVS_ACCEPTANCE '^TestBrowserTaiwanCvs$/^WebKit$' 1700s 1
   run_webkit_step password-auth LC_BROWSER_PASSWORD_AUTH_ACCEPTANCE '^TestBrowserPasswordAuth$' 1200s 0
+  run_webkit_step claim-checkout LC_BROWSER_CLAIM_CHECKOUT_ACCEPTANCE '^TestBrowserClaimDirectCheckout$' 900s 1
   if [[ "$webkit_status" != 0 ]]; then printf 'FAIL: --browser-webkit (see logs in %s)\n' "$webkit_out" >&2; exit 1; fi
-  printf 'PASS: --browser-webkit MOCK tier on Playwright WebKit (iPhone 15 buyer, Desktop Safari admin behind a self-signed https front) steps [%s]: buyer, order, payment, merchant-buyer, cvs (TCV08 buyer + merchant), password-auth; Stripe SP18 SANDBOX on WebKit = LC_BROWSER_ENGINE=webkit --stripe-browser (see GATES.md); not provider, real-device or deployment acceptance.\n' "${webkit_steps//,/ }"
+  printf 'PASS: --browser-webkit MOCK tier on Playwright WebKit (iPhone 15 buyer, Desktop Safari admin behind a self-signed https front) steps [%s]: buyer, order, payment, merchant-buyer, cvs (TCV08 buyer + merchant), password-auth, claim-checkout; Stripe SP18 SANDBOX on WebKit = LC_BROWSER_ENGINE=webkit --stripe-browser (see GATES.md); not provider, real-device or deployment acceptance.\n' "${webkit_steps//,/ }"
 elif [[ "$test_mode" == --checkout ]]; then
   # Focused diagnosis uses the same isolated real PG and cleanup guard. It never
   # substitutes for the full foundation/race/vet release gate below.

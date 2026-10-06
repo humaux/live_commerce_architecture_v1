@@ -1,0 +1,4 @@
+source	mode	exit	seconds	log
+6126273bae5e1addbe4fc6a8afa2656074523b08	--browser-password-auth	0	121	output/admin-visual/gates-20261005T194523Z/browser-password-auth.log
+6126273bae5e1addbe4fc6a8afa2656074523b08	--browser-visual-lint	1	614	output/admin-visual/gates-20261005T194523Z/browser-visual-lint.log
+6126273bae5e1addbe4fc6a8afa2656074523b08	--browser-click-sweep	0	2506	output/admin-visual/gates-20261005T194523Z/browser-click-sweep.log

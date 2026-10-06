@@ -1,0 +1,38 @@
+=== RUN   TestK3W401BForgedBodiesLeaveNoRows
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+2026/10/06 10:48:16 WARN payuni_notify_rejected code=invalid_signature token_hash=b4af9e0ab5e45823
+--- PASS: TestK3W401BForgedBodiesLeaveNoRows (3.90s)
+=== RUN   TestK3W401BConcurrentReplayExactlyOneReceipt
+--- PASS: TestK3W401BConcurrentReplayExactlyOneReceipt (2.99s)
+=== RUN   TestK3W401BRotationGraceBoundary
+2026/10/06 10:48:25 WARN payuni_notify_rejected code=invalid_signature token_hash=73dc8c8f3781e6c1
+--- PASS: TestK3W401BRotationGraceBoundary (5.43s)
+=== RUN   TestK3W401BCrossStoreSameCredentialReplayScoped
+--- PASS: TestK3W401BCrossStoreSameCredentialReplayScoped (3.44s)
+=== RUN   TestK3W401BDisabledStoreStillRecordsAndWakes
+--- PASS: TestK3W401BDisabledStoreStillRecordsAndWakes (3.62s)
+=== RUN   TestK3W401BEndpointDisableRotateAndLiveRefusal
+--- PASS: TestK3W401BEndpointDisableRotateAndLiveRefusal (3.92s)
+=== RUN   TestK3W401BWakeOnlyMatchingJobNeverInserts
+    k3_w4_01b_adversarial_test.go:387: conflicting request or version
+--- FAIL: TestK3W401BWakeOnlyMatchingJobNeverInserts (3.54s)
+=== RUN   TestK3W401BProfileMismatchReviewedNotWoken
+--- PASS: TestK3W401BProfileMismatchReviewedNotWoken (2.44s)
+=== RUN   TestK3W401BIngressAuthorityCeiling
+--- PASS: TestK3W401BIngressAuthorityCeiling (2.46s)
+=== RUN   TestK3W401BBodyAndHeaderBoundaries
+2026/10/06 10:48:47 WARN payuni_notify_rejected code=invalid_signature token_hash=504399e031d7aadb
+2026/10/06 10:48:47 WARN payuni_notify_rejected code=invalid_signature token_hash=504399e031d7aadb
+--- PASS: TestK3W401BBodyAndHeaderBoundaries (2.55s)
+FAIL
+FAIL	livecommerce/tests/foundation	35.040s
+FAIL
+test-focused: top-level PASS=9 FAIL=1 SKIP=0 exit=1

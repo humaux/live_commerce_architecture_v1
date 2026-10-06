@@ -1,9 +1,12 @@
-// Owner visual unit: real Next/Go/PG forms; no DOM mutation or API substitute for clicks.
+// Purpose: Assert and capture real product-editor layouts across modes, locales and viewport sizes.
+// Depends on: Playwright; Node evidence I/O; product-editor-copy; the caller's production Next/Go/isolated PG fixture.
+// Used by: catalog-core.spec.ts under --browser-product-editor; no DOM mutation or API substitute for UI clicks.
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 
+/** Registers screenshot and geometry cases driven by actual product-editor interactions. */
 export function registerProductVisualAcceptance() {
   if (process.env.PRODUCT_VISUAL_PHASE === "after")
     test("product visual: compact bulk, selected rows, tags and persistence", async ({
@@ -278,7 +281,15 @@ export function registerProductVisualAcceptance() {
               expect(metrics.name!.width).toBeLessThanOrEqual(680);
               expect(
                 metrics.readiness.filter((s) =>
-                  s?.includes(productEditorCopy[locale].images),
+                  s?.includes(productEditorCopy[locale].images)
+                    && !s.includes(productEditorCopy[locale].recommendedImages),
+                ),
+              ).toHaveLength(1);
+              // Integrator restored the distinct >=3-image advice: exactly one
+              // required image item and one recommendation, never duplicates.
+              expect(
+                metrics.readiness.filter((s) =>
+                  s?.includes(productEditorCopy[locale].recommendedImages),
                 ),
               ).toHaveLength(1);
               if (variants) {

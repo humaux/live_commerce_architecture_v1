@@ -1,0 +1,5 @@
+# f1 actual CVS evidence qualified for612 delivery
+
+Actual run source f1c5199adeb0c59cd74bb7b6e34a0cd0977bf2bf; current delivery 6126273bae5e1addbe4fc6a8afa2656074523b08.24 real PNGs, Chromium12 + WebKit12,3locales ×2widths ×2states merchant-created/opening. Original manifests byte-identical. Exact f1 results.tsv exit0 and wrapper MOCK/WebKit PASS/SANDBOX SKIP preserved; engines associated with sequential wrapper time windows, not fields invented in originals.21 exact listed UI/route/client/style/spec dependencies individually hashed and byte-equal sincef1. This is bounded UI equality only, not backend or complete transitive dependency equality.
+
+Current612 CVS runtime NOT_RUN; original f1 captures are not relabeled612. ProviderLayout, ManualReadyLayout, signed-ready appearance,SANDBOX andindependent retirement NOT_RUN. ResponseMOCKexistingtrapEcpay. Six audit placeholders incurrent174filepack remainNOT_RUN; currentpack unmodified. Global3storefrontR9 unresolved. Relativeartifactpaths permit relocation.

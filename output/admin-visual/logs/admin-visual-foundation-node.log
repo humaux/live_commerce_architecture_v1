@@ -1,0 +1,25 @@
+✔ ADM10 operator sentence is localized while product and company facts stay authoritative (0.808833ms)
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.615083ms)
+✔ PS review: all privacy/terms disclose actual Messenger and Instagram processing; deletion uses exact UI labels (0.353875ms)
+✔ PS1 legal identity is one untranslated source (0.13525ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.747958ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (1.030917ms)
+✔ PS4 optional Meta verification value never has a fake default (0.07825ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.05625ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (0.422084ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (1.281458ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (0.571542ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.837ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (4.084458ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.077833ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.124625ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (223.183292ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.2ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 339.944042

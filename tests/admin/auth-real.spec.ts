@@ -1,3 +1,6 @@
+// Purpose: Verify the real signed-in onboarding, store authorization and logout browser contract.
+// Depends on: Playwright and the isolated identity/admin HTTP fixture; synthetic test identities only.
+// Used by: --browser-identity; pins exact owner grants without weakening cross-store authorization assertions.
 import {
   expect,
   request as playwrightRequest,
@@ -256,12 +259,13 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
           currency: "TWD",
           // staff-team (migration 0089, storefront-v2 §D): each item carries the caller's role and effective permissions; the
           // initial-store creator is a full owner = the whole store_grants_permission_check catalogue, sorted by the SQL definer;
-          // pinned so a catalogue change is a deliberate edit here.
+          // LC-B3 (0119, live-console-v1 §11 role defaults) adds inbox read/reply and bounded live inventory adjustment to that catalogue.
+          // Keep exact equality: any further catalogue change must remain a deliberate contract edit here.
           role: "owner",
           permissions: [
             "ads:approve", "ads:manage", "ads:read", "audit:read", "audit:write", "billing:manage", "catalog:read",
-            "catalog:write", "customers:privacy", "customers:read", "fulfillment:write", "integration:execute",
-            "integration:manage", "integration:read", "inventory:read", "inventory:reserve", "inventory:write", "live:manage",
+            "catalog:write", "customers:privacy", "customers:read", "fulfillment:write", "inbox:read", "inbox:reply", "integration:execute",
+            "integration:manage", "integration:read", "inventory:live_adjust", "inventory:read", "inventory:reserve", "inventory:write", "live:manage",
             "live:read", "orders:export", "orders:read", "payments:refund", "pricing:read", "pricing:write", "store:read",
           ],
         },

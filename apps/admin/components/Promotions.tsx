@@ -1,3 +1,6 @@
+// Purpose: Owns merchant promotion creation, editing and pause/resume controls.
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css
+// Used by: apps/admin/app/[locale]/promotions/page.tsx
 "use client";
 
 // Discount codes page (/{locale}/promotions): list (code, discount, minimum, Taipei-time window, usage, per-buyer limit, status), create, edit
@@ -18,6 +21,9 @@ import {
 } from "@/lib/promotions-model";
 import { promotionsCopy, type PromotionsCopy } from "@/lib/promotions-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import { DateControl, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -25,6 +31,7 @@ import "./promotions.css";
 
 const errorText = (c: PromotionsCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns merchant promotion creation, editing and pause/resume controls. User actions submit promotion writes through promotions-client. */
 export function Promotions({
   locale, stores, store, initialError, renderKey,
 }: {
@@ -41,20 +48,7 @@ export function Promotions({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
       <div className="orders-page customers-page" data-testid="promotions-page">
-        <header className="orders-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
-        <div className="orders-controls">
-          {stores.length > 1 && (
-            <label>
-              {c.store}
-              <select data-testid="store-selector" value={store?.id ?? ""} onChange={(event) => window.location.assign(`/${locale}/promotions?store=${event.target.value}`)}>
-                {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
-            </label>
-          )}
-        </div>
+        <AdminPageHeader locale={locale} description={c.subtitle} />
         {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
           <div className="orders-message" role="status">
@@ -167,11 +161,11 @@ function Sections({
           </label>
           <label>
             {c.startsAt}
-            <input data-testid="promotion-starts" type="datetime-local" value={form.startsAt} onChange={(event) => set("startsAt", event.target.value)} />
+            <DateControl emptyLabel={presentationCopy[locale].dateTime} lang={locale} data-testid="promotion-starts" type="datetime-local" value={form.startsAt} onChange={(event) => set("startsAt", event.target.value)} />
           </label>
           <label>
             {c.endsAt}
-            <input data-testid="promotion-ends" type="datetime-local" value={form.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
+            <DateControl emptyLabel={presentationCopy[locale].dateTime} lang={locale} data-testid="promotion-ends" type="datetime-local" value={form.endsAt} onChange={(event) => set("endsAt", event.target.value)} />
             <small>{c.windowHint}</small>
           </label>
           <label>
@@ -199,7 +193,7 @@ function Sections({
         {rows.length === 0 ? (
           <p className="orders-empty" data-testid="promotions-empty">{c.empty}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.title} scrollHint={presentationCopy[locale].scroll}>
             <table className="orders-actions-table" data-testid="promotions-table">
               <thead>
                 <tr><th>{c.colCode}</th><th>{c.colDiscount}</th><th>{c.colMinimum}</th><th>{c.colWindow}</th><th>{c.colUsage}</th><th>{c.colPerBuyer}</th><th>{c.colStatus}</th><th>{c.colActions}</th></tr>
@@ -222,7 +216,7 @@ function Sections({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
     </>

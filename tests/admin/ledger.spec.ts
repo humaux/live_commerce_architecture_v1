@@ -1,5 +1,9 @@
+// Purpose: Checks inventory ledger interactions and responsive tables using the isolated identity fixture.
+// Depends on: ./fixtures/ledger-identity, node:fs/promises, ../../apps/admin/src/shell-copy; harness env: COMMERCE_FIXTURE_STORE_ID, COMMERCE_FIXTURE_TOKEN, UI_SHOT_PHASE
+// Used by: apps/admin/src/features/catalog/routes.ts, tests/foundation/browser_admin_legacy_test.go
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir } from "node:fs/promises";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 test.describe.configure({ mode: "serial" });
 
@@ -7,7 +11,7 @@ test("approved ledger reproduction and mobile table remain usable", async ({
   page,
 }) => {
   await page.goto("/zh-CN/inventory");
-  await expect(page.getByRole("heading", { name: "商品与库存" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-CN"].inventory, exact: true })).toBeVisible();
   await expect(page.locator("tbody tr")).toHaveCount(9);
   await expect(
     page.getByText("隔离本地测试店铺 · 非客户真实库存"),
@@ -50,11 +54,11 @@ test("locale routes preserve the scoped search and explicit choice", async ({
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await page.getByRole("combobox", { name: "语言" }).selectOption("zh-TW");
   await expect(page).toHaveURL(/\/zh-TW\/inventory\?q=HA-001-BE/);
-  await expect(page.getByRole("heading", { name: "商品與庫存" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-TW"].inventory, exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-TW");
   await page.getByRole("combobox", { name: "語言" }).selectOption("en");
   await expect(
-    page.getByRole("heading", { name: "Products & inventory" }),
+    page.getByRole("heading", { level: 1, name: shellCopy.en.inventory, exact: true }),
   ).toBeVisible();
   await expect(page).toHaveURL(/\/en\/inventory\?q=HA-001-BE/);
   await page.goto("/inventory?q=AC-002-BK");

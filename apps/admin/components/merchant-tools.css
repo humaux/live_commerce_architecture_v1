@@ -1,14 +1,19 @@
+/*
+ * Purpose: Styles shared merchant forms and operational feedback.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Dashboard.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/ProductImport.tsx
+ */
 /* Merchant tools (dashboard, product import, manual order). Reuses the orders/customers page chrome; every class here is mt-* so it cannot
    leak into another page. 375 px first: one column, no horizontal page scroll (tables scroll inside their own frame). */
-.mt-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 16px; }
+.mt-grid { display: grid; align-items: start; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin: 0 0 16px; }
 .mt-card { padding: 20px 22px; border: 1px solid var(--line); border-radius: 6px; background: #fff; min-width: 0; }
-.mt-card h2 { margin: 0 0 12px; font-size: 16px; }
+.mt-card h2 { margin: 0 0 12px; font-size: var(--ui-heading-section); }
 .mt-note { margin: 10px 0 0; color: var(--orders-muted); font-size: 13px; }
 .mt-todos { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .mt-todos a { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 48px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); text-decoration: none; }
 .mt-todos a:hover, .mt-todos a:focus-visible { border-color: var(--focus); }
-.mt-todos .mt-count { min-width: 38px; padding: 3px 10px; border-radius: 12px; background: #e8eef5; color: #455c74; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; }
-.mt-todos .mt-hot .mt-count { background: #fff0df; color: #975016; }
+.mt-todos li:not(.mt-hot) a > span:first-child { color: var(--ui-muted); }
+.mt-todos .mt-hot a > span:first-child { font-weight: 600; }
 .mt-pair { display: flex; gap: 28px; flex-wrap: wrap; }
 .mt-pair div { display: grid; gap: 2px; }
 .mt-pair dt { color: var(--orders-muted); font-size: 12px; font-weight: 600; }
@@ -22,14 +27,14 @@
 .mt-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .mt-actions a, .mt-actions button, .mt-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 18px; border: 1px solid #cbd6e2; border-radius: 5px; background: #fff; color: var(--ink); font-weight: 600; text-decoration: none; cursor: pointer; }
 .mt-actions .primary, .mt-btn.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
-.mt-actions button:disabled, .mt-btn:disabled { opacity: .55; cursor: not-allowed; }
+.mt-actions button:disabled, .mt-btn:disabled { opacity: 1; cursor: not-allowed; color: var(--ui-muted); background: var(--ui-page); border-color: var(--ui-border); }
 .mt-form { display: grid; gap: 14px; }
 .mt-field { display: grid; gap: 5px; color: var(--orders-muted); font-size: 12px; font-weight: 600; min-width: 0; }
 .mt-field input, .mt-field select { min-height: 44px; box-sizing: border-box; padding: 0 12px; color: var(--ink); font-size: 14px; border: 1px solid #cbd6e2; border-radius: 5px; background: #fff; max-width: 100%; }
 .mt-row { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .mt-lines { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .mt-lines li { display: grid; grid-template-columns: minmax(0, 1fr) 92px auto; gap: 10px; align-items: center; padding: 8px 12px; border: 1px solid var(--line); border-radius: 5px; }
-.mt-lines input { min-height: 40px; width: 100%; box-sizing: border-box; padding: 0 8px; border: 1px solid #cbd6e2; border-radius: 5px; font-size: 14px; }
+.mt-lines input { min-height: var(--ui-control-compact); width: 100%; box-sizing: border-box; padding: 0 8px; border: 1px solid #cbd6e2; border-radius: 5px; font-size: 14px; }
 .mt-lines small, .mt-results small { display: block; color: var(--orders-muted); }
 .mt-results { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 .mt-results li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; display: grid; gap: 8px; }
@@ -44,6 +49,12 @@
 .mt-stats dt { color: var(--orders-muted); font-size: 12px; }
 .mt-stats dd { margin: 0; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mt-rules { margin: 8px 0 0; padding-left: 20px; color: var(--orders-muted); font-size: 13px; }
+.dashboard-page > .mt-card { margin-bottom: 20px; }
+.dashboard-page .mt-grid { margin-bottom: 20px; }
+.dashboard-page .mt-todos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 0 24px; }
+.dashboard-page .mt-todos a { border: 0; border-bottom: 1px solid var(--ui-border); border-radius: 0; padding: 10px 0; }
+.dashboard-page .mt-table { min-width: 660px; }
+.dashboard-page .mt-actions { justify-content: flex-end; }
 @media (max-width: 680px) {
   .mt-card { padding: 16px; }
   .mt-pair dd { font-size: 24px; }

@@ -112,6 +112,9 @@ var stripeRegistrarFunctions = []string{
 	"payments.approve_stripe_live(uuid,uuid,uuid,uuid,uuid,text,text,timestamp with time zone,bigint,bigint,text[],jsonb)",
 	"payments.record_stripe_live_canary(uuid,uuid,uuid,uuid,uuid,uuid)",
 	"payments.revoke_stripe_live(uuid,uuid,uuid,uuid,text)",
+	// w4-01b-payuni-notify (migration 0136): the operator registrar creates/rotates the SANDBOX
+	// notify endpoint token for one payuni connection. Same registrar authority, no LIVE ingress.
+	"payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)",
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {

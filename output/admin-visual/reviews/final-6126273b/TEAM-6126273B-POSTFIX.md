@@ -1,0 +1,7 @@
+# Team P2 bounded postfix confirmation
+- Source6126273bae5e1addbe4fc6a8afa2656074523b08, frozen20261005T195027Z; sixTeam exactPNG individually opened (3locale ×390/1586), hashes in opened-team-6126273b.json.
+- Observed old23e RED: opaque stickyRemove column hid role select80%en/100%CNTW andYou/您badge. New6shots: desktoprole+badge+Remove individually visible; mobileownbadge and selectedOwner/所有者/擁有者 nowvisible, no action cell overlay. Old23e report/crops/hashmanifest retained.
+- Narrow source diff removes only mobile .teamTable td:last-child sticky declaration, keeps720px table/160px actioncell/44px controls andhorizontalTableFrame. This addresses occlusion rootcause; no inferred backend/role semantics change.
+- Mobile initialview intentionally clips rightend ofEnglishselect/remainingJoined+Actions columns inside324px horizontalframe; wholepagehas no observedspill. MobileRemove is offscreen, so sixinitialshots alone do NOT establish its clickability. Localizedscrollhintremains; root-ownedhit-test+unforcedselectclick/Escape verifies interaction, not authored/run byreviewer.
+- Frozenlint source612: R10=0 vsold10; sixTeamdesktopzero/mobileR7onlystoreellipsis plusCNJoinedheaderoutsideframe. No newscopedP1/P2 observed inTeamcaptures. GlobalstorefrontR9=3 andother86R7outside boundedreview remainnotwaived.
+- Verdict: ownedTeamsticky P2 visually resolved in testedcapturestates; E2 independentpixels/source. Rootowns E3 REDGREEN/password-auth6/6. Reviewer tests/browser/build/PG/LIVE NOT_RUN; nofull35certificate.

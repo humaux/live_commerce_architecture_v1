@@ -147,6 +147,56 @@ func TestKeyringAndCredentialBounds(t *testing.T) {
 	}
 }
 
+func TestSealPayuniAndOpenNotifyRoundTrip(t *testing.T) {
+	k := testKeyring(t)
+	scope := PayuniCredentialScope{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+		"cccccccc-cccc-cccc-cccc-cccccccccccc", "SANDBOX", "Mer_ID-1", 1}
+	want := Credentials{"hash-key-secret", "hash-iv-secret"}
+	id, nonce, ciphertext, err := k.SealPayuni(scope, want)
+	if err != nil || id != "current" || len(nonce) != 12 || len(ciphertext) < 17 {
+		t.Fatalf("seal: id=%q nonce=%d ciphertext=%d err=%v", id, len(nonce), len(ciphertext), err)
+	}
+	got, err := k.OpenPayuniNotify(scope, id, nonce, ciphertext)
+	if err != nil || got != want {
+		t.Fatalf("roundtrip: got=%v err=%v", got, err)
+	}
+	// Rotation grace: the caller retries with the previous version, which must fail against v1 material.
+	if _, err := k.OpenPayuniNotify(PayuniCredentialScope{scope.TenantID, scope.StoreID, scope.ConnectionID,
+		scope.Environment, scope.AccountID, 2}, id, nonce, ciphertext); !errors.Is(err, errInvalidSecret) {
+		t.Fatalf("cross-version open succeeded: %v", err)
+	}
+	for name, change := range map[string]func(*PayuniCredentialScope){
+		"tenant":      func(s *PayuniCredentialScope) { s.TenantID = "other" },
+		"store":       func(s *PayuniCredentialScope) { s.StoreID = "other" },
+		"connection":  func(s *PayuniCredentialScope) { s.ConnectionID = "other" },
+		"environment": func(s *PayuniCredentialScope) { s.Environment = "LIVE" },
+		"account":     func(s *PayuniCredentialScope) { s.AccountID = "Other" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			changed := scope
+			change(&changed)
+			if _, err := k.OpenPayuniNotify(changed, id, nonce, ciphertext); !errors.Is(err, errInvalidSecret) {
+				t.Fatal("cross-scope decryption succeeded")
+			}
+		})
+	}
+	for _, bad := range []PayuniCredentialScope{
+		{"", "s", "c", "SANDBOX", "m", 1},
+		{"t", "", "c", "SANDBOX", "m", 1},
+		{"t", "s", "", "SANDBOX", "m", 1},
+		{"t", "s", "c", "PROD", "m", 1},
+		{"t", "s", "c", "SANDBOX", "", 1},
+		{"t", "s", "c", "SANDBOX", "m", 0},
+	} {
+		if _, _, _, err := k.SealPayuni(bad, want); !errors.Is(err, errInvalidSecret) {
+			t.Fatal("invalid scope sealed", err)
+		}
+		if _, err := k.OpenPayuniNotify(bad, id, nonce, ciphertext); !errors.Is(err, errInvalidSecret) {
+			t.Fatal("invalid scope opened", err)
+		}
+	}
+}
+
 func TestCredentialsNeverFormatOrJSONAsPlaintext(t *testing.T) {
 	c := Credentials{"secret-hash-key", "secret-hash-iv"}
 	for _, rendered := range []string{fmt.Sprint(c), fmt.Sprintf("%#v", c), string(mustJSON(t, c)),

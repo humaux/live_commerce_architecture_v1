@@ -1,0 +1,8 @@
+
+> live-commerce-workspace@ typecheck:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual-ledger
+> pnpm --filter @live-commerce/admin typecheck
+
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual-ledger/apps/admin
+> tsc --noEmit
+

@@ -1,0 +1,7 @@
+source	mode	exit	seconds	log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-product-editor	0	118	output/admin-visual/gates-20261005T073028Z/browser-product-editor.log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-cvs	1	101	output/admin-visual/gates-20261005T073028Z/browser-cvs.log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-admin-legacy	0	48	output/admin-visual/gates-20261005T073028Z/browser-admin-legacy.log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-merchant-orders-ui	0	100	output/admin-visual/gates-20261005T073028Z/browser-merchant-orders-ui.log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-catalog-media	0	30	output/admin-visual/gates-20261005T073028Z/browser-catalog-media.log
+bb7e062ecd92e3b71a69ace45757e3d7839aeeed	--browser-webkit	1	287	output/admin-visual/gates-20261005T073028Z/browser-webkit.log

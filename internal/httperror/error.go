@@ -217,6 +217,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"already_reminded":               "This buyer was already reminded for this session.",
 		"not_remindable":                 "This buyer has nothing left to remind.",
 		"no_storefront":                  "The store has no active storefront domain to link to.", // W3-03B checkout reminders
+		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
+		"bundle_already_ordered": "These claims already have an order.",
+		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
 	}
 	message, ok := messages[code]
 	if !ok {

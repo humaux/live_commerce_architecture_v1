@@ -1,9 +1,14 @@
+// Purpose: Owns studio draft editing and rehearsal controls.
+// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/studio-copy, @/lib/orders-model, @/lib/promotions-model, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css
+// Used by: apps/admin/app/[locale]/studio/page.tsx
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, DateControl, Field, FormRow } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import {
@@ -16,6 +21,8 @@ import { studioCopy } from "@/lib/studio-copy";
 import { displayTime } from "@/lib/orders-model";
 import { instantToTaipei, taipeiToInstant } from "@/lib/promotions-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
+import s from "./OperationalForms.module.css";
 
 type Status = "initial" | "loading" | "ready" | "hidden" | StudioErrorCode;
 type PageView = { scope: string; status: Status; data: StudioPage | null };
@@ -88,6 +95,7 @@ function errorCode(error: unknown): StudioErrorCode {
   return error instanceof StudioError ? error.code : "unavailable";
 }
 
+/** Owns studio draft editing and rehearsal controls. User actions submit draft and rehearsal commands through studio-client. */
 export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   locale: Locale;
   stores: Store[];
@@ -132,6 +140,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const previous = useRef<string[]>([]);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
+  // A visible shell is not an authenticated Studio read. Creation must wait
+  // for loadPage to establish this store's session boundary before taking input.
+  const creationReady = currentPage.status === "ready" && !!boundary.current;
   const selectedID = scene || (concealed.current?.scope === scope ? concealed.current.selectedID : "") ||
     (pinnedScene.scope === scope ? pinnedScene.id : "") || currentPage.data?.items[0]?.session_id || "";
   const detailKey = `${storeID}|${selectedID}`;
@@ -475,7 +486,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     return true;
   }
   function newScene() {
-    if (recoveryElsewhere || recoveryGuard || !mayLeave()) return;
+    if (!creationReady || recoveryElsewhere || recoveryGuard || !mayLeave()) return;
     explicitDeparture.current = false;
     dirty.current = false;
     setNewMode(true);
@@ -562,7 +573,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     } finally { if (epoch === actionEpoch.current) setBusy(false); }
   }
   function save() {
-    if (recoveryElsewhere || recoveryGuard) return;
+    if ((newMode && !creationReady) || recoveryElsewhere || recoveryGuard) return;
     const input = draftInput(form);
     if (!input) {
       setFormError(form.title.trim() !== form.title || Array.from(form.title).length < 1 ||
@@ -587,7 +598,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const actionBlocked = recoveryElsewhere || recoveryGuard || actionError === "uncertain" || actionError === "conflict";
   const canStart = !!shown?.can_manage && shown.draft.state === "DRAFT" && !!prepared && preparedCurrent && !attempt && !formDirty && !actionBlocked;
   const canStop = !!shown?.can_manage && !!attempt && !attempt.stop_requested && !attempt.escalated && attempt.resource_state !== "TERMINAL" && !actionBlocked;
-  const canEdit = !recoveryElsewhere && !recoveryGuard && (newMode || (!!shown?.can_manage && shown.draft.state === "DRAFT"));
+  const canEdit = !recoveryElsewhere && !recoveryGuard && ((newMode && creationReady) || (!!shown?.can_manage && shown.draft.state === "DRAFT"));
   // Planning-only Studio (media_enabled=false) has no rehearsal column; save errors stay visible below the editor.
   const actionAlert = actionError && <div role="alert" className="studio-action-error">
     <p>{actionMessage(actionError)}</p>
@@ -597,10 +608,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   </div>;
 
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
-    <div className="studio-page" data-testid="merchant-studio">
-      <header className="studio-heading">
-        <div><h1>{c.title}</h1><p>{c.subtitle}</p></div>
-        <div className="studio-heading-actions">
+    <div className={`studio-page ${s.page}`} data-testid="merchant-studio">
+      <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
           {stores.length > 1 && <label>{c.store}<select value={storeID} onChange={(event) => {
             previous.current = []; navigate(event.target.value, "", "");
           }}>{stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
@@ -608,8 +617,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/claims?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(shown.draft.session_id)}`); }}>
             {c.claims}</button>}
           <button type="button" className="studio-refresh" onClick={refresh}>{c.refresh}</button>
-        </div>
-      </header>
+        </>} />
       {recoveryElsewhere && historyRecovery && <p className="studio-note" role="status">
         {locale === "zh-CN" ? "另一场次有待处理的草稿或请求。请先返回该场次。" :
           locale === "zh-TW" ? "另一場次有待處理的草稿或請求。請先返回該場次。" :
@@ -620,7 +628,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       </p>}
       <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`}>
         <section className="studio-scenes" aria-label={c.scenes}>
-          <button type="button" className="primary studio-new" disabled={recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || currentPage.status === "forbidden" || shown?.can_manage === false}
+          <button type="button" className="primary studio-new" disabled={!creationReady || recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || shown?.can_manage === false}
+            aria-describedby={currentPage.status !== "ready" ? "studio-list-status" : undefined}
             onClick={newScene}>＋ {c.newScene}</button>
           <h2 className="sr-only">{c.scenes}</h2>
           {currentPage.status === "ready" ? currentPage.data?.items.length ? <>
@@ -629,7 +638,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 className={`studio-scene ${!newMode && selectedID === item.session_id ? "selected" : ""}`}
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
                 onClick={() => { navigate(storeID, cursor, item.session_id); }}>
-                <strong>{item.title}</strong><span>{c.state[item.state as keyof typeof c.state] ?? item.state}</span>
+                <strong>{item.title}</strong><Badge>{c.state[item.state as keyof typeof c.state] ?? item.state}</Badge>
                 <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
               </button>)}
             </div>
@@ -643,18 +652,17 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               }}>{c.next}</button>
             </div>
           </> : <p className="studio-list-message">{c.empty}</p> :
-            <div className="studio-list-message" role={currentPage.status === "loading" ? "status" : "alert"}>
+            <div id="studio-list-status" className="studio-list-message" role={currentPage.status === "loading" ? "status" : "alert"}>
               {currentPage.status === "loading" ? c.loading : statusText(currentPage.status)}
             </div>}
         </section>
         <section className="studio-editor" aria-label={c.editor}>
           <h2>{c.editor}</h2><p className="studio-muted">{c.editorHint}</p>
           {newMode || shown ? <>
-            <div className="studio-fields">
-              <label>{c.name}<input value={form.title} maxLength={400} disabled={!canEdit || busy}
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></label>
-              {locale === "en" ? <div className="studio-schedule-field">
-                <label htmlFor="studio-schedule-entry">{c.schedule}</label>
+            <FormRow className="studio-fields">
+              <Field id="studio-name" label={c.name}><input id="studio-name" value={form.title} maxLength={400} disabled={!canEdit || busy}
+                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></Field>
+              {locale === "en" ? <Field id="studio-schedule-entry" label={c.schedule}>
                 <div className="studio-schedule-control">
                   <input id="studio-schedule-entry" type="text" placeholder="YYYY-MM-DDTHH:mm" maxLength={16}
                     value={form.scheduled} disabled={!canEdit || busy}
@@ -668,14 +676,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                       onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
                   </span>
                 </div>
-              </div> : <label>{c.schedule}<input type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
+              </Field> : <Field id="studio-schedule-entry" label={c.schedule}><DateControl emptyLabel={presentationCopy[locale].dateTime} id="studio-schedule-entry" type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
                 min="2000-01-01T00:00" max="2199-12-31T23:59"
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></label>}
-              <label>{c.aspect}<select value={form.aspect} disabled={!canEdit || busy}
+                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></Field>}
+              <Field id="studio-aspect" label={c.aspect} width="short"><select id="studio-aspect" value={form.aspect} disabled={!canEdit || busy}
                 onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, aspect: event.target.value as AspectRatio }); }}>
                 <option value="9:16">{c.tall}</option><option value="16:9">{c.wide}</option>
-              </select></label>
-            </div>
+              </select></Field>
+            </FormRow>
             <div className="studio-version">
               <h3>{c.version}</h3>
               {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
@@ -686,13 +694,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             {formError && <p role="alert" className="studio-error">{formError}</p>}
             <button type="button" className="primary studio-save" disabled={!canEdit || busy || (!newMode && !formDirty) || actionError === "uncertain" || actionError === "conflict"}
               onClick={save}>{busy ? c.saving : newMode ? c.create : c.save}</button>
+            {canEdit && !busy && !newMode && !formDirty && !actionError && <p className="studio-note">{c.noChanges}</p>}
           </> : currentDetail.status === "loading" && currentPage.status === "ready" ?
             <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
             <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
           {!mediaOn && actionAlert}
         </section>
         {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
-          <div className="studio-status-title"><h2>{c.rehearsal}</h2><span>MOCK</span></div>
+          <div className="studio-status-title"><h2>{c.rehearsal}</h2><Badge tone="info">MOCK</Badge></div>
           <p className="studio-notice">{c.localOnly}</p>
           {shown ? <>
             <section className="studio-fact">

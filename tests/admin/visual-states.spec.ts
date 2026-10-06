@@ -1,3 +1,6 @@
+// Purpose: Checks fixture-driven inventory visual states and long-SKU overflow; writes browser evidence.
+// Depends on: ./fixtures/ledger-identity, node:fs/promises, @playwright/test; harness env: COMMERCE_FIXTURE_STORE_ID
+// Used by: tests/foundation/browser_admin_legacy_test.go
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
 import type { APIRequestContext } from "@playwright/test";
@@ -111,7 +114,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
     scrollbarColor: getComputedStyle(element).scrollbarColor,
     scrollbarWidth: getComputedStyle(element).scrollbarWidth,
   }));
-  expect(scroll.scrollbarColor).toBe("rgb(113, 134, 158) rgb(237, 242, 247)");
+  expect(scroll.scrollbarColor).toBe("rgb(86, 97, 113) rgb(245, 246, 248)");
   expect(scroll.scrollbarWidth).toBe("thin");
   await table.screenshot({ path: "output/playwright/ledger-review/scrollbar-active.png" });
   await writeFile(

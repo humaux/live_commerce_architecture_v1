@@ -1,3 +1,6 @@
+// Purpose: Owns localized studio controls, destination labels and feedback.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Studio.tsx, apps/admin/components/StudioClaims.tsx, tests/admin/claims-ui.spec.ts, tests/admin/ops-polish-model.test.ts
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
@@ -8,6 +11,7 @@ const en = {
   editor: "Scene settings", editorHint: "Save the programme before checking rehearsal authority.",
   version: "Programme version", savedAt: "Last saved (Taipei time)", unsaved: "Unsaved changes", newDraft: "New unsaved scene",
   create: "Create draft", save: "Save draft", saving: "Saving…", select: "Select a scene to edit it.",
+  noChanges: "No unsaved changes. Edit a field to save a new draft version.",
   rehearsal: "MOCK rehearsal", localOnly: "Local workflow check only; this does not publish a real stream.",
   prepared: "Prepared rehearsal authority", noPrepared: "No current prepared authority. An authorized internal fixture must prepare it before rehearsal can start.",
   expiredPrepared: "Prepared authority expired. Refresh the scene; a new authority must be prepared outside this page.",
@@ -44,6 +48,7 @@ export const studioCopy: Record<Locale, StudioCopy> = {
     editor: "场次设置", editorHint: "先保存节目，再核对模拟演练授权。",
     version: "节目版本", savedAt: "最后保存（台北时间）", unsaved: "尚未保存的修改", newDraft: "尚未保存的新场次",
     create: "建立草稿", save: "保存草稿", saving: "正在保存…", select: "选择场次后编辑。",
+    noChanges: "没有未保存的更改。修改字段后即可保存新的草稿版本。",
     rehearsal: "模拟演练", localOnly: "仅检查本地流程；不会在任何平台公开直播。",
     prepared: "已准备模拟授权", noPrepared: "当前没有可用的模拟授权。须由获授权的内部准备流程提供，才能开始演练。",
     expiredPrepared: "模拟授权已过期。请刷新场次；新的授权须在本页之外准备。",
@@ -77,6 +82,7 @@ export const studioCopy: Record<Locale, StudioCopy> = {
     editor: "場次設定", editorHint: "先儲存節目，再核對模擬演練授權。",
     version: "節目版本", savedAt: "最後儲存（台北時間）", unsaved: "尚未儲存的變更", newDraft: "尚未儲存的新場次",
     create: "建立草稿", save: "儲存草稿", saving: "正在儲存…", select: "選擇場次後編輯。",
+    noChanges: "沒有未儲存的變更。修改欄位後即可儲存新的草稿版本。",
     rehearsal: "模擬演練", localOnly: "僅檢查本機流程；不會在任何平台公開直播。",
     prepared: "已準備模擬授權", noPrepared: "目前沒有可用的模擬授權。須由獲授權的內部準備流程提供，才能開始演練。",
     expiredPrepared: "模擬授權已過期。請重新整理場次；新授權須在本頁之外準備。",

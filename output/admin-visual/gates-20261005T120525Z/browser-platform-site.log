@@ -1,0 +1,26 @@
+✔ ADM10 operator sentence is localized while product and company facts stay authoritative (0.764208ms)
+✔ PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority (0.430292ms)
+✔ PS review: privacy/terms retain Messenger and Instagram purpose disclosure; deletion uses exact UI labels (0.130916ms)
+✔ P2-N1 zh-TW/privacy: current comments and private reply, conditional inbound messages (0.084333ms)
+✔ P2-N1 zh-TW/terms: current comments and private reply, conditional inbound messages (0.049084ms)
+✔ P2-N1 zh-CN/privacy: current comments and private reply, conditional inbound messages (0.039875ms)
+✔ P2-N1 zh-CN/terms: current comments and private reply, conditional inbound messages (0.05075ms)
+✔ P2-N1 en/privacy: current comments and private reply, conditional inbound messages (0.048084ms)
+✔ P2-N1 en/terms: current comments and private reply, conditional inbound messages (0.052584ms)
+✔ PS1 legal identity is one untranslated source (0.092291ms)
+✔ PS1 contact and hosts come only from configuration; production fails closed (0.3675ms)
+✔ PS2 public routes default to zh-TW, restrict page/locale, and never include admin (1.771833ms)
+✔ PS4 optional Meta verification value never has a fake default (0.127334ms)
+✔ PS1 every locale uses the same product name in auth page titles (0.470958ms)
+✔ PS1 public page copy has three complete locales, no invented operator identity or contact (2.012083ms)
+✔ PS1 production build validates config; public data is not bundled through NEXT_PUBLIC (1.185458ms)
+✔ PS review: admin image installs the manifests for its workspace dependencies before building (1.10175ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.811
+PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases, 390 real clicks, 12 messaging-copy cases and 30 reloads

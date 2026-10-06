@@ -1,22 +1,24 @@
+/*
+ * Purpose: Styles attribution reports and detail panels.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Attribution.tsx
+ */
 /* D7/D9 readonly ledger extension. Incumbent W0 shell and table palette; all wide tables scroll within the work area. */
 .attribution-page {
-  max-width: 1200px;
-  margin: 8px auto;
+  width: 100%;
+  margin: 0;
   padding-bottom: 40px;
   color: var(--ink);
 }
 .attribution-page header {
   margin-bottom: 24px;
 }
-.attribution-page h1 {
-  margin-top: 12px;
-}
 .attribution-page header p {
   max-width: 75ch;
   margin-top: 8px;
 }
 .attribution-page a {
-  color: var(--focus);
+  color: var(--ui-link);
   text-underline-offset: 3px;
 }
 .attribution-page :is(button, input, select) {
@@ -31,7 +33,7 @@
 .attribution-filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: center;
   gap: 12px;
   margin: 16px 0;
 }
@@ -59,12 +61,12 @@
   min-width: 0;
 }
 .attribution-section h2 {
-  font-size: 19px;
+  font-size: var(--ui-heading-section);
   margin: 0 0 12px;
 }
 .attribution-section h3 {
-  font-size: 16px;
-  margin: 24px 0 12px;
+  font-size: 14px;
+  margin: 20px 0 8px;
 }
 .attribution-section h4 {
   font-size: 14px;
@@ -82,7 +84,7 @@
   min-height: 44px;
   padding-block: 12px;
   cursor: pointer;
-  color: var(--focus);
+  color: var(--ui-link);
 }
 .attribution-linked-drafts ul {
   padding-inline-start: 24px;
@@ -117,9 +119,22 @@
 }
 .attribution-scroll {
   max-width: 100%;
-  overflow-x: auto;
-  scrollbar-color: #71869e #edf2f7;
-  scrollbar-width: thin;
+  min-width: 0;
+}
+.attribution-selection {
+  margin: 16px 0;
+}
+.attribution-filters > div {
+  flex: 0 1 480px;
+  width: 100%;
+}
+.attribution-page a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ui-target);
+}
+.attribution-facts {
+  align-items: start;
 }
 .attribution-scroll table {
   width: 100%;
@@ -150,7 +165,9 @@
   background: #f2f5f9;
 }
 .attribution-page button:disabled {
-  opacity: 0.6;
+  opacity: 1;
+  color: var(--ui-muted);
+  background: var(--ui-page);
   cursor: not-allowed;
 }
 .attribution-audience-read {
