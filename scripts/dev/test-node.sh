@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Purpose: Run registered DB-free Node gates without launching PostgreSQL or a browser.
+# Depends on: node, git and the repository's listed unit suites; optional pinned LiveKit binary.
+# Used by: local acceptance, CI, check-gates and release gates.
 # test-node.sh — the gate for every Node unit suite that needs no Docker/PG/browser (unit maintainability).
 # Runs (always): apps/storefront/tests/*.test.mjs, packages/i18n/tests/*.test.ts, packages/markdown-lite/tests/*.test.ts, tests/admin/design-model.test.ts (store-design) and tests/admin/team-model.test.ts (staff-team) and tests/admin/design-gate.test.ts (store-design gate). tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts (MCG09 callback/open-redirect pure functions) tests/deploy/meta-connect-preflight.test.mjs (MCG08 preflight negatives for the COMMERCE_META_LOGIN_* keys) tests/deploy/ops-alert-preflight.test.mjs (ops-disk-guard D4: preflight P08 alert-channel rule) tests/admin/invite-next.test.ts (staff-invite return-to validator) tests/admin/money-time-model.test.ts (stop-bleed D02 TWD whole-dollar money rule + M06 Taipei time)
 # Runs (only with a pinned binary): tests/media/r04-input-runner.test.mjs needs COMMERCE_R04_LIVEKIT_BINARY;
@@ -17,6 +20,7 @@ node --test --experimental-strip-types tests/admin/platform-site.test.ts
 node --test --experimental-strip-types tests/admin/attribution.test.ts tests/admin/attribution-audience.test.ts tests/admin/attribution-format.test.ts
 node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
+node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then
   node --test tests/media/r04-input-runner.test.mjs
 else

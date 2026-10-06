@@ -1,3 +1,6 @@
+// Purpose: Next packaging and response security headers, including the narrowly scoped public Facebook console embed.
+// Depends on: Next build phases, companyConfig and NODE_ENV; no provider credentials.
+// Used by: admin Next build/server and header/security acceptance tests.
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { companyConfig } from "./lib/company";
@@ -8,6 +11,7 @@ const scriptSrc =
   process.env.NODE_ENV === "development"
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline'";
+const contentPolicy = `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`;
 
 const config: NextConfig = {
   agentRules: false, // The repository owns its instruction hierarchy.
@@ -33,9 +37,14 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             // R4S-04: same-origin sources only (no form-action: OAuth starts redirect off-site); nonce script-src is post-pilot.
-            value: `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
+            value: contentPolicy,
           },
         ],
+      },
+      {
+        source: "/:locale/studio/console",
+        // Only a user-requested official public-post iframe is allowed; scripts/connect remain same-origin.
+        headers: [{ key: "Content-Security-Policy", value: `${contentPolicy}; frame-src https://www.facebook.com` }],
       },
       // staff-team D3: the invitation token is in this path, so neither the page's own subresources nor anything else may receive
       // it as a Referer, and the page is never cached. A real header (not only the <meta>) covers the stylesheet/script requests
