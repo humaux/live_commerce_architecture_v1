@@ -23,3 +23,12 @@ The reviewer observed real Next/OIDC/`platform.WithScope` boundaries in the fixt
 - Historical `ffe45ef6` browser RED was interrupted without a final result. Its resumed waiter exited 137 after author cancellation before acquiring PG; neither is browser RED proof. The current-source launcher exited 2 during its pre-test merge; conflicts were resolved in `d50953a8`, without restarting locally.
 - Under owner rule `2f596a0c`, browser/visual/sweep acceptance is GitHub-only. There are no active unit-owned local waiters. See DELIVERY.md for exact CI modes and source pin.
 - Independent screenshot review and runtime closure remain pending. No source-only report is labelled E3/E4 runtime acceptance.
+
+## LC-B7 follow-up source review
+
+Read-only explorer `lcu1_contract_review` compared this unit with backend `585600b7`, then reviewed the author diff. Actual runtime model telemetry was not exposed. Author source: `df8c6a2e`.
+
+- Found the 100-versus-200 offer cap and the valid 200-offer UTF-8 A1 response exceeding 256 KiB. Root reproduced both with local Node tests before fixing them; final scoped suite 23/23.
+- Confirmed A1/inventory BFF allowlists were already present; matching scope/bounds/DTO behavior needed regression coverage, not another route implementation.
+- Found fixture authorization errors incorrectly returned 401 and the narrow browser principal still had `live:manage`. Both corrected: 403/401/404/503 classification, narrow grant without live management, separate no-inventory BFF 403 and unchanged-stock/receipts assertion.
+- Reviewer confirmed those two repairs at source level; no remaining findings in that bounded re-review. Browser execution is pending GitHub, not performed by this reviewer.
