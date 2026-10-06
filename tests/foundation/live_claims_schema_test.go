@@ -184,9 +184,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// meta-claims-intake-v1 §4: claims.meta_intake joins the four T10 tables; claims-retention-purge-v1 §2
 		// (§6 clause 1) adds retention_policy and retention_log; 0105 (R4S-01) adds the live_price_uses ledger.
-		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants.
-		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 10 {
-			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)", n)
+		// 0113 adds the price-neutral immutable order_origins ledger; 0129 (LC-B6) adds claims.merchant_origin_grants; 0151 (W3-04B) adds sold_out_settings.
+		if n := countRows(t, f.owner, `SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='claims' AND c.relkind IN ('r','p') `); n != 11 {
+			t.Fatalf("schema claims has %d tables, want bundles/lines/events/links/meta_intake/retention_policy/retention_log/live_price_uses/order_origins/merchant_origin_grants (0129)/sold_out_settings (0151)", n)
 		}
 	})
 
@@ -279,6 +279,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(ci, "claims.events", "SELECT", cols("claims.events")...)
 		add(ci, "claims.events", "INSERT", cols("claims.events")...)
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
+		// 0151 (W3-04B): the sold-out predicate reads the claimed offer and quantity of the bundle-creating event (no actor, text or payload).
+		add(iw, "claims.events", "SELECT", "offer_id", "quantity")
 		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
 		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
 		// W3-03B (0144): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).
@@ -529,6 +531,14 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				retention[r.name] = true
 				continue
 			}
+			if r.name == "get_sold_out_reply" || r.name == "set_sold_out_reply" {
+				// 0151 (W3-04B): merchant settings definers owned by commerce_integration_writer (it owns the claim-reply planners they share a table with); the
+				// exact ACL, volatility and owner are also pinned by TestSoldOutReplyACL.
+				if !definer || r.owner != "commerce_integration_writer" || r.config != "search_path=pg_catalog" || r.acl != "commerce_integration_writer:EXECUTE,commerce_runtime:EXECUTE" || !strings.Contains(r.comment, "internal/claims") {
+					t.Fatalf("claims.%s definer shape %+v (definer=%t)", r.name, r, definer)
+				}
+				continue
+			}
 			w, ok := want[r.name]
 			if !ok {
 				t.Fatalf("unexpected function claims.%s", r.name)
@@ -576,9 +586,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
 			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
-			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link'))
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply')) -- 0151: the owner of the two sold-out settings definers
 			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
+			       -- 0151 (W3-04B): the merchant transaction reads/saves the sold-out reply setting.
+			       OR (r.rolname='commerce_runtime' AND p.proname IN ('get_sold_out_reply','set_sold_out_reply'))
 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')

@@ -1212,3 +1212,37 @@ This amendment freezes the additive B1/B2 interface for this unit; shared ACL in
   uniform 404 asks for a replacement link and offers a cart link when non-empty. Claims still never reserve stock.
 - The handoff token stays in memory/header only; fragment is removed before requests and discarded when navigating away.
   New gate `--browser-claim-checkout` and seventh WebKit step `claim-checkout` cover the real-click path (CDC01–CDC05).
+
+## Amendment "W3-04B sold-out reply" (2026-10-06, migration 0151)
+
+Authorized by the W3-04B Integrator ruling (`docs/delivery/units/w3-04b-sold-out-reply.md`). Additive; it changes only what the automatic private
+reply says when the claimed offer has no stock. The claim itself is unchanged.
+
+- **Sold-out predicate** (same rule as "Direct checkout" B1, evaluated in SQL at reply-planning time for the bundle-creating ACCEPTED event):
+  the offer's SKU tracks inventory (A6) and `SUM(on_hand - reserved - allocated - unavailable)` over the store is below the **claimed quantity**
+  (a partial shortfall, 3 claimed with 1 left, counts as sold out: no partial link), **or** the offer is inactive. An untracked SKU is never sold
+  out. Ingest rejects a paused offer as `OFFER_INACTIVE` (no bundle, so no reply of any kind); the inactive clause only closes a late deactivation.
+  `inventory.claim_sku_sold_out(uuid,integer) RETURNS boolean` (owner `commerce_inventory_writer`, EXECUTE `commerce_integration_writer` only, scope
+  from the transaction GUCs) is the boolean-only seam; `integration.claim_sold_out_facts(uuid,uuid,uuid)` is the shared private helper.
+- **Reply**: `integration.plan_claim_reply` (signature, owner and EXECUTE unchanged) plans the same single `meta.private_reply` operation on the same
+  `mpr:` key with `message_type:"sold_out_reply"`, `origin_kind:"auto"`, `offer_id`, `template`, `template_version` and the **rendered `text`
+  frozen into the request** (template body with `{{product.name}}` replaced; <= 400 characters, request still <= 2048 bytes; template text and a
+  product name, never buyer data). No `claims.links` row is created and no token is derived. Audit `claim_reply_sold_out` beside
+  `meta.private_reply.planned`. `claims.check_meta_reply` skips the link proof for this message type only; deadline, source, principal,
+  live window and takeover checks are unchanged. The adapter sends `text` once (never repeated; Graph failure is UNKNOWN, query-only Reconcile).
+- **Quota (hard limit, say it in the UI copy)**: the sold-out reply CONSUMES the comment's one private reply (first writer wins, §4.2 of
+  live-console-v1). A restock cannot re-reply to the same comment: the merchant can only wait for the buyer's DM (24 h window) or a new comment.
+  `inbox.plan_manual_private_reply` therefore answers `409 used` after it, and a manual reply sent first turns the claim into the existing audited
+  `claim_reply_skipped:reply_used` skip.
+- **Switch + template** (`claims.sold_out_settings`, per store, absent row = enabled + fixed template, FORCE RLS, no direct login-role access):
+  `claims.get_sold_out_reply()` (live:read) and `claims.set_sold_out_reply(enabled, template_id, template_version, expected_version)` (live:manage,
+  compare-and-swap, `PT409` on a stale version, `22023` for an unusable template, audit `claims.sold_out_reply.set`), both owned by
+  `commerce_integration_writer`, EXECUTE `commerce_runtime`; Go `claims.GetSoldOutReply/SetSoldOutReply`. Switch OFF: a sold-out claim is committed and the
+  reply is skipped with audit `claim_reply_skipped:sold_out_off` (the comment's budget stays for one manual reply). A usable template is the fixed
+  `sold-out-reply/v1` (zh-TW; kind `private_reply`, not public-safe) or a merchant-published template of the SAME store with kind `private_reply`, one line,
+  <= 280 characters and `{{product.name}}` as its only placeholder; a chosen template that later cannot render falls back to the fixed one (the claim never fails).
+  The reply text is not localised per `reply_locale` in this slice (the template is the locale).
+- **Feed**: `live.console_marks.private_reply_kind` reports a `sold_out_reply` operation as `out_of_stock` (the existing enum of live-console-v1 §2.5).
+- Gates: `TestSoldOutReply*` (SO01-SO08, settings/template rules, ACL pins), `internal/integrations/metareply` unit tests. Evidence MOCK (REAL_PG + fake Graph); Meta LIVE NOT_RUN.
+- NOT in this slice: restock notification (no lawful channel), auto-pausing sold-out offers (live-console §7.2), public "sold out" comments, stock holds,
+  an HTTP route/UI for the settings (W3-U2 adds them over `GetSoldOutReply/SetSoldOutReply`).
