@@ -1,0 +1,84 @@
+# Purpose: run the RAM-heavy gates (full foundation suite, browser modes, focused PG regexes) on GitHub-hosted
+#   runners instead of the dev Mac (owner 2026-10-06: "把所有需要高ram的，放到GitHub上去跑"). One matrix job per mode,
+#   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.
+# Depends on: scripts/dev/test-local.sh (modes), scripts/dev/test-focused.sh (regex runs), the pinned postgres image,
+#   Playwright Chromium/WebKit for --browser-* modes. No secrets: every gate uses MOCK/SANDBOX fixtures only.
+# Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
+#   the full foundation suite automatically.
+name: Gates (GitHub runners)
+
+on:
+  push:
+    branches: [r3/integration]
+  workflow_dispatch:
+    inputs:
+      modes:
+        description: >-
+          JSON array of gates. "foundation" = full suite (test-local.sh); "--browser-x" / "--inbox-send" etc. =
+          test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
+        default: '["foundation"]'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation"]') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    concurrency:
+      group: gates-${{ github.ref }}-${{ matrix.mode }}
+      cancel-in-progress: true
+    env:
+      GOTOOLCHAIN: go1.27.1
+      GOFLAGS: -mod=readonly
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      MODE: ${{ matrix.mode }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+      - name: Node dependencies (frozen lockfile)
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Browsers for browser modes
+        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Download pinned test image
+        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Gate
+        run: |
+          set -o pipefail
+          mkdir -p output/ci-gates
+          log="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
+          case "$MODE" in
+            foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+            --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+            *) echo "unknown mode: $MODE" >&2; exit 2 ;;
+          esac
+      - name: Failure summary
+        if: always()
+        run: grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log | head -200 || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: gate-${{ strategy.job-index }}
+          path: |
+            output/ci-gates/
+            output/ui-visual-audit/LATEST/
+          retention-days: 14
+          if-no-files-found: ignore
