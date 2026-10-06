@@ -40,9 +40,11 @@ BEGIN
  SELECT prosrc INTO v_src FROM pg_proc WHERE oid='customers.export_import_profile(bytea,uuid,uuid)'::regprocedure;
  IF md5(v_src)<>'2277018e00364d4b1bb8eaf3c0b03e55' THEN RAISE EXCEPTION '0156 export_import_profile baseline drift (not the 0152 body)'; END IF;
  SELECT pg_get_expr(polwithcheck,polrelid) INTO v_src FROM pg_policy WHERE polrelid='ops.audit_events'::regclass AND polname='privacy_audit_insert';
- IF v_src IS NULL OR (SELECT array_agg(m[1] ORDER BY m[1]) FROM regexp_matches(v_src,'(customers\.[a-z_]+)','g') m)
-  IS DISTINCT FROM ARRAY['customers.consent_withdrawn','customers.erased','customers.exported','customers.imported','customers.note_added',
-   'customers.note_deleted','customers.note_edited','customers.tag_created','customers.tag_deleted','customers.tag_renamed','customers.tagged'] THEN
+ IF v_src IS NULL
+  OR (SELECT count(DISTINCT m[1]) FROM regexp_matches(v_src,'(customers\.[a-z_]+)','g') m)<>11
+  OR EXISTS(SELECT 1 FROM regexp_matches(v_src,'(customers\.[a-z_]+)','g') m WHERE m[1]<>ALL(ARRAY['customers.consent_withdrawn','customers.erased',
+   'customers.exported','customers.imported','customers.note_added','customers.note_deleted','customers.note_edited','customers.tag_created',
+   'customers.tag_deleted','customers.tag_renamed','customers.tagged'])) THEN
   RAISE EXCEPTION '0156 privacy_audit_insert baseline drift (action set is not the 0152 set)'; END IF;
 END $$;
 
