@@ -91,6 +91,12 @@ or permission rule above.
   bytes and headers above, every other case is the same 404; BCAT08 exact keys `items,next_cursor,store_name` and
   item keys including `images`. All NOT_RUN until executed.
 
+## Amendment product-media-v2 (2026-10-06; migration 0149; contract: catalog-inventory-v1.md)
+
+- Item `images` now means the product's MAIN images only (<= 4, index 0 = cover); detail-page and option-value images are never listed here.
+- Item gains `image_id`: `uuid|null`, the variant's option-value image (image axis) when present, else the cover, else `null`. Cart, order and claim thumbnails use it.
+- Meta feed `image_link` = the variant's option-value image when present else the first main image; new column `additional_image_link` (see the catalog contract).
+
 ## Acceptance
 
 BCAT01: real isolated PostgreSQL + ordinary buyer role sees only active own-store

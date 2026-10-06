@@ -908,3 +908,14 @@ Owner correction 2026-10-01: a merchant connects their own Facebook Page / Insta
    user-token configuration, `subscribed_apps`, App Review).
 8. **Known limits.** `/me/accounts` is read with a user token (the configuration's token type) — UNKNOWN until a SANDBOX probe that it lists
    Pages and returns Page `access_token`s as documented for Facebook Login for Business; the long-lived exchange is assumed to apply. The user token is held in one API process's memory (a restart or another replica between callback and pick answers `410 state_expired`; the merchant restarts). `route_expires_at` is one year after (re)connect.
+
+## Amendment "W3-04B sold-out reply" (2026-10-06, migration 0151)
+
+§6.2/§6.3 gain a second message type on the same route and `mpr:` key. When the claimed offer is sold out (live-keyword-claims-v1 Amendment
+"W3-04B sold-out reply"), `plan_claim_reply` freezes `{v:1, platform, source_id, asset_id, comment_ref, bundle_id, session_id, offer_id, locale, template,
+template_version, policy:"mpr-policy/v1", message_type:"sold_out_reply", origin_kind:"auto", text, conversation_known, takeover_generation, app_id,
+deadline_at, live_media}` (<= 2 KiB; `text` is the rendered template, <= 400 characters, no buyer data) and creates **no** link (`link_generation`,
+`link_key_id`, `origin` absent). The "no token/text/name" rule of §6.2 holds for the claim-link message type only. Check = `claims.check_meta_reply`
+without the `link_invalid` proof for this message type; Dispatch posts the frozen `text` once to the same Graph endpoint, Page token placement and
+UNKNOWN/never-resend semantics as §6.3. The adapter refuses a malformed sold-out request (empty/over-long text or one with a control character, foreign asset, bad
+bundle or comment id) before any HTTP call.

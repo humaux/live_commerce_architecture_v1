@@ -1,0 +1,16 @@
+=== RUN   TestAttributionRealPGFlow
+=== RUN   TestAttributionRealPGFlow/consent_hook_records_a_context_only_while_consent_holds
+=== RUN   TestAttributionRealPGFlow/sweeper_plans_exactly_one_operation_per_eligible_attempt
+=== RUN   TestAttributionRealPGFlow/Check_codes
+=== RUN   TestAttributionRealPGFlow/lease-fenced_user_data
+=== RUN   TestAttributionRealPGFlow/feed
+--- PASS: TestAttributionRealPGFlow (1.57s)
+    --- PASS: TestAttributionRealPGFlow/consent_hook_records_a_context_only_while_consent_holds (0.02s)
+    --- PASS: TestAttributionRealPGFlow/sweeper_plans_exactly_one_operation_per_eligible_attempt (0.19s)
+    --- PASS: TestAttributionRealPGFlow/Check_codes (0.06s)
+    --- PASS: TestAttributionRealPGFlow/lease-fenced_user_data (0.03s)
+    --- PASS: TestAttributionRealPGFlow/feed (0.02s)
+PASS
+ok  	livecommerce/internal/attribution	4.173s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+exit 0

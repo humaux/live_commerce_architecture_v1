@@ -221,6 +221,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerPickListRoutes(mux, pool, configured.CVS) // unit w3-02b-picklist: pick list, carrier export, cvs-batch
+	registerParcelRoutes(mux, pool)                   // unit w3-07b-parcel-merge: merge suggestions, parcel groups, group shipment
 	registerOfflinePaymentRoutes(mux, pool)
 	registerCodPaymentRoutes(mux, pool)                                                  // unit home-cod: cash-on-delivery settings, cod.go
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders, configured.ForBuyer) // unit merchant-tools: storefront-v2 section G, merchanttools.go

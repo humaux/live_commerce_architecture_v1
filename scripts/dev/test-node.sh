@@ -18,7 +18,7 @@ node --test --experimental-strip-types tests/admin/orders-v2.test.ts
 node --test --experimental-strip-types tests/admin/store-number.test.ts
 node --test --experimental-strip-types tests/admin/platform-site.test.ts
 node --test --experimental-strip-types tests/admin/attribution.test.ts tests/admin/attribution-audience.test.ts tests/admin/attribution-format.test.ts
-node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts
+node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts tests/admin/product-media-model.test.ts tests/admin/backend-parity.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
 node --test --experimental-strip-types tests/admin/claims-backend-parity.test.ts tests/admin/claims-model.test.ts tests/admin/claims-request.test.ts
