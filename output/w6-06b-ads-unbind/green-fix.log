@@ -1,0 +1,45 @@
+# green-fix.log — verified tree (committed, clean): d845c94989740089d46785b40465a932c0d1ba10  base 84ac7f1f  2026-10-06T18:59:01Z
+# git status --porcelain (must be empty): [?? output/w6-06b-ads-unbind/green-fix.log ]
+
+## go test ./internal/ads/... ./internal/httperror/... ./internal/httpapi/...  (unfiltered)
+ok  	livecommerce/internal/ads	1.443s
+ok  	livecommerce/internal/httperror	0.709s
+ok  	livecommerce/internal/httpapi	1.370s
+exit=0
+
+## go vet ./...
+exit=0
+
+## go vet -tags browser ./tests/foundation
+exit=0
+
+## gofmt -l internal cmd tests
+exit=0
+
+## bash scripts/dev/check-gates.sh
+ℹ duration_ms 361.491333
+PASS G-UI3/G-UI5
+check-gates: ok (72 modes, all documented; every tracked test file is run)
+check-headers: OK (base f8f01b74ad80fc26223751ce3bfdc2cb849df6c6)
+exit=0
+
+## focused PG on the committed tree (REAL_PG): test-focused.sh <regex> ./internal/ads ./tests/foundation
+## regex: ^(TestAdsCore|TestAdsUnbind|TestAdsCatalogFeed|TestT06WorkerAuthorityAndFunctionACL$|TestMetaAdsMA02Schema|TestR2IntegrationUpgradeFromReleaseHead|TestMetaAdsMA04Chain|TestMetaAdsMA06Binding|TestMetaAdsMA07Insights|TestAdsAttributionR11AgedRetryAndFinalDaily)
+--- PASS: TestAdsCoreRealPGConnectAndBind (1.24s)
+--- PASS: TestAdsCoreRealPGDraftLifecycle (0.21s)
+--- PASS: TestAdsCoreRealPGAdvanceBeyondFirstPage (0.82s)
+--- PASS: TestAdsUnbindGuardsRealPG (0.07s)
+--- PASS: TestAdsCatalogFeedFiltersRealPG (0.03s)
+--- PASS: TestAdsUnbindRealPG (0.06s)
+--- PASS: TestAdsUnbindServiceRealPG (0.09s)
+ok  	livecommerce/internal/ads	3.963s
+--- PASS: TestAdsAttributionR11AgedRetryAndFinalDaily (3.87s)
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.45s)
+--- PASS: TestMetaAdsMA04Chain (1.48s)
+--- PASS: TestMetaAdsMA06Binding (13.45s)
+--- PASS: TestMetaAdsMA07Insights (23.55s)
+--- PASS: TestMetaAdsMA02Schema (0.44s)
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.23s)
+ok  	livecommerce/tests/foundation	49.258s
+test-focused: top-level PASS=14 FAIL=0 SKIP=0 exit=0
+exit=0
