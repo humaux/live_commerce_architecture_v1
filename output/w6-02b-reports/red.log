@@ -1,0 +1,37 @@
+=== RUN   TestReportRP01ProductsChannelsMatchHandNumbersAndFinance
+    reports_test.go:276: GET products?from=2026-09-01&to=2026-09-30 = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"15c73dd31b05486e8836c0e0cf57c731","retryable":true,"details":{}}
+--- FAIL: TestReportRP01ProductsChannelsMatchHandNumbersAndFinance (2.35s)
+=== RUN   TestReportRP04FunnelNestedPerSessionAndStore
+    reports_test.go:420: GET funnel?from=2026-09-01&to=2026-09-30 = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"7e677f0627410360595ea309aea6821d","retryable":true,"details":{}}
+--- FAIL: TestReportRP04FunnelNestedPerSessionAndStore (0.25s)
+=== RUN   TestReportRP05RangeAndShape
+    reports_test.go:479: products 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"78c9de38d680907aa1a6d7a0a1109037","retryable":true,"details":{}}
+    reports_test.go:479: channels 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"e38307fa82c6c44f790da348311b4a39","retryable":true,"details":{}}
+    reports_test.go:479: funnel 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"267d33c1ba6845074cafd00c39325306","retryable":true,"details":{}}
+    reports_test.go:479: manual-orders 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"22b8c34a35a5bc92e6e331e6d0ccaef3","retryable":true,"details":{}}
+    reports_test.go:479: products.csv 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"d85918b41b95892be25904c0d5d5be94","retryable":true,"details":{}}
+    reports_test.go:479: channels.csv 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"282a09a7c86b682ed37947ae13a10d3a","retryable":true,"details":{}}
+    reports_test.go:479: funnel.csv 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"ea5ae991c9ae7386993ffb237b9452a3","retryable":true,"details":{}}
+    reports_test.go:479: manual-orders.csv 92 days = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"c29a43ea4fae7df749860c265fdda902","retryable":true,"details":{}}
+--- FAIL: TestReportRP05RangeAndShape (0.06s)
+=== RUN   TestReportRP06ExportPermissionAuditAndCSV
+    reports_test.go:508: products.csv: 503 map[Cache-Control:[no-store, private] Content-Type:[application/json] X-Content-Type-Options:[nosniff] X-Request-Id:[b90ac331c6f6739f256fe7781667956a]] {"code":"unavailable","message":"Temporarily unavailable.","request_id":"b90ac331c6f6739f256fe7781667956a","retryable":true,"details":{}}
+--- FAIL: TestReportRP06ExportPermissionAuditAndCSV (0.09s)
+=== RUN   TestReportRP07CrossStoreNoLeak
+    reports_test.go:551: GET products?from=2026-09-01&to=2026-09-30 = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"4fd505d62d949d064d1d7085ddfe8d74","retryable":true,"details":{}}
+--- FAIL: TestReportRP07CrossStoreNoLeak (0.10s)
+=== RUN   TestReportRP08TimingTenThousandOrders
+    reports_test.go:599: RP08 products      92 days over 10000 orders: 2ms (status 503, 138 bytes)
+    reports_test.go:601: products: status 503 in 2.274417ms (limit 5s) {"code":"unavailable","message":"Temporarily unavailable.","request_id":"fa14b2d1319a829e4ce092fe2eea5d12","retryable":true,"details":{}}
+    reports_test.go:599: RP08 channels      92 days over 10000 orders: 2ms (status 503, 138 bytes)
+    reports_test.go:601: channels: status 503 in 1.862209ms (limit 5s) {"code":"unavailable","message":"Temporarily unavailable.","request_id":"0416acd7d72d51a0718e54e1ba46e2de","retryable":true,"details":{}}
+    reports_test.go:599: RP08 funnel        92 days over 10000 orders: 2ms (status 503, 138 bytes)
+    reports_test.go:601: funnel: status 503 in 1.871958ms (limit 5s) {"code":"unavailable","message":"Temporarily unavailable.","request_id":"68e6b73134aa8c0b01ef8e0449675749","retryable":true,"details":{}}
+    reports_test.go:599: RP08 manual-orders 92 days over 10000 orders: 2ms (status 503, 138 bytes)
+    reports_test.go:601: manual-orders: status 503 in 1.73175ms (limit 5s) {"code":"unavailable","message":"Temporarily unavailable.","request_id":"0c1e5f23a676e6e78593baee13ee6f60","retryable":true,"details":{}}
+    reports_test.go:605: GET channels?from=2026-06-01&to=2026-08-31 = 503 {"code":"unavailable","message":"Temporarily unavailable.","request_id":"d06b8f9b47482f521147bb3603879066","retryable":true,"details":{}}
+--- FAIL: TestReportRP08TimingTenThousandOrders (1.36s)
+FAIL
+FAIL	livecommerce/tests/foundation	6.607s
+FAIL
+test-focused: top-level PASS=0 FAIL=6 SKIP=0 exit=1
