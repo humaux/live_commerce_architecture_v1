@@ -1,3 +1,8 @@
+// Purpose: ledger-backed physical inventory commands: warehouses, on-hand adjustment (plain and the bounded live-console variant), reserve/release and balance reads.
+// Depends on: inventory.ledger (the sole balance writer, trigger), inventory.balances/warehouses/reservations, catalog.skus, internal/command (idempotent Run, Audit/AuditDetails), internal/platform scope.
+// Used by: internal/httpapi (inventory routes incl. POST /inventory/adjustments), internal/checkout, internal/merchanttools, tests/foundation.
+// Invariants: I03 (a live_adjust-only operator cannot silently rewrite stock truth: AdjustOnHandBounded forces the reason, caps |delta| and never goes below reserved+allocated+unavailable); live-console-v1 §7.2.
+
 // Package inventory owns ledger-backed physical inventory commands: warehouses, on-hand adjustment,
 // reserve and release, and the pure allocation planner.
 //
@@ -168,7 +173,35 @@ func keysetID(after []string, position int) string {
 	return ``
 }
 
-func AdjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in Adjustment) (out Balance, err error) {
+// Live-console bounds (live-console-v1 §7.2, unit LC-B7) for an adjustment authorized only by inventory:live_adjust.
+const (
+	// LiveAdjustReason is the ledger/audit reason forced on every bounded adjustment, whatever the client sent.
+	LiveAdjustReason = "live_console_edit"
+	// LiveAdjustMaxDelta bounds |delta| per call.
+	LiveAdjustMaxDelta = 1000
+)
+
+// ErrBelowReserved: a bounded adjustment would take on-hand below reserved+allocated(+unavailable) (HTTP 422 below_reserved).
+var ErrBelowReserved = errors.New("adjustment below reserved stock")
+
+// AdjustOnHand appends one ADJUST ledger row under the balance's version CAS (inventory:write callers). Side effects: ledger row (the trigger moves the
+// balance), audit inventory.adjusted, idempotency receipt.
+func AdjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in Adjustment) (Balance, error) {
+	return adjustOnHand(ctx, tx, scope, key, in, false)
+}
+
+// AdjustOnHandBounded is AdjustOnHand for a principal that holds inventory:live_adjust but not inventory:write: the reason is forced to
+// LiveAdjustReason, |delta| > LiveAdjustMaxDelta is command.ErrInvalid, and a result below reserved+allocated+unavailable is ErrBelowReserved. The audit row
+// inventory.adjusted carries {reason, bounded}. The route (httpapi/live_console.go) chooses this variant; the permission itself is checked there.
+func AdjustOnHandBounded(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in Adjustment) (Balance, error) {
+	in.Reason = LiveAdjustReason
+	if in.Delta > LiveAdjustMaxDelta || in.Delta < -LiveAdjustMaxDelta {
+		return Balance{}, command.ErrInvalid
+	}
+	return adjustOnHand(ctx, tx, scope, key, in, true)
+}
+
+func adjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in Adjustment, bounded bool) (out Balance, err error) {
 	if !validScope(tx, scope) || !validAdjustment(in) {
 		return out, command.ErrInvalid
 	}
@@ -193,11 +226,17 @@ func AdjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key stri
 				return command.ErrConflict
 			}
 			if in.Delta < 0 {
+				if bounded {
+					return ErrBelowReserved
+				}
 				return command.ErrInsufficient
 			}
 		} else {
 			if in.ExpectedVersion == 0 || current.Version != in.ExpectedVersion {
 				return command.ErrConflict
+			}
+			if bounded && in.Delta < 0 && current.OnHand+in.Delta < current.Reserved+current.Allocated+current.Unavailable {
+				return ErrBelowReserved
 			}
 			if !canAdjust(current, in.Delta) {
 				return command.ErrInsufficient
@@ -209,6 +248,9 @@ func AdjustOnHand(ctx context.Context, tx pgx.Tx, scope platform.Scope, key stri
 		out, _, err = readBalance(ctx, tx, scope, in.WarehouseID, in.SKUID)
 		if err != nil {
 			return err
+		}
+		if bounded {
+			return command.AuditDetails(ctx, tx, scope, "inventory.adjusted", map[string]any{"reason": LiveAdjustReason, "bounded": true})
 		}
 		return command.Audit(ctx, tx, scope, "inventory.adjusted")
 	})

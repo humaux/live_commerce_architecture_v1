@@ -1,0 +1,12 @@
+=== RUN   TestPlatformStripePF03Fanout
+    platform_stripe_test.go:542: exec test setup: ERROR: sealed_version belongs to derived Stripe credentials only (SQLSTATE 42501)
+--- FAIL: TestPlatformStripePF03Fanout (5.09s)
+=== RUN   TestPlatformStripePF05Webhook
+--- PASS: TestPlatformStripePF05Webhook (6.00s)
+=== RUN   TestPlatformStripePF08Routes
+    platform_stripe_test.go:863: PUT not allowlisted: 403 {"code":"internal","message":"Request could not be completed.","request_id":"df1473433e89e8d7f5d799eda5e6e084","retryable":false,"details":{}}
+--- FAIL: TestPlatformStripePF08Routes (2.93s)
+FAIL
+FAIL	livecommerce/tests/foundation	15.291s
+FAIL
+test-focused: top-level PASS=1 FAIL=2 SKIP=0 exit=1

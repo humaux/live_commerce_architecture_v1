@@ -1,5 +1,7 @@
 # Unit W4-02B — PAYUNi 信用卡商家自助开通（验证状态机，后端，钱路）
 
+**CANCELLED（owner 2026-10-06：「不使用PAYUNi，直接允许商家使用平台的stripe进行收款」）。** 由 `w4-s1-platform-stripe.md` 取代；迁移号 0137 改给 W4-S1。正文仅存档，勿实现。
+
 状态：DRAFT（起草人 Claude Opus 子代理 2026-10-06，待 integrator 审核/冻结）。Base `r3/integration` `bb71f966`。
 迁移号占位 **0137**。覆盖 IMPLEMENTATION-PLAN W4-01B 的开通部分（M14-01；M02 #11；SUMMARY P0-3；偏差 A7/B23）。
 **ID 说明**：计划里的 W4-02B（Stripe 商家自助绑定）按 owner 裁决取消，本 ID 改给 PAYUNi 开通；计划 W4-03B（日对账）延后，见 INDEX。

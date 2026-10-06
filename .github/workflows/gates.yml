@@ -27,12 +27,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation"]') }}
+        # "foundation" alone = the serial whole suite (~76 min). Pushes run the sharded equivalent (~20 min wall).
+        mode: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.modes || '["shard:unit","shard:^Test(A|[N-R])","shard:^Test[B-K]","shard:^TestL","shard:^TestM","shard:^Test[S-Z]"]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
       group: gates-${{ github.ref }}-${{ matrix.mode }}
-      cancel-in-progress: true
+      # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
+      cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
       GOTOOLCHAIN: go1.27.1
       GOFLAGS: -mod=readonly
@@ -66,6 +68,8 @@ jobs:
           log="output/ci-gates/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
           case "$MODE" in
             foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
             --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
             *) echo "unknown mode: $MODE" >&2; exit 2 ;;
@@ -79,6 +83,9 @@ jobs:
           name: gate-${{ strategy.job-index }}
           path: |
             output/ci-gates/
-            output/ui-visual-audit/LATEST/
+            output/ui-visual-audit/*/lint.md
+            output/ui-visual-audit/*/lint.json
+            output/ui-click-sweep/
+            output/playwright/
           retention-days: 14
           if-no-files-found: ignore

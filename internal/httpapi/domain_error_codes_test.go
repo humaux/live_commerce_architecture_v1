@@ -9,6 +9,7 @@ import (
 	"livecommerce/internal/billing"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/customers"
+	"livecommerce/internal/inventory"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/promotions"
 )
@@ -55,6 +56,10 @@ func TestDomainErrorCodesReachJSONBody(t *testing.T) {
 		"billing": {billingClassify, map[error]string{
 			billing.ErrSubscriptionExists: "subscription_exists",
 			billing.ErrNoCustomer:         "no_billing_customer",
+		}},
+		// live-console-v1 §7.2 (LC-B7): the bounded live stock edit.
+		"inventory": {inventoryAdjustClassify, map[error]string{
+			inventory.ErrBelowReserved: "below_reserved",
 		}},
 	}
 	for family, f := range families {

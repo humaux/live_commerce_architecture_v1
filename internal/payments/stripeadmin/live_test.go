@@ -133,7 +133,8 @@ func storedReply(t *testing.T, r *Registrar, key string) []any {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return []any{acct, keyID, nonce, ct}
+	// aad_*: a primary row's own scope and version (stripe-platform-account-v1 §3.4)
+	return []any{acct, keyID, nonce, ct, tenant, store, conn, int64(2)}
 }
 
 func liveInput() LiveApproveInput {
@@ -415,7 +416,7 @@ func TestLiveApproveRefusalsWriteNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	db.replies = []any{[]any{acct, keyID, nonce, ct}}
+	db.replies = []any{[]any{acct, keyID, nonce, ct, tenant, store, conn, int64(2)}}
 	if _, err := r.LiveApprove(context.Background(), scope, liveInput()); !errors.Is(err, ErrConfig) || p.read != 0 {
 		t.Fatalf("SANDBOX-sealed key opened by the LIVE registrar: %v read=%d", err, p.read)
 	}

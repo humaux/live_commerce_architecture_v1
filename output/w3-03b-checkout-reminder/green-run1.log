@@ -1,0 +1,33 @@
+=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
+--- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (10.72s)
+=== RUN   TestCheckoutReminderCR02ConcurrentTriggers
+    checkout_reminder_test.go:263: queued=1 operations=3, want exactly one reminder
+--- FAIL: TestCheckoutReminderCR02ConcurrentTriggers (0.96s)
+=== RUN   TestCheckoutReminderCR03WindowClosesBeforeCheck
+    checkout_reminder_test.go:280: operation job not available for the dispatcher queue: <nil>
+--- FAIL: TestCheckoutReminderCR03WindowClosesBeforeCheck (0.94s)
+=== RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
+    checkout_reminder_test.go:314: operation job not available for the dispatcher queue: <nil>
+--- FAIL: TestCheckoutReminderCR04GraphFailureIsUnknown (0.86s)
+=== RUN   TestCheckoutReminderCR05CandidateSet
+--- PASS: TestCheckoutReminderCR05CandidateSet (3.36s)
+=== RUN   TestCheckoutReminderCR06PermissionAndScope
+    checkout_reminder_test.go:396: sister store trigger on a foreign session: no_storefront
+--- FAIL: TestCheckoutReminderCR06PermissionAndScope (8.07s)
+=== RUN   TestCheckoutReminderSettingsCAS
+--- PASS: TestCheckoutReminderSettingsCAS (0.35s)
+=== RUN   TestCheckoutReminderNoStorefront
+    checkout_reminder_test.go:496: a reminder was planned without a link
+--- FAIL: TestCheckoutReminderNoStorefront (0.86s)
+=== RUN   TestCheckoutReminderCR08NoSecretsPersisted
+--- PASS: TestCheckoutReminderCR08NoSecretsPersisted (0.88s)
+=== RUN   TestCheckoutReminderMigration0131ExactACL
+--- PASS: TestCheckoutReminderMigration0131ExactACL (0.01s)
+=== RUN   TestCheckoutReminderSingleBuyer
+    checkout_reminder_test.go:639: operations=9, want 1
+--- FAIL: TestCheckoutReminderSingleBuyer (1.86s)
+FAIL
+FAIL	livecommerce/tests/foundation	29.588s
+FAIL
+test-focused: top-level PASS=5 FAIL=6 SKIP=0 exit=1
+exit 1
