@@ -200,8 +200,15 @@ BEGIN
   IF v_fail_code IS NULL THEN
    INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(s.tenant_id,p_store,s.principal_id,'fulfillment.parcel_group_created');
    v_response:=jsonb_build_object('id',v_group,'state','OPEN','version',1,'order_ids',to_jsonb(v_ids));
-   INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)
-   VALUES(s.tenant_id,p_store,'fulfillment.parcel_group.create',p_key,p_request_hash,v_response,s.principal_id);
+   BEGIN
+    INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)
+    VALUES(s.tenant_id,p_store,'fulfillment.parcel_group.create',p_key,p_request_hash,v_response,s.principal_id);
+   EXCEPTION WHEN unique_violation THEN
+    -- Another transaction committed the same Idempotency-Key for a different order set while this one ran (disjoint sets do not
+    -- block each other on the order locks). The key is taken: refuse; the raise below aborts the transaction, so the group
+    -- rows inserted above vanish with it.
+    v_fail_code:='PT409'; v_fail_msg:='idempotency_conflict';
+   END;
   END IF;
  END IF;
  SELECT * INTO v_final FROM identity.resolve_access(p_hash,p_store,'fulfillment:write');
@@ -308,9 +315,11 @@ BEGIN
  ELSIF g.state='DISSOLVED' THEN v_fail_code:='PT409'; v_fail_msg:='group_not_open';
  ELSIF g.state='OPEN' THEN
   -- Every member must be MERCHANT_SHIPPED on a SHIPPED head and all heads must carry the same carrier + tracking number.
-  SELECT count(*) AS total,count(v.order_id) AS shipped,count(DISTINCT v.carrier_code||'/'||v.tracking_number) AS tracked INTO t
+  -- LEFT JOINs + FILTER: an unshipped member must still count in total (an inner join on the shipped state would drop it).
+  SELECT count(*) AS total,count(*) FILTER (WHERE o.fulfillment_state='MERCHANT_SHIPPED' AND v.order_id IS NOT NULL) AS shipped,
+   count(DISTINCT v.carrier_code||'/'||v.tracking_number) AS tracked INTO t
    FROM fulfillment.parcel_group_orders m
-   JOIN checkout.orders o ON o.tenant_id=m.tenant_id AND o.store_id=m.store_id AND o.id=m.order_id AND o.fulfillment_state='MERCHANT_SHIPPED'
+   JOIN checkout.orders o ON o.tenant_id=m.tenant_id AND o.store_id=m.store_id AND o.id=m.order_id
    LEFT JOIN fulfillment.manual_shipment_heads h ON h.tenant_id=m.tenant_id AND h.store_id=m.store_id AND h.order_id=m.order_id
    LEFT JOIN fulfillment.manual_shipment_versions v ON v.tenant_id=h.tenant_id AND v.store_id=h.store_id AND v.order_id=h.order_id
     AND v.version=h.current_version AND v.status='SHIPPED'

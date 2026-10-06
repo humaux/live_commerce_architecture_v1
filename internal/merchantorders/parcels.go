@@ -88,7 +88,7 @@ func mapParcelError(err error) error {
 			}
 			return command.ErrInvalid
 		case "23505":
-			return &ParcelError{Code: "already_in_group"}
+			return command.ErrConflict // the definers catch their own unique violations; anything left is a generic conflict
 		}
 	}
 	return mapError(err)

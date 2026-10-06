@@ -53,7 +53,7 @@ func TestMapParcelError(t *testing.T) {
 			t.Errorf("%v -> %v, want %v", tc.err, got, tc.want)
 		}
 	}
-	if err := mapParcelError(pg("23505", "dup")); !errors.As(err, &parcel) || parcel.Code != "already_in_group" {
-		t.Errorf("23505 -> %v", err)
+	if err := mapParcelError(pg("23505", "dup")); !errors.Is(err, command.ErrConflict) {
+		t.Errorf("23505 -> %v, want a generic conflict (never already_in_group)", err)
 	}
 }

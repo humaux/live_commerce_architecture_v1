@@ -363,7 +363,7 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
   `record_manual_shipment`; the guard locks the named orders in id order, the same order `create_parcel_group` uses, so a group cannot
   be created between the check and the write. A SHIPPED group no longer blocks per-order correction or void.
 - **Pick list / carrier export** (W3-02B): members of one group are listed side by side; the pick-list order and the `generic` export
-  template carry `parcel_group_id` (the carrier-specific templates stay the fixed upload formats; their rows are only grouped).
+  template carry `parcel_group_id` (the carrier-specific templates stay the fixed upload formats; their rows are only grouped). KNOWN LIMIT: the `black_cat`/`hsinchu`/`chunghwa_post` templates still emit ONE ROW PER MEMBER, i.e. N carrier waybills for one physical parcel; the merchant must upload only one row per group (UI warning: W3-U4).
 - **I05**: group commands write only the two group tables, `ops.audit_events` (`fulfillment.parcel_group_created|dissolved|shipped`),
   the command receipt and, through `RecordShipment`, the usual per-order shipment rows, audit and shipped mail; no `payments.*`,
   amount, shipping-fee or refund row is read for writing or changed.

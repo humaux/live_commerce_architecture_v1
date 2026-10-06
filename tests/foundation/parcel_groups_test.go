@@ -382,6 +382,64 @@ func TestParcelGroup(t *testing.T) {
 			t.Fatalf("membership rows %d, want 2", n)
 		}
 	})
+
+	t.Run("PG09 same Idempotency-Key, disjoint order sets, concurrently: one group, the loser is a conflict (not already_in_group)", func(t *testing.T) {
+		q1, q2, q3, q4 := e.pgHome(b), e.pgHome(b), e.pgHome(b), e.pgHome(b)
+		sets := [][]string{{q1, q2}, {q3, q4}}
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		statuses := make([]int, 2)
+		bodies := make([]map[string]any, 2)
+		for i := range sets {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				<-start
+				statuses[i], bodies[i], _ = e.pgCreate("pg-same-key-0001", sets[i]...)
+			}(i)
+		}
+		close(start)
+		wg.Wait()
+		ok, bad := 0, 0
+		for i, st := range statuses {
+			switch {
+			case st == 201:
+				ok++
+			case st == 409 && bodies[i]["code"] == "conflict":
+				bad++
+			default:
+				t.Fatalf("racer %d: %d %v, want 201 or 409 conflict", i, st, bodies[i])
+			}
+		}
+		if ok != 1 || bad != 1 {
+			t.Fatalf("statuses %v, want one 201 and one 409 conflict", statuses)
+		}
+		if n := e.count(`SELECT count(DISTINCT group_id) FROM fulfillment.parcel_group_orders WHERE order_id=ANY($1::uuid[])`, []string{q1, q2, q3, q4}); n != 1 {
+			t.Fatalf("groups over the four orders: %d, want 1", n)
+		}
+	})
+
+	t.Run("PG10 mark_parcel_group_shipped on a partly shipped group refuses (group_incomplete) and stays OPEN", func(t *testing.T) {
+		r1, r2, r3 := e.pgHome(b), e.pgHome(b), e.pgHome(b)
+		st, out, raw := e.pgCreate("pg-create-0010", r1, r2, r3)
+		if st != 201 {
+			t.Fatalf("create: %d %s", st, raw)
+		}
+		g := out["id"].(string)
+		// Disclosed fixture: ship TWO of the three members behind the group's back with one shared tracking number (definer called
+		// directly), so total/shipped/tracked would all look consistent if unshipped members were dropped from the count.
+		for i, o := range []string{r1, r2} {
+			mustExec(t, f.owner, `SELECT fulfillment.record_manual_shipment(sha256(convert_to($1,'UTF8')),$2::uuid,$3::uuid,$4,sha256('half'::bytea),0,'SHIPPED','black_cat',NULL,'HALF0001',NULL,NULL,NULL)`,
+				e.token(), e.store(), o, "half-key-000"+string(rune('1'+i)))
+		}
+		_, err := f.owner.Exec(ctx, `SELECT fulfillment.mark_parcel_group_shipped(sha256(convert_to($1,'UTF8')),$2::uuid,$3::uuid)`, e.token(), e.store(), g)
+		if sqlState(err) != "PT409" || err == nil || !strings.Contains(err.Error(), "group_incomplete") {
+			t.Fatalf("mark on a half-shipped group: %v, want PT409 group_incomplete", err)
+		}
+		if n := e.count(`SELECT count(*) FROM fulfillment.parcel_groups WHERE id=$1 AND state='OPEN' AND version=1`, g); n != 1 {
+			t.Fatal("a refused mark changed the group")
+		}
+	})
 	_ = ctx
 }
 
