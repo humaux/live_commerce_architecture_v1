@@ -225,7 +225,9 @@ func blankRecord(rec []string) bool {
 
 // normalizeCustomerRow validates one row's cells and stores the canonical values; the first defect wins (outcome failed + code).
 func normalizeCustomerRow(r *customerRow, externalID, name, phone, email string) {
-	r.externalID = truncateRunes(externalID, 64) // a refused over-long cell is echoed truncated, never in full
+	// The canonical form of external_id (trim + unguard, no case folding, no NFC) is FROZEN: erasure tombstones are digests of this exact
+	// string, so changing it would make every existing tombstone stop matching.
+	r.externalID = truncateRunes(externalID, 64) // parse-level only; runCustomers blanks the id of every failed row before any output
 	switch {
 	case externalID == "":
 		r.outcome, r.code = outcomeFailed, "required"

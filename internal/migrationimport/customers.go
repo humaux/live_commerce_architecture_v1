@@ -252,6 +252,13 @@ func runCustomers(ctx context.Context, tx pgx.Tx, scope platform.Scope, token st
 			}
 		}
 	}
+	// A failed row keeps its row number and code only: its external id may be an erased person's (a row that fails Go validation never
+	// reaches the tombstone check), so no failed row echoes an id into a preview, a batch or results.csv.
+	for i := range parsed.rows {
+		if parsed.rows[i].outcome == outcomeFailed {
+			parsed.rows[i].externalID = ""
+		}
+	}
 	return parsed, nil
 }
 

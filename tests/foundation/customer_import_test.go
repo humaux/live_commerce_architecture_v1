@@ -25,6 +25,8 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -316,7 +318,7 @@ func TestCustomerImport(t *testing.T) {
 			t.Fatalf("results.csv: %d %q %v", st, raw, hdr)
 		}
 		body := string(raw)
-		if !strings.Contains(body, "row,external_id,outcome,code") || !strings.Contains(body, "'=EVIL-3,created") || !strings.Contains(body, "BAD-1,failed,invalid_phone") {
+		if !strings.Contains(body, "row,external_id,outcome,code") || !strings.Contains(body, "'=EVIL-3,created") || !strings.Contains(body, "1,,failed,invalid_phone") {
 			t.Fatalf("results.csv content: %q", body)
 		}
 		st, raw, _ = c.call("GET", c.imports(c.store)+"/"+cm["batch_id"].(string)+"/results.csv?only=failed", c.adminTok, "")
@@ -424,6 +426,28 @@ func TestCustomerImport(t *testing.T) {
 			c.n(`SELECT count(*) FROM migrationimport.erased_external_ids WHERE id_digest=sha256('SL-0002'::bytea)`) != 0 ||
 			c.n(`SELECT count(*) FROM migrationimport.store_salts WHERE tenant_id=$1 AND store_id=$2 AND octet_length(salt)=32`, f.tenantA, c.store) != 1 {
 			t.Fatal("tombstone must be one salted digest per erased id, never an unsalted hash")
+		}
+		// An erased id on a row that fails Go validation (invalid phone) never reaches the tombstone check: it must not be echoed anywhere.
+		failRow := "customer_id,name,phone\nSL-0002,Erased But Invalid,0212345678\nNEW-77,Valid New Row,0900000077\n"
+		st, pv = c.preview(c.adminTok, failRow, "")
+		if st != 200 || strings.Contains(fmt.Sprint(pv), "SL-0002") || pv["failed_rows"] != float64(1) {
+			t.Fatalf("failed row of an erased id echoes it: %d %v", st, pv)
+		}
+		st, cm = c.commit(c.adminTok, failRow, 1, "")
+		if st != 200 || cm["created"] != float64(1) || cm["failed"] != float64(1) {
+			t.Fatalf("commit with a failed erased-id row: %d %v", st, cm)
+		}
+		if body := c.resultsCSV(cm["batch_id"].(string)); strings.Contains(body, "SL-0002") || !strings.Contains(body, "1,,failed,invalid_phone") {
+			t.Fatalf("results.csv of the failed erased-id row: %q", body)
+		}
+		for label, q := range map[string]string{
+			"batches":  `SELECT count(*) FROM migrationimport.batches b WHERE b.tenant_id=$1 AND (b.results::text LIKE '%SL-0002%' OR b.mapping::text LIKE '%SL-0002%')`,
+			"receipts": `SELECT count(*) FROM ops.command_results r WHERE r.tenant_id=$1 AND r.response::text LIKE '%SL-0002%'`,
+			"external": `SELECT count(*) FROM migrationimport.external_ids e WHERE e.tenant_id=$1 AND e.external_id='SL-0002'`,
+		} {
+			if got := c.n(q, f.tenantA); got != 0 {
+				t.Fatalf("%s still hold the erased id after a failed row: %d", label, got)
+			}
 		}
 		// The same id in another tenant's store is unaffected (the digest is per store).
 		other := "customer_id,name\nSL-0002,Other Tenant Row\n"
@@ -568,7 +592,12 @@ func TestCustomerImport(t *testing.T) {
 			"receipts":        `SELECT count(*) FROM ops.command_results r WHERE r.tenant_id=$1 AND r.response::text LIKE '%'||$2||'%'`,
 			"audit":           `SELECT count(*) FROM ops.audit_events a WHERE a.tenant_id=$1 AND row_to_json(a)::text LIKE '%'||$2||'%'`,
 		} {
-			for _, secret := range []string{secretEmail, "900000011", "SL-0001"} {
+			// The values actually exported (read from the export itself), not a remembered literal.
+			secrets := []string{fmt.Sprint(prof["email"]), strings.TrimPrefix(fmt.Sprint(prof["phone"]), "+886"), fmt.Sprint(prof["display_name"]), fmt.Sprint(prof["external_ids"].([]any)[0])}
+			for _, secret := range secrets {
+				if len(secret) < 6 {
+					t.Fatalf("scan token too short to be meaningful: %q", secret)
+				}
 				if got := c.n(q, f.tenantA, secret); got != 0 {
 					t.Errorf("%s holds %q after the export", label, secret)
 				}
@@ -620,13 +649,26 @@ func TestCustomerImport(t *testing.T) {
 		}
 	})
 
-	t.Run("CI14 two parallel commits of one file import it once", func(t *testing.T) {
+	t.Run("CI14 two parallel commits of one file import it once (deterministic barrier)", func(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("customer_id,name\n")
 		for i := 0; i < 40; i++ {
 			fmt.Fprintf(&b, "PAR-%d,Parallel %d\n", i, i)
 		}
 		body := b.String()
+		sum := sha256.Sum256([]byte(body))
+		// The barrier: hold command.Run's own advisory lock key in a separate transaction, start both commits, wait until both are really
+		// in flight (or 5 s: without the lock they do not wait at all), then release so they race for the lock together.
+		lockKey := "command|" + f.tenantA + "|" + c.store + "|migrationimport.customers_commit|cimp-" + hex.EncodeToString(sum[:])[:32]
+		ctx := context.Background()
+		barrier, err := f.owner.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer barrier.Rollback(ctx)
+		if _, err := barrier.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, lockKey); err != nil {
+			t.Fatal(err)
+		}
 		ownersBefore := c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA)
 		type res struct {
 			st int
@@ -639,7 +681,20 @@ func TestCustomerImport(t *testing.T) {
 				out <- res{st, m}
 			}()
 		}
+		waiting := 0
+		for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+			waiting = c.n(`SELECT count(*) FROM pg_locks WHERE locktype='advisory' AND NOT granted`)
+			if waiting >= 2 {
+				break
+			}
+		}
+		if err := barrier.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
 		a, b2 := <-out, <-out
+		if waiting < 2 {
+			t.Errorf("only %d of the two commits waited on the idempotency lock: the commits were not serialised by it", waiting)
+		}
 		if a.st != 200 || b2.st != 200 || a.m["batch_id"] != b2.m["batch_id"] || (a.m["replayed"] == b2.m["replayed"]) {
 			t.Fatalf("parallel commits: %d %v / %d %v (want one execution and one replay of the same batch)", a.st, a.m, b2.st, b2.m)
 		}

@@ -15,7 +15,7 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
 ## 2. Persistence (schema `migrationimport`, FORCE RLS, no login-role grant; written only by `commerce_privacy_writer` definers)
 - `migrationimport.batches(tenant_id, store_id, id, kind CHECK in ('customers','orders'), file_sha256, mapping jsonb <= 2 KiB, rows_total,
   applied, updated, failed, results jsonb, principal_id, created_at, UNIQUE(tenant_id,store_id,kind,file_sha256))`. `applied` = rows that
-  created a record; every row is exactly one of created / updated / failed. `results` = `[{row, outcome, code?, external_id?}]`,
+  created a record; every row is exactly one of created / updated / failed. `results` = `[{row, outcome, code?, external_id?}]` (external_id only on created/updated rows; a failed row keeps its row number and code only),
   <= 5000 rows. Retention 90 days (lazy prune, <= 50 batches per commit).
 - `migrationimport.external_ids(tenant_id, store_id, kind, external_id 1..64, internal_id, PK(tenant_id,store_id,kind,external_id))`.
 - Erasure tombstone: `migrationimport.store_salts(tenant_id, store_id, salt bytea 32)` (two v4 uuids, pgcrypto is not installed) and
