@@ -2,7 +2,7 @@
 // Depends on: internal/claims (SimulateClaim, CheckKeywords, NextKeywords, BatchOffers); claims.go helpers (claimsRoute, claimsReadPostRoute, claimsBody, claimsBodyRoute, scopedAs, claimsClassify); studio.go (studioRoute).
 // Used by: registerClaimRoutes (claims.go), mounted only when the claims routes are (COMMERCE_CLAIMS_ENABLED); the admin BFF must forward them (apps/admin/lib/claims-request.ts allow-list: UI unit).
 // Invariants: simulate/check/next are reads (live:read, no row written, the comment or keyword text is never stored, logged or echoed in an error); batch is live:manage with a required Idempotency-Key and conflicts are 200 data;
-//   an omitted match_mode is EXACT (owner ruling 2026-10-07); unknown body keys are 400 invalid_json.
+//   an omitted match_mode is the session's window mode, EXACT when it has no window (owner EXACT window default + integrator ruling 2026-10-07), for the simulator and the keyword check alike; unknown body keys are 400 invalid_json.
 //
 // Routes (base = /v1/admin/stores/{store_id}/live-sessions/{session_id}/claims):
 //   POST base/simulate           {comment, match_mode?}                    -> claims.SimulatedClaim

@@ -41,7 +41,7 @@ func (SimulateInput) MarshalJSON() ([]byte, error) { return redactedJSON, nil }
 // ("" when ACCEPTED). Kind is the parse kind AFTER the mode gate (a kwc result outside CONTAINS reads NO_MATCH).
 // Offer is the session's offer when the parsed keyword resolves. TargetQuantity is the line target an ACCEPTED claim
 // would SET (never an addition); 0 otherwise. WindowState/WindowMatchMode are the session window's actual state and
-// mode: when WindowState is CLOSED real ingest answers WINDOW_CLOSED before every Reason here.
+// mode: when WindowClosed is true (state CLOSED) real ingest answers WINDOW_CLOSED before every Reason here.
 type SimulatedClaim struct {
 	Outcome         string    `json:"outcome"`
 	Reason          Reason    `json:"reason"`
@@ -55,7 +55,16 @@ type SimulatedClaim struct {
 	TargetQuantity  int64     `json:"target_quantity"`
 	WindowState     string    `json:"window_state"`
 	WindowMatchMode MatchMode `json:"window_match_mode"`
+	// WindowClosed is true when the session's window is not OPEN: the parse result above is still the rule outcome, but real ingest answers
+	// WINDOW_CLOSED (nothing is recorded) before it.
+	WindowClosed bool `json:"window_closed"`
+	// NotSimulated names the real-ingest outcomes the simulator cannot reach because they depend on buyer-bundle or Meta state:
+	// "bundle_limit" (BUNDLE_LIMIT: a 51st distinct line for one buyer) and "rate_limit" (RATE_LIMITED: Meta per-actor/session caps).
+	NotSimulated []string `json:"not_simulated"`
 }
+
+// notSimulated is the constant NotSimulated list (copied per answer, never shared).
+var notSimulated = []string{"bundle_limit", "rate_limit"}
 
 // SimulateClaim simulates one comment for a session (live:read) in the caller's READ COMMITTED platform.WithScope
 // transaction. It only reads: the session's window row, its offers and the database clock. ErrInvalid for a bad
@@ -84,7 +93,7 @@ func SimulateClaim(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	}
 	mode, _ := resolveMode(in.MatchMode, window.MatchMode) // omitted = the window's mode; a window-less session reads EXACT (readWindow placeholder)
 	out := simulateClaim(in.Comment, mode, offers, now)
-	out.WindowState, out.WindowMatchMode = window.State, window.MatchMode
+	out.WindowState, out.WindowMatchMode, out.WindowClosed = window.State, window.MatchMode, window.State != WindowOpen
 	if err := authorize(ctx, tx, scope, token, readPermission); err != nil {
 		return SimulatedClaim{}, err
 	}
@@ -121,7 +130,7 @@ func simulateClaim(text string, mode MatchMode, offers []Offer, now time.Time) S
 	}
 	p := effective(grammar.ParseForIngest(text), mode)
 	out := SimulatedClaim{Outcome: OutcomeRejected, MatchMode: mode, GrammarVersion: p.Version, Kind: string(p.Kind),
-		ParsedKeyword: p.Keyword, ParsedQuantity: p.Quantity, Explicit: p.Explicit}
+		ParsedKeyword: p.Keyword, ParsedQuantity: p.Quantity, Explicit: p.Explicit, NotSimulated: append([]string(nil), notSimulated...)}
 	if p.Kind == grammar.NoMatch {
 		out.Reason = ReasonNoMatch
 		return out

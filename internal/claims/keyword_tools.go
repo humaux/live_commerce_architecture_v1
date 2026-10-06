@@ -1,13 +1,14 @@
 // Purpose: the W3-06B keyword tools of a live session: CheckKeywords (conflict findings for proposed and existing keywords), NextKeywords (auto-numbering) and BatchOffers (atomic batch deactivate / rename of offers).
 // Depends on: live.offers / claims.lines / catalog SKUs through merchant.go (readOffers), keyword_library.go (sellableSKUs, ConflictSKUUnavailable/ConflictSessionFull, importCandidate); claims.go (authorize, requireSession, waitAdvisory, mapError); internal/claims/grammar (NormalizeKeyword, MaxQuantity); command (receipt live.claim.offer.batch, audit).
 // Used by: internal/httpapi/keyword_tools.go (keywords/check, keywords/next, offers/batch); tests/foundation/keyword_tools_test.go.
-// Invariants: keywords and SKUs are immutable (0060), so a rename retires the old offer and creates a new one in the same transaction; a batch is all-or-nothing (conflicts are data, nothing written); the session's `claims-offers` advisory lock serialises with CreateOffer/ImportOffers; ambiguity findings come only from the frozen grammar (no mode matches a substring).
+// Invariants: keywords and SKUs are immutable (0060), so a rename retires the old offer and creates a new one in the same transaction (and moves the console's 'featured' pointer to it); a batch is all-or-nothing (conflicts are data, nothing written); the session's `claims-offers` advisory lock serialises with CreateOffer/ImportOffers; ambiguity findings come only from the frozen grammar (no mode matches a substring).
 // Status: MOCK (REAL_PG gates; no Meta wire).
 
 package claims
 
 import (
 	"context"
+	"errors"
 	"math"
 	"sort"
 	"strconv"
@@ -28,6 +29,9 @@ const (
 	FindingCollision       = "normalization_collision" // error: different raw text folds onto an existing or earlier keyword
 	FindingLookalike       = "quantity_lookalike"      // warning: B = A + "X" + digits, so a typed "a1x2" parses to head A1X2 (§12 R09)
 	FindingNumericContains = "numeric_in_contains"     // warning: digits-only keyword under KEYWORD_QTY_CONTAINS
+	// FindingDeactivateHasClaims is a batch warning: the deactivated offer has claim lines. Like a single M4 pause (gate LTG03) it ends the
+	// offer's live price at the buyers' next quote and makes their pending lines skip as offer_inactive until the offer is reactivated.
+	FindingDeactivateHasClaims = "deactivate_has_claims"
 )
 
 // Finding severities.
@@ -69,7 +73,7 @@ type KeywordFinding struct {
 	OfferID  string `json:"offer_id,omitempty"`
 }
 
-// KeywordCheckInput is the check body: raw proposed keywords (0..50) and an optional mode (omitted = EXACT).
+// KeywordCheckInput is the check body: raw proposed keywords (0..50) and an optional mode (omitted = the session's window mode, EXACT without a window).
 type KeywordCheckInput struct {
 	Keywords  []string  `json:"keywords"`
 	MatchMode MatchMode `json:"match_mode,omitempty"`
@@ -95,8 +99,7 @@ type KeywordCheck struct {
 // themselves (the caller decides). ErrInvalid for a bad session id, mode or more than 50 keywords; ErrNotFound for a missing
 // session. Called by the keywords/check route.
 func CheckKeywords(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string, in KeywordCheckInput) (KeywordCheck, error) {
-	mode, err := resolveMode(in.MatchMode, MatchExact)
-	if err != nil || !command.ValidID(sessionID) || len(in.Keywords) > maxCheckKeywords {
+	if _, err := resolveMode(in.MatchMode, MatchExact); err != nil || !command.ValidID(sessionID) || len(in.Keywords) > maxCheckKeywords {
 		return KeywordCheck{}, command.ErrInvalid
 	}
 	if err := authorize(ctx, tx, scope, token, readPermission); err != nil {
@@ -105,6 +108,11 @@ func CheckKeywords(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	if err := requireSession(ctx, tx, scope, sessionID); err != nil {
 		return KeywordCheck{}, err
 	}
+	window, err := readWindow(ctx, tx, scope, sessionID, "")
+	if err != nil {
+		return KeywordCheck{}, err
+	}
+	mode, _ := resolveMode(in.MatchMode, window.MatchMode) // omitted = the session's window mode, EXACT without a window (as the simulator)
 	offers, err := readOffers(ctx, tx, scope, sessionID, "")
 	if err != nil {
 		return KeywordCheck{}, err
@@ -415,6 +423,10 @@ func applyBatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 			renameIDs = append(renameIDs, it.OfferID)
 		}
 	}
+	window, err := readWindow(ctx, tx, scope, sessionID, "")
+	if err != nil {
+		return BatchResult{}, err
+	}
 	// live.offers (claims package table): lock the touched rows in id order (deadlock-free against other batches; ingest holds FOR SHARE).
 	rows, err := tx.Query(ctx, `SELECT id::text FROM live.offers
 		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND id=ANY($4::uuid[]) ORDER BY id FOR NO KEY UPDATE`,
@@ -437,25 +449,26 @@ func applyBatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 		byID[o.ID] = o
 	}
 	claimed, sellable := map[string]bool{}, map[string]bool{}
+	// claims.lines: a rename would strand every buyer line of the old offer, so an offer with any line is refused; a deactivate of an offer
+	// with lines is allowed but warned (it ends the buyers' live price at their next quote, like an M4 pause).
+	lines, err := tx.Query(ctx, `SELECT DISTINCT offer_id::text FROM claims.lines
+		WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND offer_id=ANY($4::uuid[])`, scope.TenantID, scope.StoreID, sessionID, ids)
+	if err != nil {
+		return BatchResult{}, mapError(err)
+	}
+	defer lines.Close()
+	for lines.Next() {
+		var id string
+		if err := lines.Scan(&id); err != nil {
+			return BatchResult{}, mapError(err)
+		}
+		claimed[id] = true
+	}
+	if err := lines.Err(); err != nil {
+		return BatchResult{}, mapError(err)
+	}
+	lines.Close()
 	if len(renameIDs) > 0 {
-		// claims.lines: a rename would strand every buyer line of the old offer, so an offer with any line is refused.
-		lines, err := tx.Query(ctx, `SELECT DISTINCT offer_id::text FROM claims.lines
-			WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND offer_id=ANY($4::uuid[])`, scope.TenantID, scope.StoreID, sessionID, renameIDs)
-		if err != nil {
-			return BatchResult{}, mapError(err)
-		}
-		defer lines.Close()
-		for lines.Next() {
-			var id string
-			if err := lines.Scan(&id); err != nil {
-				return BatchResult{}, mapError(err)
-			}
-			claimed[id] = true
-		}
-		if err := lines.Err(); err != nil {
-			return BatchResult{}, mapError(err)
-		}
-		lines.Close()
 		var candidates []importCandidate
 		for _, id := range renameIDs {
 			if o, ok := byID[id]; ok {
@@ -466,11 +479,17 @@ func applyBatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 			return BatchResult{}, err
 		}
 	}
-	plan := planBatch(items, offers, claimed, sellable, maxOffersPerSession-len(offers))
+	plan := planBatch(items, offers, claimed, sellable, maxOffersPerSession-len(offers), window.MatchMode)
 	out := BatchResult{Offers: []Offer{}, Unchanged: plan.Unchanged, Conflicts: plan.Conflicts, Warnings: plan.Warnings}
 	if len(plan.Conflicts) > 0 {
 		out.Unchanged, out.Warnings = []string{}, []KeywordFinding{}
 		return out, nil
+	}
+	// live.offer_timeline (console "recommended" = the latest 'featured' row): a renamed offer must not leave the console pointing at the retired one.
+	recommended := ""
+	if err := tx.QueryRow(ctx, `SELECT offer_id::text FROM live.offer_timeline WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND kind='featured'
+		ORDER BY at DESC,id DESC LIMIT 1`, scope.TenantID, scope.StoreID, sessionID).Scan(&recommended); err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return BatchResult{}, mapError(err)
 	}
 	written := map[string]bool{}
 	deactivated, renamed := 0, 0
@@ -504,6 +523,13 @@ func applyBatch(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID 
 		}
 		written[newID] = true
 		renamed++
+		if recommended == o.ID {
+			// live.offer_timeline: same insert as live.RecordOfferFeatured (append-only; the old offer's rows stay as history).
+			if _, err := tx.Exec(ctx, `INSERT INTO live.offer_timeline(tenant_id,store_id,session_id,offer_id,kind,principal_id)
+				VALUES($1,$2,$3,$4,'featured',$5)`, scope.TenantID, scope.StoreID, sessionID, newID, scope.PrincipalID); err != nil {
+				return BatchResult{}, mapError(err)
+			}
+		}
 	}
 	all, err := readOffers(ctx, tx, scope, sessionID, "")
 	if err != nil {
@@ -546,8 +572,8 @@ func validBatch(in BatchInput) error {
 // item the first failing rule wins: offer_not_found, version_conflict, then for a rename offer_inactive, has_claims,
 // same_keyword, the keyword errors (invalid_keyword, keyword_taken, normalization_collision, duplicate_in_request: the old
 // keyword of a renamed offer stays reserved), sku_unavailable, session_full. A deactivate of an inactive offer is Unchanged, not
-// a conflict. Non-blocking findings of clean rename targets are Warnings. Pure.
-func planBatch(items []BatchItem, offers []Offer, claimed, sellable map[string]bool, capacity int) batchPlan {
+// a conflict. Non-blocking findings are Warnings: those of clean rename targets (analysed in mode, the session's window mode) and deactivate_has_claims. Pure.
+func planBatch(items []BatchItem, offers []Offer, claimed, sellable map[string]bool, capacity int, mode MatchMode) batchPlan {
 	plan := batchPlan{Conflicts: []BatchConflict{}, Warnings: []KeywordFinding{}, Unchanged: []string{}}
 	byID := make(map[string]Offer, len(offers))
 	for _, o := range offers {
@@ -561,7 +587,7 @@ func planBatch(items []BatchItem, offers []Offer, claimed, sellable map[string]b
 			proposals = append(proposals, it.Keyword)
 		}
 	}
-	checked, _ := analyzeKeywords(offers, proposals, MatchExact)
+	checked, _ := analyzeKeywords(offers, proposals, mode)
 	free := capacity
 	for i, it := range items {
 		o, found := byID[it.OfferID]
@@ -574,6 +600,8 @@ func planBatch(items []BatchItem, offers []Offer, claimed, sellable map[string]b
 		case it.Action == BatchDeactivate:
 			if !o.Active {
 				plan.Unchanged = append(plan.Unchanged, o.ID)
+			} else if claimed[o.ID] {
+				plan.Warnings = append(plan.Warnings, KeywordFinding{Kind: FindingDeactivateHasClaims, Severity: SeverityWarning, Keyword: o.Keyword, OfferID: o.ID})
 			}
 		default: // rename
 			c := checked[slot[i]]

@@ -178,7 +178,7 @@ func TestKeywordToolsPlanBatch(t *testing.T) {
 		{"rename needs a free slot", []BatchItem{rename("o2", 1, "E5"), rename("o5", 1, "E6")}, 1, map[int]string{1: "session_full"}, nil},
 		{"mixed conflict reports every bad item", []BatchItem{deact("o2", 1), deact("o9", 1), rename("o5", 1, "D4")}, 10, map[int]string{1: "offer_not_found", 2: "keyword_taken"}, nil},
 	} {
-		plan := planBatch(tc.items, batchOffers(), claimed, sellable, tc.capacity)
+		plan := planBatch(tc.items, batchOffers(), claimed, sellable, tc.capacity, MatchExact)
 		got := map[int]string{}
 		for _, c := range plan.Conflicts {
 			got[c.Index] = c.Reason
@@ -194,9 +194,23 @@ func TestKeywordToolsPlanBatch(t *testing.T) {
 		}
 	}
 	// A look-alike target is a warning, never a conflict.
-	plan := planBatch([]BatchItem{rename("o2", 1, "A1X3")}, batchOffers(), claimed, sellable, 10)
+	plan := planBatch([]BatchItem{rename("o2", 1, "A1X3")}, batchOffers(), claimed, sellable, 10, MatchExact)
 	if len(plan.Conflicts) != 0 || len(plan.Warnings) != 1 || plan.Warnings[0].Kind != "quantity_lookalike" {
 		t.Fatalf("look-alike plan: %+v", plan)
+	}
+	// The rename warnings follow the window's mode: a digits-only target warns in CONTAINS, not in EXACT.
+	numeric := []BatchItem{rename("o2", 1, "777")}
+	if plan = planBatch(numeric, batchOffers(), claimed, sellable, 10, MatchKeywordQtyContains); len(plan.Conflicts) != 0 || len(plan.Warnings) != 1 || plan.Warnings[0].Kind != "numeric_in_contains" || plan.Warnings[0].Keyword != "777" {
+		t.Fatalf("numeric target in CONTAINS: %+v", plan)
+	}
+	if plan = planBatch(numeric, batchOffers(), claimed, sellable, 10, MatchExact); len(plan.Conflicts) != 0 || len(plan.Warnings) != 0 {
+		t.Fatalf("numeric target in EXACT: %+v", plan)
+	}
+	// Deactivating an active offer that has claim lines is allowed but warned (it ends the buyers' live price at their next quote, LTG03);
+	// an offer without lines, and one already inactive, is silent.
+	plan = planBatch([]BatchItem{deact("o1", 3), deact("o2", 1), deact("o3", 2)}, batchOffers(), claimed, sellable, 10, MatchExact)
+	if len(plan.Conflicts) != 0 || len(plan.Warnings) != 1 || plan.Warnings[0].Kind != "deactivate_has_claims" || plan.Warnings[0].Keyword != "A1" || plan.Warnings[0].OfferID != "o1" || plan.Warnings[0].Severity != "warning" {
+		t.Fatalf("deactivate warning: %+v", plan)
 	}
 }
 

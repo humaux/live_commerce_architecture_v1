@@ -1,6 +1,6 @@
 # Unit W3-06B: keyword tools and match simulator (backend)
 
-Status: IMPLEMENTING (Claude Sonnet backend implementer, 2026-10-07). Base `r3/integration` `5862caf8`.
+Status: DELIVERED, independent review MERGE (Opus, output/w3-06b-keyword-tools/REVIEW-opus.md); review P2 follow-up applied 2026-10-07 (Claude Sonnet backend implementer). Base `r3/integration` `5862caf8`.
 Worktree `.worktrees/w3-06b-keyword-tools` (branch `unit/w3-06b-keyword-tools`). Source: `output/arch-conformance/IMPLEMENTATION-PLAN.md`
 W3-06B; M04 #2, #3, #5, #7, #14; FR-RULE-01. UI is a separate Codex unit (W3-U2 simulator part); this unit has no `apps/` change.
 Migration: none needed (reserved 0158 stays unused; see DELIVERY).
@@ -9,7 +9,7 @@ Migration: none needed (reserved 0158 stays unused; see DELIVERY).
 Store default match mode = **EXACT**. That is the existing frozen default (a window without a row reads EXACT). No store-level default
 setting is added. Integrator ruling (same day): an omitted `match_mode` on the **simulator** means the session's current window mode
 (EXACT when there is no window), so the merchant sees what would happen live; `window_match_mode` and `window_state` stay in the response.
-The keyword check treats an omitted `match_mode` as EXACT.
+The keyword check and the batch rename warnings use the same default (window mode, EXACT without a window).
 
 ## Scope (smallest useful set; reuse, do not duplicate)
 1. **Simulator** `POST .../live-sessions/{session_id}/claims/simulate` `{comment, match_mode?}`: pure read (`live:read`), no row written, no Meta call.

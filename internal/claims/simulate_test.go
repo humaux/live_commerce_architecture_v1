@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -63,6 +64,10 @@ func TestSimulateDecisionTable(t *testing.T) {
 		{"contains bare keyword needs a quantity", MatchKeywordQtyContains, "我要H1", OutcomeRejected, ReasonQuantityRequired, "H1", 0},
 		{"contains over max", MatchKeywordQtyContains, "我要H1+9", OutcomeRejected, ReasonQuantityOverMax, "H1", 0},
 		{"contains inactive", MatchKeywordQtyContains, "我要H2+1", OutcomeRejected, ReasonOfferInactive, "H2", 0},
+		// A digits-only keyword under CONTAINS (kwc-v2 rule 3): "+N" matches only an all-ASCII comment. A Chinese sentence never matches it.
+		{"contains numeric keyword in a Chinese sentence never matches", MatchKeywordQtyContains, "我要101+2", OutcomeRejected, ReasonNoMatch, "", 0},
+		{"contains numeric keyword in an ASCII line matches", MatchKeywordQtyContains, "101+2!", OutcomeAccepted, "", "101", 2},
+		{"contains ASCII sentence is two fragments", MatchKeywordQtyContains, "101+2 minutes", OutcomeRejected, ReasonNoMatch, "", 0},
 	} {
 		got := simulateClaim(tc.text, tc.mode, simOffers(), now)
 		wantMode := tc.mode
@@ -91,6 +96,9 @@ func TestSimulateParsedFields(t *testing.T) {
 	got = simulateClaim("我要H1+1", MatchExact, simOffers(), now)
 	if got.Kind != "NO_MATCH" || got.GrammarVersion != "kw-v1" || got.ParsedKeyword != "" || got.ParsedQuantity != 0 {
 		t.Fatalf("gated contains comment: %+v", got)
+	}
+	if want := []string{"bundle_limit", "rate_limit"}; !reflect.DeepEqual(got.NotSimulated, want) {
+		t.Fatalf("not_simulated %v, want %v", got.NotSimulated, want)
 	}
 	got = simulateClaim("A1+0", MatchExact, simOffers(), now)
 	if got.Kind != "INVALID_QUANTITY" || got.ParsedKeyword != "A1" || got.ParsedQuantity != 0 || got.Offer == nil || got.Offer.ID != "o-a1" {

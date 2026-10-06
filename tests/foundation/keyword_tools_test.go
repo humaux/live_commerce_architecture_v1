@@ -26,6 +26,7 @@ import (
 	"livecommerce/internal/claims/grammar"
 	"livecommerce/internal/command"
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/live"
 	"livecommerce/internal/platform"
 )
 
@@ -195,6 +196,10 @@ func TestSimulateReadOnlyDefaultsAndScope(t *testing.T) {
 	if err != nil || closed.Outcome != claims.OutcomeAccepted || closed.TargetQuantity != 2 || closed.WindowState != claims.WindowClosed || closed.MatchMode != claims.MatchExact {
 		t.Fatalf("closed-window simulation: %+v %v", closed, err)
 	}
+	// The parse result is kept, and the answer says plainly that live ingest would say WINDOW_CLOSED, and what is never simulated.
+	if !closed.WindowClosed || !reflect.DeepEqual(closed.NotSimulated, []string{"bundle_limit", "rate_limit"}) || closed.Offer == nil {
+		t.Fatalf("closed window must set window_closed and keep the parse result: %+v", closed)
+	}
 	beforeClosed := lcDigest(t, f, "claims")
 	if real := h.claim(t, s, claims.ManualClaimInput{ActorLabel: "closed", Text: "H1+2"}); real.Reason != claims.ReasonWindowClosed {
 		t.Fatalf("real ingest into a closed window: %+v", real)
@@ -204,6 +209,9 @@ func TestSimulateReadOnlyDefaultsAndScope(t *testing.T) {
 	omitted, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "我要H1+1"})
 	if err != nil || omitted.MatchMode != claims.MatchKeywordQtyContains || omitted.Outcome != claims.OutcomeAccepted || omitted.WindowMatchMode != claims.MatchKeywordQtyContains || omitted.WindowState != claims.WindowOpen {
 		t.Fatalf("omitted match_mode must be the window's mode (CONTAINS): %+v %v", omitted, err)
+	}
+	if omitted.WindowClosed {
+		t.Fatalf("an OPEN window must not read window_closed: %+v", omitted)
 	}
 	override, err := h.simulate(h.token, f.storeA1, s, claims.SimulateInput{Comment: "我要H1+1", MatchMode: claims.MatchExact})
 	if err != nil || override.MatchMode != claims.MatchExact || override.Reason != claims.ReasonNoMatch || override.WindowMatchMode != claims.MatchKeywordQtyContains {
@@ -358,6 +366,27 @@ func TestKeywordToolsCheckAndNext(t *testing.T) {
 	other := h.draftAs(t, h.token, f.storeA2)
 	lcIs(t, lcErr(h.check(h.token, f.storeA1, other, claims.KeywordCheckInput{})), command.ErrNotFound, "check: session of another store")
 	lcIs(t, lcErr(h.next(h.token, f.storeA1, other, "", 1)), command.ErrNotFound, "next: session of another store")
+
+	// Omitted match_mode follows the session's window (no window above: EXACT). In a CONTAINS window a digits-only proposal and the stored
+	// digits-only offer are warned; an explicit EXACT overrides the window.
+	h.open(t, s, claims.MatchKeywordQtyContains)
+	win, err := h.check(h.token, f.storeA1, s, claims.KeywordCheckInput{Keywords: []string{"777"}})
+	if err != nil || win.MatchMode != claims.MatchKeywordQtyContains || len(win.Items) != 1 || !reflect.DeepEqual(kindsOf(win.Items[0].Conflicts), []string{"numeric_in_contains"}) ||
+		!reflect.DeepEqual(kindsOf(win.Existing), []string{"numeric_in_contains", "quantity_lookalike"}) { // stored 101, then the A1X2 / A1 pair (keyword order)
+		t.Fatalf("CONTAINS window, no mode: %+v %v", win, err)
+	}
+	exact, err := h.check(h.token, f.storeA1, s, claims.KeywordCheckInput{Keywords: []string{"777"}, MatchMode: claims.MatchExact})
+	if err != nil || exact.MatchMode != claims.MatchExact || len(exact.Items[0].Conflicts) != 0 {
+		t.Fatalf("explicit EXACT in a CONTAINS window: %+v %v", exact, err)
+	}
+}
+
+func kindsOf(fs []claims.KeywordFinding) []string {
+	out := []string{}
+	for _, f := range fs {
+		out = append(out, f.Kind)
+	}
+	return out
 }
 
 // TestKeywordToolsBatch: atomic batch deactivate / rename on a real session: retire + create, receipt replay, all-or-nothing
@@ -380,6 +409,26 @@ func TestKeywordToolsBatch(t *testing.T) {
 	h.open(t, s, claims.MatchExact)
 	h.accepted(t, s, "", "amy", "A1+2") // A1 now has a claim line: it can no longer be renamed
 
+	// B2 is the console's recommended offer (the latest 'featured' event): a rename must carry that to the new offer.
+	for _, offer := range []string{a1.ID, b2.ID} {
+		if err := h.do(h.token, f.storeA1, func(tx pgx.Tx, sc platform.Scope) error {
+			_, e := live.RecordOfferFeatured(h.ctx, tx, sc, h.token, s, offer)
+			return e
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	recommended := func() string {
+		var id string
+		if err := f.owner.QueryRow(h.ctx, `SELECT offer_id::text FROM live.offer_timeline WHERE session_id=$1 AND kind='featured' ORDER BY at DESC,id DESC LIMIT 1`, s).Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	if recommended() != b2.ID {
+		t.Fatal("setup: B2 must be the recommended offer")
+	}
+
 	// 1. rename B2 -> E5 and deactivate C3 in one call.
 	key := t04Key("kt-batch")
 	items := []claims.BatchItem{
@@ -400,6 +449,12 @@ func TestKeywordToolsBatch(t *testing.T) {
 	}
 	if !newE5.Active || newE5.Version != 1 || newE5.SKUID != b2.SKUID || newE5.MaxQuantityPerClaim != 4 || newE5.LivePriceMinor == nil || *newE5.LivePriceMinor != price || newE5.ID == b2.ID {
 		t.Fatalf("new offer must copy SKU, cap and live price: %+v", newE5)
+	}
+	if got := recommended(); got != newE5.ID {
+		t.Fatalf("the console's recommended offer is %s after the rename, want the new offer %s (not the retired %s)", got, newE5.ID, b2.ID)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM live.offer_timeline WHERE session_id=$1 AND kind='featured'`, s); n != 3 {
+		t.Fatalf("timeline rows %d, want 3 (the old rows stay as history, one new row for E5)", n)
 	}
 	// The next comment sees the final state: the old keyword is inactive, the new one accepts, D4 is untouched.
 	if r := h.claim(t, s, claims.ManualClaimInput{ActorLabel: "bob", Text: "B2"}); r.Reason != claims.ReasonOfferInactive {
@@ -503,6 +558,28 @@ func TestKeywordToolsBatch(t *testing.T) {
 	lcIs(t, lcErr(h.batch(h.token, f.storeA1, t04Key("kt-sess"), randomUUID(), claims.BatchInput{Items: items[1:]})), command.ErrNotFound, "missing session")
 	otherSession := h.draftAs(t, h.token, f.storeA2)
 	lcIs(t, lcErr(h.batch(h.token, f.storeA1, t04Key("kt-foreign"), otherSession, claims.BatchInput{Items: items[1:]})), command.ErrNotFound, "session of another store")
+
+	// 6b. deactivating an offer with claim lines is allowed but warned (like an M4 pause it ends the buyers' live price at their next quote).
+	dg, err := h.batch(h.token, f.storeA1, t04Key("kt-warn"), s, claims.BatchInput{Items: []claims.BatchItem{{OfferID: d4.ID, ExpectedVersion: d4.Version, Action: claims.BatchDeactivate}}})
+	if err != nil || !dg.Applied || len(dg.Warnings) != 1 || dg.Warnings[0].Kind != "deactivate_has_claims" || dg.Warnings[0].OfferID != d4.ID || dg.Warnings[0].Keyword != "D4" {
+		t.Fatalf("deactivate with claims: %+v %v", dg, err)
+	}
+	// Rename warnings follow the session's window mode: a digits-only target warns under CONTAINS (this session's window is EXACT: silent).
+	more := lcSKUs(t, f, f.tenantA, f.storeA1, "USD", 2)
+	cs := h.draft(t, f.storeA1)
+	h.open(t, cs, claims.MatchKeywordQtyContains)
+	x1 := h.offer(t, cs, "X1", more[0], 3)
+	cw, err := h.batch(h.token, f.storeA1, t04Key("kt-cwarn"), cs, claims.BatchInput{Items: []claims.BatchItem{{OfferID: x1.ID, ExpectedVersion: x1.Version, Action: claims.BatchRename, Keyword: "777"}}})
+	if err != nil || !cw.Applied || len(cw.Warnings) != 1 || cw.Warnings[0].Kind != "numeric_in_contains" || cw.Warnings[0].Keyword != "777" {
+		t.Fatalf("numeric rename in a CONTAINS window: %+v %v", cw, err)
+	}
+	es := h.draft(t, f.storeA1)
+	h.open(t, es, claims.MatchExact)
+	y1 := h.offer(t, es, "Y1", more[1], 3)
+	ew, err := h.batch(h.token, f.storeA1, t04Key("kt-ewarn"), es, claims.BatchInput{Items: []claims.BatchItem{{OfferID: y1.ID, ExpectedVersion: y1.Version, Action: claims.BatchRename, Keyword: "888"}}})
+	if err != nil || !ew.Applied || len(ew.Warnings) != 0 {
+		t.Fatalf("numeric rename in an EXACT window: %+v %v", ew, err)
+	}
 
 	// 7. an archived session is read-only at the database (0124): the batch is refused as invalid, reads still work.
 	archived := h.draft(t, f.storeA1)
