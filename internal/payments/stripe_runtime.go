@@ -248,15 +248,19 @@ func (s *StripeRuntime) clientForClaim(ctx context.Context, snapshot stripeSessi
 	bounded, cancel := context.WithTimeout(ctx, dbTimeout)
 	defer cancel()
 	var scope accounts.StripeAPIScope
+	var aad accounts.StripeAADScope
 	var keyID string
 	var nonce, ciphertext []byte
-	// integration.load_stripe_credential selects the attempt's immutable version after the lease fence.
+	// integration.load_stripe_credential selects the attempt's immutable version after the lease fence. aad_* is the scope
+	// the envelope was sealed under: the store's own, or the platform connection's for a derived row (stripe-platform-account-v1 §3.4).
 	if err := s.pool.QueryRow(bounded, `SELECT tenant_id::text,store_id::text,connection_id::text,
-		credential_version,environment,account_id,key_id,nonce,ciphertext
+		credential_version,environment,account_id,key_id,nonce,ciphertext,
+		aad_tenant_id::text,aad_store_id::text,aad_connection_id::text,aad_version
 		FROM integration.load_stripe_credential($1::uuid,$2::bigint,$3::bytea,$4::text)`,
 		snapshot.AttemptID, claim.Generation, claim.LeaseToken, s.profile).
 		Scan(&scope.TenantID, &scope.StoreID, &scope.ConnectionID, &scope.CredentialVersion,
-			&scope.Environment, &scope.AccountID, &keyID, &nonce, &ciphertext); err != nil {
+			&scope.Environment, &scope.AccountID, &keyID, &nonce, &ciphertext,
+			&aad.TenantID, &aad.StoreID, &aad.ConnectionID, &aad.Version); err != nil {
 		return nil, errStripeMaterial
 	}
 	if scope.TenantID != snapshot.TenantID || scope.StoreID != snapshot.StoreID ||
@@ -264,7 +268,8 @@ func (s *StripeRuntime) clientForClaim(ctx context.Context, snapshot stripeSessi
 		scope.Environment != snapshot.Environment || scope.AccountID != snapshot.AccountID {
 		return nil, errStripeMaterial
 	}
-	credentials, err := s.keys.OpenStripeAPI(scope, keyID, nonce, ciphertext)
+	// The attempt's own scope was checked above; the AEAD binds the account id, so a derived row opens only for the platform account.
+	credentials, err := s.keys.OpenStripeAPIFor(scope, aad, keyID, nonce, ciphertext)
 	if err != nil {
 		return nil, errStripeMaterial
 	}

@@ -1,5 +1,5 @@
 // Purpose: adversarial health DTO/request examples, including the actual backend's omitted capability identifier.
-// Depends on: Node test/assert and the pure health model/request boundary; no browser/PG/provider.
+// Depends on: Node test/assert/fs/child_process, pure health model/request and the actual admin build selector; no browser/PG/provider.
 // Used by: test-node.sh, --browser-meta-health-ui and independent acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -62,4 +62,18 @@ test("blocking advice comes from the blocking capability, not a secondary public
     { ...cap, capability: "reply_public", state: "missing_permission", reason: "perm_pages_manage_engagement" },
   ] }] });
   assert.equal(healthReason(health), "unknown");
+});
+
+test("clean health browser mode prepares admin standalone before starting its fixture", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { execFileSync } = await import("node:child_process");
+  const script = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
+  const lines = script.split("\n");
+  const build = lines.findIndex(line => line.includes("pnpm run build:admin"));
+  assert.ok(build > 0);
+  const condition = lines.slice(0, build).reverse().find(line => line.startsWith("if [["));
+  assert.ok(condition);
+  // Execute only the real preparation predicate, never the build or PG/browser mode.
+  const outcome = execFileSync("bash", ["-c", `test_mode="$1"\n${condition}\n  printf prepared\nelse\n  printf missing\nfi`, "health-build-predicate", "--browser-meta-health-ui"], { encoding: "utf8" });
+  assert.equal(outcome, "prepared");
 });

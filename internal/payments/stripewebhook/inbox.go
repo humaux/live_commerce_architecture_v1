@@ -159,10 +159,10 @@ func (s *pgStore) admit(ctx context.Context, endpointID string, m material, ev s
 		refund_id::text,object_type
 		FROM payments.stripe_webhook_prepare($1::uuid,$2::bigint,$3::text,$4::text,$5::bigint,$6::text,$7::text,
 		$8::text,$9::text,$10::text,$11::boolean,$12::boolean,$13::boolean,$14::boolean,$15::bytea,$16::bigint,
-		$17::text,$18::text)`,
+		$17::text,$18::text,$19::text)`,
 		endpointID, m.KeyVersion, ev.ID, ev.Type, ev.Created, ev.APIVersion, ev.ObjectType, ev.SessionID,
 		ev.ClientReferenceID, ev.MetadataAttempt, ev.AccountPresent, ev.Livemode, ev.ProbeSession,
-		ev.Malformed, ev.BodySHA256[:], ev.SignedAt, ev.PaymentIntentID, ev.MetadataRefund).
+		ev.Malformed, ev.BodySHA256[:], ev.SignedAt, ev.PaymentIntentID, ev.MetadataRefund, ev.MetadataStore).
 		Scan(&disposition, &receipt, &attempt, &session, &signal, &refund, &objectType); err != nil {
 		return ErrDatabase
 	}

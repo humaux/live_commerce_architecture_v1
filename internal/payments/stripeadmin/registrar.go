@@ -326,8 +326,10 @@ func (r *Registrar) storedCredential(ctx context.Context, s Scope, connectionID 
 	expectedVersion int64) (account, secretKey string, err error) {
 	var keyID string
 	var nonce, ciphertext []byte
-	if err := r.scanRow(ctx, []any{&account, &keyID, &nonce, &ciphertext},
-		`SELECT account_id,key_id,nonce,ciphertext FROM payments.stripe_registrar_credential(
+	var aad accounts.StripeAADScope
+	if err := r.scanRow(ctx, []any{&account, &keyID, &nonce, &ciphertext, &aad.TenantID, &aad.StoreID, &aad.ConnectionID, &aad.Version},
+		`SELECT account_id,key_id,nonce,ciphertext,aad_tenant_id::text,aad_store_id::text,aad_connection_id::text,aad_version
+		 FROM payments.stripe_registrar_credential(
 		 $1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::bigint)`,
 		s.TenantID, s.StoreID, s.PrincipalID, connectionID, expectedVersion); err != nil {
 		return "", "", err
@@ -335,9 +337,10 @@ func (r *Registrar) storedCredential(ctx context.Context, s Scope, connectionID 
 	if !accountPattern.MatchString(account) {
 		return "", "", ErrDatabase
 	}
-	creds, err := r.apiKeys.OpenStripeAPI(accounts.StripeAPIScope{TenantID: s.TenantID, StoreID: s.StoreID,
+	// aad_*: the scope the envelope was sealed under (the platform connection's for a derived row, stripe-platform-account-v1 §3.4).
+	creds, err := r.apiKeys.OpenStripeAPIFor(accounts.StripeAPIScope{TenantID: s.TenantID, StoreID: s.StoreID,
 		ConnectionID: connectionID, Environment: r.environment(), AccountID: account,
-		CredentialVersion: expectedVersion}, keyID, nonce, ciphertext)
+		CredentialVersion: expectedVersion}, aad, keyID, nonce, ciphertext)
 	if err != nil {
 		return "", "", ErrConfig // custody cannot open it: wrong keyring or a mismatching envelope
 	}
