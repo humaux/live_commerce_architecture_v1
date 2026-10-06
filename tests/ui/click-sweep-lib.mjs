@@ -377,6 +377,10 @@ export async function cancelLayer(page, mon) {
 // Back to the page state before the control: leave a layer by its cancel path, otherwise reload the unit URL ("reload if needed").
 export async function restore(page, mon, url, row) {
   if (row.layer && !row.urlChanged) { if (await cancelLayer(page, mon)) { const st = await pageState(page); if (st.url === url) return "layer closed"; } }
+  // Let the click's own requests finish first: the effect loop above stops at the first DOM change, which for the storefront cart is the optimistic busy
+  // state while the CAS write is still in flight. Reloading then aborts the write, the cart journals an UNKNOWN outcome ("check the previous attempt"), and
+  // the next steps meet a recovery notice instead of the cart (slow CI runners; CI run 37426264136). Bounded by settle's own max.
+  await settle(page, mon);
   await page.goto(url, { waitUntil: "domcontentloaded" }).catch(() => {});
   await settle(page, mon);
   return "reloaded";
