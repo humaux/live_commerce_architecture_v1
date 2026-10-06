@@ -11,9 +11,16 @@ import {
   parseCvsBatch,
   validPickRequest,
   carrierFilename,
+  shouldOpenPickTools,
 } from "../../apps/admin/lib/picklist-model.ts";
 const id = (n: number) =>
   `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`;
+test("batch controls stay compact until an order selection or live-session scope exists", () => {
+  assert.equal(shouldOpenPickTools(0, ""), false);
+  assert.equal(shouldOpenPickTools(1, ""), true);
+  assert.equal(shouldOpenPickTools(0, id(1)), true);
+  assert.equal(shouldOpenPickTools(0, "invalid"), false);
+});
 const line = {
   sku_id: id(9),
   sku_code: "SKU-9",

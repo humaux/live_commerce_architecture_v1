@@ -3,6 +3,10 @@
 // Used by: PickList, CVS/CSV clients, exact BFF routes and unit gates.
 export const pickUUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** Expand batch work only for a real selection/scope; initial mobile order rows keep their space. */
+export function shouldOpenPickTools(count: number, sessionID: string): boolean {
+  return count > 0 || pickUUID.test(sessionID);
+}
 export const carrierTemplates = [
   "black_cat",
   "hsinchu",
