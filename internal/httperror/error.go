@@ -210,6 +210,10 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_cursor":                 "The page cursor is not valid.",
 		"invalid_ref":                    "The comment reference is not valid.",
 		"invalid_filter":                 "The filter is not valid.",
+		"human_takeover":                 "A staff member is handling this conversation, so no automatic reminder was sent.",
+		"already_reminded":               "This buyer was already reminded for this session.",
+		"not_remindable":                 "This buyer has nothing left to remind.",
+		"no_storefront":                  "The store has no active storefront domain to link to.", // W3-03B checkout reminders
 	}
 	message, ok := messages[code]
 	if !ok {

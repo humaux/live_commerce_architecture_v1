@@ -220,6 +220,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerNotifySettingsRoutes(mux, pool)
 	registerInboxRoutes(mux, pool, configured.Inbox)
 	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
+	registerReminderRoutes(mux, pool, configured.Inbox)                            // W3-03B: checkout reminders + settings (reminders.go)
 	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {

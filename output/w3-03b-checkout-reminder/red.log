@@ -1,0 +1,43 @@
+=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
+    checkout_reminder_test.go:147: trigger: invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR01WindowTakeoverAndOnce (10.33s)
+=== RUN   TestCheckoutReminderCR02ConcurrentTriggers
+    checkout_reminder_test.go:253: concurrent trigger: invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR02ConcurrentTriggers (0.93s)
+=== RUN   TestCheckoutReminderCR03WindowClosesBeforeCheck
+    checkout_reminder_test.go:270: trigger: {Queued:0 AlreadyReminded:0 Followup:0 Skipped:0 Truncated:false} err=invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR03WindowClosesBeforeCheck (0.89s)
+=== RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
+    checkout_reminder_test.go:303: trigger: {Queued:0 AlreadyReminded:0 Followup:0 Skipped:0 Truncated:false} err=invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR04GraphFailureIsUnknown (0.91s)
+=== RUN   TestCheckoutReminderCR05CandidateSet
+    checkout_reminder_test.go:338: trigger: {Queued:0 AlreadyReminded:0 Followup:0 Skipped:0 Truncated:false} err=invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR05CandidateSet (2.91s)
+=== RUN   TestCheckoutReminderCR06PermissionAndScope
+    checkout_reminder_test.go:387: trigger without inbox:reply: invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR06PermissionAndScope (0.87s)
+=== RUN   TestCheckoutReminderSettingsCAS
+    checkout_reminder_test.go:433: inbox: database unavailable
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderSettingsCAS (7.12s)
+=== RUN   TestCheckoutReminderNoStorefront
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderNoStorefront (0.89s)
+=== RUN   TestCheckoutReminderCR08NoSecretsPersisted
+    checkout_reminder_test.go:503: trigger: {Queued:0 AlreadyReminded:0 Followup:0 Skipped:0 Truncated:false} err=invalid_text
+    checkout_reminder_test.go:88: exec test setup: ERROR: relation "inbox.checkout_reminders" does not exist (SQLSTATE 42P01)
+--- FAIL: TestCheckoutReminderCR08NoSecretsPersisted (0.86s)
+=== RUN   TestCheckoutReminderMigration0131ExactACL
+    checkout_reminder_test.go:545: 0131 migration rows=0
+--- FAIL: TestCheckoutReminderMigration0131ExactACL (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	26.447s
+FAIL
+test-focused: top-level PASS=0 FAIL=10 SKIP=0 exit=1
+exit 1

@@ -49,14 +49,15 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 		}
 	}
 
-	// The two system-fixed templates are seeded exactly once with the frozen shape.
+	// The system-fixed templates are seeded exactly once with the frozen shape.
 	fixed := map[string]struct {
 		kinds []string
 		safe  bool
 		body  string
 	}{
-		"order-pay-link/v1":  {[]string{"dm"}, false, "{{連結}}"},
-		"offer-recommend/v1": {[]string{"recommend"}, true, "{{product.name}}"},
+		"order-pay-link/v1":    {[]string{"dm"}, false, "{{連結}}"},
+		"offer-recommend/v1":   {[]string{"recommend"}, true, "{{product.name}}"},
+		"checkout-reminder/v1": {[]string{"dm"}, false, "{{連結}}"}, // W3-03B (0131)
 	}
 	for id, want := range fixed {
 		var kinds []string
@@ -69,8 +70,8 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 			t.Fatalf("fixed %s: kinds=%v safe=%t body=%q", id, kinds, safe, body)
 		}
 	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 2 {
-		t.Fatalf("fixed template rows=%d, want 2", n)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 3 { // + checkout-reminder/v1 (0131, W3-03B)
+		t.Fatalf("fixed template rows=%d, want 3", n)
 	}
 
 	// The three definers are owned by the NOLOGIN writer, SECURITY DEFINER, pg_catalog search_path, correct
