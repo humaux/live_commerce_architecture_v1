@@ -18,6 +18,9 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
   created a record; every row is exactly one of created / updated / failed. `results` = `[{row, outcome, code?, external_id?}]`,
   <= 5000 rows. Retention 90 days (lazy prune, <= 50 batches per commit).
 - `migrationimport.external_ids(tenant_id, store_id, kind, external_id 1..64, internal_id, PK(tenant_id,store_id,kind,external_id))`.
+- Erasure tombstone: `migrationimport.store_salts(tenant_id, store_id, salt bytea 32)` (two v4 uuids, pgcrypto is not installed) and
+  `migrationimport.erased_external_ids(tenant_id, store_id, kind, id_digest bytea 32, erased_at, PK(tenant_id,store_id,kind,id_digest))`
+  with `id_digest = sha256(salt || external_id as stored)`. Insert-only (privacy writer SELECT+INSERT, FORCE RLS, store-scoped policies).
 - `customers.import_profiles(tenant_id, store_id, owner_id, display_name 1..80, phone_e164 NULL, email NULL lower-case <= 254,
   source = 'shopline_csv', imported_at, updated_at)`: personal data, deleted by erasure.
 - Definers (SECURITY DEFINER, `search_path=pg_catalog`, EXECUTE `commerce_runtime`): `migrationimport.import_customers(hash, store, rows)`
@@ -32,7 +35,9 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
 - Fields: `external_id` (required, 1..64 chars, no control/format characters), `name` (required, NFC, 1..80 chars), `phone` (optional,
   Taiwan mobile -> `+8869xxxxxxxx`; accepted spellings: `0912-345-678`, `0912345678`, `912345678`, `+886 912 345 678`, `886912345678`,
   `00886912345678`; landlines and anything else are `invalid_phone`), `email` (optional, lower-cased, `invalid_email`).
-- Row codes (never a file refusal): `required`, `invalid_external_id`, `name_too_long`, `invalid_name`, `invalid_phone`, `invalid_email`,
+- `external_id` format rule: an id containing `@` or accepted as a Taiwan mobile number is refused (`invalid_external_id`), so a mis-mapped
+  phone/email column cannot copy PII into results. A numeric source id that is also a valid mobile number must be prefixed.
+- Row codes (never a file refusal): `erased` (the source id carries an erasure tombstone), `required`, `invalid_external_id`, `name_too_long`, `invalid_name`, `invalid_phone`, `invalid_email`,
   `duplicate_external_id` (every holder of an id that appears twice is refused, none is guessed), `invalid_request` (field-count mismatch).
 - File codes (422, nothing written): `encoding_not_utf8`, `too_many_rows`, `required` (empty file or `external_id`/`name` unmapped),
   `invalid_request` (broken CSV, bad mapping). 413 `invalid_request` above 2 MiB; 415 for a non-`text/csv` body.
@@ -45,9 +50,11 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
 ## 4. HTTP (all `/v1/admin/stores/{store_id}/imports`, private no-store, `customers:privacy`, no `Idempotency-Key` — the file hash is the key)
 | Method and path | Body / query | Result |
 |---|---|---|
-| `POST customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
+| `POST customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, erased_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
 | `POST customers/commit?expected_apply_rows=N` | `text/csv`; `&mapping=` | 200 `{batch_id, created, updated, failed, replayed}`; 409 `preview_stale` (body = fresh preview, nothing written); 409 `idempotency_conflict` (same bytes with another mapping or N); 422 `nothing_to_apply`. |
 | `GET {batch_id}/results.csv[?only=failed]` | none | UTF-8 BOM CSV `row,external_id,outcome,code`, every text cell formula-guarded; 404 for another store's batch. |
+- A committed file is keyed by its bytes forever: the same bytes with another mapping or count is `idempotency_conflict`, so a merchant who
+  committed a wrong mapping must change the file (W5-U1 copy must say so). The brief's `Idempotency-Key` header is deliberately NOT used.
 - 60 s `WithScopeBudget`; commit is one transaction (`command.Run` operation `migrationimport.customers_commit`, key `cimp-<sha256[:32]>`).
 - Audit: `customers.imported` (action only).
 
@@ -56,9 +63,21 @@ Evidence class: REAL_PG + MOCK (synthetic data only). Order-history import (W5-0
   `imported_at`, shows the imported `display_name` and phone tail while there is no order (an order's destination wins), and every row
   carries `imported: boolean`. Search (D6) also matches an import profile (name prefix; phone suffix against the local `09...` digits).
 - Imported customers can be tagged and noted (`customers.tn_lock_owner` / `tn_owner_visible` accept an import profile).
-- Erasure (`apply_erasure`, also on `replay_erasures`) deletes the profile and the customer external id, and scrubs that external id from
-  retained `batches.results`. After erasure the same external id in a new file creates a NEW owner (no tombstone is kept; see Risks in DELIVERY).
+- Erasure (`apply_erasure`, also on `replay_erasures`; the hook lives in `apply_erasure`, not `erase_owner`) writes the salted tombstone
+  digest of each customer external id FIRST, then deletes the profile and the external id and scrubs that id from retained
+  `batches.results`. A later import of the same source id in the same store fails that row as `erased` (never creates an owner); the preview
+  counts `erased_rows` and the preview row, the stored result and results.csv carry the row number and code only, never the id. A commit
+  racing an erasure is safe: the create branch re-checks the tombstone in a new READ COMMITTED statement after the owner lock released.
+  The digest is per store (salt), so other stores and tenants are unaffected; deleting the store's salt crypto-shreds every tombstone.
+  **Known limits (not solved here):** the same person under a NEW source id, and a buyer who erased themselves (no external id exists),
+  are not caught; that needs the verified-contact contract (B24). There is no merchant override in v1.
+- Privacy export: `customers.export_import_profile(hash, store, customer)` (customers:privacy, EXECUTE `commerce_runtime`) returns
+  `{display_name, phone, email, source, imported_at, updated_at, external_ids[]}`; the merchant export (`POST customers/{id}/exports`) adds it as
+  `import_profile` (absent for non-imported customers). The EXPORT receipt and audit stay counts-only.
+- `commerce_auth` reads `customers.import_profiles` through a policy scoped to `app.tenant_id` and `app.store_id`.
+- Retention gap (known): batches are pruned lazily on the next commit of the same store (90 days); a store that never imports again keeps
+  `batches.results` (row numbers and external ids) until then. A sweeper hook is a follow-up.
 
 ## 6. Gates
-`bash scripts/dev/test-focused.sh '^TestCustomerImport$'` (CI01-CI11), `internal/migrationimport` and `internal/httpapi/imports_test.go`
+`bash scripts/dev/test-focused.sh '^TestCustomerImport$'` (CI01-CI15), `internal/migrationimport` and `internal/httpapi/imports_test.go`
 (DB-free), the schema/comment/upgrade pins (`TestCustomersBillingCB02*`, `TestR2IntegrationUpgradeFromReleaseHead`).

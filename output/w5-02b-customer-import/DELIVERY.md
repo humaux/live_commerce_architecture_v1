@@ -28,3 +28,9 @@
 - NOT_RUN / BLOCKED: `--browser-*`, release-gate G07, full foundation suite (CI). No LIVE. W5-U1 UI/BFF not touched.
 - CI gates: full foundation suite (`.github/workflows/gates.yml`); new mode `bash scripts/dev/test-local.sh --migration-import` is for the integrator to add (suggest regex `^TestCustomerImport$`); regression `--browser-customers-billing`; `release-gate.sh --strict --only G07`.
 - Integrator to-do: migration 0152 slot; r2 count pin is 73 -> 74 (union with parallel units); schema pins already updated in customers_billing_schema_test.go (privacy-writer grants, DELETE list, audit action, erase_import_profile) and customers_billing_http_test.go (`imported` key); freeze contracts/migration-import-v1.md; GATES.md row for the new mode.
+
+## Fix round (Opus privacy review, MERGE-AFTER-FIX), all inside 0152
+- P1-1 salted tombstone (`store_salts`, `erased_external_ids`; digest written before delete; create branch refuses `erased`; `erased_rows` in the preview; no id in results); commit-vs-erasure race closed by the create-branch re-check.
+- P1-2 `customers.export_import_profile` + `import_profile` in the merchant export. P2: `commerce_auth` policy store-scoped; external_id shape rule; CI13 owner-insert negative, CI14 parallel commit, CI15; contract/brief updated.
+- Evidence: red-fix.log (CI07b/CI12/CI15 red at dddb1452), red-fix-ci13.log (CI13 red with WITH CHECK(true)), green-fix.log (CustomerImport, CB02/03/05/09, tags, R2 upgrade, WAS all PASS).
+- Known gaps left: lazy batch retention (documented in contract), review P2-6 K3 consent counter-example is covered by CI04's zero-event assertion only.

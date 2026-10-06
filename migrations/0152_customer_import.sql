@@ -3,7 +3,8 @@
 --   customers.import_profiles (name / phone / email of an imported customer), the three definers the Go importer calls
 --   (import_customers, record_batch, read_batch_results), the audit action customers.imported, the "imported" projection and list
 --   predicate of identity.read_merchant_customers, tag/note visibility of imported customers, and erasure coverage (apply_erasure
---   also deletes the profile and the external id and scrubs the external id from retained batch results).
+--   also deletes the profile and the external id, leaves a SALTED digest tombstone so a stale export cannot resurrect the person, and
+--   scrubs the external id from retained batch results), and the merchant privacy-export reader customers.export_import_profile.
 -- Depends on: 0006 (buyer.owners), 0078 (customers schema, commerce_privacy_writer, apply_erasure, privacy_audit_insert),
 --   0139 (tn_authority / tn_fence / tn_lock_owner / tn_owner_visible / tn_owners_with_tag, read_merchant_customers 8-arg body,
 --   privacy_audit_insert with the tag/note actions).
@@ -11,7 +12,8 @@
 --   new "imported" key.
 -- Invariants: imported consent is ALWAYS unknown (no definer here touches customers.consent_events); an imported owner is its own
 --   buyer.owners row and is never merged with a later buyer (no cross-tenant, no cross-store match); results/audit carry no name,
---   phone or email; no login role holds a direct grant on the new tables (definers only); erasure removes every imported datum.
+--   phone or email; no login role holds a direct grant on the new tables (definers only); erasure removes every imported datum and keeps
+--   only a per-store salted digest of the erased source id (no name, phone, email or owner link) so the same id is refused later.
 -- Status: REAL_PG / MOCK evidence only (synthetic data).
 
 DO $$
@@ -94,13 +96,37 @@ CREATE TABLE customers.import_profiles (
  FOREIGN KEY (tenant_id,store_id,owner_id) REFERENCES buyer.owners(tenant_id,store_id,id)
 );
 
+-- Erasure tombstone (P1-1): one random 32-byte salt per store (two v4 uuids, the 0125 precedent: pgcrypto is not installed) and the
+-- salted sha256 digests of erased source ids. The salt lives apart from the digests so a leak of the digest table alone cannot be
+-- enumerated; deleting the salt with the store crypto-shreds every tombstone. No UPDATE or DELETE exists for any role.
+CREATE TABLE migrationimport.store_salts (
+ tenant_id uuid NOT NULL,
+ store_id uuid NOT NULL,
+ salt bytea NOT NULL CHECK (octet_length(salt)=32),
+ PRIMARY KEY (tenant_id,store_id)
+);
+CREATE TABLE migrationimport.erased_external_ids (
+ tenant_id uuid NOT NULL,
+ store_id uuid NOT NULL,
+ kind text NOT NULL CHECK (kind IN ('customers','orders')),
+ id_digest bytea NOT NULL CHECK (octet_length(id_digest)=32),
+ erased_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ PRIMARY KEY (tenant_id,store_id,kind,id_digest)
+);
+
 ALTER TABLE migrationimport.batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE migrationimport.batches FORCE ROW LEVEL SECURITY;
 ALTER TABLE migrationimport.external_ids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE migrationimport.external_ids FORCE ROW LEVEL SECURITY;
 ALTER TABLE customers.import_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customers.import_profiles FORCE ROW LEVEL SECURITY;
-REVOKE ALL ON migrationimport.batches, migrationimport.external_ids, customers.import_profiles FROM PUBLIC;
+ALTER TABLE migrationimport.store_salts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE migrationimport.store_salts FORCE ROW LEVEL SECURITY;
+ALTER TABLE migrationimport.erased_external_ids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE migrationimport.erased_external_ids FORCE ROW LEVEL SECURITY;
+REVOKE ALL ON migrationimport.batches, migrationimport.external_ids, customers.import_profiles,
+ migrationimport.store_salts, migrationimport.erased_external_ids FROM PUBLIC;
+GRANT SELECT, INSERT ON migrationimport.store_salts, migrationimport.erased_external_ids TO commerce_privacy_writer;
 
 GRANT SELECT, INSERT, DELETE ON migrationimport.batches TO commerce_privacy_writer;
 GRANT UPDATE (results) ON migrationimport.batches TO commerce_privacy_writer;          -- erasure scrubs one external id
@@ -127,7 +153,16 @@ BEGIN
  EXECUTE format('CREATE POLICY imp_import_profiles_update ON customers.import_profiles FOR UPDATE TO commerce_privacy_writer USING (%s) WITH CHECK (%s)',scope,scope);
  EXECUTE format('CREATE POLICY imp_owner_insert ON buyer.owners FOR INSERT TO commerce_privacy_writer WITH CHECK (%s)',scope);
 END $$;
-CREATE POLICY auth_import_profile_read ON customers.import_profiles FOR SELECT TO commerce_auth USING (true);
+DO $$
+DECLARE t text; scope text:='tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid';
+BEGIN
+ FOREACH t IN ARRAY ARRAY['store_salts','erased_external_ids'] LOOP
+  EXECUTE format('CREATE POLICY %I ON migrationimport.%I FOR SELECT TO commerce_privacy_writer USING (%s)','imp_'||t||'_select',t,scope);
+  EXECUTE format('CREATE POLICY %I ON migrationimport.%I FOR INSERT TO commerce_privacy_writer WITH CHECK (%s)','imp_'||t||'_insert',t,scope);
+ END LOOP;
+ -- read_merchant_customers verifies app.tenant_id / app.store_id against resolve_access before it reads, so the scope holds there.
+ EXECUTE format('CREATE POLICY auth_import_profile_read ON customers.import_profiles FOR SELECT TO commerce_auth USING (%s)',scope);
+END $$;
 
 -- Audit: the privacy writer may also insert customers.imported (counts only, never a row). The policy is replaced, not added to:
 -- the ACL pin requires every INSERT policy of the role to carry the full action list (0139 pattern).
@@ -145,11 +180,12 @@ COMMENT ON POLICY privacy_audit_insert ON ops.audit_events IS 'commerce_privacy_
 -- Definers (owner commerce_privacy_writer, SECURITY DEFINER, search_path=pg_catalog, customers:privacy, EXECUTE commerce_runtime).
 -- ---------------------------------------------------------------------------------------
 -- import_customers: upserts up to 500 normalised rows [{row, external_id, name, phone?, email?}] in the caller's transaction and
--- returns [{row, outcome}] with outcome created | updated. The Go importer validates every cell first (the table CHECKs are the
+-- returns [{row, outcome, code?}] with outcome created | updated | failed (code erased: the source id carries an erasure tombstone). The Go importer validates every cell first (the table CHECKs are the
 -- backstop, a violation aborts the whole import). A per-store transaction advisory lock serialises concurrent imports; the existing
 -- owner row is locked FOR UPDATE with its active test in the WHERE, so a concurrent erasure (which deactivates the owner and
--- deletes the external id in one transaction) can never be updated back to life: after its commit the lookup finds nothing and the
--- row is created as a NEW owner. Never touches customers.consent_events: an imported customer's consent stays unknown.
+-- deletes the external id and writes the tombstone in one transaction) can never be updated back to life: after its commit the lookup
+-- finds nothing, and the create branch re-checks the tombstone in a NEW statement (READ COMMITTED sees the committed erasure), so a
+-- commit racing an erasure refuses the row as erased instead of resurrecting the person. Never touches customers.consent_events.
 CREATE FUNCTION migrationimport.import_customers(p_hash bytea,p_store uuid,p_rows jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record; r jsonb; v_owner uuid; v_out jsonb:='[]'::jsonb; v_outcome text; v_ext text; v_phone text; v_email text;
@@ -173,6 +209,12 @@ BEGIN
     email=CASE WHEN r ? 'email' THEN v_email ELSE p.email END,updated_at=clock_timestamp()
     WHERE p.tenant_id=a.tenant_id AND p.store_id=p_store AND p.owner_id=v_owner;
    v_outcome:='updated';
+  ELSIF EXISTS(SELECT 1 FROM migrationimport.erased_external_ids t JOIN migrationimport.store_salts sa
+    ON sa.tenant_id=t.tenant_id AND sa.store_id=t.store_id
+   WHERE t.tenant_id=a.tenant_id AND t.store_id=p_store AND t.kind='customers'
+    AND t.id_digest=sha256(sa.salt||convert_to(v_ext,'UTF8'))) THEN
+   v_out:=v_out||jsonb_build_object('row',(r->>'row')::integer,'outcome','failed','code','erased');
+   CONTINUE;
   ELSE
    INSERT INTO buyer.owners(tenant_id,store_id) VALUES(a.tenant_id,p_store) RETURNING id INTO v_owner;
    INSERT INTO customers.import_profiles(tenant_id,store_id,owner_id,display_name,phone_e164,email,source)
@@ -221,12 +263,24 @@ BEGIN
  RETURN v_results;
 END $$;
 
--- erase_import_profile (erasure-only, called by apply_erasure): removes the profile and the customer external id of one owner and
--- scrubs that external id out of the retained batch results (the counts and row numbers stay; the id link does not).
+-- erase_import_profile (erasure-only, called by apply_erasure): writes the salted tombstone digest of each customer external id of the
+-- owner FIRST, then removes the profile and the external id and scrubs that id out of the retained batch results (the counts and row
+-- numbers stay; the id link does not). The tombstone holds only sha256(store salt || id): no name, phone, email or owner link.
+-- Known limits (migration-import-v1 section 5): the same person under a NEW source id, or a buyer who erased themselves (no external
+-- id exists), is not caught; that needs the verified-contact contract (B24).
 CREATE FUNCTION customers.erase_import_profile(p_tenant uuid,p_store uuid,p_owner uuid) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE x record;
 BEGIN
+ IF EXISTS(SELECT 1 FROM migrationimport.external_ids e WHERE e.tenant_id=p_tenant AND e.store_id=p_store AND e.kind='customers' AND e.internal_id=p_owner) THEN
+  INSERT INTO migrationimport.store_salts(tenant_id,store_id,salt) VALUES(p_tenant,p_store,uuid_send(gen_random_uuid())||uuid_send(gen_random_uuid()))
+   ON CONFLICT DO NOTHING;
+  INSERT INTO migrationimport.erased_external_ids(tenant_id,store_id,kind,id_digest)
+   SELECT p_tenant,p_store,'customers',sha256(sa.salt||convert_to(e.external_id,'UTF8'))
+   FROM migrationimport.external_ids e JOIN migrationimport.store_salts sa ON sa.tenant_id=e.tenant_id AND sa.store_id=e.store_id
+   WHERE e.tenant_id=p_tenant AND e.store_id=p_store AND e.kind='customers' AND e.internal_id=p_owner
+   ON CONFLICT DO NOTHING;
+ END IF;
  FOR x IN SELECT e.external_id FROM migrationimport.external_ids e
    WHERE e.tenant_id=p_tenant AND e.store_id=p_store AND e.kind='customers' AND e.internal_id=p_owner LOOP
   UPDATE migrationimport.batches b SET results=(
@@ -239,10 +293,29 @@ BEGIN
  DELETE FROM customers.import_profiles p WHERE p.tenant_id=p_tenant AND p.store_id=p_store AND p.owner_id=p_owner;
 END $$;
 
+-- export_import_profile: the merchant privacy export's reader (P1-2, modelled on export_tags_notes of 0139). customers:privacy; returns the
+-- profile of one imported customer {display_name, phone, email, source, imported_at, updated_at, external_ids[]} or NULL when the customer
+-- has none. The merchant already holds this data (it imported it); the export route needs customers:privacy too, so nothing widens.
+CREATE FUNCTION customers.export_import_profile(p_hash bytea,p_store uuid,p_customer uuid)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a record; v jsonb;
+BEGIN
+ IF p_customer IS NULL THEN RAISE EXCEPTION 'invalid export request' USING ERRCODE='PT400'; END IF;
+ SELECT * INTO a FROM customers.tn_authority(p_hash,p_store,'customers:privacy');
+ SELECT jsonb_build_object('display_name',p.display_name,'phone',p.phone_e164,'email',p.email,'source',p.source,
+   'imported_at',to_char(p.imported_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   'updated_at',to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   'external_ids',coalesce((SELECT jsonb_agg(e.external_id ORDER BY e.external_id) FROM migrationimport.external_ids e
+     WHERE e.tenant_id=p.tenant_id AND e.store_id=p.store_id AND e.kind='customers' AND e.internal_id=p.owner_id),'[]'::jsonb))
+  INTO v FROM customers.import_profiles p WHERE p.tenant_id=a.tenant_id AND p.store_id=p_store AND p.owner_id=p_customer;
+ PERFORM customers.tn_fence(p_hash,p_store,'customers:privacy',a.tenant_id,a.principal_id,a.authz_revision);
+ RETURN v;
+END $$;
+
 DO $$
 DECLARE f text;
 BEGIN
- FOREACH f IN ARRAY ARRAY['migrationimport.import_customers(bytea,uuid,jsonb)',
+ FOREACH f IN ARRAY ARRAY['migrationimport.import_customers(bytea,uuid,jsonb)','customers.export_import_profile(bytea,uuid,uuid)',
   'migrationimport.record_batch(bytea,uuid,text,bytea,jsonb,integer,integer,integer,integer,jsonb)',
   'migrationimport.read_batch_results(bytea,uuid,uuid)','customers.erase_import_profile(uuid,uuid,uuid)'] LOOP
   EXECUTE format('ALTER FUNCTION %s OWNER TO commerce_privacy_writer',f);
@@ -478,6 +551,10 @@ COMMENT ON COLUMN migrationimport.batches.applied IS 'internal/migrationimport: 
 COMMENT ON COLUMN migrationimport.batches.updated IS 'internal/migrationimport: rows that updated an existing record (same external id).';
 COMMENT ON COLUMN migrationimport.batches.failed IS 'internal/migrationimport: rows skipped with a code (parse, duplicate or validation); never written.';
 COMMENT ON COLUMN migrationimport.batches.results IS 'internal/migrationimport: per-row verdicts {row, outcome created|updated|failed, code?, external_id?}; external_id is the merchant source-system id, scrubbed on erasure of the customer.';
+COMMENT ON TABLE migrationimport.store_salts IS 'internal/migrationimport (W5-02B): one random 32-byte salt per store used only to digest erased source ids (tombstones). Insert-only; deleting a store deletes its salt and so every tombstone. FORCE RLS, definers only.';
+COMMENT ON COLUMN migrationimport.store_salts.salt IS 'internal/migrationimport: 32 random bytes from two v4 uuids (pgcrypto is not installed).';
+COMMENT ON TABLE migrationimport.erased_external_ids IS 'internal/migrationimport (W5-02B): erasure tombstones: sha256(store salt || external id) of an erased imported customer, so the same source id is refused (code erased) when a stale export is re-imported. No name, phone, email or owner link. Insert-only. FORCE RLS, definers only.';
+COMMENT ON COLUMN migrationimport.erased_external_ids.id_digest IS 'internal/migrationimport: sha256(salt || external_id as stored in external_ids); never an unsalted hash.';
 COMMENT ON TABLE migrationimport.external_ids IS 'internal/migrationimport (W5-02B): source-system id -> internal id per (store, kind); the key that makes a re-import update instead of duplicate. For kind customers internal_id is buyer.owners.id; deleted by erasure (customers.erase_import_profile). FORCE RLS, definers only.';
 COMMENT ON COLUMN migrationimport.external_ids.external_id IS 'internal/migrationimport: the merchant source-system record id (1..64 chars), pseudonymous but linkable, so erasure deletes it.';
 COMMENT ON COLUMN migrationimport.external_ids.internal_id IS 'internal/migrationimport: our id for the imported record (buyer.owners.id for customers).';
@@ -494,7 +571,8 @@ COMMENT ON COLUMN customers.import_profiles.store_id IS 'internal/customers: sto
 COMMENT ON FUNCTION migrationimport.import_customers(bytea,uuid,jsonb) IS 'internal/migrationimport (customers:privacy): upserts <=500 validated rows [{row,external_id,name,phone,email}] as buyer.owners + import_profiles + external_ids and returns [{row,outcome created|updated}]. Per-store advisory lock; never writes customers.consent_events.';
 COMMENT ON FUNCTION migrationimport.record_batch(bytea,uuid,text,bytea,jsonb,integer,integer,integer,integer,jsonb) IS 'internal/migrationimport (customers:privacy): records the committed import batch (UNIQUE per file hash), prunes this store''s batches older than 90 days (<=50) and audits customers.imported; returns the batch id.';
 COMMENT ON FUNCTION migrationimport.read_batch_results(bytea,uuid,uuid) IS 'internal/migrationimport (customers:privacy): the per-row results jsonb of one batch of this store for results.csv; PT404 otherwise.';
-COMMENT ON FUNCTION customers.erase_import_profile(uuid,uuid,uuid) IS 'internal/customers erasure-only (called by apply_erasure, EXECUTE nobody): deletes the import profile and customer external id of one owner and scrubs that external id from retained batch results.';
+COMMENT ON FUNCTION customers.erase_import_profile(uuid,uuid,uuid) IS 'internal/customers erasure-only (called by apply_erasure, EXECUTE nobody): writes the salted tombstone digest of the owner''s customer external ids, then deletes the import profile and external id and scrubs that external id from retained batch results.';
+COMMENT ON FUNCTION customers.export_import_profile(bytea,uuid,uuid) IS 'internal/customers (customers:privacy): the imported profile (name, phone, email, source, timestamps, external ids) of one customer for the merchant privacy export, or NULL when it has none.';
 COMMENT ON FUNCTION customers.tn_lock_owner(uuid,uuid,uuid) IS 'internal/customers (W6-01B, W5-02B): Internal (EXECUTE nobody): locks an active, merchant-visible customer owner row (order, bound bundle or import profile); same lock order as erase_owner.';
 COMMENT ON FUNCTION customers.tn_owner_visible(uuid,uuid,uuid) IS 'internal/customers (W6-01B, W5-02B): Internal (EXECUTE nobody): whether a customer is visible to the merchant list (order, bound bundle or import profile).';
 COMMENT ON FUNCTION identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamptz,uuid,text,uuid) IS

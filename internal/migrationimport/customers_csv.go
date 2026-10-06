@@ -230,7 +230,7 @@ func normalizeCustomerRow(r *customerRow, externalID, name, phone, email string)
 	case externalID == "":
 		r.outcome, r.code = outcomeFailed, "required"
 		return
-	case utf8.RuneCountInString(externalID) > 64 || hasControl(externalID):
+	case utf8.RuneCountInString(externalID) > 64 || hasControl(externalID) || looksLikeContact(externalID):
 		r.outcome, r.code = outcomeFailed, "invalid_external_id"
 		return
 	}
@@ -263,6 +263,16 @@ func normalizeCustomerRow(r *customerRow, externalID, name, phone, email string)
 		}
 		r.email = email
 	}
+}
+
+// looksLikeContact reports an external id that is really an email or a Taiwan mobile number: a mis-mapped column would otherwise copy
+// that PII into external_ids, batch results and results.csv. A numeric source id that is also a valid mobile number must be prefixed.
+func looksLikeContact(id string) bool {
+	if strings.Contains(id, "@") {
+		return true
+	}
+	_, phone := normalizeTWMobile(id)
+	return phone
 }
 
 // markDuplicates refuses every still-valid row whose external_id appears on two or more rows (never guess which one is right). A row

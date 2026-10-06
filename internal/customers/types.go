@@ -463,6 +463,20 @@ type exportDoc struct {
 	Consents       []ConsentEvent          `json:"consents"`
 	Claims         []ClaimSummary          `json:"claims"`
 	PrivacyActions []PrivacyAction         `json:"privacy_actions"`
+	// ImportProfile is the profile of a customer created by the CSV import (W5-02B); absent for every other customer.
+	ImportProfile *ImportProfile `json:"import_profile,omitempty"`
+}
+
+// ImportProfile is what the CSV import stored about one customer, as returned by customers.export_import_profile for the merchant
+// privacy export: name, E.164 phone, email, source, timestamps and the merchant's source-system ids.
+type ImportProfile struct {
+	DisplayName string   `json:"display_name"`
+	Phone       *string  `json:"phone"`
+	Email       *string  `json:"email"`
+	Source      string   `json:"source"`
+	ImportedAt  string   `json:"imported_at"`
+	UpdatedAt   string   `json:"updated_at"`
+	ExternalIDs []string `json:"external_ids"`
 }
 
 // buyerExportDoc is the same envelope without customer_id and principal ids (D8); orders are the buyer's own

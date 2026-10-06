@@ -171,6 +171,7 @@ var cbsFunctions = []cbsFn{
 	{"customers.export_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
 	// W5-02B (0152): erasure hook of the customer import (EXECUTE nobody; the import definers live in schema migrationimport).
 	{"customers.erase_import_profile(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
+	{"customers.export_import_profile(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"identity.read_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	// 0147 (W6-02B): the report read definers and the audited export (volatile like finance: they call resolve_access / the audit fence).
@@ -218,6 +219,9 @@ var cbsPrivacyFrozen = []cbsPriv{
 	{"customers.import_profiles", "UPDATE", []string{"display_name", "phone_e164", "email", "updated_at"}},
 	{"migrationimport.batches", "SELECT", nil}, {"migrationimport.batches", "INSERT", nil}, {"migrationimport.batches", "UPDATE", []string{"results"}},
 	{"migrationimport.external_ids", "SELECT", nil}, {"migrationimport.external_ids", "INSERT", nil},
+	// Erasure tombstones: insert-only (no UPDATE, no DELETE) salted digests and the per-store salt.
+	{"migrationimport.store_salts", "SELECT", nil}, {"migrationimport.store_salts", "INSERT", nil},
+	{"migrationimport.erased_external_ids", "SELECT", nil}, {"migrationimport.erased_external_ids", "INSERT", nil},
 	{"buyer.owners", "SELECT", nil}, {"buyer.owners", "UPDATE", []string{"active"}}, {"buyer.owners", "INSERT", []string{"tenant_id", "store_id"}},
 	{"buyer.capability_sessions", "SELECT", nil}, {"buyer.capability_sessions", "UPDATE", []string{"revoked_at"}},
 	{"buyer.capability_events", "INSERT", nil},

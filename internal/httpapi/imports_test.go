@@ -1,6 +1,6 @@
 // imports_test.go is the DB-free test of the W5-02B customer-import routes: it builds the FULL router (NewHandler, so a pattern
 // conflict with any other route panics here, before PostgreSQL is needed), the transport rules that hold before any database work
-// (method, Content-Type, strict query, no Idempotency-Key, ids) and the error-code table. Real-PG outcomes are CI01-CI09 in
+// (method, Content-Type, strict query, no Idempotency-Key, ids) and the error-code table. Real-PG outcomes are CI01-CI15 in
 // tests/foundation/customer_import_test.go.
 
 package httpapi

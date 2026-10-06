@@ -113,6 +113,17 @@ func TestCellRulesAndCodes(t *testing.T) {
 	}
 }
 
+// A mis-mapped phone or email column must not become an external id (it would copy PII into results and external_ids).
+func TestExternalIDThatLooksLikeContactIsRefused(t *testing.T) {
+	for id, want := range map[string]string{"a@example.test": "invalid_external_id", "0900-000-001": "invalid_external_id", "+886900000001": "invalid_external_id",
+		"900000001": "invalid_external_id", "SL-0001": "", "5f1c2a9e8b7d4e0012345678": "", "10023": "", "CUST_0900000": ""} {
+		p := rowsOf(t, "customer_id,name\n\""+id+"\",A\n", nil)
+		if p.rows[0].code != want {
+			t.Fatalf("%q -> %q want %q", id, p.rows[0].code, want)
+		}
+	}
+}
+
 func TestNameIsNFCAndFormulaGuardIsUnguarded(t *testing.T) {
 	// "é" decomposed -> composed; a cell exported by us as '=cmd round-trips to =cmd (stored text), a plain apostrophe name is kept.
 	p := rowsOf(t, "customer_id,name\nC1,Café\nC2,'=cmd\nC3,'Neil\nC4,\"'@x\"\n", nil)

@@ -42,16 +42,18 @@ type PreviewRow struct {
 // CustomerPreview is the preview answer (also attached to a 409 preview_stale). Headers and Mapping let the UI show and edit the
 // column mapping; ApplyRows = NewRows + UpdateRows is the count the commit must echo as expected_apply_rows.
 type CustomerPreview struct {
-	FileSHA256         string            `json:"file_sha256"`
-	Headers            []string          `json:"headers"`
-	Mapping            map[string]string `json:"mapping"`
-	RowsTotal          int               `json:"rows_total"`
-	NewRows            int               `json:"new_rows"`
-	UpdateRows         int               `json:"update_rows"`
-	ApplyRows          int               `json:"apply_rows"`
-	FailedRows         int               `json:"failed_rows"`
-	ConsentIgnoredRows int               `json:"consent_ignored_rows"`
-	Rows               []PreviewRow      `json:"rows"`
+	FileSHA256 string            `json:"file_sha256"`
+	Headers    []string          `json:"headers"`
+	Mapping    map[string]string `json:"mapping"`
+	RowsTotal  int               `json:"rows_total"`
+	NewRows    int               `json:"new_rows"`
+	UpdateRows int               `json:"update_rows"`
+	ApplyRows  int               `json:"apply_rows"`
+	FailedRows int               `json:"failed_rows"`
+	// ErasedRows counts failed rows whose source id carries an erasure tombstone (code erased); they never show their id.
+	ErasedRows         int          `json:"erased_rows"`
+	ConsentIgnoredRows int          `json:"consent_ignored_rows"`
+	Rows               []PreviewRow `json:"rows"`
 }
 
 // CustomerCommitResult is the commit answer (replayed:true on an idempotent re-submit of the same file and count).
@@ -232,16 +234,22 @@ func runCustomers(ctx context.Context, tx pgx.Tx, scope platform.Scope, token st
 		var outcomes []struct {
 			Row     int    `json:"row"`
 			Outcome string `json:"outcome"`
+			Code    string `json:"code"`
 		}
 		if json.Unmarshal(raw, &outcomes) != nil || len(outcomes) != end-start {
 			return parsed, ErrUnavailable
 		}
 		for k, o := range outcomes {
 			i := index[start+k]
-			if o.Row != parsed.rows[i].n || (o.Outcome != outcomeCreated && o.Outcome != outcomeUpdated) {
+			erased := o.Outcome == outcomeFailed && o.Code == "erased"
+			if o.Row != parsed.rows[i].n || (o.Outcome != outcomeCreated && o.Outcome != outcomeUpdated && !erased) {
 				return parsed, ErrUnavailable
 			}
 			parsed.rows[i].outcome = o.Outcome
+			if erased {
+				// The row keeps its number and code only: the erased source id must not reappear in a preview, batch or results.csv.
+				parsed.rows[i].code, parsed.rows[i].externalID = "erased", ""
+			}
 		}
 	}
 	return parsed, nil
@@ -274,6 +282,9 @@ func buildPreview(digest string, p parsedCustomers) CustomerPreview {
 	for _, r := range p.rows {
 		if r.consentIgnored {
 			out.ConsentIgnoredRows++
+		}
+		if r.code == "erased" {
+			out.ErasedRows++
 		}
 		out.Rows = append(out.Rows, PreviewRow{Row: r.n, ExternalID: r.externalID, Outcome: r.outcome, Code: r.code, ConsentIgnored: r.consentIgnored})
 	}

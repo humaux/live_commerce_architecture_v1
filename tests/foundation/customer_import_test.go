@@ -1,6 +1,6 @@
 package foundation_test
 
-// CI01-CI12 (contracts/migration-import-v1.md; unit w5-02b-customer-import; tier REAL_PG over httpapi.NewHandler, MOCK data: every
+// CI01-CI15 (contracts/migration-import-v1.md; unit w5-02b-customer-import; tier REAL_PG over httpapi.NewHandler, MOCK data: every
 // name, phone and email is synthetic: +8869000000xx, example.test). Helper prefix `ci`. What it proves:
 //   - CI01 preview rolls back, commit creates owner + profile + external id per row, the list shows imported:true with the imported
 //     name / phone tail, search by name prefix and phone suffix works, detail works, audit customers.imported, no consent row;
@@ -13,7 +13,12 @@ package foundation_test
 //   - CI08 5001 rows, 2 MiB + 1, Big5, nothing_to_apply, preview_stale (nothing written), 5000 rows inside the budget;
 //   - CI09 no name / phone / email in results.csv, audit rows, receipts, batch rows or logs;
 //   - CI10 an imported customer can be tagged and noted (W6-01B visibility rule extended);
-//   - CI11 no login role holds a direct grant on the new tables or can insert owners.
+//   - CI11 no login role holds a direct grant on the new tables or can insert owners;
+//   - CI07b erasure leaves a salted tombstone: a re-import of the stale export refuses the erased id (`erased`), shows no id anywhere;
+//   - CI12 the merchant privacy export contains the imported profile (phone, email, external id) and no receipt does;
+//   - CI13 the owner-insert privilege of commerce_privacy_writer cannot create an owner in another store or tenant;
+//   - CI14 two parallel commits of one file import it once (one replay), one owner per row;
+//   - CI15 the commerce_auth read policy of import_profiles is store-scoped; a phone- or email-looking external id is refused.
 // Disclosed owner-pool fixtures: store grants of the merchant principals (lcPrincipal) and the final purge of the import rows
 // this test created in the shared stores A1 and B.
 
@@ -385,6 +390,48 @@ func TestCustomerImport(t *testing.T) {
 		}
 	})
 
+	t.Run("CI07b erasure leaves a salted tombstone: a stale export cannot resurrect the person", func(t *testing.T) {
+		stale := strings.Replace(file, "Test Customer Three", "Test Customer Three Renamed", 1)
+		st, pv := c.preview(c.adminTok, stale, "")
+		if st != 200 || pv["erased_rows"] != float64(1) || pv["update_rows"] != float64(2) || pv["new_rows"] != float64(0) || pv["apply_rows"] != float64(2) || pv["failed_rows"] != float64(1) {
+			t.Fatalf("preview after erasure: %d %v", st, pv)
+		}
+		for _, r := range pv["rows"].([]any) {
+			m := r.(map[string]any)
+			if m["code"] == "erased" && (m["row"] != float64(2) || m["outcome"] != "failed" || m["external_id"] != nil && m["external_id"] != "") {
+				t.Fatalf("erased row must carry the row number and code only: %v", m)
+			}
+		}
+		if strings.Contains(fmt.Sprint(pv), "SL-0002") {
+			t.Fatalf("the erased id is echoed in the preview: %v", pv)
+		}
+		ownersBefore := c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA)
+		st, cm := c.commit(c.adminTok, stale, 2, "")
+		if st != 200 || cm["updated"] != float64(2) || cm["created"] != float64(0) || cm["failed"] != float64(1) {
+			t.Fatalf("commit after erasure: %d %v", st, cm)
+		}
+		if c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA) != ownersBefore || c.n(`SELECT count(*) FROM migrationimport.external_ids WHERE tenant_id=$1 AND external_id='SL-0002'`, f.tenantA) != 0 {
+			t.Fatal("an erased id created an owner or an external id again")
+		}
+		if body := c.resultsCSV(cm["batch_id"].(string)); strings.Contains(body, "SL-0002") || !strings.Contains(body, "erased") {
+			t.Fatalf("results.csv of the batch: %q", body)
+		}
+		if c.n(`SELECT count(*) FROM migrationimport.batches b WHERE b.tenant_id=$1 AND b.results::text LIKE '%SL-0002%'`, f.tenantA) != 0 ||
+			c.n(`SELECT count(*) FROM ops.command_results r WHERE r.tenant_id=$1 AND r.response::text LIKE '%SL-0002%'`, f.tenantA) != 0 {
+			t.Fatal("the erased id survives in a batch or receipt")
+		}
+		if c.n(`SELECT count(*) FROM migrationimport.erased_external_ids WHERE tenant_id=$1 AND store_id=$2 AND kind='customers'`, f.tenantA, c.store) != 1 ||
+			c.n(`SELECT count(*) FROM migrationimport.erased_external_ids WHERE id_digest=sha256('SL-0002'::bytea)`) != 0 ||
+			c.n(`SELECT count(*) FROM migrationimport.store_salts WHERE tenant_id=$1 AND store_id=$2 AND octet_length(salt)=32`, f.tenantA, c.store) != 1 {
+			t.Fatal("tombstone must be one salted digest per erased id, never an unsalted hash")
+		}
+		// The same id in another tenant's store is unaffected (the digest is per store).
+		other := "customer_id,name\nSL-0002,Other Tenant Row\n"
+		if st, raw, _ := c.call("POST", c.imports(f.storeB)+"/customers/commit?expected_apply_rows=1", c.otok, other); st != 200 || sraJSON(raw)["failed"] != float64(0) {
+			t.Fatalf("tenant B same id: %d %s", st, raw)
+		}
+	})
+
 	t.Run("CI08 limits and drift", func(t *testing.T) {
 		var b strings.Builder
 		b.WriteString("customer_id,name\n")
@@ -498,6 +545,126 @@ func TestCustomerImport(t *testing.T) {
 		}
 		if got := c.n(`SELECT count(*) FROM information_schema.table_privileges WHERE table_schema='migrationimport' AND grantee NOT IN ('commerce_privacy_writer') AND grantee<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='migrationimport.batches'::regclass)`); got != 0 {
 			t.Fatalf("%d unexpected table grants in schema migrationimport", got)
+		}
+	})
+
+	t.Run("CI12 the merchant privacy export contains the imported profile", func(t *testing.T) {
+		owner := c.ownerOf("SL-0001")
+		key := t04Key("ci-export")
+		st, raw, _ := c.call("POST", "/v1/admin/stores/"+c.store+"/customers/"+owner+"/exports", c.adminTok, "", "Content-Type", "application/json", "Idempotency-Key", key)
+		if st != 200 {
+			t.Fatalf("export: %d %s", st, raw)
+		}
+		doc := sraJSON(raw)
+		prof, _ := doc["import_profile"].(map[string]any)
+		if prof == nil || prof["email"] != secretEmail || prof["phone"] != "+886900000001" || prof["display_name"] != secretName || prof["source"] != "shopline_csv" {
+			t.Fatalf("export import_profile: %v", doc["import_profile"])
+		}
+		if ids, _ := prof["external_ids"].([]any); len(ids) != 1 || ids[0] != "SL-0001" {
+			t.Fatalf("export external ids: %v", prof["external_ids"])
+		}
+		for label, q := range map[string]string{
+			"privacy_actions": `SELECT count(*) FROM customers.privacy_actions a WHERE a.tenant_id=$1 AND row_to_json(a)::text LIKE '%'||$2||'%'`,
+			"receipts":        `SELECT count(*) FROM ops.command_results r WHERE r.tenant_id=$1 AND r.response::text LIKE '%'||$2||'%'`,
+			"audit":           `SELECT count(*) FROM ops.audit_events a WHERE a.tenant_id=$1 AND row_to_json(a)::text LIKE '%'||$2||'%'`,
+		} {
+			for _, secret := range []string{secretEmail, "900000011", "SL-0001"} {
+				if got := c.n(q, f.tenantA, secret); got != 0 {
+					t.Errorf("%s holds %q after the export", label, secret)
+				}
+			}
+		}
+		// A non-imported customer's export has no import_profile section.
+		plain := c.bundleCustomer().Scope.OwnerID
+		st, raw, _ = c.call("POST", "/v1/admin/stores/"+c.store+"/customers/"+plain+"/exports", c.adminTok, "", "Content-Type", "application/json", "Idempotency-Key", t04Key("ci-export2"))
+		if st != 200 || sraJSON(raw)["import_profile"] != nil {
+			t.Fatalf("plain export: %d %s", st, raw)
+		}
+	})
+
+	t.Run("CI13 the owner-insert privilege cannot create an owner outside the GUC scope", func(t *testing.T) {
+		ctx := context.Background()
+		try := func(gucTenant, gucStore, tenant, store string) error {
+			tx, err := f.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			for _, q := range []string{`SET LOCAL ROLE commerce_privacy_writer`, `SELECT set_config('app.tenant_id','` + gucTenant + `',true),set_config('app.store_id','` + gucStore + `',true)`} {
+				if _, err := tx.Exec(ctx, q); err != nil {
+					t.Fatalf("%s: %v", q, err)
+				}
+			}
+			_, err = tx.Exec(ctx, `INSERT INTO buyer.owners(tenant_id,store_id) VALUES($1,$2)`, tenant, store)
+			return err
+		}
+		if err := try(f.tenantA, c.store, f.tenantA, c.store); err != nil {
+			t.Fatalf("control: an owner in the GUC scope must insert: %v", err)
+		}
+		for name, args := range map[string][4]string{
+			"other store, same tenant": {f.tenantA, c.store, f.tenantA, f.storeA2},
+			"other tenant and store":   {f.tenantA, c.store, f.tenantB, f.storeB},
+			"scope of another tenant":  {f.tenantB, f.storeB, f.tenantA, c.store},
+		} {
+			err := try(args[0], args[1], args[2], args[3])
+			if err == nil || (!strings.Contains(err.Error(), "42501") && !strings.Contains(err.Error(), "row-level security")) {
+				t.Fatalf("%s: owner insert must be refused, got %v", name, err)
+			}
+		}
+		// A column outside (tenant_id, store_id) is not insertable either.
+		tx, _ := f.owner.Begin(ctx)
+		defer tx.Rollback(ctx)
+		_, _ = tx.Exec(ctx, `SET LOCAL ROLE commerce_privacy_writer`)
+		if _, err := tx.Exec(ctx, `INSERT INTO buyer.owners(id,tenant_id,store_id) VALUES(gen_random_uuid(),$1,$2)`, f.tenantA, c.store); err == nil {
+			t.Fatal("inserting the owner id must be refused (column grant is tenant_id, store_id only)")
+		}
+	})
+
+	t.Run("CI14 two parallel commits of one file import it once", func(t *testing.T) {
+		var b strings.Builder
+		b.WriteString("customer_id,name\n")
+		for i := 0; i < 40; i++ {
+			fmt.Fprintf(&b, "PAR-%d,Parallel %d\n", i, i)
+		}
+		body := b.String()
+		ownersBefore := c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA)
+		type res struct {
+			st int
+			m  map[string]any
+		}
+		out := make(chan res, 2)
+		for i := 0; i < 2; i++ {
+			go func() {
+				st, m := c.commit(c.adminTok, body, 40, "")
+				out <- res{st, m}
+			}()
+		}
+		a, b2 := <-out, <-out
+		if a.st != 200 || b2.st != 200 || a.m["batch_id"] != b2.m["batch_id"] || (a.m["replayed"] == b2.m["replayed"]) {
+			t.Fatalf("parallel commits: %d %v / %d %v (want one execution and one replay of the same batch)", a.st, a.m, b2.st, b2.m)
+		}
+		if got := c.n(`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1`, f.tenantA) - ownersBefore; got != 40 {
+			t.Fatalf("owners created: %d, want 40", got)
+		}
+		if c.n(`SELECT count(*) FROM migrationimport.batches WHERE tenant_id=$1 AND store_id=$2 AND rows_total=40`, f.tenantA, c.store) != 1 {
+			t.Fatal("two batches for one file")
+		}
+	})
+
+	t.Run("CI15 the commerce_auth read policy is store-scoped; a phone or email as external id is refused", func(t *testing.T) {
+		var qual string
+		if err := f.owner.QueryRow(context.Background(), `SELECT qual FROM pg_policies WHERE schemaname='customers' AND tablename='import_profiles' AND policyname='auth_import_profile_read'`).Scan(&qual); err != nil ||
+			!strings.Contains(qual, "app.tenant_id") || !strings.Contains(qual, "app.store_id") {
+			t.Fatalf("auth_import_profile_read must be GUC-scoped: %q %v", qual, err)
+		}
+		bad := "customer_id,name\nmail@example.test,A Name\n0900-000-077,B Name\n+886900000078,C Name\nOK-77,D Name\n"
+		st, pv := c.preview(c.adminTok, bad, "")
+		codes := []string{}
+		for _, r := range pv["rows"].([]any) {
+			codes = append(codes, fmt.Sprint(r.(map[string]any)["code"]))
+		}
+		if st != 200 || strings.Join(codes, ",") != "invalid_external_id,invalid_external_id,invalid_external_id,<nil>" {
+			t.Fatalf("external id shape: %d %v", st, codes)
 		}
 	})
 }
