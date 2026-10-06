@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -65,6 +67,9 @@ func (g *bgEnv) phoneOf(order string) string {
 var bgRequestID = regexp.MustCompile(`"request_id":"[0-9a-f]+"`)
 
 // bgRefusal is everything a caller can observe of a refusal except the per-request id (which is random by design).
+// bgLookupWindow mirrors internal/buyerhttp lookupWindow (seconds); the limits subtest uses it to bound Retry-After.
+const bgLookupWindow = 600
+
 func bgRefusal(r bhResponse) string {
 	return fmt.Sprintf("%d|%s|ct=%s|cc=%s|ra=%s|%s", r.status, bgRequestID.ReplaceAllString(strings.TrimSpace(string(r.body)), `"request_id":"-"`), r.header.Get("Content-Type"), r.header.Get("Cache-Control"), r.header.Get("Retry-After"), r.header.Get("Set-Cookie"))
 }
@@ -228,7 +233,20 @@ func TestBuyerCommsGateLookup(t *testing.T) {
 			g.lookup("EEEE-EEEE-EEEE", "x@buyers.example.test")
 		}
 		unknown := g.lookup("EEEE-EEEE-EEEE", "x@buyers.example.test")
-		if unknown.status != 429 || bgRefusal(unknown) != bgRefusal(real) {
+		// Retry-After is wall-clock aligned (internal/buyerhttp/lookup.go: lookupWindow - now%lookupWindow), so it never depends on the
+		// ref; the two 429s are taken up to a second apart, so their values may differ by one (flake: ra=31 vs ra=32, CI 37475164874).
+		// Everything else must be byte-identical.
+		noRA := func(r bhResponse) string {
+			return regexp.MustCompile(`\|ra=\d+\|`).ReplaceAllString(bgRefusal(r), "|ra=*|")
+		}
+		raU, _ := strconv.Atoi(unknown.header.Get("Retry-After"))
+		raR, _ := strconv.Atoi(real.header.Get("Retry-After"))
+		if src, err := os.ReadFile("../../internal/buyerhttp/lookup.go"); err != nil || !regexp.MustCompile(`lookupWindow\s*=\s*`+strconv.Itoa(bgLookupWindow)+`\b`).Match(src) {
+			t.Fatalf("bgLookupWindow %d must equal internal/buyerhttp lookupWindow (%v)", bgLookupWindow, err)
+		}
+		// The window rolls over at most once between the two requests: real=1 -> unknown=window is the same one-second step.
+		step := (raR - raU + bgLookupWindow) % bgLookupWindow
+		if unknown.status != 429 || noRA(unknown) != noRA(real) || raU < 1 || raR < 1 || raU > bgLookupWindow || raR > bgLookupWindow || (step != 0 && step != 1) {
 			t.Errorf("the 429 for an unknown ref must equal the 429 for a real one:\n%s\n%s", bgRefusal(unknown), bgRefusal(real))
 		}
 		// another ref is untouched by this one
