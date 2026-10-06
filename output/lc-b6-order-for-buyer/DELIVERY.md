@@ -37,3 +37,12 @@
      (`customers.Get` + `merchantorders.Get`), fine for a linked-customer drawer, add a definer if it shows up in latency.
   6. The pay-link DM does the A12 implicit takeover (plan_dm), by design of A1.3. A DM refusal never fails the created order (`send.state = not_sent` + reason; buyer_link is in the body for copy).
   7. Docs: contract §5.1/§11 could name 0129 and the extra reason codes; GATES.md has no new mode (LCN12 runs inside `foundation` and the `^TestLiveConsole` regex).
+
+## Review follow-up (Opus money review f95acafa, P2-1..P2-6) — merged r3/integration first (R2 pin 65 + 0129 = 66)
+- P2-1: `inbox.order_for_buyer` now stores `buyer_id` (capability owner) and `request_hash`; staleness uses `updated_at` (a resume refreshes it); a pending row is released/stolen only when no non-CANCELLED order of
+  its owner exists (else 409 bundle_already_ordered with that order id); `for_buyer_release` skips such rows; `for_buyer_finish` checks the order is the owner's and raises PT409 `reservation_lost` when updated rows != the
+  request's rows. P2-2: `claims.live_price_uses.unit_price_minor` written by `consume_live_prices` from the quote snapshot; finish returns it; audit lists full offer id + SKU id + consumed price (5 lines, `line_count` total).
+  P2-3: finish expires the request's unconsumed grants. P2-4: same key + other body -> 409 `idempotency_conflict` (`for_buyer_begin` gained `p_request_hash`). P2-5: a begin whose eligibility fails expires earlier grants.
+  P2-6: `for_buyer_peer_state` re-checks inventory:reserve. KC03 pins updated (begin signature, live_price_uses column).
+- Tests: `live_console_order_for_buyer_p2_test.go` (LCN12h-k). Red on the pre-fix tree: `red-p2.log` (4/4 tests FAIL, incl. P2-1 b with a catalog-priced order so the ledger cannot mask it). Green: `gate-focused.log`
+  PASS=104 FAIL=0 (regression regex incl. LCN12, KC03, R2, T06, LPC, MTO); `--browser-manual-order` exit 0; check-gates exit 0. The earlier flaky LC-B4 pair passed this time (fixed separately).
