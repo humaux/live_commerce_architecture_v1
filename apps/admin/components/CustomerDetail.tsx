@@ -1,3 +1,6 @@
+// Purpose: Owns customer detail and merchant privacy-action controls.
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
 // Merchant customer detail (/{locale}/customers/{customer}): facts, orders, claims, consent with "Record withdrawal",
@@ -9,6 +12,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import {
@@ -25,6 +30,7 @@ import { displayTime } from "@/lib/orders-model";
 import { ordersCopy } from "@/lib/orders-copy";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -32,6 +38,7 @@ import "./customers.css";
 type Notice = { tone: "ok" | "bad"; text: string } | null;
 const errorText = (c: CustomersCopy, code: string) => c.errors[code] ?? c.errors.default;
 
+/** Owns customer detail and merchant privacy-action controls. User actions request consent withdrawal, export or erasure through customers-client. */
 export function CustomerDetail({
   locale,
   stores,
@@ -63,11 +70,7 @@ export function CustomerDetail({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customer-detail">
-        <header className="orders-heading">
-          <h1>{read.data ? (read.data.display_name ?? c.noName) : c.title}</h1>
-          <p>{c.subtitle}</p>
-        </header>
-        <Link className="customers-back" href={back}>{c.back}</Link>
+        <AdminPageHeader locale={locale} title={read.data ? (read.data.display_name ?? c.noName) : c.title} description={c.subtitle} actions={<Link className="customers-back" href={back}>{c.back}</Link>} />
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.detailLoading}</p>
         )}
@@ -174,7 +177,7 @@ function Body({
         {detail.orders.length === 0 ? (
           <p className="orders-empty">{c.ordersNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.ordersSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="customer-orders">
               <thead>
                 <tr><th>{c.orderId}</th><th>{c.created}</th><th>{c.total}</th><th>{c.payment}</th><th>{c.status}</th></tr>
@@ -196,7 +199,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
         <p className="orders-hint">{c.ordersNewest}</p>
       </section>
@@ -206,7 +209,7 @@ function Body({
         {detail.claims.length === 0 ? (
           <p className="orders-empty">{c.claimsNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.claimsSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="customer-claims">
               <thead><tr><th>{c.platform}</th><th>{c.boundAt}</th><th>{c.lines}</th></tr></thead>
               <tbody>
@@ -219,7 +222,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
 
@@ -231,9 +234,9 @@ function Body({
             return (
               <li key={purpose} data-testid={`consent-${purpose}`}>
                 <span>{label(purpose)}</span>
-                <span className={`orders-badge ${on ? "orders-tone-success" : "orders-tone-neutral"}`}>
+                <Badge tone={on ? "success" : "neutral"}>
                   {on ? c.consentGranted : c.consentNone}
-                </span>
+                </Badge>
                 {on && detail.active && (
                   <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== ""}
                     onClick={() => void withdraw(purpose, channel)}>
@@ -249,7 +252,7 @@ function Body({
         {detail.consent_history.length === 0 ? (
           <p className="orders-empty">{c.consentHistoryNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.consentSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="consent-history">
               <thead>
                 <tr><th>{c.when}</th><th>{c.consentSection}</th><th>{c.source}</th><th>{c.policy}</th></tr>
@@ -260,9 +263,9 @@ function Body({
                     <td>{displayTime(locale, event.occurred_at)}</td>
                     <td>
                       {label(event.purpose)}:{" "}
-                      <span className={`orders-badge ${event.granted ? "orders-tone-success" : "orders-tone-neutral"}`}>
+                      <Badge tone={event.granted ? "success" : "neutral"}>
                         {event.granted ? c.consentGranted : c.consentNone}
-                      </span>
+                      </Badge>
                     </td>
                     <td>{c.sources[event.source] ?? event.source}</td>
                     <td>{event.policy_version}</td>
@@ -270,7 +273,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
 
@@ -300,7 +303,7 @@ function Body({
         {detail.privacy_actions.length === 0 ? (
           <p className="orders-empty">{c.actionsNone}</p>
         ) : (
-          <div className="orders-actions-scroll">
+          <TableFrame label={c.privacySection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
             <table className="orders-actions-table" data-testid="privacy-actions">
               <thead><tr><th>{c.when}</th><th>{c.actionCol}</th><th>{c.source}</th></tr></thead>
               <tbody>
@@ -313,7 +316,7 @@ function Body({
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
       </section>
     </>

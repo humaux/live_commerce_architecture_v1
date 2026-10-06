@@ -1,31 +1,38 @@
-/* Approved comps 02/03, scoped to products. The existing outer shell is deliberately untouched. */
+/* Purpose: Product editor, matrix and quick-edit layout using the shared admin visual tokens.
+ * Depends on: packages/ui tokens; ProductDocumentForm/Variants/BulkFill/Readiness and useProductEditorLayout markup/height.
+ * Used by: ProductEditor and product list quick edits; styles only, no command or data ownership.
+ */
 .pe-page,
 .pe-catalog {
-  --pe-accent: #b84b00;
-  --pe-fill: #fff3e8;
-  --pe-rule: #dde5ee;
-  --pe-muted: #56677b;
+  --pe-accent: var(--ui-primary);
+  --pe-fill: var(--ui-primary-soft);
+  --pe-rule: var(--ui-border);
+  --pe-muted: var(--ui-muted);
 }
 .pe-document {
   display: grid;
   grid-template-columns: 184px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-  padding-bottom: 90px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 16px 24px;
+  align-items: stretch;
+  height: var(--pe-editor-height, auto);
+  min-height: 0;
   max-width: 1280px;
-  --pe-accent: var(--teal);
+  --pe-accent: var(--ui-primary);
   --pe-fill: var(--ui-page);
   --pe-rule: var(--ui-border);
   --pe-muted: var(--ui-muted);
 }
 .pe-index {
-  position: sticky;
-  top: 82px;
   display: grid;
+  align-content: start;
   gap: 16px;
   min-width: 0;
-  max-height: calc(100dvh - 164px);
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--ui-border) var(--ui-surface);
+  scrollbar-width: thin;
 }
 .pe-index nav,
 .pe-index section {
@@ -73,6 +80,11 @@
   font-size: 12px;
   color: var(--pe-muted);
 }
+.pe-index .pe-readiness[aria-current="location"] {
+  background: var(--ui-page);
+  outline: 1px solid var(--ui-border);
+  outline-offset: -1px;
+}
 .pe-readiness-state[data-ready="true"] {
   color: var(--ui-success);
   font-weight: 600;
@@ -85,18 +97,27 @@
 .pe-fieldset {
   min-width: 0;
 }
+.pe-fields {
+  min-height: 0;
+  /* Real end spacing keeps the last card and its focus ring off the clip edge. */
+  padding-block-end: var(--ui-space-4);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--ui-border) var(--ui-surface);
+  scrollbar-width: thin;
+}
 .pe-fieldset {
   border: 0;
   padding: 0;
   margin: 0;
 }
 .pe-document .product-section {
-  scroll-margin-top: 85px;
   padding: 20px;
   border-radius: 8px;
 }
 .pe-document .product-section h2 {
-  font-size: 17px;
+  font-size: var(--ui-heading-section);
 }
 .pe-document .product-form input,
 .pe-document .product-form textarea {
@@ -465,11 +486,7 @@
 }
 .pe-savebar {
   grid-column: 1/-1;
-  position: fixed;
-  bottom: 0;
-  right: 0;
-  width: calc(100% - var(--ui-rail-width, 220px));
-  z-index: 12;
+  min-width: 0;
   padding: 12px 24px;
   box-sizing: border-box;
   background: white;
@@ -477,12 +494,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
-}
-@media (max-width: 1023px) {
-  .pe-savebar {
-    width: 100%;
-  }
 }
 .pe-quick.pe-quick-inline {
   position: static;
@@ -499,6 +512,10 @@
 }
 .pe-savebar > div {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
 }
 .pe-savebar > span {
@@ -506,15 +523,15 @@
   color: var(--pe-muted);
 }
 .pe-catalog .product-primary {
-  background: #b84b00;
-  border-color: #b84b00;
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
 }
 .pe-catalog .product-primary:hover:not(:disabled) {
-  background: #993e00;
+  background: var(--ui-primary-hover);
 }
 .pe-page .product-primary {
-  background: var(--teal);
-  border-color: var(--teal);
+  background: var(--ui-primary);
+  border-color: var(--ui-primary);
 }
 .pe-status-tabs {
   display: flex;
@@ -546,7 +563,7 @@
   color: var(--pe-accent);
 }
 .pe-batch {
-  border: 1px solid #efc296;
+  border: 1px solid var(--pe-rule);
   background: var(--pe-fill);
   border-radius: 8px;
   padding: 12px;
@@ -568,12 +585,120 @@
   min-width: 44px;
   min-height: 44px;
 }
-.pe-catalog .product-table th:first-child,
-.pe-catalog .product-table td:first-child {
+.pe-catalog .product-table {
+  table-layout: fixed;
+  min-width: 1050px;
+}
+/* The selection hit area is the entire 44px column; inherited table padding
+   otherwise makes its contents wider than the column. Product gets the remainder. */
+.pe-catalog .pe-col-select {
   width: 44px;
 }
-.pe-catalog .product-table td {
+.pe-catalog .pe-col-status {
+  width: 112px;
+}
+.pe-catalog .pe-col-price {
+  width: 176px;
+}
+.pe-catalog .pe-col-stock {
+  width: 160px;
+}
+.pe-catalog .pe-col-updated {
+  width: 176px;
+}
+.pe-catalog .pe-col-actions {
+  width: 144px;
+}
+.pe-catalog .product-table > thead > tr > th,
+.pe-catalog .product-table > tbody > tr > td {
+  padding: 12px;
   vertical-align: middle;
+  border-right: 0;
+}
+.pe-catalog .product-table > thead > tr > th:first-child,
+.pe-catalog .product-table > tbody > tr > td:first-child {
+  width: auto;
+  padding: 0;
+}
+.pe-catalog .product-cell {
+  min-width: 0;
+  gap: 12px;
+}
+.pe-catalog .pe-product-identity {
+  min-width: 0;
+}
+.pe-catalog .pe-product-identity strong,
+.pe-catalog .pe-product-identity small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.pe-catalog .pe-status-cell .product-status {
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.pe-catalog .product-table > thead > tr > th:nth-child(4),
+.pe-catalog .product-table > thead > tr > th:nth-child(5),
+.pe-catalog .pe-price-cell,
+.pe-catalog .pe-stock-cell {
+  text-align: right;
+}
+.pe-catalog .pe-number-edit {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+.pe-catalog .pe-number-edit > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-edit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-link);
+}
+.pe-catalog .pe-edit-icon:hover:not(:disabled) {
+  background: var(--pe-fill);
+}
+.pe-catalog .pe-edit-icon:disabled {
+  opacity: 0.45;
+}
+.pe-catalog .pe-updated-cell {
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-quick-inline {
+  box-sizing: border-box;
+  text-align: left;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.pe-catalog .pe-quick-inline header,
+.pe-catalog .pe-quick-inline footer {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pe-catalog .pe-quick-inline h2,
+.pe-catalog .pe-quick-inline fieldset,
+.pe-catalog .pe-quick-inline legend {
+  min-width: 0;
+  max-width: 100%;
+}
+.pe-catalog .pe-quick-inline fieldset {
+  padding: 8px;
+}
+.pe-catalog .pe-quick-inline input {
+  box-sizing: border-box;
 }
 .pe-catalog button {
   min-height: 44px;
@@ -581,8 +706,8 @@
 }
 .pe-catalog .pe-row-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 .pe-catalog .pe-row-actions a {
   display: inline-flex;
@@ -614,10 +739,9 @@
 @media (max-width: 900px) {
   .pe-document {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .pe-index {
-    position: static;
-    max-height: none;
     overflow: visible;
   }
   .pe-index nav {
@@ -634,9 +758,6 @@
   .pe-index section {
     display: none;
   }
-  .pe-savebar {
-    width: 100%;
-  }
 }
 @media (max-width: 680px) {
   .pe-page {
@@ -644,10 +765,8 @@
   }
   .pe-document .product-section {
     padding: 16px 12px;
-    scroll-margin-top: 70px;
   }
   .pe-savebar {
-    width: 100%;
     padding: 10px 12px;
   }
   .pe-savebar > span {
@@ -699,14 +818,64 @@
   .pe-photos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .pe-catalog .product-table td {
+  .pe-catalog .product-table {
+    min-width: 0;
+  }
+  .pe-catalog .product-table colgroup {
+    display: none;
+  }
+  .pe-catalog .product-table > tbody > tr {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 12px;
+    gap: 4px 8px;
+  }
+  .pe-catalog .product-table > tbody > tr > td {
+    grid-column: 1 / -1;
     width: auto;
+    padding: 0;
+    min-height: 0;
+    height: auto;
+    font-size: 13px;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-selection-cell {
+    grid-column: 1;
+    align-self: start;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-product-cell {
+    grid-column: 2;
+    display: block;
+  }
+  .pe-catalog .pe-product-cell::before {
+    display: none;
+  }
+  .pe-catalog .product-table > tbody > tr > .pe-price-cell,
+  .pe-catalog .product-table > tbody > tr > .pe-stock-cell {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .pe-catalog .pe-price-cell > .pe-number-edit,
+  .pe-catalog .pe-stock-cell > .pe-number-edit {
+    flex: 1;
+  }
+  .pe-catalog .pe-price-cell > .pe-quick-inline,
+  .pe-catalog .pe-stock-cell > .pe-quick-inline {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .pe-catalog .pe-updated-cell::before {
+    max-width: 50%;
+  }
+  .pe-catalog .pe-actions-cell {
+    justify-content: flex-end;
+  }
+  .pe-catalog .pe-actions-cell::before {
+    display: none;
   }
   .pe-catalog .pe-select {
-    justify-content: flex-start;
-  }
-  .pe-catalog .product-table td:first-child {
-    width: auto;
+    justify-content: center;
   }
   /* The shared card-table clips its heading on mobile. Keep the actionable
      select-all header visible while leaving the descriptive headings hidden. */

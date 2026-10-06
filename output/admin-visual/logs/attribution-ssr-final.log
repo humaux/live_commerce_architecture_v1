@@ -1,0 +1,31 @@
+✔ shared presentation preserves registry title and one empty buyer message in en (47.101917ms)
+✔ R11 large linked-draft list is complete but collapsed in en (3.143833ms)
+✔ shared presentation preserves registry title and one empty buyer message in zh-TW (5.842375ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-TW (3.497ms)
+✔ shared presentation preserves registry title and one empty buyer message in zh-CN (5.820916ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-CN (2.500667ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (5.101708ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (2.57675ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (3.427583ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.274708ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (11.155833ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (11.182875ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (12.732708ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.19925ms)
+✔ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.229584ms)
+✔ R12 granted but unread audience offers a read, never reconnect in en (1.648125ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-TW (1.614833ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-CN (1.878042ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.997334ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.067292ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.315209ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.237042ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.140042ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 481.611416

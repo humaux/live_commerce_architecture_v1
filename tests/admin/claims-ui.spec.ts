@@ -1,6 +1,6 @@
 // Purpose: KC16 real-click merchant claim lifecycle and buyer direct-checkout regression.
-// Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG.
-// Used by: --browser-live-claims; no provider sends or payment placement in this gate.
+// Depends on: production admin/storefront Next, signed MOCK IdP, buyer/merchant BFF and real PG; @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/studio-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_CLAIMS_BUYER_ORIGIN, LC_CLAIMS_STORE, LC_CLAIMS_SESSION, LC_CLAIMS_SCENE, LC_CLAIMS_PRODUCT, LC_CLAIMS_SKU_A, LC_CLAIMS_SKU_B, LC_CLAIMS_SKU_A_ID, LC_CLAIMS_SKU_B_ID, LC_CLAIMS_CONTROL, LC_CLAIMS_CONTROL_KEY, LC_CLAIMS_PROXY, LC_CLAIMS_FB_ASSET, LC_CLAIMS_IG_ASSET
+// Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_live_claims_test.go; --browser-live-claims (no provider sends or payment placement)
 // KC16 browser gate (contracts/live-keyword-claims-v1.md §11.1): Studio › Claims in the
 // packaged admin, then the buyer claim link in the storefront production server, through
 // real BFFs, Go transports and PostgreSQL. Started only by browser_live_claims_test.go
@@ -13,6 +13,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
 import { studioCopy } from "../../apps/admin/lib/studio-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -51,6 +52,48 @@ async function storageLacks(page: Page, secrets: string[]) {
 async function fitsWidth(page: Page) {
   // G-UI8 audit [READ/MEASURE]: measures horizontal overflow (layout read, no state change)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+}
+async function offerLayout(page: Page) {
+  const form = page.locator(".claims-offer-form");
+  await expect(form.locator(".claims-field")).toHaveCount(5);
+  await expect(page.locator("#claims-offer-live")).toHaveAccessibleDescription(claimsCopy.en.live.livePriceHint);
+  // ADM15/16 [READ/MEASURE]: DOM geometry only; user interactions stay click/fill/selectOption.
+  const geometry = await form.evaluate((element) => {
+    const rect = (node: Element | Range) => {
+      const box = node.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height };
+    };
+    const fields = [...element.querySelectorAll(".claims-field")].map((field) => ({
+      label: rect(field.querySelector("label")!), control: rect(field.querySelector("input, select")!),
+    }));
+    const actions = [...element.querySelectorAll("button")].map((button) => {
+      const range = document.createRange();
+      range.selectNodeContents(button);
+      return { ...rect(button), text: rect(range) };
+    });
+    return { form: rect(element), fields, actions, hint: rect(element.querySelector("#claims-offer-live-hint")!) };
+  });
+  expect(geometry.actions).toHaveLength(2);
+  for (const field of geometry.fields) {
+    expect(field.control.height).toBeGreaterThanOrEqual(44);
+    expect(field.control.width).toBeGreaterThanOrEqual(160);
+    expect(field.control.left).toBeGreaterThanOrEqual(geometry.form.left - 1);
+    expect(field.control.right).toBeLessThanOrEqual(geometry.form.right + 1);
+  }
+  if ((page.viewportSize()?.width ?? 0) >= 1586) {
+    const labels = geometry.fields.map((field) => field.label.top);
+    const controls = geometry.fields.map((field) => field.control.top);
+    expect(Math.max(...labels) - Math.min(...labels)).toBeLessThanOrEqual(1);
+    expect(Math.max(...controls) - Math.min(...controls)).toBeLessThanOrEqual(1);
+  }
+  expect(geometry.hint.top).toBeGreaterThanOrEqual(Math.max(...geometry.fields.map((field) => field.control.bottom)));
+  for (const action of geometry.actions) {
+    expect(action.height).toBeGreaterThanOrEqual(44);
+    expect(action.top).toBeGreaterThanOrEqual(geometry.hint.bottom);
+    expect(action.text.width).toBeGreaterThan(0);
+    expect(action.text.left).toBeGreaterThanOrEqual(action.left);
+    expect(action.text.right).toBeLessThanOrEqual(action.right);
+  }
 }
 // Buyer pages have no fixed chrome, so they are captured whole; the admin shell has a
 // fixed rail and skip link, so admin evidence is the settled viewport (Studio idiom).
@@ -178,6 +221,12 @@ async function claimSourcePhase(merchant: Page, pass: (name: string) => void) {
     const box = merchant.getByTestId("claims-source");
     await expect(box.getByTestId("claims-source-status")).toBeVisible();
     await expect(merchant.getByTestId("claims-feed")).toHaveText(words.feedNone);
+    // The English phase reuses the earlier offer form: establish the prerequisite
+    // through the real control before checking the disabled-state explanation.
+    await merchant.locator("#claims-offer-product").selectOption("");
+    await expect(merchant.locator("#claims-offer-sku")).toBeDisabled();
+    await expect(merchant.locator("#claims-offer-sku")).toHaveAccessibleDescription(words.skuChooseProduct);
+    await expect(merchant.locator("#claims-offer-sku-hint")).toHaveText(words.skuChooseProduct);
     await box.locator("#claims-source-active").check();
     for (const [index, code] of sourceCodes.entries()) {
       // Statuses differ on purpose: the wording keys on the backend code, not the HTTP status.
@@ -269,7 +318,16 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   pass("planning-only Studio: scene detail loads, rehearsal panel and controls hidden (media_enabled=false)");
   await merchant.getByTestId("studio-open-claims").click();
   await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-  await expect(merchant.getByRole("heading", { level: 1, name: "Keyword claims" })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1, name: shellCopy.en.claims })).toBeVisible();
+  await expect(merchant.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(merchant.locator(".claims-breadcrumb")).toHaveCount(0);
+  const stats = merchant.locator(".claims-stats");
+  await expect(stats).not.toHaveAttribute("open", "");
+  await stats.locator("summary").click();
+  await expect(merchant.getByTestId("claims-accepted")).toBeVisible();
+  await expect(merchant.getByTestId("claims-accepted")).toHaveText("0");
+  await stats.locator("summary").click();
+  await expect(merchant.getByTestId("claims-accepted")).not.toBeVisible();
   await expect(merchant.getByText(`Scene: ${scene}`)).toBeVisible();
   // Ruling t: the stale MOCK capture banner is gone; with no source bound it asks for one.
   await expect(merchant.getByTestId("claims-feed")).toHaveText(claimsCopy.en.feedNone);
@@ -302,10 +360,15 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");
   await expect(merchant.getByLabel("Quantity rule", { exact: true })).toBeDisabled();
   const offerForm = merchant.locator(".claims-offer-form");
+  await expect(offerForm.getByLabel("SKU", { exact: true })).toBeDisabled();
+  await expect(offerForm.getByLabel("SKU", { exact: true })).toHaveAccessibleDescription(claimsCopy.en.skuChooseProduct);
+  await offerLayout(merchant);
+  pass("ADM15/16: five offer fields have readable widths and aligned tops; live hint and unclipped actions have separate rows");
   for (const [keyword, sku, max, canonical] of [["ａ１", skuA, "5", "A1"], ["b2", skuB, "3", "B2"]]) {
     await offerForm.getByLabel("Keyword", { exact: true }).fill(keyword);
     await offerForm.getByLabel("Product", { exact: true }).selectOption({ label: product });
     await expect(offerForm.getByLabel("SKU", { exact: true })).toBeEnabled();
+    await expect(merchant.locator("#claims-offer-sku-hint")).toBeEmpty();
     await offerForm.getByLabel("SKU", { exact: true }).selectOption({ label: sku });
     await offerForm.getByLabel("Max per claim", { exact: true }).fill(max);
     await offerForm.getByRole("button", { name: "Add offer" }).click();
@@ -458,6 +521,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 
   await merchant.setViewportSize({ width: 390, height: 844 });
   await fitsWidth(merchant);
+  await offerLayout(merchant);
   await merchant.evaluate(() => window.scrollTo(0, 0));
   await merchantShot(merchant, "merchant-claims-390");
   expect(pageErrors).toEqual([]);

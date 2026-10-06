@@ -1,0 +1,5 @@
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+release-gate  commit=6126273bae5e  dirty_files=1074  modes_in_test-local=68  evidence=/Volumes/data/live_commerce_architecture_v1/output/release-gate/20261005T205423Z-6126273bae5e
+ID                       TIER       STATUS   NOTE
+G04                      STATIC     PASS     no key-shaped literal (sk_/rk_/pk_/whsec_/EAA/inline-password DSN)
+OVERALL: PASS (1 PASS) [subset via --only: not a release verdict]

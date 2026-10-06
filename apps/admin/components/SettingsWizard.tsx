@@ -1,3 +1,6 @@
+// Purpose: Owns the merchant setup sequence and composes integration settings cards.
+// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
+// Used by: apps/admin/app/[locale]/settings/page.tsx
 "use client";
 
 // Merchant settings wizard (approved A four-step sequence): BFF /api/stores/{store}/{provider-accounts,markets/...}
@@ -17,6 +20,7 @@ import {
   type FormEvent,
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
 import { BankTransferSettings } from "./BankTransferSettings";
@@ -65,6 +69,7 @@ import {
 } from "@/lib/settings-draft";
 import "./settings.css";
 
+/** Owns the merchant setup sequence and composes integration settings cards. User actions submit setup changes through settings-client; nested cards own their commands. */
 export function SettingsWizard({
   locale,
   initial,
@@ -1636,10 +1641,7 @@ export function SettingsWizard({
       locked={busy}
     >
       <div className="settings-page" data-testid="settings-wizard">
-        <div className="settings-heading">
-          <h1>{c.title}</h1>
-          <p>{c.subtitle}</p>
-        </div>
+        <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
         <ol className="settings-steps" aria-label={c.title}>
           {c.steps.map((label, index) => {
             const number = (index + 1) as 1 | 2 | 3 | 4;

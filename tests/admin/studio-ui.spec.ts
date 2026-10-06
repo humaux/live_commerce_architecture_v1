@@ -1,3 +1,6 @@
+// Purpose: Exercises studio controls and access behavior through the isolated browser/API harness.
+// Depends on: @playwright/test, node:fs/promises, node:crypto, ../../apps/admin/lib/studio-model, ../../apps/admin/src/shell-copy, ./fixtures/native-device; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STUDIO_STORE, LC_BROWSER_STUDIO_FOREIGN_STORE, LC_BROWSER_STUDIO_UNLISTED_STORE, LC_BROWSER_STUDIO_SESSION, LC_BROWSER_STUDIO_READONLY_TOKEN, LC_BROWSER_STUDIO_EXPIRED_TOKEN
+// Used by: apps/admin/src/features/live/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_studio_ui_test.go
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -33,7 +36,8 @@ async function signedLogin(page: Page) {
   await expect(page.getByTestId("nav-group-live")).toBeVisible();
   await page.getByTestId("nav-group-live").click();
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Live Studio" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy.en.studio })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
 }
 
 async function setSession(context: BrowserContext, token: string) {
@@ -92,6 +96,19 @@ async function screenshot(page: Page, name: string, width: number, height: numbe
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
   await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
   await expect(page.getByLabel(/Scene name|场次名称|場次名稱/)).toBeVisible();
+  // ADM18/21 [READ/MEASURE]: inspect the real labelled controls; never change the DOM or product state.
+  const fields = await page.locator(".studio-fields").evaluate((element) =>
+    ["studio-name", "studio-schedule-entry", "studio-aspect"].map((id) => {
+      const control = element.querySelector(`#${id}`)!;
+      const box = control.getBoundingClientRect();
+      return { width: box.width, height: box.height };
+    }));
+  expect(fields).toHaveLength(3);
+  for (const field of fields) {
+    expect(field.width).toBeGreaterThan(0);
+    expect(field.width).toBeLessThanOrEqual(400);
+    expect(field.height).toBeGreaterThanOrEqual(44);
+  }
   if (width <= 680) {
     // A desktop-to-phone resize animates the fixed rail off-screen; capture
     // only its settled position, never a partially obscured first viewport.
@@ -240,13 +257,13 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   page.once("dialog", async (dialog) => { await dialog.accept(); });
   await page.getByTestId("locale-switch").selectOption("zh-CN");
   await expect(page).toHaveURL(/\/zh-CN\/studio/);
-  await expect(page.getByRole("heading", { name: "直播工作室" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-CN"].studio, exact: true })).toBeVisible();
   await page.goto(`/zh-CN/studio?store=${store}&scene=${preparedSession}`);
   await expect(page.getByText("已准备模拟授权")).toBeVisible();
   await screenshot(page, "zh-CN-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-CN-phone-first-390x844", 390, 844);
   await page.goto(`/zh-TW/studio?store=${store}&scene=${preparedSession}`);
-  await expect(page.getByRole("heading", { name: "直播工作室" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: shellCopy["zh-TW"].studio, exact: true })).toBeVisible();
   await screenshot(page, "zh-TW-desktop-first-1586x992", 1586, 992);
   await screenshot(page, "zh-TW-phone-first-390x844", 390, 844);
   await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
@@ -312,8 +329,35 @@ test("STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker
   await expect(page.getByText("This scene is unavailable", { exact: false })).toBeVisible();
   await page.goto(`/en/studio?store=${unlistedStore}`);
   await expect(page.getByTestId("merchant-studio")).toHaveCount(0);
-  await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+  // G-UI8 audit [EXTERNAL-MOCK]: hold the real authorized list response to
+  // reproduce fast input before the Studio session boundary is established.
+  const listPath = `**/api/stores/${store}/live-sessions?*`;
+  let listHeld = false;
+  let releaseList!: () => void;
+  let finishList!: () => void;
+  const listGate = new Promise<void>((resolve) => { releaseList = resolve; });
+  const listContinued = new Promise<void>((resolve) => { finishList = resolve; });
+  const holdList = async (route: import("@playwright/test").Route) => {
+    listHeld = true;
+    await listGate;
+    try { await route.continue(); } finally { finishList(); }
+  };
+  const createsBeforeLoading = createRequests.length;
+  await page.route(listPath, holdList);
+  try {
+    await page.goto(`/en/studio?store=${store}&scene=${preparedSession}`);
+    await expect.poll(() => listHeld).toBe(true);
+    await expect(page.getByRole("region", { name: "Scenes", exact: true }).getByText("Loading scenes…", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /New scene/ })).toHaveAttribute("aria-describedby", "studio-list-status");
+    expect(createRequests).toHaveLength(createsBeforeLoading);
+  } finally {
+    releaseList();
+    if (listHeld) await listContinued;
+    await page.unroute(listPath, holdList);
+  }
   await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  await expect(page.getByRole("button", { name: /New scene/ })).toBeEnabled();
   // A second, independently signed OIDC login for the same merchant is not
   // the initiating login. An unresolved write must not carry its key/form
   // into that different session even though principal and store are equal.

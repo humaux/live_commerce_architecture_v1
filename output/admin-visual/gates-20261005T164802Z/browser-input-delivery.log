@@ -1,0 +1,129 @@
+✔ input readers accept null and exact public DTOs only (2.395334ms)
+✔ input can_stop is authoritative for joint liability, including held or closed input (0.117542ms)
+✔ legacy Studio detail reuses the prepared parser but still binds draft version (0.77875ms)
+✔ Studio collection accepts only canonical raw pagination syntax (0.481834ms)
+✔ Studio detail and rehearsal actions reject every query (0.062167ms)
+✔ Studio token transport accepts only its exact local six-field DTO (0.341875ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 87.727
+(node:9250) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ input start and token use exact scoped POST, CSRF, key, private transport and real session boundary (14.902084ms)
+✔ input client refuses missing, duplicated or replaced login before dispatch (0.837625ms)
+✔ input token is not delivered when login changes while the response is in flight (1.090791ms)
+✔ input token rejects wrong attempt, expired grants and non-allowlisted responses without leaking body (2.263833ms)
+✔ input commands preserve UNKNOWN on network, server and malformed success without automatic retries (1.268542ms)
+✔ input commands preserve explicit authorization errors and bind start receipt to requested session (0.930667ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.021166
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 17ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1415ms
+  Running TypeScript ...
+  Finished TypeScript in 294ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 78ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserInputDeliveryBRW05RealChain
+2026/10/06 02:58:37 http: proxy error: dial tcp 127.0.0.1:51324: connect: connection refused
+2026/10/06 02:58:37 http: proxy error: dial tcp 127.0.0.1:51324: connect: connection refused
+2026/10/06 02:58:38 http: proxy error: dial tcp 127.0.0.1:51324: connect: connection refused
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51368: remote error: tls: unknown certificate
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51370: remote error: tls: unknown certificate
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51371: remote error: tls: unknown certificate
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51372: remote error: tls: unknown certificate
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51373: remote error: tls: unknown certificate
+2026/10/06 02:58:39 http: TLS handshake error from 127.0.0.1:51375: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51406: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51412: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51414: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51417: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51415: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51416: remote error: tls: unknown certificate
+2026/10/06 02:58:41 http: TLS handshake error from 127.0.0.1:51418: remote error: tls: unknown certificate
+2026/10/06 02:58:42 http: TLS handshake error from 127.0.0.1:51434: remote error: tls: unknown certificate
+    browser_input_delivery_test.go:370: PASS: two independent signed HTTPS browser logins -> Next -> Go -> PG; token HMAC and WSS handshake verified; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/input-delivery-20261005T185837.817033000
+--- PASS: TestBrowserInputDeliveryBRW05RealChain (5.85s)
+PASS
+ok  	livecommerce/tests/foundation	7.529s
+PASS: isolated HTTPS signed browser + Next + Go + PG input token transport; not decoded SFU media, recovery or production acceptance.

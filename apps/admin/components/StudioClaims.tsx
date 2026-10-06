@@ -1,3 +1,6 @@
+// Purpose: Owns studio claim controls, source binding and one-time cart-link presentation.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/client, @/lib/claims-client, @/lib/claim-source-model, @/lib/claims-request, @/lib/claims-model, @/lib/catalog-v2-model, @/lib/orders-model, @/lib/claims-copy, @/lib/studio-copy, @/lib/meta-connect-copy, @/lib/meta-connect-client, @/lib/orders-client, @/lib/meta-page-source, ./WorkspaceFrame, ./AdminPageHeader, ./claims.css
+// Used by: apps/admin/app/[locale]/studio/claims/page.tsx
 "use client";
 
 // Owns the Studio › Claims panel (contracts/live-keyword-claims-v1.md §11.1, T10b): claim
@@ -22,8 +25,8 @@
 // claims.css (surface-local layout only).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
 import { locales, localeNames, type Locale } from "@live-commerce/i18n";
+import { Badge, Field as SharedField, FormRow, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { readStudioDetail, readStudioPage, StudioError, type StudioErrorCode } from "@/lib/studio-client";
@@ -49,6 +52,7 @@ import { readStatus as readMetaStatus, type ConnectStatus } from "@/lib/meta-con
 import { OrderReadError } from "@/lib/orders-client";
 import { pageSourceInput } from "@/lib/meta-page-source";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import "./claims.css";
 
 type Status = "loading" | "ready" | StudioErrorCode;
@@ -63,11 +67,7 @@ type Issued = { ref: string; origin: string; token: string | null; generation: n
 // A label beside (not around) its control keeps the accessible name exactly the label
 // text, so a select's option text never leaks into it.
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
-  return <div className="claims-field">
-    <label htmlFor={id}>{label}</label>
-    {children}
-    {hint && <small id={`${id}-hint`} className="claims-muted">{hint}</small>}
-  </div>;
+  return <SharedField id={id} label={label} hint={hint} width="full" className="claims-field">{children}</SharedField>;
 }
 const codeOf = (error: unknown): StudioErrorCode => error instanceof StudioError ? error.code : "unavailable";
 // The form the saved source (or the defaults of a first bind: collecting, reply off) would produce.
@@ -78,12 +78,12 @@ const sourceFormOf = (source: ClaimSource | null, locale: Locale): ClaimSourceFo
   : { input: "", private_reply: false, reply_locale: locale, active: true, platform: "" };
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
+/** Owns studio claim controls, source binding and one-time cart-link presentation. User actions submit claim and source-binding commands through claims-client. */
 export function StudioClaims({ locale, store, scene, initialError }: {
   locale: Locale; store: Store | null; scene: string; initialError: StudioErrorCode | null;
 }) {
   const c = claimsCopy[locale];
   const shared = studioCopy[locale];
-  const router = useRouter();
   const storeID = store?.id ?? "";
   const [status, setStatus] = useState<Status>(initialError ?? "loading");
   const [facts, setFacts] = useState<Facts | null>(null);
@@ -463,26 +463,15 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const link = issued?.token ? `${issued.origin}/${buyerLocale}/claim#t=${issued.token}` : "";
   const masked = issued ? `${issued.origin}/${buyerLocale}/claim#t=••••••••` : "";
   const expiresText = issued ? displayTime(locale, issued.expiresAt) : "";
-  const back = `/${locale}/studio?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(scene)}`;
 
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live" onBeforeNavigate={() => { setIssued(null); return true; }}>
     <div className="studio-page claims-page" data-testid="merchant-claims">
-      <header className="studio-heading">
-        <div>
-          <nav className="claims-breadcrumb" aria-label={shared.title}>
-            <button type="button" className="claims-crumb" onClick={() => { setIssued(null); router.push(back); }}>{shared.title}</button>
-            <span aria-hidden="true">›</span><span aria-current="page">{c.title}</span>
-          </nav>
-          <h1>{c.title}</h1>
-          {facts && <p>{c.scene}: {facts.detail.draft.title}</p>}
-        </div>
-        <div className="studio-heading-actions">
+      <AdminPageHeader locale={locale} description={facts ? `${c.scene}: ${facts.detail.draft.title}` : undefined} actions={<>
           {refreshedAt !== null && !refreshing && <span className="claims-refreshed" role="status">{c.refreshedAt(displayClock(locale, refreshedAt))}</span>}
           <button type="button" className="studio-refresh" disabled={!!busy || refreshing} aria-busy={refreshing} onClick={() => void refreshFacts()}>
             {refreshing ? c.refreshing : shared.refresh}
           </button>
-        </div>
-      </header>
+        </>} />
       <div className="claims-mock" role="note">{feed && <strong data-testid="claims-feed">{feed}</strong>}<p>{c.mockDetail}</p></div>
       {status !== "ready" || !facts || !board || !claimWindow ? <p className="claims-status" role={status === "loading" ? "status" : "alert"}>{statusText(status === "ready" ? "loading" : status)}</p> : <>
         {!canManage && <p className="studio-note">{c.readOnly}</p>}
@@ -490,13 +479,9 @@ export function StudioClaims({ locale, store, scene, initialError }: {
           <aside className="claims-rail" aria-labelledby="claims-window-title">
             <div className="claims-window-head">
               <h2 id="claims-window-title">{c.window}</h2>
-              <span className={`claims-badge ${claimWindow.state === "OPEN" ? "open" : "closed"}`} data-testid="claims-window-state">
-                {claimWindow.state === "OPEN" ? c.open : c.closed}</span>
+              <Badge tone={claimWindow.state === "OPEN" ? "success" : "neutral"} data-testid="claims-window-state">
+                {claimWindow.state === "OPEN" ? c.open : c.closed}</Badge>
             </div>
-            <dl className="claims-facts">
-              <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
-              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
-            </dl>
             <Field id="claims-mode" label={c.mode}>
               <select id="claims-mode" value={claimWindow.state === "OPEN" ? claimWindow.match_mode : modeDraft} disabled={blocked || claimWindow.state === "OPEN"}
                 onChange={(event) => changeMode(event.target.value as MatchMode)}>
@@ -506,17 +491,21 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             {claimWindow.state === "OPEN" && <p className="claims-muted">{c.modeLocked}</p>}
             <button type="button" className="primary claims-window-action" disabled={blocked} onClick={toggleWindow}>
               {busy === "window" ? c.working : claimWindow.state === "OPEN" ? c.closeWindow : c.openWindow}</button>
+            <dl className="claims-facts">
+              <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
+              {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
+            </dl>
             {alert("window")}
-            <section className="claims-stats" aria-labelledby="claims-stats-title">
-              <h3 id="claims-stats-title">{c.stats}</h3>
+            <details className="claims-stats" open={board.stats.accepted > 0 || persistedReasons.some((reason) => board.stats.rejected[reason] > 0)}>
+              <summary id="claims-stats-title">{c.stats}</summary>
               <dl className="claims-facts">
                 <div><dt>{c.accepted}</dt><dd data-testid="claims-accepted">{board.stats.accepted}</dd></div>
                 {persistedReasons.map((reason) => <div key={reason}><dt>{c.reasons[reason]}</dt>
                   <dd data-testid={`claims-rejected-${reason}`}>{board.stats.rejected[reason]}</dd></div>)}
               </dl>
               {board.stats.rejected.NO_MATCH > 0 && <p className="claims-hint" role="status">{c.notUnderstood(board.stats.rejected.NO_MATCH)}</p>}
-            </section>
-            <section className="claims-prompt" aria-labelledby="claims-prompt-title">
+            </details>
+            {prompt && <section className="claims-prompt" aria-labelledby="claims-prompt-title">
               <h3 id="claims-prompt-title">{c.prompt}</h3>
               {prompt ? <>
                 <div className="claims-prompt-controls">
@@ -530,7 +519,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 <p className="claims-prompt-text" data-testid="host-prompt" lang={promptLanguage}>{prompt}</p>
                 <button type="button" onClick={() => void copy(prompt, "prompt")}>{copied === "prompt" ? c.copied : c.copyPrompt}</button>
               </> : <p className="claims-muted">{c.promptNone}</p>}
-            </section>
+            </section>}
           </aside>
           <div className="claims-work">
             <section className="claims-section" aria-labelledby="claims-source-title" data-testid="claims-source">
@@ -551,7 +540,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   {metaConnectCopy[locale].studioNone} <a href={`/${locale}/settings?store=${storeID}`}>{metaConnectCopy[locale].studioLink}</a></p>}
                 <form className="claims-form claims-source-form" onSubmit={(event) => { event.preventDefault(); saveSource(); }}>
                   {facts.meta === null && <p role="status" className="claims-muted">{metaConnectCopy[locale].unavailable}</p>}
-                  {!!facts.meta?.pages.length && <Field id="claims-source-page" label={metaConnectCopy[locale].studioPage} hint={metaConnectCopy[locale].studioPageHint}>
+                  {!!facts.meta?.pages.length && <FormRow><Field id="claims-source-page" label={metaConnectCopy[locale].studioPage} hint={metaConnectCopy[locale].studioPageHint}>
                     <select id="claims-source-page" value={sourcePage} disabled={sourceLocked} aria-describedby="claims-source-page-hint"
                       onChange={(event) => { setSourcePage(event.target.value); editSource({ platform: event.target.value ? "facebook" : "" }); }}>
                       <option value="">{metaConnectCopy[locale].studioPageAuto}</option>
@@ -559,7 +548,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                         <option value={page.id} disabled={page.status !== "active"}>{page.name || page.id} · {page.id}{page.status !== "active" ? ` · ${metaConnectCopy[locale].reconnect}` : ""}</option>
                       </optgroup>)}
                     </select>
-                  </Field>}
+                  </Field></FormRow>}
+                  <FormRow>
                   <Field id="claims-source-input" label={c.sourceInput} hint={c.sourceInputHint}>
                     <input id="claims-source-input" value={sourceForm.input} maxLength={claimSourceInputMax} autoComplete="off" spellCheck={false}
                       disabled={sourceLocked} aria-describedby="claims-source-input-hint"
@@ -574,6 +564,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                     <select id="claims-source-locale" value={sourceForm.reply_locale} disabled={sourceLocked}
                       onChange={(event) => editSource({ reply_locale: event.target.value as Locale })}>
                       {locales.map((item) => <option key={item} value={item}>{localeNames[item]}</option>)}</select></Field>
+                  </FormRow>
+                  <div className="claims-check-row">
                   <div className="claims-check">
                     <label><input type="checkbox" id="claims-source-reply" checked={sourceForm.private_reply} disabled={sourceLocked}
                       aria-describedby="claims-source-reply-hint" onChange={(event) => editSource({ private_reply: event.target.checked })} />{c.sourcePrivateReply}</label>
@@ -583,7 +575,11 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                     <label><input type="checkbox" id="claims-source-active" checked={sourceForm.active} disabled={sourceLocked}
                       onChange={(event) => editSource({ active: event.target.checked })} />{c.sourceActive}</label>
                   </div>
-                  <button type="submit" className="primary" disabled={sourceLocked || !sourceChanged}>{busy === "source" ? c.working : c.sourceSave}</button>
+                  </div>
+                  <div className="claims-form-actions">
+                    <button type="submit" className="primary" disabled={sourceLocked || !sourceChanged}>{busy === "source" ? c.working : c.sourceSave}</button>
+                    {!sourceLocked && !sourceChanged && <p className="claims-muted">{c.sourceUnchanged}</p>}
+                  </div>
                 </form>
               </>}
               {alert("source")}
@@ -591,13 +587,16 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             <section className="claims-section" aria-labelledby="claims-offers-title">
               <h2 id="claims-offers-title">{c.offers}</h2>
               <div className="claims-toolbar" data-testid="claims-import-tools">
-                <button type="button" disabled={blocked || !facts.library?.length} onClick={() => importOffers({ source: "library" })}>{c.live.importLibrary}</button>
-                <Field id="claims-copy-from" label={c.live.copyFrom}>
+                <FormRow><Field id="claims-copy-from" label={c.live.copyFrom} hint={c.live.copyHint}>
                   <select id="claims-copy-from" value={copyFrom} disabled={blocked || !scenes.length} onChange={(event) => setCopyFrom(event.target.value)}>
                     <option value="">{scenes.length ? c.live.chooseScene : c.live.noOtherScenes}</option>
-                    {scenes.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field>
-                <button type="button" disabled={blocked || !copyFrom} onClick={() => importOffers({ source: "session", from_session_id: copyFrom })}>{c.live.copyOffers}</button>
-                <small className="claims-muted">{c.live.copyHint}</small>
+                    {scenes.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></Field></FormRow>
+                <div className="claims-import-actions">
+                  <div><button type="button" disabled={blocked || !facts.library?.length} onClick={() => importOffers({ source: "library" })}>{c.live.importLibrary}</button>
+                    {!facts.library?.length && <p className="claims-muted">{c.importEmpty}</p>}</div>
+                  <div><button type="button" disabled={blocked || !copyFrom} onClick={() => importOffers({ source: "session", from_session_id: copyFrom })}>{c.live.copyOffers}</button>
+                    {!copyFrom && <p className="claims-muted">{scenes.length ? c.live.chooseScene : c.live.noOtherScenes}</p>}</div>
+                </div>
               </div>
               {busy === "import" && <p className="claims-muted" role="status">{c.working}</p>}
               {imported && <div role="status" className="claims-import-result" data-testid="claims-import-result">
@@ -608,7 +607,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                     <span className="claims-keyword">{item.keyword}</span> — {c.live.conflictReason[item.reason]}</li>)}</ul></>}
               </div>}
               {alert("import")}
-              {board.offers.length ? <div className="claims-table-scroll">
+              {board.offers.length ? <TableFrame className="claims-table-scroll" label={c.offers} scrollHint={c.scrollHint}>
                 <table className="claims-table claims-offers-table">
                   <thead><tr><th scope="col">{c.keyword}</th><th scope="col">{c.product}</th><th scope="col">{c.maxPerClaim}</th><th scope="col">{c.live.livePrice}</th><th scope="col">{c.status}</th><th scope="col">{c.actions}</th></tr></thead>
                   <tbody>{board.offers.map((offer) => {
@@ -639,30 +638,35 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                     </tr>;
                   })}</tbody>
                 </table>
-              </div> : <p className="claims-muted">{c.noOffers}</p>}
+              </TableFrame> : <p className="claims-muted">{c.noOffers}</p>}
               {alert("update")}
               <form className="claims-form claims-offer-form" onSubmit={(event) => { event.preventDefault(); addOffer(); }}>
-                <Field id="claims-offer-keyword" label={c.keyword}>
-                  <input id="claims-offer-keyword" value={offerForm.keyword} maxLength={32} autoComplete="off" disabled={blocked}
-                    aria-describedby="claims-keyword-hint" onChange={(event) => setOfferForm({ ...offerForm, keyword: event.target.value })} /></Field>
-                <Field id="claims-offer-product" label={c.product}>
-                  <select id="claims-offer-product" value={offerForm.product} disabled={blocked || !products?.length}
-                    onChange={(event) => setOfferForm({ ...offerForm, product: event.target.value, sku: "" })}>
-                    <option value="">{c.chooseProduct}</option>
-                    {products?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-                <Field id="claims-offer-sku" label={c.sku}>
-                  <select id="claims-offer-sku" value={offerForm.sku} disabled={blocked || !skus.length}
-                    onChange={(event) => setOfferForm({ ...offerForm, sku: event.target.value })}>
-                    <option value="">{c.chooseSKU}</option>
-                    {skus.map((item) => <option key={item.id} value={item.id}>{item.code}</option>)}</select></Field>
-                <Field id="claims-offer-max" label={c.maxPerClaim}>
-                  <input id="claims-offer-max" type="number" min={1} max={999} step={1} inputMode="numeric" value={offerForm.max} disabled={blocked}
-                    onChange={(event) => setOfferForm({ ...offerForm, max: event.target.value })} /></Field>
-                <Field id="claims-offer-live" label={c.live.livePrice} hint={c.live.livePriceHint}>
-                  <input id="claims-offer-live" type="text" inputMode="decimal" autoComplete="off" value={offerForm.live} disabled={blocked}
-                    aria-describedby="claims-offer-live-hint" onChange={(event) => setOfferForm({ ...offerForm, live: event.target.value })} /></Field>
-                <button type="submit" className="primary" disabled={blocked}>{busy === "offer" ? c.working : c.addOffer}</button>
-                <button type="button" disabled={blocked} data-testid="claims-add-library" onClick={addLibrary}>{busy === "library" ? c.working : c.live.libraryAdd}</button>
+                <FormRow className="claims-offer-fields">
+                  <Field id="claims-offer-keyword" label={c.keyword}>
+                    <input id="claims-offer-keyword" value={offerForm.keyword} maxLength={32} autoComplete="off" disabled={blocked}
+                      aria-describedby="claims-keyword-hint" onChange={(event) => setOfferForm({ ...offerForm, keyword: event.target.value })} /></Field>
+                  <Field id="claims-offer-product" label={c.product}>
+                    <select id="claims-offer-product" value={offerForm.product} disabled={blocked || !products?.length}
+                      onChange={(event) => setOfferForm({ ...offerForm, product: event.target.value, sku: "" })}>
+                      <option value="">{c.chooseProduct}</option>
+                      {products?.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+                  <Field id="claims-offer-sku" label={c.sku} hint={!offerForm.product ? c.skuChooseProduct : !skus.length ? c.skuNotAvailable : undefined}>
+                    <select id="claims-offer-sku" value={offerForm.sku} disabled={blocked || !skus.length}
+                      aria-describedby="claims-offer-sku-hint"
+                      onChange={(event) => setOfferForm({ ...offerForm, sku: event.target.value })}>
+                      <option value="">{c.chooseSKU}</option>
+                      {skus.map((item) => <option key={item.id} value={item.id}>{item.code}</option>)}</select></Field>
+                  <Field id="claims-offer-max" label={c.maxPerClaim}>
+                    <input id="claims-offer-max" type="number" min={1} max={999} step={1} inputMode="numeric" value={offerForm.max} disabled={blocked}
+                      onChange={(event) => setOfferForm({ ...offerForm, max: event.target.value })} /></Field>
+                  <Field id="claims-offer-live" label={c.live.livePrice} hint={c.live.livePriceHint}>
+                    <input id="claims-offer-live" type="text" inputMode="decimal" autoComplete="off" value={offerForm.live} disabled={blocked}
+                      aria-describedby="claims-offer-live-hint" onChange={(event) => setOfferForm({ ...offerForm, live: event.target.value })} /></Field>
+                </FormRow>
+                <div className="claims-offer-actions">
+                  <button type="submit" className="primary" disabled={blocked}>{busy === "offer" ? c.working : c.addOffer}</button>
+                  <button type="button" disabled={blocked} data-testid="claims-add-library" onClick={addLibrary}>{busy === "library" ? c.working : c.live.libraryAdd}</button>
+                </div>
                 <p id="claims-keyword-hint" className="claims-muted claims-form-hint">{c.keywordHint}</p>
                 {catalogError ? <p className="claims-muted" role="status">{c.catalogUnavailable}</p>
                   : products && !products.length && <p className="claims-muted" role="status">{c.noProducts}</p>}
@@ -672,7 +676,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             <section className="claims-section" aria-labelledby="claims-library-title" data-testid="claims-library">
               <h2 id="claims-library-title">{c.live.library}</h2>
               <p className="claims-muted">{c.live.libraryHint}</p>
-              {facts.library && (facts.library.length ? <div className="claims-table-scroll">
+              {facts.library && (facts.library.length ? <TableFrame className="claims-table-scroll" label={c.live.library} scrollHint={c.scrollHint}>
                 <table className="claims-table claims-library-table">
                   <thead><tr><th scope="col">{c.live.libraryKeyword}</th><th scope="col">{c.product}</th><th scope="col">{c.actions}</th></tr></thead>
                   <tbody>{facts.library.map((entry) => {
@@ -688,12 +692,13 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                     </tr>;
                   })}</tbody>
                 </table>
-              </div> : <p className="claims-muted">{c.live.libraryEmpty}</p>)}
+              </TableFrame> : <p className="claims-muted">{c.live.libraryEmpty}</p>)}
               {alert("library")}
             </section>
             <section className="claims-section" aria-labelledby="claims-manual-title">
               <h2 id="claims-manual-title">{c.manual}</h2>
               <form className="claims-form claims-manual-form" onSubmit={(event) => { event.preventDefault(); record(); }}>
+                <FormRow>
                 <Field id="claims-manual-buyer" label={c.buyer}>
                   <select id="claims-manual-buyer" value={manual.bundle} disabled={blocked} onChange={(event) => setManual({ ...manual, bundle: event.target.value })}>
                     <option value="">{c.newBuyer}</option>
@@ -706,7 +711,8 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 <Field id="claims-manual-text" label={c.comment}>
                   <input id="claims-manual-text" value={manual.text} maxLength={256} autoComplete="off" disabled={blocked}
                     onChange={(event) => setManual({ ...manual, text: event.target.value })} /></Field>
-                <button type="submit" className="primary" disabled={blocked}>{busy === "manual" ? c.working : c.record}</button>
+                </FormRow>
+                <div className="claims-form-actions"><button type="submit" className="primary" disabled={blocked}>{busy === "manual" ? c.working : c.record}</button></div>
               </form>
               {result && <p className={`claims-result ${result.outcome === "ACCEPTED" ? "accepted" : "rejected"}`} role="status" data-testid="claims-manual-result">
                 {result.outcome === "ACCEPTED" ? c.resultAccepted(result.keyword, result.quantity, result.previous_quantity)
@@ -718,7 +724,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
         <section className="claims-section claims-bundles" aria-labelledby="claims-bundles-title">
           <h2 id="claims-bundles-title">{c.bundles}</h2>
           {alert("link")}
-          {facts.bundles.length ? <div className="claims-table-scroll">
+          {facts.bundles.length ? <TableFrame className="claims-table-scroll" label={c.bundles} scrollHint={c.scrollHint}>
             <table className="claims-table claims-bundles-table">
               <thead><tr><th scope="col">{c.ref}</th><th scope="col">{c.buyer}</th><th scope="col">{c.items}</th><th scope="col">{c.link}</th><th scope="col">{c.actions}</th></tr></thead>
               <tbody>{facts.bundles.map((bundle) => <tr key={bundle.bundle_id} data-testid={`bundle-${bundle.label}`}>
@@ -735,7 +741,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                 </td>
               </tr>)}</tbody>
             </table>
-          </div> : <p className="claims-muted">{c.noBundles}</p>}
+          </TableFrame> : <p className="claims-muted">{c.noBundles}</p>}
           {facts.next && <button type="button" className="claims-more" onClick={() => void loadMore()}>{c.more}</button>}
         </section>
       </>}
