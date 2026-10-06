@@ -138,6 +138,11 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(unknown.effect).toBe(true);
     await page.getByTestId("live-console-refresh").click();
     await expect(page.getByTestId("live-command-retry")).toBeVisible();
+    const listFailed = page.waitForResponse((response) => response.url().includes(`/api/stores/${store}/live-sessions?`) && response.status() === 503);
+    await fault(request, scene, "list_unavailable");
+    await listFailed;
+    await expect(page.getByTestId("live-command-retry")).toBeVisible();
+    await fault(request, scene, "list_restore");
     const reads = (await facts(request)).scenes[scene]!.Reads?.length ?? 0;
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Reads?.length ?? 0, { timeout: 8_000 }).toBeGreaterThan(reads);
     expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
@@ -201,6 +206,30 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await writeFile(`${evidence}/${name}-receipts.json`, JSON.stringify({ class: "MOCK", scene, copied, receipts: end.receipts.filter((receipt) => receipt.scene === scene), cadence }, null, 2));
   });
 }
+
+test("LC-U1 delayed copy cannot navigate back after an actual shell store switch", async ({ page, request }) => {
+  await page.setViewportSize(sizes[1]!);
+  await login(page);
+  await page.goto(route("en", otherScene, otherStore));
+  await phase(page, "draft");
+  await page.getByTestId("live-primary-action").click();
+  await phase(page, "live");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByTestId("live-primary-action").click();
+  await phase(page, "ended");
+  await page.getByTestId("live-primary-action").click();
+  await page.getByTestId("live-copy-title").fill("Delayed copy scope test");
+  await fault(request, otherScene, "delay_copy");
+  const response = page.waitForResponse((r) => r.url().endsWith(`/${otherScene}/copy`) && r.request().method() === "POST");
+  await page.getByTestId("live-copy-confirm").click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByTestId("shell-store-selector").selectOption(store);
+  await response;
+  await expect.poll(() => new URL(page.url()).searchParams.get("store")).toBe(store);
+  await expect(page.getByText("Delayed copy scope test", { exact: true })).toHaveCount(0);
+  expect((await facts(request)).receipts.filter((r) => r.scene === otherScene && r.action === "copy" && r.effect)).toHaveLength(1);
+  await screenshot(page, "en-390-delayed-copy-other-store");
+});
 
 for (const [index, locale] of locales.entries()) {
   test(`LC-U1 ${locale}: missing A1 is graceful and live_adjust-only cannot edit stock`, async ({ browser, request }) => {

@@ -20,17 +20,23 @@ export function LiveWorkspace({ locale, store, scene, initialError }: {
 }) {
   const router = useRouter(), c = workspaceCopy[locale], storeID = store?.id ?? "";
   const beforeLeave = useRef<() => boolean>(() => true);
+  // A temporary list refresh/conceal must not unmount the scene's UNKNOWN command owner.
+  const retained = useRef({ store: storeID, scene: "" });
   const view = useLiveRead(`${storeID}:sessions`, !!storeID && !initialError, (signal) => readStudioPage(storeID, "", signal));
-  const selected = scene || view.data?.items[0]?.session_id || "";
+  if (retained.current.store !== storeID) retained.current = { store: storeID, scene: "" };
+  const selected = scene || retained.current.scene || view.data?.items[0]?.session_id || "";
+  retained.current.scene = selected;
   const error = initialError || view.error;
+  const denied = !!initialError || error === "signed-out" || error === "forbidden";
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="live" onBeforeNavigate={() => beforeLeave.current()}>
     <div className="live-workspace" data-testid="live-workspace">
       <AdminPageHeader locale={locale} description={c.lifecycleHint} />
-      {error ? <p role="alert">{error === "signed-out" ? c.signedOut : error === "forbidden" ? c.forbidden : c.unavailable}</p> : <>
+      {denied ? <p role="alert">{error === "signed-out" ? c.signedOut : error === "forbidden" ? c.forbidden : c.unavailable}</p> : <>
+        {error && <p role="alert">{c.unavailable}</p>}
         <div className="live-workspace-toolbar">
           <label htmlFor="live-session-picker">{c.choose}<select id="live-session-picker" value={selected} onChange={(event) => { if (beforeLeave.current()) router.push(`/${locale}/studio/console?store=${storeID}&scene=${event.target.value}`); }}>
             {!view.data && <option value="">{c.loading}</option>}
-            {scene && !view.data?.items.some((item) => item.session_id === scene) && <option value={scene}>{c.choose}</option>}
+            {selected && !view.data?.items.some((item) => item.session_id === selected) && <option value={selected}>{c.choose}</option>}
             {view.data?.items.map((item) => <option key={item.session_id} value={item.session_id}>{item.title}</option>)}
           </select></label>
           <a data-testid="live-session-results" href={`/${locale}/studio?store=${storeID}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.sessions}</a>

@@ -42,6 +42,7 @@ type consoleMockScene struct {
 	Recommended                                    any
 	Reads                                          []int64
 	Fault                                          string
+	ListUnavailable                                bool
 }
 type consoleMockReceipt struct {
 	Scene    string         `json:"scene"`
@@ -106,6 +107,10 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		items := []any{}
 		for _, s := range m.scenes {
 			if s.Store == store {
+				if s.ListUnavailable {
+					consoleJSON(w, 503, map[string]any{"code": "unavailable"})
+					return true
+				}
 				items = append(items, s.draft())
 			}
 		}
@@ -145,7 +150,8 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		return true
 	}
 	if s != nil && len(parts) == 6 && r.Method == http.MethodGet {
-		consoleJSON(w, 200, s.draft())
+		// Match the real studioDetail envelope, including separate planning/media observations.
+		consoleJSON(w, 200, map[string]any{"draft": s.draft(), "prepared": nil, "attempt": nil, "can_manage": true, "media_enabled": false})
 		return true
 	}
 	if s != nil && len(parts) == 7 && parts[6] == "claims" && r.Method == http.MethodGet {
@@ -290,6 +296,13 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		return true
 	}
 	m.receipts = append(m.receipts, receipt)
+	if action == "copy" && s.Fault == "delay_copy" {
+		s.Fault = ""
+		// Delay only this ACK, not concurrent store reads or the facts control endpoint.
+		m.mu.Unlock()
+		time.Sleep(2 * time.Second)
+		m.mu.Lock()
+	}
 	consoleJSON(w, 200, out)
 	return true
 }
@@ -362,11 +375,13 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 					Scene string `json:"scene"`
 					Mode  string `json:"mode"`
 				}
-				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore") {
+				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore" && in.Mode != "delay_copy" && in.Mode != "list_unavailable" && in.Mode != "list_restore") {
 					consoleJSON(w, 400, map[string]any{"code": "invalid_request"})
 					return
 				}
-				if in.Mode == "missing" || in.Mode == "restore" {
+				if in.Mode == "list_unavailable" || in.Mode == "list_restore" {
+					mock.scenes[in.Scene].ListUnavailable = in.Mode == "list_unavailable"
+				} else if in.Mode == "missing" || in.Mode == "restore" {
 					mock.scenes[in.Scene].Missing = in.Mode == "missing"
 				} else {
 					mock.scenes[in.Scene].Fault = in.Mode
