@@ -117,9 +117,10 @@ for (const [locale, code] of [["zh-TW", "tw"], ["zh-CN", "cn"], ["en", "en"]] as
     await expect(page.getByTestId("orders-table")).toBeVisible();
     for (const [suffix, number] of [["a", "0012345678"], ["b", "0009876543"]]) {
       if (await page.getByTestId("state-filter").inputValue() !== "all") {
-        if (width === 390) {
+        if (!await page.getByTestId("state-filter").isVisible()) {
           await expect(page.getByTestId("orders-v2-filters")).toHaveAttribute("data-expanded", "false");
-          await page.getByTestId("orders-more-filters").click();
+          await click(page, "expand-filters-after-reload", () => page.getByTestId("orders-more-filters").click(),
+            () => expect(page.getByTestId("state-filter")).toBeVisible(), "state filter expands before persisted-order lookup");
         }
         await expect(page.getByTestId("state-filter")).toBeVisible();
         await page.getByTestId("state-filter").selectOption("all");
