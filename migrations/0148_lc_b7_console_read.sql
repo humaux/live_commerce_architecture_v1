@@ -54,11 +54,12 @@ COMMENT ON FUNCTION claims.console_session_facts(uuid,uuid,uuid) IS
 -- F2. identity.read_live_console_sales: owner commerce_auth, EXECUTE commerce_runtime. Authenticated by live:read only (A1), unlike
 -- read_live_session_results (orders:read + live:read), because the console shows the live-session sales to every live:read principal.
 -- ---------------------------------------------------------------------------------------
-CREATE FUNCTION identity.read_live_console_sales(p_hash bytea,p_store uuid,p_session uuid) RETURNS jsonb
+CREATE FUNCTION identity.read_live_console_sales(p_hash bytea,p_store uuid,p_session uuid,p_environment text) RETURNS jsonb
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog SET jit=off SET plan_cache_mode=force_custom_plan AS $$
 DECLARE s record; v_result jsonb; v_facts jsonb; v_auth_error text;
 BEGIN
  IF p_hash IS NULL OR octet_length(p_hash)<>32 OR p_store IS NULL OR p_session IS NULL
+  OR p_environment IS NULL OR p_environment NOT IN ('SANDBOX','LIVE')
   OR current_setting('transaction_isolation')<>'read committed' THEN
   RAISE EXCEPTION 'invalid live console sales' USING ERRCODE='PT400'; END IF;
  SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'live:read');
@@ -125,10 +126,10 @@ BEGIN
   ) x GROUP BY x.order_id,x.environment
  ), ord_paid AS MATERIALIZED (
   SELECT o.id AS order_id,o.currency,o.commercial_state,o.total_minor+coalesce(o.cod_surcharge_minor,0) AS amount_minor,
-   coalesce(pl.minor,0) AS live_minor,
+   coalesce(pl.minor,0) AS env_minor,
    CASE WHEN jsonb_typeof(o.snapshot#>'{quote,lines}')='array' THEN o.snapshot#>'{quote,lines}' ELSE '[]'::jsonb END AS lines
   FROM checkout.orders o
-  LEFT JOIN paid pl ON pl.order_id=o.id AND pl.environment='LIVE'
+  LEFT JOIN paid pl ON pl.order_id=o.id AND pl.environment=p_environment
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id IN (SELECT order_id FROM ord)
  ), cur AS MATERIALIZED (
   -- One currency per console (the UI shows one amount): the one with the most non-cancelled orders, ties by code.
@@ -139,8 +140,8 @@ BEGIN
  ), per_offer AS MATERIALIZED (
   SELECT p.offer_id,
    coalesce(sum(l.qty),0)::bigint AS ordered_qty,
-   coalesce(sum(l.qty) FILTER (WHERE lo.live_minor>0),0)::bigint AS paid_qty,
-   coalesce(sum(l.amount) FILTER (WHERE lo.live_minor>0),0)::bigint AS paid_amount_minor
+   coalesce(sum(l.qty) FILTER (WHERE lo.env_minor>0),0)::bigint AS paid_qty,
+   coalesce(sum(l.amount) FILTER (WHERE lo.env_minor>0),0)::bigint AS paid_amount_minor
   FROM jsonb_to_recordset(v_facts->'pairs') AS p(order_id uuid,offer_id uuid,sku_id uuid)
   JOIN live_orders lo ON lo.order_id=p.order_id
   CROSS JOIN LATERAL (
@@ -156,8 +157,8 @@ BEGIN
   'buyers',(v_facts->>'buyers')::bigint,
   'orders',jsonb_build_object('count',(SELECT count(*) FROM live_orders),
     'amount_minor',(SELECT coalesce(sum(amount_minor),0)::bigint FROM live_orders)),
-  'paid',jsonb_build_object('count',(SELECT count(*) FROM live_orders WHERE live_minor>0),
-    'amount_minor',(SELECT coalesce(sum(live_minor),0)::bigint FROM live_orders WHERE live_minor>0)),
+  'paid',jsonb_build_object('count',(SELECT count(*) FROM live_orders WHERE env_minor>0),
+    'amount_minor',(SELECT coalesce(sum(env_minor),0)::bigint FROM live_orders WHERE env_minor>0)),
   'offers',coalesce((SELECT jsonb_agg(jsonb_build_object('offer_id',po.offer_id,'ordered_qty',po.ordered_qty,
     'paid_qty',po.paid_qty,'paid_amount_minor',po.paid_amount_minor) ORDER BY po.offer_id) FROM per_offer po),'[]'::jsonb))
  INTO v_result;
@@ -166,8 +167,8 @@ BEGIN
  IF octet_length(v_result::text)>1048576 THEN RAISE EXCEPTION 'live console sales unavailable' USING ERRCODE='PT503'; END IF;
  RETURN v_result;
 END $$;
-ALTER FUNCTION identity.read_live_console_sales(bytea,uuid,uuid) OWNER TO commerce_auth;
-REVOKE ALL ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid) TO commerce_runtime;
-COMMENT ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid) IS
- 'internal/live Console (0148, LC-B7, A1): fresh live:read authentication, then for ONE session of the store: keyword_comments, buyers, the dominant-currency non-CANCELLED order count and amount, LIVE-environment paid count and amount (net of refunds, I05; SANDBOX never counted) and per-offer ordered/paid quantity and amount over the attributed (order,offer,sku) pairs. Money口径 mirrors identity.read_live_session_results (0118). EXECUTE: commerce_runtime.';
+ALTER FUNCTION identity.read_live_console_sales(bytea,uuid,uuid,text) OWNER TO commerce_auth;
+REVOKE ALL ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid,text) TO commerce_runtime;
+COMMENT ON FUNCTION identity.read_live_console_sales(bytea,uuid,uuid,text) IS
+ 'internal/live Console (0148, LC-B7, A1): fresh live:read authentication, then for ONE session of the store: keyword_comments, buyers, the dominant-currency non-CANCELLED order count and amount, paid count and amount of the deployment''s payment environment p_environment SANDBOX|LIVE (net of refunds, I05; the other environment is never counted) and per-offer ordered/paid quantity and amount over the attributed (order,offer,sku) pairs. Money口径 mirrors identity.read_live_session_results (0118). EXECUTE: commerce_runtime.';

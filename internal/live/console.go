@@ -1,8 +1,8 @@
 // Purpose: A1 live-console read model (live-console-v1 §7.1, unit LC-B7): one GET snapshot of a session for the console — lifecycle, claim window, stats (comments, keyword comments, buyers, orders, paid), per-offer stock/claims/sales, capabilities, comment-stream state and the last recommended offer. Read-only: no write, no external call except one bridge read for the stream state/comment total.
 // Depends on: draft.go (authorize/mapError/mapReadError, readPermission), claims.ReadWindow (window), CommentStream (stream.go: resolveSource + metabridge comment-page limit 1), metaconnect.CapabilityReader (§6 rows, optional), live.sessions/offers/offer_timeline, catalog.skus/products, inventory.balances/warehouses, claims.lines (runtime SELECT); identity.read_live_console_sales (migration 0148: orders/paid money, keyword comments, buyers, per-offer sales; EXECUTE commerce_runtime, live:read only).
 // Used by: internal/httpapi/live_console.go (GET /live-sessions/{session_id}/console), cmd/api through httpapi.NewHandler.
-// Invariants: I01 (scope from the authenticated transaction, session must be in the store → 404), I05 (paid = LIVE money only, never SANDBOX), I11 (no comment text/names are read or returned; the bridge page is requested with limit 1 and only its stream state and next_seq are kept).
-// Status: MOCK (bridge via fake Graph); SANDBOX payments are deliberately not counted as paid.
+// Invariants: I01 (scope from the authenticated transaction, session must be in the store → 404), I05 (paid = captured money of the deployment's payment environment only, never mixed), I11 (no comment text/names are read or returned; the bridge page is requested with limit 1 and only its stream state and next_seq are kept).
+// Status: MOCK (bridge via fake Graph).
 package live
 
 import (
@@ -33,11 +33,23 @@ const defaultConsoleCurrency = "TWD"
 type Console struct {
 	stream *CommentStream
 	caps   metaconnect.CapabilityReader
+	env    string // payment environment "paid" is counted in: SANDBOX (default, pre-LIVE) or LIVE
 }
 
 // NewConsole returns the A1 read service. Both arguments may be nil.
 func NewConsole(stream *CommentStream, caps metaconnect.CapabilityReader) *Console {
-	return &Console{stream: stream, caps: caps}
+	return &Console{stream: stream, caps: caps, env: "SANDBOX"}
+}
+
+// WithPaymentEnvironment returns a copy whose "paid" totals count captured money of the deployment's payment environment (httpapi Options.PaymentEnvironment):
+// "LIVE" selects LIVE, anything else (including empty) keeps the pre-LIVE SANDBOX behaviour. Environments are never mixed in one total (I05).
+func (c *Console) WithPaymentEnvironment(env string) *Console {
+	cp := *c
+	cp.env = "SANDBOX"
+	if env == "LIVE" {
+		cp.env = "LIVE"
+	}
+	return &cp
 }
 
 // ConsoleSnapshot is the §7.1 body (key set closed: the UI parser rejects unknown/missing keys).
@@ -186,7 +198,7 @@ func (c *Console) Read(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	out.Window = ConsoleWindow{State: w.State, Generation: w.Generation, OpenedAt: w.OpenedAt, MatchMode: w.MatchMode}
 	out.Session.StartedAt, out.Session.EndedAt = sessionTimes(out.Session.Lifecycle, lifecycleAt, w)
 
-	sales, err := readConsoleSales(ctx, tx, scope, token, sessionID)
+	sales, err := readConsoleSales(ctx, tx, scope, token, sessionID, c.env)
 	if err != nil {
 		return ConsoleSnapshot{}, err
 	}
@@ -228,11 +240,11 @@ func sessionTimes(lifecycle string, at *time.Time, w claims.Window) (started, en
 }
 
 // readConsoleSales calls identity.read_live_console_sales (0148) and strictly decodes it; a malformed projection is ErrResultsUnavailable.
-func readConsoleSales(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID string) (consoleSales, error) {
+func readConsoleSales(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, sessionID, environment string) (consoleSales, error) {
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
 	// Calls identity.read_live_console_sales (live-console-v1 §7.1; migration 0148): live:read re-authenticated inside the definer.
-	if err := tx.QueryRow(ctx, `SELECT identity.read_live_console_sales($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, sessionID).Scan(&raw); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT identity.read_live_console_sales($1,$2::uuid,$3::uuid,$4)`, hash[:], scope.StoreID, sessionID, environment).Scan(&raw); err != nil {
 		return consoleSales{}, mapReadError(err)
 	}
 	var s consoleSales

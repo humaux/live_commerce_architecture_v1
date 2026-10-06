@@ -19,6 +19,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"livecommerce/internal/httpapi"
 	"livecommerce/internal/integrations/metareply"
 	"livecommerce/internal/live"
 	"livecommerce/internal/metaconnect"
@@ -36,6 +37,27 @@ func lcbConsole(t *testing.T, e *ltgEnv, token, session string) (int, live.Conso
 		}
 	}
 	return status, snap, raw
+}
+
+// lcbLiveProfile reads A1 as a LIVE-profile deployment (ltgNew's own handler is the unset/SANDBOX one).
+func lcbLiveProfile(t *testing.T, e *ltgEnv, session string) live.ConsoleSnapshot {
+	t.Helper()
+	return lcbProfile(t, e, session, "LIVE")
+}
+
+// lcbProfile reads A1 through a router whose Options.PaymentEnvironment is env.
+func lcbProfile(t *testing.T, e *ltgEnv, session, env string) live.ConsoleSnapshot {
+	t.Helper()
+	h := httpapi.NewHandler(e.p.f.runtime, httpapi.Options{Studio: true, PaymentEnvironment: env})
+	r := httptest.NewRequest("GET", "/v1/admin/stores/"+e.store()+"/live-sessions/"+session+"/console", nil)
+	r.Header.Set("Authorization", "Bearer "+e.token())
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	var snap live.ConsoleSnapshot
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &snap) != nil {
+		t.Fatalf("LIVE-profile A1: %d %s", w.Code, w.Body.String())
+	}
+	return snap
 }
 
 func lcbMustConsole(t *testing.T, e *ltgEnv, session string) live.ConsoleSnapshot {
@@ -159,10 +181,13 @@ func TestLiveConsoleLCN17ReadModelStockClaimsSales(t *testing.T) {
 		t.Fatalf("A1 orders disagree with live.Results: %+v vs %+v", snap.Stats, res)
 	}
 
-	// Paid: LIVE-environment collected money (disclosed owner-pool fixture; the card path is SANDBOX here and is covered by the next test).
+	// Paid: LIVE-environment collected money (disclosed owner-pool fixture). The default (unset = SANDBOX) deployment does not count it; a LIVE-profile one does.
 	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET payment_mode='pay_at_pickup',collection_state='COLLECTED' WHERE id=$1`, hold.OrderID)
 	lineTotal := int64(e.count(`SELECT (snapshot#>>'{quote,lines,0,amount,total_minor}')::bigint FROM checkout.orders WHERE id=$1`, hold.OrderID))
-	snap = lcbMustConsole(t, e, s)
+	if snap = lcbMustConsole(t, e, s); snap.Stats.Paid.Count != 0 || snap.Offers[0].PaidQty != 0 || snap.Offers[0].OrderedQty != 2 {
+		t.Fatalf("SANDBOX-profile console counted LIVE money: %+v / %+v", snap.Stats, snap.Offers[0])
+	}
+	snap = lcbLiveProfile(t, e, s)
 	off = snap.Offers[0]
 	if snap.Stats.Paid.Count != 1 || snap.Stats.Paid.AmountMinor != total || off.PaidQty != 2 || off.PaidAmount != lineTotal || off.OrderedQty != 2 {
 		t.Fatalf("paid: stats %+v offer %+v (order total %d line %d)", snap.Stats, off, total, lineTotal)
@@ -234,9 +259,10 @@ func (c lcbCaps) Capabilities(ctx context.Context, tx pgx.Tx, _ platform.Scope, 
 	return c.rows, nil
 }
 
-// TestLiveConsoleLCN17SandboxPaidNotCounted: a card order paid through the real (SANDBOX) capture path is an order but never "paid" in A1 (I05), while
-// live.Results reports the same money as sandbox_paid_minor.
-func TestLiveConsoleLCN17SandboxPaidNotCounted(t *testing.T) {
+// TestLiveConsoleLCN17PaidFollowsDeploymentEnvironment: "paid" counts captured money of the deployment's payment environment only (Options.PaymentEnvironment;
+// unset = SANDBOX), never a mix (I05). One order carries a real SANDBOX card capture and, after an owner-pool fixture flips it to pay_at_pickup COLLECTED, LIVE money
+// too: the SANDBOX profile (explicit and unset) reports the captured amount, the LIVE profile the collected total, and live.Results shows the two environments separately.
+func TestLiveConsoleLCN17PaidFollowsDeploymentEnvironment(t *testing.T) {
 	e := ltgNew(t, tcvOpts{stripe: true})
 	e.r.startWorker(t)
 	s, o := e.session("A1", ltgLive, 5)
@@ -248,15 +274,29 @@ func TestLiveConsoleLCN17SandboxPaidNotCounted(t *testing.T) {
 	if err != nil {
 		t.Fatalf("hold: %v", err)
 	}
-	if paid := e.payHold(hold, b); paid.captured != q.Amount.TotalMinor {
+	paid := e.payHold(hold, b)
+	if paid.captured != q.Amount.TotalMinor {
 		t.Fatalf("captured %d want %d", paid.captured, q.Amount.TotalMinor)
 	}
-	snap := lcbMustConsole(t, e, s)
-	if snap.Stats.Orders.Count != 1 || snap.Stats.Paid.Count != 0 || snap.Stats.Paid.AmountMinor != 0 || snap.Offers[0].PaidQty != 0 || snap.Offers[0].OrderedQty != 2 {
-		t.Fatalf("sandbox-paid order must be ordered, not paid: %+v / %+v", snap.Stats, snap.Offers[0])
+	lineTotal := int64(e.count(`SELECT (snapshot#>>'{quote,lines,0,amount,total_minor}')::bigint FROM checkout.orders WHERE id=$1`, hold.OrderID))
+	// SANDBOX card capture only.
+	for name, snap := range map[string]live.ConsoleSnapshot{"unset": lcbMustConsole(t, e, s), "explicit SANDBOX": lcbProfile(t, e, s, "SANDBOX")} {
+		if snap.Stats.Orders.Count != 1 || snap.Stats.Paid.Count != 1 || snap.Stats.Paid.AmountMinor != paid.captured || snap.Offers[0].PaidQty != 2 || snap.Offers[0].PaidAmount != lineTotal || snap.Offers[0].OrderedQty != 2 {
+			t.Fatalf("%s profile must count the SANDBOX capture: %+v / %+v", name, snap.Stats, snap.Offers[0])
+		}
 	}
-	if res := lcbResults(t, e, s); res.PaidOrders != 1 || res.Money[0].SandboxPaidMinor != q.Amount.TotalMinor || res.Money[0].PaidMinor != 0 {
-		t.Fatalf("live.Results should show the same money as sandbox: %+v", res)
+	if snap := lcbLiveProfile(t, e, s); snap.Stats.Orders.Count != 1 || snap.Stats.Paid.Count != 0 || snap.Stats.Paid.AmountMinor != 0 || snap.Offers[0].PaidQty != 0 || snap.Offers[0].PaidAmount != 0 {
+		t.Fatalf("LIVE profile must not count SANDBOX money: %+v / %+v", snap.Stats, snap.Offers[0])
+	}
+	// The same order also holds LIVE (collected) money: each profile sees only its own environment.
+	mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET payment_mode='pay_at_pickup',collection_state='COLLECTED' WHERE id=$1`, hold.OrderID)
+	total := e.total(hold.OrderID)
+	sb, lv := lcbMustConsole(t, e, s), lcbLiveProfile(t, e, s)
+	if sb.Stats.Paid.Count != 1 || sb.Stats.Paid.AmountMinor != paid.captured || lv.Stats.Paid.Count != 1 || lv.Stats.Paid.AmountMinor != total {
+		t.Fatalf("environments mixed: SANDBOX %+v LIVE %+v (captured %d, total %d)", sb.Stats.Paid, lv.Stats.Paid, paid.captured, total)
+	}
+	if res := lcbResults(t, e, s); res.Money[0].SandboxPaidMinor != sb.Stats.Paid.AmountMinor || res.Money[0].PaidMinor != lv.Stats.Paid.AmountMinor {
+		t.Fatalf("live.Results environments %+v vs A1 %+v / %+v", res.Money, sb.Stats.Paid, lv.Stats.Paid)
 	}
 }
 
@@ -508,7 +548,7 @@ func TestLiveConsoleLCN17DefinerACL(t *testing.T) {
 		stable           bool
 	}{
 		{"claims.console_session_facts(uuid,uuid,uuid)", "commerce_claims_writer", []string{"commerce_auth"}, true},
-		{"identity.read_live_console_sales(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
+		{"identity.read_live_console_sales(bytea,uuid,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, false},
 	} {
 		t.Run(fn.signature, func(t *testing.T) {
 			var owner string

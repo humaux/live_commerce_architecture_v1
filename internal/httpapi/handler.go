@@ -200,7 +200,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
 	registerLiveLifecycleRoutes(mux, pool, configured.Studio || configured.Live != nil) // LC-B1 A7
 	registerLiveStreamRoutes(mux, pool, configured.CommentStream)
-	registerLiveConsoleRoutes(mux, pool, configured.Studio || configured.Live != nil, live.NewConsole(configured.CommentStream, capabilityReader(configured.MetaHealth))) // LC-B7 A1
+	registerLiveConsoleRoutes(mux, pool, configured.Studio || configured.Live != nil, live.NewConsole(configured.CommentStream, capabilityReader(configured.MetaHealth)).WithPaymentEnvironment(configured.PaymentEnvironment)) // LC-B7 A1
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {
