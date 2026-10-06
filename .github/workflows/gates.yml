@@ -80,7 +80,8 @@ jobs:
           name: gate-${{ strategy.job-index }}
           path: |
             output/ci-gates/
-            output/ui-visual-audit/LATEST/
+            output/ui-visual-audit/*/lint.md
+            output/ui-visual-audit/*/lint.json
             output/ui-click-sweep/
             output/playwright/
           retention-days: 14

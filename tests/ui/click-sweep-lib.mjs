@@ -11,9 +11,10 @@ import { writeFile } from "node:fs/promises";
 // ---- classification (pure; unit tested in click-sweep-lib.test.mjs) ----------------------------------------------------------------------------------
 // Destructive or irreversible: exercised only up to the confirmation step, then cancelled (owner list: delete, archive, void, disconnect, refund,
 // cancel order, publish, sign out; extended with the obvious siblings revoke / remove / unpublish / deactivate / erase). Matching is on the accessible name,
-// test id, title and aria-label of the control.
+// test id, title and aria-label of the control. zh "移出" (storefront "將 X 移出購物車") is the remove of a cart line: unlisted, the zh-TW sweep really removed the
+// cart and raced its own checkout/order steps (CI run 37424335236).
 const DESTRUCTIVE_EN = /\b(delete|remove|archive|void|disconnect|refund|cancel (the )?order|revoke|unpublish|publish|deactivate|erase|discard|suspend|detach|unbind|unlink|terminate)\b/i;
-const DESTRUCTIVE_ZH = /刪除|删除|封存|作廢|作废|斷開|断开|中斷連接|中断连接|退款|取消訂單|取消订单|撤銷|撤销|下架|上架|發布|发布|發佈|取消發佈|取消发布|停用|移除|清除|抹除|丟棄|丢弃|解除|終止|终止|停止/;
+const DESTRUCTIVE_ZH = /刪除|删除|封存|作廢|作废|斷開|断开|中斷連接|中断连接|退款|取消訂單|取消订单|撤銷|撤销|下架|上架|發布|发布|發佈|取消發佈|取消发布|停用|移除|移出|清除|抹除|丟棄|丢弃|解除|終止|终止|停止/;
 export const isDestructive = (text) => DESTRUCTIVE_EN.test(text) || DESTRUCTIVE_ZH.test(text);
 // Sign out ends the session the sweep itself runs in: it is exercised once, last, in a throwaway context (journey J5), never inside the sweep.
 const SIGN_OUT = /\b(sign ?out|log ?out)\b|登出|退出登录|退出登錄/i;

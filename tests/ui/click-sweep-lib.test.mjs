@@ -5,7 +5,7 @@ import test from "node:test";
 import { classKey, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
 
 test("destructive / irreversible / sign-out classification (owner list, en + zh)", () => {
-  for (const name of ["Delete product", "刪除商品", "删除", "Archive", "封存", "Void shipment", "作廢", "Disconnect Page", "斷開連線", "Refund", "退款", "Cancel order", "取消訂單", "Publish", "上架", "Unpublish", "revoke invite", "Remove staff", "取消發佈", "解除綁定", "中斷連接", "Suspend", "Detach"])
+  for (const name of ["Delete product", "刪除商品", "删除", "Archive", "封存", "Void shipment", "作廢", "Disconnect Page", "斷開連線", "Refund", "退款", "Cancel order", "取消訂單", "Publish", "上架", "Unpublish", "revoke invite", "Remove staff", "取消發佈", "解除綁定", "中斷連接", "Suspend", "Detach", "將 Sweep Wool Scarf 移出購物車", "将 Scarf 移出购物车"])
     assert.equal(isDestructive(name), true, name);
   for (const name of ["Save", "儲存", "Cancel", "取消", "Next page", "Add to cart", "Choose delivery", "Search", "Pause", "暫停"]) assert.equal(isDestructive(name), false, name);
   assert.equal(isSignOut("Sign out"), true); assert.equal(isSignOut("登出"), true); assert.equal(isSignOut("Signed in as"), false);

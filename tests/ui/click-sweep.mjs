@@ -533,9 +533,13 @@ async function journeySignOut(state) {
       await page.goto(`${adminOrigin}/zh-TW/?store=${store}`);
       await expect(page.getByTestId("nav-orders")).toBeVisible();
       await page.locator("header[data-shell-topbar] summary", { hasText: /^(帳號|Account)$/ }).click(); // the sign-out button lives inside the closed Account disclosure
+      // MARKER ONLY: the shell strips ?store= (so the URL wait below can pass) before logout's window.location.replace(/zh-TW/) runs; the next
+      // goto then aborts that navigation (ERR_ABORTED on slow runners). A flag on this document disappears when the new document replaces it.
+      await page.evaluate(() => { window.__preSignOut = true; });
       await page.getByTestId("workspace-sign-out").click();
       await expect(page.getByTestId("nav-orders")).toHaveCount(0, { timeout: 15000 });
       await page.waitForURL(url => /^\/zh-TW\/?$/.test(url.pathname) && !url.search, {timeout:15000});
+      await page.waitForFunction(() => !window.__preSignOut, null, { timeout: 15000 });
       await page.waitForLoadState("domcontentloaded");
     }, page);
     await step(unit, "reload after sign out", "the dashboard is not shown without a session", async () => {
