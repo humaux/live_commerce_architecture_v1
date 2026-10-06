@@ -146,7 +146,29 @@ var cbsFunctions = []cbsFn{
 	{"customers.erase_owner(bytea,uuid,uuid,text,uuid)", "commerce_privacy_writer", []string{"commerce_runtime", "commerce_buyer_runtime"}, false},
 	{"customers.apply_erasure(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
 	{"customers.replay_erasures(uuid[])", "commerce_privacy_writer", nil, false},
-	{"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, false},
+	// W6-01B (0139): the 8-argument read replaces the 7-argument one; tags/notes definers (owner privacy writer) follow.
+	{"identity.read_merchant_customers(bytea,uuid,uuid,integer,timestamp with time zone,uuid,text,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"customers.create_tag(bytea,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.rename_tag(bytea,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.delete_tag(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.set_owner_tags(bytea,uuid,uuid,uuid[],text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.add_note(bytea,uuid,uuid,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.edit_note(bytea,uuid,uuid,uuid,text,bigint)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.delete_note(bytea,uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.list_tags(bytea,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.list_notes(bytea,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"customers.tn_authority(bytea,uuid,text)", "commerce_privacy_writer", nil, false},
+	{"customers.tn_fence(bytea,uuid,text,uuid,uuid,bigint)", "commerce_privacy_writer", nil, false},
+	{"customers.tn_lock_owner(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
+	{"customers.tn_owner_visible(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
+	{"customers.tn_check_tag(text,text)", "commerce_privacy_writer", nil, false},
+	{"customers.tn_tags_json(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.tn_tags_revision(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.tn_owners_with_tag(uuid,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.tn_note_json(customers.notes)", "commerce_privacy_writer", nil, true},
+	{"customers.tn_notes_json(uuid,uuid,uuid,integer,timestamp with time zone,uuid)", "commerce_privacy_writer", []string{"commerce_auth"}, true},
+	{"customers.erase_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
+	{"customers.export_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
 	{"identity.read_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.read_billing(bytea,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
@@ -174,6 +196,11 @@ type cbsPriv struct {
 var cbsPrivacyFrozen = []cbsPriv{
 	{"customers.consent_events", "SELECT", nil}, {"customers.consent_events", "INSERT", nil},
 	{"customers.privacy_actions", "SELECT", nil}, {"customers.privacy_actions", "INSERT", nil},
+	// W6-01B (0139): tags, tag links and notes are written by the privacy writer's definers (DELETE is a table privilege,
+	// asserted separately below: it exists on exactly these three tables).
+	{"customers.tags", "SELECT", nil}, {"customers.tags", "INSERT", nil}, {"customers.tags", "UPDATE", []string{"name", "color"}},
+	{"customers.owner_tags", "SELECT", nil}, {"customers.owner_tags", "INSERT", nil},
+	{"customers.notes", "SELECT", nil}, {"customers.notes", "INSERT", nil}, {"customers.notes", "UPDATE", []string{"body", "edited_at", "version"}},
 	{"buyer.owners", "SELECT", nil}, {"buyer.owners", "UPDATE", []string{"active"}},
 	{"buyer.capability_sessions", "SELECT", nil}, {"buyer.capability_sessions", "UPDATE", []string{"revoked_at"}},
 	{"buyer.capability_events", "INSERT", nil},
@@ -194,6 +221,8 @@ var cbsPrivacyRequiredNarrow = map[string][]string{"storefront.destination_snaps
 var cbsPrivacyExtra = []cbsPriv{
 	{"control.stores", "SELECT", []string{"id", "name", "tenant_id"}},
 	{"claims.bundles", "SELECT", []string{"platform", "session_id", "line_count"}},
+	// W6-01B: erasure deletes the idempotency receipts of the customer's tag-set/note writes (policy-limited to those four operations).
+	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response"}},
 }
 
 var cbsBillingFrozen = []cbsPriv{
@@ -396,7 +425,9 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			}
 		}
 		for _, r := range []string{"commerce_privacy_writer", "commerce_billing_writer"} {
-			if e.bool(`SELECT EXISTS(SELECT 1 FROM information_schema.table_privileges WHERE grantee=$1 AND privilege_type IN ('DELETE','TRUNCATE','TRIGGER','REFERENCES'))`, r) {
+			// W6-01B: DELETE is allowed on exactly customers.tags / owner_tags / notes (tag delete, set replacement, erasure) and ops.command_results (erasure of receipts).
+			if e.bool(`SELECT EXISTS(SELECT 1 FROM information_schema.table_privileges WHERE grantee=$1 AND privilege_type IN ('DELETE','TRUNCATE','TRIGGER','REFERENCES')
+			 AND NOT (privilege_type='DELETE' AND ((table_schema='customers' AND table_name IN ('tags','owner_tags','notes')) OR (table_schema='ops' AND table_name='command_results'))))`, r) {
 				t.Errorf("%s holds DELETE/TRUNCATE/TRIGGER/REFERENCES somewhere", r)
 			}
 		}
@@ -502,7 +533,8 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 			}
 		}
 		// audit inserts are limited to the contract's actions
-		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased"}, "commerce_billing_writer": {"billing.customer_pinned"}}
+		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased",
+			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted"}, "commerce_billing_writer": {"billing.customer_pinned"}}
 		for role, actions := range auditRe {
 			ps := covers("ops.audit_events", role, "INSERT")
 			if len(ps) == 0 {

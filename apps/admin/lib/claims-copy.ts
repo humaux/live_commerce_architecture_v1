@@ -1,3 +1,6 @@
+// Purpose: Owns localized claims labels, host prompts and claim-link message templates.
+// Depends on: @live-commerce/i18n, ./claims-model
+// Used by: apps/admin/components/StudioClaims.tsx, tests/admin/claim-source.test.ts, tests/admin/claims-model.test.ts, tests/admin/claims-request.test.ts, tests/admin/claims-ui.spec.ts, tests/admin/customers-billing.spec.ts, tests/admin/meta-connect-gate.spec.ts, tests/admin/shell-registry.test.ts
 // Owns every Studio › Claims string in zh-CN, zh-TW and en, including the FROZEN host
 // prompt copy of contracts/live-keyword-claims-v1.md §11.1 (verbatim) and the buyer
 // message that accompanies a one-time claim link. Words shared with Studio (its title,
@@ -23,6 +26,7 @@ const en = {
   mode: "Quantity rule", modeExact: "Keyword = 1 · keyword+N = N", modeQty: "Keyword+N only",
   modeLocked: "Close the window to change the quantity rule.",
   stats: "This round", accepted: "Recorded",
+  scrollHint: "Scroll horizontally to see every column and action.", sourceUnchanged: "No changes to save.", importEmpty: "Add keywords to the library before importing them.",
   reasons: {
     NO_MATCH: "Not understood", UNKNOWN_KEYWORD: "Unknown keyword", OFFER_INACTIVE: "Offer paused",
     INVALID_QUANTITY: "Invalid quantity", QUANTITY_REQUIRED: "Quantity missing",
@@ -36,6 +40,8 @@ const en = {
   status: "Status", actions: "Actions", active: "Active", paused: "Paused", pause: "Pause", resume: "Resume",
   saveMax: "Save limit", noOffers: "No offers yet. Add a keyword for a SKU.", addOffer: "Add offer",
   chooseProduct: "Choose a product", chooseSKU: "Choose a SKU",
+  skuChooseProduct: "Choose a product first to load its SKUs.",
+  skuNotAvailable: "SKU options are not available yet. Wait for loading, refresh, or choose another product.",
   keywordHint: "1–16 letters or digits. Keywords can't be changed later; pause and add a new one to fix a typo.",
   keywordInvalid: "Enter 1–16 letters or digits.", maxInvalid: "Enter a whole number from 1 to 999.",
   skuRequired: "Choose a product and SKU.", catalogUnavailable: "Products could not be loaded.",
@@ -157,6 +163,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     mode: "数量规则", modeExact: "口令 = 1 件 · 口令+N = N 件", modeQty: "只接受口令+数量",
     modeLocked: "关闭窗口后才能修改数量规则。",
     stats: "本轮", accepted: "已登记",
+    scrollHint: "横向滚动以查看全部列和操作。", sourceUnchanged: "没有待保存的更改。", importEmpty: "请先在口令库中添加口令，再导入。",
     reasons: {
       NO_MATCH: "无法识别", UNKNOWN_KEYWORD: "没有这个口令", OFFER_INACTIVE: "商品已暂停登记",
       INVALID_QUANTITY: "数量无效", QUANTITY_REQUIRED: "缺少数量",
@@ -170,6 +177,8 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     status: "状态", actions: "操作", active: "启用中", paused: "已暂停", pause: "暂停", resume: "恢复",
     saveMax: "保存上限", noOffers: "还没有口令。为 SKU 添加一个口令。", addOffer: "添加口令",
     chooseProduct: "选择商品", chooseSKU: "选择 SKU",
+    skuChooseProduct: "请先选择商品以载入 SKU。",
+    skuNotAvailable: "SKU 选项暂不可用。请等待载入、刷新，或选择其他商品。",
     keywordHint: "1–16 个字母或数字。口令之后不能修改；打错时请暂停并新建一个。",
     keywordInvalid: "请输入 1–16 个字母或数字。", maxInvalid: "请输入 1 到 999 的整数。",
     skuRequired: "请选择商品和 SKU。", catalogUnavailable: "无法读取商品。",
@@ -286,6 +295,7 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     mode: "數量規則", modeExact: "關鍵字 = 1 件 · 關鍵字+N = N 件", modeQty: "只接受關鍵字+數量",
     modeLocked: "關閉窗口後才能修改數量規則。",
     stats: "本輪", accepted: "已登記",
+    scrollHint: "橫向捲動以查看全部欄位和操作。", sourceUnchanged: "沒有待儲存的變更。", importEmpty: "請先在關鍵字庫中新增關鍵字，再匯入。",
     reasons: {
       NO_MATCH: "無法辨識", UNKNOWN_KEYWORD: "沒有這個關鍵字", OFFER_INACTIVE: "商品已暫停登記",
       INVALID_QUANTITY: "數量無效", QUANTITY_REQUIRED: "缺少數量",
@@ -299,6 +309,8 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
     status: "狀態", actions: "操作", active: "啟用中", paused: "已暫停", pause: "暫停", resume: "恢復",
     saveMax: "儲存上限", noOffers: "還沒有關鍵字。為 SKU 新增一個關鍵字。", addOffer: "新增關鍵字",
     chooseProduct: "選擇商品", chooseSKU: "選擇 SKU",
+    skuChooseProduct: "請先選擇商品以載入 SKU。",
+    skuNotAvailable: "SKU 選項暫不可用。請等待載入、重新整理，或選擇其他商品。",
     keywordHint: "1–16 個英文字母或數字。關鍵字之後不能修改；打錯時請暫停並新增一個。",
     keywordInvalid: "請輸入 1–16 個英文字母或數字。", maxInvalid: "請輸入 1 到 999 的整數。",
     skuRequired: "請選擇商品和 SKU。", catalogUnavailable: "無法讀取商品。",
@@ -424,6 +436,7 @@ const hostPromptQtyOnlyClause: Record<Locale, string> = {
 };
 
 /** The host prompt for one language, window mode and canonical keyword. Pure. */
+/** Formats a localized keyword host prompt without sending it. */
 export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
   const exact = hostPromptExact[language];
   const text = mode === "EXACT" ? exact
@@ -432,6 +445,7 @@ export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
 }
 
 /** The private message sent with a one-time link, in the buyer's language. Pure. */
+/** Formats a supplied claim URL and expiry into a message without sending it. */
 export function claimLinkMessage(language: Locale, url: string, expires: string) {
   return language === "zh-TW" ? `你的留言登記已準備好。打開這個連結即可確認並加入購物車（有效至 ${expires} 台北時間）：${url}`
     : language === "zh-CN" ? `你的评论登记已准备好。打开这个链接即可确认并加入购物车（有效至 ${expires} 台北时间）：${url}`

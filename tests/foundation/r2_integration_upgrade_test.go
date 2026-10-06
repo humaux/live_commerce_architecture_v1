@@ -48,9 +48,11 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0123 (LC-B2 live-console comments), 0124 (LC-B1 readonly-archived), 0125 (meta connection health) and 0126 (tracking
 	// import) add four more: 56 -> 60. 0127 (LC-R1 retention of the four send actions) adds one more: 60 -> 61.
 	// 0128 (LC-B4 sends + takeover) and 0130 (W3-02B pick list) add one each: 61 -> 63.
-	// 0129 (LC-B6 order for a buyer) adds one more: 63 -> 64.
-	if len(r2) != 64 {
-		t.Fatalf("R2 migration set = %d files %v, want 64", len(r2), r2)
+	// 0139 (W6-01B customer tags and notes) adds one more: 63 -> 64.
+	// 0116 (claim-direct-checkout sold-out read, merged late into its free slot) adds one: 64 -> 65.
+	// 0129 (LC-B6 order for a buyer) adds one more: 65 -> 66.
+	if len(r2) != 66 {
+		t.Fatalf("R2 migration set = %d files %v, want 66", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

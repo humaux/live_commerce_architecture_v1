@@ -1,3 +1,6 @@
+// Purpose: Renders product thumbnails and server-backed photo management controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/copy, @/lib/model, @/lib/images-client
+// Used by: apps/admin/components/Ledger.tsx, apps/admin/components/ProductDocumentForm.tsx, apps/admin/components/LedgerTable.tsx, apps/admin/components/ProductList.tsx
 "use client";
 
 // Product photo thumbnail and the photo manager of the Ledger inspector (catalog-media CM5).
@@ -8,6 +11,8 @@
 // without the server's answer: the list always shows what the server returned last.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { FilePicker } from "@live-commerce/ui";
+import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import { copy } from "@/lib/copy";
 import type { ProductImage } from "@/lib/model";
 import {
@@ -33,6 +38,7 @@ const cells: Record<string, number> = {
   "AC-006-GY": 7,
   "CL-007-BR": 8,
 };
+/** Renders a product cover image or its existing fallback. */
 export function ProductPhoto({
   code,
   name,
@@ -56,15 +62,19 @@ export function ProductPhoto({
       data-photo={imageSrc ? "real" : undefined}
       style={
         imageSrc
-          ? { backgroundImage: `url(${imageSrc})`, backgroundSize: "cover", backgroundPosition: "center" }
-          : demo && cell !== undefined
           ? {
-              backgroundImage:
-                "url(/demo-assets/hearing-aid-accessory-atlas.png)",
-              backgroundSize: "300% 300%",
-              backgroundPosition: `${(cell % 3) * 50}% ${Math.floor(cell / 3) * 50}%`,
+              backgroundImage: `url(${imageSrc})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
             }
-          : undefined
+          : demo && cell !== undefined
+            ? {
+                backgroundImage:
+                  "url(/demo-assets/hearing-aid-accessory-atlas.png)",
+                backgroundSize: "300% 300%",
+                backgroundPosition: `${(cell % 3) * 50}% ${Math.floor(cell / 3) * 50}%`,
+              }
+            : undefined
       }
     >
       {!imageSrc && (!demo || cell === undefined) && (
@@ -75,6 +85,7 @@ export function ProductPhoto({
 }
 
 // Photo manager for one product. `onChanged` runs after every committed change so the Ledger refreshes its cover.
+/** Lists product images and submits upload, deletion and ordering through images-client. */
 export function ProductPhotoManager({
   locale,
   store,
@@ -95,7 +106,10 @@ export function ProductPhotoManager({
   const c = copy[locale];
   const [images, setImages] = useState<ProductImage[] | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<{ kind: "error" | "success"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    kind: "error" | "success";
+    text: string;
+  } | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const scope = `${store}:${productID}`;
   const current = useRef(scope);
@@ -106,7 +120,11 @@ export function ProductPhotoManager({
     setImages(null);
     setMessage(null);
     void listImages(store, productID, controller.signal).then((result) => {
-      if (controller.signal.aborted || current.current !== `${store}:${productID}`) return;
+      if (
+        controller.signal.aborted ||
+        current.current !== `${store}:${productID}`
+      )
+        return;
       if (result.items) setImages(result.items);
       else setMessage({ kind: "error", text: c.photosFailed });
     });
@@ -129,9 +147,13 @@ export function ProductPhotoManager({
           setMessage({ kind: "success", text: done });
           onChanged();
         } else {
-          setMessage({ kind: "error", text: result.status === 409 ? c.photoLimit : c.photosFailed });
+          setMessage({
+            kind: "error",
+            text: result.status === 409 ? c.photoLimit : c.photosFailed,
+          });
           const fresh = await listImages(store, productID);
-          if (fresh.items && current.current === scopeAtStart) setImages(fresh.items);
+          if (fresh.items && current.current === scopeAtStart)
+            setImages(fresh.items);
         }
       } finally {
         setBusy(false);
@@ -144,7 +166,10 @@ export function ProductPhotoManager({
     if (!file) return;
     const problem = photoFileProblem(file);
     if (problem) {
-      setMessage({ kind: "error", text: problem === "size" ? c.photoTooLarge : c.photoType });
+      setMessage({
+        kind: "error",
+        text: problem === "size" ? c.photoTooLarge : c.photoType,
+      });
       return;
     }
     // Upload answers with the new Image; re-read the list so order and positions come from the server.
@@ -170,14 +195,34 @@ export function ProductPhotoManager({
       <h2>{c.photos}</h2>
       <p className="audit-hint">{c.photoHelp}</p>
       {message && (
-        <p className={`message ${message.kind}`} role={message.kind === "error" ? "alert" : "status"}>
+        <p
+          className={`message ${message.kind}`}
+          role={message.kind === "error" ? "alert" : "status"}
+        >
           {message.text}
         </p>
       )}
       {images && images.length === 0 && <p>{c.noPhotos}</p>}
-      <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+      <ol
+        style={{
+          listStyle: "none",
+          margin: 0,
+          padding: 0,
+          display: "grid",
+          gap: 8,
+        }}
+      >
         {images?.map((image, index) => (
-          <li key={image.id} data-testid="photo-row" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <li
+            key={image.id}
+            data-testid="photo-row"
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <ProductPhoto
               code={code}
               name={`${productName} #${index + 1}`}
@@ -186,33 +231,45 @@ export function ProductPhotoManager({
               imageSrc={imageURL(store, productID, image.id)}
             />
             {index === 0 && <small>{c.photoCover}</small>}
-            <button type="button" disabled={locked || index === 0} onClick={() => move(index, -1)}>
+            <button
+              type="button"
+              disabled={locked || index === 0}
+              onClick={() => move(index, -1)}
+            >
               {c.moveUp}
             </button>
-            <button type="button" disabled={locked || index === images.length - 1} onClick={() => move(index, 1)}>
+            <button
+              type="button"
+              disabled={locked || index === images.length - 1}
+              onClick={() => move(index, 1)}
+            >
               {c.moveDown}
             </button>
             <button
               type="button"
               disabled={locked}
-              onClick={() => void run(() => deleteImage(store, productID, image.id), c.photoRemoved)}
+              onClick={() =>
+                void run(
+                  () => deleteImage(store, productID, image.id),
+                  c.photoRemoved,
+                )
+              }
             >
               {c.deletePhoto}
             </button>
           </li>
         ))}
       </ol>
-      <label>
-        {c.addPhoto}
-        <input
-          ref={input}
-          type="file"
-          accept={PHOTO_ACCEPT}
-          data-testid="photo-input"
-          disabled={locked || full}
-          onChange={(event) => void add(event.target.files?.[0])}
-        />
-      </label>
+      <FilePicker
+        label={c.addPhoto}
+        emptyLabel={catalogPresentationCopy[locale].noFile}
+        fileName=""
+        inputRef={input}
+        accept={PHOTO_ACCEPT}
+        data-testid="photo-input"
+        disabled={locked || full}
+        onChange={(event) => void add(event.target.files?.[0])}
+      />
       {full && <p className="audit-hint">{c.photoLimit}</p>}
     </div>
   );

@@ -1,3 +1,6 @@
+// Purpose: Owns storefront publication and merchant domain settings controls.
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/settings-client, @/lib/orders-client, @/lib/storefront-client, @/lib/storefront-model, @/lib/storefront-command, @/lib/storefront-copy, ./settings.css
+// Used by: apps/admin/components/SettingsWizard.tsx
 "use client";
 
 // Settings -> 网店发布 card (mounted by SettingsWizard.tsx below the setup steps): shows whether the store is published,
@@ -9,6 +12,7 @@
 // so they are rendered directly. The operator CLI (cmd/store-admin) remains the break-glass for the same state.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, Field } from "@live-commerce/ui";
 import { sessionBoundary } from "@/lib/settings-client";
 import { OrderReadError } from "@/lib/orders-client";
 import {
@@ -19,8 +23,16 @@ import {
   setPublication,
   type StorefrontState,
 } from "@/lib/storefront-client";
-import { dnsAddressType, type DomainRequestResult, type StorefrontDomains } from "@/lib/storefront-model";
-import { parseDomainCommand, validDomainHostname, type DomainCommand } from "@/lib/storefront-command";
+import {
+  dnsAddressType,
+  type DomainRequestResult,
+  type StorefrontDomains,
+} from "@/lib/storefront-model";
+import {
+  parseDomainCommand,
+  validDomainHostname,
+  type DomainCommand,
+} from "@/lib/storefront-command";
 import { storefrontCopy } from "@/lib/storefront-copy";
 import "./settings.css";
 
@@ -30,12 +42,27 @@ function hostOf(origin: string) {
   return origin.slice("https://".length);
 }
 
-export function StorefrontSettings({ store, locale }: { store: string; locale: Locale }) {
+/** Owns storefront publication and merchant domain settings controls. User actions submit publication and domain commands through storefront-client. */
+export function StorefrontSettings({
+  store,
+  locale,
+}: {
+  store: string;
+  locale: Locale;
+}) {
   // Do not carry a DNS token, confirmation or uncertain command into another store.
-  return <StorefrontSettingsForStore key={store} store={store} locale={locale} />;
+  return (
+    <StorefrontSettingsForStore key={store} store={store} locale={locale} />
+  );
 }
 
-function StorefrontSettingsForStore({ store, locale }: { store: string; locale: Locale }) {
+function StorefrontSettingsForStore({
+  store,
+  locale,
+}: {
+  store: string;
+  locale: Locale;
+}) {
   const sc = storefrontCopy[locale];
   const [load, setLoad] = useState<Load>("loading");
   const [state, setState] = useState<StorefrontState | null>(null);
@@ -51,7 +78,10 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   const [requesting, setRequesting] = useState(false);
   const [requestProblem, setRequestProblem] = useState("");
   const [dns, setDns] = useState<DomainRequestResult | null>(null);
-  const [moving, setMoving] = useState<{ origin: string; action: "suspend" | "detach" } | null>(null);
+  const [moving, setMoving] = useState<{
+    origin: string;
+    action: "suspend" | "detach";
+  } | null>(null);
   const [moveBusy, setMoveBusy] = useState(false);
   const [copyNotice, setCopyNotice] = useState("");
   const [unconfirmed, setUnconfirmed] = useState(false);
@@ -64,17 +94,20 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   // The session fence captured when the card loads: writeSettings refuses to send if the session changed since.
   useEffect(() => {
     let live = true;
-    sessionBoundary().then((value) => {
-      if (!live) return;
-      setBoundary(value);
-      journalKey.current = `commerce-domain-pending:${store}:${value}`;
-      try {
+    sessionBoundary().then(
+      (value) => {
+        if (!live) return;
+        setBoundary(value);
+        journalKey.current = `commerce-domain-pending:${store}:${value}`;
+        try {
         const saved = sessionStorage.getItem(journalKey.current);
         domainCommand.current = parseDomainCommand(saved);
         setUnconfirmed(saved !== null);
         setJournalReady(true);
       } catch { setJournalReady(false); }
-    }, () => { if (live) setBoundary(""); });
+      },
+      () => { if (live) setBoundary(""); },
+    );
     return () => {
       live = false;
     };
@@ -91,7 +124,9 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       (error) => {
         if (active.signal.aborted) return;
         setState(null);
-        setLoad(error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error");
+        setLoad(
+          error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error",
+        );
       },
     );
     return () => active.abort();
@@ -108,7 +143,9 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       (error) => {
         if (active.signal.aborted) return;
         setDomains(null);
-        setDomainsLoad(error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error");
+        setDomainsLoad(
+          error instanceof OrderReadError && error.code === "forbidden" ? "hidden" : "error",
+        );
       },
     );
     return () => active.abort();
@@ -123,11 +160,21 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
   async function submit() {
     if (busy || !state) return;
     // A retry of the same intent reuses the key; a new intent gets a new one.
-    if (pending.current?.published !== target) pending.current = { key: `storefront-${crypto.randomUUID()}`, published: target };
+    if (pending.current?.published !== target)
+      pending.current = {
+        key: `storefront-${crypto.randomUUID()}`,
+        published: target,
+      };
     setBusy(true);
     setProblem("");
     setNotice("");
-    const result = await setPublication(store, pending.current.key, target, state.version, boundary);
+    const result = await setPublication(
+      store,
+      pending.current.key,
+      target,
+      state.version,
+      boundary,
+    );
     setBusy(false);
     setConfirming(false);
     if (result.ok) {
@@ -137,7 +184,9 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       setProblem(sc.uncertain);
     } else {
       pending.current = null;
-      setProblem(result.code === "forbidden" ? sc.noPermission : (sc.errors[result.code] ?? sc.errors.unavailable));
+      setProblem(
+        result.code === "forbidden" ? sc.noPermission : (sc.errors[result.code] ?? sc.errors.unavailable),
+      );
     }
     setTick((value) => value + 1); // re-GET: the server's state, never our guess
   }
@@ -183,7 +232,12 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       setRequestProblem(sc.domains.errors.invalid_request);
       return;
     }
-    await runDomainCommand({ version: 1, key: `storefront-domain-${crypto.randomUUID()}`, action: "request", hostname: proposed });
+    await runDomainCommand({
+      version: 1,
+      key: `storefront-domain-${crypto.randomUUID()}`,
+      action: "request",
+      hostname: proposed,
+    });
   }
 
   async function runDomainCommand(command: DomainCommand, retry = false) {
@@ -192,9 +246,18 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
     setRequesting(command.action === "request");
     setMoveBusy(command.action !== "request");
     setRequestProblem("");
-    const result: { ok: true; result?: DomainRequestResult } | { ok: false; code: string; uncertain: boolean } = command.action === "request"
-      ? await requestDomain(store, command.key, command.hostname, boundary)
-      : await moveDomain(store, command.key, command.origin, command.action, boundary);
+    const result:
+      | { ok: true; result?: DomainRequestResult }
+      | { ok: false; code: string; uncertain: boolean } =
+      command.action === "request"
+        ? await requestDomain(store, command.key, command.hostname, boundary)
+        : await moveDomain(
+            store,
+            command.key,
+            command.origin,
+            command.action,
+            boundary,
+          );
     // A rejected retry does not disprove the original write. Preserve it until
     // the backend confirms replay, including when the session has expired.
     endDomainWrite(!result.ok && (result.uncertain || retry));
@@ -210,14 +273,21 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
       }
     } else {
       if (command.action === "request") setDns(null);
-      if (!result.uncertain) setRequestProblem(sc.domains.errors[result.code] ?? sc.domains.errors.unavailable);
+      if (!result.uncertain)
+        setRequestProblem(
+          sc.domains.errors[result.code] ?? sc.domains.errors.unavailable,
+        );
     }
     setTick((value) => value + 1); // never optimistic: read authoritative state
   }
 
   async function confirmMove() {
     if (domainBusy.current || !moving || domainCommand.current) return;
-    await runDomainCommand({ version: 1, key: `storefront-domain-${crypto.randomUUID()}`, ...moving });
+    await runDomainCommand({
+      version: 1,
+      key: `storefront-domain-${crypto.randomUUID()}`,
+      ...moving,
+    });
   }
 
   async function copyDNS(records: string) {
@@ -232,24 +302,28 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
 
   return (
     <>
-    <section className="settings-fields storefront-card" data-testid="storefront-card" aria-labelledby="storefront-title">
-      <h2 id="storefront-title" className="settings-section-title settings-subtitle">{sc.title}</h2>
-      <p className="settings-note">{sc.intro}</p>
-      {load === "loading" && <p role="status">{sc.loading}</p>}
-      {load === "error" && (
+      <section className="settings-fields storefront-card" data-testid="storefront-card" aria-labelledby="storefront-title">
+        <h2 id="storefront-title" className="settings-section-title settings-subtitle">{sc.title}</h2>
+        <p className="settings-note">{sc.intro}</p>
+        {load === "loading" && <p role="status">{sc.loading}</p>}
+        {load === "error" && (
         <div role="status">
           <p>{sc.unavailable}</p>
           <button type="button" onClick={() => setTick((value) => value + 1)}>{sc.retry}</button>
         </div>
       )}
-      {load === "ready" && state && (
-        <>
-          <dl className="settings-status-list">
-            <div>
-              <dt>{sc.state}</dt>
-              <dd data-testid="storefront-state">{state.published ? sc.published : sc.unpublished}</dd>
-            </div>
-            <div>
+        {load === "ready" && state && (
+          <>
+            <dl className="settings-status-list">
+              <div>
+                <dt>{sc.state}</dt>
+                <dd data-testid="storefront-state">
+                  <Badge tone={state.published ? "success" : "neutral"}>
+                    {state.published ? sc.published : sc.unpublished}
+                  </Badge>
+                </dd>
+              </div>
+              <div>
               <dt>{sc.domain}</dt>
               <dd data-testid="storefront-domain">
                 {bound ? (
@@ -264,8 +338,8 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                 )}
               </dd>
             </div>
-          </dl>
-          <p className={serving && state.published ? "settings-note" : "settings-warning"} data-testid="storefront-hint">
+            </dl>
+            <p className={serving && state.published ? "settings-note" : "settings-warning"} data-testid="storefront-hint">
             {serving
               ? state.published
                 ? sc.live
@@ -276,118 +350,192 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                   ? sc.publishedNoDomain
                   : sc.awaitingDomain}
           </p>
-          {confirming ? (
-            <div className="settings-pending" role="alertdialog" aria-label={target ? sc.publish : sc.unpublish} data-testid="storefront-confirm">
-              <p>{target ? sc.confirmPublish : sc.confirmUnpublish}</p>
+            {confirming ? (
+              <div className="settings-pending" role="alertdialog" aria-label={target ? sc.publish : sc.unpublish} data-testid="storefront-confirm">
+                <p>{target ? sc.confirmPublish : sc.confirmUnpublish}</p>
+                <div className="settings-actions">
+                  <button type="button" disabled={busy} onClick={() => setConfirming(false)}>{sc.cancel}</button>
+                  <button
+                    className={target ? "primary" : "settings-danger"}
+                    type="button"
+                    data-testid="storefront-confirm-yes"
+                    disabled={busy}
+                    onClick={() => void submit()}
+                  >
+                    {busy ? sc.saving : sc.confirm}
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div className="settings-actions">
-                <button type="button" disabled={busy} onClick={() => setConfirming(false)}>{sc.cancel}</button>
-                <button className="primary" type="button" data-testid="storefront-confirm-yes" disabled={busy} onClick={() => void submit()}>
-                  {busy ? sc.saving : sc.confirm}
+                <button
+                  className={target ? "primary" : "settings-danger"}
+                  type="button"
+                  data-testid="storefront-toggle"
+                  disabled={busy}
+                  onClick={() => { setNotice(""); setProblem(""); setConfirming(true); }}
+                >
+                  {target ? sc.publish : sc.unpublish}
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="settings-actions">
-              <button className="primary" type="button" data-testid="storefront-toggle" disabled={busy}
-                onClick={() => { setNotice(""); setProblem(""); setConfirming(true); }}>
-                {target ? sc.publish : sc.unpublish}
-              </button>
-            </div>
-          )}
-        </>
-      )}
-      {problem && <p className="settings-warning" role="alert" data-testid="storefront-problem">{problem}</p>}
-      {notice && <p className="message pending" role="status" data-testid="storefront-notice">{notice}</p>}
-    </section>
-    {domainsLoad !== "hidden" && <section className="settings-fields storefront-domains-card" data-testid="storefront-domains-card" aria-label={sc.domains.title}>
-      {domainsLoad === "loading" && <p role="status">{sc.loading}</p>}
-      {domainsLoad === "ready" && domains && (
-        <div className="storefront-domains" data-testid="storefront-domains">
-          <h2 className="settings-section-title settings-subtitle">{sc.domains.title}</h2>
-          <p className="settings-note">{sc.domains.intro}</p>
-          {(!journalReady || unconfirmed) && <div className="settings-warning" role="status" data-testid="storefront-domain-unconfirmed">
-            <p>{!journalReady ? sc.domains.storageUnavailable : domainCommand.current ? sc.domains.unconfirmed : sc.domains.legacyUnconfirmed}</p>
-            {unconfirmed && journalReady && domainCommand.current && <>
-              <p className="storefront-domain-origin">{sc.domains[domainCommand.current.action]}: {domainCommand.current.action === "request" ? domainCommand.current.hostname : domainCommand.current.origin}</p>
-              <button type="button" data-testid="storefront-domain-retry" disabled={requesting || moveBusy}
+            )}
+          </>
+        )}
+        {problem && (
+          <p className="settings-warning" role="alert" data-testid="storefront-problem">{problem}</p>
+        )}
+        {notice && (
+          <p className="message pending" role="status" data-testid="storefront-notice">{notice}</p>
+        )}
+      </section>
+      {domainsLoad !== "hidden" && (
+        <section className="settings-fields storefront-domains-card" data-testid="storefront-domains-card" aria-label={sc.domains.title}>
+          {domainsLoad === "loading" && <p role="status">{sc.loading}</p>}
+          {domainsLoad === "ready" && domains && (
+            <div className="storefront-domains" data-testid="storefront-domains">
+              <h2 className="settings-section-title settings-subtitle">{sc.domains.title}</h2>
+              <p className="settings-note">{sc.domains.intro}</p>
+              {(!journalReady || unconfirmed) && (
+                <div className="settings-warning" role="status" data-testid="storefront-domain-unconfirmed">
+                  <p>{!journalReady ? sc.domains.storageUnavailable : domainCommand.current ? sc.domains.unconfirmed : sc.domains.legacyUnconfirmed}</p>
+                  {unconfirmed && journalReady && domainCommand.current && (
+                    <>
+                      <p className="storefront-domain-origin">
+                        {sc.domains[domainCommand.current.action]}:{" "}
+                        {domainCommand.current.action === "request" ? domainCommand.current.hostname : domainCommand.current.origin}
+                      </p>
+                      <button type="button" data-testid="storefront-domain-retry" disabled={requesting || moveBusy}
                 onClick={() => { if (domainCommand.current) void runDomainCommand(domainCommand.current, true); }}>{sc.domains.retry}</button>
-            </>}
-            <button type="button" onClick={() => setTick(value => value + 1)}>{sc.domains.refresh}</button>
-          </div>}
-          <ul className="storefront-domain-list">
-            {domainRows.map((row) => (
-              <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state} data-kind={row.kind}>
-                <span className="storefront-domain-origin" data-testid="storefront-domain-origin">
-                  <a href={row.origin} target="_blank" rel="noopener noreferrer">{row.origin}</a>
-                  {row.kind === "platform" && <span className="storefront-domain-kind settings-note">{sc.domains.platform}</span>}
-                  {row.serving && <span className="storefront-domain-badge">{sc.domains.serving}</span>}
-                </span>
-                <span className="storefront-domain-state" data-testid="storefront-domain-state">{sc.domains.states[row.state]}</span>
-                {row.token && row.state !== "DETACHED" && (
+                    </>
+                  )}
+                  <button type="button" onClick={() => setTick((value) => value + 1)}>
+                    {sc.domains.refresh}
+                  </button>
+                </div>
+              )}
+              <ul className="storefront-domain-list">
+                {domainRows.map((row) => (
+                  <li key={row.origin} className="storefront-domain-row" data-testid="storefront-domain-row" data-state={row.state} data-kind={row.kind}>
+                    <span className="storefront-domain-origin" data-testid="storefront-domain-origin">
+                      <a href={row.origin} target="_blank" rel="noopener noreferrer">{row.origin}</a>
+                      {row.kind === "platform" && (
+                        <span className="storefront-domain-kind settings-note">{sc.domains.platform}</span>
+                      )}
+                      {row.serving && (
+                        <span className="storefront-domain-badge">{sc.domains.serving}</span>
+                      )}
+                    </span>
+                    <span className="storefront-domain-state" data-testid="storefront-domain-state">{sc.domains.states[row.state]}</span>
+                    {row.token && row.state !== "DETACHED" && (
                   <div className="storefront-domain-token" data-testid="storefront-domain-token">
                     <code>{sc.domains.dnsTxtName}: _lc-verify.{hostOf(row.origin)}</code>
                     <code>{sc.domains.dnsTxtValue}: {row.token}</code>
                   </div>
                 )}
-                {row.kind === "custom" && <div className="storefront-domain-actions">
-                  {moveable(row) && (
-                    <button type="button" data-testid="storefront-domain-suspend" disabled={domainsLocked}
-                      onClick={() => { setRequestProblem(""); setMoving({ origin: row.origin, action: "suspend" }); }}>
-                      {sc.domains.suspend}
-                    </button>
-                  )}
-                  {row.state !== "DETACHED" && (
-                    <button type="button" data-testid="storefront-domain-detach" disabled={domainsLocked}
-                      onClick={() => { setRequestProblem(""); setMoving({ origin: row.origin, action: "detach" }); }}>
-                      {sc.domains.detach}
-                    </button>
-                  )}
-                </div>}
-              </li>
-            ))}
-            {domainRows.length === 0 && (
+                    {row.kind === "custom" && (
+                      <div className="storefront-domain-actions">
+                        {moveable(row) && (
+                          <button
+                            className="settings-danger"
+                            type="button"
+                            data-testid="storefront-domain-suspend"
+                            disabled={domainsLocked}
+                            onClick={() => {
+                              setRequestProblem("");
+                              setMoving({
+                                origin: row.origin,
+                                action: "suspend",
+                              });
+                            }}
+                          >
+                            {sc.domains.suspend}
+                          </button>
+                        )}
+                        {row.state !== "DETACHED" && (
+                          <button
+                            className="settings-danger"
+                            type="button"
+                            data-testid="storefront-domain-detach"
+                            disabled={domainsLocked}
+                            onClick={() => {
+                              setRequestProblem("");
+                              setMoving({
+                                origin: row.origin,
+                                action: "detach",
+                              });
+                            }}
+                          >
+                            {sc.domains.detach}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+                {domainRows.length === 0 && (
               <li className="settings-note" data-testid="storefront-domains-empty">{sc.domains.platform}</li>
             )}
-          </ul>
+              </ul>
 
-          <form className="storefront-domain-request" onSubmit={submitDomain} data-testid="storefront-domain-request">
-            <label>
-              <span>{sc.domains.hostnameLabel}</span>
-              <input
-                name="hostname"
-                value={hostname}
-                onChange={(event) => setHostname(event.target.value)}
-                placeholder={sc.domains.hostnamePlaceholder}
-                autoCapitalize="none"
-                spellCheck={false}
-                disabled={domainsLocked}
-              />
-            </label>
-            <button className="primary" type="submit" data-testid="storefront-domain-submit" disabled={domainsLocked}>
+              <form className="storefront-domain-request" onSubmit={submitDomain} data-testid="storefront-domain-request">
+                <Field
+                  id="storefront-hostname"
+                  label={sc.domains.hostnameLabel}
+                  width="long"
+                >
+                  <input
+                    id="storefront-hostname"
+                    name="hostname"
+                    value={hostname}
+                    onChange={(event) => setHostname(event.target.value)}
+                    placeholder={sc.domains.hostnamePlaceholder}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    disabled={domainsLocked}
+                  />
+                </Field>
+                <button className="primary" type="submit" data-testid="storefront-domain-submit" disabled={domainsLocked}>
               {requesting ? sc.domains.requesting : sc.domains.request}
             </button>
-          </form>
+              </form>
 
-          {dns && (
-            <div className="storefront-dns" data-testid="storefront-dns" role="status">
-              <h4>{sc.domains.dnsTitle}</h4>
-              <p className="settings-note">{sc.domains.dnsIntro}</p>
-              <dl>
-                <div>
+              {dns && (
+                <div className="storefront-dns" data-testid="storefront-dns" role="status">
+                  <h4>{sc.domains.dnsTitle}</h4>
+                  <p className="settings-note">{sc.domains.dnsIntro}</p>
+                  <dl>
+                    <div>
                   <dt>{sc.domains.dnsTxtName}</dt>
                   <dd><code data-testid="storefront-dns-txt-name">{dns.dns.txt_name}</code></dd>
                 </div>
-                <div>
+                    <div>
                   <dt>{sc.domains.dnsTxtValue}</dt>
                   <dd><code data-testid="storefront-dns-txt-value">{dns.dns.txt_value}</code></dd>
                 </div>
-                {dns.dns.apex && dns.dns.edge_addresses?.length ? dns.dns.edge_addresses.map((address, index) => (
-                  <div key={`${index}-${address}`} data-testid="storefront-dns-address">
-                    <dt>{dnsAddressType(address)}</dt>
-                    <dd><code>{hostOf(dns.origin)} → {address}</code></dd>
-                    <dd><button type="button" aria-label={`${sc.domains.copyRecord}: ${dnsAddressType(address)} ${address}`} onClick={() => copyDNS(`${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`)}>{sc.domains.copyRecord}</button></dd>
-                  </div>
-                )) : dns.dns.apex ? (
+                    {dns.dns.apex && dns.dns.edge_addresses?.length ? (
+                      dns.dns.edge_addresses.map((address, index) => (
+                        <div
+                          key={`${index}-${address}`}
+                          data-testid="storefront-dns-address"
+                        >
+                          <dt>{dnsAddressType(address)}</dt>
+                          <dd><code>{hostOf(dns.origin)} → {address}</code></dd>
+                          <dd>
+                            <button
+                              type="button"
+                              aria-label={`${sc.domains.copyRecord}: ${dnsAddressType(address)} ${address}`}
+                              onClick={() =>
+                                copyDNS(
+                                  `${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`,
+                                )
+                              }
+                            >
+                              {sc.domains.copyRecord}
+                            </button>
+                          </dd>
+                        </div>
+                      ))
+                    ) : dns.dns.apex ? (
                   <div>
                     <dt>{sc.domains.dnsApex}</dt>
                     <dd><code data-testid="storefront-dns-apex">{hostOf(dns.origin)}</code></dd>
@@ -399,41 +547,63 @@ function StorefrontSettingsForStore({ store, locale }: { store: string; locale: 
                     <dd><code data-testid="storefront-dns-cname">{hostOf(dns.origin)} → {dns.dns.cname_target}</code></dd>
                   </div>
                 )}
-              </dl>
-              <p className="settings-note">{sc.domains.verifying}</p>
-              <button type="button" data-testid="storefront-dns-copy" onClick={() => {
-                  const addressRecord = dns.dns.apex ? dns.dns.edge_addresses?.length ? dns.dns.edge_addresses.map(address => `${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`).join("\n") : sc.domains.dnsApexNote : `CNAME ${hostOf(dns.origin)} → ${dns.dns.cname_target}`;
-                  const records = `TXT ${dns.dns.txt_name}\n${dns.dns.txt_value}\n${addressRecord}`;
-                  void copyDNS(records);
-              }}>{sc.domains.copy}</button>
-              <p role="status" className="settings-note">{copyNotice}</p>
+                  </dl>
+                  <p className="settings-note">{sc.domains.verifying}</p>
+                  <button
+                    type="button"
+                    data-testid="storefront-dns-copy"
+                    onClick={() => {
+                      const addressRecord = dns.dns.apex
+                        ? dns.dns.edge_addresses?.length
+                          ? dns.dns.edge_addresses.map(
+                                (address) =>
+                                  `${dnsAddressType(address)} ${hostOf(dns.origin)} → ${address}`,
+                              )
+                              .join("\n")
+                          : sc.domains.dnsApexNote
+                        : `CNAME ${hostOf(dns.origin)} → ${dns.dns.cname_target}`;
+                      const records = `TXT ${dns.dns.txt_name}\n${dns.dns.txt_value}\n${addressRecord}`;
+                      void copyDNS(records);
+                    }}
+                  >
+                    {sc.domains.copy}
+                  </button>
+                  <p role="status" className="settings-note">{copyNotice}</p>
+                </div>
+              )}
+
+              {moving && (
+                <div className="settings-pending" role="alertdialog" aria-label={sc.domains[moving.action]} data-testid="storefront-domain-confirm">
+                  <p>{moving.action === "suspend" ? sc.domains.confirmSuspend : sc.domains.confirmDetach}</p>
+                  <p className="storefront-domain-origin"><strong>{moving.origin}</strong></p>
+                  <div className="settings-actions">
+                    <button type="button" disabled={moveBusy || domainCommand.current !== null} onClick={() => setMoving(null)}>{sc.cancel}</button>
+                    <button
+                      className="settings-danger"
+                      type="button"
+                      data-testid="storefront-domain-confirm-yes"
+                      disabled={moveBusy}
+                      onClick={() => void confirmMove()}
+                    >
+                      {moveBusy ? sc.saving : sc.confirm}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {requestProblem && (
+                <p className="settings-warning" role="alert" data-testid="storefront-domain-problem">{requestProblem}</p>
+              )}
             </div>
           )}
-
-          {moving && (
-            <div className="settings-pending" role="alertdialog" aria-label={sc.domains[moving.action]} data-testid="storefront-domain-confirm">
-              <p>{moving.action === "suspend" ? sc.domains.confirmSuspend : sc.domains.confirmDetach}</p>
-              <p className="storefront-domain-origin"><strong>{moving.origin}</strong></p>
-              <div className="settings-actions">
-                <button type="button" disabled={moveBusy || domainCommand.current !== null} onClick={() => setMoving(null)}>{sc.cancel}</button>
-                <button className="primary" type="button" data-testid="storefront-domain-confirm-yes" disabled={moveBusy}
-                  onClick={() => void confirmMove()}>
-                  {moveBusy ? sc.saving : sc.confirm}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {requestProblem && <p className="settings-warning" role="alert" data-testid="storefront-domain-problem">{requestProblem}</p>}
-        </div>
-      )}
-      {domainsLoad === "error" && (
+          {domainsLoad === "error" && (
         <div role="status" data-testid="storefront-domains-error">
           <p>{sc.domains.errors.unavailable}</p>
           <button type="button" onClick={() => setTick((value) => value + 1)}>{sc.retry}</button>
         </div>
       )}
-    </section>}
+        </section>
+      )}
     </>
   );
 }

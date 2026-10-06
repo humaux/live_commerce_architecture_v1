@@ -1,0 +1,180 @@
+✔ R11 SQL's exact receipt states are accepted; missing/forged operation/state remains unknown (0.755042ms)
+✔ R11 durable receipt journal validates phase against exact operation state (0.339042ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in en (4.567291ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-TW (0.755833ms)
+✔ R11 actual read control distinguishes replay/inflight/unknown/failure in zh-CN (0.45625ms)
+✔ unknown journal retains exact key/boundary and is scoped to store+session; malformed state fails closed (0.140125ms)
+✔ R12 read hook keeps network UNKNOWN on one key and explicitly refreshes acknowledged UNKNOWN (19.209584ms)
+✔ actual POST transport uses CSRF and session fence; 403 independent of response text (24.196333ms)
+✔ shared presentation preserves registry title and one empty buyer message in en (29.876333ms)
+✔ R11 large linked-draft list is complete but collapsed in en (3.169583ms)
+✔ shared presentation preserves registry title and one empty buyer message in zh-TW (5.145417ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-TW (2.432875ms)
+✔ shared presentation preserves registry title and one empty buyer message in zh-CN (6.123459ms)
+✔ R11 large linked-draft list is complete but collapsed in zh-CN (2.463292ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in en (2.765208ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-TW (1.896042ms)
+✔ R11 timeline distinguishes local unknown spend from explicit Meta zero in zh-CN (2.968709ms)
+✔ R11 I12 nullable Meta evidence survives without becoming zero (0.217375ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in en (10.479583ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-TW (10.929833ms)
+✔ R11 actual panel rendering preserves unknowns and reconnect route in zh-CN (11.341375ms)
+✔ D1, D6, R7: exact amounts and sources remain independent, account days stay labelled (0.193667ms)
+✔ R12: null stays unknown and unread / unauthorised / insufficient remain different states (0.219125ms)
+✔ R12 granted but unread audience offers a read, never reconnect in en (1.697042ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-TW (1.679959ms)
+✔ R12 granted but unread audience offers a read, never reconnect in zh-CN (1.622709ms)
+✔ I12 forged / missing frozen fields never silently become zeros (0.848458ms)
+✔ only whitelisted aggregates survive: extra identifiers and HTML are never interpreted (0.060084ms)
+✔ attribution is a read-only BFF resource with exact bounded query grammar (0.293917ms)
+✔ audience-read is exactly the new local intention POST and never a data GET or queried write (0.23575ms)
+✔ route fails closed without ads:read and is not a duplicate navigation entry; locale keys match (0.098667ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 439.638334
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 16ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 894ms
+  Running TypeScript ...
+  Finished TypeScript in 362ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 67ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 25ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1425ms
+  Running TypeScript ...
+  Finished TypeScript in 424ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 196ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserAdsAttributionReport
+--- PASS: TestBrowserAdsAttributionReport (82.64s)
+=== RUN   TestBrowserAdsAttributionCheckout
+--- PASS: TestBrowserAdsAttributionCheckout (28.17s)
+PASS
+ok  	livecommerce/tests/foundation	113.089s
+PASS: AT5/AT9 real-click storefront and authenticated report against isolated PG/Go and production Next builds; Meta=MOCK only; no live/sandbox acceptance.

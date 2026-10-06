@@ -1,0 +1,57 @@
+
+Running 6 tests using 1 worker
+
+(node:47651) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/studio-ui.spec.ts:136:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker (27.8s)
+(node:47818) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 tests/admin/studio-ui.spec.ts:410:1 › STU05 the Studio route without a scene settles: live-sessions reads stay bounded across reloads and the first scene opens (11.5s)
+  ✓  3 tests/admin/studio-ui.spec.ts:429:1 › STU04 exact draft timestamp parser accepts offsets without admitting malformed dates (12ms)
+  ✓  4 tests/admin/studio-ui.spec.ts:442:1 › STU04 read-only and expired sessions cannot mutate (1.5s)
+  ✓  5 tests/admin/studio-ui.spec.ts:474:1 › STU04 native visibility conceal and revalidation remains required (2.3s)
+  ✓  6 tests/admin/studio-ui.spec.ts:493:1 › STU04 native conceal retains an uncertain committed request (1.7s)
+
+
+  1) tests/admin/studio-ui.spec.ts:136:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByRole('button', { name: /New scene/ })
+    Expected: disabled
+    Received: enabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByRole('button', { name: /New scene/ }) with timeout 10000ms
+      - waiting for getByRole('button', { name: /New scene/ })
+        24 × locator resolved to <button type="button" class="primary studio-new">＋ New scene</button>
+           - unexpected value "enabled"
+
+
+      349 |     await expect.poll(() => listHeld).toBe(true);
+      350 |     await expect(page.getByRole("region", { name: "Scenes", exact: true }).getByText("Loading scenes…", { exact: true })).toBeVisible();
+    > 351 |     await expect(page.getByRole("button", { name: /New scene/ })).toBeDisabled();
+          |                                                                   ^
+      352 |     expect(createRequests).toHaveLength(createsBeforeLoading);
+      353 |   } finally {
+      354 |     releaseList();
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/studio-ui.spec.ts:351:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261005T104834.374377000/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/studio-ui-20261005T104834.374377000/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/studio-ui-20261005T104834.374377000/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/studio-ui-20261005T104834.374377000/results/studio-ui-STU04-signed-Stu-46f44-Go-PG-and-local-MOCK-worker/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/studio-ui.spec.ts:136:1 › STU04 signed Studio UI through packaged Next, Go, PG and local MOCK worker 
+  5 passed (47.6s)

@@ -1,11 +1,15 @@
+// Purpose: Checks platform/operator branding by browser navigation; writes local evidence.
+// Depends on: node:assert/strict, node:fs/promises, ../../apps/admin/lib/company.ts, ../../apps/admin/lib/entry-copy.ts, ../../apps/admin/src/shell-copy.ts
+// Used by: Playwright spec discovery / configured browser harness
 // PS1 brand slice: real navigation on the packaged admin app + existing MOCK identity.
 // No form submission, external email, account creation, or provider operation.
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
-import { company, operatedBy, brandedTitle } from "../../apps/admin/lib/company.ts";
+import { company, operatorSentence, brandedTitle } from "../../apps/admin/lib/company.ts";
 import { passwordCopy } from "../../apps/admin/lib/entry-copy.ts";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 
+/** Navigates browser branding checks and writes evidence to the supplied output path. */
 export async function runBrandGate({ browser, base, output }) {
   await mkdir(output, { recursive: true });
   const context = await browser.newContext();
@@ -21,13 +25,13 @@ export async function runBrandGate({ browser, base, output }) {
           assert.equal(await page.getByTestId("platform-brand").innerText(), company.productName);
           assert.equal(await page.title(), brandedTitle(title));
           assert.equal(await page.locator("title").count(), 1, "single title, not conflicting metadata");
-          assert.equal(await page.getByTestId("operator-footer").innerText(), operatedBy);
+          assert.equal(await page.getByTestId("operator-footer").innerText(), operatorSentence(locale));
           // Measurement only; no DOM mutations or injected styles.
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "no horizontal overflow");
           await page.reload();
           await page.locator("#password-auth-title").waitFor();
           assert.equal(await page.title(), brandedTitle(title), "SSR reload preserves title");
-          assert.equal(await page.getByTestId("operator-footer").innerText(), operatedBy);
+          assert.equal(await page.getByTestId("operator-footer").innerText(), operatorSentence(locale));
           await page.screenshot({ path: `${output}/brand-${mode}-${locale}-${width}.png`, fullPage: true, animations: "disabled" });
           ledger.push({ locale, width, page: mode, action: "navigate by link; reload", expected: "exact brand/title/operator; no overflow", result: "PASS" });
         };

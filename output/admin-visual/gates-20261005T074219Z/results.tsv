@@ -1,0 +1,13 @@
+source	mode	exit	seconds	log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-cvs	0	103	output/admin-visual/gates-20261005T074219Z/browser-cvs.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-visual-lint	1	397	output/admin-visual/gates-20261005T074219Z/browser-visual-lint.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-admin-shell	0	90	output/admin-visual/gates-20261005T074219Z/browser-admin-shell.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-customers-billing	0	79	output/admin-visual/gates-20261005T074219Z/browser-customers-billing.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-storefront-publish	0	28	output/admin-visual/gates-20261005T074219Z/browser-storefront-publish.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-store-domains	0	35	output/admin-visual/gates-20261005T074219Z/browser-store-domains.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-meta-ads	0	57	output/admin-visual/gates-20261005T074219Z/browser-meta-ads.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-ads-attribution	0	132	output/admin-visual/gates-20261005T074219Z/browser-ads-attribution.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-ops-polish	0	61	output/admin-visual/gates-20261005T074219Z/browser-ops-polish.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-catalog-core	0	47	output/admin-visual/gates-20261005T074219Z/browser-catalog-core.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-merchant-buyer	0	35	output/admin-visual/gates-20261005T074219Z/browser-merchant-buyer.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-webkit	0	303	output/admin-visual/gates-20261005T074219Z/browser-webkit.log

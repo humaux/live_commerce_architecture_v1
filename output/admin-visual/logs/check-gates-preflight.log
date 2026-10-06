@@ -1,0 +1,42 @@
+✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (314.062208ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.745334ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.884792ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (3.09075ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.190791ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.221334ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (133.482375ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.207417ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 509.43675
+
+✖ failing tests:
+
+test at tests/admin/shell-architecture.test.mjs:10:1
+✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (314.062208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   'apps/admin/components/Ads.tsx: lines 1302 > 0',
+  +   'apps/admin/components/Attribution.tsx: lines 813 > 0'
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/tests/admin/shell-architecture.test.mjs:11:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'apps/admin/components/Ads.tsx: lines 1302 > 0', 'apps/admin/components/Attribution.tsx: lines 813 > 0' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

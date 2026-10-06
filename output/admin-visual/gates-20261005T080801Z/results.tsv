@@ -1,0 +1,3 @@
+source	mode	exit	seconds	log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-product-editor	0	90	output/admin-visual/gates-20261005T080801Z/browser-product-editor.log
+e85654d00f684a855f7600d5af94a3ac29c67f46	--browser-admin-legacy	0	44	output/admin-visual/gates-20261005T080801Z/browser-admin-legacy.log

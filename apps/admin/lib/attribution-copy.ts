@@ -1,3 +1,6 @@
+// Purpose: Owns localized attribution labels and evidence-status explanations.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Ads.tsx, apps/admin/components/AdsDraft.tsx, apps/admin/components/Attribution.tsx, apps/admin/components/AttributionAudienceRead.tsx, apps/admin/components/AttributionPanels.tsx, tests/admin/attribution-audience.test.ts, tests/admin/attribution-checkout.spec.ts, tests/admin/attribution.spec.ts, tests/admin/attribution.test.ts
 // D7/D9 copy only; values and availability come from the frozen attribution read, not locale or client inference.
 import type { Locale } from "@live-commerce/i18n";
 const en = {
@@ -121,6 +124,7 @@ const en = {
   end: "Ends",
   noTimeline: "No timeline observations provided.",
   noRows: "No rows provided.",
+  scrollHint: "Scroll horizontally to view all columns.",
   source: "Source reference",
 };
 export type AttributionCopy = typeof en;
@@ -236,6 +240,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     end: "結束",
     noTimeline: "尚未提供時間軸觀測。",
     noRows: "尚未提供紀錄。",
+    scrollHint: "橫向捲動以查看所有欄位。",
     source: "來源參照",
   },
   "zh-CN": {
@@ -348,6 +353,7 @@ export const attributionCopy: Record<Locale, AttributionCopy> = {
     end: "结束",
     noTimeline: "尚未提供时间轴观测。",
     noRows: "尚未提供记录。",
+    scrollHint: "横向滚动以查看所有列。",
     source: "来源参照",
   },
 };

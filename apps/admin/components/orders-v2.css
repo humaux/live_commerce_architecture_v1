@@ -1,37 +1,37 @@
+/*
+ * Purpose: Styles the merchant orders workspace, filters and details.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/MerchantOrders.tsx
+ */
 /* Seven-column ledger: use the existing shell and C inline expansion. */
 .orders-v2-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px 0; border-top: 1px solid var(--line); }
 .orders-v2-filters label { display: grid; align-content: start; gap: 7px; min-width: 0; font-size: 13px; font-weight: 600; }
 .orders-v2-filters input, .orders-v2-filters select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; background: white; color: var(--ink); font: inherit; }
 .orders-v2-filters small { font-weight: 400; color: var(--orders-muted); }
-.orders-v2-search { grid-column: 1 / -1; }
+.orders-v2-search { grid-column: 1 / -1; max-width: var(--ui-field-long); }
 .orders-v2-secondary { display: contents; }
 .orders-v2-secondary[hidden] { display: none; }
 .orders-v2-state-controls { grid-column: 1 / -1; margin: 0; }
-.orders-v2-filter-toggle { display: none; }
+.orders-v2-filter-toggle { display: block; justify-self: start; min-height: var(--ui-target); }
+.orders-v2-filters[data-expanded="false"] .orders-v2-state-field { display: none; }
 .orders-v2-filter-actions { display: flex; align-items: end; flex-wrap: wrap; gap: 8px; }
-.orders-v2-filter-actions button, .orders-v2-tabs button { min-height: 44px; padding: 9px 12px; }
-.orders-v2-filter-actions button:first-child { background: #c45222; border-color: #c45222; color: white; }
-.orders-v2-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
-.orders-v2-tabs button { display: inline-flex; align-items: center; gap: 8px; border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 4px; font-size: 13px; }
-.orders-v2-tabs button[aria-pressed="true"] { color: #8b3516; background: #fff3eb; border-color: #e7b495; }
-.orders-v2-tabs button span { font-variant-numeric: tabular-nums; font-weight: 700; }
+.orders-v2-filter-actions button { min-height: var(--ui-target); padding: 9px 12px; }
+.orders-v2-filter-actions button:first-child { background: var(--ui-primary); border-color: var(--ui-primary); color: white; }
 .orders-v2-total { margin: 16px 0; font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }
 .orders-v2-note { font-size: 13px; color: var(--orders-muted); }
 .orders-v2 .orders-table { table-layout: fixed; }
 .orders-v2 .orders-table > thead > tr > th, .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td { width: auto; padding: 12px 10px; overflow-wrap: anywhere; }
-.orders-v2 .orders-table > thead > tr > th:first-child { width: 21%; }
+.orders-v2 .orders-table > thead > tr > th:first-child { width: 17%; }
 .orders-v2 .orders-table > thead > tr > th:nth-child(2) { width: 16%; }
 .orders-v2 .orders-table > thead > tr > th:nth-child(3) { width: 8%; }
 .orders-v2 .orders-table > tbody > tr > td:first-child button { white-space: normal; text-align: start; min-height: 44px; gap: 6px; max-width: 100%; flex-wrap: wrap; }
 .orders-v2 .orders-table > tbody > tr > td:first-child button > span:first-of-type { overflow-wrap: anywhere; min-width: 0; flex: 1; }
-.orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td > span { display: block; margin: 3px 0; }
-.orders-v2 .orders-badge { white-space: normal; overflow-wrap: anywhere; max-width: 100%; }
+.orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td > span { display: block; width: fit-content; margin: 3px 0; }
+.orders-v2 .orders-badge { white-space: normal; word-break: normal; overflow-wrap: normal; max-width: 100%; }
 @media (min-width: 681px) {
   .orders-v2 .orders-table > thead > tr > th:nth-child(4), .orders-v2 .orders-table > tbody > tr:not(.orders-detail-row) > td:nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; }
 }
 @media (max-width: 680px) {
-  .orders-v2-tabs { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #c45222 #f5f6f8; }
-  .orders-v2-tabs button { flex: 0 0 auto; white-space: nowrap; }
   .orders-v2-filters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-secondary { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .orders-v2-filter-toggle { display: block; justify-self: start; min-height: 44px; padding: 9px 12px; }

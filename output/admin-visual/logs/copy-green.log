@@ -1,0 +1,15 @@
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.689334ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.565125ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (3.695459ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.094042ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.140834ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (123.282917ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.183958ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 231.369834

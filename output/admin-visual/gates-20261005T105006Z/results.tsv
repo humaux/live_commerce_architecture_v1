@@ -1,0 +1,3 @@
+source	mode	exit	seconds	log
+f0b93ca6d56d01c68e8787dcf692de7318dfe0f5	--browser-studio-ui	0	65	output/admin-visual/gates-20261005T105006Z/browser-studio-ui.log
+f0b93ca6d56d01c68e8787dcf692de7318dfe0f5	--browser-merchant-orders-ui	0	108	output/admin-visual/gates-20261005T105006Z/browser-merchant-orders-ui.log

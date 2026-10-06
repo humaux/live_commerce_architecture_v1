@@ -41,6 +41,17 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		sum := sha256.Sum256([]byte(q))
 		filter = hex.EncodeToString(sum[:])
 	}
+	// W6-01B: the tag id joins the cursor filter (a cursor minted for one tag must not page another). With no tag the
+	// filter is exactly the pre-0139 value, so existing cursors stay valid.
+	var tagArg any
+	if in.Tag != "" {
+		if !command.ValidID(in.Tag) {
+			return empty, command.ErrInvalid
+		}
+		tagArg = in.Tag
+		sum := sha256.Sum256([]byte(q + "\x00tag:" + in.Tag))
+		filter = hex.EncodeToString(sum[:])
+	}
 	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "customers", Filter: filter}
 	limit, keys, err := pagination.Decode(in.Page, binding, 2)
 	if err != nil {
@@ -54,7 +65,7 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 	if q != "" {
 		qArg = q
 	}
-	raw, err := read(ctx, tx, scope, token, nil, limit+1, afterTime, afterID, qArg)
+	raw, err := read(ctx, tx, scope, token, nil, limit+1, afterTime, afterID, qArg, tagArg)
 	if err != nil {
 		return empty, err
 	}
@@ -91,7 +102,7 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, customerID
 		ids = ids[:detailOrders]
 	}
 	out := Detail{Customer: d.Customer, Orders: make([]merchantorders.Summary, 0, len(ids)), Claims: d.Claims,
-		ConsentHistory: d.ConsentHistory, PrivacyActions: d.PrivacyActions}
+		ConsentHistory: d.ConsentHistory, PrivacyActions: d.PrivacyActions, TagsRevision: d.TagsRevision, Notes: d.Notes}
 	for _, id := range ids {
 		// merchantorders.Get: existing order projection; the detail page must show what the order page shows.
 		order, err := merchantorders.Get(ctx, tx, scope, token, id)
@@ -112,7 +123,7 @@ func loadDetail(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, cus
 	if tx == nil || !validAuthorityInput(scope, token) || !command.ValidID(customerID) {
 		return detailWire{}, 0, command.ErrInvalid
 	}
-	raw, err := read(ctx, tx, scope, token, customerID, 1, nil, nil, nil)
+	raw, err := read(ctx, tx, scope, token, customerID, 1, nil, nil, nil, nil)
 	if err != nil {
 		return detailWire{}, 0, err
 	}
@@ -130,13 +141,14 @@ func loadDetail(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, cus
 	return d, len(d.OrderIDs), nil
 }
 
-func read(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, customerID any, limit int, afterTime, afterID, q any) ([]byte, error) {
+func read(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, customerID any, limit int, afterTime, afterID, q, tag any) ([]byte, error) {
 	hash := sha256.Sum256([]byte(token))
 	var raw []byte
 	// identity.read_merchant_customers: customers:read projection over buyer.owners (0078); the definer re-verifies
 	// the GUCs WithScope set and fences authority again after its reads.
-	err := tx.QueryRow(ctx, `SELECT identity.read_merchant_customers($1,$2::uuid,$3::uuid,$4,$5::timestamptz,$6::uuid,$7)`,
-		hash[:], scope.StoreID, customerID, limit, afterTime, afterID, q).Scan(&raw)
+	// W6-01B: the 8-argument form adds the tag filter and the tag/note projection (migration 0139).
+	err := tx.QueryRow(ctx, `SELECT identity.read_merchant_customers($1,$2::uuid,$3::uuid,$4,$5::timestamptz,$6::uuid,$7,$8::uuid)`,
+		hash[:], scope.StoreID, customerID, limit, afterTime, afterID, q, tag).Scan(&raw)
 	if err != nil {
 		return nil, mapMerchantError(err)
 	}

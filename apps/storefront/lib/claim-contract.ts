@@ -1,3 +1,6 @@
+// Purpose: closed buyer claim-link wire validators and fragment grammar.
+// Depends on: frozen B1/B2 Direct checkout contract; no IO or storage.
+// Used by: ClaimLink, purchase redeem helper, buyer-server BFF and Node gates.
 // Owns the buyer claim-link wire contract in the storefront: the canonical link-token
 // grammar, the #t= fragment reader, and closed validators for the B1 preview and B2
 // redeem projections (contracts/live-keyword-claims-v1.md §7.2, §11.1).
@@ -16,6 +19,7 @@ export type ClaimPreviewLine = {
   quantity: number;
   pending: boolean;
   available: boolean;
+  sold_out: boolean;
 };
 export type ClaimPreview = {
   bundle_version: number;
@@ -33,7 +37,7 @@ export type ClaimRedeemed = {
   bundle_version: number;
   cart: ClaimCart;
   applied: { sku_id: string; quantity: number }[];
-  skipped: { sku_id: string; reason: "unavailable" | "offer_inactive" }[];
+  skipped: { sku_id: string; reason: "unavailable" | "offer_inactive" | "sold_out" }[];
 };
 
 // 32 random bytes as canonical unpadded base64url: 42 free characters and a final one
@@ -68,12 +72,12 @@ export function validClaimPreview(value: unknown): value is ClaimPreview {
     typeof value.bound !== "boolean" || !time(value.expires_at) || !Array.isArray(value.lines) ||
     value.lines.length < 1 || value.lines.length > 50) return false;
   return value.lines.every((line: unknown) =>
-    exact(line, ["keyword", "sku_id", "sku_code", "product_name", "currency", "unit_price_minor", "quantity", "pending", "available"]) &&
+    exact(line, ["keyword", "sku_id", "sku_code", "product_name", "currency", "unit_price_minor", "quantity", "pending", "available", "sold_out"]) &&
     typeof line.keyword === "string" && /^[A-Z0-9]{1,16}$/.test(line.keyword) &&
     typeof line.sku_id === "string" && UUID.test(line.sku_id) && typeof line.sku_code === "string" &&
     typeof line.product_name === "string" && typeof line.currency === "string" && /^[A-Z]{3}$/.test(line.currency) &&
     count(line.unit_price_minor, 0) && count(line.quantity, 1) && (line.quantity as number) <= 999 &&
-    typeof line.pending === "boolean" && typeof line.available === "boolean");
+    typeof line.pending === "boolean" && typeof line.available === "boolean" && typeof line.sold_out === "boolean");
 }
 
 /** The existing buyer cart projection (GET/PUT cart and B2's cart). */
@@ -90,5 +94,5 @@ export function validClaimRedeemed(value: unknown): value is ClaimRedeemed {
     validClaimCart(value.cart) && Array.isArray(value.applied) && value.applied.every(item) &&
     Array.isArray(value.skipped) && value.skipped.every((entry: unknown) => exact(entry, ["sku_id", "reason"]) &&
       typeof entry.sku_id === "string" && UUID.test(entry.sku_id) &&
-      (entry.reason === "unavailable" || entry.reason === "offer_inactive"));
+      (entry.reason === "unavailable" || entry.reason === "offer_inactive" || entry.reason === "sold_out"));
 }
