@@ -1,0 +1,8 @@
+=== RUN   TestKeywordToolsBatch
+    keyword_tools_test.go:397: rename inactive: {Applied:true Offers:[] Unchanged:[] Conflicts:[{Index:0 OfferID:b47ad538-6093-428e-ab06-207d122dfdc5 Keyword:F6 Reason:offer_inactive}] Warnings:[]} <nil>
+--- FAIL: TestKeywordToolsBatch (1.70s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.946s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

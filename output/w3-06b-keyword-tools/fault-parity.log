@@ -1,0 +1,8 @@
+=== RUN   TestSimulateParityWithIngest
+    keyword_tools_test.go:156: SIM-PARITY EXACT "#A01": ingest {Outcome:REJECTED Reason:NO_MATCH OfferID: Keyword: Quantity:0 PreviousQuantity:0 BundleID: BundleVersion:0 LineVersion:0}, simulator {Outcome:ACCEPTED Reason: MatchMode:EXACT GrammarVersion:kwc-v2 Kind:MATCH ParsedKeyword:A01 ParsedQuantity:1 Explicit:false Offer:0xc000b5b110 TargetQuantity:1 WindowState:OPEN WindowMatchMode:EXACT}
+--- FAIL: TestSimulateParityWithIngest (1.72s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.451s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1
