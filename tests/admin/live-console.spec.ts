@@ -204,7 +204,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId("workspace-sign-out").click();
     await expect(page.getByTestId("live-console")).toHaveCount(0);
     const cookies = await page.context().cookies(origin);
-    expect(cookies.filter((cookie) => cookie.name === "__Host-commerce_session" || cookie.name === "__Host-commerce_csrf")).toHaveLength(0);
+    expect(cookies.filter((cookie) => cookie.name === "__Host-commerce_session" || cookie.name === "__Host-commerce_csrf").map((cookie) => cookie.name)).toHaveLength(0);
     const end = await facts(request);
     await writeFile(`${evidence}/${name}-receipts.json`, JSON.stringify({ class: "MOCK", scene, copied, receipts: end.receipts.filter((receipt) => receipt.scene === scene), cadence }, null, 2));
   });
