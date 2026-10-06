@@ -67,16 +67,17 @@ func (s *Service) PlanCheckoutReminders(ctx context.Context, tx pgx.Tx, scope pl
 		Bundle  string `json:"bundle_id"`
 	}{sessionID, bundleID}
 	err := command.Run(ctx, tx, scope, "inbox.checkout_reminder.trigger", key, request, &out, func() error {
-		origin, err := s.storeOrigin(ctx, tx)
-		if err != nil {
-			return err
-		}
 		body, err := s.reminderBody(ctx, tx)
 		if err != nil {
 			return err
 		}
 		// Calls inbox.checkout_reminder_candidates (0131): classifies every candidate buyer, records the follow-up rows, takes the session lock.
+		// It runs before the storefront check so a foreign session is 404 (not no_storefront); a store without a domain rolls the rows back.
 		cands, truncated, err := s.reminderCandidates(ctx, tx, sessionID, bundleID)
+		if err != nil {
+			return err
+		}
+		origin, err := s.storeOrigin(ctx, tx)
 		if err != nil {
 			return err
 		}

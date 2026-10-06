@@ -66,11 +66,11 @@ func (e *lbEnv) crReport(t *testing.T) inbox.ReminderReport {
 	return out
 }
 
-// crOps returns the checkout-reminder DM operations of this store, oldest first.
+// crOps returns the checkout-reminder DM operations of this test's session (the store is shared across tests), oldest first.
 func (e *lbEnv) crOps(t *testing.T) []string {
 	t.Helper()
 	rows, err := e.h.f.owner.Query(context.Background(), `SELECT id::text FROM integration.operations WHERE tenant_id=$1 AND store_id=$2
-		AND action='meta.dm_send' AND request->>'message_type'='checkout_reminder' ORDER BY created_at`, e.h.f.tenantA, e.h.f.storeA1)
+		AND action='meta.dm_send' AND request->>'message_type'='checkout_reminder' AND request->>'session_id'=$3 ORDER BY created_at`, e.h.f.tenantA, e.h.f.storeA1, e.session)
 	if err != nil {
 		t.Fatal(err)
 	}
