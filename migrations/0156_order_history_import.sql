@@ -284,7 +284,7 @@ COMMENT ON COLUMN customers.historical_orders.status IS 'internal/migrationimpor
 COMMENT ON COLUMN customers.historical_orders.total_minor IS 'internal/migrationimport: display total in TWD minor units (whole NT$ x 100); NOT revenue: no finance, report or attribution object may sum it (I05).';
 COMMENT ON COLUMN customers.historical_orders.currency IS 'internal/migrationimport: always TWD in v1.';
 COMMENT ON COLUMN customers.historical_orders.items_summary IS 'internal/migrationimport: item names x quantities joined into one line (<= 500 chars); no SKU link.';
-COMMENT ON COLUMN customers.historical_orders.city IS 'internal/migrationimport: one of Taiwan's 22 cities / counties (canonical 臺 spelling) or NULL; CHECK-enforced, so a street, name or email can never be stored; the full address is never imported (OH-OPEN-1).';
+COMMENT ON COLUMN customers.historical_orders.city IS 'internal/migrationimport: one of Taiwan''s 22 cities / counties (canonical 臺 spelling) or NULL; CHECK-enforced, so a street, name or email can never be stored; the full address is never imported (OH-OPEN-1).';
 COMMENT ON COLUMN customers.historical_orders.imported_at IS 'internal/migrationimport: first import time of this order.';
 COMMENT ON COLUMN customers.historical_orders.updated_at IS 'internal/migrationimport: last time a re-import changed this order.';
 COMMENT ON COLUMN customers.historical_orders.tenant_id IS 'internal/customers: tenant scope (FORCE RLS GUC).';
