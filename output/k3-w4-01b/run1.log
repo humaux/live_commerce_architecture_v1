@@ -1,0 +1,39 @@
+=== RUN   TestK3W401BForgedBodiesLeaveNoRows
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+2026/10/06 07:42:37 WARN payuni_notify_rejected code=invalid_signature token_hash=997b609b1aac190f
+--- PASS: TestK3W401BForgedBodiesLeaveNoRows (3.71s)
+=== RUN   TestK3W401BConcurrentReplayExactlyOneReceipt
+--- PASS: TestK3W401BConcurrentReplayExactlyOneReceipt (2.32s)
+=== RUN   TestK3W401BRotationGraceBoundary
+2026/10/06 07:42:41 WARN payuni_notify_rejected code=invalid_signature token_hash=1226ebcfe197fca5
+--- PASS: TestK3W401BRotationGraceBoundary (2.33s)
+=== RUN   TestK3W401BCrossStoreSameCredentialReplayScoped
+    k3_w4_01b_adversarial_test.go:250: exec test setup: ERROR: insert or update on table "merchant_accounts" violates foreign key constraint "account_current_credential_fk" (SQLSTATE 23503)
+--- FAIL: TestK3W401BCrossStoreSameCredentialReplayScoped (2.25s)
+=== RUN   TestK3W401BDisabledStoreStillRecordsAndWakes
+--- PASS: TestK3W401BDisabledStoreStillRecordsAndWakes (2.26s)
+=== RUN   TestK3W401BEndpointDisableRotateAndLiveRefusal
+--- PASS: TestK3W401BEndpointDisableRotateAndLiveRefusal (2.19s)
+=== RUN   TestK3W401BWakeOnlyMatchingJobNeverInserts
+    k3_w4_01b_adversarial_test.go:368: exec test setup: ERROR: payment queue linkage mismatch (SQLSTATE 22023)
+--- FAIL: TestK3W401BWakeOnlyMatchingJobNeverInserts (2.21s)
+=== RUN   TestK3W401BProfileMismatchReviewedNotWoken
+--- PASS: TestK3W401BProfileMismatchReviewedNotWoken (2.28s)
+=== RUN   TestK3W401BIngressAuthorityCeiling
+--- PASS: TestK3W401BIngressAuthorityCeiling (2.19s)
+=== RUN   TestK3W401BBodyAndHeaderBoundaries
+2026/10/06 07:42:57 WARN payuni_notify_rejected code=invalid_signature token_hash=43bfff5d122e94ba
+2026/10/06 07:42:57 WARN payuni_notify_rejected code=invalid_signature token_hash=43bfff5d122e94ba
+--- PASS: TestK3W401BBodyAndHeaderBoundaries (2.24s)
+FAIL
+FAIL	livecommerce/tests/foundation	25.036s
+FAIL
+test-focused: top-level PASS=8 FAIL=2 SKIP=0 exit=1
