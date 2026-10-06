@@ -1,0 +1,39 @@
+# red-fix: HEAD e68b73a2d216df276457dc010198d0c8e724cb85 + uncommitted red tests (support_grant_test.go); migration 0153 not yet changed
+=== RUN   TestSupportGrantSG01ReadAndSG02PackLimits
+    support_grant_test.go:150: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG01ReadAndSG02PackLimits (2.17s)
+=== RUN   TestSupportGrantSG02ReadOnlyTransactionAndUseAudit
+    support_grant_test.go:266: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG02ReadOnlyTransactionAndUseAudit (0.02s)
+=== RUN   TestSupportGrantSG03ExpiryNeedsNoSweeper
+    support_grant_test.go:316: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG03ExpiryNeedsNoSweeper (0.02s)
+=== RUN   TestSupportGrantSG04RevokeImmediateAndIdempotent
+    support_grant_test.go:354: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG04RevokeImmediateAndIdempotent (0.02s)
+=== RUN   TestSupportGrantSG05SuspensionStopsSupportToo
+    support_grant_test.go:395: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG05SuspensionStopsSupportToo (0.02s)
+=== RUN   TestSupportGrantSG06Limits
+    support_grant_test.go:420: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG06Limits (0.02s)
+=== RUN   TestSupportGrantSG07RegularPrincipalsUnaffected
+    support_grant_test.go:498: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG07RegularPrincipalsUnaffected (0.02s)
+=== RUN   TestSupportGrantSG09RegistryAndSeparation
+    support_grant_test.go:552: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG09RegistryAndSeparation (0.02s)
+=== RUN   TestSupportGrantNullPermissionDenied
+    support_grant_test.go:696: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantNullPermissionDenied (0.02s)
+=== RUN   TestSupportGrantWriteVerbRouteWithReadPermissionRefused
+    support_grant_test.go:716: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantWriteVerbRouteWithReadPermissionRefused (0.02s)
+=== RUN   TestSupportGrantSG08AuthorityMatrix
+    support_grant_test.go:748: operator call: ERROR: function identity.add_support_principal(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+--- FAIL: TestSupportGrantSG08AuthorityMatrix (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.646s
+FAIL
+test-focused: top-level PASS=0 FAIL=11 SKIP=0 exit=1
+exit 1
