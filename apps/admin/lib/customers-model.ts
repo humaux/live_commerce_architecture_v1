@@ -32,6 +32,7 @@ export type Customer = {
   platforms: string[];
   consents: Consents;
   active: boolean;
+  imported: boolean; // W5-02B: created by a customer import (migration 0152); consent is never imported
   tags: Tag[];
 };
 export type CustomerList = { items: Customer[]; next_cursor: string };
@@ -116,7 +117,7 @@ function parseConsents(value: unknown): Consents {
 }
 const customerKeys = [
   "customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-  "paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "tags",
+  "paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "imported", "tags",
 ];
 function parseTag(value: unknown): Tag {
   const v = object(value, ["id", "name", "color"]);
@@ -148,7 +149,7 @@ function customerFrom(v: Record<string, unknown>): Customer {
     !(v.currency === null || /^[A-Z]{3}$/.test(String(v.currency))) || !count(v.claims_count) ||
     !Array.isArray(v.platforms) || v.platforms.length > 8 ||
     !v.platforms.every((platform) => typeof platform === "string" && token.test(platform)) ||
-    new Set(v.platforms).size !== v.platforms.length || !flag(v.active))
+    new Set(v.platforms).size !== v.platforms.length || !flag(v.active) || !flag(v.imported))
     throw new Error("unavailable");
   // An erased owner (active=false) never shows a granted consent: consent_allows is false for it (CD4/CD7).
   const consents = parseConsents(v.consents);

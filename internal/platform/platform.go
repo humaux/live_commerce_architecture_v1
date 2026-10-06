@@ -18,12 +18,21 @@ import (
 	"livecommerce/internal/httperror"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrUnauthorized = errors.New("unauthorized")
 var ErrForbidden = errors.New("forbidden")
 var ErrScopeNotFound = errors.New("scope not found")
+
+// ErrSupportReadOnly is a write attempted under a platform support grant (migration 0153). It wraps ErrForbidden so every
+// existing handler already answers 403; the distinct text is for logs and tests.
+var ErrSupportReadOnly = fmt.Errorf("support_read_only: %w", ErrForbidden)
+
+// supportRevision is the authz_revision identity.resolve_access returns for a support scope (memberships.authz_revision is
+// always > 0, so a negative value cannot come from a regular member).
+const supportRevision int64 = -1
 
 const (
 	storeReadPermission = "store:read"
@@ -667,7 +676,27 @@ func withScopeContext(ctx context.Context, pool *pgxpool.Pool, token, storeID, p
 	if err != nil {
 		return err
 	}
+	support := scope.Revision == supportRevision
+	if support {
+		// 0153: platform support is read-only and audited. One support.used row per principal+store per 15 minutes (written
+		// while the transaction can still write, under the same scoped RLS policy as every merchant audit row), then the
+		// transaction is made read-only so no definer or query below can write anything, whatever permission it asked for.
+		if _, err = transaction.Exec(scopeCtx, `INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action)
+			SELECT $1::uuid,$2::uuid,$3::uuid,'support.used'
+			WHERE NOT EXISTS (SELECT 1 FROM ops.audit_events a WHERE a.store_id=$2::uuid AND a.principal_id=$3::uuid
+				AND a.action='support.used' AND a.created_at > clock_timestamp() - interval '15 minutes')`,
+			scope.TenantID, scope.StoreID, scope.PrincipalID); err != nil {
+			return err
+		}
+		if _, err = transaction.Exec(scopeCtx, `SELECT set_config('transaction_read_only','on',true)`); err != nil {
+			return err
+		}
+	}
 	if err = fn(scopeCtx, transaction, scope); err != nil {
+		var pgErr *pgconn.PgError
+		if support && errors.As(err, &pgErr) && pgErr.Code == "25006" { // read_only_sql_transaction
+			return ErrSupportReadOnly
+		}
 		return err
 	}
 	return transaction.Commit(scopeCtx)

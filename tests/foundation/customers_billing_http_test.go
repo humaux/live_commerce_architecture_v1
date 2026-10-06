@@ -172,7 +172,7 @@ func TestCustomersBillingCB09HTTP(t *testing.T) {
 	owner := m.p.cap.Scope.OwnerID // has one order (the psSetup hold): a customer
 
 	getStatus := func(token string) cbhResp { return c.do(c.on, "GET", base+"/customers?limit=50", token, nil, nil) }
-	const listItemKeys = "active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags"
+	const listItemKeys = "active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags"
 
 	t.Run("GET customers: permissions, grammar, shape, paging, method", func(t *testing.T) {
 		c.want("no token", getStatus(""), 401, "")

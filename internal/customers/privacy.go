@@ -75,11 +75,25 @@ func Export(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, cu
 		}
 		doc.Orders = append(doc.Orders, order)
 	}
+	hash := sha256.Sum256([]byte(token))
+	// customers.export_import_profile (customers:privacy, W5-02B): the imported name/phone/email/external ids of this customer, NULL
+	// when it was not imported. The summary stored with the EXPORT row stays counts-only.
+	var rawProfile []byte
+	if err = tx.QueryRow(ctx, `SELECT customers.export_import_profile($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, customerID).Scan(&rawProfile); err != nil {
+		return nil, mapMerchantError(err)
+	}
+	if len(rawProfile) > 0 {
+		var profile ImportProfile
+		if exactKeys(rawProfile, "display_name", "phone", "email", "source", "imported_at", "updated_at", "external_ids") != nil || strict(rawProfile, &profile) != nil ||
+			profile.ExternalIDs == nil {
+			return nil, ErrUnavailable
+		}
+		doc.ImportProfile = &profile
+	}
 	body, err := marshalBounded(doc, len(doc.Orders))
 	if err != nil {
 		return nil, err
 	}
-	hash := sha256.Sum256([]byte(token))
 	var stored []byte
 	// customers.record_export: EXPORT row + audit customers.exported in this transaction; a replayed key returns the row.
 	err = tx.QueryRow(ctx, `SELECT customers.record_export($1,$2::uuid,$3::uuid,'merchant',$4::uuid,$5::jsonb)`,
