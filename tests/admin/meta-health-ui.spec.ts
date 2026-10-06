@@ -29,6 +29,8 @@ const locales=["zh-TW","zh-CN","en"] as const;
 const review={"zh-TW":"僅測試帳號","zh-CN":"仅测试账号",en:"Test accounts only"};
 const recheck={"zh-TW":"重新檢查","zh-CN":"重新检查",en:"Check again"};
 test.use({actionTimeout:15000,navigationTimeout:30000});
+// Only the separate focused Go test supplies this flag. The full CI gate supplies an empty value and runs every assertion.
+test.beforeEach(({},info)=>{test.skip(process.env.LC_HEALTH_FOCUS==='mobile-ci'&&!/named FB\/IG capabilities|blocking connection advice/.test(info.title),'local focused subset; full MCH11 NOT_RUN');});
 test.afterAll(async()=>{
  // A failed test restarts the single worker; retain preceding workers' real-click records.
  const previous = await readFile(path.join(evidence,"click-ledger.json"),"utf8").then(text=>JSON.parse(text) as typeof ledger).catch((error:NodeJS.ErrnoException)=>{if(error.code==="ENOENT")return [];throw error;});

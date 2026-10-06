@@ -8,6 +8,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -27,7 +28,12 @@ import (
 )
 
 // TestBrowserMetaHealthUI checks health advice and merchant actions through the actual browser/BFF/Go boundary.
-func TestBrowserMetaHealthUI(t *testing.T) {
+func TestBrowserMetaHealthUI(t *testing.T) { metaHealthUIBrowser(t, false) }
+
+// TestBrowserMetaHealthUIFocused covers the reported mobile restriction/connection advice failures only; it is not full MCH11 acceptance.
+func TestBrowserMetaHealthUIFocused(t *testing.T) { metaHealthUIBrowser(t, true) }
+
+func metaHealthUIBrowser(t *testing.T, focused bool) {
 	if os.Getenv("LC_BROWSER_META_HEALTH_UI") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use --browser-meta-health-ui")
 	}
@@ -128,11 +134,17 @@ func TestBrowserMetaHealthUI(t *testing.T) {
 		if err == nil {
 			err = m.probe.Work(r.Context(), nil)
 		}
-		if err == nil {
+		if err == nil && status != "active" {
+			// 0125 meta_health_on_connection clears capability rows on every active UPDATE, even a no-op.
+			// Keep the just-probed rows for active scenarios; only the blocking scenario changes connection status.
 			_, err = m.f.owner.Exec(r.Context(), `UPDATE integration.meta_connections SET status=$4 WHERE tenant_id=$1 AND store_id=$2 AND page_id=$3`, m.tenant, m.store, p.pageID, status)
 		}
 		if err == nil {
-			_, err = m.f.owner.Exec(r.Context(), `UPDATE integration.binding_capabilities SET state=CASE WHEN $7='warning' AND capability<>'reply_public' THEN 'ok' ELSE $4 END,reason=CASE WHEN $7='warning' AND capability<>'reply_public' THEN 'ok' ELSE $5 END,checked_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND store_id=$2 AND binding_id IN ($3,$6)`, m.tenant, m.store, p.fbBinding, state, reason, p.igBinding, scenario)
+			result, updateErr := m.f.owner.Exec(r.Context(), `UPDATE integration.binding_capabilities SET state=CASE WHEN $7='warning' AND capability<>'reply_public' THEN 'ok' ELSE $4 END,reason=CASE WHEN $7='warning' AND capability<>'reply_public' THEN 'ok' ELSE $5 END,checked_at=clock_timestamp()-interval '2 minutes' WHERE tenant_id=$1 AND store_id=$2 AND binding_id IN ($3,$6)`, m.tenant, m.store, p.fbBinding, state, reason, p.igBinding, scenario)
+			err = updateErr
+			if err == nil && result.RowsAffected() != 8 {
+				err = fmt.Errorf("scenario requires 8 persisted named capability rows, got %d", result.RowsAffected())
+			}
 		}
 		if err == nil {
 			_, err = m.f.owner.Exec(r.Context(), `UPDATE integration.meta_health_probes SET severity=$4,last_checked_at=clock_timestamp()-interval '2 minutes',next_due_at=clock_timestamp()+interval '6 hours' WHERE tenant_id=$1 AND store_id=$2 AND page_id=$3`, m.tenant, m.store, p.pageID, severity)
@@ -169,7 +181,11 @@ func TestBrowserMetaHealthUI(t *testing.T) {
 		t.Fatal(err)
 	}
 	viewerStack := mabStartAdmin(t, ctx, m.f, viewer, viewerEvidence, options)
-	brfPlaywright(t, ctx, stack, []string{"meta-health-ui.spec.ts"}, map[string]string{"LC_HEALTH_SCENE": draft.ID, "LC_HEALTH_STORE": m.store, "LC_HEALTH_OTHER_STORE": m.f.storeA2, "LC_HEALTH_PAGE": p.pageID, "LC_HEALTH_CONTROL": control.URL, "LC_HEALTH_KEY": key, "LC_HEALTH_VIEWER": viewerStack.origin})
+	focus := ""
+	if focused {
+		focus = "mobile-ci"
+	}
+	brfPlaywright(t, ctx, stack, []string{"meta-health-ui.spec.ts"}, map[string]string{"LC_HEALTH_FOCUS": focus, "LC_HEALTH_SCENE": draft.ID, "LC_HEALTH_STORE": m.store, "LC_HEALTH_OTHER_STORE": m.f.storeA2, "LC_HEALTH_PAGE": p.pageID, "LC_HEALTH_CONTROL": control.URL, "LC_HEALTH_KEY": key, "LC_HEALTH_VIEWER": viewerStack.origin})
 	t.Logf("MCH11 browser evidence: %s", filepath.Join(durable, filepath.Base(evidence)))
 }
 
