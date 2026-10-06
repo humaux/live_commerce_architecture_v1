@@ -2,10 +2,11 @@
 // Depends on: @live-commerce/i18n locale keys; no network services.
 // Used by: LiveWorkspace, LiveConsole, SessionResults and live workspace hooks.
 const en = {
-  refusals: { too_many_open_windows: "Five sessions already accept comments. Close one before opening another.", billing_restricted: "Billing restrictions prevent starting this session. Check your subscription.", below_reserved: "Stock cannot fall below reserved and allocated quantities. Refresh and enter a higher target." },
+  refusals: { too_many_open_windows: "Five sessions already accept comments. Close one before opening another.", billing_restricted: "Billing restrictions prevent starting this session. Check your subscription.", below_reserved: "Stock cannot fall below reserved, allocated and unavailable quantities. Refresh and enter a higher target." },
   leavePending: "A request is still pending. Leave this session? Its receipt will still require reconciliation.",
   feed: "Comment feed", stream: { live: "Receiving", throttled: "Temporarily rate-limited", reauth_required: "Reconnect the account", unavailable: "Not available", not_started: "Not started" },
   title: "Live console", sessions: "Live sessions", settings: "Session settings", choose: "Choose a session",
+  settingsChoose: "Choose a session to configure its products and comment ordering.", emptySessions: "No sessions yet. Create one in Live sessions.",
   before: "Before going live", during: "Live session", after: "After the session", archived: "Archived",
   start: "Start live session", end: "End live session", copy: "Copy to next session", copyLast: "Copy previous session",
   lifecycleHint: "These controls open or close comment ordering. They do not start or stop your Facebook or Instagram broadcast.",
@@ -20,7 +21,7 @@ const en = {
   comments: "Comments", keyword: "Keyword comments", buyers: "Buyers", orders: "Orders", amount: "Order amount", paid: "Collected revenue",
   unknown: "Not available", observed: "Comments observed", graph: "Platform comment count", offers: "Session products", empty: "No products in this session yet.",
   configure: "Configure products and comment source", stock: "Sellable stock", saveStock: "Save stock", untracked: "Untracked", missingWarehouse: "Set a warehouse in Inventory before adjusting stock.",
-  narrowPending: "Live-operator stock adjustment is not connected yet. Ask an inventory manager to adjust it in Inventory.",
+  stockPermission: "Live-stock adjustment or inventory-management permission is required.",
   manageRequired: "Session-management permission is required.", open: "Open", closed: "Closed", recommend: "Recommend", recommended: "Recommended",
   recommendHint: "Highlights this product in the console only; no public comment is sent.", soldOut: "Sold out", lowStock: "Low stock", claimed: "Claimed quantity", paidQty: "Paid quantity",
   stockInvalid: "Enter a whole nonnegative quantity, with a change no larger than 1,000.",
@@ -34,7 +35,8 @@ const en = {
 };
 export type WorkspaceCopy = typeof en;
 const tw: WorkspaceCopy = {
-  refusals: { too_many_open_windows: "已有 5 場開放收單，請先關閉其中一場。", billing_restricted: "帳務限制暫時阻止開播，請核對訂閱狀態。", below_reserved: "庫存不可低於已保留與已分配數量，請重新整理並提高目標數量。" },
+  settingsChoose: "請先選擇場次，再設定商品與留言收單。", emptySessions: "尚無場次，請先到直播場次建立。",
+  refusals: { too_many_open_windows: "已有 5 場開放收單，請先關閉其中一場。", billing_restricted: "帳務限制暫時阻止開播，請核對訂閱狀態。", below_reserved: "庫存不可低於已保留、已分配與不可售數量，請重新整理並提高目標數量。" },
   leavePending: "尚有待確認請求。仍要離開場次嗎？離開後仍須核對回執。",
   feed: "留言接收", stream: { live: "接收中", throttled: "暫時限流", reauth_required: "請重新連接帳號", unavailable: "暫時無法接收", not_started: "尚未開始" },
   title: "直播控台", sessions: "直播場次", settings: "場次設定", choose: "選擇場次",
@@ -51,7 +53,7 @@ const tw: WorkspaceCopy = {
   comments: "留言", keyword: "關鍵字留言", buyers: "買家", orders: "訂單", amount: "訂單金額", paid: "營業額（已收款）",
   unknown: "尚無資料", observed: "已觀察留言", graph: "平台留言數", offers: "本場商品", empty: "本場尚未加入商品。",
   configure: "設定商品與留言來源", stock: "可售庫存", saveStock: "儲存庫存", untracked: "不追蹤", missingWarehouse: "請先到庫存頁設定倉庫，再調整數量。",
-  narrowPending: "直播操作員的庫存調整尚未接通，請庫存管理員到庫存頁調整。",
+  stockPermission: "需要直播庫存調整或庫存管理權限。",
   manageRequired: "需要直播管理權限。", open: "開放", closed: "關閉", recommend: "推薦", recommended: "推薦中",
   recommendHint: "僅在控台標示推薦商品，不發送公開留言。", soldOut: "已售罄", lowStock: "庫存偏低", claimed: "認領數量", paidQty: "已付款數量",
   stockInvalid: "請輸入非負整數，單次增減不可超過 1,000。",
@@ -65,15 +67,16 @@ const tw: WorkspaceCopy = {
 };
 const cn: WorkspaceCopy = {
   ...tw, title: "直播控台", sessions: "直播场次", settings: "场次设置", choose: "选择场次", before: "开播前准备", during: "直播中", after: "直播后", archived: "已归档",
+  settingsChoose: "请先选择场次，再设置商品与评论收单。", emptySessions: "尚无场次，请先到直播场次创建。",
   start: "开始直播", end: "结束直播", copy: "复制成下一场", copyLast: "复制上一场", lifecycleHint: "此处控制本场评论收单，不会启动或停止 Facebook、Instagram 的实际直播。",
   feed: "评论接收", stream: { live: "接收中", throttled: "暂时限流", reauth_required: "请重新连接账号", unavailable: "暂时无法接收", not_started: "尚未开始" },
   leavePending: "仍有待确认请求。仍要离开场次吗？离开后仍须核对回执。",
-  refusals: { too_many_open_windows: "已有 5 场开放收单，请先关闭其中一场。", billing_restricted: "账务限制暂时阻止开播，请核对订阅状态。", below_reserved: "库存不可低于已保留与已分配数量，请刷新并提高目标数量。" },
+  refusals: { too_many_open_windows: "已有 5 场开放收单，请先关闭其中一场。", billing_restricted: "账务限制暂时阻止开播，请核对订阅状态。", below_reserved: "库存不可低于已保留、已分配与不可售数量，请刷新并提高目标数量。" },
   confirmEnd: "结束本场评论收单？平台上的直播不会因此停止。", refresh: "刷新", loading: "正在加载场次…", unavailable: "暂时无法读取直播控台。请刷新确认；系统未推测场次状态。",
   signedOut: "登录已过期，请重新登录。", forbidden: "你没有执行此操作的权限。", conflict: "场次已变更，已重新读取最新数据；请确认后再操作。", failed: "操作未被接受，请核对最新场次状态后重试。",
   uncertain: "结果尚未确认，其他操作已锁定。请核对结果或重试同一请求，不要新增请求。", recovery: "先前请求仍待对账，重新加载后操作仍会锁定；请管理员核对请求回执。", retry: "重试同一请求", updated: "更新于", taipei: "台北时间", polling: "画面显示时每 5 秒更新",
   comments: "评论", keyword: "关键词评论", buyers: "买家", orders: "订单", amount: "订单金额", paid: "营业额（已收款）", unknown: "暂无数据", observed: "已观察评论", graph: "平台评论数", offers: "本场商品", empty: "本场尚未加入商品。",
-  configure: "设置商品与评论来源", stock: "可售库存", saveStock: "保存库存", untracked: "不追踪", missingWarehouse: "请先到库存页设置仓库，再调整数量。", narrowPending: "直播操作员的库存调整尚未接通，请库存管理员到库存页调整。",
+  configure: "设置商品与评论来源", stock: "可售库存", saveStock: "保存库存", untracked: "不追踪", missingWarehouse: "请先到库存页设置仓库，再调整数量。", stockPermission: "需要直播库存调整或库存管理权限。",
   manageRequired: "需要直播管理权限。", open: "开放", closed: "关闭", recommend: "推荐", recommended: "推荐中", recommendHint: "仅在控台标示推荐商品，不发送公开评论。", soldOut: "已售罄", lowStock: "库存偏低", claimed: "认领数量", paidQty: "已付款数量", stockInvalid: "请输入非负整数，单次增减不可超过 1,000。",
   facebook: "Facebook 直播／帖子", loadEmbed: "加载 Facebook 预览", embedNotice: "将加载 Facebook 内容，能否播放取决于帖子可见性与 Facebook 服务。", noEmbed: "目前没有可验证的 Facebook 公开帖子预览，请到来源设置核对。", instagram: "Instagram 直播无法嵌入此处，请在 Instagram 观看；支持的评论另行接收。",
   endReadOnly: "本场已结束，商品仅供查看。可复制成下一场继续准备。", name: "下一场名称", confirmCopy: "创建下一场", cancel: "取消", copiedConflicts: "已复制场次，但部分商品有冲突；开播前请核对商品设置。",

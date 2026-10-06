@@ -1,6 +1,27 @@
 // Purpose: Pure presentation decisions for the LC-U1 workspace; never infer provider or payment state.
-// Depends on: Native string/number/URL validation only.
+// Depends on: Store and ConsoleSnapshot types, console request UUID grammar; native string/number/URL validation.
 // Used by: LiveConsole and live-workspace.test.ts.
+import type { Store } from "../../../lib/model.ts";
+import type { ConsoleSnapshot } from "./console-model.ts";
+import { validConsoleID } from "./console-request.ts";
+
+/** Accepts an unselected settings entry; explicit scene links must also name their store. */
+export function liveSettingsSelection(query: Record<string, unknown>): { store: string; scene: string } | null {
+  if (Object.keys(query).some((key) => key !== "store" && key !== "scene")) return null;
+  const store = query.store, scene = query.scene;
+  if ((store !== undefined && !validConsoleID(store)) || (scene !== undefined && (!validConsoleID(scene) || !store))) return null;
+  return { store: typeof store === "string" ? store : "", scene: typeof scene === "string" ? scene : "" };
+}
+
+/** Display permission only; the inventory endpoint enforces the narrow LC-B7 bounds and CAS. */
+export function liveStockAllowed(store: Pick<Store, "role" | "permissions">): boolean {
+  return store.role === "owner" || store.permissions?.some((p) => p === "inventory:write" || p === "inventory:live_adjust") === true;
+}
+/** IG has no Graph summary count; observed FB counts retain their explicit source label. */
+export function consoleCommentStat(platform: ConsoleSnapshot["stream"]["source_platform"], comments: ConsoleSnapshot["stats"]["comments"]): ConsoleSnapshot["stats"]["comments"] {
+  return platform === "instagram" ? { total: null, source: "unavailable" } : comments;
+}
+
 /** Maps only the server's commerce lifecycle to the single primary action. */
 export function primaryAction(lifecycle: string): "start" | "end" | "copy" | null {
   return lifecycle === "draft" ? "start" : lifecycle === "live" ? "end" : lifecycle === "ended" ? "copy" : null;

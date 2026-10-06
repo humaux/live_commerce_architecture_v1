@@ -1,0 +1,558 @@
+=== RUN   TestBuyerCommsGateLifecycle
+=== RUN   TestBuyerCommsGateLifecycle/placed_(bank_transfer)_carries_store,_number,_link,_the_order's_bank_snapshot_and_the_deadline
+=== RUN   TestBuyerCommsGateLifecycle/merchant_new-order_mail:_counts_orders,_names_no_buyer,_carries_no_bank_detail
+=== RUN   TestBuyerCommsGateLifecycle/paid_(transfer_confirmed):_proof_by_the_buyer,_confirm_by_the_merchant,_one_mail
+=== RUN   TestBuyerCommsGateLifecycle/shipped_(manual):_carrier,_tracking_number_and_the_https_tracking_URL,_escaped_in_html
+=== RUN   TestBuyerCommsGateLifecycle/placed:_merchant-typed_bank_fields_are_HTML-escaped_in_the_html_part_and_literal_in_the_text_part
+=== RUN   TestBuyerCommsGateLifecycle/refunded_(offline)_after_a_confirmed_transfer
+=== RUN   TestBuyerCommsGateLifecycle/cancelled_(expiry_of_an_unpaid_transfer_hold)
+=== RUN   TestBuyerCommsGateLifecycle/placed_(pay_at_pickup)_names_the_pickup_store;_shipped_(CVS)_once_at_AT_DC_and_not_again_at_AT_STORE
+=== RUN   TestBuyerCommsGateLifecycle/paid_(card_capture,_Stripe_MOCK)_sends_no_'placed';_two_partial_Stripe_refunds_send_one_'refunded'
+=== RUN   TestBuyerCommsGateLifecycle/no_mail_carries_another_buyer's_address,_order_number_or_order_id
+--- PASS: TestBuyerCommsGateLifecycle (12.51s)
+    --- PASS: TestBuyerCommsGateLifecycle/placed_(bank_transfer)_carries_store,_number,_link,_the_order's_bank_snapshot_and_the_deadline (0.06s)
+    --- PASS: TestBuyerCommsGateLifecycle/merchant_new-order_mail:_counts_orders,_names_no_buyer,_carries_no_bank_detail (0.00s)
+    --- PASS: TestBuyerCommsGateLifecycle/paid_(transfer_confirmed):_proof_by_the_buyer,_confirm_by_the_merchant,_one_mail (0.05s)
+    --- PASS: TestBuyerCommsGateLifecycle/shipped_(manual):_carrier,_tracking_number_and_the_https_tracking_URL,_escaped_in_html (0.04s)
+    --- PASS: TestBuyerCommsGateLifecycle/placed:_merchant-typed_bank_fields_are_HTML-escaped_in_the_html_part_and_literal_in_the_text_part (0.13s)
+    --- PASS: TestBuyerCommsGateLifecycle/refunded_(offline)_after_a_confirmed_transfer (0.10s)
+    --- PASS: TestBuyerCommsGateLifecycle/cancelled_(expiry_of_an_unpaid_transfer_hold) (0.06s)
+    --- PASS: TestBuyerCommsGateLifecycle/placed_(pay_at_pickup)_names_the_pickup_store;_shipped_(CVS)_once_at_AT_DC_and_not_again_at_AT_STORE (1.15s)
+    --- PASS: TestBuyerCommsGateLifecycle/paid_(card_capture,_Stripe_MOCK)_sends_no_'placed';_two_partial_Stripe_refunds_send_one_'refunded' (3.47s)
+    --- PASS: TestBuyerCommsGateLifecycle/no_mail_carries_another_buyer's_address,_order_number_or_order_id (0.03s)
+=== RUN   TestBuyerCommsGateLookup
+=== RUN   TestBuyerCommsGateLookup/a_match_is_normalised_(ref_case/dashes/spaces,_email_case/space,_phone_formats)_and_returns_only_the_order_id
+=== RUN   TestBuyerCommsGateLookup/every_mismatch_class_is_the_same_refusal,_byte_for_byte
+=== RUN   TestBuyerCommsGateLookup/refusals_register_no_session
+=== RUN   TestBuyerCommsGateLookup/limits:_5_per_order_ref,_counted_before_the_lookup,_429_with_Retry-After_and_an_identical_body_for_real_and_unknown_refs
+=== RUN   TestBuyerCommsGateLookup/limits:_10_per_client_IP,_counted_before_the_lookup
+=== RUN   TestBuyerCommsGateLookup/limits:_200_per_store_in_10_minutes_across_any_number_of_IPs_and_refs
+=== RUN   TestBuyerCommsGateLookup/input_and_auth_edges:_no_bearer_401,_missing_field_422,_GET_405
+=== RUN   TestBuyerCommsGateLookup/timing:_unknown_order,_wrong_email_and_wrong_phone_cost_the_same_(medians_of_60,_tolerance_max(35%,_2_ms))
+    buyer_comms_gate_lookup_test.go:333: median real ref, wrong email = 2.903125ms vs unknown ref 2.77425ms (diff 128.875µs, tolerance 2ms)
+    buyer_comms_gate_lookup_test.go:333: median real ref, wrong phone = 3.182417ms vs unknown ref 2.77425ms (diff 408.167µs, tolerance 2ms)
+--- PASS: TestBuyerCommsGateLookup (2.74s)
+    --- PASS: TestBuyerCommsGateLookup/a_match_is_normalised_(ref_case/dashes/spaces,_email_case/space,_phone_formats)_and_returns_only_the_order_id (0.03s)
+    --- PASS: TestBuyerCommsGateLookup/every_mismatch_class_is_the_same_refusal,_byte_for_byte (0.10s)
+    --- PASS: TestBuyerCommsGateLookup/refusals_register_no_session (0.01s)
+    --- PASS: TestBuyerCommsGateLookup/limits:_5_per_order_ref,_counted_before_the_lookup,_429_with_Retry-After_and_an_identical_body_for_real_and_unknown_refs (0.08s)
+    --- PASS: TestBuyerCommsGateLookup/limits:_10_per_client_IP,_counted_before_the_lookup (0.05s)
+    --- PASS: TestBuyerCommsGateLookup/limits:_200_per_store_in_10_minutes_across_any_number_of_IPs_and_refs (0.94s)
+    --- PASS: TestBuyerCommsGateLookup/input_and_auth_edges:_no_bearer_401,_missing_field_422,_GET_405 (0.01s)
+    --- PASS: TestBuyerCommsGateLookup/timing:_unknown_order,_wrong_email_and_wrong_phone_cost_the_same_(medians_of_60,_tolerance_max(35%,_2_ms)) (0.68s)
+=== RUN   TestBuyerCommsGateLookupReusedBearer
+--- PASS: TestBuyerCommsGateLookupReusedBearer (0.97s)
+=== RUN   TestBuyerCommsGateViewOnly
+--- PASS: TestBuyerCommsGateViewOnly (1.01s)
+=== RUN   TestBuyerCommsGateExactlyOnce
+=== RUN   TestBuyerCommsGateExactlyOnce/six_workers_racing_over_one_outbox:_one_SMTP_mail_per_(order,_kind),_one_merchant_batch
+=== RUN   TestBuyerCommsGateExactlyOnce/fourteen_raw_claim_batch_callers_never_receive_the_same_(order,_kind)_twice
+=== RUN   TestBuyerCommsGateExactlyOnce/concurrent_confirm,_concurrent_expiry_and_concurrent_enqueue_each_leave_one_row
+--- PASS: TestBuyerCommsGateExactlyOnce (2.26s)
+    --- PASS: TestBuyerCommsGateExactlyOnce/six_workers_racing_over_one_outbox:_one_SMTP_mail_per_(order,_kind),_one_merchant_batch (0.66s)
+    --- PASS: TestBuyerCommsGateExactlyOnce/fourteen_raw_claim_batch_callers_never_receive_the_same_(order,_kind)_twice (0.74s)
+    --- PASS: TestBuyerCommsGateExactlyOnce/concurrent_confirm,_concurrent_expiry_and_concurrent_enqueue_each_leave_one_row (0.18s)
+=== RUN   TestBuyerCommsGateUnknownRetry
+=== RUN   TestBuyerCommsGateUnknownRetry/an_SMTP_connection_dropped_after_the_dot_is_UNKNOWN_and_is_never_sent_again
+2026/10/06 14:23:02 WARN buyer_mail_unknown kind=placed order_id=ac362cd4-c949-430f-a6b2-fecc4c4c9388
+=== RUN   TestBuyerCommsGateUnknownRetry/a_dead_SENDING_row_(worker_killed_mid-send)_becomes_UNKNOWN,_not_a_second_send
+=== RUN   TestBuyerCommsGateUnknownRetry/definite_refusals_back_off_2_min_then_10_min_and_end_FAILED_after_the_third_attempt
+2026/10/06 14:23:02 WARN buyer_mail_failed kind=placed order_id=31a17de3-e403-4433-89d5-fde8f4702e57
+2026/10/06 14:23:02 WARN buyer_mail_failed kind=placed order_id=31a17de3-e403-4433-89d5-fde8f4702e57
+2026/10/06 14:23:02 WARN buyer_mail_failed kind=placed order_id=31a17de3-e403-4433-89d5-fde8f4702e57
+=== RUN   TestBuyerCommsGateUnknownRetry/a_refusal_followed_by_success_delivers_exactly_once
+2026/10/06 14:23:02 WARN buyer_mail_failed kind=placed order_id=62e66a52-db99-4029-902e-759b2912d71c
+--- PASS: TestBuyerCommsGateUnknownRetry (0.62s)
+    --- PASS: TestBuyerCommsGateUnknownRetry/an_SMTP_connection_dropped_after_the_dot_is_UNKNOWN_and_is_never_sent_again (0.08s)
+    --- PASS: TestBuyerCommsGateUnknownRetry/a_dead_SENDING_row_(worker_killed_mid-send)_becomes_UNKNOWN,_not_a_second_send (0.03s)
+    --- PASS: TestBuyerCommsGateUnknownRetry/definite_refusals_back_off_2_min_then_10_min_and_end_FAILED_after_the_third_attempt (0.07s)
+    --- PASS: TestBuyerCommsGateUnknownRetry/a_refusal_followed_by_success_delivers_exactly_once (0.06s)
+=== RUN   TestBuyerCommsGateCaps
+=== RUN   TestBuyerCommsGateCaps/daily_share:_buyer_mail_never_exceeds_60%_of_COMMERCE_MAIL_DAILY_CAP,_the_rest_stays_PENDING_for_login_codes
+=== RUN   TestBuyerCommsGateCaps/daily_share_counts_merchant_batches_too_(buyer_+_merchant_together_stay_under_the_share)
+=== RUN   TestBuyerCommsGateCaps/per_store:_at_most_30_buyer_mails_in_a_rolling_hour
+--- PASS: TestBuyerCommsGateCaps (2.84s)
+    --- PASS: TestBuyerCommsGateCaps/daily_share:_buyer_mail_never_exceeds_60%_of_COMMERCE_MAIL_DAILY_CAP,_the_rest_stays_PENDING_for_login_codes (0.57s)
+    --- PASS: TestBuyerCommsGateCaps/daily_share_counts_merchant_batches_too_(buyer_+_merchant_together_stay_under_the_share) (1.14s)
+    --- PASS: TestBuyerCommsGateCaps/per_store:_at_most_30_buyer_mails_in_a_rolling_hour (0.81s)
+=== RUN   TestBuyerCommsGateMerchantBatch
+=== RUN   TestBuyerCommsGateMerchantBatch/orders_inside_the_5_minute_window_wait,_then_go_out_as_one_batch
+=== RUN   TestBuyerCommsGateMerchantBatch/a_confirmed_transfer_does_not_announce_the_same_order_to_the_merchant_again
+=== RUN   TestBuyerCommsGateMerchantBatch/opt-out_through_the_real_route_skips_merchant_mail;_turning_it_on_again_does_not_resurrect_skipped_rows
+--- PASS: TestBuyerCommsGateMerchantBatch (1.96s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/orders_inside_the_5_minute_window_wait,_then_go_out_as_one_batch (0.14s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/a_confirmed_transfer_does_not_announce_the_same_order_to_the_merchant_again (0.10s)
+    --- PASS: TestBuyerCommsGateMerchantBatch/opt-out_through_the_real_route_skips_merchant_mail;_turning_it_on_again_does_not_resurrect_skipped_rows (0.12s)
+=== RUN   TestBuyerCommsGateErasure
+--- PASS: TestBuyerCommsGateErasure (0.52s)
+=== RUN   TestBuyerCommsGateStoreCapDoesNotStarveOtherStores
+--- PASS: TestBuyerCommsGateStoreCapDoesNotStarveOtherStores (1.23s)
+=== RUN   TestBuyerCommsOutbox
+=== RUN   TestBuyerCommsOutbox/placement_enqueues_placed_+_merchant_new_in_the_order_transaction;_one_buyer_mail_carries_the_bank_snapshot
+=== RUN   TestBuyerCommsOutbox/the_checkout_locale_persists_on_the_order_and_picks_the_buyer_mail_language
+=== RUN   TestBuyerCommsOutbox/the_log_has_no_body_and_no_address_column;_direct_enqueue_of_an_existing_(order,_kind)_is_a_no-op
+=== RUN   TestBuyerCommsOutbox/confirm_->_paid_mail;_offline_refund_->_refunded_mail;_each_exactly_once
+=== RUN   TestBuyerCommsOutbox/expiry_->_cancelled_mail
+=== RUN   TestBuyerCommsOutbox/merchant_batch:_at_most_one_mail_per_store_per_5_minutes,_covering_every_pending_order
+=== RUN   TestBuyerCommsOutbox/UNKNOWN_is_final;_a_definite_refusal_retries_with_backoff_and_ends_FAILED;_a_dead_SENDING_becomes_UNKNOWN
+2026/10/06 14:23:09 WARN buyer_mail_unknown kind=placed order_id=f1f4389d-437f-4061-b5a1-9ebb9c47e2a3
+2026/10/06 14:23:09 WARN buyer_mail_failed kind=placed order_id=d64c48f7-d20a-4151-9215-dc92b18be416
+2026/10/06 14:23:09 WARN buyer_mail_failed kind=placed order_id=d64c48f7-d20a-4151-9215-dc92b18be416
+2026/10/06 14:23:09 WARN buyer_mail_failed kind=placed order_id=d64c48f7-d20a-4151-9215-dc92b18be416
+=== RUN   TestBuyerCommsOutbox/no_recipient_and_stale_rows_are_SKIPPED,_never_sent
+=== RUN   TestBuyerCommsOutbox/caps:_per-store_hourly_and_the_daily_budget_leave_rows_PENDING
+=== RUN   TestBuyerCommsOutbox/erasure_clears_the_recipient_hash_and_skips_pending_rows
+--- PASS: TestBuyerCommsOutbox (0.98s)
+    --- PASS: TestBuyerCommsOutbox/placement_enqueues_placed_+_merchant_new_in_the_order_transaction;_one_buyer_mail_carries_the_bank_snapshot (0.05s)
+    --- PASS: TestBuyerCommsOutbox/the_checkout_locale_persists_on_the_order_and_picks_the_buyer_mail_language (0.10s)
+    --- PASS: TestBuyerCommsOutbox/the_log_has_no_body_and_no_address_column;_direct_enqueue_of_an_existing_(order,_kind)_is_a_no-op (0.00s)
+    --- PASS: TestBuyerCommsOutbox/confirm_->_paid_mail;_offline_refund_->_refunded_mail;_each_exactly_once (0.05s)
+    --- PASS: TestBuyerCommsOutbox/expiry_->_cancelled_mail (0.04s)
+    --- PASS: TestBuyerCommsOutbox/merchant_batch:_at_most_one_mail_per_store_per_5_minutes,_covering_every_pending_order (0.07s)
+    --- PASS: TestBuyerCommsOutbox/UNKNOWN_is_final;_a_definite_refusal_retries_with_backoff_and_ends_FAILED;_a_dead_SENDING_becomes_UNKNOWN (0.10s)
+    --- PASS: TestBuyerCommsOutbox/no_recipient_and_stale_rows_are_SKIPPED,_never_sent (0.06s)
+    --- PASS: TestBuyerCommsOutbox/caps:_per-store_hourly_and_the_daily_budget_leave_rows_PENDING (0.10s)
+    --- PASS: TestBuyerCommsOutbox/erasure_clears_the_recipient_hash_and_skips_pending_rows (0.05s)
+=== RUN   TestBuyerCommsCardCaptureAndStripeRefundTriggers
+=== RUN   TestBuyerCommsCardCaptureAndStripeRefundTriggers/DRAFT_card_order_->_CONFIRMED_enqueues_paid_+_merchant_new,_never_placed
+=== RUN   TestBuyerCommsCardCaptureAndStripeRefundTriggers/a_DRAFT_order_that_expires_unpaid_sends_nothing
+=== RUN   TestBuyerCommsCardCaptureAndStripeRefundTriggers/Stripe_refund_facts_enqueue_one_refunded_row_per_order_however_many_partial_refunds
+--- PASS: TestBuyerCommsCardCaptureAndStripeRefundTriggers (0.62s)
+    --- PASS: TestBuyerCommsCardCaptureAndStripeRefundTriggers/DRAFT_card_order_->_CONFIRMED_enqueues_paid_+_merchant_new,_never_placed (0.01s)
+    --- PASS: TestBuyerCommsCardCaptureAndStripeRefundTriggers/a_DRAFT_order_that_expires_unpaid_sends_nothing (0.00s)
+    --- PASS: TestBuyerCommsCardCaptureAndStripeRefundTriggers/Stripe_refund_facts_enqueue_one_refunded_row_per_order_however_many_partial_refunds (0.01s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.65s)
+=== RUN   TestIdentityFunctionsAreTheOnlyLoginAuthority
+--- PASS: TestIdentityFunctionsAreTheOnlyLoginAuthority (0.04s)
+=== RUN   TestK3W401BForgedBodiesLeaveNoRows
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+2026/10/06 14:23:13 WARN payuni_notify_rejected code=invalid_signature token_hash=cb1309382eaf17c9
+--- PASS: TestK3W401BForgedBodiesLeaveNoRows (3.31s)
+=== RUN   TestK3W401BConcurrentReplayExactlyOneReceipt
+--- PASS: TestK3W401BConcurrentReplayExactlyOneReceipt (3.74s)
+=== RUN   TestK3W401BRotationGraceBoundary
+2026/10/06 14:23:20 WARN payuni_notify_rejected code=invalid_signature token_hash=c13381283afb24c4
+--- PASS: TestK3W401BRotationGraceBoundary (2.86s)
+=== RUN   TestK3W401BCrossStoreSameCredentialReplayScoped
+--- PASS: TestK3W401BCrossStoreSameCredentialReplayScoped (2.74s)
+=== RUN   TestK3W401BDisabledStoreStillRecordsAndWakes
+--- PASS: TestK3W401BDisabledStoreStillRecordsAndWakes (2.44s)
+=== RUN   TestK3W401BEndpointDisableRotateAndLiveRefusal
+--- PASS: TestK3W401BEndpointDisableRotateAndLiveRefusal (3.56s)
+=== RUN   TestK3W401BWakeOnlyMatchingJobNeverInserts
+--- PASS: TestK3W401BWakeOnlyMatchingJobNeverInserts (11.56s)
+=== RUN   TestK3W401BProfileMismatchReviewedNotWoken
+--- PASS: TestK3W401BProfileMismatchReviewedNotWoken (5.93s)
+=== RUN   TestK3W401BIngressAuthorityCeiling
+--- PASS: TestK3W401BIngressAuthorityCeiling (9.50s)
+=== RUN   TestK3W401BBodyAndHeaderBoundaries
+2026/10/06 14:24:05 WARN payuni_notify_rejected code=invalid_signature token_hash=00b20003aa4b24fe
+2026/10/06 14:24:05 WARN payuni_notify_rejected code=invalid_signature token_hash=00b20003aa4b24fe
+--- PASS: TestK3W401BBodyAndHeaderBoundaries (9.20s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (10.70s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (1.10s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.54s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (2.16s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (1.42s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.32s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.27s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (3.89s)
+=== RUN   TestMetaClaimsMCI04SignedReplayToAcceptedClaim
+--- PASS: TestMetaClaimsMCI04SignedReplayToAcceptedClaim (7.89s)
+=== RUN   TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly
+--- PASS: TestMetaClaimsMCI04NonQualifyingKeepsSocialFactOnly (2.17s)
+=== RUN   TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes
+--- PASS: TestMetaClaimsMCI04NoMatchAndUnknownKeywordShapes (0.95s)
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/social_fact
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/stage
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/processed_mark
+=== RUN   TestMetaClaimsMCI04ConsumerAtomicity/COMMIT
+--- PASS: TestMetaClaimsMCI04ConsumerAtomicity (16.72s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/social_fact (2.43s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/stage (2.38s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/processed_mark (2.35s)
+    --- PASS: TestMetaClaimsMCI04ConsumerAtomicity/COMMIT (2.37s)
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/23514_check
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies
+=== RUN   TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row
+--- PASS: TestMetaClaimsMCI04ApplyFailurePaths (1.76s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/22023_invalid (0.36s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/23514_check (0.22s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/transient_40P01_backs_off_then_applies (0.32s)
+    --- PASS: TestMetaClaimsMCI04ApplyFailurePaths/attempt_cap_10_fails_the_row (0.44s)
+=== RUN   TestMetaClaimsMCI04IngestPreconditions
+--- PASS: TestMetaClaimsMCI04IngestPreconditions (0.80s)
+=== RUN   TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce
+--- PASS: TestMetaClaimsMCI04CrashMidApplyIsRepolledAndAppliedOnce (4.67s)
+=== RUN   TestMetaClaimsMCI04RiverGuards
+--- PASS: TestMetaClaimsMCI04RiverGuards (0.45s)
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset
+=== RUN   TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment
+--- PASS: TestMetaClaimsMCI05OneIntakePerComment (3.46s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/redelivered_webhook_is_a_duplicate (0.29s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/same_comment_id_with_a_different_payload_hash:_late_A1_does_not_reset_A1+3 (0.53s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_Instagram_comment_as_comments_and_live_comments (0.48s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/one_comment_through_two_apps_routed_to_one_asset (0.50s)
+    --- PASS: TestMetaClaimsMCI05OneIntakePerComment/20_concurrent_consumer_runs_of_one_comment (0.84s)
+=== RUN   TestMetaClaimsMCI05ImmutableFactsAndDuplicates
+--- PASS: TestMetaClaimsMCI05ImmutableFactsAndDuplicates (7.92s)
+=== RUN   TestMetaClaimsMCI05StagingCap
+--- PASS: TestMetaClaimsMCI05StagingCap (0.90s)
+=== RUN   TestMetaClaimsMCI06IntervalsGraceAndGenerations
+--- PASS: TestMetaClaimsMCI06IntervalsGraceAndGenerations (1.92s)
+=== RUN   TestMetaClaimsMCI06CloseWhileApplyWaits
+--- PASS: TestMetaClaimsMCI06CloseWhileApplyWaits (0.70s)
+=== RUN   TestMetaClaimsMCI06InstagramUsesDeliveryTime
+--- PASS: TestMetaClaimsMCI06InstagramUsesDeliveryTime (0.93s)
+=== RUN   TestMetaClaimsMCI06RateBounds
+=== RUN   TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies
+=== RUN   TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited
+=== RUN   TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies
+--- PASS: TestMetaClaimsMCI06RateBounds (15.53s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/10_per_actor_per_minute_under_12_concurrent_applies (3.19s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/spaced_backlog_replay_is_not_limited (2.99s)
+    --- PASS: TestMetaClaimsMCI06RateBounds/5000_platform_bundles_per_session_under_4_concurrent_applies (1.19s)
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget/facebook
+=== RUN   TestMetaClaimsMCI07PlanShapeAndBudget/instagram_live
+--- PASS: TestMetaClaimsMCI07PlanShapeAndBudget (1.55s)
+    --- PASS: TestMetaClaimsMCI07PlanShapeAndBudget/facebook (0.55s)
+    --- PASS: TestMetaClaimsMCI07PlanShapeAndBudget/instagram_live (0.52s)
+=== RUN   TestMetaClaimsMCI07ReplySkips
+=== RUN   TestMetaClaimsMCI07ReplySkips/binding_disabled
+=== RUN   TestMetaClaimsMCI07ReplySkips/binding_changed
+=== RUN   TestMetaClaimsMCI07ReplySkips/source_off
+=== RUN   TestMetaClaimsMCI07ReplySkips/no_storefront
+--- PASS: TestMetaClaimsMCI07ReplySkips (3.14s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/binding_disabled (0.68s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/binding_changed (0.59s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/source_off (0.98s)
+    --- PASS: TestMetaClaimsMCI07ReplySkips/no_storefront (0.89s)
+=== RUN   TestMetaClaimsMCI07BindingVersionBumpIsNotASkip
+--- PASS: TestMetaClaimsMCI07BindingVersionBumpIsNotASkip (1.67s)
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/2xx_sends_the_link_once,_token_only_in_the_JSON_body
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/locale_en_renders_the_/en/_link
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_400
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_5xx
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_429
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_garbled
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_nomsgid
+=== RUN   TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_hang
+--- PASS: TestMetaClaimsMCI07SendAndOutcomes (23.33s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/2xx_sends_the_link_once,_token_only_in_the_JSON_body (2.31s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/locale_en_renders_the_/en/_link (1.00s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_400 (2.25s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_5xx (1.99s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_429 (1.99s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_garbled (2.26s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_nomsgid (1.99s)
+    --- PASS: TestMetaClaimsMCI07SendAndOutcomes/UNKNOWN_then_query-only:_hang (1.99s)
+=== RUN   TestMetaClaimsMCI07CheckDenials
+=== RUN   TestMetaClaimsMCI07CheckDenials/deadline_(IG_live:_received_1_h_ago,_+15_min_already_passed)
+=== RUN   TestMetaClaimsMCI07CheckDenials/source_off
+=== RUN   TestMetaClaimsMCI07CheckDenials/principal_revoked
+=== RUN   TestMetaClaimsMCI07CheckDenials/IG_live_window_closed
+=== RUN   TestMetaClaimsMCI07CheckDenials/merchant_rotated_the_link
+=== RUN   TestMetaClaimsMCI07CheckDenials/merchant_released_a_bound_link
+=== RUN   TestMetaClaimsMCI07CheckDenials/link_expiring_within_10_minutes
+=== RUN   TestMetaClaimsMCI07CheckDenials/link_key_id_changed
+=== RUN   TestMetaClaimsMCI07CheckDenials/binding_changed_after_plan_(dispatcher_gate)
+=== RUN   TestMetaClaimsMCI07CheckDenials/no_Page_token_head
+=== RUN   TestMetaClaimsMCI07CheckDenials/current_Page_token_lacks_the_attested_scope
+=== RUN   TestMetaClaimsMCI07CheckDenials/Check_infrastructure_error_is_UNKNOWN_policy_check_failed,_never_a_denial_or_a_send
+--- PASS: TestMetaClaimsMCI07CheckDenials (34.18s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/deadline_(IG_live:_received_1_h_ago,_+15_min_already_passed) (1.88s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/source_off (1.69s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/principal_revoked (2.50s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/IG_live_window_closed (1.49s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/merchant_rotated_the_link (9.38s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/merchant_released_a_bound_link (1.57s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/link_expiring_within_10_minutes (1.45s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/link_key_id_changed (0.87s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/binding_changed_after_plan_(dispatcher_gate) (1.45s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/no_Page_token_head (1.47s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/current_Page_token_lacks_the_attested_scope (8.92s)
+    --- PASS: TestMetaClaimsMCI07CheckDenials/Check_infrastructure_error_is_UNKNOWN_policy_check_failed,_never_a_denial_or_a_send (1.50s)
+=== RUN   TestMetaClaimsMCI07SecretVisibility
+--- PASS: TestMetaClaimsMCI07SecretVisibility (3.64s)
+=== RUN   TestMetaClaimsMCI07ChildKillAfterSend
+--- PASS: TestMetaClaimsMCI07ChildKillAfterSend (27.92s)
+=== RUN   TestMetaClaimsMCI07DispatcherRouteShape
+--- PASS: TestMetaClaimsMCI07DispatcherRouteShape (0.18s)
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (3.11s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+=== RUN   TestMetaClaimsMCI02PoolValidator
+--- PASS: TestMetaClaimsMCI02PoolValidator (0.46s)
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window
+=== RUN   TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only
+--- PASS: TestMetaClaimsMCI02PolicyBehaviour (0.93s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/intake_login_without_a_leased_row_sees_and_writes_nothing,_even_with_forged_GUCs (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/with_a_lease_the_login_sees_exactly_the_leased_scope (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/NOGUC_system_policies_never_widen_a_tenant-scoped_transaction (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/claims.links:_system_issue_is_INSERT-only,_generation_1,_no_principal (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_runtime_cannot_insert_a_meta.private_reply_operation (0.01s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/commerce_meta_consumer_holds_no_claims,_live_or_river_table_privilege (0.00s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/check_meta_reply_from_the_worker_pool_(no_GUCs)_sees_the_link_and_the_window (0.02s)
+    --- PASS: TestMetaClaimsMCI02PolicyBehaviour/CHECK_widening:_meta_events_carry_no_principal,_RATE_LIMITED_is_meta-only (0.00s)
+=== RUN   TestMetaClaimsMCI03PutClaimSource
+=== RUN   TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping
+=== RUN   TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict
+=== RUN   TestMetaClaimsMCI03PutClaimSource/validation
+=== RUN   TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute
+=== RUN   TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential
+=== RUN   TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object
+=== RUN   TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency
+--- PASS: TestMetaClaimsMCI03PutClaimSource (0.43s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/provider_and_binding_mapping (0.00s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/route_mismatch_is_a_conflict (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/validation (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/permissions_live:manage_and_integration:execute (0.02s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/private_reply_requires_a_current_Page-token_credential (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/CAS_on_version,_principal_follows_the_caller,_deactivation_frees_the_object (0.01s)
+    --- PASS: TestMetaClaimsMCI03PutClaimSource/one_object_maps_to_one_session_under_concurrency (0.03s)
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/REQUESTED
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/OWNERSHIP_PENDING
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/TLS_PENDING
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/SUSPENDED
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/DETACHED
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/control.tenants
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/control.stores
+=== RUN   TestPublishedStorefrontAdmissionAndRevocation/control.storefront_publications
+--- PASS: TestPublishedStorefrontAdmissionAndRevocation (0.11s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/REQUESTED (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/OWNERSHIP_PENDING (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/TLS_PENDING (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/SUSPENDED (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/DETACHED (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/control.tenants (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/control.stores (0.00s)
+    --- PASS: TestPublishedStorefrontAdmissionAndRevocation/control.storefront_publications (0.00s)
+=== RUN   TestPublishedStorefrontOriginGrammarParity
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-0
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-1
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-2
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-3
+=== RUN   TestPublishedStorefrontOriginGrammarParity/valid-4
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-0
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-1
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-2
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-3
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-4
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-5
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-6
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-7
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-8
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-9
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-10
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-11
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-12
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-13
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-14
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-15
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-16
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-17
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-18
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-19
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-20
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-21
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-22
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-23
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-24
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-25
+=== RUN   TestPublishedStorefrontOriginGrammarParity/invalid-26
+--- PASS: TestPublishedStorefrontOriginGrammarParity (0.11s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-0 (0.01s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-1 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-2 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-3 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/valid-4 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-0 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-1 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-2 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-3 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-4 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-5 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-6 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-7 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-8 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-9 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-10 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-11 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-12 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-13 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-14 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-15 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-16 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-17 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-18 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-19 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-20 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-21 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-22 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-23 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-24 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-25 (0.00s)
+    --- PASS: TestPublishedStorefrontOriginGrammarParity/invalid-26 (0.00s)
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_runtime
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_auth
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_identity
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_buyer_runtime
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_checkout_runtime
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_payment_worker
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_payment_live
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_expiry_worker
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_ads_worker
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_claims_worker
+=== RUN   TestPublishedStorefrontAuthorityAndConstraints/commerce_worker
+--- PASS: TestPublishedStorefrontAuthorityAndConstraints (0.36s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_runtime (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_auth (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_identity (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_buyer_runtime (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_checkout_runtime (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_payment_worker (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_payment_live (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_expiry_worker (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_ads_worker (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_claims_worker (0.00s)
+    --- PASS: TestPublishedStorefrontAuthorityAndConstraints/commerce_worker (0.00s)
+=== RUN   TestPublishedStorefrontDeadlinesAndSanitization
+--- PASS: TestPublishedStorefrontDeadlinesAndSanitization (0.28s)
+=== RUN   TestPublishedStorefrontFinalClockAfterObservedLock
+--- PASS: TestPublishedStorefrontFinalClockAfterObservedLock (0.58s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.18s)
+=== RUN   TestStoreDomainsSDW07AskAdmitDenyMatrix
+--- PASS: TestStoreDomainsSDW07AskAdmitDenyMatrix (0.13s)
+=== RUN   TestStoreDomainsSDW08DNSVerifierRefusesForeignAddr
+--- PASS: TestStoreDomainsSDW08DNSVerifierRefusesForeignAddr (0.00s)
+=== RUN   TestStoreDomainsSDW09AskRateLimitFairness
+--- PASS: TestStoreDomainsSDW09AskRateLimitFairness (0.00s)
+=== RUN   TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix
+--- PASS: TestStoreDomainsSDW01HandleFormatReservedUniquenessSuffix (0.07s)
+=== RUN   TestStoreDomainsSDW02PlatformRowActive
+--- PASS: TestStoreDomainsSDW02PlatformRowActive (0.06s)
+=== RUN   TestStoreDomainsSDW03MerchantDomainLifecycle
+--- PASS: TestStoreDomainsSDW03MerchantDomainLifecycle (0.07s)
+=== RUN   TestStoreDomainsSDW04RefusalsAndOwnerOnly
+--- PASS: TestStoreDomainsSDW04RefusalsAndOwnerOnly (0.08s)
+=== RUN   TestStoreDomainsSDW05Worker301AndTLSAsk
+--- PASS: TestStoreDomainsSDW05Worker301AndTLSAsk (0.08s)
+=== RUN   TestStoreDomainsSDW06SchemaAndACLInventory
+--- PASS: TestStoreDomainsSDW06SchemaAndACLInventory (0.08s)
+=== RUN   TestStoreDomainsSDW07OperatorHandleSet
+--- PASS: TestStoreDomainsSDW07OperatorHandleSet (0.09s)
+=== RUN   TestStorefrontPublishSPW01SchemaAndGrants
+--- PASS: TestStorefrontPublishSPW01SchemaAndGrants (0.14s)
+=== RUN   TestStorefrontPublishSPW02UpgradeAfter0080
+--- PASS: TestStorefrontPublishSPW02UpgradeAfter0080 (2.73s)
+=== RUN   TestStorefrontPublishSPW03MerchantScopeAndPermission
+--- PASS: TestStorefrontPublishSPW03MerchantScopeAndPermission (0.26s)
+=== RUN   TestStorefrontPublishSPW04MerchantCompareAndSetAuditAndHTTP
+--- PASS: TestStorefrontPublishSPW04MerchantCompareAndSetAuditAndHTTP (0.27s)
+=== RUN   TestStorefrontPublishSPW05OperatorLifecycleAndResolver
+--- PASS: TestStorefrontPublishSPW05OperatorLifecycleAndResolver (0.27s)
+=== RUN   TestStorefrontPublishSPW06OperatorInputBoundaries
+--- PASS: TestStorefrontPublishSPW06OperatorInputBoundaries (0.16s)
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_identity
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_buyer_runtime
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_buyer_issuer
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_checkout_runtime
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_worker
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_meta_ingress
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_meta_registrar
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_payment_registrar
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_stripe_ingress
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_claims_intake
+=== RUN   TestStorefrontPublishSPW07ExecuteMatrix/commerce_auth
+--- PASS: TestStorefrontPublishSPW07ExecuteMatrix (0.47s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_identity (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_buyer_runtime (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_buyer_issuer (0.01s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_checkout_runtime (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_worker (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_meta_ingress (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_meta_registrar (0.13s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_payment_registrar (0.03s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_stripe_ingress (0.03s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_claims_intake (0.02s)
+    --- PASS: TestStorefrontPublishSPW07ExecuteMatrix/commerce_auth (0.02s)
+=== RUN   TestStorefrontPublishSPW08RegistrarLoginShape
+--- PASS: TestStorefrontPublishSPW08RegistrarLoginShape (0.16s)
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.00s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.14s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.00s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.36s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.17s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.11s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.21s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.02s)
+PASS
+ok  	livecommerce/tests/foundation	276.101s
+test-focused: top-level PASS=82 FAIL=0 SKIP=0 exit=0
+exit=0

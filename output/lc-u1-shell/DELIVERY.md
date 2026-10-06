@@ -1,12 +1,16 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source b6ccbfe2, integration 8a08656a and owner rule 2f596a0c.
+Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source c743b465, CI 37443892071 and owner rule 2f596a0c.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — candidate ready for CI, not runtime-accepted
+# LC-U1 — CI repairs submitted; privacy ruling blocks acceptance
 
-- Branch: `unit/lc-u1-shell`; source commit: `b6ccbfe24a453c203d36fd0e04a34105b21399e7`.
+Current source **`c743b465472a657f7652cc80934055d9e1b9577d`** includes trunk **`685d465c`**, the Next proxy repair, settings scene selector, updated leaf/title drivers and CI display/serial-fixture configuration. Local Node **465/465**, scoped **25/25**, both typechecks and check-gates exit 0. **TCV09 is still RED**, pending the explicit Facebook-preview/CSP ruling; it has not been weakened. Full per-failure attribution, command exits and rerun modes: [CI-37443892071.md](CI-37443892071.md).
+
+The earlier LC-B7 alignment and initial candidate receipts below remain historical evidence. No current browser PASS is claimed.
+
+- Branch: `unit/lc-u1-shell`; previous LC-B7 alignment source: `df8c6a2e7f3e52b45f23225cb055118d473081a6`.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell`.
 - Integrated base: `8a08656a46ab98db4497240e1ffc6c27b6e697b8`, including GitHub-only heavy-gate rule `2f596a0c`; merge `d50953a8` preserves both `--browser-live-console` and `--browser-tracking-backfill` and both Node registrations.
-- Evidence level: **E1 overall** (typed/registered candidate). The 20 focused Node assertions have automated evidence; this does not establish browser, SQL, provider or production acceptance.
+- Evidence level: **E1 overall with a known blocking source guard**; **E3 for the local regressions and reproduced failures**. Browser, SQL and provider acceptance remain pending.
 - Root runtime model/effort: NOT_EXPOSED. Child transport/browser/safety roles requested `gpt-6.1-sol`, high; actual runtime telemetry NOT_EXPOSED. Raw author reports are retained as reports, not independent acceptance.
 
 ## Implemented
@@ -14,14 +18,36 @@ Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/g
 | Area | Candidate behavior | Boundary |
 | --- | --- | --- |
 | W0/v5 shell | Sessions, new `/studio/console`, and existing claim settings share registry navigation and three locales. No second store switcher in the new workspace. | Inbox navigation/page remains LC-U2-owned; no dead link was added. |
-| Three phases | Server lifecycle selects the single primary start/end/copy action. Copy uses **planning** version, not lifecycle version. | UI explicitly says these commands do not start/stop the Meta broadcast. A1 real read model is still missing. |
-| Products | Offer switch preserves the real existing `max_quantity_per_claim`; local recommendation uses `post_comment:false`; stock uses sellable delta and CAS. | Existing `inventory:write` works through the existing endpoint; `inventory:live_adjust`-only users remain disabled with an explanation until LC-B7 lands. No backend permission widening. |
-| Status/polling | Five-second visible-only, non-overlapping reads; collected revenue and order amounts are separate; unavailable comment counts show a dash, not zero. | A1 contract acceptance is MOCK, not proof that its backend route exists. |
+| Three phases | Server lifecycle selects the single primary start/end/copy action. Copy uses **planning** version, not lifecycle version. A1/A5/A7 accept `KEYWORD_QTY_CONTAINS`. | UI explicitly says these commands do not start/stop the Meta broadcast. Combined runtime acceptance requires LC-B7 on the CI integration branch. |
+| Products | Offer switch preserves the existing `max_quantity_per_claim`; local recommendation uses `post_comment:false`; stock uses sellable delta and CAS. Both `inventory:write` and `inventory:live_adjust` enable stock controls independently of `live:manage`. | LC-B7 enforces reason, delta and reserved/allocated/unavailable bounds. No inventory grant keeps stock disabled and the server refusal is preserved. |
+| Status/polling | Five-second visible-only, non-overlapping reads; collected revenue and order amounts are separate; IG totals and other unavailable comment counts show a dash, not zero. | A1 business acceptance in this browser fixture is MOCK; actual Go/PG acceptance belongs to LC-B7. |
 | Session results/copy | A5 results retain currencies and sandbox money separately; both list and console copy entry points use keyed commands. | A5 reads may be refused without the backend-required permissions; unavailable totals are not fabricated. |
 | Media | Optional official public Facebook-post iframe from a validated numeric Page/post pair and a verified source; console-only CSP allowance; honest IG no-embed notice. | Live-video identity selection/playback is not proven. No external Meta request/mutation was used for acceptance. |
 | Command safety | Opaque receipt fence survives reload **and reauthentication**; in-memory replay stays bound to the original session. Delayed copy completion is fenced after navigation/unmount. Transient list/console reads do not lose UNKNOWN retry. | Durable recovery needs authoritative reconciliation; the UI does not guess that a request failed or silently generate a new key. |
 
 No authored changes to product Go, SQL, migrations, dependency lockfiles, `packages/ui`, or frozen `tests/ui/**`. Go changes are confined to the explicitly MOCK browser fixture. See [REVIEW-NOTES.md](REVIEW-NOTES.md) for the independent findings and bounded repairs.
+
+## LC-B7 alignment — 2026-10-06 18:04 ruling
+
+- A1 GET and inventory POST were already in the BFF allowlist. New tests call the **actual BFF route**: A1's real enum previously produced 503; it now returns 200. The inventory POST is forwarded for a store listing containing only the narrow inventory grant, with origin/CSRF/key protections and backend `403` / `422 below_reserved` preserved.
+- Replaced the incorrect bare `CONTAINS` value with `KEYWORD_QTY_CONTAINS` throughout the console/A5/A7 parser and fixture. The old wire value is rejected.
+- IG has no Graph summary field: its count presentation stays unavailable, including a regression against an accidental numeric observation. FB observed counts retain their distinct label.
+- Independent review found two additional blockers for legal large scenes: controls were capped at 100 instead of the backend's 200, and the BFF's 256 KiB limit rejected a legal 200-offer Unicode response. Both have failing-before/passing-after tests; A1 alone now permits 512 KiB, with 201-offer and oversized-response negatives retained.
+- CI browser assertions now exercise narrow stock adjustment without `live:manage`, disabled lifecycle/offer/recommend controls, >1000 delta refusal, persisted stock after reload, `below_reserved`, no-inventory disabled controls and a supplemental BFF 403/no-mutation authority test. IG lanes use unavailable totals. This is a contract correction, not a waived permission negative.
+- Independent read-only reviewer closed both fixture findings (authorization error classification and independent permission coverage). No browser runtime or screenshot acceptance is claimed.
+
+| Current-source command | Exit / result | Evidence |
+| --- | --- | --- |
+| `node --experimental-transform-types --test tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts` | 0; 23/23 | `lc-b7-green.log` |
+| `bash scripts/dev/test-node.sh` | 0; 462/462 | `lc-b7-test-node.log` |
+| `pnpm --filter admin exec tsc --noEmit` | 0 | `lc-b7-tsc.log` |
+| `pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2023 --module ESNext --moduleResolution bundler --allowImportingTsExtensions --typeRoots apps/admin/node_modules/@types --types node tests/admin/live-console.spec.ts` | 0 | `lc-b7-spec-tsc-bundler.log` |
+| `bash scripts/dev/check-gates.sh` | 0; 72 registered modes | `lc-b7-check-gates.log` |
+| `gofmt -l tests/foundation/browser_live_console_test.go`; `git diff --check` | 0; no output | Author command receipts |
+
+Red evidence: `lc-b7-red.log` (exit 1, including actual A1 BFF 503), `lc-b7-offer-cap-red-valid.log` (exit 1 at the old cap), `lc-b7-large-a1-red.log` (exit 1, 503 instead of 200). The earlier `lc-b7-offer-cap-red.log` lacked a cache header; it is a fixture setup failure, not cap proof. Two initial standalone spec typecheck commands used incomplete/wrong flags (`lc-b7-spec-tsc.log`, `lc-b7-spec-tsc-green.log`, both exit 1); the bundler/type-root command above is the valid passing check.
+
+NOT_RUN locally: every browser/visual/click gate, Go browser-fixture compilation/runtime, LC-B7 PG acceptance, screenshots, LIVE/SANDBOX. The optional pinned R04 media binary suite is explicitly NOT_RUN by `test-node.sh` because its binary is unset. Source is pinned by `df8c6a2e`; subsequent delivery commits change evidence only.
 
 ## CI gates
 
@@ -29,7 +55,7 @@ No authored changes to product Go, SQL, migrations, dependency lockfiles, `packa
 
 | Exact mode | Purpose | Current result |
 | --- | --- | --- |
-| `--browser-live-console` | 11 real-click cases: 1586×992 / 390×844 × en/zh-TW/zh-CN, lifecycle/copy/offer/stock/recommend, receipt replay, reauthentication, actual SPA navigation, totals, missing A1 and narrow-stock denial | NOT_RUN |
+| `--browser-live-console` | 11 real-click cases: 1586×992 / 390×844 × en/zh-TW/zh-CN, lifecycle/copy/offer/stock/recommend, receipt replay, reauthentication, actual SPA navigation, totals, canonical match mode, IG unknown total, missing A1, narrow-stock success and no-stock denial | NOT_RUN; rerun on LC-U1 + LC-B7 trunk |
 | `--browser-studio-ui` | Existing draft/media/leave guards and changed session list | NOT_RUN |
 | `--browser-studio-bff` | Shared Studio BFF method/body/auth boundaries | NOT_RUN |
 | `--browser-live-claims` | Existing claim/source/settings writes and navigation | NOT_RUN |
@@ -47,7 +73,7 @@ Workflow `modes` input:
 
 The new console fixture writes screenshots, Playwright output and redacted `mock-receipts.json` to `output/ci-gates/live-console-*` when `CI=true`, so the existing workflow upload includes them. It uses real signed MOCK OIDC, Next session/CSRF and PG `platform.WithScope`; **console business responses are MOCK** and cannot accept LC-B1/LC-B7 SQL or Meta. Trace is off; cookie assertion diagnostics retain names, not values. Other modes retain their existing artifact paths; please retain their screenshot directories too if they are needed for independent review.
 
-## Actual lightweight checks
+## Initial-candidate lightweight checks (historical)
 
 All below ran against source `b6ccbfe2`; following evidence/document-only commits must not be represented as changed application source.
 
@@ -71,6 +97,6 @@ Historical `depmap.sh --check` returned **1** at the pre-CI candidate because in
 - `red-resume-20261006T060525Z/result.tsv`: **137**, canceled while waiting and owning no PG/container. PID/cwd/parent and absence of its exact container were verified; TERM only ran the existing cleanup trap without exiting, so only that owned waiter was stopped. Other locks/PIDs were untouched.
 - `console-current-20261006T061501Z/merge.log`: launcher returned **2 before testing** due to merge conflicts; those are now resolved. No current console browser result exists.
 - New owner rule: **no further local browser/full-foundation/visual/sweep/batch starts**. The old local wrapper is archived as `historical-local-runner.txt`, not an active runner. No own browser waiters or the two named local PG containers remain.
-- **Backend gaps at the integrated baseline:** A1 console GET is not mounted; `POST /inventory/adjustments` still requires `inventory:write`. A6 is mounted. These are not UI fixes or waived acceptance. Real operator rollout stays blocked until LC-B7 and its tests are integrated.
+- **Integration prerequisite satisfied in source:** LC-B7 `585600b7` supplies A1 and narrow stock authorization on trunk `685d465c`, now merged into this unit as `6dd556a5`. Current-source CI is pending; this UI handoff does not certify the backend.
 - CI exits, actual screenshots at both sizes/three locales, independent screenshot review, production/SANDBOX/Meta validation: **NOT_RUN**. Existing unrelated integration visual findings must be identified by baseline comparison, not suppressed.
 - Helper worktrees and source commits remain available for review; no push, deployment, live credential access, real message, money or production change occurred.

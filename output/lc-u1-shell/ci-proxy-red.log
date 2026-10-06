@@ -1,0 +1,31 @@
+(node:5773) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ Next proxy admits the exact console family and results query before the BFF (119.948791ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 303.346125
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:87:1
+✖ Next proxy admits the exact console family and results query before the BFF (119.948791ms)
+  AssertionError [ERR_ASSERTION]: GET live-sessions/22222222-2222-4222-8222-222222222222/console
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-bff.test.ts:95:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -55,6 +55,9 @@ type Options struct {
 	// ClaimLabels is the server-held manual-label HMAC key (cmd/api loads
 	// COMMERCE_CLAIMS_LABEL_KEY). nil leaves the keyword-claims routes unmounted.
 	ClaimLabels *claims.LabelKey
+	// PaymentProfile is COMMERCE_PAYMENT_PROFILE (PROVIDER_MOCK|SANDBOX|LIVE; cmd/api validates it). Empty leaves the platform-Stripe
+	// card routes (payments/card) unmounted.
+	PaymentProfile string
 	// RefundJobs is the insert-only river_payment client (cmd/api newMerchantRefundJobs). nil leaves the
 	// stripe-refund-v1 §7.1 refund routes unmounted.
 	RefundJobs *river.Client[pgx.Tx]
@@ -187,9 +190,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	mux.HandleFunc("GET "+base+"/inventory", listRoute(pool, "inventory:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
 		return inventory.ListBalancesPage(ctx, tx, s, page)
 	}))
-	mux.HandleFunc("POST "+base+"/inventory/adjustments", bodyRoute(pool, "inventory:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in inventory.Adjustment) (any, error) {
-		return inventory.AdjustOnHand(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
-	}))
+	mux.HandleFunc("POST "+base+"/inventory/adjustments", inventoryAdjustRoute(pool)) // inventory:write, or bounded inventory:live_adjust (LC-B7, live_console.go)
 	registerImageRoutes(mux, pool)
 	registerDesignRoutes(mux, pool) // unit store-design: storefront-v2 section B, design.go
 	registerCatalogV2Routes(mux, pool)
@@ -202,12 +203,14 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerLiveFlowRoutes(mux, pool, configured.Studio || configured.Live != nil, configured.LiveFlowJobs)
 	registerLiveLifecycleRoutes(mux, pool, configured.Studio || configured.Live != nil) // LC-B1 A7
 	registerLiveStreamRoutes(mux, pool, configured.CommentStream)
+	registerLiveConsoleRoutes(mux, pool, configured.Studio || configured.Live != nil, live.NewConsole(configured.CommentStream, capabilityReader(configured.MetaHealth)).WithPaymentEnvironment(configured.PaymentEnvironment)) // LC-B7 A1
 	registerClaimRoutes(mux, pool, configured.ClaimLabels)
 	paymentEnvironment := configured.PaymentEnvironment
 	if paymentEnvironment == "" {
 		paymentEnvironment = "SANDBOX"
 	}
 	registerRefundRoutesIn(mux, pool, configured.RefundJobs, paymentEnvironment)
+	registerPaymentCardRoutes(mux, pool, configured.PaymentProfile) // unit w4-s1-platform-stripe: payment_card.go
 	registerShipmentRoutes(mux, pool)
 	registerAdsRoutes(mux, pool, configured.Ads)
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
@@ -224,6 +227,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerNotifySettingsRoutes(mux, pool)
 	registerInboxRoutes(mux, pool, configured.Inbox)
 	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
+	registerReminderRoutes(mux, pool, configured.Inbox, configured.ManualOrders)   // W3-03B: checkout reminders (reminders.go)
 	registerTemplateRoutes(mux, pool, configured.MsgTemplates)
 	foundation := platform.NewHandler(pool, platform.HandlerOptions{SessionStoreList: configured.SessionStoreList})
 	if configured.SessionStoreList {

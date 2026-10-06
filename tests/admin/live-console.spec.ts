@@ -23,12 +23,13 @@ const lateScene = required("LC_BROWSER_CONSOLE_LATE_SCENE");
 const lateDestination = required("LC_BROWSER_CONSOLE_LATE_DEST");
 const control = required("LC_BROWSER_CONSOLE_CONTROL");
 const narrowToken = required("LC_BROWSER_CONSOLE_NARROW_TOKEN");
+const readToken = required("LC_BROWSER_CONSOLE_READ_TOKEN");
 const scenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_SCENES"));
 if (scenes.length !== 6 || new Set(scenes).size !== 6) throw new Error("six independent Console scenes required");
 const locales = ["en", "zh-TW", "zh-CN"] as const;
 const sizes = [{ width: 1586, height: 992 }, { width: 390, height: 844 }];
 type Receipt = { scene: string; action: string; key_hash: string; body_hash: string; status: number; effect: boolean; input: Record<string, unknown> };
-type Scene = { ID: string; Title: string; Phase: string; Offer: string; Active: boolean; Stock: number; StockVersion: number; OfferVersion: number; Reads: number[] | null; Recommended: unknown; Copied: boolean };
+type Scene = { ID: string; Title: string; Phase: string; Offer: string; SKU: string; Warehouse: string; Active: boolean; Stock: number; StockVersion: number; OfferVersion: number; Reads: number[] | null; Recommended: unknown; Copied: boolean };
 type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number };
 
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
@@ -279,13 +280,14 @@ test("LC-U1 delayed copy cannot navigate back after an actual SPA scene switch",
 });
 
 for (const [index, locale] of locales.entries()) {
-  test(`LC-U1 ${locale}: missing A1 is graceful and live_adjust-only cannot edit stock`, async ({ browser, request }) => {
+  test(`LC-U1 ${locale}: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful`, async ({ browser, request }) => {
     const context = await browser.newContext({ viewport: sizes[1], ignoreHTTPSErrors: true });
     try {
       const url = origin.replace(/^http:/, "https:");
+      const csrf = randomBytes(32).toString("base64url");
       await context.addCookies([
         { name: "__Host-commerce_session", value: narrowToken, url, secure: true, httpOnly: true, sameSite: "Lax" },
-        { name: "__Host-commerce_csrf", value: randomBytes(32).toString("base64url"), url, secure: true, httpOnly: false, sameSite: "Lax" },
+        { name: "__Host-commerce_csrf", value: csrf, url, secure: true, httpOnly: false, sameSite: "Lax" },
       ]);
       const page = await context.newPage();
       const scene = lateDestination;
@@ -293,12 +295,50 @@ for (const [index, locale] of locales.entries()) {
       await expect(page.getByTestId("live-console")).toBeVisible();
       await phase(page, "draft");
       const body = (await facts(request)).scenes[scene]!;
-      await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeDisabled();
-      await expect(page.getByText(workspaceCopy[locale].narrowPending, { exact: true })).toBeVisible();
+      await expect(page.getByTestId("live-primary-action")).toBeDisabled();
+      await expect(page.getByTestId(`live-offer-toggle-${body.Offer}`)).toBeDisabled();
+      await expect(page.getByTestId(`live-recommend-${body.Offer}`)).toBeDisabled();
+      await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeEnabled();
+      await expect(page.getByTestId("live-console").locator(".live-status-bar > div").first().locator("dd")).toHaveText("—");
       const before = (await facts(request)).receipts.length;
-      await expect(page.getByTestId(`live-stock-save-${body.Offer}`)).toBeDisabled();
+      await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 1001));
+      await page.getByTestId(`live-stock-save-${body.Offer}`).click();
+      await expect(page.getByRole("alert")).toHaveText(workspaceCopy[locale].stockInvalid);
       expect((await facts(request)).receipts).toHaveLength(before);
+      await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 2));
+      await page.getByTestId(`live-stock-save-${body.Offer}`).click();
+      await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(body.Stock + 2);
+      await page.reload();
+      await expect(page.getByTestId(`live-stock-${body.Offer}`)).toHaveValue(String(body.Stock + 2));
+      const receipt = (await facts(request)).receipts.at(-1)!;
+      expect(receipt).toMatchObject({ action: "adjustments", status: 200, effect: true });
+      expect(receipt.input).toMatchObject({ delta: 2, expected_version: body.StockVersion, reason: "live_console_edit" });
+      await fault(request, scene, "below_reserved");
+      await page.getByTestId(`live-stock-${body.Offer}`).fill(String(body.Stock + 1));
+      await page.getByTestId(`live-stock-save-${body.Offer}`).click();
+      await expect(page.getByRole("alert")).toContainText(workspaceCopy[locale].refusals.below_reserved);
+      expect((await facts(request)).scenes[scene]!.Stock).toBe(body.Stock + 2);
       await screenshot(page, `${locale}-narrow-permission`);
+      // Setup a distinct signed principal with no inventory grant; assertions use the real page.
+      await context.addCookies([{ name: "__Host-commerce_session", value: readToken, url, secure: true, httpOnly: true, sameSite: "Lax" }]);
+      await page.reload();
+      await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeDisabled();
+      await expect(page.getByText(workspaceCopy[locale].stockPermission, { exact: true })).toBeVisible();
+      await expect(page.getByTestId(`live-stock-save-${body.Offer}`)).toBeDisabled();
+      const after = (await facts(request)).receipts.length;
+      await page.getByTestId("live-console-refresh").click();
+      await expect(page.getByTestId(`live-stock-${body.Offer}`)).toBeDisabled();
+      expect((await facts(request)).receipts).toHaveLength(after);
+      // Authority negative only: direct BFF request supplements the real disabled-control clicks above.
+      const forbidden = await context.request.post(`${origin}/api/stores/${store}/inventory/adjustments`, {
+        headers: { origin, "x-csrf-token": csrf, "idempotency-key": `no-stock-${locale}` },
+        data: { warehouse_id: body.Warehouse, sku_id: body.SKU, delta: 1, expected_version: body.StockVersion + 1, reason: "live_console_edit" },
+      });
+      expect(forbidden.status()).toBe(403);
+      expect((await forbidden.json()).code).toBe("forbidden");
+      expect((await facts(request)).receipts).toHaveLength(after);
+      expect((await facts(request)).scenes[scene]!.Stock).toBe(body.Stock + 2);
+      await screenshot(page, `${locale}-no-stock-permission`);
       await fault(request, scene, "missing");
       try {
         await page.reload();

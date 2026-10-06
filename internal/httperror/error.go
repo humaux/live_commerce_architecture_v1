@@ -94,6 +94,17 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"cap_exceeded":       "This store has reached the limit of 10 connected Facebook Pages.",
 		"page_taken":         "That Facebook Page is already connected to another store.",
 		"recheck_too_soon":   "A re-check was already requested in the last minute.",
+		// stripe-platform-account-v1 §3.3 + owner amendment AD-PF2 (unit w4-s1-platform-stripe): coded refusals of PUT .../payments/card.
+		"platform_stripe_not_allowed":  "This store is not enabled for platform card payments.",
+		"platform_stripe_unavailable":  "Platform card payments are not available right now.",
+		"platform_stripe_closed":       "Platform card payments are not accepting new stores.",
+		"platform_stripe_blocked":      "Card payments for this store are blocked by the platform.",
+		"terms_version_stale":          "The terms changed since they were loaded.",
+		"stripe_store_has_own_account": "This store already has its own Stripe connection.",
+		"descriptor_suffix_too_long":   "The statement descriptor suffix is too long.",
+		"invalid_descriptor_suffix":    "The statement descriptor suffix is not valid.",
+		"currency_unsupported":         "Card payments do not support this store currency.",
+		"no_payment_market":            "Add a market and shipping country before enabling card payments.",
 		// stripe-refund-v1 §7.1 (ruling 15: unknown codes were rewritten to "internal").
 		"refundable_changed":    "Refundable amount changed since it was loaded.",
 		"exceeds_refundable":    "Amount exceeds the refundable amount.",
@@ -213,6 +224,11 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"invalid_cursor":                 "The page cursor is not valid.",
 		"invalid_ref":                    "The comment reference is not valid.",
 		"invalid_filter":                 "The filter is not valid.",
+		"human_takeover":                 "A staff member is handling this conversation, so no automatic reminder was sent.",
+		"already_reminded":               "This buyer was already reminded for this session.",
+		"not_remindable":                 "This buyer has nothing left to remind.",
+		"no_storefront":                  "The store has no active storefront domain to link to.", // W3-03B checkout reminders
+		"below_reserved":                 "Stock cannot be set below what is already reserved.",   // live-console-v1 §7.2 (LC-B7): bounded live stock edit
 		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
 		"bundle_already_ordered": "These claims already have an order.",
 		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
