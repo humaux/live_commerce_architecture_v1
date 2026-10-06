@@ -29,6 +29,10 @@ CREATE TABLE inbox.order_for_buyer (
     bundle_id uuid NOT NULL,
     request_id uuid NOT NULL,
     idempotency_key_hash bytea NOT NULL CHECK (octet_length(idempotency_key_hash) = 32),
+    -- sha256 of the canonical request: the same Idempotency-Key with another body (bundle set, items, delivery) is refused (P2-4).
+    request_hash bytea NOT NULL CHECK (octet_length(request_hash) = 32),
+    -- The capability owner the order is placed under: "is there a live order for this request" is answered from checkout.orders by this id (P2-1).
+    buyer_id uuid NOT NULL,
     order_id uuid,
     state text NOT NULL CHECK (state IN ('pending','placed','released')),
     conversation_id uuid,
@@ -63,6 +67,11 @@ ALTER TABLE inbox.order_for_buyer FORCE ROW LEVEL SECURITY;
 ALTER TABLE claims.merchant_origin_grants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE claims.merchant_origin_grants FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON inbox.order_for_buyer, claims.merchant_origin_grants FROM PUBLIC;
+
+-- The unit price the ledger row was consumed at (P2-2): written by claims.consume_live_prices from the order's own quote snapshot, so the for-buyer
+-- audit records the price actually charged, not the offer's price at audit time. NULL on rows of earlier migrations.
+ALTER TABLE claims.live_price_uses ADD COLUMN unit_price_minor bigint CHECK (unit_price_minor IS NULL OR unit_price_minor BETWEEN 0 AND 1000000000000);
+GRANT SELECT(unit_price_minor), INSERT(unit_price_minor) ON claims.live_price_uses TO commerce_claims_writer;
 
 -- ---------------------------------------------------------------------------------------
 -- commerce_claims_writer (NOLOGIN definer owner of every function below). No runtime role holds any privilege on these tables.
@@ -129,6 +138,7 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE v uuid[]; c record; b uuid; n bigint; m bigint; v_unverified boolean:=false;
 BEGIN
  v:=claims.for_buyer_scope();
+ IF NOT identity.principal_holds(v[1],v[2],v[3],ARRAY['inventory:reserve']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  IF p_bundles IS NULL OR cardinality(p_bundles)=0 THEN RETURN 'no_bundle'; END IF;
  IF p_conversation IS NULL THEN RETURN 'no_conversation'; END IF;
  SELECT x.peer_key,x.app_id,x.object,x.asset_id INTO c FROM social.conversations x WHERE x.id=p_conversation AND x.tenant_id=v[1] AND x.store_id=v[2];
@@ -146,7 +156,7 @@ ALTER FUNCTION claims.for_buyer_peer_state(uuid,uuid[]) OWNER TO commerce_claims
 REVOKE ALL ON FUNCTION claims.for_buyer_peer_state(uuid,uuid[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.for_buyer_peer_state(uuid,uuid[]) TO commerce_runtime;
 COMMENT ON FUNCTION claims.for_buyer_peer_state(uuid,uuid[]) IS
- 'internal/claims (0129 LC-B6, helper of for_buyer_begin and the order-prefill eligibility read; caller commerce_runtime inside the merchant transaction): compares the peer keys of the bundles (inbox.bundle_peers) with the thread''s peer key (social.conversations) inside the merchant transaction scope; returns the empty string only when every bundle has peers and all equal the thread''s; otherwise no_bundle | no_conversation | bundle_buyer_unverified | bundle_buyer_mismatch. Never trusts a caller-supplied peer.';
+ 'internal/claims (0129 LC-B6, helper of for_buyer_begin and the order-prefill eligibility read; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): compares the peer keys of the bundles (inbox.bundle_peers) with the thread''s peer key (social.conversations) inside the merchant transaction scope; returns the empty string only when every bundle has peers and all equal the thread''s; otherwise no_bundle | no_conversation | bundle_buyer_unverified | bundle_buyer_mismatch. Never trusts a caller-supplied peer.';
 
 -- ---------------------------------------------------------------------------------------
 -- claims.for_buyer_lines (A15): the open claim lines of the actor's bundles with the live price and the live quantity still available.
@@ -191,13 +201,13 @@ COMMENT ON FUNCTION claims.for_buyer_lines(uuid,uuid) IS
 -- ---------------------------------------------------------------------------------------
 -- claims.for_buyer_begin (A16 steps 3a + 3b): reservation rows, fail-closed eligibility, the single-use grants.
 -- ---------------------------------------------------------------------------------------
-CREATE FUNCTION claims.for_buyer_begin(p_key_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid)
+CREATE FUNCTION claims.for_buyer_begin(p_key_hash bytea, p_request_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid)
 RETURNS TABLE(o_request uuid, o_reason text)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v uuid[]; v_req uuid; v_reason text; b uuid; r record; v_order uuid; v_own boolean; v_now timestamptz:=clock_timestamp(); v_sorted uuid[];
+DECLARE v uuid[]; v_req uuid; v_reason text; b uuid; r record; v_order uuid; v_live uuid; v_own boolean; v_hash bytea; v_now timestamptz:=clock_timestamp(); v_sorted uuid[];
 BEGIN
  v:=claims.for_buyer_scope();
- IF p_key_hash IS NULL OR octet_length(p_key_hash)<>32 OR p_bundles IS NULL OR cardinality(p_bundles)>5
+ IF p_key_hash IS NULL OR octet_length(p_key_hash)<>32 OR p_request_hash IS NULL OR octet_length(p_request_hash)<>32 OR p_bundles IS NULL OR cardinality(p_bundles)>5
   OR (cardinality(p_bundles)>0 AND p_buyer IS NULL) THEN
   RAISE EXCEPTION 'invalid for-buyer request' USING ERRCODE='22023';
  END IF;
@@ -216,23 +226,31 @@ BEGIN
  v_reason:=claims.for_buyer_peer_state(p_conversation,v_sorted);
  IF v_reason='bundle_buyer_mismatch' THEN RAISE EXCEPTION 'bundle_buyer_mismatch' USING ERRCODE='PT409'; END IF;
  IF v_reason='' AND NOT identity.principal_holds(v[1],v[2],v[3],ARRAY['live:manage']) THEN v_reason:='permission'; END IF;
- -- The request this Idempotency-Key already started (resume), else a new one.
- SELECT x.request_id INTO v_req FROM inbox.order_for_buyer x WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.idempotency_key_hash=p_key_hash LIMIT 1;
- IF NOT FOUND THEN v_req:=gen_random_uuid(); END IF;
+ -- The request this Idempotency-Key already started (resume), else a new one. The same key with another request body is refused (P2-4).
+ SELECT x.request_id,x.request_hash INTO v_req,v_hash FROM inbox.order_for_buyer x
+  WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.idempotency_key_hash=p_key_hash LIMIT 1;
+ IF NOT FOUND THEN v_req:=gen_random_uuid();
+ ELSIF v_hash<>p_request_hash THEN RAISE EXCEPTION 'idempotency_conflict' USING ERRCODE='PT409'; END IF;
  FOREACH b IN ARRAY v_sorted LOOP
   -- §5.1 3a: lock the live row of the bundle (sorted order = lock order); another request's row blocks unless its order is CANCELLED or the
-  -- row is a pending one older than 15 minutes with no order.
-  SELECT x.request_id,x.state,x.order_id,x.created_at INTO r FROM inbox.order_for_buyer x
+  -- row is a pending one that has not been touched for 15 minutes AND whose capability owner has no non-CANCELLED order (a crash between Place and
+  -- the record leaves a pending row WITH an order: that bundle is ordered, never stealable; a live resume refreshes updated_at).
+  SELECT x.request_id,x.state,x.order_id,x.updated_at,x.buyer_id INTO r FROM inbox.order_for_buyer x
    WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.state IN ('pending','placed') FOR UPDATE;
   v_own:=FOUND AND r.request_id=v_req;
   IF FOUND AND NOT v_own THEN
+   SELECT o.id INTO v_live FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.owner_id=r.buyer_id AND o.commercial_state<>'CANCELLED'
+    ORDER BY o.created_at DESC LIMIT 1;
    IF (r.state='placed' AND EXISTS (SELECT 1 FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.id=r.order_id AND o.commercial_state='CANCELLED'))
-    OR (r.state='pending' AND r.order_id IS NULL AND r.created_at<v_now-interval '15 minutes') THEN
+    OR (r.state='pending' AND v_live IS NULL AND r.updated_at<v_now-interval '15 minutes') THEN
     UPDATE inbox.order_for_buyer x SET state='released',updated_at=v_now
      WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.request_id=r.request_id AND x.state IN ('pending','placed');
    ELSE
-    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL=coalesce(r.order_id::text,'');
+    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL=coalesce(r.order_id::text,v_live::text,'');
    END IF;
+  END IF;
+  IF v_own THEN
+   UPDATE inbox.order_for_buyer x SET updated_at=v_now WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.bundle_id=b AND x.request_id=v_req AND x.state='pending';
   END IF;
   -- A bundle whose claim lines are all fully consumed (the buyer ordered through the link) is also already ordered; a resume of THIS request
   -- (its own live row) is exempt, because its own order is what consumed the lines.
@@ -247,8 +265,8 @@ BEGIN
    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL=coalesce(v_order::text,'');
   END IF;
   BEGIN
-   INSERT INTO inbox.order_for_buyer AS x(tenant_id,store_id,bundle_id,request_id,idempotency_key_hash,state,conversation_id,principal_id)
-    VALUES(v[1],v[2],b,v_req,p_key_hash,'pending',p_conversation,v[3])
+   INSERT INTO inbox.order_for_buyer AS x(tenant_id,store_id,bundle_id,request_id,idempotency_key_hash,request_hash,buyer_id,state,conversation_id,principal_id)
+    VALUES(v[1],v[2],b,v_req,p_key_hash,p_request_hash,p_buyer,'pending',p_conversation,v[3])
     ON CONFLICT (tenant_id,store_id,request_id,bundle_id) DO UPDATE SET state='pending',updated_at=v_now WHERE x.state='released';
   EXCEPTION WHEN unique_violation THEN
    RAISE EXCEPTION 'bundle_already_ordered' USING ERRCODE='PT409', DETAIL='';   -- the partial unique index lost a race with another request
@@ -263,13 +281,18 @@ BEGIN
      WHERE g.consumed_at IS NULL AND g.quote_id IS NULL AND g.buyer_id=p_buyer;
   END LOOP;
  END IF;
+ IF v_reason<>'' THEN
+  -- A replay whose eligibility now fails must not leave the grants an earlier run wrote (P2-5): expire them.
+  UPDATE claims.merchant_origin_grants g SET expires_at=v_now
+   WHERE g.tenant_id=v[1] AND g.store_id=v[2] AND g.request_id=v_req AND g.consumed_at IS NULL AND g.expires_at>v_now;
+ END IF;
  o_request:=v_req; o_reason:=v_reason; RETURN NEXT;
 END $$;
-ALTER FUNCTION claims.for_buyer_begin(bytea,uuid,uuid[],uuid) OWNER TO commerce_claims_writer;
-REVOKE ALL ON FUNCTION claims.for_buyer_begin(bytea,uuid,uuid[],uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION claims.for_buyer_begin(bytea,uuid,uuid[],uuid) TO commerce_runtime;
-COMMENT ON FUNCTION claims.for_buyer_begin(bytea,uuid,uuid[],uuid) IS
- 'internal/claims (0129 LC-B6, POST orders/for-buyer steps 3a+3b; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): reserves one inbox.order_for_buyer row per bundle (sorted lock order; PT409 bundle_already_ordered with the order id in DETAIL when another live request or fully consumed claim lines hold it), evaluates the fail-closed buyer comparison (PT409 bundle_buyer_mismatch, nothing created) and, only when the comparison passed and the caller holds live:manage, writes one single-use 15-minute claims.merchant_origin_grants row per bundle for the capability owner p_buyer. Returns the request id and the reason no grant was written (empty string = granted). Idempotent per key hash (a resume finds its own rows).';
+ALTER FUNCTION claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid) OWNER TO commerce_claims_writer;
+REVOKE ALL ON FUNCTION claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid) TO commerce_runtime;
+COMMENT ON FUNCTION claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid) IS
+ 'internal/claims (0129 LC-B6, POST orders/for-buyer steps 3a+3b; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): reserves one inbox.order_for_buyer row per bundle (sorted lock order; PT409 bundle_already_ordered with the order id in DETAIL when another live request, an order of another request''s capability owner, or fully consumed claim lines hold it; PT409 idempotency_conflict when the key already started another request body), evaluates the fail-closed buyer comparison (PT409 bundle_buyer_mismatch, nothing created) and, only when the comparison passed and the caller holds live:manage, writes one single-use 15-minute claims.merchant_origin_grants row per bundle for the capability owner p_buyer. Returns the request id and the reason no grant was written (empty string = granted). Idempotent per key hash (a resume finds its own rows).';
 
 -- ---------------------------------------------------------------------------------------
 -- claims.for_buyer_finish (step 3d): the order is placed; returns the live-priced lines its ledger rows record (audit input).
@@ -277,27 +300,36 @@ COMMENT ON FUNCTION claims.for_buyer_begin(bytea,uuid,uuid[],uuid) IS
 CREATE FUNCTION claims.for_buyer_finish(p_request uuid, p_order uuid)
 RETURNS TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, quantity bigint, live_price_minor bigint)
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE v uuid[];
+DECLARE v uuid[]; v_total bigint; v_n bigint; v_buyer uuid;
 BEGIN
  v:=claims.for_buyer_scope();
  IF p_request IS NULL OR p_order IS NULL THEN RAISE EXCEPTION 'invalid for-buyer request' USING ERRCODE='22023'; END IF;
  IF NOT identity.principal_holds(v[1],v[2],v[3],ARRAY['inventory:reserve']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
- PERFORM 1 FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.id=p_order AND o.commercial_state<>'CANCELLED';
+ SELECT x.buyer_id INTO v_buyer FROM inbox.order_for_buyer x WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.request_id=p_request LIMIT 1;
+ IF NOT FOUND THEN RAISE EXCEPTION 'reservation_lost' USING ERRCODE='PT409'; END IF;
+ -- The order must be a non-cancelled order of THIS request's capability owner.
+ PERFORM 1 FROM checkout.orders o WHERE o.tenant_id=v[1] AND o.store_id=v[2] AND o.id=p_order AND o.owner_id=v_buyer AND o.commercial_state<>'CANCELLED';
  IF NOT FOUND THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ SELECT count(*) INTO v_total FROM inbox.order_for_buyer x WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.request_id=p_request;
  UPDATE inbox.order_for_buyer x SET state='placed',order_id=p_order,updated_at=clock_timestamp()
   WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.request_id=p_request AND x.state IN ('pending','placed') AND (x.order_id IS NULL OR x.order_id=p_order);
+ GET DIAGNOSTICS v_n=ROW_COUNT;
+ -- Every bundle row of the request must now be placed with this order; a released or taken row means the one-live-order rule was lost (P2-1).
+ IF v_n<>v_total THEN RAISE EXCEPTION 'reservation_lost' USING ERRCODE='PT409'; END IF;
+ -- The request is done: grants it did not consume (a bundle none of whose lines were priced live) expire now (P2-3).
+ UPDATE claims.merchant_origin_grants g SET expires_at=clock_timestamp()
+  WHERE g.tenant_id=v[1] AND g.store_id=v[2] AND g.request_id=p_request AND g.consumed_at IS NULL AND g.expires_at>clock_timestamp();
  RETURN QUERY
- SELECT u.bundle_id,u.offer_id,l.sku_id,u.quantity::bigint,o.live_price_minor
+ SELECT u.bundle_id,u.offer_id,l.sku_id,u.quantity::bigint,u.unit_price_minor
  FROM claims.live_price_uses u
  JOIN claims.lines l ON l.tenant_id=u.tenant_id AND l.store_id=u.store_id AND l.bundle_id=u.bundle_id AND l.offer_id=u.offer_id
- JOIN live.offers o ON o.tenant_id=l.tenant_id AND o.store_id=l.store_id AND o.id=l.offer_id
  WHERE u.tenant_id=v[1] AND u.store_id=v[2] AND u.order_id=p_order ORDER BY u.bundle_id,u.offer_id;
 END $$;
 ALTER FUNCTION claims.for_buyer_finish(uuid,uuid) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.for_buyer_finish(uuid,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.for_buyer_finish(uuid,uuid) TO commerce_runtime;
 COMMENT ON FUNCTION claims.for_buyer_finish(uuid,uuid) IS
- 'internal/claims (0129 LC-B6, POST orders/for-buyer step 3d; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): marks the request''s pending/placed reservation rows placed with the order id and returns the live-priced lines of the order from claims.live_price_uses (empty = the order was placed at catalog price). PT404 for an order that is not a live order of the store.';
+ 'internal/claims (0129 LC-B6, POST orders/for-buyer step 3d; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): marks the request''s pending/placed reservation rows placed with the order id expires the request''s unconsumed grants and returns the live-priced lines of the order with the unit price each was CONSUMED at (claims.live_price_uses.unit_price_minor; empty = the order was placed at catalog price). PT409 reservation_lost when a bundle row of the request is not placed with this order; PT404 for an order that is not a non-cancelled order of the request''s capability owner.';
 
 -- ---------------------------------------------------------------------------------------
 -- claims.for_buyer_release: a refused placement gives its bundles back and kills the request's unconsumed grants.
@@ -310,7 +342,9 @@ BEGIN
  IF p_request IS NULL THEN RAISE EXCEPTION 'invalid for-buyer request' USING ERRCODE='22023'; END IF;
  IF NOT identity.principal_holds(v[1],v[2],v[3],ARRAY['inventory:reserve']) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  UPDATE inbox.order_for_buyer x SET state='released',updated_at=clock_timestamp()
-  WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.request_id=p_request AND x.state='pending';
+  WHERE x.tenant_id=v[1] AND x.store_id=v[2] AND x.request_id=p_request AND x.state='pending'
+   -- never release a bundle that has an order: Place can fail AFTER begin_hold (the manual-source mark), and the order still exists (P2-1 c)
+   AND NOT EXISTS (SELECT 1 FROM checkout.orders o WHERE o.tenant_id=x.tenant_id AND o.store_id=x.store_id AND o.owner_id=x.buyer_id AND o.commercial_state<>'CANCELLED');
  GET DIAGNOSTICS n=ROW_COUNT;
  UPDATE claims.merchant_origin_grants g SET expires_at=clock_timestamp()
   WHERE g.tenant_id=v[1] AND g.store_id=v[2] AND g.request_id=p_request AND g.consumed_at IS NULL;
@@ -320,7 +354,7 @@ ALTER FUNCTION claims.for_buyer_release(uuid) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.for_buyer_release(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.for_buyer_release(uuid) TO commerce_runtime;
 COMMENT ON FUNCTION claims.for_buyer_release(uuid) IS
- 'internal/claims (0129 LC-B6, POST orders/for-buyer after a coded Place refusal; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): sets the request''s pending reservation rows released and expires its unconsumed grants; returns the released row count. A placed row is never touched.';
+ 'internal/claims (0129 LC-B6, POST orders/for-buyer after a coded Place refusal; caller commerce_runtime inside the merchant transaction, inventory:reserve re-verified): sets the request''s pending reservation rows released and expires its unconsumed grants; returns the released row count. A placed row is never touched, and neither is a pending row whose capability owner has a non-CANCELLED order.';
 
 -- ---------------------------------------------------------------------------------------
 -- claims.bind_merchant_origin_grant: CreateQuote cannot name the quote it is about to insert, so the for-buyer pipeline binds the grant to
@@ -441,7 +475,7 @@ BEGIN
  -- The live-priced lines come from the order's own quote (begin_hold proved it byte-equal to the order snapshot), never from arguments.
  -- Claim-line order is the lock order.
  FOR r IN SELECT (x->>'claim_bundle_id')::uuid AS bundle_id,(x->>'claim_offer_id')::uuid AS offer_id,(x->>'sku_id')::uuid AS sku_id,
-   (x->>'quantity')::bigint AS quantity
+   (x->>'quantity')::bigint AS quantity,(x->>'unit_price_minor')::bigint AS unit_price
   FROM storefront.quotes q CROSS JOIN LATERAL jsonb_array_elements(q.snapshot->'lines') x
   WHERE q.tenant_id=v_tenant AND q.store_id=v_store AND q.owner_id=v_buyer AND q.id=v_quote AND x->>'price_rule'='live_claim'
   ORDER BY 1,2 LOOP
@@ -467,8 +501,8 @@ BEGIN
    WHERE u.tenant_id=v_tenant AND u.store_id=v_store AND u.bundle_id=r.bundle_id AND u.offer_id=r.offer_id;
   IF r.quantity IS NULL OR r.quantity<1 OR v_held+r.quantity>v_claimed THEN
    RAISE EXCEPTION 'live price no longer available' USING ERRCODE='PT409'; END IF;
-  INSERT INTO claims.live_price_uses(tenant_id,store_id,bundle_id,offer_id,order_id,quantity)
-   VALUES(v_tenant,v_store,r.bundle_id,r.offer_id,p_order,r.quantity);
+  INSERT INTO claims.live_price_uses(tenant_id,store_id,bundle_id,offer_id,order_id,quantity,unit_price_minor)
+   VALUES(v_tenant,v_store,r.bundle_id,r.offer_id,p_order,r.quantity,r.unit_price);
   v_count:=v_count+1;
  END LOOP;
  IF cardinality(v_bundles)>0 THEN
@@ -481,7 +515,7 @@ BEGIN
 END $$;
 ALTER FUNCTION claims.consume_live_prices(uuid) OWNER TO commerce_claims_writer;
 COMMENT ON FUNCTION claims.consume_live_prices(uuid) IS
- 'internal/claims (SQL definer; its only caller is internal/storefront ConsumeLivePrices from internal/checkout Begin, after checkout.begin_hold in the same transaction on commerce_checkout_runtime); EXECUTE: commerce_checkout_runtime. For every live_claim line of the order''s quote: locks the claim line FOR UPDATE (bundle bound to the caller, or 0129: a merchant-origin grant of the caller bound to this quote, locked and marked consumed), re-checks claimed minus held uses covers the line quantity, inserts the claims.live_price_uses row; returns the row count. PT409 (live price no longer available) rolls the whole placement back and the buyer re-quotes; PT404 when the order is not the caller''s fresh order. Non-goals: no price computation, no release (derived from order state).';
+ 'internal/claims (SQL definer; its only caller is internal/storefront ConsumeLivePrices from internal/checkout Begin, after checkout.begin_hold in the same transaction on commerce_checkout_runtime); EXECUTE: commerce_checkout_runtime. For every live_claim line of the order''s quote: locks the claim line FOR UPDATE (bundle bound to the caller, or 0129: a merchant-origin grant of the caller bound to this quote, locked and marked consumed), re-checks claimed minus held uses covers the line quantity, inserts the claims.live_price_uses row with the unit price of the quote line (0129); returns the row count. PT409 (live price no longer available) rolls the whole placement back and the buyer re-quotes; PT404 when the order is not the caller''s fresh order. Non-goals: no price computation, no release (derived from order state).';
 
 -- inbox.plan_dm (same signature/owner/ACL): semantic key of the for-buyer DM
 CREATE OR REPLACE FUNCTION inbox.plan_dm(p_conversation uuid, p_expected_generation bigint, p_order uuid, p_operation uuid, p_job bigint,

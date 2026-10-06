@@ -17,6 +17,7 @@ package merchanttools
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"slices"
@@ -40,6 +41,8 @@ const (
 	maxForBuyerBundle = 5
 	// maxGrantAuditBytes keeps one claims.merchant_origin_granted detail under command.AuditDetails' 1024-byte cap.
 	maxGrantAuditBytes = 900
+	// maxGrantAuditLines is how many lines (full offer id, SKU id, quantity, unit price actually charged) one audit event lists; line_count is the total.
+	maxGrantAuditLines = 5
 )
 
 // ForBuyerTarget is the body's `for` object: the claim bundles the order is made for (0..5; empty = a plain manual order, never a live price)
@@ -246,12 +249,17 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 		buyerOwner = capability.Scope.OwnerID
 	}
 	keyHash := sha256.Sum256([]byte("order-for-buyer|" + storeID + "|" + key))
+	canonical, err := json.Marshal(request)
+	if err != nil {
+		return zero, "", "", false, &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
+	}
+	requestHash := sha256.Sum256(canonical) // the same key with another body (bundle set, items, delivery) is refused in SQL (P2-4)
 	var begun claims.ForBuyerBegun
 	var lines []claims.ForBuyerLine
-	err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
+	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		var inner error
 		// Calls claims.for_buyer_begin (0129; live-console-v1 §5.1 3a+3b): reservation rows, fail-closed buyer comparison, grants.
-		if begun, inner = claims.BeginForBuyer(ctx, tx, keyHash[:], target.ConversationID, target.BundleIDs, buyerOwner); inner != nil {
+		if begun, inner = claims.BeginForBuyer(ctx, tx, keyHash[:], requestHash[:], target.ConversationID, target.BundleIDs, buyerOwner); inner != nil {
 			return inner
 		}
 		if begun.Reason != "" {
@@ -342,8 +350,8 @@ func notAppliedReason(reason string, origins int) string {
 }
 
 // grantAudit builds the claims.merchant_origin_granted detail of one bundle (principal is the audit row's own column): bundle, buyer, order and
-// the live-priced lines {offer, quantity, live-price minor}. Offer ids are cut to 8 hex chars to stay under the 1 KiB detail cap; the full
-// facts live in claims.live_price_uses and the quote snapshot.
+// the live-priced lines {offer id, SKU id, quantity, unit price the ledger consumed}. The first maxGrantAuditLines lines are listed to stay under the 1 KiB
+// detail cap; line_count is the total and the full facts live in claims.live_price_uses.
 func grantAudit(bundle, buyer, order string, granted []claims.GrantedLine) (map[string]any, bool) {
 	lines := []map[string]any{}
 	total := 0
@@ -352,8 +360,8 @@ func grantAudit(bundle, buyer, order string, granted []claims.GrantedLine) (map[
 			continue
 		}
 		total++
-		if len(lines) < 12 {
-			lines = append(lines, map[string]any{"o": g.OfferID[:8], "q": g.Quantity, "p": g.LivePriceMinor})
+		if len(lines) < maxGrantAuditLines {
+			lines = append(lines, map[string]any{"o": g.OfferID, "k": g.SKUID, "q": g.Quantity, "p": g.LivePriceMinor})
 		}
 	}
 	if total == 0 {

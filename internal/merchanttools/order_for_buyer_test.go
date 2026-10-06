@@ -8,6 +8,7 @@ package merchanttools
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -60,11 +61,12 @@ func TestPickOriginsFailsClosedPerLine(t *testing.T) {
 func TestGrantAuditStaysUnderTheDetailCap(t *testing.T) {
 	var granted []claims.GrantedLine
 	for i := 0; i < 50; i++ {
-		granted = append(granted, claims.GrantedLine{BundleID: "11111111-1111-4111-8111-111111111111", OfferID: "22222222-2222-4222-8222-222222222222", SKUID: "s", Quantity: 999, LivePriceMinor: 1000000000000})
+		granted = append(granted, claims.GrantedLine{BundleID: "11111111-1111-4111-8111-111111111111", OfferID: "22222222-2222-4222-8222-222222222222", SKUID: "55555555-5555-4555-8555-555555555555", Quantity: 999, LivePriceMinor: 1000000000000})
 	}
 	detail, ok := grantAudit("11111111-1111-4111-8111-111111111111", "33333333-3333-4333-8333-333333333333", "44444444-4444-4444-8444-444444444444", granted)
 	raw, _ := json.Marshal(detail)
-	if !ok || len(raw) > maxGrantAuditBytes || detail["line_count"] != 50 {
+	if !ok || len(raw) > maxGrantAuditBytes || detail["line_count"] != 50 || !strings.Contains(string(raw), "22222222-2222-4222-8222-222222222222") ||
+		!strings.Contains(string(raw), "55555555-5555-4555-8555-555555555555") {
 		t.Fatalf("detail %d bytes ok=%v: %s", len(raw), ok, raw)
 	}
 	if _, ok := grantAudit("another-bundle", "x", "y", granted); ok {

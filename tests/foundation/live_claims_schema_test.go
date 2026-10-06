@@ -260,8 +260,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "identity.sessions", "SELECT", "token_hash", "principal_id", "audience", "revoked_at", "expires_at")
 		// 0105 (R4S-01): the consumption ledger (written only by claims.consume_live_prices), order state for the held-use sum
 		// and the buyer's own quote lines (no order snapshot, no destination, no PII).
-		add(wr, "claims.live_price_uses", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity")
-		add(wr, "claims.live_price_uses", "INSERT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity")
+		add(wr, "claims.live_price_uses", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity", "unit_price_minor") // 0129: the price consumed at
+		add(wr, "claims.live_price_uses", "INSERT", "tenant_id", "store_id", "bundle_id", "offer_id", "order_id", "quantity", "unit_price_minor")
 		add(wr, "checkout.orders", "SELECT", "tenant_id", "store_id", "owner_id", "id", "creator_session_id", "quote_id", "commercial_state", "created_at")
 		add(wr, "storefront.quotes", "SELECT", "tenant_id", "store_id", "owner_id", "id", "snapshot")
 		// meta-claims-intake-v1 §4.3 rows (exactly; the contract is the source, not the migration).
@@ -449,7 +449,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"for_buyer_peer_state": {args: "p_conversation uuid, p_bundles uuid[]", result: "text", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"for_buyer_lines": {args: "p_conversation uuid, p_bundle uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, keyword text, quantity integer, live_price_minor bigint, live_remaining bigint)",
 				volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
-			"for_buyer_begin": {args: "p_key_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid", result: "TABLE(o_request uuid, o_reason text)", volatility: "v",
+			"for_buyer_begin": {args: "p_key_hash bytea, p_request_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid", result: "TABLE(o_request uuid, o_reason text)", volatility: "v",
 				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"for_buyer_finish": {args: "p_request uuid, p_order uuid", result: "TABLE(bundle_id uuid, offer_id uuid, sku_id uuid, quantity bigint, live_price_minor bigint)", volatility: "v",
 				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
@@ -890,7 +890,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
-				"claims.for_buyer_begin(bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)"})
+				"claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p
 			WHERE p.table_schema='claims' AND p.table_name='bundles' AND p.column_name IN ('owner_id','bound_at') AND p.privilege_type='UPDATE'
 			  AND p.grantee::text<>(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='claims.bundles'::regclass)`),

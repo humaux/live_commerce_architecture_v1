@@ -45,7 +45,7 @@ func forBuyerError(err error) error {
 		switch pg.Message {
 		case "bundle_already_ordered":
 			return &ForBuyerError{Status: http.StatusConflict, Code: pg.Message, OrderID: pg.Detail}
-		case "bundle_buyer_mismatch":
+		case "bundle_buyer_mismatch", "idempotency_conflict": // the same key with another request body
 			return &ForBuyerError{Status: http.StatusConflict, Code: pg.Message}
 		}
 	}
@@ -92,9 +92,9 @@ type ForBuyerBegun struct {
 }
 
 // BeginForBuyer is §5.1 steps 3a+3b: it reserves the bundles (409 bundle_already_ordered) and evaluates the fail-closed buyer comparison (409
-// bundle_buyer_mismatch, nothing created) and writes the single-use grants for buyer (the capability owner of the order). Calls
+// bundle_buyer_mismatch, nothing created; 409 idempotency_conflict when keyHash already started another requestHash) and writes the single-use grants for buyer (the capability owner of the order). Calls
 // claims.for_buyer_begin (0129) in the merchant transaction; a resume under the same key hash finds its own rows. bundles must be sorted.
-func BeginForBuyer(ctx context.Context, tx pgx.Tx, keyHash []byte, conversation *string, bundles []string, buyer string) (ForBuyerBegun, error) {
+func BeginForBuyer(ctx context.Context, tx pgx.Tx, keyHash, requestHash []byte, conversation *string, bundles []string, buyer string) (ForBuyerBegun, error) {
 	var out ForBuyerBegun
 	var buyerArg *string
 	if buyer != "" {
@@ -103,21 +103,22 @@ func BeginForBuyer(ctx context.Context, tx pgx.Tx, keyHash []byte, conversation 
 	if bundles == nil {
 		bundles = []string{}
 	}
-	err := tx.QueryRow(ctx, `SELECT o_request::text,o_reason FROM claims.for_buyer_begin($1::bytea,$2::uuid,$3::uuid[],$4::uuid)`,
-		keyHash, conversation, bundles, buyerArg).Scan(&out.RequestID, &out.Reason)
+	err := tx.QueryRow(ctx, `SELECT o_request::text,o_reason FROM claims.for_buyer_begin($1::bytea,$2::bytea,$3::uuid,$4::uuid[],$5::uuid)`,
+		keyHash, requestHash, conversation, bundles, buyerArg).Scan(&out.RequestID, &out.Reason)
 	if err != nil {
 		return ForBuyerBegun{}, forBuyerError(err)
 	}
 	return out, nil
 }
 
-// GrantedLine is one live-priced line of a placed order as the ledger recorded it (audit input).
+// GrantedLine is one live-priced line of a placed order as the ledger recorded it (audit input); LivePriceMinor is the unit price the line was
+// CONSUMED at (claims.live_price_uses.unit_price_minor, from the order's own quote), not the offer's current price.
 type GrantedLine struct {
 	BundleID, OfferID, SKUID string
 	Quantity, LivePriceMinor int64
 }
 
-// FinishForBuyer is §5.1 step 3d (the reservation part): the request's rows become placed with the order id; it returns the order's live-priced
+// FinishForBuyer is §5.1 step 3d (the reservation part): the request's rows become placed with the order id (409 conflict when a row of the request was lost), its unconsumed grants expire; it returns the order's live-priced
 // lines (empty = catalog price). Calls claims.for_buyer_finish (0129) in the merchant transaction.
 func FinishForBuyer(ctx context.Context, tx pgx.Tx, request, order string) ([]GrantedLine, error) {
 	rows, err := tx.Query(ctx, `SELECT bundle_id::text,offer_id::text,sku_id::text,quantity,live_price_minor FROM claims.for_buyer_finish($1::uuid,$2::uuid)`, request, order)
@@ -128,8 +129,12 @@ func FinishForBuyer(ctx context.Context, tx pgx.Tx, request, order string) ([]Gr
 	out := []GrantedLine{}
 	for rows.Next() {
 		var g GrantedLine
-		if err = rows.Scan(&g.BundleID, &g.OfferID, &g.SKUID, &g.Quantity, &g.LivePriceMinor); err != nil {
+		var price *int64
+		if err = rows.Scan(&g.BundleID, &g.OfferID, &g.SKUID, &g.Quantity, &price); err != nil {
 			return nil, forBuyerError(err)
+		}
+		if price != nil {
+			g.LivePriceMinor = *price
 		}
 		out = append(out, g)
 	}
