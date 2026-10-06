@@ -1,0 +1,40 @@
+# green on COMMITTED tree SHA fc275e0e999467d3662e150312d1dbc2050cec60 (clean tree); three focused invocations (RAM): 2026-10-06T15:39:32Z
+## ^TestStripeRF
+--- PASS: TestStripeRF05HappyMock (13.76s)
+--- PASS: TestStripeRF06Unknown (49.11s)
+--- PASS: TestStripeRF07Lifecycle (45.34s)
+    stripe_refund_guards_test.go:398: DATA internal/httpapi: package comment lacks [owns] (pre-existing; reviewer decision)
+--- PASS: TestStripeRF12Guards (12.14s)
+--- PASS: TestStripeRF09AdminHTTP (10.78s)
+--- PASS: TestStripeRF06RejectionIsFinal (21.68s)
+--- PASS: TestStripeRF04Request (13.11s)
+    stripe_refund_sandbox_test.go:85: NOT_RUN: RF10 requires STRIPE_SANDBOX=1 with a Stripe test key (owner-provided; SANDBOX only, LIVE refused)
+--- SKIP: TestStripeRF10Sandbox (0.00s)
+    stripe_refund_schema_test.go:794: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0061 with rows cannot be built without re-implementing the migrator
+--- PASS: TestStripeRF03Schema (14.97s)
+--- PASS: TestStripeRF08Webhook (24.60s)
+--- PASS: TestStripeRF01Wire (1.60s)
+--- PASS: TestStripeRF02WebhookProjection (0.05s)
+test-focused: top-level PASS=11 FAIL=0 SKIP=1 exit=0
+exit=0
+## ^(TestStripeSL09Watchdog|TestPlatformSettlement|TestStripeSL02)
+--- PASS: TestPlatformSettlement (12.82s)
+--- PASS: TestStripeSL02Schema (7.72s)
+--- PASS: TestStripeSL09Watchdog (12.23s)
+test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0
+exit=0
+## ^(TestStripeSP12MoneyChecks|TestPlatformStripe)
+--- PASS: TestPlatformStripePF01Schema (4.53s)
+--- PASS: TestPlatformStripePF02Enable (3.08s)
+--- PASS: TestPlatformStripePF03Fanout (3.70s)
+--- PASS: TestPlatformStripePF04Start (4.35s)
+--- PASS: TestPlatformStripePF05Webhook (5.65s)
+--- PASS: TestPlatformStripePF06Refund (7.97s)
+--- PASS: TestPlatformStripePF07Kill (3.87s)
+--- PASS: TestPlatformStripePF08Routes (2.83s)
+--- PASS: TestPlatformStripePF11DisallowBlocks (4.93s)
+--- PASS: TestPlatformStripePF09LiveRevokeRace (8.23s)
+--- PASS: TestPlatformStripePF07LivePostRevoke (2.47s)
+--- PASS: TestStripeSP12MoneyChecks (102.12s)
+test-focused: top-level PASS=12 FAIL=0 SKIP=0 exit=0
+exit=0

@@ -1,0 +1,5 @@
+ok  	livecommerce/internal/returns	0.380s
+ok  	livecommerce/internal/fulfillment	1.150s
+ok  	livecommerce/internal/httpapi	2.148s
+ok  	livecommerce/internal/httperror	1.321s
+exit=0

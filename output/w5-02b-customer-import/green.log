@@ -1,0 +1,51 @@
+=== RUN   TestCustomerImport
+=== RUN   TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers
+=== RUN   TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts
+=== RUN   TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner
+=== RUN   TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written
+=== RUN   TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv
+=== RUN   TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match
+=== RUN   TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results
+=== RUN   TestCustomerImport/CI08_limits_and_drift
+    customer_import_test.go:442: 5000-row preview + commit: 4.584623291s
+=== RUN   TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs
+=== RUN   TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted
+=== RUN   TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners
+--- PASS: TestCustomerImport (6.71s)
+    --- PASS: TestCustomerImport/CI01_preview_rolls_back,_commit_imports,_list_shows_imported_customers (0.05s)
+    --- PASS: TestCustomerImport/CI02_same_file_replays,_a_different_count_conflicts (0.01s)
+    --- PASS: TestCustomerImport/CI03_the_same_external_id_updates,_it_never_creates_a_second_owner (0.01s)
+    --- PASS: TestCustomerImport/CI04_a_consent_column_is_ignored_and_flagged,_no_consent_is_written (0.01s)
+    --- PASS: TestCustomerImport/CI05_bad_cells_fail_their_row;_formula_cells_are_unguarded_on_input_and_guarded_in_results.csv (0.02s)
+    --- PASS: TestCustomerImport/CI06_customers:privacy_is_required;_tenants_never_match (0.06s)
+    --- PASS: TestCustomerImport/CI07_erasure_deletes_the_profile_and_the_external_id_and_scrubs_retained_results (0.05s)
+    --- PASS: TestCustomerImport/CI08_limits_and_drift (4.64s)
+    --- PASS: TestCustomerImport/CI09_no_name,_phone_or_email_in_results,_audit,_receipts,_batches_or_logs (0.04s)
+    --- PASS: TestCustomerImport/CI10_an_imported_customer_can_be_tagged_and_noted (0.05s)
+    --- PASS: TestCustomerImport/CI11_no_login_role_reaches_the_new_tables_or_inserts_owners (0.01s)
+=== RUN   TestCustomersBillingCB09HTTP
+=== RUN   TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method
+=== RUN   TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store
+=== RUN   TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict
+=== RUN   TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound
+=== RUN   TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer
+=== RUN   TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv
+=== RUN   TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal
+=== RUN   TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12)
+=== RUN   TestCustomersBillingCB09HTTP/buyer_routes:_privacy_state,_consents,_export,_erasure_(410_erased)
+=== RUN   TestCustomersBillingCB09HTTP/no_error_body_or_response_carries_a_secret,_a_bearer_URL_or_another_domain's_id
+--- PASS: TestCustomersBillingCB09HTTP (3.46s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method (0.10s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store (0.02s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict (0.02s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound (0.47s)
+    --- PASS: TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer (0.07s)
+    --- PASS: TestCustomersBillingCB09HTTP/GET_finance/summary_and_summary.csv (0.03s)
+    --- PASS: TestCustomersBillingCB09HTTP/billing:_GET_billing,_GET_standing,_POST_checkout,_POST_portal (0.06s)
+    --- PASS: TestCustomersBillingCB09HTTP/billing_restricted_is_HTTP_402_on_the_claim-window_route_(B9,_B12) (0.59s)
+    --- PASS: TestCustomersBillingCB09HTTP/buyer_routes:_privacy_state,_consents,_export,_erasure_(410_erased) (0.54s)
+    --- PASS: TestCustomersBillingCB09HTTP/no_error_body_or_response_carries_a_secret,_a_bearer_URL_or_another_domain's_id (0.53s)
+PASS
+ok  	livecommerce/tests/foundation	14.675s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+exit=0
