@@ -316,6 +316,8 @@ export function MetaConnect({ store, locale, canManage = false }: { store: strin
                   <dt>{c.token}</dt>
                   <dd data-testid="metaconnect-token" data-state={connected.status}>
                     <Badge
+                      // This is a full refusal sentence; the shared one-line badge would overflow the 390px card.
+                      style={{ whiteSpace: "normal" }}
                       tone={
                         connected.status === "active" ? "success" : "warning"
                       }
