@@ -1,35 +1,3 @@
-=== RUN   TestCheckoutReminderCR01WindowTakeoverAndOnce
---- PASS: TestCheckoutReminderCR01WindowTakeoverAndOnce (11.04s)
-=== RUN   TestCheckoutReminderCR02ConcurrentTriggers
---- PASS: TestCheckoutReminderCR02ConcurrentTriggers (1.11s)
-=== RUN   TestCheckoutReminderCR03CheckReChecks
---- PASS: TestCheckoutReminderCR03CheckReChecks (3.75s)
-=== RUN   TestCheckoutReminderCR04GraphFailureIsUnknown
---- PASS: TestCheckoutReminderCR04GraphFailureIsUnknown (11.41s)
-=== RUN   TestCheckoutReminderCR05CandidateSetAndOrderLink
---- PASS: TestCheckoutReminderCR05CandidateSetAndOrderLink (13.65s)
-=== RUN   TestCheckoutReminderCR09BatchDoesNotLivelock
---- PASS: TestCheckoutReminderCR09BatchDoesNotLivelock (1.93s)
-=== RUN   TestCheckoutReminderYoungClaimsAreNotNagged
---- PASS: TestCheckoutReminderYoungClaimsAreNotNagged (0.98s)
-=== RUN   TestCheckoutReminderPerBuyerRefusalDoesNotAbortTheBatch
---- PASS: TestCheckoutReminderPerBuyerRefusalDoesNotAbortTheBatch (3.71s)
-=== RUN   TestCheckoutReminderCountsTowardTheSendCap
---- PASS: TestCheckoutReminderCountsTowardTheSendCap (3.68s)
-=== RUN   TestCheckoutReminderFollowupOnlyAuditAndPermissions
---- PASS: TestCheckoutReminderFollowupOnlyAuditAndPermissions (8.71s)
-=== RUN   TestCheckoutReminderCR06Scope
---- PASS: TestCheckoutReminderCR06Scope (1.71s)
-=== RUN   TestCheckoutReminderNoStorefront
---- PASS: TestCheckoutReminderNoStorefront (1.68s)
-=== RUN   TestCheckoutReminderSingleBuyer
---- PASS: TestCheckoutReminderSingleBuyer (4.24s)
-=== RUN   TestCheckoutReminderCR08NoSecretsPersisted
---- PASS: TestCheckoutReminderCR08NoSecretsPersisted (8.80s)
-=== RUN   TestCheckoutReminderMigration0144ExactACL
---- PASS: TestCheckoutReminderMigration0144ExactACL (0.03s)
-=== RUN   TestCheckoutReminderSuspendedStoreBlocksQueued
---- PASS: TestCheckoutReminderSuspendedStoreBlocksQueued (1.67s)
 === RUN   TestClaimsRetentionCRP02Schema
 === RUN   TestClaimsRetentionCRP02Schema/fresh-database
     claims_retention_test.go:3459: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
@@ -97,11 +65,12 @@
 === RUN   TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach
 === RUN   TestClaimsRetentionCRP02Schema/constraints-and-policy-api
 === RUN   TestClaimsRetentionCRP02Schema/populated-upgrade
---- PASS: TestClaimsRetentionCRP02Schema (6.26s)
+    claims_retention_test.go:3871: apply every migration but 0071, 0127 and 0129: apply 0144_checkout_reminders.sql: ERROR: column "purged_at" of relation "bundles" does not exist (SQLSTATE 42703)
+--- FAIL: TestClaimsRetentionCRP02Schema (6.88s)
     --- PASS: TestClaimsRetentionCRP02Schema/fresh-database (0.18s)
-    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (0.70s)
-    --- PASS: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.25s)
-    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (2.16s)
+    --- PASS: TestClaimsRetentionCRP02Schema/non-retention-roles-denied (0.76s)
+    --- PASS: TestClaimsRetentionCRP02Schema/writer-policy-behaviour (0.28s)
+    --- PASS: TestClaimsRetentionCRP02Schema/pool-validators (2.27s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_operator_(two_retention_authorities) (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_worker (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/job_validator_rejects_job_+_payment_live_worker (0.02s)
@@ -128,7 +97,7 @@
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_job (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_worker (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_payment_live_worker (0.02s)
-        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.02s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_expiry_worker (0.03s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_ads_worker (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_claims_worker (0.02s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/operator_validator_rejects_operator_+_legacy_worker (0.02s)
@@ -151,21 +120,19 @@
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_ads_worker_rejects_retention_reach (0.08s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_worker_rejects_retention_reach (0.08s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_checkout_rejects_retention_reach (0.08s)
-        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_rejects_retention_reach (0.09s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_buyer_issuer_rejects_retention_reach (0.08s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_ingress_rejects_retention_reach (0.08s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_consumer_rejects_retention_reach (0.08s)
-        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.08s)
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_meta_worker_rejects_retention_reach (0.09s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_claims_intake_rejects_retention_reach (0.08s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_worker_rejects_retention_reach (0.09s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_executor_rejects_retention_reach (0.09s)
         --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_media_recovery_rejects_retention_reach (0.09s)
-        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.09s)
-    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.08s)
-    --- PASS: TestClaimsRetentionCRP02Schema/populated-upgrade (2.89s)
-=== RUN   TestR2IntegrationUpgradeFromReleaseHead
---- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.07s)
-PASS
-ok  	livecommerce/tests/foundation	91.446s
-test-focused: top-level PASS=18 FAIL=0 SKIP=0 exit=0
-exit 0
+        --- PASS: TestClaimsRetentionCRP02Schema/pool-validators/validator_stripe_ingress_rejects_retention_reach (0.10s)
+    --- PASS: TestClaimsRetentionCRP02Schema/constraints-and-policy-api (0.09s)
+    --- FAIL: TestClaimsRetentionCRP02Schema/populated-upgrade (2.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	8.258s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

@@ -39,3 +39,10 @@
 - NOT_RUN / BLOCKED: automatic River trigger and settings routes DEFERRED (inbox payload ring stays API-only); release-gate G07 and the broad regression -> CI.
 - Integrator to-do: claims-retention-purge-v1 row for inbox.checkout_reminders (intake_days); serialise the fixed_templates template_id CHECK with W3-04B (0132); add test-local.sh
   --reminders; decide on the storefront-order / opened-claim limit above; per-locale reminder templates (UI/template unit); wire nothing else (cmd/api already passes ManualOrders).
+
+## CI follow-up (GitHub run 37444686668 on 000cab42)
+- TestCheckoutReminderCR08NoSecretsPersisted failed only on the shared full-suite DB. Root cause (reproduced locally with a decoy receipt, red-cr08.log): the assertion scanned store-wide
+  `ops.command_results` / `inbox.checkout_reminders`, which other suites fill with legitimate URLs. No product leak: the scoped rows (this operation, this session's reminder rows, claim-link
+  receipts since the test started, job args, outbound rows) hold no PSID/link/token. The assertion is now scoped to this reminder, keeps the decoy, and fails if its own operation is not read.
+- TestClaimsRetentionCRP02Schema/populated-upgrade: 0144 reads claims.bundles.purged_at (0071), so it is held back with 0071/0127/0129 and applied after (red-crp02.log -> green).
+- R2 pin = 71 (trunk 70 + 0144). Local focused: ^(TestCheckoutReminder|TestClaimsRetentionCRP02|TestR2IntegrationUpgradeFromReleaseHead) -> exit 0 (18 tests); check-gates exit 0.
