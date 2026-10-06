@@ -171,6 +171,15 @@ var cbsFunctions = []cbsFn{
 	{"customers.export_tags_notes(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
 	{"identity.read_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.export_finance_summary(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
+	// 0147 (W6-02B): the report read definers and the audited export (volatile like finance: they call resolve_access / the audit fence).
+	{"identity.read_report_products(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"identity.read_report_channels(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"identity.read_report_manual_orders(bytea,uuid,date,date)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"identity.read_report_funnel(bytea,uuid,date,date,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"identity.export_report(bytea,uuid,text,date,date,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
+	{"claims.report_order_bundles(uuid,uuid,uuid[])", "commerce_claims_writer", []string{"commerce_auth"}, true},
+	{"claims.report_funnel_bundles(uuid,uuid,timestamp with time zone,timestamp with time zone,uuid)", "commerce_claims_writer", []string{"commerce_auth"}, true},
+	{"checkout.report_manual_creators(uuid,uuid,timestamp with time zone,timestamp with time zone)", "commerce_checkout_writer", []string{"commerce_auth"}, true},
 	{"identity.read_billing(bytea,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"identity.read_billing_standing(bytea,uuid)", "commerce_auth", []string{"commerce_runtime"}, false},
 	{"billing.store_standing(uuid,uuid)", "commerce_billing_writer", []string{"commerce_auth", "commerce_ads_writer"}, true},
@@ -741,7 +750,7 @@ func TestCustomersBillingCB02Comments(t *testing.T) {
 		for _, fn := range cbsFunctions {
 			word := strings.SplitN(fn.sig, ".", 2)[0]
 			switch {
-			case strings.Contains(fn.sig, "finance"):
+			case strings.Contains(fn.sig, "finance") || strings.Contains(fn.sig, "report"):
 				word = "reporting"
 			case word == "identity" && strings.Contains(fn.sig, "customers"):
 				word = "customers"

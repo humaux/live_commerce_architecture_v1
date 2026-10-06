@@ -214,6 +214,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerMetaHealthRoutes(mux, pool, configured.MetaHealth)
 	registerCustomerRoutes(mux, pool)
 	registerFinanceRoutes(mux, pool)
+	registerReportRoutes(mux, pool) // unit w6-02b-reports: product / channel / funnel / manual-order reports, reports.go
 	registerBillingRoutes(mux, pool, configured.Billing)
 	registerCVSRoutes(mux, pool, configured.CVS)
 	registerPickListRoutes(mux, pool, configured.CVS) // unit w3-02b-picklist: pick list, carrier export, cvs-batch

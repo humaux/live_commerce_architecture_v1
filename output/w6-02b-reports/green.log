@@ -1,0 +1,19 @@
+=== RUN   TestReportRP01ProductsChannelsMatchHandNumbersAndFinance
+--- PASS: TestReportRP01ProductsChannelsMatchHandNumbersAndFinance (1.41s)
+=== RUN   TestReportRP04FunnelNestedPerSessionAndStore
+--- PASS: TestReportRP04FunnelNestedPerSessionAndStore (0.10s)
+=== RUN   TestReportRP05RangeAndShape
+--- PASS: TestReportRP05RangeAndShape (0.05s)
+=== RUN   TestReportRP06ExportPermissionAuditAndCSV
+--- PASS: TestReportRP06ExportPermissionAuditAndCSV (0.09s)
+=== RUN   TestReportRP07CrossStoreNoLeak
+--- PASS: TestReportRP07CrossStoreNoLeak (0.09s)
+=== RUN   TestReportRP08TimingTenThousandOrders
+    reports_test.go:599: RP08 products      92 days over 10000 orders: 76ms (status 200, 11052 bytes)
+    reports_test.go:599: RP08 channels      92 days over 10000 orders: 27ms (status 200, 771 bytes)
+    reports_test.go:599: RP08 funnel        92 days over 10000 orders: 125ms (status 200, 161 bytes)
+    reports_test.go:599: RP08 manual-orders 92 days over 10000 orders: 22ms (status 200, 598 bytes)
+--- PASS: TestReportRP08TimingTenThousandOrders (1.69s)
+PASS
+ok  	livecommerce/tests/foundation	6.126s
+test-focused: top-level PASS=6 FAIL=0 SKIP=0 exit=0

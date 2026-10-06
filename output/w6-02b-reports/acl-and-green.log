@@ -1,0 +1,43 @@
+=== RUN   TestCustomersBillingCB02Comments
+=== RUN   TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package
+--- PASS: TestCustomersBillingCB02Comments (3.28s)
+    --- PASS: TestCustomersBillingCB02Comments/every_new_object_names_its_owning_package (0.02s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (3.74s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.07s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.13s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.02s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.25s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.59s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.11s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.23s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.16s)
+=== RUN   TestReportRP01ProductsChannelsMatchHandNumbersAndFinance
+--- PASS: TestReportRP01ProductsChannelsMatchHandNumbersAndFinance (0.17s)
+=== RUN   TestReportRP04FunnelNestedPerSessionAndStore
+--- PASS: TestReportRP04FunnelNestedPerSessionAndStore (0.14s)
+=== RUN   TestReportRP05RangeAndShape
+--- PASS: TestReportRP05RangeAndShape (0.05s)
+=== RUN   TestReportRP06ExportPermissionAuditAndCSV
+--- PASS: TestReportRP06ExportPermissionAuditAndCSV (0.09s)
+=== RUN   TestReportRP07CrossStoreNoLeak
+--- PASS: TestReportRP07CrossStoreNoLeak (0.09s)
+=== RUN   TestReportRP08TimingTenThousandOrders
+    reports_test.go:599: RP08 products      92 days over 10000 orders: 88ms (status 200, 11052 bytes)
+    reports_test.go:599: RP08 channels      92 days over 10000 orders: 28ms (status 200, 771 bytes)
+    reports_test.go:599: RP08 funnel        92 days over 10000 orders: 152ms (status 200, 161 bytes)
+    reports_test.go:599: RP08 manual-orders 92 days over 10000 orders: 24ms (status 200, 598 bytes)
+--- PASS: TestReportRP08TimingTenThousandOrders (1.95s)
+PASS
+ok  	livecommerce/tests/foundation	15.685s
+test-focused: top-level PASS=9 FAIL=0 SKIP=0 exit=0

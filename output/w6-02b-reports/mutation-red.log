@@ -1,0 +1,8 @@
+=== RUN   TestReportRP01ProductsChannelsMatchHandNumbersAndFinance
+    reports_test.go:296: product row 3 071ead6a-e74e-4b42-a827-b20761ced3a6/LIVE: got [2 8334 0 8334 0 0] want [2 8335 0 8335 0 0]
+    reports_test.go:368: finance totals map[LIVE:{captured:45101 refunded:9000 net:36101 offline:23000} SANDBOX:{captured:30000 refunded:0 net:30000 offline:0}] (live product net 36100)
+--- FAIL: TestReportRP01ProductsChannelsMatchHandNumbersAndFinance (1.77s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.502s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
