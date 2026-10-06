@@ -217,6 +217,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerMetaConnectRoutes(mux, pool, configured.MetaConnect)
 	registerMetaHealthRoutes(mux, pool, configured.MetaHealth)
 	registerCustomerRoutes(mux, pool)
+	registerImportRoutes(mux, pool) // unit w5-02b-customer-import: imports.go, contracts/migration-import-v1.md
 	registerFinanceRoutes(mux, pool)
 	registerReportRoutes(mux, pool, paymentEnvironment) // unit w6-02b-reports: product / channel / funnel / manual-order reports, reports.go
 	registerBillingRoutes(mux, pool, configured.Billing)
