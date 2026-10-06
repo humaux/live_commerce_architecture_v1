@@ -147,3 +147,55 @@ No P0. One P1 (a Go-only fix of about 8 lines plus tests). The SQL change is cor
 
 ## NOT_RUN (reviewer)
 PG suites, including the R2 upgrade gate and the full foundation suite, are left to CI. No browser runs.
+
+## Re-verify (2026-10-07, fix 2573225c, HEAD 6a8c9da9; read-only)
+
+**P1-1 is FIXED. No new P0 or P1. Verdict: MERGE.** The P2 doc items below can be fixed after merge.
+
+- **Code.**
+  - `skuWinners` (`internal/claims/buyer.go:378-394`) now ranks lines in this order: the active offer's line, then a line already applied (`!pending`), then the lowest offer id.
+  - `PreviewLink` now passes `pending` into the ranking (`buyer.go:133`), so B1 and B2 rank the same inputs. Before the fix, the preview's contenders had `pending` left at its zero value.
+  - `claims.for_buyer_lines` (`0158:153-161`) applies the same ranking in SQL. A row comparison of `(active, applied_version IS NOT DISTINCT FROM version)` decides, with false below true. On a tie the lower `offer_id` wins. That is a 16-byte compare in PostgreSQL, the same order as Go's comparison of lowercase hex strings. A superseded line reports a NULL price, so `pickOrigins` cannot fall through to it.
+  - Signature, owner and volatility are unchanged (`TestLiveClaimsKC03Schema` passes in `green-fix.log`).
+- **The exact scenario I reproduced.**
+  - The scratch probe now runs against HEAD. Setup: A11 is the typo line (lower id, pending, paused) and A1 is applied, then paused. Result: `apply=[]` and `skipped=[offer_inactive]`. Before the fix the result was `apply=[A11 x2]`.
+  - New PG test `TestLivePriceKeepOnPauseReplacementPausedAfterRedeem` (`live_price_keep_on_pause_test.go`). `typoPair` keeps drawing sessions until the typo id is lower than A1's id, which is the order that triggers the bug. Steps:
+    1. Redeem while A1 is active: x3 at `ltgLive` on A1.
+    2. Pause A1.
+    3. Preview: A11 is pending and not available.
+    4. Second redeem: nothing applied, the cart is still x3, and the quote is still live on A1.
+    5. Order: the ledger holds A1 3/1.
+    6. Third redeem: nothing applied, and A11 holds 0/0 in the ledger.
+  - Red on the unchanged code: `red-fix.log` (base SHA stamped) shows the test failing at the step 3 preview check. `red-fix-unit.log` shows the new unit case failing ("applied a-typo").
+  - Green: `green-fix.log` (tested SHA 2573225c stamped) has 62 PASS and 0 FAIL.
+  - Locally at HEAD: gofmt is clean, `go vet ./internal/claims/ ./tests/foundation/` is clean, and `go test ./internal/claims/ ./internal/storefront/ ./internal/merchanttools/` passes.
+- **Reminder flow** (nothing active, nothing ever applied, two pending lines).
+  - Test: `TestLivePriceKeepOnPauseOneClaimPerSKU`, second half. It uses a re-issued link (generation 1), and only the winner shows as available in the preview. Exactly one line is applied, at that line's own quantity and price. The unit test also checks that the winner is the same for all six input orders.
+  - Once the winner is applied, it outranks the other pending line, so neither the buyer's later redeems nor the merchant prefill ever use the second line.
+  - So the reminder flow uses at most one claim line per SKU, the same as before 0158.
+- **Can the lowest-offer-id tiebreak grant extra live-price units? Confirmed: no unit beyond a claim line's own claimed quantity.**
+  - Every live-priced unit passes `claims.live_prices` (`0158:79-83`: cart quantity ≤ line quantity minus units held by non-CANCELLED orders).
+  - `consume_live_prices` locks the line `FOR UPDATE` and re-checks held plus new ≤ claimed (0129).
+  - The tiebreak only chooses which single line carries the SKU's one cart origin.
+  - **Residual, P2-9 (new).** Rank 2 uses applied at the *current* line version. Suppose the buyer raises the applied replacement while it is still active (`A1+4` after ordering 3), so the line becomes pending again. Then the merchant pauses A1 before the buyer redeems again. Both lines are now pending, and the lowest id decides, so the typo line can win.
+    - Probe at HEAD: `apply=[A11 x2]`.
+    - Each line stays within its own cap. But the buyer can then use the typo claim after the replacement was partly ordered, which KC04 typo recovery meant to supersede. For example, A11+5 and A1+4 with 3 already ordered gives 3 + 5 live units instead of at most 4.
+    - Rated P2:
+      - It needs the buyer to raise after redeeming, a pause before the next redeem, and the 50% id order.
+      - It is bounded by the buyer's own claim made before the pause, which the owner rule literally protects.
+      - Same class as the open "earliest/latest claim" owner choice.
+    - Fixing it needs an "ever applied" signal (`applied_version IS NOT NULL`), and `redeem_link` / `preview_link` do not return one: the same signature change as the claim-time option.
+- **Contract and DELIVERY corrections.** Checked and correct:
+  - rule 2: the current price at quote time, and a merchant re-issue restarts the 72 h window;
+  - rule 4: the three-rank order;
+  - rule 5: superseded lines get a NULL price;
+  - rule 7 and the W3-04B sentence: the race is unreachable, with the correct mechanism;
+  - the KC11 row, the GATES LPK row, and the DELIVERY fix-round section.
+
+  The repricing test is added to `...ClearedPriceStillEndsIt`. Two inaccuracies remain (P2-10, doc only):
+  - Rule 4 (`contracts/live-keyword-claims-v1.md:1392`) and the `buyer.go:369` comment say rank 3 "applies only when nothing is active and nothing was applied yet". It also applies after a raise makes an applied line pending again (P2-9).
+  - Rule 5 (`:1399`) still says "Within a bundle the active offers' lines are listed first". The fix dropped `ORDER BY ... o.active DESC` (`0158`: `ORDER BY l.bundle_id,o.keyword,l.offer_id`).
+- **Still open for the owner** (unchanged P2s):
+  - P2-1/P2-9: the rank-3 choice;
+  - P2-3: the price is the current price, not frozen at claim time;
+  - P2-4: a merchant re-issue renews the price window.
