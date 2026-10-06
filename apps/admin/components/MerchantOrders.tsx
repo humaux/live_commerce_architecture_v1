@@ -1,10 +1,10 @@
-// Purpose: Owns order list loading, filtering and selected-order detail.
+// Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
 // Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css
 // Used by: apps/admin/app/[locale]/orders/page.tsx
 "use client";
 
 // Purpose: scoped merchant order list, existing inline details and fulfillment action entry points.
-// Depends on: orders BFF/read models, WorkspaceFrame and TrackingImport's independent CSV workflow.
+// Depends on: orders BFF/read models, WorkspaceFrame, PickList/picklist-model/copy and TrackingImport's independent CSV workflow.
 // Used by: /[locale]/orders; existing controls keep their placement and permission semantics.
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /

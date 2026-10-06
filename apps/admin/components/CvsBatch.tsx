@@ -1,5 +1,5 @@
 // Purpose: count-confirmed CVS batches with durable unknown-outcome blocking and no retry loop.
-// Depends on: picklist-client, session-scoped sessionStorage containing IDs only, server order detail flow.
+// Depends on: picklist-client/model/copy, logistics-client recovery reads, ID-only sessionStorage and scoped onViewOrder.
 // Used by: PickList for fulfillment_write actors; never purchases real labels in fixtures.
 "use client";
 import { useEffect, useRef, useState } from "react";
@@ -112,6 +112,7 @@ export function CvsBatch({
     setBusy(true);
     setError("");
     setResult(null);
+    setCheckedCount(null); // A new command must not inherit the previous recovery count.
     setConfirm(false);
     // Persist BEFORE dispatch: a closed tab or unreadable response is never interpreted as no effect.
     try {
