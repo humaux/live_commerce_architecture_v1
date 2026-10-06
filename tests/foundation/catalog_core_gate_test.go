@@ -1150,12 +1150,12 @@ func TestCatalogCoreCC07StockHints(t *testing.T) {
 	// exact detail shape of the contract
 	var top map[string]json.RawMessage
 	_ = json.Unmarshal(e.buyer("/v1/buyer/catalog/v2/products/"+p.ID).body, &top)
-	if got, w := ccKeys(top), []string{"collections", "description", "id", "images", "options", "seo", "slug", "title", "variants"}; !reflect.DeepEqual(got, w) {
+	if got, w := ccKeys(top), []string{"collections", "description", "detail_images", "id", "image_axis", "images", "option_images", "options", "seo", "slug", "title", "variants"}; !reflect.DeepEqual(got, w) {
 		t.Fatalf("detail keys %v want %v", got, w)
 	}
 	var variants []map[string]json.RawMessage
 	_ = json.Unmarshal(top["variants"], &variants)
-	if got, w := ccKeys(variants[0]), []string{"compare_at_minor", "option_values", "price_minor", "sku_id", "stock", "title"}; !reflect.DeepEqual(got, w) {
+	if got, w := ccKeys(variants[0]), []string{"compare_at_minor", "image_id", "option_values", "price_minor", "sku_id", "stock", "title"}; !reflect.DeepEqual(got, w) {
 		t.Fatalf("variant keys %v want %v", got, w)
 	}
 }

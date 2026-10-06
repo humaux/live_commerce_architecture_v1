@@ -1,0 +1,60 @@
+=== RUN   TestAdsAttributionAT3ExactComment
+=== RUN   TestAdsAttributionAT3ExactComment/one_boost
+=== RUN   TestAdsAttributionAT3ExactComment/simultaneous_boosts
+=== RUN   TestAdsAttributionAT3ExactComment/outside_window
+=== RUN   TestAdsAttributionAT3ExactComment/other_post_in_same_session
+=== RUN   TestAdsAttributionAT3ExactComment/click_beats_post
+=== RUN   TestAdsAttributionAT3ExactComment/line_updated_after_redeem
+--- PASS: TestAdsAttributionAT3ExactComment (63.33s)
+    --- PASS: TestAdsAttributionAT3ExactComment/one_boost (16.47s)
+    --- PASS: TestAdsAttributionAT3ExactComment/simultaneous_boosts (9.55s)
+    --- PASS: TestAdsAttributionAT3ExactComment/outside_window (14.08s)
+    --- PASS: TestAdsAttributionAT3ExactComment/other_post_in_same_session (5.22s)
+    --- PASS: TestAdsAttributionAT3ExactComment/click_beats_post (14.28s)
+    --- PASS: TestAdsAttributionAT3ExactComment/line_updated_after_redeem (3.73s)
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C1-links
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C3-intake
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C5-social
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/C6-run-log
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle
+=== RUN   TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link
+--- PASS: TestClaimsRetentionCRP04EnforcedPurge (3.35s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C1-links (0.04s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-claim-identity (0.19s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C2-more-at-limit (0.02s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C3-intake (0.04s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-reply-ledger (0.11s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C4-a14-send-actions (0.05s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C5-social (0.49s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/C6-run-log (0.03s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/meta-actor-new-session-gets-a-new-bundle (1.55s)
+    --- PASS: TestClaimsRetentionCRP04EnforcedPurge/buyer-token-and-issue-link (0.72s)
+=== RUN   TestClaimsRetentionCRP06Erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores
+    claims_retention_test.go:2487: selector_digest = sha256(a|object|asset|hex(sha256(key)))
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-b-comment-id
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle
+=== RUN   TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure
+=== RUN   TestClaimsRetentionCRP06Erasure/holds
+=== RUN   TestClaimsRetentionCRP06Erasure/reserved-labels
+=== RUN   TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys
+--- PASS: TestClaimsRetentionCRP06Erasure (12.91s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-a-across-two-stores (0.82s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-b-comment-id (0.52s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-meta-bundle (0.28s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/selector-c-manual-bundle (0.02s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/a14-send-actions-erasure (0.37s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/holds (1.55s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/reserved-labels (0.28s)
+    --- PASS: TestClaimsRetentionCRP06Erasure/real-pipeline-peer-and-comment-keys (8.64s)
+=== RUN   TestClaimsRetentionCRP07Privacy
+--- PASS: TestClaimsRetentionCRP07Privacy (21.86s)
+PASS
+ok  	livecommerce/tests/foundation	104.145s
+test-focused: top-level PASS=4 FAIL=0 SKIP=0 exit=0

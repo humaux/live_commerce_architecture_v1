@@ -1,0 +1,35 @@
+--- FAIL: TestSoldOutTextRuleIsControlCharactersOnly (0.00s)
+    sold_out_test.go:113: U+3000 refused: metareply: malformed operation request
+    sold_out_test.go:113: ZWJ refused: metareply: malformed operation request
+    sold_out_test.go:113: NBSP refused: metareply: malformed operation request
+    sold_out_test.go:123: 1 calls, want 4
+FAIL
+FAIL	livecommerce/internal/integrations/metareply	0.423s
+FAIL
+=== RUN   TestSoldOutReplyTextMatchesAdapter
+=== RUN   TestSoldOutReplyTextMatchesAdapter/full-width_space,_ZWJ_and_newline_in_the_name
+    sold_out_reply_test.go:546: frozen text "抱歉，韓版\u3000針織衫\u200d\n外套 已售完，補貨時會在直播中通知，請留意直播。", want "抱歉，韓版\u3000針織衫\u200d 外套 已售完，補貨時會在直播中通知，請留意直播。"
+=== RUN   TestSoldOutReplyTextMatchesAdapter/120-character_name_is_clipped_by_characters_and_still_sends
+=== RUN   TestSoldOutReplyTextMatchesAdapter/multi-placeholder_or_C1-control_templates_are_refused_and_a_stored_one_falls_back
+    sold_out_reply_test.go:570: template so-six accepted: <nil>
+    sold_out_reply_test.go:570: template so-two accepted: conflicting request or version
+    sold_out_reply_test.go:574: exec test setup: ERROR: duplicate key value violates unique constraint "sold_out_settings_pkey" (SQLSTATE 23505)
+--- FAIL: TestSoldOutReplyTextMatchesAdapter (11.54s)
+    --- FAIL: TestSoldOutReplyTextMatchesAdapter/full-width_space,_ZWJ_and_newline_in_the_name (0.43s)
+    --- PASS: TestSoldOutReplyTextMatchesAdapter/120-character_name_is_clipped_by_characters_and_still_sends (0.86s)
+    --- FAIL: TestSoldOutReplyTextMatchesAdapter/multi-placeholder_or_C1-control_templates_are_refused_and_a_stored_one_falls_back (0.04s)
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim/switch_OFF,_stock_disappears_between_the_two_checks
+    sold_out_reply_test.go:617: claim lost: intake FAILED/sqlstate_42501 outcome ""
+=== RUN   TestSoldOutReplyDisagreementKeepsTheClaim/switch_ON,_stock_returns_between_the_two_checks
+    sold_out_reply_test.go:632: claim lost: intake FAILED/sqlstate_42501
+--- FAIL: TestSoldOutReplyDisagreementKeepsTheClaim (1.25s)
+    --- FAIL: TestSoldOutReplyDisagreementKeepsTheClaim/switch_OFF,_stock_disappears_between_the_two_checks (0.39s)
+    --- FAIL: TestSoldOutReplyDisagreementKeepsTheClaim/switch_ON,_stock_returns_between_the_two_checks (0.15s)
+=== RUN   TestSoldOutReplyEventMark
+    sold_out_reply_test.go:652: event reply_kind = <nil> (ERROR: column "reply_kind" does not exist (SQLSTATE 42703)), want sold_out
+--- FAIL: TestSoldOutReplyEventMark (0.87s)
+FAIL
+FAIL	livecommerce/tests/foundation	14.458s
+FAIL
+test-focused: top-level PASS=0 FAIL=3 SKIP=0 exit=1

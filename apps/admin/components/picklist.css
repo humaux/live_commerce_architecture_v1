@@ -3,8 +3,32 @@
  * Used by: PickList, CarrierExport, CvsBatch and row-selection controls. */
 .pick-toolbar {
   border-block: 1px solid var(--line);
-  padding-block: 12px;
+  padding-block: 0;
+  margin-block: 6px;
+}
+.pick-tools-summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+.pick-toolbar[open] > .pick-controls {
+  padding-block: 8px;
+}
+.orders-list-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-block: 12px;
+}
+.orders-list-tools .orders-v2-total {
+  margin: 0;
+}
+.orders-page-selection {
+  gap: 8px;
 }
 .pick-controls {
   display: flex;

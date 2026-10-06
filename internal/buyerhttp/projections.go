@@ -1,3 +1,7 @@
+// Purpose: Closed JSON projections of the buyer catalog, cart and order reads (explicit structs, no pass-through).
+// Depends on: internal/storefront, internal/pagination (typed pages).
+// Used by: internal/buyerhttp handler routes.
+
 package buyerhttp
 
 import (
@@ -76,6 +80,8 @@ type catalogItemResponse struct {
 	// Images is the product's photos in display order, [] when none (catalog-media CM4); bytes are fetched from
 	// /media/p/{product_id}/{id} on the storefront origin.
 	Images []catalogImageResponse `json:"images"`
+	// ImageID is this variant's thumbnail: its option-value image, else the cover, else null (product-media-v2).
+	ImageID *string `json:"image_id"`
 }
 
 type catalogImageResponse struct {
@@ -106,7 +112,7 @@ func projectCatalog(page pagination.Page[storefront.CatalogItem]) catalogRespons
 		}
 		out.Items = append(out.Items, catalogItemResponse{
 			ProductID: item.ProductID, SKUID: item.SKUID, Name: item.Name, Description: item.Description,
-			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor, Images: images,
+			SKUCode: item.SKUCode, Currency: item.Currency, PriceMinor: item.PriceMinor, Images: images, ImageID: item.ImageID,
 		})
 	}
 	return out

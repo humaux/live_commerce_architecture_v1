@@ -1,0 +1,16 @@
+# storefront-image-cap delivery
+- Branch/commit: unit/storefront-image-cap (SHA in the final report)   Base: fbe0d012   Model: Claude Sonnet 5.5
+- Summary: task 1 (12/9-image real-upload browser regression) DROPPED by integrator (media model moves to 1688-style 4 main + per-SKU + detail images; the regression will be written against that model); nothing of it committed. Task 2 done: drift audit `output/storefront-image-cap/DRIFT.md` (4 real findings, 2 fixed, 1 open latent, 1 theoretical note, ~60 rows verified in parity).
+  - D1 fixed `apps/storefront/lib/purchase.ts:122` photo cap 8 -> shared `MAX_PRODUCT_IMAGES` (cart page `validProduct` had the same stale literal as the product page).
+  - D2 fixed `apps/storefront/lib/design.ts:56` clip by code point (Go counts runes; emoji text was halved / surrogate split).
+  - D3 open `apps/admin/lib/claims-model.ts:11,77` rejects `KEYWORD_QTY_CONTAINS` (Go mode merged in 0115); belongs to the A7 UI unit (3-locale copy needed).
+  - D4 note: Meta feed route 8 MiB vs SQL `LIMIT 20000` rows.
+  - New parity guards: `apps/storefront/tests/backend-parity.test.mjs`, `tests/admin/backend-parity.test.ts` (added to `scripts/dev/test-node.sh`).
+- Contract/interface changes: none
+- Tests: `node --test --experimental-strip-types apps/storefront/tests/purchase.test.mjs apps/storefront/tests/shop.test.mjs` -> red before fix (`output/storefront-image-cap/red.log`: `9 photos`; `actual: 70, expected: 100`), exit 0 after. `bash scripts/dev/test-node.sh` -> exit 0 (372 + 4 + 1 ... tests, 0 fail; r04 NOT_RUN, no binary) (`green-full.log`). Injected fault MAX_PHOTOS 12 -> 8 goes red (`mutation-red.log`). `bash scripts/dev/check-headers.sh` -> OK.
+- Gates run: test-node.sh exit 0; check-headers OK
+- Evidence class: DESIGN (static comparison) + node unit tests; no PG, no browser
+- Risks: D3 stays open until the A7 UI unit lands; D4 theoretical.
+- NOT_RUN / BLOCKED: no browser/PG gate (none needed for these changes). Task 1 browser regression: dropped by integrator decision.
+- CI gates: none required beyond the node unit job in `.github/workflows/foundation.yml` (runs `scripts/dev/test-node.sh`). Optional sanity: `--browser-storefront` / `--browser-catalog-media` (cart page + product page unchanged in behaviour for <= 8 photos).
+- Integrator to-do: carry D3 into the live-a7 UI unit (extend `MatchMode` + `parseWindow` + copy together); decide D4 (cap or raise).

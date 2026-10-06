@@ -617,17 +617,17 @@ export function MerchantOrders({
                 {v2.tabs[bucket]} <span data-testid={`orders-count-${bucket}`}>{current.page!.counts[bucket]}</span>
               </button>)}
             </TabStrip>
-            <p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p>
+            <div className="orders-list-tools"><p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p><label className="pick-row-check orders-page-selection"><input type="checkbox" aria-label={pc.page}
+                      checked={current.page.items.length>0 && current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id))}
+                      ref={node=>{if(node)node.indeterminate=current.page!.items.some(row=>Object.hasOwn(bulkRows,row.order_id))&&!current.page!.items.every(row=>Object.hasOwn(bulkRows,row.order_id));}}
+                      disabled={!current.page.items.length || (new Set([...selectedIDs,...current.page.items.map(r=>r.order_id)]).size>500 && !current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id)))}
+                      onChange={e=>checkRows(current.page!.items,e.target.checked)}/><span>{pc.page}</span></label></div>
             {filters.bucket === "completed" && <p className="orders-v2-note">{v2.completedNote}</p>}
             <div className="orders-table-scroll">
               <table className="orders-table" data-testid="orders-table">
                 <thead>
                   <tr>
-                    <th><label className="pick-row-check"><input type="checkbox" aria-label={pc.page}
-                      checked={current.page.items.length>0 && current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id))}
-                      ref={node=>{if(node)node.indeterminate=current.page!.items.some(row=>Object.hasOwn(bulkRows,row.order_id))&&!current.page!.items.every(row=>Object.hasOwn(bulkRows,row.order_id));}}
-                      disabled={!current.page.items.length || (new Set([...selectedIDs,...current.page.items.map(r=>r.order_id)]).size>500 && !current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id)))}
-                      onChange={e=>checkRows(current.page!.items,e.target.checked)}/></label>{c.order}</th>
+                    <th>{c.order}</th>
                     <th>{c.created}</th>
                     <th>{v2.recipient}</th>
                     <th>{c.total}</th>

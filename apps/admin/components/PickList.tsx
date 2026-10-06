@@ -8,6 +8,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { readPickList, PickError } from "@/lib/picklist-client";
 import {
   pickUUID,
+  shouldOpenPickTools,
   type PickDocument,
   type PickLine,
   type PickSelection,
@@ -45,6 +46,9 @@ export function PickList({
 }) {
   const c = picklistCopy[locale];
   const scopeID = useId();
+  const [toolsOpen, setToolsOpen] = useState(() =>
+    shouldOpenPickTools(ids.length, sessionID),
+  );
   const [scope, setScope] = useState("chosen"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -69,6 +73,9 @@ export function PickList({
   useEffect(() => {
     if (document) dialog.current?.showModal();
   }, [document]);
+  useEffect(() => {
+    setToolsOpen(shouldOpenPickTools(ids.length, sessionID));
+  }, [ids.length, sessionID]);
   async function preview() {
     if (!selection || flight.current) return;
     flight.current = true;
@@ -92,17 +99,19 @@ export function PickList({
     }
   }
   return (
-    <section
+    <details
       className="pick-toolbar"
       aria-label={c.pick}
       data-testid="pick-toolbar"
       hidden={disabled}
+      open={toolsOpen}
+      onToggle={(event) => setToolsOpen(event.currentTarget.open)}
     >
+      <summary className="pick-tools-summary">
+        {c.tools} · {c.selected}:{" "}
+        <strong data-testid="pick-count">{ids.length}</strong> / 500
+      </summary>
       <div className="pick-controls">
-        <p>
-          {c.selected}: <strong data-testid="pick-count">{ids.length}</strong> /
-          500
-        </p>
         <button type="button" disabled={!ids.length} onClick={onClear}>
           {c.clear}
         </button>
@@ -199,7 +208,7 @@ export function PickList({
           </div>,
           globalThis.document.body,
         )}
-    </section>
+    </details>
   );
 }
 function LineTable({ locale, rows }: { locale: Locale; rows: PickLine[] }) {
