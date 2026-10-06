@@ -28,7 +28,7 @@ export function readOfferControls(store: string, sessionID: string, signal: Abor
   return parsed(() => read(`${base(store, sessionID)}/claims`, signal), (value) => {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("invalid_offer_controls");
     const offers = (value as Record<string, unknown>).offers;
-    if (!Array.isArray(offers) || offers.length > 100) throw new Error("invalid_offer_controls");
+    if (!Array.isArray(offers) || offers.length > 200) throw new Error("invalid_offer_controls");
     const result = offers.map((offer) => parseOffer(offer, sessionID));
     if (new Set(result.map((offer) => offer.offer_id)).size !== result.length) throw new Error("invalid_offer_controls");
     return result;

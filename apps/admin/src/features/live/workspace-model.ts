@@ -1,6 +1,18 @@
 // Purpose: Pure presentation decisions for the LC-U1 workspace; never infer provider or payment state.
-// Depends on: Native string/number/URL validation only.
+// Depends on: Store and ConsoleSnapshot types; native string/number/URL validation.
 // Used by: LiveConsole and live-workspace.test.ts.
+import type { Store } from "../../../lib/model.ts";
+import type { ConsoleSnapshot } from "./console-model.ts";
+
+/** Display permission only; the inventory endpoint enforces the narrow LC-B7 bounds and CAS. */
+export function liveStockAllowed(store: Pick<Store, "role" | "permissions">): boolean {
+  return store.role === "owner" || store.permissions?.some((p) => p === "inventory:write" || p === "inventory:live_adjust") === true;
+}
+/** IG has no Graph summary count; observed FB counts retain their explicit source label. */
+export function consoleCommentStat(platform: ConsoleSnapshot["stream"]["source_platform"], comments: ConsoleSnapshot["stats"]["comments"]): ConsoleSnapshot["stats"]["comments"] {
+  return platform === "instagram" ? { total: null, source: "unavailable" } : comments;
+}
+
 /** Maps only the server's commerce lifecycle to the single primary action. */
 export function primaryAction(lifecycle: string): "start" | "end" | "copy" | null {
   return lifecycle === "draft" ? "start" : lifecycle === "live" ? "end" : lifecycle === "ended" ? "copy" : null;

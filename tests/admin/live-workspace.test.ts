@@ -5,6 +5,20 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { primaryAction, stockDelta, facebookEmbed, settleLiveCommand } from "../../apps/admin/src/features/live/workspace-model.ts";
+import * as workspace from "../../apps/admin/src/features/live/workspace-model.ts";
+test("LC-B7 stock permission admits live_adjust without inventory:write, not unrelated grants", () => {
+  for (const permissions of [["inventory:live_adjust"], ["inventory:write"], ["live:read", "inventory:live_adjust"]])
+    assert.equal(workspace.liveStockAllowed({ role: "live_operator", permissions }), true);
+  assert.equal(workspace.liveStockAllowed({ role: "owner" }), true);
+  for (const store of [{}, { role: "admin" }, { permissions: ["live:read", "live:manage"] }])
+    assert.equal(workspace.liveStockAllowed(store), false);
+});
+test("Instagram comment total stays unavailable; Facebook observed count is not a platform total", () => {
+  for (const comments of [{ total: 7, source: "stream_seen" }, { total: 7, source: "graph_summary" }, { total: null, source: "unavailable" }] as const)
+    assert.deepEqual(workspace.consoleCommentStat("instagram", comments), { total: null, source: "unavailable" });
+  for (const comments of [{ total: 7, source: "stream_seen" }, { total: 0, source: "graph_summary" }, { total: null, source: "unavailable" }] as const)
+    assert.deepEqual(workspace.consoleCommentStat("facebook", comments), comments);
+});
 test("LC-U1 one primary action follows lifecycle, never planning or transport state", () => {
   assert.equal(primaryAction("draft"), "start");
   assert.equal(primaryAction("live"), "end");

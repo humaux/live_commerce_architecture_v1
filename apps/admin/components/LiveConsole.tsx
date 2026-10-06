@@ -11,7 +11,7 @@ import { readStudioDetail } from "@/lib/studio-client";
 import { readClaimSource } from "@/lib/claims-client";
 import { readConsole, readOfferControls, changeLifecycle, copySession, recommendOffer, toggleOffer, adjustLiveStock } from "@/src/features/live/console-client";
 import type { ConsoleOffer } from "@/src/features/live/console-model";
-import { primaryAction, stockDelta, facebookEmbed } from "@/src/features/live/workspace-model";
+import { primaryAction, stockDelta, facebookEmbed, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
 import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
 
@@ -38,7 +38,9 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
   const embed = data?.stream.video_embeddable && source?.active && source.verified ? facebookEmbed(source.platform, source.source_object_id) : null;
   const action = data ? primaryAction(data.session.lifecycle) : null;
   const manage = can("live:manage") && detail?.can_manage === true;
-  const editable = manage && !!data && ["draft", "live"].includes(data.session.lifecycle) && !command.blocked;
+  const sessionEditable = !!data && ["draft", "live"].includes(data.session.lifecycle) && !command.blocked;
+  const editable = manage && sessionEditable;
+  const comments = data ? consoleCommentStat(data.stream.source_platform, data.stats.comments) : null;
   const refusal = Object.hasOwn(c.refusals, command.reason) ? c.refusals[command.reason as keyof typeof c.refusals] : null;
   const feedback = refusal ?? (command.error === "uncertain" ? c.uncertain : command.error === "recovery" ? c.recovery : command.error === "conflict" ? c.conflict : command.error === "signed-out" ? c.signedOut : command.error === "forbidden" ? c.forbidden : c.failed);
   const primary = async () => {
@@ -69,7 +71,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
         {!manage && <p id="live-management-reason">{c.manageRequired}</p>}
       </div>
       <dl className="live-status-bar">
-        <div><dt>{data.stats.comments.source === "stream_seen" ? c.observed : c.comments}</dt><dd>{data.stats.comments.source === "unavailable" ? "—" : data.stats.comments.total ?? "—"}</dd></div>
+        <div><dt>{comments?.source === "stream_seen" ? c.observed : c.comments}</dt><dd>{comments?.source === "unavailable" ? "—" : comments?.total ?? "—"}</dd></div>
         <div><dt>{c.keyword}</dt><dd>{data.stats.keyword_comments}</dd></div>
         <div><dt>{c.buyers}</dt><dd>{data.stats.buyers}</dd></div>
         <div><dt>{c.orders}</dt><dd>{data.stats.orders.count}</dd></div>
@@ -95,7 +97,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
           {!editable && manage && !["draft", "live"].includes(data.session.lifecycle) && <p>{c.endReadOnly}</p>}
           {!data.offers.length && <p>{c.empty}</p>}
           <ul>{data.offers.map((offer) => <OfferRow key={`${offer.offer_id}:${offer.version}:${offer.stock.balance_version}`} offer={offer} c={c} locale={locale} currency={data.stats.currency}
-            editable={editable} canToggle={view.data?.controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version) === true} canStock={can("inventory:write")} recommended={data.recommended?.offer_id === offer.offer_id}
+            editable={editable} stockEditable={sessionEditable} canToggle={view.data?.controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version) === true} canStock={liveStockAllowed(store)} recommended={data.recommended?.offer_id === offer.offer_id}
             onToggle={() => { const control = view.data?.controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return command.run(async (key) => { await toggleOffer(store.id, sessionID, offer.offer_id, offer.version, !offer.active, control.max_quantity_per_claim, key, view.boundary); }); }}
             onRecommend={() => command.run(async (key) => { await recommendOffer(store.id, sessionID, offer.offer_id, offer.version, key, view.boundary); })}
             onStock={(delta) => command.run(async (key) => { if (!offer.stock.warehouse_id) return; await adjustLiveStock(store.id, { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: offer.stock.balance_version, reason: "live_console_edit" }, key, view.boundary); })}
@@ -106,13 +108,13 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
   </section>;
 }
 
-function OfferRow({ offer, c, locale, currency, editable, canToggle, canStock, recommended, onToggle, onRecommend, onStock }: {
-  offer: ConsoleOffer; c: WorkspaceCopy; locale: Locale; currency: string; editable: boolean; canToggle: boolean; canStock: boolean; recommended: boolean;
+function OfferRow({ offer, c, locale, currency, editable, stockEditable, canToggle, canStock, recommended, onToggle, onRecommend, onStock }: {
+  offer: ConsoleOffer; c: WorkspaceCopy; locale: Locale; currency: string; editable: boolean; stockEditable: boolean; canToggle: boolean; canStock: boolean; recommended: boolean;
   onToggle: () => Promise<void>; onRecommend: () => Promise<void>; onStock: (delta: number) => Promise<void>;
 }) {
   const [quantity, setQuantity] = useState(String(offer.stock.sellable)), [invalid, setInvalid] = useState(false);
-  const canAdjust = editable && canStock && offer.stock.tracked && !!offer.stock.warehouse_id;
-  const reason = !canStock ? c.narrowPending : !offer.stock.warehouse_id ? c.missingWarehouse : "";
+  const canAdjust = stockEditable && canStock && offer.stock.tracked && !!offer.stock.warehouse_id;
+  const reason = !canStock ? c.stockPermission : !offer.stock.warehouse_id ? c.missingWarehouse : "";
   return <li className="live-offer" data-testid={`live-offer-${offer.offer_id}`} data-recommended={recommended || undefined}>
     <div className="live-offer-heading"><div><h4>{offer.keyword} · {offer.product_name}</h4><p>{offer.variant_label}</p></div>
       <label className="live-offer-toggle"><input type="checkbox" role="switch" data-testid={`live-offer-toggle-${offer.offer_id}`} checked={offer.active} disabled={!editable || !canToggle} onChange={() => void onToggle()} />{offer.active ? c.open : c.closed}</label>

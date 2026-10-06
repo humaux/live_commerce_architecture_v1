@@ -26,8 +26,8 @@ const at = "2026-10-06T00:00:00Z";
 const controlOffer = { offer_id: oid, session_id: sid, keyword: "A1", sku_id: store, sku_code: "S1", product_name: "Synthetic",
   max_quantity_per_claim: 17, active: true, version: 6, activated_at: at, updated_at: at, sku_price_minor: 2000, currency: "TWD", live_price_minor: 1500 };
 
-test("offer controls read authoritative limits without parsing unrelated CONTAINS window/stats", async (t) => {
-  let reply: unknown = { offers: [controlOffer], window: { match_mode: "CONTAINS" }, stats: { unused: true } };
+test("offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats", async (t) => {
+  let reply: unknown = { offers: [controlOffer], window: { match_mode: "KEYWORD_QTY_CONTAINS" }, stats: { unused: true } };
   const signal = new AbortController().signal;
   const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
     assert.equal(path, `/api/stores/${store}/${root}/claims`);
@@ -42,6 +42,15 @@ test("offer controls read authoritative limits without parsing unrelated CONTAIN
     { offers: [{ ...controlOffer, max_quantity_per_claim: 0 }] }])
     await assert.rejects(client.readOfferControls(store, sid, signal), (e: unknown) => e instanceof StudioError && e.code === "unavailable");
   assert.equal(fetch.mock.callCount(), 9);
+});
+
+test("offer controls accept 101 through the backend cap of 200 distinct offers, reject 201", async (t) => {
+  const offers = Array.from({ length: 201 }, (_, i) => ({ ...controlOffer, offer_id: `33333333-3333-4333-8333-${String(i + 1).padStart(12, "0")}` }));
+  let count = 101;
+  t.mock.method(globalThis, "fetch", async () => Response.json({ offers: offers.slice(0, count) }, { headers: { "cache-control": "private, no-store" } }));
+  for (count of [101, 200]) assert.equal((await client.readOfferControls(store, sid, new AbortController().signal)).length, count);
+  count = 201;
+  await assert.rejects(client.readOfferControls(store, sid, new AbortController().signal), (e: unknown) => e instanceof StudioError && e.code === "unavailable");
 });
 
 test("offer toggle preserves exactly the authoritative maximum in the real M4 payload", async (t) => {
@@ -99,10 +108,12 @@ test("real BFF route forwards only exact resources, authenticates scope and retu
   const calls: { path: string; init?: RequestInit }[] = [];
   let upstreamStatus = 409;
   let upstreamBody: unknown = { code: "too_many_open_windows", message: "SENSITIVE upstream diagnostic" };
+  let upstreamRaw: string | undefined;
   let stores = [store];
   t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
-    if (path === `${apiOrigin}/v1/admin/stores`) return Response.json({ items: stores.map((id) => ({ id, name: "Synthetic", currency: "TWD" })) });
+    if (path === `${apiOrigin}/v1/admin/stores`) return Response.json({ items: stores.map((id) => ({ id, name: "Synthetic", currency: "TWD", role: "live_operator", permissions: ["live:read", "inventory:live_adjust"] })) });
     calls.push({ path: String(path), init });
+    if (upstreamRaw !== undefined) return new Response(upstreamRaw, { status: upstreamStatus, headers: { "content-type": "application/json" } });
     return Response.json(upstreamBody, { status: upstreamStatus });
   });
   const invoke = (method: string, path: string, body?: unknown, query = "", headers: Record<string, string> = {}) => {
@@ -152,6 +163,51 @@ test("real BFF route forwards only exact resources, authenticates scope and retu
   upstreamBody = { as_of: at, items: [{ session_id: sid, orders: 0, paid_orders: 0, multi_session_orders: 0, money: [] }] };
   assert.equal((await invoke("GET", "live-sessions/results", undefined, `?session_id=${sid}`)).status, 200);
   assert.equal(calls.at(-1)?.path, `${apiOrigin}/v1/admin/stores/${store}/live-sessions/results?session_id=${sid}`);
+  // Exercise the actual route's A1 allowlist and strict parser with LC-B7's wire enum.
+  upstreamBody = {
+    session: { id: sid, title: "Synthetic", lifecycle: "draft", version: 1, started_at: null, ended_at: null },
+    window: { state: "CLOSED", generation: 0, opened_at: null, match_mode: "KEYWORD_QTY_CONTAINS" },
+    stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 0, buyers: 0,
+      orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: at },
+    offers: [], capabilities: {}, recommended: null,
+    stream: { state: "unavailable", poll_interval_ms: 5000, last_ok_at: null, lag_ms: null, source_platform: "instagram", video_embeddable: false },
+  };
+  const console = await invoke("GET", `${root}/console`);
+  assert.equal(console.status, 200);
+  assert.deepEqual(await console.json(), upstreamBody);
+  assert.equal(calls.at(-1)?.path, `${apiOrigin}/v1/admin/stores/${store}/${root}/console`);
+  assert.equal(new Headers(calls.at(-1)?.init?.headers).has("idempotency-key"), false);
+  // 200 legal products (120-rune names, three 40-rune option values) exceed the old 256 KiB cap.
+  const large = { ...(upstreamBody as object), offers: Array.from({ length: 200 }, (_, i) => ({
+    offer_id: `33333333-3333-4333-8333-${String(i + 1).padStart(12, "0")}`, keyword: `K${i}`,
+    sku_id: `44444444-4444-4444-8444-${String(i + 1).padStart(12, "0")}`,
+    product_name: "😀".repeat(120), variant_label: Array(3).fill("😀".repeat(40)).join(" / "),
+    active: true, version: 1, live_price_minor: null, sku_price_minor: 100,
+    stock: { tracked: true, sellable: 1, reserved: 0, warehouse_id: oid, balance_version: 1 },
+    claimed: { buyers: 0, quantity: 0 }, ordered_qty: 0, paid_qty: 0, paid_amount_minor: 0, sold_out: false, low_stock: true,
+  })) };
+  upstreamRaw = JSON.stringify(large);
+  assert.ok(Buffer.byteLength(upstreamRaw) > 256 * 1024);
+  assert.ok(Buffer.byteLength(upstreamRaw) < 512 * 1024);
+  const largeConsole = await invoke("GET", `${root}/console`);
+  assert.equal(largeConsole.status, 200);
+  assert.equal((await largeConsole.json()).offers.length, 200);
+  upstreamRaw = " ".repeat(512 * 1024) + upstreamRaw;
+  assert.equal((await invoke("GET", `${root}/console`)).status, 503);
+  upstreamRaw = undefined;
+  // Backend remains the permission/bounds authority; BFF must not require inventory:write.
+  const adjustment = { warehouse_id: oid, sku_id: sid, delta: -1, expected_version: 1, reason: "live_console_edit" };
+  upstreamBody = { warehouse_id: oid, sku_id: sid, on_hand: 2, reserved: 0, allocated: 0, unavailable: 0, version: 2, available: 2 };
+  assert.equal((await invoke("POST", "inventory/adjustments", adjustment)).status, 200);
+  assert.equal(calls.at(-1)?.path, `${apiOrigin}/v1/admin/stores/${store}/inventory/adjustments`);
+  assert.deepEqual(JSON.parse(calls.at(-1)?.init?.body as string), adjustment);
+  assert.equal(new Headers(calls.at(-1)?.init?.headers).get("idempotency-key"), "console-bff-key");
+  upstreamStatus = 422; upstreamBody = { code: "below_reserved" };
+  const denied = await invoke("POST", "inventory/adjustments", adjustment);
+  assert.equal(denied.status, 422);
+  assert.equal((await denied.json()).code, "below_reserved");
+  upstreamStatus = 403; upstreamBody = { code: "forbidden" };
+  assert.equal((await invoke("POST", "inventory/adjustments", adjustment)).status, 403);
 });
 
 test("new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body", () => {
@@ -240,11 +296,13 @@ test("stock client reuses catalog transport/key/parser and fences a changed logi
   assert.deepEqual(await client.adjustLiveStock(store, body, "stock-console-key", boundary), { sku_id: sid });
   status = 409; reply = { code: "version_conflict" };
   await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "conflict" && e.api === "version_conflict");
+  status = 422; reply = { code: "below_reserved" };
+  await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "invalid" && e.api === "below_reserved");
   status = 503; reply = { code: "retry_later" };
   await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "uncertain");
   status = 200; reply = { warehouse_id: oid, sku_id: sid }; changeLogin = true;
   await assert.rejects(client.adjustLiveStock(store, body, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "signed-out");
-  assert.equal(fetch.mock.callCount(), 4);
+  assert.equal(fetch.mock.callCount(), 5);
   await assert.rejects(client.adjustLiveStock(store, { ...body, delta: 1001 }, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "invalid");
-  assert.equal(fetch.mock.callCount(), 4);
+  assert.equal(fetch.mock.callCount(), 5);
 });

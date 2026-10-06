@@ -15,10 +15,10 @@ const offer = {
   stock: { tracked: true, sellable: 3, reserved: 2, warehouse_id: sku, balance_version: 4 },
   claimed: { buyers: 2, quantity: 3 }, ordered_qty: 2, paid_qty: 1, paid_amount_minor: 1200, sold_out: false, low_stock: true,
 };
-const window = { session_id: sid, state: "OPEN", generation: 2, version: 3, opened_at: at, closed_at: null, match_mode: "CONTAINS" };
+const window = { session_id: sid, state: "OPEN", generation: 2, version: 3, opened_at: at, closed_at: null, match_mode: "KEYWORD_QTY_CONTAINS" };
 const snapshot = {
   session: { id: sid, title: "Synthetic session", lifecycle: "live", version: 3, started_at: at, ended_at: null },
-  window: { state: "OPEN", generation: 2, opened_at: at, match_mode: "CONTAINS" },
+  window: { state: "OPEN", generation: 2, opened_at: at, match_mode: "KEYWORD_QTY_CONTAINS" },
   stats: { comments: { total: null, source: "unavailable" }, keyword_comments: 2, buyers: 1,
     orders: { count: 1, amount_minor: 1500 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: at },
   offers: [offer], capabilities: { facebook: { read_comment: { state: "unknown", reason: "not_checked", evidence: "DESIGN", checked_at: null } } },
@@ -34,13 +34,14 @@ test("A1 strict MOCK snapshot preserves unavailable counts, capability unknown a
     { ...snapshot, capabilities: { facebook: { read_comment: { ...snapshot.capabilities.facebook.read_comment, state: "supported" } } } },
     { ...snapshot, stats: { ...snapshot.stats, paid: { count: 1, amount_minor: Number.MAX_SAFE_INTEGER + 1 } } },
     { ...snapshot, offers: [offer, offer] },
+    { ...snapshot, window: { ...snapshot.window, match_mode: "CONTAINS" } },
   ]) assert.throws(() => parseConsole(value, sid));
   for (const value of [null, [], { ...offer, token: "forbidden" }, { ...offer, version: 0 },
     { ...offer, stock: { ...offer.stock, reserved: -1 } }, { ...offer, active: "true" },
     { ...offer, claimed: { buyers: 1.1, quantity: 1 } }]) assert.throws(() => parseConsoleOffer(value));
 });
 
-test("A7 returns a separate lifecycle version and closed full CONTAINS window", () => {
+test("A7 returns a separate lifecycle version and closed full KEYWORD_QTY_CONTAINS window", () => {
   const result = { lifecycle: "live", version: 8, window };
   assert.deepEqual(parseLifecycleResult(result, sid), result);
   for (const value of [{ ...result, lifecycle: "DRAFT" }, { ...result, version: 0 },
@@ -59,7 +60,7 @@ test("A5 results retain separate environments/currencies and bind exact requeste
     assert.throws(() => parseSessionResults(value, [sid]));
 });
 
-test("A5 copy parses real Go envelope, copied offer prices and CONTAINS window", () => {
+test("A5 copy parses real Go envelope, copied offer prices and KEYWORD_QTY_CONTAINS window", () => {
   const session = { session_id: sid, program_id: sku, title: "Copied", scheduled_at: null, aspect_ratio: "9:16",
     state: "DRAFT", version: 1, created_at: at, updated_at: at };
   const created = { offer_id: oid, session_id: sid, keyword: "A1", sku_id: sku, sku_code: "S1", product_name: "Synthetic product",

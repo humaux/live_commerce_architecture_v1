@@ -349,7 +349,9 @@ async function route(request: Request, context: Context) {
       const tokenResponse = input && path.endsWith("/token");
       const inputRead = studioInputReadRoute.test(path);
       const claimLink = claimLinkRoute(path);
-      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : 256 << 10);
+      // A1 includes up to 200 offers; legal Unicode names/variants can exceed the normal Studio 256 KiB cap.
+      const consoleRead = request.method === "GET" && consoleRoutes.GET.test(path) && path.endsWith("/console");
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
       if (consoleAny.test(path) && response.ok) {
         const session = resource[1];

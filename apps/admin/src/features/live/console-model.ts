@@ -7,8 +7,8 @@ import { parseImportResult, type ImportResult } from "../../../lib/claims-model.
 
 /** Session lifecycle, separate from media programme/operation state. */
 export type Lifecycle = "draft" | "live" | "ended" | "archived";
-/** Frozen window match modes, including A7 CONTAINS. */
-export type ConsoleMatchMode = "EXACT" | "KEYWORD_QTY_ONLY" | "CONTAINS";
+/** Wire values returned by claims.MatchMode in A1, A5 and A7. */
+export type ConsoleMatchMode = "EXACT" | "KEYWORD_QTY_ONLY" | "KEYWORD_QTY_CONTAINS";
 /** Full claims.Window returned by A7 and A5 copy. */
 export type ConsoleClaimWindow = {
   session_id: string; state: "OPEN" | "CLOSED"; match_mode: ConsoleMatchMode; generation: number;
@@ -75,7 +75,7 @@ function exact(v: unknown, fields: string[], optional: string[] = []): Record<st
   if (fields.some((k) => !Object.hasOwn(r, k)) || Object.keys(r).some((k) => !fields.includes(k) && !optional.includes(k))) fail();
   return r;
 }
-const modes = ["EXACT", "KEYWORD_QTY_ONLY", "CONTAINS"];
+const modes = ["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"];
 const lifecycle = ["draft", "live", "ended", "archived"];
 function window(v: unknown, sid: string): ConsoleClaimWindow {
   const r = exact(v, ["session_id", "state", "match_mode", "generation", "version", "opened_at", "closed_at"]);
@@ -118,7 +118,7 @@ function stream(v: unknown): ConsoleStream {
     typeof r.video_embeddable !== "boolean" || (Object.hasOwn(r, "reason") && (typeof r.reason !== "string" || !/^[a-z0-9_]{0,64}$/.test(r.reason)))) fail();
   return r as ConsoleStream;
 }
-/** Parse the frozen MOCK A1 DTO and bind it to the requested session. */
+/** Parse the A1 DTO and bind it to the requested session. */
 export function parseConsole(v: unknown, sid: string): ConsoleSnapshot {
   const r = exact(v, ["session", "window", "stats", "offers", "capabilities", "stream", "recommended"]);
   const session = exact(r.session, ["id", "title", "lifecycle", "version", "started_at", "ended_at"]);

@@ -12,6 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -34,6 +35,7 @@ import (
 
 type consoleMockScene struct {
 	ID, Store, Title, Phase, Offer, SKU, Warehouse string
+	Platform                                       string
 	Version, OfferVersion, Stock, StockVersion     int64
 	Generation                                     int64
 	Active                                         bool
@@ -83,7 +85,7 @@ func (s *consoleMockScene) window() map[string]any {
 	if state == "OPEN" {
 		opened = "2030-01-01T00:00:00Z"
 	}
-	return map[string]any{"session_id": s.ID, "state": state, "match_mode": "EXACT", "generation": s.Generation, "version": s.Version, "opened_at": opened, "closed_at": nil}
+	return map[string]any{"session_id": s.ID, "state": state, "match_mode": "KEYWORD_QTY_CONTAINS", "generation": s.Generation, "version": s.Version, "opened_at": opened, "closed_at": nil}
 }
 func (s *consoleMockScene) read() map[string]any {
 	orders, paid, orderMinor, paidMinor := int64(3), int64(1), int64(60000), int64(20000)
@@ -92,10 +94,10 @@ func (s *consoleMockScene) read() map[string]any {
 	}
 	return map[string]any{
 		"session":      map[string]any{"id": s.ID, "title": s.Title, "lifecycle": s.Phase, "version": s.Version, "started_at": nil, "ended_at": nil},
-		"window":       map[string]any{"state": s.window()["state"], "generation": s.Generation, "opened_at": s.window()["opened_at"], "match_mode": "EXACT"},
+		"window":       map[string]any{"state": s.window()["state"], "generation": s.Generation, "opened_at": s.window()["opened_at"], "match_mode": "KEYWORD_QTY_CONTAINS"},
 		"stats":        map[string]any{"comments": map[string]any{"total": nil, "source": "unavailable"}, "keyword_comments": 0, "buyers": 0, "orders": map[string]any{"count": orders, "amount_minor": orderMinor}, "paid": map[string]any{"count": paid, "amount_minor": paidMinor}, "currency": "TWD", "as_of": "2030-01-01T00:00:00Z"},
 		"offers":       []any{map[string]any{"offer_id": s.Offer, "keyword": "A1", "sku_id": s.SKU, "product_name": "MOCK Console Tea", "variant_label": "250 g", "active": s.Active, "version": s.OfferVersion, "live_price_minor": 20000, "sku_price_minor": 30000, "stock": map[string]any{"tracked": true, "sellable": s.Stock, "reserved": 0, "warehouse_id": s.Warehouse, "balance_version": s.StockVersion}, "claimed": map[string]any{"buyers": 0, "quantity": 0}, "ordered_qty": 0, "paid_qty": 0, "paid_amount_minor": 0, "sold_out": s.Stock <= 0, "low_stock": s.Stock > 0 && s.Stock <= 5}},
-		"capabilities": map[string]any{}, "stream": map[string]any{"state": "unavailable", "poll_interval_ms": 5000, "last_ok_at": nil, "lag_ms": nil, "source_platform": "facebook", "video_embeddable": false, "reason": "no_source"}, "recommended": s.Recommended,
+		"capabilities": map[string]any{}, "stream": map[string]any{"state": "unavailable", "poll_interval_ms": 5000, "last_ok_at": nil, "lag_ms": nil, "source_platform": s.Platform, "video_embeddable": false, "reason": "no_source"}, "recommended": s.Recommended,
 	}
 }
 
@@ -258,6 +260,17 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 			return true
 		}
 		delta, _ := body["delta"].(float64)
+		if body["reason"] != "live_console_edit" || delta == 0 || delta != float64(int64(delta)) || delta < -1000 || delta > 1000 {
+			consoleJSON(w, 422, map[string]any{"code": "invalid_request"})
+			return true
+		}
+		if s.Stock+int64(delta) < 0 || s.Fault == "below_reserved" {
+			s.Fault = ""
+			receipt.Status = 422
+			m.receipts = append(m.receipts, receipt)
+			consoleJSON(w, 422, map[string]any{"code": "below_reserved"})
+			return true
+		}
 		s.Stock += int64(delta)
 		s.StockVersion++
 		out = map[string]any{"sku_id": s.SKU, "warehouse_id": s.Warehouse, "on_hand": s.Stock, "reserved": 0, "allocated": 0, "version": s.StockVersion}
@@ -326,7 +339,8 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	defer cancel()
 	h := lcSetup(t)
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'inventory:write')`, h.f.tenantA, h.f.storeA1, h.actor)
-	narrow, narrowToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "live:manage", "inventory:live_adjust")
+	narrow, narrowToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "inventory:live_adjust")
+	_, readToken := lcPrincipal(t, h.f, h.f.tenantA, []string{h.f.storeA1}, "store:read", "live:read", "live:manage")
 	mustExec(t, h.f.owner, `INSERT INTO identity.store_staff(tenant_id,store_id,principal_id,role) VALUES($1,$2,$3,'admin'),($1,$2,$4,'live_operator')`, h.f.tenantA, h.f.storeA1, h.actor, narrow)
 	t.Cleanup(func() {
 		mustExec(t, h.f.owner, `DELETE FROM identity.store_staff WHERE principal_id IN ($1,$2)`, h.actor, narrow)
@@ -371,10 +385,14 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 		} else {
 			lateScenes = append(lateScenes, id)
 		}
-		mock.scenes[id] = &consoleMockScene{ID: id, Store: h.f.storeA1, Title: fmt.Sprintf("LC-U1 MOCK lane %d", i), Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 12, StockVersion: 1, Active: true}
+		platformName := "facebook"
+		if i%2 == 1 {
+			platformName = "instagram"
+		}
+		mock.scenes[id] = &consoleMockScene{ID: id, Store: h.f.storeA1, Title: fmt.Sprintf("LC-U1 MOCK lane %d", i), Platform: platformName, Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 12, StockVersion: 1, Active: true}
 	}
 	other := h.draft(t, h.f.storeA2)
-	mock.scenes[other] = &consoleMockScene{ID: other, Store: h.f.storeA2, Title: "LC-U1 MOCK other store", Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 9, StockVersion: 1, Active: true}
+	mock.scenes[other] = &consoleMockScene{ID: other, Store: h.f.storeA2, Title: "LC-U1 MOCK other store", Platform: "facebook", Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 9, StockVersion: 1, Active: true}
 	controlKey := randomToken()
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/__test/live-console/") {
@@ -389,7 +407,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 					Scene string `json:"scene"`
 					Mode  string `json:"mode"`
 				}
-				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore" && in.Mode != "delay_copy" && in.Mode != "list_unavailable" && in.Mode != "list_restore") {
+				if json.NewDecoder(r.Body).Decode(&in) != nil || mock.scenes[in.Scene] == nil || (in.Mode != "conflict" && in.Mode != "unknown" && in.Mode != "missing" && in.Mode != "restore" && in.Mode != "delay_copy" && in.Mode != "list_unavailable" && in.Mode != "list_restore" && in.Mode != "below_reserved") {
 					consoleJSON(w, 400, map[string]any{"code": "invalid_request"})
 					return
 				}
@@ -426,8 +444,21 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 				permission = "inventory:write"
 			}
 			err := platform.WithScope(r.Context(), h.f.runtime, token, parts[3], permission, func(pgx.Tx, platform.Scope) error { return nil })
+			if parts[4] == "inventory" && errors.Is(err, platform.ErrForbidden) {
+				// Mirror LC-B7's second, narrow grant. The MOCK write checks its fixed reason and bounds.
+				err = platform.WithScope(r.Context(), h.f.runtime, token, parts[3], "inventory:live_adjust", func(pgx.Tx, platform.Scope) error { return nil })
+			}
 			if err != nil {
-				consoleJSON(w, 401, map[string]any{"code": "unauthorized"})
+				status, code := http.StatusServiceUnavailable, "unavailable"
+				switch {
+				case errors.Is(err, platform.ErrForbidden):
+					status, code = http.StatusForbidden, "forbidden"
+				case errors.Is(err, platform.ErrUnauthorized):
+					status, code = http.StatusUnauthorized, "unauthorized"
+				case errors.Is(err, platform.ErrScopeNotFound):
+					status, code = http.StatusNotFound, "not_found"
+				}
+				consoleJSON(w, status, map[string]any{"code": code})
 				return
 			}
 			if mock.serve(w, r, parts[3]) {
@@ -497,7 +528,7 @@ func TestBrowserLiveConsoleRealChain(t *testing.T) {
 	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/live-console.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken})
+	cmd.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "live-console", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_CONSOLE_SCENES": string(sceneJSON), "LC_BROWSER_CONSOLE_LATE_SCENE": lateScenes[0], "LC_BROWSER_CONSOLE_LATE_DEST": lateScenes[1], "LC_BROWSER_CONSOLE_STORE": h.f.storeA1, "LC_BROWSER_CONSOLE_OTHER_STORE": h.f.storeA2, "LC_BROWSER_CONSOLE_OTHER_SCENE": other, "LC_BROWSER_CONSOLE_CONTROL": controlKey, "LC_BROWSER_CONSOLE_NARROW_TOKEN": narrowToken, "LC_BROWSER_CONSOLE_READ_TOKEN": readToken})
 	cmd.Stdout, cmd.Stderr = log, log
 	runErr := cmd.Run()
 	mock.mu.Lock()
