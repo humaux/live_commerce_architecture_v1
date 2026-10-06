@@ -94,10 +94,14 @@ export function parseProductList(v: unknown): ProductList | null {
   return { store: { name: v.store.name, currency: String(v.store.currency) }, products, next: v.next as string | null };
 }
 
+// Mirrors internal/catalog MaxImagesPerProduct (12, migration 0109). A lower cap here rejects valid merchant products and the
+// whole product page fails ("此頁面暫時無法載入", pilot 2026-10-06); tests/storefront parity check pins the two equal.
+export const MAX_PRODUCT_IMAGES = 12;
+
 export function parseProductDetail(v: unknown): ProductDetail | null {
   if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 300) || !str(v.description, 20000)) return null;
   if (!rec(v.seo) || !str(v.seo.title, 200) || !str(v.seo.description, 400)) return null;
-  if (!Array.isArray(v.images) || v.images.length > 8 || !Array.isArray(v.options) || v.options.length > 3) return null;
+  if (!Array.isArray(v.images) || v.images.length > MAX_PRODUCT_IMAGES || !Array.isArray(v.options) || v.options.length > 3) return null;
   if (!Array.isArray(v.variants) || v.variants.length < 1 || v.variants.length > 500 || !Array.isArray(v.collections)) return null;
   const images: ProductDetail["images"] = [];
   for (const i of v.images) {

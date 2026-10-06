@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { accentText, contrast, defaultDesign, internalHref, normalizeDesign, onAccent, resolveNav, safeExternal, withPreview } from "../lib/design.ts";
-import { freeShippingProgress, initialChoice, parseCollections, parseProductDetail, parseProductList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
+import { MAX_PRODUCT_IMAGES, freeShippingProgress, initialChoice, parseCollections, parseProductDetail, parseProductList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
 import { parseListQuery } from "../lib/shop-query.ts";
 import { productJsonLd, robotsTxt, sitemapXml } from "../lib/seo.ts";
 import { formatMoney, majorToMinor, minorToMajor } from "../lib/money.ts";
@@ -95,6 +95,11 @@ test("catalog-v2 parsers accept the frozen shapes and refuse drift", () => {
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], stock: "plenty" }] }), null);
   assert.equal(parseProductDetail({ ...detail, variants: [{ ...variants[0], option_values: ["M"] }] }), null, "values must align with the axes");
   assert.equal(parseProductDetail({ ...detail, options: [{}, {}, {}, {}] }), null);
+  // Pilot bug 2026-10-06: a merchant product with 9 uploaded images (backend cap 12, internal/catalog MaxImagesPerProduct)
+  // made the product page render "此頁面暫時無法載入" because this parser still capped images at 8.
+  const img = (n) => ({ id: U(100 + n), width: 1512, height: 2016, sizes: [{ width: 360, pixel_width: 360 }, { width: 720, pixel_width: 720 }, { width: 1080, pixel_width: 1080 }] });
+  for (const n of [9, 12]) assert.equal(parseProductDetail({ ...detail, images: Array.from({ length: n }, (_, i) => img(i)) })?.images.length, n, `${n} images must parse`);
+  assert.equal(parseProductDetail({ ...detail, images: Array.from({ length: 13 }, (_, i) => img(i)) }), null, "13 > backend cap");
   assert.deepEqual(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }] }), [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: 2 }]);
   assert.equal(parseCollections({ collections: [{ id: U(7), slug: "c", title: "C", image_id: null, product_count: -1 }] }), null);
   assert.equal(parseCollections({ collections: [{ slug: "c", title: "C", image_id: null, product_count: 2 }] }), null, "contract A: the id is required");
@@ -195,4 +200,12 @@ test("no-image placeholder copy: exactly the locale label a photo-less card or g
     assert.equal(typeof shopCopy[locale].noImage, "string");
     assert.ok(shopCopy[locale].noImage.length > 0);
   }
+});
+
+test("storefront image cap equals the Go catalog cap (internal/catalog MaxImagesPerProduct)", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const go = await readFile(new URL("../../../internal/catalog/images.go", import.meta.url), "utf8");
+  const m = go.match(/MaxImagesPerProduct\s*=\s*(\d+)/);
+  assert.ok(m, "MaxImagesPerProduct not found in internal/catalog/images.go");
+  assert.equal(MAX_PRODUCT_IMAGES, Number(m[1]));
 });
