@@ -1,0 +1,24 @@
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+--- PASS: TestPlatformOperatorOP08SchemaAndExecuteMatrix (1.26s)
+=== RUN   TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns
+--- PASS: TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns (0.39s)
+=== RUN   TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected
+--- PASS: TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected (0.16s)
+=== RUN   TestPlatformOperatorOP06IdempotentAndInputBoundaries
+    platform_operator_test.go:201: read_operator_audit rows = [] err=number of field descriptions must equal number of destinations, got 3 and 1, want 2
+--- FAIL: TestPlatformOperatorOP06IdempotentAndInputBoundaries (0.14s)
+=== RUN   TestPlatformOperatorOP07AuditAppendOnly
+--- PASS: TestPlatformOperatorOP07AuditAppendOnly (0.15s)
+=== RUN   TestPlatformOperatorOP02BuyerSurface
+--- PASS: TestPlatformOperatorOP02BuyerSurface (0.24s)
+=== RUN   TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned
+--- PASS: TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned (7.75s)
+=== RUN   TestPlatformOperatorOP03MailNotClaimedForSuspendedStore
+--- PASS: TestPlatformOperatorOP03MailNotClaimedForSuspendedStore (0.09s)
+=== RUN   TestPlatformOperatorOP09CLIProcess
+--- PASS: TestPlatformOperatorOP09CLIProcess (2.36s)
+FAIL
+FAIL	livecommerce/tests/foundation	13.318s
+FAIL
+test-focused: top-level PASS=8 FAIL=1 SKIP=0 exit=1
+exit=1

@@ -20,11 +20,11 @@ var validKind = map[string]bool{
 	KindDM: true, KindPrivateReply: true, KindPublicReply: true, KindRecommend: true,
 }
 
-// System-fixed template ids (migrations 0121 and 0131 seed these; merchants can never republish them — publish raises PT409).
+// System-fixed template ids (migrations 0121 and 0144 seed these; merchants can never republish them — publish raises PT409).
 const (
 	FixedOrderPayLink     = "order-pay-link/v1"
 	FixedOfferRecommend   = "offer-recommend/v1"
-	FixedCheckoutReminder = "checkout-reminder/v1" // W3-03B (0131): dm-only, carries {{連結}}, rendered by internal/inbox/reminders.go
+	FixedCheckoutReminder = "checkout-reminder/v1" // W3-03B (0144): dm-only, carries {{連結}}, rendered by internal/inbox/reminders.go
 )
 
 // PublishInput is POST /message-templates. template_id, name, kinds, public_safe and body are all required; null is

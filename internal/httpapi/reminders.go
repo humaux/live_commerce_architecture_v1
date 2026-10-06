@@ -1,7 +1,7 @@
 // Purpose: the W3-03B checkout-reminder HTTP adapter: POST /live-sessions/{sid}/reminders[/{bundle_id}] (the merchant triggers one reminder pass over
 // every eligible buyer, or for one buyer) and GET /live-sessions/{sid}/reminders (sent / queued / failed / follow-up list). It runs the
 // merchanttools.CheckoutReminders pass (one scan transaction, then one transaction per buyer) and the inbox.Service report, and maps refusals
-// through inboxSendClassify; it decides no rule (the 0131 definers do), never returns a driver message and never logs a body, link or token.
+// through inboxSendClassify; it decides no rule (the 0144 definers do), never returns a driver message and never logs a body, link or token.
 // The per-store 「自動提醒」 settings routes are DEFERRED with the automatic path (keyring custody): live.reminder_settings has no route.
 // Depends on: internal/merchanttools (CheckoutReminders), internal/inbox (report), internal/httpapi inboxSendScoped/claimsRoute, internal/platform.
 // Used by: internal/httpapi/handler.go (registerReminderRoutes, gated on Options.Inbox with the send side enabled); cmd/api wires it.

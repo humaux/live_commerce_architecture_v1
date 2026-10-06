@@ -1,6 +1,6 @@
 package foundation_test
 
-// Real-PG gates of W3-03B (checkout reminders; migration 0131; brief docs/delivery/units/w3-03b-checkout-reminder.md + the integrator's P1/P2 review
+// Real-PG gates of W3-03B (checkout reminders; migration 0144; brief docs/delivery/units/w3-03b-checkout-reminder.md + the integrator's P1/P2 review
 // rulings): CR01..CR08, the batch livelock gate (CR09), the link-completes-the-purchase gates (CR10 claim link, CR11 order link), the per-buyer outcome /
 // rate-cap / young-claim / Check re-check gates and the exact ACL of the new definers/tables. Harness: live_console_send_test.go (lbSetup: the REAL
 // inbox.Service planners on commerce_runtime, the REAL metareply send routes on a REAL core dispatcher over a loopback fake Graph) plus the REAL
@@ -855,12 +855,12 @@ func TestCheckoutReminderCR08NoSecretsPersisted(t *testing.T) {
 	}
 }
 
-// Exact ACL of migration 0131: table privileges, RLS, function owners / search_path / EXECUTE lists, the new integration-writer column reads and policies.
-func TestCheckoutReminderMigration0131ExactACL(t *testing.T) {
+// Exact ACL of migration 0144: table privileges, RLS, function owners / search_path / EXECUTE lists, the new integration-writer column reads and policies.
+func TestCheckoutReminderMigration0144ExactACL(t *testing.T) {
 	f := fixture(t)
 	ctx := context.Background()
-	if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0131_checkout_reminders.sql'`); n != 1 {
-		t.Fatalf("0131 migration rows=%d", n)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version='0144_checkout_reminders.sql'`); n != 1 {
+		t.Fatalf("0144 migration rows=%d", n)
 	}
 	for _, table := range []string{"inbox.checkout_reminders", "live.reminder_settings"} {
 		var rls, force bool
@@ -920,7 +920,7 @@ func TestCheckoutReminderMigration0131ExactACL(t *testing.T) {
 			}
 		}
 	}
-	// The exact column reads 0131 adds for commerce_integration_writer, and the policies that scope them (inventory pinned here; KC03 pins the bundle matrix).
+	// The exact column reads 0144 adds for commerce_integration_writer, and the policies that scope them (inventory pinned here; KC03 pins the bundle matrix).
 	got := lcStrings(t, f.owner, `SELECT p.table_schema||'.'||p.table_name||'.'||p.column_name FROM information_schema.column_privileges p
 		WHERE p.grantee='commerce_integration_writer' AND p.privilege_type='SELECT'
 		  AND (p.table_schema||'.'||p.table_name, p.column_name) IN (('claims.order_origins','tenant_id'),('claims.order_origins','store_id'),('claims.order_origins','order_id'),('claims.order_origins','bundle_id'),
@@ -928,7 +928,7 @@ func TestCheckoutReminderMigration0131ExactACL(t *testing.T) {
 		     ('claims.links','tenant_id'),('claims.links','store_id'),('claims.links','bundle_id'),('claims.links','generation'),
 		     ('live.claim_sources','session_id'),('live.claim_sources','active'),('live.claim_sources','reply_locale'))`)
 	if len(got) != 17 {
-		t.Fatalf("0131 column reads: %v", got)
+		t.Fatalf("0144 column reads: %v", got)
 	}
 	// Never the link hash (checkout.orders carries older, unrelated grants of other units; only this unit's additions are pinned above).
 	if countRows(t, f.owner, `SELECT count(*) FROM information_schema.column_privileges p WHERE p.grantee='commerce_integration_writer' AND p.table_schema='claims' AND p.table_name='links' AND p.column_name='token_hash' AND p.privilege_type='SELECT'`) != 0 {
@@ -939,12 +939,34 @@ func TestCheckoutReminderMigration0131ExactACL(t *testing.T) {
 	slices.Sort(wantPolicies)
 	slices.Sort(policies)
 	if !slices.Equal(policies, wantPolicies) {
-		t.Fatalf("0131 policies: %v want %v", policies, wantPolicies)
+		t.Fatalf("0144 policies: %v want %v", policies, wantPolicies)
 	}
 	// The fixed template exists, dm only, not public-safe, and merchants still cannot republish it.
 	var kinds []string
 	var safe bool
 	if err := f.owner.QueryRow(ctx, `SELECT kinds, public_safe FROM msgtemplates.fixed_templates WHERE template_id='checkout-reminder/v1' AND version=1`).Scan(&kinds, &safe); err != nil || safe || !slices.Equal(kinds, []string{"dm"}) {
 		t.Fatalf("checkout-reminder/v1: kinds=%v safe=%v err=%v", kinds, safe, err)
+	}
+}
+
+// OPS-01B (0143) x W3-03B: an origin=auto checkout reminder queued BEFORE the store is suspended ends BLOCKED_POLICY store_suspended with zero Graph
+// calls (0144 patches the reminder re-check ON TOP of 0143's suspension guard instead of replacing check_send), and the reminder's own re-check still
+// works after the patch (not_remindable is covered by CR03).
+func TestCheckoutReminderSuspendedStoreBlocksQueued(t *testing.T) {
+	e := lbSetup(t)
+	e.crCleanup(t)
+	f := e.h.f
+	e.crBuyer(t)
+	if out, err := e.crTrigger(t); err != nil || out.Queued != 1 {
+		t.Fatalf("trigger: %+v err=%v", out, err)
+	}
+	op := e.crOps(t)[0]
+	mustExec(t, f.owner, `UPDATE control.stores SET active=false WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1)
+	t.Cleanup(func() { mustExec(t, f.owner, `UPDATE control.stores SET active=true WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1) })
+	before := e.g.count()
+	e.run(t, op)
+	code, _ := e.awaitOp(t, op, "BLOCKED_POLICY", 10*time.Second, "completed")
+	if code != "store_suspended" || e.g.count() != before || e.secretCount(t, op) != 0 {
+		t.Fatalf("suspended store: code=%s graph %d->%d secrets=%d", code, before, e.g.count(), e.secretCount(t, op))
 	}
 }

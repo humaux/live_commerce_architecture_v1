@@ -4,7 +4,7 @@
 // order-pay-link/v1), a claim nobody opened gets a re-issued claim link (claims.issue_link, template checkout-reminder/v1). A refusal of one buyer
 // (window closed since the scan, takeover, rate cap, state changed) rolls back only that buyer's link issue and is reported per buyer; the batch goes on.
 // Depends on: internal/inbox (ScanCheckoutReminders, PlanCheckoutReminder), internal/claims (IssueLink), ManualOrders (capability derivation and the
-//   order-link regenerate call, manual.go), internal/platform (WithScope), SQL 0131 + fulfillment.regenerate_order_link (0104).
+//   order-link regenerate call, manual.go), internal/platform (WithScope), SQL 0144 + fulfillment.regenerate_order_link (0104).
 // Used by: internal/httpapi/reminders.go (POST …/reminders[/{bundle_id}]); cmd/api builds it beside the ManualOrders pipeline and the inbox service.
 // Invariants: the bearer link exists only in memory, in the sealed dispatch copy and as its own hash in the claims/order link tables (never in a display
 //   copy, a log or a receipt); no send outside the 24 h window (the planner and Check refuse); one reminder per buyer per session; no new bearer type.

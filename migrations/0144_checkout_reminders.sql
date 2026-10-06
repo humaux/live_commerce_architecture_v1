@@ -1,11 +1,11 @@
--- 0131_checkout_reminders.sql — W3-03B checkout reminders (live-console-v1 Amendment W3-03B; brief docs/delivery/units/w3-03b-checkout-reminder.md).
+-- 0144_checkout_reminders.sql — W3-03B checkout reminders (live-console-v1 Amendment W3-03B; brief docs/delivery/units/w3-03b-checkout-reminder.md).
 -- Purpose: after a live session (or when the merchant clicks 「提醒未付款」) remind buyers who claimed but did not order, or ordered but did not pay,
 --   by ONE Messenger/IG DM per buyer per session, ONLY inside the 24 h window (messaging_type RESPONSE; no message tag, no UPDATE, no utility
 --   template, ever). The DM carries a link that really completes the purchase: the buyer's unpaid merchant-created order -> a re-issued order link
 --   (order-pay-link/v1, fulfillment.regenerate_order_link rules), a never-opened claim -> a re-issued claim link (checkout-reminder/v1,
 --   claims.issue_link). Buyers outside the window / under human takeover / without a known thread / without a re-issuable link land in a
 --   follow-up list instead. Adds the fixed template checkout-reminder/v1, the reminder ledger table, the (unused) per-store settings table and the definers.
--- Depends on: 0121 (msgtemplates.fixed_templates), 0128 (inbox.lcn_scope/lcn_emit/lcn_rate_check, inbox.bundle_peers, inbox.check_send, outbound_messages,
+-- Depends on: 0143 (control.store_serving; check_send is patched on top of its suspension guard), 0121 (msgtemplates.fixed_templates), 0128 (inbox.lcn_scope/lcn_emit/lcn_rate_check, inbox.bundle_peers, inbox.check_send, outbound_messages,
 --   send_secrets, the meta.dm_send worker route), 0119 (inbox.conversation_state), 0113 (claims.order_origins), 0013/0094 (checkout.orders, source),
 --   0060 (claims.links generation; the link itself is issued by claims.issue_link / fulfillment.regenerate_order_link in the same merchant transaction).
 -- Used by: internal/inbox/reminders.go, internal/merchanttools/checkout_reminders.go, internal/httpapi/reminders.go (POST/GET .../live-sessions/{sid}/reminders).
@@ -159,79 +159,29 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------------------
--- inbox.check_send: 0128's Check plus the reminder re-check (same signature, owner and ACL).
+-- inbox.check_send: the reminder re-check is PATCHED into the function as it stands (0128 + 0143's store_serving refusal for every origin + whatever
+-- a later migration adds) instead of replacing it wholesale: a replace would silently drop a suspension check applied by an earlier-numbered migration.
+-- Same signature, owner and ACL. The anchor must occur exactly once, else the migration fails loudly.
+-- A checkout reminder is only valid while its buyer is still in the state it was planned for (paid / cancelled / expired / ordered since planning ->
+-- BLOCKED_POLICY not_remindable, zero HTTP, never retried); the suspension check (store_suspended) already ran above it for every origin.
 -- ---------------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION inbox.check_send(p_operation uuid) RETURNS text
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = pg_catalog AS $$
-DECLARE o record; r jsonb; v_now timestamptz := clock_timestamp(); v_cap text; st record; w record; v_key text; v_conv uuid;
- v_perms text[]; v_deadline timestamptz; v_ref text; v_object text;
+DO $$
+DECLARE v_fn text; v_anchor text; v_add text;
 BEGIN
-    SELECT x.tenant_id, x.store_id, x.action, x.provider, x.binding_id, x.external_asset_id, x.request INTO o
-      FROM integration.operations x WHERE x.id = p_operation AND x.actor_kind = 'MERCHANT'
-       AND x.action IN ('meta.dm_send', 'meta.private_reply', 'meta.public_reply', 'meta.offer_recommend');
-    IF NOT FOUND THEN RETURN 'invalid_request'; END IF;
-    r := o.request;
-    IF jsonb_typeof(r) <> 'object' OR r->>'policy' IS DISTINCT FROM 'lcn-policy/v1' THEN RETURN 'invalid_request'; END IF;
-    PERFORM set_config('app.tenant_id', o.tenant_id::text, true), set_config('app.store_id', o.store_id::text, true);
-    v_deadline := (r->>'deadline_at')::timestamptz;
-    IF v_now >= v_deadline THEN
-        RETURN CASE o.action WHEN 'meta.dm_send' THEN 'window_closed' ELSE 'deadline' END;
+    v_anchor := '        IF r->>''origin'' = ''auto'' THEN' || chr(10);
+    v_add := '        IF r->>''message_type'' = ''checkout_reminder'' THEN' || chr(10)
+          || '            SELECT f.state INTO v_key FROM inbox.crm_bundle_facts(o.tenant_id, o.store_id, (r->>''bundle_id'')::uuid) f;' || chr(10)
+          || '            IF v_key IS DISTINCT FROM r->>''reminder_state'' THEN RETURN ''not_remindable''; END IF;' || chr(10)
+          || '        END IF;' || chr(10);
+    v_fn := pg_get_functiondef('inbox.check_send(uuid)'::regprocedure);
+    IF (length(v_fn) - length(replace(v_fn, v_anchor, ''))) <> length(v_anchor) OR position('store_serving' IN v_fn) = 0 THEN
+        RAISE EXCEPTION 'inbox.check_send has an unexpected shape for the checkout reminder patch';
     END IF;
-    v_cap := CASE o.action WHEN 'meta.dm_send' THEN 'dm_session' WHEN 'meta.private_reply' THEN 'private_reply' ELSE 'reply_public' END;
-    IF coalesce(integration.binding_capability_state(o.tenant_id, o.store_id, o.binding_id, v_cap, ARRAY[]::text[]), 'unknown')
-       NOT IN ('ok', 'review_required') THEN
-        RETURN 'capability';
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM inbox.outbound_messages m WHERE m.tenant_id = o.tenant_id AND m.store_id = o.store_id AND m.operation_id = p_operation) THEN
-        RETURN 'outbound_missing';
-    END IF;
-    IF r->>'origin' = 'human' THEN
-        v_perms := CASE WHEN o.action = 'meta.offer_recommend' THEN ARRAY['live:manage', 'inbox:reply'] ELSE ARRAY['inbox:reply'] END;
-        IF NOT identity.principal_holds(o.tenant_id, o.store_id, (r->>'principal_id')::uuid, v_perms) THEN RETURN 'principal_revoked'; END IF;
-    END IF;
-    IF o.action = 'meta.dm_send' THEN
-        v_conv := (r->>'conversation_id')::uuid;
-        SELECT s.last_inbound_at,
-               CASE WHEN s.mode = 'human' AND s.human_until IS NOT NULL AND v_now >= s.human_until THEN 'auto' ELSE s.mode END AS mode,
-               CASE WHEN s.mode = 'human' AND s.human_until IS NOT NULL AND v_now >= s.human_until THEN s.takeover_generation + 1 ELSE s.takeover_generation END AS gen
-          INTO st FROM inbox.conversation_state s WHERE s.tenant_id = o.tenant_id AND s.store_id = o.store_id AND s.conversation_id = v_conv;
-        IF NOT FOUND THEN RETURN 'conversation_gone'; END IF;
-        IF NOT EXISTS (SELECT 1 FROM social.conversations c WHERE c.tenant_id = o.tenant_id AND c.store_id = o.store_id AND c.id = v_conv) THEN
-            RETURN 'conversation_gone';
-        END IF;
-        IF st.last_inbound_at IS NULL OR st.last_inbound_at + interval '24 hours' - interval '5 minutes' <= v_now THEN RETURN 'window_closed'; END IF;
-        -- 0131 (W3-03B): a checkout reminder is only valid while its buyer is still in the state it was planned for (paid / cancelled / expired /
-        -- ordered since planning -> BLOCKED_POLICY not_remindable, zero HTTP, never retried).
-        IF r->>'message_type' = 'checkout_reminder' THEN
-            SELECT f.state INTO v_key FROM inbox.crm_bundle_facts(o.tenant_id, o.store_id, (r->>'bundle_id')::uuid) f;
-            IF v_key IS DISTINCT FROM r->>'reminder_state' THEN RETURN 'not_remindable'; END IF;
-        END IF;
-        IF r->>'origin' = 'auto' THEN
-            IF st.mode = 'human' THEN RETURN 'human_takeover'; END IF;
-            IF st.gen <> (r->>'takeover_generation')::bigint THEN RETURN 'takeover_changed'; END IF;
-        END IF;
-    ELSIF o.action = 'meta.private_reply' THEN
-        IF r->>'message_type' IS DISTINCT FROM 'manual_private_reply' THEN RETURN 'invalid_request'; END IF;
-        v_object := CASE r->>'platform' WHEN 'facebook' THEN 'page' ELSE 'instagram' END;
-        v_ref := r->>'comment_ref';
-        v_key := 'mpr:' || substr(encode(sha256(convert_to(v_object || '|' || (r->>'asset_id') || '|' || v_ref, 'UTF8')), 'hex'), 1, 48);
-        -- comment budget: no OTHER operation of this comment may have used the one private reply.
-        IF EXISTS (SELECT 1 FROM integration.operations y WHERE y.tenant_id = o.tenant_id AND y.store_id = o.store_id AND y.id <> p_operation
-                    AND y.semantic_key IN (v_key, v_key || ':m1') AND y.state IN ('SUCCEEDED', 'ACKNOWLEDGED', 'UNKNOWN', 'FAILED_FINAL')) THEN
-            RETURN 'used';
-        END IF;
-        IF (r->>'live_media')::boolean AND NOT EXISTS (SELECT 1 FROM live.claim_windows cw WHERE cw.tenant_id = o.tenant_id AND cw.store_id = o.store_id
-                AND cw.session_id = (r->>'session_id')::uuid AND cw.state = 'OPEN') THEN
-            RETURN 'ig_live_ended';
-        END IF;
-    ELSIF o.action = 'meta.offer_recommend' THEN
-        IF NOT EXISTS (SELECT 1 FROM live.offers f WHERE f.tenant_id = o.tenant_id AND f.store_id = o.store_id
-                        AND f.id = (r->>'offer_id')::uuid AND f.active) THEN
-            RETURN 'offer_unavailable';
-        END IF;
-    END IF;
-    RETURN 'OK';
+    EXECUTE replace(v_fn, v_anchor, v_add || v_anchor);
 END $$;
+ALTER FUNCTION inbox.check_send(uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.check_send(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.check_send(uuid) TO commerce_claims_worker;
 
 -- ---------------------------------------------------------------------------------------
 -- inbox.checkout_reminder_candidates (merchant transaction, inbox:reply AND live:manage: a claim link is re-issued): enumerate the session's candidate

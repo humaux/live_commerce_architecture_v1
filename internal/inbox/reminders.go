@@ -4,7 +4,7 @@
 // re-validates and plans; this file renders the fixed template of the buyer's state, seals both copies and calls the planner. The orchestration
 // (one transaction per buyer: issue the link, then plan) lives in internal/merchanttools/checkout_reminders.go. No network call.
 // Depends on: internal/command, internal/msgtemplates (Resolve checkout-reminder/v1 | order-pay-link/v1), internal/inbox send.go (prepare,
-// latestSender), send_text.go (checkText), keyring.go (bodyHMAC); SQL migration 0131 (inbox.checkout_reminder_candidates,
+// latestSender), send_text.go (checkText), keyring.go (bodyHMAC); SQL migration 0144 (inbox.checkout_reminder_candidates,
 // inbox.plan_checkout_reminder, inbox.reminder_report) and inbox.store_origins (0128).
 // Used by: internal/merchanttools/checkout_reminders.go (scan + plan), internal/httpapi/reminders.go (report); cmd/api through the inbox service.
 // Invariants: no message tag / no send outside the 24 h window (planner + Check refuse, never retried); one reminder per buyer per session; the
@@ -56,7 +56,7 @@ type ReminderScan struct {
 
 // ScanCheckoutReminders classifies the session's candidate buyers (inbox:reply and live:manage; bundleID "" = the batch, else that buyer only,
 // 409 not_remindable when she is no candidate). Side effects: follow-up rows for the buyers that cannot be reached and one audit row.
-// Calls inbox.checkout_reminder_candidates (0131) and inbox.store_origins (0128).
+// Calls inbox.checkout_reminder_candidates (0144) and inbox.store_origins (0128).
 func (s *Service) ScanCheckoutReminders(ctx context.Context, tx pgx.Tx, sessionID, bundleID string) (ReminderScan, error) {
 	var out ReminderScan
 	if !s.SendEnabled() {
@@ -137,7 +137,7 @@ func reminderTemplate(state string) (string, bool) {
 // just issued link (a claim link or an order link) — a refusal of the planner (PT409 with the deny code: window_closed, human_takeover,
 // takeover_changed, capability, already_reminded, not_remindable, conversation_gone, rate_limited) rolls that issue back with the transaction.
 // The conversation named by c is verified by the planner to be a peer of the bundle (never re-picked). Side effects: River job, operation,
-// outbound row, sealed dispatch copy, reminder row, audit (inbox.plan_checkout_reminder, 0131).
+// outbound row, sealed dispatch copy, reminder row, audit (inbox.plan_checkout_reminder, 0144).
 func (s *Service) PlanCheckoutReminder(ctx context.Context, tx pgx.Tx, scope platform.Scope, sessionID string, c ReminderCandidate, link string) error {
 	if !s.SendEnabled() {
 		return ErrSendUnavailable
@@ -177,7 +177,7 @@ func (s *Service) PlanCheckoutReminder(ctx context.Context, tx pgx.Tx, scope pla
 	if err != nil {
 		return err
 	}
-	// Calls inbox.plan_checkout_reminder (0131): definer commerce_integration_writer; lcn-dup lock, window/takeover/capability/state re-check, the
+	// Calls inbox.plan_checkout_reminder (0144): definer commerce_integration_writer; lcn-dup lock, window/takeover/capability/state re-check, the
 	// once-per-buyer row, then inbox.lcn_emit (operation, outbound row, sealed secret, audit). Never a takeover (origin=auto).
 	var op string
 	if err := tx.QueryRow(ctx, `SELECT inbox.plan_checkout_reminder($1::uuid,$2::uuid,$3::uuid,'manual',$4::bigint,$5,$6::uuid,$7::bigint,$8::uuid,$9::bytea,$10,$11::bytea,$12::bytea,$13::bytea,$14::bytea,$15,$16::bigint)::text`,
@@ -220,7 +220,7 @@ type ReminderReport struct {
 	Link     *string        `json:"link"`
 }
 
-// ReminderReport reads the session's reminder rows (inbox:read) and the copyable link. Calls inbox.reminder_report (0131).
+// ReminderReport reads the session's reminder rows (inbox:read) and the copyable link. Calls inbox.reminder_report (0144).
 func (s *Service) ReminderReport(ctx context.Context, tx pgx.Tx, sessionID string) (ReminderReport, error) {
 	out := ReminderReport{Sent: []ReminderItem{}, Failed: []ReminderItem{}, Followup: []FollowupItem{}}
 	if !command.ValidID(sessionID) {

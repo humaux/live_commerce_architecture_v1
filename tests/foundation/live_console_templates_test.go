@@ -57,7 +57,7 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 	}{
 		"order-pay-link/v1":    {[]string{"dm"}, false, "{{連結}}"},
 		"offer-recommend/v1":   {[]string{"recommend"}, true, "{{product.name}}"},
-		"checkout-reminder/v1": {[]string{"dm"}, false, "{{連結}}"}, // W3-03B (0131)
+		"checkout-reminder/v1": {[]string{"dm"}, false, "{{連結}}"}, // W3-03B (0144)
 	}
 	for id, want := range fixed {
 		var kinds []string
@@ -70,7 +70,7 @@ func TestLiveConsoleTemplatesMigration0121ExactACL(t *testing.T) {
 			t.Fatalf("fixed %s: kinds=%v safe=%t body=%q", id, kinds, safe, body)
 		}
 	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 3 { // + checkout-reminder/v1 (0131, W3-03B)
+	if n := countRows(t, f.owner, `SELECT count(*) FROM msgtemplates.fixed_templates`); n != 3 { // + checkout-reminder/v1 (0144, W3-03B)
 		t.Fatalf("fixed template rows=%d, want 3", n)
 	}
 

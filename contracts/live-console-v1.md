@@ -1060,7 +1060,7 @@ Skipped:
 - **LC-U2 (UI)**: the A1.1 copy and confirm dialog, the A1.2 disabled-reason text, bundle-only A8 items (copy-link only).
 - LC-B1, LC-B3, LC-B5, LC-B7: no change (P2-9 and P2-10 are text-only; P2-6 already satisfied in 0119).
 
-## Amendment W3-03B checkout reminders (2026-10-06; migration 0131; revised after the independent review)
+## Amendment W3-03B checkout reminders (2026-10-06; migration 0144; revised after the independent review)
 
 Owner ruling: a reminder is sent **only within 24 h of the buyer's last inbound message** (`messaging_type=RESPONSE`). Meta's fixed-format / utility
 policy is unverified (EVIDENCE_GAP; message tags were removed 2026-02-09), so there is no tag, no UPDATE type, no utility template, no send outside the window.

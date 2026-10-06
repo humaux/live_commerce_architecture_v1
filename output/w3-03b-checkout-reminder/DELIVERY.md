@@ -1,6 +1,6 @@
 # w3-03b-checkout-reminder delivery (revised after the independent review: 2 P1 + P2)
 - Branch/commit: unit/w3-03b-checkout-reminder (SHA in the final commit message / `git log -1`)   Base: r3/integration 4509df6e (0129 LC-B6, 0136, 0139 merged)   Model: Claude Sonnet (fallback)
-- Summary: migration 0131 (fixed template checkout-reminder/v1; inbox.checkout_reminders; empty live.reminder_settings; definers inbox.checkout_reminder_candidates,
+- Summary: migration 0144 (fixed template checkout-reminder/v1; inbox.checkout_reminders; empty live.reminder_settings; definers inbox.checkout_reminder_candidates,
   inbox.plan_checkout_reminder, inbox.reminder_report; private inbox.crm_bundle_facts; CREATE OR REPLACE of inbox.check_send (+ bundle-state re-check) and inbox.lcn_rate_check
   (+ reminders count toward the 60/min cap)); internal/inbox/reminders.go (scan + plan one buyer + report); internal/merchanttools/checkout_reminders.go (one scan tx, then one tx per
   buyer: issue link + plan); internal/httpapi/reminders.go (POST .../reminders[/{bundle_id}], GET .../reminders).
@@ -16,18 +16,18 @@
   the 60/min cap (gate CountsTowardTheSendCap); (7) check_send re-reads bundle state (CR03: paid after plan -> BLOCKED_POLICY not_remindable, zero HTTP); (8) candidates need window
   CLOSED or claim >= 10 min (gate YoungClaims); (9) planner refuses line_count=0 (gate SingleBuyer); (12) proconfig/search_path, column grants and policies pinned in the ACL gate +
   KC03 inventory (claims.bundles columns, claims.links generation, definer list, claims.links SELECT-probe exemption); (13) one audit row per pass incl. follow-up-only (gate
-  FollowupOnlyAudit); (14) settings GET/PUT routes + definers removed, table kept (comment in 0131). (11) templates are not localised (msgtemplates has no locale): recorded in the
+  FollowupOnlyAudit); (14) settings GET/PUT routes + definers removed, table kept (comment in 0144). (11) templates are not localised (msgtemplates has no locale): recorded in the
   amendment. (10) skipped per ruling; for the UI unit: the report's `display_name` is null for Meta buyers (no names are stored).
 - Contract/interface changes: contracts/live-console-v1.md "Amendment W3-03B" (revised; auto leg + settings DEFERRED: keyring custody).
 - Tests (local, focused): `bash scripts/dev/test-focused.sh '^(TestCheckoutReminder|TestLiveClaimsKC03Schema|TestT06WorkerAuthorityAndFunctionACL|TestR2IntegrationUpgradeFromReleaseHead|
   TestLiveConsoleSendMigration0128ExactACL|TestLiveConsoleTemplates|TestWAS)'` -> exit 0 (29 tests; TestCheckoutReminder = 14: CR01 window/takeover/once/claim link, CR02 concurrent, CR03
   Check re-checks, CR04 UNKNOWN, CR05 candidate set + order link, CR06 scope, CR08 no secrets persisted, CR09 livelock, no_storefront, single buyer, young claims, per-buyer refusal,
-  send cap, follow-up-only audit/permissions, 0131 ACL); `bash scripts/dev/test-local.sh --inbox-send` -> exit 0; `bash scripts/dev/check-gates.sh` -> exit 0;
+  send cap, follow-up-only audit/permissions, 0144 ACL); `bash scripts/dev/test-local.sh --inbox-send` -> exit 0; `bash scripts/dev/check-gates.sh` -> exit 0;
   `go test ./internal/inbox ./internal/httpapi ./internal/merchanttools ./internal/httperror ./internal/msgtemplates` -> ok. Red: output/w3-03b-checkout-reminder/red.log, red-httpapi.log,
   red2.log (the review-fix gates do not compile against the pre-review code: no per-buyer link-issuing pass existed). Green: gates.log, inbox-send.log.
 - CI gates (NOT run locally per the owner's RAM rule; run on GitHub gates.yml): the broad regression
   `^(TestLiveConsole|TestLCN|TestK3LCB4|TestMsgTemplates|TestInbox|TestT06|TestKC03|TestR2Integration|TestLiveClaims|TestWAS|TestManualFulfilmentMF02Schema|TestMetaAdsMA02Schema|TestCustomersBillingCB02|TestTaiwanCvsSchema|TestMetaClaimsMCI02|TestCRP)`,
-  and `release-gate.sh --strict --only G07` (full ACL/schema inventories; 0131 adds column grants on claims.order_origins, checkout.orders, claims.links, live.claim_sources and policies on them).
+  and `release-gate.sh --strict --only G07` (full ACL/schema inventories; 0144 adds column grants on claims.order_origins, checkout.orders, claims.links, live.claim_sources and policies on them).
 - Evidence class: MOCK (REAL_PG + loopback fake Graph); Meta LIVE NOT_RUN. Link redemption by a real buyer browser NOT_RUN (DB-level: stored link hash/owner/order verified).
 - Deviations: (1) scan then one transaction per buyer (sealing in Go with the payload keyring + PSID; per-buyer isolation); (2) inbox.plan_checkout_reminder is the origin=auto variant of plan_dm
   (plan_dm = human + implicit takeover) sharing lcn_emit / check_send / the dm route; (3) own bundle_peers join, not dm_window_for_bundle; (4) no runtime table grants (0128 convention);

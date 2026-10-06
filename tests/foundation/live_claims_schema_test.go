@@ -281,11 +281,11 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(iw, "claims.events", "SELECT", "tenant_id", "store_id", "id", "session_id", "source_event_id", "outcome", "bundle_id", "bundle_version")
 		// LC-B4 (0128, live-console-v1 §4): the send planners read the session's offer/window/bundle facts under the tenant/store GUC
 		// scope (or the intake scope for the auto-reply skip) and may only flag/unflag claims.bundles.link_pending_manual.
-		// W3-03B (0131): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).
+		// W3-03B (0144): the reminder definers also read owner/label/line_count/purged_at (candidate scan; owner_id only keys the once-per-buyer hash).
 		add(iw, "claims.bundles", "SELECT", "tenant_id", "store_id", "id", "session_id", "platform", "link_pending_manual", "created_at",
 			"owner_id", "label", "line_count", "purged_at")
 		add(iw, "claims.bundles", "UPDATE", "link_pending_manual")
-		// W3-03B (0131): the current claim-link generation only (the merchant link issue is a CAS on it); never the token hash.
+		// W3-03B (0144): the current claim-link generation only (the merchant link issue is a CAS on it); never the token hash.
 		add(iw, "claims.links", "SELECT", "tenant_id", "store_id", "bundle_id", "generation")
 		add(iw, "live.offers", "SELECT", "tenant_id", "store_id", "id", "session_id", "keyword", "sku_id", "active", "version")
 		add(iw, "live.offers", "UPDATE", "updated_at")
@@ -371,6 +371,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.consume_live_prices",
 				// LC-B4 (0128): claims.check_meta_reply resolves the actor's thread through the bundle peers (human_takeover / takeover_changed).
 				"inbox.dm_window_for_bundle",
+				// 0143 (OPS-01B): live.comment_poll_sources (owned by this role) asks the suspension guard predicate.
+				"control.store_serving",
 				// 0110 ACL ruling: domain-owned order provenance projection; only
 				// commerce_auth gets EXECUTE, never consumption-table privileges.
 				"claims.order_live_sources",
@@ -410,7 +412,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake','commerce_retention_writer') -- retention_writer: §4 rows asserted above
-			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','claims.links','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) + W3-03B (0131) column grants, asserted above
+			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','claims.links','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) + W3-03B (0144) column grants, asserted above
 			  AND NOT (r.rolname IN ('commerce_auth','commerce_privacy_writer') AND c.oid::regclass::text='claims.bundles') -- 0078 column grants, asserted above
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
@@ -847,7 +849,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 					if role == "commerce_integration_writer" && table == "claims.events" && strings.HasPrefix(q, "SELECT") {
 						continue
 					}
-					// LC-B4 (0128) + W3-03B (0131, claims.links generation only; the token hash stays unreadable): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
+					// LC-B4 (0128) + W3-03B (0144, claims.links generation only; the token hash stays unreadable): the same column-SELECT shape for the send planners on claims.bundles / live.offers / live.claim_windows
 					// (rows stay GUC- or intake-scoped by policy; every write statement stays 42501 except the pinned flag/updated_at columns,
 					// which the `SET tenant_id=tenant_id` probe does not touch).
 					if role == "commerce_integration_writer" && (table == "claims.bundles" || table == "live.offers" || table == "live.claim_windows" || table == "claims.links") && strings.HasPrefix(q, "SELECT") {
@@ -893,7 +895,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"claims.order_live_sources(uuid,uuid,uuid[])",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
-				// W3-03B (0131): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
+				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
 				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
 				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
