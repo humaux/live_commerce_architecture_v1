@@ -477,8 +477,10 @@ type ImportProfile struct {
 	ImportedAt  string   `json:"imported_at"`
 	UpdatedAt   string   `json:"updated_at"`
 	ExternalIDs []string `json:"external_ids"`
-	// HistoricalOrders is the customer's order-history archive (W5-03B, newest first); never nil, empty when none was imported.
-	HistoricalOrders []HistoricalOrder `json:"historical_orders"`
+	// HistoricalOrders is the NEWEST <= 100 rows of the customer's order-history archive (W5-03B), never nil; HistoricalOrdersTotal is the
+	// full archive size, so a bigger archive never makes the export exceed its size cap.
+	HistoricalOrders      []HistoricalOrder `json:"historical_orders"`
+	HistoricalOrdersTotal int64             `json:"historical_orders_total"`
 }
 
 // buyerExportDoc is the same envelope without customer_id and principal ids (D8); orders are the buyer's own

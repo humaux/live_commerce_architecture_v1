@@ -5,8 +5,9 @@
 //   outcome constants), encoding/csv, golang.org/x/text/unicode/norm (NFC).
 // Used by: orders.go (OrdersPreview / OrdersCommit); pinned by orders_test.go (DB-free).
 // Invariants: only the mapped columns are ever read, so an address, phone, email, payment or note column in the file is never stored;
-//   the city cell is refused when it contains a digit or is over 20 characters (a mis-mapped full address cannot be archived); the file
-//   content never appears in a returned error.
+//   the city is stored ONLY when the cell is one of the 22 Taiwan cities / counties (internal/twcity); any other cell (a street, a name, an
+//   email) is dropped to an empty city with the unit flagged city_dropped, and its text is never kept; an item name or status that looks
+//   like an email or a Taiwan mobile number refuses the order; the file content never appears in a returned error.
 // Status: MOCK (header aliases are best-guess SHOPLINE / Taiwan spreadsheet names until the owner supplies a de-identified header row).
 
 package migrationimport
@@ -23,6 +24,8 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
+
+	"livecommerce/internal/twcity"
 )
 
 // Canonical order fields a mapping may name. Every other column of the file is ignored and never read.
@@ -55,7 +58,6 @@ var orderAliases = map[string][]string{
 // Limits of the archive row (the table CHECKs are the backstop).
 const (
 	maxStatusRunes   = 40
-	maxCityRunes     = 20
 	maxItemsRunes    = 500
 	maxOrderIDRunes  = 64
 	maxItemQty       = 9999
@@ -82,7 +84,8 @@ type orderUnit struct {
 	status        string
 	totalMinor    int64
 	items         string
-	city          string
+	city          string // canonical city name or "" (none given, or the cell was not a city)
+	cityDropped   bool   // a city cell was present but is not one of the 22 cities: it was not stored (a counted warning, not a failure)
 	outcome, code string
 }
 
@@ -229,7 +232,7 @@ func buildUnit(u *orderUnit, ls []orderLine) {
 		}
 		if l.status != "" {
 			s := norm.NFC.String(l.status)
-			if utf8.RuneCountInString(s) > maxStatusRunes || hasControl(s) {
+			if utf8.RuneCountInString(s) > maxStatusRunes || hasControl(s) || looksLikeContact(s) {
 				fail("invalid_status")
 				return
 			}
@@ -252,19 +255,22 @@ func buildUnit(u *orderUnit, ls []orderLine) {
 			total, haveTotal = m, true
 		}
 		if l.city != "" {
-			c := norm.NFC.String(l.city)
-			// Taiwanese city / county names carry no digit: a digit or a long cell is a street address in the wrong column.
-			if utf8.RuneCountInString(c) > maxCityRunes || hasControl(c) || strings.IndexFunc(c, unicode.IsDigit) >= 0 {
-				fail("invalid_city")
-				return
+			// Allowlist, not a heuristic: only a Taiwan city / county is ever stored; a street, name or email in the column is dropped.
+			if c, ok := twcity.Normalize(norm.NFC.String(l.city)); !ok {
+				u.cityDropped = true
+			} else {
+				if city != "" && city != c {
+					fail("inconsistent_order")
+					return
+				}
+				city = c
 			}
-			if city != "" && city != c {
-				fail("inconsistent_order")
-				return
-			}
-			city = c
 		}
 		if name := cleanItemName(l.item); name != "" {
+			if looksLikeContact(name) { // a mis-mapped email / phone column must not be archived as a product name
+				fail("invalid_item")
+				return
+			}
 			qty := 1
 			if l.qty != "" {
 				q, err := strconv.Atoi(l.qty)

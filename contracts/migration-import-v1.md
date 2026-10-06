@@ -89,10 +89,14 @@ Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator
   It attaches only to a customer imported earlier (`external_ids` kind `customers`); a missing customer fails the row
   `customer_not_imported` (no customer is created); an erased customer's source id fails the row `erased` (section 5 tombstone).
   Amount = display `total_minor` (whole NT$ x 100) + `currency='TWD'`. No payment method / card / bank account; no address beyond the
-  city (OH-OPEN-1: city only, <= 20 chars, a cell with a digit or longer is refused `invalid_city`, so a mis-mapped full address is
-  not archived). Unmapped columns (address, phone, email, notes) are never read.
+  city (OH-OPEN-1: city only). The ONLY stored city is one of Taiwan's 22 cities / counties (`internal/twcity`; 台 is folded to the canonical 臺;
+  English and simplified spellings are not accepted: the SHOPLINE Taiwan export is Traditional Chinese). Any other cell (a street, a house
+  number, a name, an email) is NEVER stored: the order still imports with `city = NULL` and the unit carries the counted warning `city_dropped`
+  (preview `city_dropped_rows`, row `warning`; batch results put it in the code column of a created / updated row). The table backs this with a
+  `CHECK (city IN (the 22 names))`, so no writer can store anything else. Item name, status, order id and customer id that look like an email or a
+  Taiwan mobile number refuse the order (`invalid_item`, `invalid_status`, `invalid_order_id`, `invalid_external_id`). not archived). Unmapped columns (address, phone, email, notes) are never read.
 - **Table** `customers.historical_orders(tenant_id, store_id, id, owner_id, external_order_id 1..64, ordered_at, status 1..40, total_minor
-  0..10^12, currency='TWD', items_summary <= 500, city NULL <= 20, imported_at, updated_at, UNIQUE(tenant,store,external_order_id))`,
+  0..10^12, currency='TWD', items_summary <= 500, city NULL or one of the 22 cities, imported_at, updated_at, UNIQUE(tenant,store,external_order_id))`,
   FORCE RLS, no login-role grant (privacy-writer definers only). <= 2000 rows per customer (`order_limit`). No `imported_batch_id`: the
   batch row is written after the apply, and batch results carry no order id.
 - **Definers** (owner `commerce_privacy_writer`, SECURITY DEFINER, `search_path=pg_catalog`, EXECUTE `commerce_runtime`):
@@ -108,7 +112,7 @@ Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator
   may be empty on later lines; non-empty cells that disagree fail the whole order `inconsistent_order`. Amounts accept `1280`, `1,280`,
   `NT$1,280`, `1280.00`; a non-zero fraction is `invalid_amount`. Dates accept `2026-03-05[ 14:30[:00]]`, `/` separators and RFC 3339; no zone
   = Asia/Taipei. Unit codes: `required`, `invalid_order_id`, `invalid_external_id` (customer id shaped like a phone or email),
-  `invalid_date`, `invalid_amount`, `invalid_status`, `invalid_quantity`, `invalid_city`, `inconsistent_order`, `invalid_request`
+  `invalid_date`, `invalid_amount`, `invalid_status`, `invalid_item`, `invalid_quantity`, `inconsistent_order`, `invalid_request`
   (field-count mismatch), plus the database codes `customer_not_imported`, `erased`, `order_owner_conflict` (the order number belongs to
   another customer), `order_limit`. `rows_total / applied / updated / failed` of the batch count units; the row number of a unit is its first line.
 - **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST orders/preview` and
@@ -118,7 +122,7 @@ Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator
   serves orders batches too (external_id column empty). Read: `GET /v1/admin/stores/{store_id}/customers/{customer_id}/historical-orders[?limit&after]`
   (`customers:read`, default 50, newest first, same limit/after grammar as the customer notes) answers
   `{items:[{order_id, ordered_at, status, total_minor, currency, items_summary, city}], next_cursor, total}`; another store's, an erased or
-  an unknown customer is 404. The merchant privacy export (`POST customers/{id}/exports`) adds `import_profile.historical_orders`.
+  an unknown customer is 404. The merchant privacy export (`POST customers/{id}/exports`) adds `import_profile.historical_orders` (the NEWEST 100 rows, so a 2000-row archive never exceeds the 1 MiB export cap) and `import_profile.historical_orders_total` (the full count); the merchant sees every row through the read route.
 - **Not done here (integrator decisions):** `historical_orders_count` on the customer list row (it changes the strict list-row key set of
   Go `customerKeys`, `apps/admin` `customerKeys` and every browser mock; `total` of the read route serves the detail page meanwhile) and a
   count of erased archive rows in the erasure summary (the strict four-key summary of `decodeErasure` and the storefront / admin parsers).

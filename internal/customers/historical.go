@@ -5,20 +5,20 @@
 //   "customer-historical-orders"), internal/command, internal/platform.
 // Used by: internal/httpapi/customer_historical.go (the route); the privacy export embeds the same item shape (privacy.go).
 // Invariants: customers-billing-v1 / migration-import-v1 section 7: an unknown, erased or other-store customer is the not-found class;
-//   currency is always TWD; the response never carries a street address, phone, email or payment method (the table has no such column).
+//   currency is always TWD; a city is one of the 22 Taiwan cities / counties (internal/twcity) or null; the response never carries a street address, phone, email or payment method (the table has no such column).
 
 package customers
 
 import (
 	"context"
 	"crypto/sha256"
-	"strings"
 
 	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/twcity"
 )
 
 // HistoricalOrder is one archived order: display facts only. TotalMinor is TWD minor units (NT$ x 100) and is NOT revenue.
@@ -50,7 +50,7 @@ func validHistoricalOrder(h HistoricalOrder) bool {
 		return false
 	}
 	return h.OrderID != "" && len([]rune(h.OrderID)) <= 64 && h.Status != "" && len([]rune(h.Status)) <= 40 && h.TotalMinor >= 0 &&
-		h.Currency == "TWD" && len([]rune(h.ItemsSummary)) <= 500 && (h.City == nil || (*h.City != "" && len([]rune(*h.City)) <= 20 && !strings.ContainsAny(*h.City, "0123456789")))
+		h.Currency == "TWD" && len([]rune(h.ItemsSummary)) <= 500 && (h.City == nil || twcity.Valid(*h.City))
 }
 
 // ListHistoricalOrders pages one customer's archive newest first (customers:read; DB: customers.read_historical_orders). The cursor is

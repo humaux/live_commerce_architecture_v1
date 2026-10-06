@@ -84,8 +84,9 @@ func Export(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, cu
 	}
 	if len(rawProfile) > 0 {
 		var profile ImportProfile
-		if exactKeys(rawProfile, "display_name", "phone", "email", "source", "imported_at", "updated_at", "external_ids", "historical_orders") != nil || strict(rawProfile, &profile) != nil ||
-			profile.ExternalIDs == nil || profile.HistoricalOrders == nil || len(profile.HistoricalOrders) > 2000 {
+		if exactKeys(rawProfile, "display_name", "phone", "email", "source", "imported_at", "updated_at", "external_ids", "historical_orders", "historical_orders_total") != nil || strict(rawProfile, &profile) != nil ||
+			profile.ExternalIDs == nil || profile.HistoricalOrders == nil || len(profile.HistoricalOrders) > 100 ||
+			profile.HistoricalOrdersTotal < int64(len(profile.HistoricalOrders)) || profile.HistoricalOrdersTotal > 2000 {
 			return nil, ErrUnavailable
 		}
 		for _, h := range profile.HistoricalOrders {

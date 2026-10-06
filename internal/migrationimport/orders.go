@@ -36,6 +36,8 @@ type OrderPreviewRow struct {
 	ExternalID string `json:"external_id"`
 	Outcome    string `json:"outcome"` // created | updated | failed
 	Code       string `json:"code,omitempty"`
+	// Warning is city_dropped on a created / updated unit whose city cell was not one of the 22 Taiwan cities (the order imports, the city is not stored).
+	Warning string `json:"warning,omitempty"`
 }
 
 // OrderPreview is the preview answer (also attached to a 409 preview_stale). ApplyRows = NewRows + UpdateRows is the count the commit
@@ -50,7 +52,9 @@ type OrderPreview struct {
 	ApplyRows  int               `json:"apply_rows"`
 	FailedRows int               `json:"failed_rows"`
 	ErasedRows int               `json:"erased_rows"`
-	Rows       []OrderPreviewRow `json:"rows"`
+	// CityDroppedRows counts applicable units whose city cell was refused and stored as empty (a warning, never a failure).
+	CityDroppedRows int               `json:"city_dropped_rows"`
+	Rows            []OrderPreviewRow `json:"rows"`
 }
 
 // OrderCommitResult is the commit answer (replayed:true on an idempotent re-submit of the same file and count).
@@ -140,7 +144,7 @@ func applyOrders(ctx context.Context, tx pgx.Tx, scope platform.Scope, token str
 	// Results carry row, outcome and code only: an order number or customer id in a retained batch would outlive an erasure.
 	results := make([]batchResult, 0, len(parsed.units))
 	for _, u := range parsed.units {
-		results = append(results, batchResult{Row: u.n, Outcome: u.outcome, Code: u.code})
+		results = append(results, batchResult{Row: u.n, Outcome: u.outcome, Code: u.code + unitWarning(u)})
 	}
 	id, err := recordBatch(ctx, tx, scope, token, kindOrders, sum, parsed.mapping, len(parsed.units), created, updated, failed, results)
 	if err != nil {
@@ -197,6 +201,15 @@ func runOrders(ctx context.Context, tx pgx.Tx, scope platform.Scope, token strin
 	return parsed, nil
 }
 
+// unitWarning is "city_dropped" for an applicable (not failed) unit whose city cell was refused, else "". Batch results carry it in the
+// code column of a created / updated row; a failed row keeps its failure code only.
+func unitWarning(u orderUnit) string {
+	if u.cityDropped && u.outcome != outcomeFailed {
+		return "city_dropped"
+	}
+	return ""
+}
+
 func tallyOrders(units []orderUnit) (created, updated, failed int) {
 	for _, u := range units {
 		switch u.outcome {
@@ -228,6 +241,11 @@ func buildOrderPreview(digest string, p parsedOrders) OrderPreview {
 		id := u.orderID
 		if u.outcome == outcomeFailed {
 			id = "" // a failed unit keeps its row number and code only
+		}
+		if w := unitWarning(u); w != "" {
+			out.CityDroppedRows++
+			out.Rows = append(out.Rows, OrderPreviewRow{Row: u.n, ExternalID: id, Outcome: u.outcome, Warning: w})
+			continue
 		}
 		out.Rows = append(out.Rows, OrderPreviewRow{Row: u.n, ExternalID: id, Outcome: u.outcome, Code: u.code})
 	}

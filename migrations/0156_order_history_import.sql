@@ -10,7 +10,7 @@
 --   internal/httpapi/customer_historical.go; internal/customers/privacy.go decodes the new "historical_orders" export key.
 -- Invariants: I05 -- a historical order is NEVER a checkout.orders row and NO payment, inventory, finance, report, CAPI or attribution
 --   object reads this table (a static test greps every such function body); it carries a display total_minor in TWD only, never a payment
---   method, card, bank account or street address (city only, <= 20 chars); it attaches only to a customer imported earlier (external_ids
+--   method, card, bank account or street address (city only: one of the 22 Taiwan cities / counties); it attaches only to a customer imported earlier (external_ids
 --   kind customers); an erased customer's source id fails the row as erased and erasure deletes the owner's historical orders in the
 --   same transaction; results / audit rows carry row numbers and codes only (no order id, no customer id, no name).
 -- Status: REAL_PG / MOCK evidence only (synthetic data).
@@ -29,17 +29,21 @@ BEGIN
   OR to_regprocedure('customers.tn_owner_visible(uuid,uuid,uuid)') IS NULL THEN
   RAISE EXCEPTION '0156 requires 0152 (customer import) and 0139 (tags/notes)';
  END IF;
- -- Drift guards for the bodies replaced below (0113 / 0152 pattern): fail loudly rather than overwrite a changed body.
+ -- Drift guards (P2-1 of the W5-03B review): the three functions replaced below are the 0152 text plus declared hunks, so each is guarded on
+ -- the md5 of its CURRENT body being the md5 of the 0152 body (any other patch in between fails loudly and the integrator re-bases the
+ -- hunk). The audit policy is guarded on its exact action SET (order-insensitive), so a parallel unit that added an action is never
+ -- silently dropped: the integrator must union the lists.
  SELECT prosrc INTO v_src FROM pg_proc WHERE oid='migrationimport.record_batch(bytea,uuid,text,bytea,jsonb,integer,integer,integer,integer,jsonb)'::regprocedure;
- IF position('p_kind IS DISTINCT FROM ''customers''' IN v_src)=0 THEN RAISE EXCEPTION '0156 record_batch baseline drift'; END IF;
+ IF md5(v_src)<>'4a98483008173938fbd45d923b5af3e2' THEN RAISE EXCEPTION '0156 record_batch baseline drift (not the 0152 body)'; END IF;
  SELECT prosrc INTO v_src FROM pg_proc WHERE oid='customers.erase_import_profile(uuid,uuid,uuid)'::regprocedure;
- IF position('historical_orders' IN v_src)>0 OR position('DELETE FROM customers.import_profiles p' IN v_src)=0 THEN RAISE EXCEPTION '0156 erase_import_profile baseline drift'; END IF;
+ IF md5(v_src)<>'a6676b8aa3830f6ba25272dcd88c0577' THEN RAISE EXCEPTION '0156 erase_import_profile baseline drift (not the 0152 body)'; END IF;
  SELECT prosrc INTO v_src FROM pg_proc WHERE oid='customers.export_import_profile(bytea,uuid,uuid)'::regprocedure;
- IF position('historical_orders' IN v_src)>0 OR position('''external_ids''' IN v_src)=0 THEN RAISE EXCEPTION '0156 export_import_profile baseline drift'; END IF;
- IF NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='ops.audit_events'::regclass AND polname='privacy_audit_insert'
-    AND pg_get_expr(polwithcheck,polrelid) LIKE '%customers.imported%'
-    AND pg_get_expr(polwithcheck,polrelid) NOT LIKE '%customers.orders_imported%') THEN
-  RAISE EXCEPTION '0156 privacy_audit_insert baseline drift'; END IF;
+ IF md5(v_src)<>'2277018e00364d4b1bb8eaf3c0b03e55' THEN RAISE EXCEPTION '0156 export_import_profile baseline drift (not the 0152 body)'; END IF;
+ SELECT pg_get_expr(polwithcheck,polrelid) INTO v_src FROM pg_policy WHERE polrelid='ops.audit_events'::regclass AND polname='privacy_audit_insert';
+ IF v_src IS NULL OR (SELECT array_agg(m[1] ORDER BY m[1]) FROM regexp_matches(v_src,'(customers\.[a-z_]+)','g') m)
+  IS DISTINCT FROM ARRAY['customers.consent_withdrawn','customers.erased','customers.exported','customers.imported','customers.note_added',
+   'customers.note_deleted','customers.note_edited','customers.tag_created','customers.tag_deleted','customers.tag_renamed','customers.tagged'] THEN
+  RAISE EXCEPTION '0156 privacy_audit_insert baseline drift (action set is not the 0152 set)'; END IF;
 END $$;
 
 -- ---------------------------------------------------------------------------------------
@@ -58,7 +62,8 @@ CREATE TABLE customers.historical_orders (
  total_minor bigint NOT NULL CHECK (total_minor BETWEEN 0 AND 1000000000000),
  currency text NOT NULL CHECK (currency='TWD'),
  items_summary text NOT NULL CHECK (char_length(items_summary)<=500),
- city text CHECK (char_length(city) BETWEEN 1 AND 20),
+ -- Backstop of the importer's allowlist (internal/twcity): only Taiwan's 22 cities / counties, canonical spelling (臺), or NULL.
+ city text CHECK (city IN ('臺北市','新北市','桃園市','臺中市','臺南市','高雄市','基隆市','新竹市','嘉義市','新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣','宜蘭縣','花蓮縣','臺東縣','澎湖縣','金門縣','連江縣')),
  imported_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY (tenant_id,store_id,id),
@@ -232,7 +237,7 @@ BEGIN
 END $$;
 
 -- export_import_profile: the 0152 body in full plus 'historical_orders' (W5-03B): the customer's archive, newest first, same item shape
--- as the reader. The merchant already holds this data (it imported it); the export route needs customers:privacy, so nothing widens.
+-- as the reader, newest 100 only, with historical_orders_total. The merchant already holds this data (it imported it); the export route needs customers:privacy, so nothing widens.
 CREATE OR REPLACE FUNCTION customers.export_import_profile(p_hash bytea,p_store uuid,p_customer uuid)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record; v jsonb;
@@ -244,10 +249,14 @@ BEGIN
    'updated_at',to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
    'external_ids',coalesce((SELECT jsonb_agg(e.external_id ORDER BY e.external_id) FROM migrationimport.external_ids e
      WHERE e.tenant_id=p.tenant_id AND e.store_id=p.store_id AND e.kind='customers' AND e.internal_id=p.owner_id),'[]'::jsonb),
+   -- Bounded (P2-4 of the review): the newest 100 archive rows plus the total, so 2000 rows of 500 characters can never push the export
+   -- over its 1 MiB cap. The merchant still sees every row through the reader; a data-subject request for the rest is answered by the merchant.
    'historical_orders',coalesce((SELECT jsonb_agg(jsonb_build_object('order_id',h.external_order_id,
      'ordered_at',to_char(h.ordered_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),'status',h.status,'total_minor',h.total_minor,
      'currency',h.currency,'items_summary',h.items_summary,'city',h.city) ORDER BY h.ordered_at DESC,h.id DESC)
-     FROM customers.historical_orders h WHERE h.tenant_id=p.tenant_id AND h.store_id=p.store_id AND h.owner_id=p.owner_id),'[]'::jsonb))
+     FROM (SELECT x.* FROM customers.historical_orders x WHERE x.tenant_id=p.tenant_id AND x.store_id=p.store_id AND x.owner_id=p.owner_id
+       ORDER BY x.ordered_at DESC,x.id DESC LIMIT 100) h),'[]'::jsonb),
+   'historical_orders_total',(SELECT count(*) FROM customers.historical_orders t WHERE t.tenant_id=p.tenant_id AND t.store_id=p.store_id AND t.owner_id=p.owner_id))
   INTO v FROM customers.import_profiles p WHERE p.tenant_id=a.tenant_id AND p.store_id=p_store AND p.owner_id=p_customer;
  PERFORM customers.tn_fence(p_hash,p_store,'customers:privacy',a.tenant_id,a.principal_id,a.authz_revision);
  RETURN v;
@@ -275,7 +284,7 @@ COMMENT ON COLUMN customers.historical_orders.status IS 'internal/migrationimpor
 COMMENT ON COLUMN customers.historical_orders.total_minor IS 'internal/migrationimport: display total in TWD minor units (whole NT$ x 100); NOT revenue: no finance, report or attribution object may sum it (I05).';
 COMMENT ON COLUMN customers.historical_orders.currency IS 'internal/migrationimport: always TWD in v1.';
 COMMENT ON COLUMN customers.historical_orders.items_summary IS 'internal/migrationimport: item names x quantities joined into one line (<= 500 chars); no SKU link.';
-COMMENT ON COLUMN customers.historical_orders.city IS 'internal/migrationimport: city/county of the delivery address only (<= 20 chars, no digits); the full address is never imported (OH-OPEN-1).';
+COMMENT ON COLUMN customers.historical_orders.city IS 'internal/migrationimport: one of Taiwan's 22 cities / counties (canonical 臺 spelling) or NULL; CHECK-enforced, so a street, name or email can never be stored; the full address is never imported (OH-OPEN-1).';
 COMMENT ON COLUMN customers.historical_orders.imported_at IS 'internal/migrationimport: first import time of this order.';
 COMMENT ON COLUMN customers.historical_orders.updated_at IS 'internal/migrationimport: last time a re-import changed this order.';
 COMMENT ON COLUMN customers.historical_orders.tenant_id IS 'internal/customers: tenant scope (FORCE RLS GUC).';
@@ -285,4 +294,4 @@ COMMENT ON FUNCTION migrationimport.import_orders(bytea,uuid,jsonb) IS 'internal
 COMMENT ON FUNCTION customers.read_historical_orders(bytea,uuid,uuid,integer,timestamptz,uuid) IS 'internal/customers (customers:read): {total, items} of one customer''s historical orders newest first (keyset ordered_at,id; limit 1..101); PT404 for an unknown, erased or other-store customer.';
 COMMENT ON FUNCTION migrationimport.record_batch(bytea,uuid,text,bytea,jsonb,integer,integer,integer,integer,jsonb) IS 'internal/migrationimport (customers:privacy): records the committed import batch of kind customers or orders (UNIQUE per file hash), prunes this store''s batches older than 90 days (<=50) and audits customers.imported / customers.orders_imported; returns the batch id.';
 COMMENT ON FUNCTION customers.erase_import_profile(uuid,uuid,uuid) IS 'internal/customers erasure-only (called by apply_erasure, EXECUTE nobody): writes the salted tombstone digest of the owner''s customer external ids, then deletes the import profile, the external id and (W5-03B) the owner''s historical orders, and scrubs that external id from retained batch results.';
-COMMENT ON FUNCTION customers.export_import_profile(bytea,uuid,uuid) IS 'internal/customers (customers:privacy): the imported profile (name, phone, email, source, timestamps, external ids) and (W5-03B) historical orders of one customer for the merchant privacy export, or NULL when it has none.';
+COMMENT ON FUNCTION customers.export_import_profile(bytea,uuid,uuid) IS 'internal/customers (customers:privacy): the imported profile (name, phone, email, source, timestamps, external ids) and (W5-03B) the newest 100 historical orders plus their total of one customer for the merchant privacy export, or NULL when it has none.';
