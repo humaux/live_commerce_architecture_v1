@@ -1,3 +1,6 @@
+// Purpose: Select isolated admin browser suites without sharing authority fixtures.
+// Depends on: @playwright/test, LC_BROWSER_SUITE and LC_BROWSER_ENGINE.
+// Used by: tests/foundation/browser_* harnesses through scripts/dev/test-local.sh.
 import { defineConfig, devices } from "@playwright/test";
 
 // These suites have deliberately different server/authority fixtures. Never
@@ -18,6 +21,8 @@ const suites: Record<string, string[]> = {
   "studio-ui": ["studio-ui.spec.ts"],
   // KC16: admin + storefront Next, Go and PG are started by browser_live_claims_test.go.
   "live-claims": ["claims-ui.spec.ts"],
+  // LC-U1: real signed session/BFF; Console upstream and receipts explicitly MOCK.
+  "live-console": ["live-console.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
   "store-design": ["design.spec.ts"],
 };
