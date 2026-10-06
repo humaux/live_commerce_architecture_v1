@@ -1,5 +1,7 @@
 # Unit W4-01B — PAYUNi NotifyURL 接收器（后端，钱路）
 
+**已合并（651c5744, 0136）但从未部署；owner 2026-10-06 取消 PAYUNi → 保持关闭（`COMMERCE_PAYUNI_NOTIFY_ENABLED` 不设），由 `pay-remove-payuni.md` 删除。**
+
 状态：DRAFT（起草人 Claude Opus 子代理 2026-10-06，待 integrator 审核/冻结）。Base `r3/integration` `bb71f966`。
 迁移号占位 **0136**。覆盖 IMPLEMENTATION-PLAN W4-01B 的「补上 NotifyURL（B4）」部分（拆成独立单元：激活 W4-02B 依赖它证明回调可达）。
 worktree `.worktrees/w4-01b-payuni-notify`（branch `unit/w4-01b-payuni-notify`）。
