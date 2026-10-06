@@ -52,9 +52,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0116 (claim-direct-checkout sold-out read, merged late into its free slot) adds one: 64 -> 65.
 	// 0129 (LC-B6 order for a buyer) adds one more: 65 -> 66.
 	// 0136 (W4-01B PAYUNi notify receiver) adds one more: 66 -> 67.
-	// 0147 (W6-02B reports) adds one more: 67 -> 68.
-	if len(r2) != 68 {
-		t.Fatalf("R2 migration set = %d files %v, want 68", len(r2), r2)
+	// 0143 (OPS-01B platform operator) and 0147 (W6-02B reports) add one each: 67 -> 69.
+	if len(r2) != 69 {
+		t.Fatalf("R2 migration set = %d files %v, want 69", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

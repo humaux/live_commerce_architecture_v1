@@ -1,0 +1,46 @@
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (5.49s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.18s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.59s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.11s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (2.95s)
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+--- PASS: TestPlatformOperatorOP08SchemaAndExecuteMatrix (0.02s)
+=== RUN   TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns
+--- PASS: TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns (0.43s)
+=== RUN   TestPlatformOperatorOP10AutoSendQueuedBeforeSuspensionIsBlocked
+--- PASS: TestPlatformOperatorOP10AutoSendQueuedBeforeSuspensionIsBlocked (9.06s)
+=== RUN   TestPlatformOperatorOP04bStripeRecordsForSuspendedStore
+--- PASS: TestPlatformOperatorOP04bStripeRecordsForSuspendedStore (6.39s)
+=== RUN   TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags
+--- PASS: TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags (0.03s)
+=== RUN   TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected
+--- PASS: TestPlatformOperatorOP01MerchantStopsAndSiblingUnaffected (0.25s)
+=== RUN   TestPlatformOperatorOP06IdempotentAndInputBoundaries
+--- PASS: TestPlatformOperatorOP06IdempotentAndInputBoundaries (0.17s)
+=== RUN   TestPlatformOperatorOP07AuditAppendOnly
+--- PASS: TestPlatformOperatorOP07AuditAppendOnly (0.18s)
+=== RUN   TestPlatformOperatorOP02BuyerSurface
+--- PASS: TestPlatformOperatorOP02BuyerSurface (0.28s)
+=== RUN   TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned
+--- PASS: TestPlatformOperatorOP03ClaimRecordedNoReplyPlanned (8.20s)
+=== RUN   TestPlatformOperatorOP03MailNotClaimedForSuspendedStore
+--- PASS: TestPlatformOperatorOP03MailNotClaimedForSuspendedStore (0.10s)
+=== RUN   TestPlatformOperatorOP09CLIProcess
+--- PASS: TestPlatformOperatorOP09CLIProcess (3.68s)
+PASS
+ok  	livecommerce/tests/foundation	37.145s
+test-focused: top-level PASS=13 FAIL=0 SKIP=0 exit=0
+exit=0
