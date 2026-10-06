@@ -65,7 +65,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
         <div><h2>{data.session.title}</h2><ol className="live-phases" data-testid="live-phase" data-phase={data.session.lifecycle}>
           {([['draft', c.before], ['live', c.during], ['ended', c.after]] as const).map(([phase, label]) => <li key={phase} aria-current={data.session.lifecycle === phase || (phase === "ended" && data.session.lifecycle === "archived") ? "step" : undefined}>{label}</li>)}
         </ol></div>
-        {action && <button type="button" className="primary" data-testid="live-primary-action" disabled={!manage || command.blocked} aria-describedby={!manage ? "live-management-reason" : undefined} onClick={() => void primary()}>{command.busy ? c.pending : c[action]}</button>}
+        {action && !copying && <button type="button" className="primary" data-testid="live-primary-action" disabled={!manage || command.blocked} aria-describedby={!manage ? "live-management-reason" : undefined} onClick={() => void primary()}>{command.busy ? c.pending : c[action]}</button>}
         {!manage && <p id="live-management-reason">{c.manageRequired}</p>}
       </div>
       <dl className="live-status-bar">
@@ -82,7 +82,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
       {copyConflict && <p role="status">{c.copiedConflicts} <a href={`/${locale}/studio/claims?store=${store.id}&scene=${copyConflict}`}>{c.configure}</a></p>}
       {copying && <form className="live-copy-form" onSubmit={(event) => { event.preventDefault(); void submitCopy(); }}>
         <label>{c.name}<input data-testid="live-copy-title" maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label>
-        <button type="submit" data-testid="live-copy-confirm" disabled={command.blocked || !title.trim()}>{c.confirmCopy}</button>
+        <button type="submit" className="primary" data-testid="live-copy-confirm" disabled={command.blocked || !title.trim()}>{c.confirmCopy}</button>
         <button type="button" disabled={command.busy} onClick={() => setCopying(false)}>{c.cancel}</button>
       </form>}
       <div className="live-console-columns">

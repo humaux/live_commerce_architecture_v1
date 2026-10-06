@@ -178,6 +178,8 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await phase(page, "ended");
     await page.getByTestId("live-primary-action").click();
     await page.getByTestId("live-copy-title").fill(`LC-U1 copied ${name}`);
+    await expect(page.getByTestId("live-primary-action")).toHaveCount(0);
+    await expect(page.getByTestId("live-console").locator("button.primary")).toHaveCount(1);
     await page.getByTestId("live-copy-confirm").click();
     await expect(page).not.toHaveURL(route(locale, scene));
     const copied = new URL(page.url()).searchParams.get("scene");
