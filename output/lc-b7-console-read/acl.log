@@ -1,0 +1,10 @@
+=== RUN   TestLiveConsoleLCN17DefinerACL
+=== RUN   TestLiveConsoleLCN17DefinerACL/claims.console_session_facts(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleLCN17DefinerACL/identity.read_live_console_sales(bytea,uuid,uuid)
+--- PASS: TestLiveConsoleLCN17DefinerACL (1.26s)
+    --- PASS: TestLiveConsoleLCN17DefinerACL/claims.console_session_facts(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleLCN17DefinerACL/identity.read_live_console_sales(bytea,uuid,uuid) (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	3.013s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+exit=0

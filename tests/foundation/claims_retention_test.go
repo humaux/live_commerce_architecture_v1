@@ -3863,12 +3863,18 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	b6Sum := fmt.Sprintf("%x", sha256.Sum256(b6Body))
+	crmBody, err := os.ReadFile("../../migrations/0144_checkout_reminders.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	crmSum := fmt.Sprintf("%x", sha256.Sum256(crmBody))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)        // hold 0071 back
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum)       // hold 0127 back (its 55000 precondition needs 0071)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0129_lc_b6_order_for_buyer.sql',$1)`, b6Sum) // hold 0129 back (reads claims.bundles.purged_at from 0071)
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0144_checkout_reminders.sql',$1)`, crmSum)   // hold 0144 back (reads claims.bundles.purged_at from 0071)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071, 0127 and 0129: %v", err)
+		t.Fatalf("apply every migration but 0071, 0127, 0129 and 0144: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -3945,10 +3951,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
 	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
-	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql')`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql')`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 + 0127 + 0129 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 + 0129 + 0144 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {

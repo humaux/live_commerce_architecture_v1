@@ -20,6 +20,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/command"
+	"livecommerce/internal/csvguard"
 	"livecommerce/internal/platform"
 )
 
@@ -84,19 +85,8 @@ func writeCSVLine(b *bytes.Buffer, cells []string) {
 	b.WriteString("\r\n")
 }
 
-// guardFormula prefixes a cell a spreadsheet could execute (first non-space character = + - @, or a first
-// character of TAB, CR or LF) with an apostrophe (contract §5.3, A1). Numeric and phone cells never start
-// with these characters after formatting, so they pass unchanged.
-func guardFormula(cell string) string {
-	if cell == "" {
-		return cell
-	}
-	if t := strings.TrimLeft(cell, " \t\r\n"); cell[0] == '\t' || cell[0] == '\r' || cell[0] == '\n' ||
-		(t != "" && strings.IndexByte("=+-@", t[0]) >= 0) {
-		return "'" + cell
-	}
-	return cell
-}
+// guardFormula is the shared formula guard (internal/csvguard), kept under its old name for the callers and tests of this package.
+var guardFormula = csvguard.Cell
 
 // exportPhone: digits only; a leading +886 becomes 0 (Taiwan national form); any other country code keeps
 // its digits without "+". Export formatting only: the frozen destination value is untouched.

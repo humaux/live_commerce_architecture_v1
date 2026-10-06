@@ -1,0 +1,8 @@
+=== RUN   TestLiveConsoleLCN03InventoryLiveAdjustBounds
+    live_console_read_test.go:408: bounded +5: 403 map[code:forbidden details:map[] message:Operation not permitted. request_id:a8106b0dd8a76f15f6f7af7cc4ffa71d retryable:false]
+--- FAIL: TestLiveConsoleLCN03InventoryLiveAdjustBounds (1.53s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.248s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1
