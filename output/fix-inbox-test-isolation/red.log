@@ -1,0 +1,19 @@
+red: unfixed code (161d5d34) + temp TestZZFloodSharedStoreA1 (300 page-conversations on shared storeA1, since removed) -> LCN10 and CrossStore fail "missing convA1"; list ids visibly ordered id DESC
+=== RUN   TestZZFloodSharedStoreA1
+--- PASS: TestZZFloodSharedStoreA1 (3.21s)
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee
+    live_console_inbox_test.go:438: no rows in result set
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404
+--- FAIL: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink (0.05s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit (0.02s)
+    --- FAIL: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee (0.02s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404 (0.01s)
+=== RUN   TestLiveConsoleInboxCrossStoreIsolation
+    live_console_inbox_test.go:534: storeA1 reader missing convA1=46407642-1551-4d65-bda2-5e6be3a45f23: [ff8daa16-5d8c-4d4e-91e9-c9d243df4ba5 ff6e7de3-23d8-4b34-9e13-a330eea51b4e ff404788-f213-4b44-8298-d3e926cebf8d fef62f48-9012-4697-b224-04de0bbc1f0f fed8047c-8359-4d9c-bd7c-0b82900da647 fd536a67-c7d1-44bd-85de-b4ca7ffc181b fce63f66-577b-41cc-a68d-00a89294fdd7 fca7ff12-de5f-43e7-af82-bef904b06bed faf3f643-9e2b-45d9-bf60-5c7fd896b74a f76e4e9a-156c-4ad2-9777-182560cf0922 f6ee54d1-c8f1-415f-a520-a5d72502f0c6 f6ca0e85-e933-4d74-8c21-a95cf624de9f f695e506-908b-4871-aea1-f752715196d7 f6038f7b-9d44-4779-9fb1-86b64bec3399 f4b7ffb7-a16b-4cab-b60c-e12098c7f1ed f36d314c-e6f8-401e-8d25-878426015083 f365011b-154b-4901-ba6e-cadfad2c1d22 efeb41e2-7089-46a9-bf5e-31f0f82e6d67 ed9adfd6-1334-40d9-8196-597e5367b983 ed43d0cc-ea1b-46be-85bf-3739ed6f3bad ed1353ab-aa2d-4e95-9a21-330516e88ae0 eb8177ce-bfe4-4511-88b9-16473f4de782 eb681959-1513-4cb3-98e2-118d310095d5 e96eb7ed-b60e-419e-8572-6899bbbc2ac5 e8d04cd8-0b7b-4244-acb1-55388ba13be0 e86b861c-5e07-4a3a-bc7a-07f37d9ce5c3 e80fc73d-578a-4d86-bb71-4c78fec0bf1e e6d62089-1eda-4223-8bdb-751def1dd918 e6b72996-ccbf-4963-94b6-ef25b3558ab7 e69dcd23-609d-4f6e-8174-78862d3c96c9 e58d88c8-e927-459a-8cfb-58e62cef2597 e47bdd18-1c91-4a23-853d-f203886aa086 e4151659-4918-48f5-9d84-f1cd12e078ec e3453b80-57fd-4bc3-a222-ae3efff067f7 e298a496-cf9d-4c40-9654-da54bfdfb068 e1ed8e57-3973-4a88-9c56-d2d1b5172307 e111ec05-7011-4ebf-852a-b0ddb8279629 e0d59e20-62c3-4a4f-a73d-84b1e32c1820 e072ec4a-011c-46ed-86df-2c61d8c30d29 e0536a07-08c5-480c-942e-2fdd7aecfdfb e03b8d6f-5d6d-456c-aa5f-f2b19c2276a1 e01b602c-0c03-4699-a766-d8be8bd9633d dfdda6b0-9d4e-45b4-9806-306d4d8ba83e df3e8d06-1508-4d30-b588-bb1c9ca1bc43 df1b0629-634f-41c9-a349-30fcd1e1abfa dc3001ef-e0e5-47ad-a8ee-6b73639e632b dc11c6a0-cd95-494d-b273-85b2cfd4696b da5f49fb-6cd0-449e-9a92-6e16c3004fa8 d9d73182-8084-46c9-a800-db58c682088d d8dd792c-c2e3-4f0d-b54e-1a6d6ad10b78]
+--- FAIL: TestLiveConsoleInboxCrossStoreIsolation (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	5.959s
+FAIL
+test-focused: top-level PASS=1 FAIL=2 SKIP=0 exit=1
