@@ -1,0 +1,82 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.60s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.22s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.24s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.11s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.09s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.12s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.18s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+    operations_queue_test.go:398: cancel of a READY pause: 200 {"operation_id":"ffd10135-8a92-4521-830f-6a933cd93aea","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:401: a refused pause cancel changed the row to CANCELLED gen=1
+    operations_queue_test.go:404: READY pause DTO cancel = false "operation_closed", want unavailable protective_operation
+--- FAIL: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.15s)
+=== RUN   TestOperationsQueueProtectiveOperationsCannotBeCancelled
+    operations_queue_test.go:426: cancel payment.pause/READY: 200 {"operation_id":"5b375143-038b-4691-9122-91388edf93ec","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved payment.pause/READY to CANCELLED
+    operations_queue_test.go:426: cancel payment.pause/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"ec201f0770b3370f17779ada6032322c","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel payment.pause/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"f128fc61e6e63009b925e7699d9f6207","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel campaign.pause_all/READY: 200 {"operation_id":"3ef78ff1-c426-4033-928c-94a954da624e","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved campaign.pause_all/READY to CANCELLED
+    operations_queue_test.go:426: cancel campaign.pause_all/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"3816d86c079db50942dc2e51d9e5a308","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel campaign.pause_all/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"376b845cc3db623d51c10b0fed2e3ba0","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel egress.stop/READY: 200 {"operation_id":"26e7b680-98c8-48dc-b155-206c0b279094","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved egress.stop/READY to CANCELLED
+    operations_queue_test.go:426: cancel egress.stop/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"82d59a76a2e38c68c508fb0041b89755","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel egress.stop/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"0aff39cccb89203f08077a5470fc3e05","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel meta.ads.disable/READY: 200 {"operation_id":"4a28a873-bb3c-44b4-9690-9968a5d0368c","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved meta.ads.disable/READY to CANCELLED
+    operations_queue_test.go:426: cancel meta.ads.disable/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"30c9470e5938e4c5192b9d6dcb80274e","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel meta.ads.disable/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"2874a25311774212a4bb519ae2d06b02","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel stripe.revoke/READY: 200 {"operation_id":"cf4b3bf8-6b6a-42e9-b027-31534ebd643d","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved stripe.revoke/READY to CANCELLED
+    operations_queue_test.go:426: cancel stripe.revoke/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"a0a34cde584913f459faa83b81fcdfbf","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel stripe.revoke/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"2680055bb001f6cdbee4698fe59be06d","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel meta.unsubscribe/READY: 200 {"operation_id":"0dae72e1-6748-43de-9653-451730c3fbbd","state":"CANCELLED","attempts":1}
+        , want 409 protective_operation
+    operations_queue_test.go:429: refused cancel moved meta.unsubscribe/READY to CANCELLED
+    operations_queue_test.go:426: cancel meta.unsubscribe/UNKNOWN: 409 {"code":"already_dispatched","message":"This operation may already have reached the provider and cannot be cancelled.","request_id":"53bb2e7422be269d888d3c55701a05df","retryable":false,"details":{}}
+        , want 409 protective_operation
+    operations_queue_test.go:426: cancel meta.unsubscribe/FAILED_FINAL: 409 {"code":"operation_closed","message":"This operation is already finished.","request_id":"9c2bf120b9635298c716bd2c4165f6ad","retryable":false,"details":{}}
+        , want 409 protective_operation
+--- FAIL: TestOperationsQueueProtectiveOperationsCannotBeCancelled (0.31s)
+=== RUN   TestOperationsQueueQueryHardCap
+--- PASS: TestOperationsQueueQueryHardCap (0.06s)
+=== RUN   TestOperationsQueueSQLDTOHasExactKeys
+--- PASS: TestOperationsQueueSQLDTOHasExactKeys (0.05s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.33s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.699s
+FAIL
+test-focused: top-level PASS=14 FAIL=2 SKIP=0 exit=1
