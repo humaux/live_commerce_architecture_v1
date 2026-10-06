@@ -184,7 +184,11 @@ func TestCatalogCoreCC01PopulatedUpgrade(t *testing.T) {
 	if n != len(productIDs) {
 		t.Fatalf("products after the upgrade: %d want %d", n, len(productIDs))
 	}
-	newCols := []string{"slug", "seo_title", "seo_description", "options"}
+	// image_axis is added later in the same Apply by 0149 (product-media-v2); it must stay NULL on existing products.
+	newCols := []string{"slug", "seo_title", "seo_description", "options", "image_axis"}
+	if n := countRows(t, owner, `SELECT count(*) FROM catalog.products WHERE image_axis IS NOT NULL`); n != 0 {
+		t.Errorf("%d upgraded products gained an image_axis; 0149 must leave existing products on the default axis", n)
+	}
 	if got := digest("catalog.products", newCols...); got != productsBefore {
 		t.Error("0086 changed populated catalog.products columns it does not own")
 	}

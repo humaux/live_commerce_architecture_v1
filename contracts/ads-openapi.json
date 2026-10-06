@@ -1051,7 +1051,7 @@
     "/v1/buyer/feeds/meta.csv": {
       "get": {
         "operationId": "adsMetaProductFeed",
-        "description": "Public Meta catalog feed of one verified storefront host (meta-ads-v1 §7, ads-capi C6; internal/attribution FeedHandler via cmd/api mountFeed on the buyer runtime pool). Called only by the storefront BFF (apps/storefront/app/feeds/meta.csv/route.ts): the store is resolved from X-Commerce-Storefront-Origin, never from a query or store parameter; any query is 422. Columns F17: id,title,description,availability,condition,price,link,image_link,brand.",
+        "description": "Public Meta catalog feed of one verified storefront host (meta-ads-v1 §7, ads-capi C6; internal/attribution FeedHandler via cmd/api mountFeed on the buyer runtime pool). Called only by the storefront BFF (apps/storefront/app/feeds/meta.csv/route.ts): the store is resolved from X-Commerce-Storefront-Origin, never from a query or store parameter; any query is 422. Columns F17 + product-media-v2 (catalog-inventory-v1.md): id,title,description,availability,condition,price,link,image_link,additional_image_link,brand; image_link = the variant's option-value image else main image 0, additional_image_link = the other main images (comma-joined).",
         "security": [],
         "parameters": [
           {

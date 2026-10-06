@@ -48,7 +48,7 @@ func bcatRead(t *testing.T, h bhHarness, query string) bcatPage {
 		len(page) != 3 || page["items"] == nil || page["next_cursor"] == nil || page["store_name"] == nil || out.Items == nil {
 		t.Fatal("catalog page is not an exact non-null page projection")
 	}
-	want := []string{"currency", "description", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}
+	want := []string{"currency", "description", "image_id", "images", "name", "price_minor", "product_id", "sku_code", "sku_id"}
 	for _, item := range raw.Items {
 		keys := make([]string, 0, len(item))
 		for key := range item {

@@ -45,7 +45,7 @@ func TestWriteFeedEscaping(t *testing.T) {
 	if len(got) != 4 || strings.Join(got[0], ",") != strings.Join(feedColumns, ",") {
 		t.Fatalf("shape = %v", got)
 	}
-	want := []string{"a", `He said "hi", ok`, "line1\nline2, more", "in stock", "new", "1234.00 TWD", "https://s.example.test/products/p", "", "Shop, Inc"}
+	want := []string{"a", `He said "hi", ok`, "line1\nline2, more", "in stock", "new", "1234.00 TWD", "https://s.example.test/products/p", "", "", "Shop, Inc"}
 	for i := range want {
 		if got[1][i] != want[i] {
 			t.Errorf("row 1 col %d = %q want %q", i, got[1][i], want[i])
@@ -86,16 +86,22 @@ func TestFeedHandlerRejectsBeforeSQL(t *testing.T) {
 	}
 }
 
-func TestImageLink(t *testing.T) {
-	first := map[string]string{"p1": "i1"}
-	for link, want := range map[string]string{
-		"https://s.example.test/products/p1":     "https://s.example.test/media/p/p1/i1",
-		"https://s.example.test/products/p2":     "", // product without a photo
-		"https://other.example.test/products/p1": "", // link of another origin is never rewritten
-		"p1":                                     "",
+func TestImageLinks(t *testing.T) {
+	const origin = "https://s.example.test"
+	main := map[string][]string{"p1": {"m0", "m1", "m2", "m3"}, "p2": nil, "p3": {"only"}}
+	u := func(p, i string) string { return origin + "/media/p/" + p + "/" + i }
+	for name, c := range map[string]struct{ link, variant, image, extra string }{
+		"cover + three additional":           {origin + "/products/p1", "", u("p1", "m0"), u("p1", "m1") + "," + u("p1", "m2") + "," + u("p1", "m3")},
+		"variant image first, all main more": {origin + "/products/p1", "v1", u("p1", "v1"), u("p1", "m0") + "," + u("p1", "m1") + "," + u("p1", "m2") + "," + u("p1", "m3")},
+		"single main":                        {origin + "/products/p3", "", u("p3", "only"), ""},
+		"variant image without main":         {origin + "/products/p2", "v9", u("p2", "v9"), ""},
+		"product without a photo":            {origin + "/products/p2", "", "", ""},
+		"link of another origin":             {"https://other.example.test/products/p1", "", "", ""},
+		"malformed link":                     {"p1", "", "", ""},
 	} {
-		if got := imageLink("https://s.example.test", link, first); got != want {
-			t.Errorf("imageLink(%q) = %q want %q", link, got, want)
+		image, extra := imageLinks(origin, c.link, c.variant, main)
+		if image != c.image || extra != c.extra {
+			t.Errorf("%s: imageLinks = %q, %q want %q, %q", name, image, extra, c.image, c.extra)
 		}
 	}
 }
