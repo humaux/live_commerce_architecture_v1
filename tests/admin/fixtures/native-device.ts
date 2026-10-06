@@ -16,7 +16,11 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     diagnostics = await open(`${profile}.log`, "w");
     child = spawn(chromium.executablePath(), [
       `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
+      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
+      // Ubuntu 24.04 runners block unprivileged user namespaces (AppArmor), so Chromium's sandbox aborts startup before CDP opens
+      // (trunk CI 37457009669 → green 37468351592 with this flag). Playwright's own launches pass it too; the page is our local admin.
+      ...(process.platform === "linux" ? ["--no-sandbox"] : []),
+      "about:blank",
     ], { stdio: ["ignore", diagnostics.fd, diagnostics.fd] });
   } catch (error) {
     await diagnostics?.close().catch(() => {});
