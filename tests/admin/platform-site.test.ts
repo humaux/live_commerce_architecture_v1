@@ -1,3 +1,6 @@
+// Purpose: Checks company configuration, public host routing and localized disclosures.
+// Depends on: node:test, node:assert/strict, ../../apps/admin/lib/company.ts, ../../apps/admin/lib/platform-copy.ts, ../../apps/admin/lib/platform-legal.ts, node:fs, ../../apps/admin/lib/company.ts, ../../apps/admin/lib/meta-connect-copy.ts, ./platform-messaging-copy.fixture.mjs
+// Used by: scripts/dev/test-local.sh, scripts/dev/test-node.sh
 // PS1/PS4: platform identity/configuration and host routing; no provider calls.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -24,6 +27,18 @@ const env = {
   LC_ADMIN_HOST: "admin.example.invalid",
   LC_COMPANY_CONTACT_EMAIL: "contact@example.invalid",
 };
+test("ADM10 operator sentence is localized while product and company facts stay authoritative", () => {
+  assert.equal(typeof platformCompany.operatorSentence, "function");
+  assert.equal(
+    platformCompany.operatorSentence("zh-TW"),
+    `${company.productName} 由 ${company.legalChinese} 營運`,
+  );
+  assert.equal(
+    platformCompany.operatorSentence("zh-CN"),
+    `${company.productName} 由 ${company.legalChinese} 运营`,
+  );
+  assert.equal(platformCompany.operatorSentence("en"), operatedBy);
+});
 test("PS review: actual Host matching normalizes case, port and a terminal DNS dot, never forwarded authority", () => {
   assert.equal(typeof platformCompany.requestHostname, "function");
   for (const value of [

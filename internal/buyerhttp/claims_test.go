@@ -1,3 +1,6 @@
+// Purpose: closed B1/B2 projections, strict input and token redaction tests.
+// Depends on: buyerhttp handlers, claims DTOs and synthetic requests.
+// Used by: Go unit gates and claim direct checkout interface regression.
 // claims_test.go covers the B1–B2 transport rules that hold before the buyer transaction
 // (contract live-keyword-claims-v1 §7.2, §5.6) and the frozen projections. Real-PG
 // preview/redeem behaviour is KC14 (test_worker) and the KC16 browser chain.
@@ -128,7 +131,7 @@ func TestClaimProjectionsAreExact(t *testing.T) {
 	preview, err := json.Marshal(projectClaimPreview(claims.Preview{BundleVersion: 2, Bound: true, ExpiresAt: expires,
 		Lines: []claims.PreviewLine{{Keyword: "A1", SKUID: "s1", SKUCode: "CODE", ProductName: "Name", Currency: "TWD",
 			UnitPriceMinor: 1200, Quantity: 3, Pending: true, Available: false}}}))
-	want := `{"bundle_version":2,"bound":true,"expires_at":"2026-09-28T04:00:00.000123Z","lines":[{"keyword":"A1","sku_id":"s1","sku_code":"CODE","product_name":"Name","currency":"TWD","unit_price_minor":1200,"quantity":3,"pending":true,"available":false}]}`
+	want := `{"bundle_version":2,"bound":true,"expires_at":"2026-09-28T04:00:00.000123Z","lines":[{"keyword":"A1","sku_id":"s1","sku_code":"CODE","product_name":"Name","currency":"TWD","unit_price_minor":1200,"quantity":3,"pending":true,"available":false,"sold_out":false}]}`
 	if err != nil || string(preview) != want {
 		t.Fatalf("B1 projection %s", preview)
 	}
@@ -142,5 +145,18 @@ func TestClaimProjectionsAreExact(t *testing.T) {
 	empty, _ := json.Marshal(projectClaimRedeem(claims.Redeemed{}))
 	if !strings.Contains(string(empty), `"applied":[],"skipped":[]`) {
 		t.Fatalf("empty lists must stay arrays: %s", empty)
+	}
+}
+
+// TestClaimSoldOutProjectionTrue checks the positive inventory hint and closed skipped reason.
+func TestClaimSoldOutProjectionTrue(t *testing.T) {
+	line := claims.PreviewLine{Keyword: "A1", SKUID: "s1", Quantity: 2, Available: true, SoldOut: true}
+	pv := projectClaimPreview(claims.Preview{Lines: []claims.PreviewLine{line}})
+	if len(pv.Lines) != 1 || !pv.Lines[0].SoldOut || !pv.Lines[0].Available {
+		t.Fatalf("positive sold-out projection: %+v", pv)
+	}
+	out := projectClaimRedeem(claims.Redeemed{Skipped: []claims.Skipped{{SKUID: "s1", Reason: "sold_out"}}})
+	if len(out.Skipped) != 1 || out.Skipped[0].Reason != "sold_out" {
+		t.Fatalf("sold_out skipped reason: %+v", out)
 	}
 }

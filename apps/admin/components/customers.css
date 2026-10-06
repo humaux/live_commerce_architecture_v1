@@ -1,10 +1,18 @@
+/*
+ * Purpose: Styles customer lists, details and billing layouts.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Billing.tsx, apps/admin/components/BillingBanner.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/Customers.tsx, apps/admin/components/Dashboard.tsx, apps/admin/components/Finance.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/Team.tsx, apps/admin/components/TeamInvite.tsx
+ */
 /* Customers, customer detail, finance, billing pages and the standing banner (customers-billing-v1 §5, U1).
    Reuses orders.css / order-actions.css classes and tokens; only what they cannot express lives here:
    the six-column customers table (orders.css fixes widths for five), the search field, the inline sections of the
    customer detail, the finance totals row, and the one banner shape. No new colour tokens. */
 .customers-search { flex: 1 1 280px; max-width: 420px; }
-.customers-search input, .customers-page input[type="date"] { height: 45px; min-height: 45px; box-sizing: border-box; color: var(--ink); font-size: 14px; }
+.customers-search input, .customers-page input[type="date"] { height: var(--ui-target); min-height: var(--ui-target); box-sizing: border-box; color: var(--ink); font-size: 14px; }
 .customers-table > thead > tr > th, .customers-table > tbody > tr > td { width: auto; }
+@media (min-width: 681px) {
+  .customers-table tr > :nth-child(2), .customers-table tr > :nth-child(3), .customers-table tr > :nth-child(4) { text-align: right; }
+}
 .orders-table.customers-table > thead > tr > th:nth-child(n), .orders-table.customers-table > tbody > tr > td:nth-child(n) { width: auto; }
 .orders-table.customers-table > thead > tr > th:first-child, .orders-table.customers-table > tbody > tr > td:first-child { width: 24%; }
 .customers-table td small { display: block; margin-top: 2px; color: var(--orders-muted); font-size: 12px; }
@@ -12,16 +20,18 @@
 .customers-table td:first-child a:hover, .customers-table td:first-child a:focus-visible { color: var(--focus); text-decoration: underline; }
 .customers-table td:first-child .orders-badge { margin-left: 8px; }
 .customers-table td .orders-badge { min-height: 26px; padding: 4px 9px; margin: 2px 6px 2px 0; white-space: nowrap; }
-.customers-back { display: inline-block; margin: 0 0 12px 6px; color: var(--focus); }
+.customers-back { display: inline-flex; align-items: center; min-height: var(--ui-target); margin: 0; color: var(--ui-link); }
 .customers-section { padding: 22px 26px; margin: 0 0 16px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
-.customers-section h2 { font-size: 16px; margin: 0 0 14px; }
+.customers-section h2 { font-size: var(--ui-heading-section); margin: 0 0 14px; }
 .customers-section .orders-facts { margin-bottom: 0; }
-.customers-section button, .customers-section .orders-export { min-height: 40px; padding: 8px 16px; border: 1px solid #cbd6e2; border-radius: 5px; background: #fff; color: var(--ink); font-weight: 600; }
+.customers-section button, .customers-section .orders-export { min-height: var(--ui-target); padding: 8px 16px; border: 1px solid var(--ui-border); border-radius: 5px; background: #fff; color: var(--ink); font-weight: 600; }
 .customers-section button:hover:not(:disabled) { background: #edf3f8; color: var(--ink); }
 .customers-section button.primary { background: var(--teal); border-color: var(--teal); color: #fff; }
-.customers-section button.primary:hover:not(:disabled) { background: #1c6554; color: #fff; }
-.customers-section button.danger { border-color: #975016; color: #975016; }
-.customers-section button.danger.primary { background: #975016; color: #fff; }
+.customers-section button.primary:hover:not(:disabled) { background: var(--ui-primary-hover); color: #fff; }
+.customers-section button.danger { border-color: var(--ui-danger); color: var(--ui-danger); }
+.customers-section button.danger.primary { background: var(--ui-danger); color: #fff; }
+.customers-section button:disabled { color: var(--ui-muted); background: var(--ui-page); border-color: var(--ui-border); }
+.invite-brand { font-weight: 700; color: var(--ui-primary); margin-bottom: 20px; }
 .customers-consent { display: grid; gap: 12px; margin: 0 0 14px; padding: 0; list-style: none; }
 .customers-consent li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
 .customers-consent li > span:first-child { flex: 1 1 260px; }

@@ -1,7 +1,7 @@
-"use client";
 // Purpose: Product create/edit form — the single writer of the product document (details, media, variants, price, stock, live keyword, visibility) and its save flow.
-// Depends on: lib/use-product-document (load/save of the product document through the admin BFF → Go catalog v2 API); lib/catalog-v2-client (readCollections, readWarehouses); lib/product-document (draft model, money toMinor/fromMinor); ProductDocumentVariants, ProductBulkFill, ProductReadiness; lib/product-editor-copy.
+// Depends on: React/Next; use-product-document and catalog-v2/images clients (admin BFF → Go catalog); product-document draft/money helpers; ProductDocumentVariants, ProductBulkFill, ProductReadiness, useProductEditorLayout and product-editor-copy.
 // Used by: ProductEditor (routes /[locale]/products/new and /[locale]/products/[product]).
+"use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
@@ -33,10 +33,12 @@ import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductPhotoManager } from "./ProductPhoto";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
+import { useProductEditorLayout } from "./useProductEditorLayout";
 function initialDraft(detail: ProductDetail | null): ProductDraft {
   if (!detail) return emptyDraft();
   return draftFromDetail(detail);
 }
+/** Edits one catalog document; save/image writes remain delegated to the existing catalog command clients. */
 export function ProductDocumentForm({
   locale,
   store,
@@ -92,6 +94,13 @@ export function ProductDocumentForm({
     "shipping",
     "seo",
   ] as const;
+  const { editor, fields, feedback, focus, noteSaveAttempt } =
+    useProductEditorLayout(
+      sections,
+      setSection,
+      JSON.stringify([write.message, write.done?.id, write.recoveryBlocked]),
+      write.busy,
+    );
   useEffect(() => {
     if (write.savedDetail) {
       const fresh = draftFromDetail(write.savedDetail);
@@ -168,37 +177,6 @@ export function ProductDocumentForm({
     write.recoveryBlocked,
     onNavigationChange,
   ]);
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        // Navigation focuses its actual section. A short section may intersect
-        // together with the next one; keep the focused destination highlighted
-        // while it is visible rather than letting observer delivery order win.
-        const focused =
-          document.activeElement?.closest<HTMLElement>(".product-section");
-        const bounds = focused?.getBoundingClientRect();
-        if (
-          focused &&
-          bounds &&
-          bounds.bottom > 85 &&
-          bounds.top < innerHeight - 85
-        ) {
-          setSection(focused.id);
-          return;
-        }
-        const seen = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (seen[0]) setSection(seen[0].target.id);
-      },
-      { rootMargin: "-10% 0px -65% 0px" },
-    );
-    sections.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [singleVariant]);
   function change(patch: Partial<ProductDraft>) {
     setDraft((now) => ({ ...now, ...patch }));
     write.setMessage("");
@@ -249,19 +227,11 @@ export function ProductDocumentForm({
         ),
     },
   ];
-  function focus(id: string) {
-    const target = document.getElementById(id);
-    if (target instanceof HTMLDetailsElement) target.open = true;
-    target?.scrollIntoView({ block: "start" });
-    target
-      ?.querySelector<HTMLElement>("input,textarea,button")
-      ?.focus({ preventScroll: true });
-    setSection(id);
-  }
   const save = (publish: boolean, requestedStatus = targetStatus) => {
     if (disabled) return;
     if (axisError) {
       write.setMessage(axisError);
+      noteSaveAttempt();
       return;
     }
     if (
@@ -272,6 +242,7 @@ export function ProductDocumentForm({
     ) {
       write.setMessage(c.chooseWarehouse);
       focus("shipping");
+      noteSaveAttempt();
       return;
     }
     if (
@@ -296,9 +267,11 @@ export function ProductDocumentForm({
         ? requestedStatus
         : undefined,
     );
+    noteSaveAttempt();
   };
   return (
     <form
+      ref={editor}
       className="pe-document"
       data-testid={mode === "create" ? "product-create-form" : "product-form"}
       onSubmit={(e) => {
@@ -323,7 +296,7 @@ export function ProductDocumentForm({
         <section>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
-          <ProductReadiness c={c} items={requirements} focus={focus} />
+          <ProductReadiness c={c} items={requirements} focus={focus} activeSection={section} />
           <p>
             {c.missing}: {requirements.filter((r) => !r.ok).length}
           </p>
@@ -331,7 +304,9 @@ export function ProductDocumentForm({
           <ProductReadiness
             c={c}
             focus={focus}
+            activeSection={section}
             items={[
+              { key: "media", label: c.recommendedImages, ok: photos.length >= 3 },
               { key: "basics", label: c.description, ok: !!draft.description },
               {
                 key: "collections",
@@ -348,7 +323,7 @@ export function ProductDocumentForm({
           />
         </section>
       </aside>
-      <div className="pe-fields">
+      <div className="pe-fields" ref={fields} data-testid="product-fields">
         {detail ? (
           <section id="media" className="product-section pe-media">
             <ProductPhotoManager
@@ -686,77 +661,81 @@ export function ProductDocumentForm({
             </div>
           </details>
         </fieldset>
-        {write.message && (
-          <div
-            className="orders-message"
-            role={write.done ? "status" : "alert"}
-            data-testid="product-message"
-          >
-            <p>{write.message}</p>
-            {write.pending && !write.busy && !write.recoveryBlocked && (
-              <button
-                type="button"
-                data-testid="product-retry"
-                onClick={() => void write.retry()}
+        {(write.message || write.done) && (
+          <div className="pe-feedback" ref={feedback} tabIndex={-1}>
+            {write.message && (
+              <div
+                className="orders-message"
+                role={write.done ? "status" : "alert"}
+                data-testid="product-message"
               >
-                {c.retry}
-              </button>
+                <p>{write.message}</p>
+                {write.pending && !write.busy && !write.recoveryBlocked && (
+                  <button
+                    type="button"
+                    data-testid="product-retry"
+                    onClick={() => void write.retry()}
+                  >
+                    {c.retry}
+                  </button>
+                )}
+              </div>
+            )}
+            {write.done && (
+              <section
+                className="product-section"
+                data-testid="product-save-result"
+              >
+                <h2>{write.done.name}</h2>
+                <p>{c.storeUnpublished}</p>
+                <div className="pe-actions">
+                  <Link href={`/${locale}/settings?store=${store.id}`}>
+                    {c.settings}
+                  </Link>
+                  <Link
+                    href={`/${locale}/products/${write.done.id}?store=${store.id}`}
+                  >
+                    {c.save}
+                  </Link>
+                  <Link href={`/${locale}/products?store=${store.id}`}>
+                    {c.back}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      write.reset();
+                      setDraft(emptyDraft());
+                      setPhotos([]);
+                      photos.forEach((p) => {
+                        if (p.file) URL.revokeObjectURL(p.url);
+                      });
+                      initial.current = JSON.stringify(emptyDraft());
+                    }}
+                  >
+                    {c.another}
+                  </button>
+                  {draft.rows.some((r) => !!r.keyword) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void navigator.clipboard
+                          .writeText(
+                            draft.rows
+                              .filter((r) => r.keyword)
+                              .map((r) => r.keyword)
+                              .join("\n"),
+                          )
+                          .then(() => write.setMessage(c.copied))
+                          .catch(() => write.setMessage(c.failed))
+                      }
+                    >
+                      {c.copyKeyword}
+                    </button>
+                  )}
+                </div>
+              </section>
             )}
           </div>
-        )}
-        {write.done && (
-          <section
-            className="product-section"
-            data-testid="product-save-result"
-          >
-            <h2>{write.done.name}</h2>
-            <p>{c.storeUnpublished}</p>
-            <div className="pe-actions">
-              <Link href={`/${locale}/settings?store=${store.id}`}>
-                {c.settings}
-              </Link>
-              <Link
-                href={`/${locale}/products/${write.done.id}?store=${store.id}`}
-              >
-                {c.save}
-              </Link>
-              <Link href={`/${locale}/products?store=${store.id}`}>
-                {c.back}
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  write.reset();
-                  setDraft(emptyDraft());
-                  setPhotos([]);
-                  photos.forEach((p) => {
-                    if (p.file) URL.revokeObjectURL(p.url);
-                  });
-                  initial.current = JSON.stringify(emptyDraft());
-                }}
-              >
-                {c.another}
-              </button>
-              {draft.rows.some((r) => !!r.keyword) && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    void navigator.clipboard
-                      .writeText(
-                        draft.rows
-                          .filter((r) => r.keyword)
-                          .map((r) => r.keyword)
-                          .join("\n"),
-                      )
-                      .then(() => write.setMessage(c.copied))
-                      .catch(() => write.setMessage(c.failed))
-                  }
-                >
-                  {c.copyKeyword}
-                </button>
-              )}
-            </div>
-          </section>
         )}
       </div>
       <footer className="pe-savebar">

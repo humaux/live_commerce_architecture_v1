@@ -1,0 +1,104 @@
+✔ callback redirect target is always a same-origin /<locale>/settings path whatever the cookies, store, code or error say (2.306792ms)
+✔ the binding cookie: exactly one canonical store uuid, path-scoped to the callback, HttpOnly, Lax, 10 minutes, Secure (0.112459ms)
+✔ callback query: exactly one code and one state within charset/length bounds; Meta's error=… and repeats are not forwarded (0.588333ms)
+✔ the dialog URL the BFF hands the browser is https://www.facebook.com only (0.328959ms)
+✔ callback error mapping only ever yields fixed codes, never an upstream message (0.348625ms)
+✔ selected Page qualifies only a bare Facebook id, never rewrites another Page or external URL (0.553167ms)
+✔ status: not connected, connected with and without Instagram, and every deviation throws (1.614625ms)
+✔ pick state: closed shape, optional Instagram keys come as a pair, id must match (0.253916ms)
+✔ route grammar: only status/states/pick/disconnect; start and callback are dedicated routes; no query; reads carry no body or key (9.662625ms)
+✔ connect cookie, body and callback redirect never carry code/state and only fixed codes (0.284042ms)
+✔ copy: three locales have the same keys and every Go error code has a message (0.093042ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 97.864333
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 154ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1592ms
+  Running TypeScript ...
+  Finished TypeScript in 309ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 86ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserMetaConnectGate
+    browser_meta_connect_gate_test.go:231: meta-connect independent BROWSER gate (Meta = MOCK) passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/meta-connect-gate/20261005T192200.486586000
+--- PASS: TestBrowserMetaConnectGate (19.71s)
+=== RUN   TestBrowserMetaConnect
+    browser_meta_connect_test.go:193: meta-connect BROWSER (Meta = MOCK) passed; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/meta-connect/20261005T192219.179804000
+--- PASS: TestBrowserMetaConnect (6.43s)
+PASS
+ok  	livecommerce/tests/foundation	27.831s
+PASS: meta-connect isolated admin Next, Go API with the metaconnect service, PG; Meta = MOCK (tests/metaconnect/fakegraph + the Facebook Login dialog answered by the browser route); merchant connects Page A + Instagram, a forged state and a missing permission are refused, disconnect and a Facebook-only reconnect, en/zh-TW/zh-CN, desktop + 390px; the independent gate (MCG10) adds the Studio claim-source picker, state replay and hostile-cookie callback refusals; not Meta, provider or deployment acceptance; Meta SANDBOX/LIVE are NOT_RUN.

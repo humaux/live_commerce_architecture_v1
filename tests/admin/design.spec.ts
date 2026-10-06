@@ -1,3 +1,6 @@
+// Purpose: Exercises design draft, media, preview and publication controls through the browser harness.
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/design-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_DESIGN_STORES, LC_BROWSER_BFF_STORE, LC_BROWSER_READONLY_STORE, LC_BROWSER_FOREIGN_STORES
+// Used by: apps/admin/src/features/storefront/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_store_design_test.go
 // SDB admin gate of unit store-design (contracts/storefront-v2.md section B; independent test author, evidence label BROWSER, IdP = MOCK).
 // BFF routes exercised through the UI: GET|PUT /api/stores/{store}/design/draft, POST design/publish|rollback|preview-token,
 // GET design/versions, GET|POST design/media, GET design/media/{id} -> Go /v1/admin/stores/{store}/design/* (integration:read /
@@ -10,6 +13,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { designCopy, fill } from "../../apps/admin/lib/design-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -100,7 +104,7 @@ for (const j of journeys) {
 
     // ---- empty state: nothing saved, never published, the toolbar fits the viewport ----
     await expect(page.getByTestId("design-page")).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1 })).toHaveText(c.title);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[j.locale].design);
     await expect(status).toContainText(c.noDraft);
     await expect(status).toContainText(c.neverPublished);
     for (const id of ["design-save", "design-preview", "design-publish"]) {

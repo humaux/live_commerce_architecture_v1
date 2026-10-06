@@ -1,0 +1,136 @@
+✔ the four constructs render (0.711208ms)
+✔ XSS payloads stay inert text (1.564541ms)
+✔ fuzz: any string over a hostile alphabet renders only whitelisted tags (14.102458ms)
+✔ validator mirrors the Go rules (0.242084ms)
+✔ SDN1 allowlist: exactly the contract routes, per method (2.548042ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.620417ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (34.973208ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.490667ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (2.076042ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.995041ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (14.808958ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (0.271209ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (1.2555ms)
+✔ localIssues names each missing mandatory value by server path (1.627958ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.310166ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.718333ms)
+✔ BFF allowlist covers exactly the design resources (0.261167ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (36.595375ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.496458ms)
+✔ parses never-published, published and bound states (0.787625ms)
+✔ rejects anything outside the closed shape (0.281166ms)
+✔ parses the domain list and the one-time request instructions (0.23325ms)
+✔ rejects domain shapes outside the closed contract (0.196959ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 178.532083
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 42ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1862ms
+  Running TypeScript ...
+  Finished TypeScript in 359ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 195ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+✔ SDN1 allowlist: exactly the contract routes, per method (2.141667ms)
+✔ SDN1 allowlist: traversal, case, suffix and prefix tricks never match (0.934584ms)
+✔ SDN1 request shape: no query string anywhere, reads carry no body, key, length or transfer-encoding (20.439666ms)
+✔ SDN1 cap: 260 KiB = Go's 256 KiB document + 4 KiB envelope, and a body of exactly the cap is still below it (0.354792ms)
+✔ SDN2 renderer: every XSS payload comes out as whitelisted tags and escaped text only (1.546125ms)
+✔ SDN2 renderer: escape-first means the merchant's text never becomes markup (0.209667ms)
+✔ SDN2 renderer: fuzz (seeded) never produces a tag outside the whitelist (17.35175ms)
+✔ SDN2 client validator rejects what the server rejects (HTML, non-https links, `<` anywhere) (0.556375ms)
+✔ cleanForSave turns cleared fields into null but keeps an empty body (1.736583ms)
+✔ localIssues names each missing mandatory value by server path (1.466875ms)
+✔ moved swaps neighbours and ignores out-of-range moves (0.33675ms)
+✔ parsers accept the exact Go shapes and refuse extra or missing keys (0.747667ms)
+✔ BFF allowlist covers exactly the design resources (0.437417ms)
+✔ validDesignRequest refuses queries and bodies on reads, ignores other paths (15.786125ms)
+✔ designDetails forwards only a bounded {path, reason} pair (0.229417ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 135.560042
+=== RUN   TestBrowserStoreDesign
+    browser_store_design_test.go:282: SDB: 4 journeys, PG facts, BFF probes and 20 hashed screenshots checked; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/store-design/20261005T111111.187230000
+--- PASS: TestBrowserStoreDesign (18.23s)
+PASS
+ok  	livecommerce/tests/foundation	21.505s
+PASS: store-design editor browser, signed MOCK IdP and isolated PG; not storefront rendering or production acceptance.

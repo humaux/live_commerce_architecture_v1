@@ -1,0 +1,149 @@
+[
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/team/en-390x844.png",
+    "sha256": "4ee7a0b0f6cb4614131aff310b8ee7ba683172fbddfa8717f1f163df6130ae6c",
+    "width": 390,
+    "height": 1072,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/team/zh-CN-390x844.png",
+    "sha256": "9333f9e467f223ae843ef2fe21b9372bdb60ee41391dad7970fef1856fb99f2d",
+    "width": 390,
+    "height": 1052,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/team/zh-TW-390x844.png",
+    "sha256": "d4f15d9571d78b7185fbd09900cf56620d294106283e93180271c03dbbb1427d",
+    "width": 390,
+    "height": 1052,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/en-390x844-R10-bottom-1.png",
+    "sha256": "838485db9006d6edf4f178cffc6f1ee04b4a5c36cac65042ada7cfc133913d22",
+    "width": 70,
+    "height": 62,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/en-390x844-R10-bottom-2.png",
+    "sha256": "b0ad1074e2a3d83908c391c1b9d381af1af1e3206ba798795637151c2e6c461c",
+    "width": 150,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/en-390x844-R10-middle-1.png",
+    "sha256": "838485db9006d6edf4f178cffc6f1ee04b4a5c36cac65042ada7cfc133913d22",
+    "width": 70,
+    "height": 62,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/en-390x844-R10-middle-2.png",
+    "sha256": "b0ad1074e2a3d83908c391c1b9d381af1af1e3206ba798795637151c2e6c461c",
+    "width": 150,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-CN-390x844-R10-bottom-1.png",
+    "sha256": "3a213790460185f099dd8994043fdc7c0c140bc5f77b62b44ee39f8379827f86",
+    "width": 144,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-CN-390x844-R10-middle-1.png",
+    "sha256": "3a213790460185f099dd8994043fdc7c0c140bc5f77b62b44ee39f8379827f86",
+    "width": 144,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-TW-390x844-R10-bottom-1.png",
+    "sha256": "c1b32ba4a20b25779beed36b63a064d5d4b80b542afd0fe36ad4d3412807b3eb",
+    "width": 60,
+    "height": 62,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-TW-390x844-R10-bottom-2.png",
+    "sha256": "6a67965ddb8d1c87738e6c50cf671b9c83d4cefa4eaa0272a64750cc97a74094",
+    "width": 145,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-TW-390x844-R10-middle-1.png",
+    "sha256": "c1b32ba4a20b25779beed36b63a064d5d4b80b542afd0fe36ad4d3412807b3eb",
+    "width": 60,
+    "height": 62,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-TW-390x844-R10-middle-2.png",
+    "sha256": "6a67965ddb8d1c87738e6c50cf671b9c83d4cefa4eaa0272a64750cc97a74094",
+    "width": 145,
+    "height": 92,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/orders/en-390x844-R7-1.png",
+    "sha256": "e91c70d04534da0897acfcdbef35623e52d1569c2480a58dcdf9c68c79bd3dad",
+    "width": 185,
+    "height": 64,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/orders/en-390x844-R7-2.png",
+    "sha256": "2a3e507cbf67c1e8287d9da5e8a5b0129133c29d926db7b1a50de46f2b00274f",
+    "width": 145,
+    "height": 64,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/team/zh-CN-390x844-R7-2.png",
+    "sha256": "c7e404e1b354be2450937ee144174d5081f4d2f9d081adcdea859b2c7cab0aa0",
+    "width": 48,
+    "height": 62,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/crops/admin/products-new/en-390x844-R7-2.png",
+    "sha256": "21b17c5f4709cf729e1bd19f6d9f4593b34a38d3674e3bfa3ae1a7caac91cdb6",
+    "width": 104,
+    "height": 64,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/orders/en-390x844.png",
+    "sha256": "5b08ff7b7a6439378b75315ea514b82cb1818745636e20f3c271b4ab1b467a0c",
+    "width": 390,
+    "height": 4405,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/products-new/en-390x844.png",
+    "sha256": "4b1e4b98d8e256f088faa1a7efa7070916c4c97940dd3f356d7151889c36c5cd",
+    "width": 390,
+    "height": 950,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/settings/en-1586x992.png",
+    "sha256": "67522a697b22ccea3a09afc23b03f2994b7d2ab133db46f3b25b1026762d2890",
+    "width": 1586,
+    "height": 2442,
+    "opened": true
+  },
+  {
+    "path": "/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/ui-visual-audit/20261005T192246Z/shots/admin/studio-claims/en-1586x992.png",
+    "sha256": "eff6e096400fd003d5623fecc8a1ea8a3fee480212bee175ca1e88a0f74323b2",
+    "width": 1586,
+    "height": 2042,
+    "opened": true
+  }
+]

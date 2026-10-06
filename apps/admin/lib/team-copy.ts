@@ -1,3 +1,6 @@
+// Purpose: Owns localized team membership and invitation labels.
+// Depends on: @live-commerce/i18n
+// Used by: apps/admin/components/Team.tsx, apps/admin/components/TeamInvite.tsx, tests/admin/team-model.test.ts
 // Copy for the admin Team page (/{locale}/team) and the invitation page (/{locale}/invite/{token}); locales zh-CN / zh-TW / en
 // (BFF POST /api/team/* -> Go /v1/identity/staff/*, contract storefront-v2 §D). Owns every string of Team.tsx and TeamInvite.tsx,
 // the five role labels and what each role can do, and the error map for the staff codes of internal/identityhttp/staff.go.
@@ -11,6 +14,7 @@ const en = {
   subtitle: "Invite people to work in this store and choose what each of them can do.",
   store: "Store",
   loading: "Loading team…",
+  working: "A team change is being saved. Wait for it to finish.",
   signedOut: "Sign in to manage the team.",
   notOwner: "Only a store owner can manage the team. Ask an owner to change roles or invite people.",
   notFound: "The team is unavailable for this store.",
@@ -24,6 +28,7 @@ const en = {
   colJoined: "Joined",
   colStatus: "Status",
   colActions: "Actions",
+  scrollHint: "Scroll horizontally to see every column and action.",
   noEmail: "Sign-in without email",
   changeRole: "Change role",
   removeMember: "Remove",
@@ -97,6 +102,7 @@ const zhCN: TeamCopy = {
   subtitle: "邀请成员加入这个店铺，并决定每个人能做什么。",
   store: "店铺",
   loading: "正在加载团队…",
+  working: "正在保存团队更改，请等待完成。",
   signedOut: "请登录后管理团队。",
   notOwner: "只有店铺所有者可以管理团队。请联系所有者调整角色或邀请成员。",
   notFound: "此店铺的团队暂时不可用。",
@@ -110,6 +116,7 @@ const zhCN: TeamCopy = {
   colJoined: "加入时间",
   colStatus: "状态",
   colActions: "操作",
+  scrollHint: "横向滚动以查看全部列和操作。",
   noEmail: "无邮箱登录",
   changeRole: "更改角色",
   removeMember: "移除",
@@ -179,8 +186,10 @@ const zhTW: TeamCopy = {
   nav: "團隊",
   title: "團隊",
   subtitle: "邀請成員加入這個店鋪，並決定每個人能做什麼。",
+  scrollHint: "橫向捲動以查看全部欄位和操作。",
   store: "店鋪",
   loading: "正在載入團隊…",
+  working: "正在儲存團隊變更，請等待完成。",
   signedOut: "請登入後管理團隊。",
   notOwner: "只有店鋪擁有者可以管理團隊。請聯絡擁有者調整角色或邀請成員。",
   notFound: "此店鋪的團隊暫時無法使用。",

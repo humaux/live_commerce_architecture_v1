@@ -1,9 +1,14 @@
+// Purpose: Renders order detail and composes the supplied action sections.
+// Depends on: @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, ./OrderRefunds, ./OrderShipment, ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection
+// Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
 // Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / transfer / CVS / COD / shipment
 // sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). A plain render function with no state of its own: MerchantOrders
 // owns the list, polling and selection and passes the loaded detail in; the BFF routes are listed in the section components.
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, TableFrame } from "@live-commerce/ui";
+import { presentationCopy } from "@/lib/presentation-copy";
 import { money } from "@/lib/client";
 import type { OrderActions, OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
@@ -17,25 +22,30 @@ import { OrderCodCollection } from "./OrderCodCollection";
 // Refund section applies once money was captured (stripe-refund-v1 §4.3); earlier payment states have nothing to refund.
 const capturedPayment = ["CAPTURED", "PARTIALLY_REFUNDED", "REFUNDED", "REVIEW_REQUIRED"];
 
+/** Formats a minor-unit order amount for display. */
 export function amount(locale: Locale, currency: string, minor: number) {
   return money(locale, currency, minor);
 }
+/** Renders the localized order-state badge. */
 export function badge(state: string, c: OrdersCopy) {
   return (
-    <span
+    <Badge
+      tone={/CAPTURED|FULFILLED|DELIVERED|COLLECTED/.test(state) ? "success" : /FAILED|CANCELLED|EXPIRED/.test(state) ? "danger" : /AWAITING|PENDING|REVIEW/.test(state) ? "warning" : "neutral"}
       className={`orders-badge orders-badge-${state.toLowerCase()}`}
       data-state={state}
     >
       {c.statuses[state as keyof OrdersCopy["statuses"]]}
-    </span>
+    </Badge>
   );
 }
+/** Describes Sections values shared by this presentation module. */
 export type Sections = {
   store: string;
   actions: OrderActions;
   boundary: string;
   onChanged: () => Promise<boolean>;
 };
+/** Composes loaded order detail with the supplied action sections. */
 export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, sections: Sections) {
   const m = (value: number) => amount(locale, detail.currency, value);
   const dest = detail.destination;
@@ -58,7 +68,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
     >
       <div className="orders-items">
         <h2>{c.items}</h2>
-        <div className="orders-items-scroll">
+        <TableFrame label={c.items} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-items-scroll">
           <table>
             <thead>
               <tr>
@@ -82,7 +92,7 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
               ))}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
         <dl className="orders-totals">
           <div>
             <dt>{c.subtotal}</dt>

@@ -1,3 +1,6 @@
+// Purpose: pure claims grammar, validation, redaction and delta-redeem planning tests.
+// Depends on: claims package helpers and canonical vectors; no PostgreSQL.
+// Used by: Go unit tests and foundation gate lifecycle.
 // Pure unit tests for package claims (commerce_worker): error mapping, credentials and
 // redaction, manual input validation, window transitions, ingest precedence/§3.1 shape
 // against the canonical vectors, and redeem planning. Non-goals: no database; the
@@ -399,7 +402,7 @@ func TestRedeemPlanning(t *testing.T) {
 		{offerID: "o4", skuID: "sku-d", quantity: 2, version: 1, pending: true, offerActive: true},
 		{offerID: "o5", skuID: "sku-e", quantity: 9, version: 4, pending: false, offerActive: true},
 	}
-	available := map[string]bool{"sku-a": true, "sku-b": true, "sku-c": true, "sku-d": false, "sku-e": true}
+	available := map[string]skuAvailability{"sku-a": {available: true}, "sku-b": {available: true}, "sku-c": {available: true, tracked: true, quantity: 0}, "sku-d": {available: false, tracked: true, quantity: 0}, "sku-e": {available: true}}
 	apply, skipped, err := splitPending(lines, available)
 	if err != nil {
 		t.Fatal(err)

@@ -1,0 +1,172 @@
+✔ fragment grammar accepts only one canonical token (0.453208ms)
+✔ claim projections are closed (0.257833ms)
+✔ claim token rides only its header on B1/B2 and is never echoed (22.307583ms)
+✔ claim-source BFF allowlist is exactly GET and PUT on the scene (8.410958ms)
+✔ pasted input: one link or id, trimmed, no whitespace or controls, bounded (0.252791ms)
+✔ PUT body is exactly five keys with the trimmed input, plus platform only when chosen (ruling p) (0.072542ms)
+✔ source response parser is closed (1.017291ms)
+✔ every refusal code and source label is worded in all three locales (0.148ms)
+✔ ruling t: defaults and replaced MOCK banner copy (0.094417ms)
+✔ bundle parser accepts manual (labelled) and Meta (unlabelled) bundles (1.960291ms)
+✔ bundle parser rejects unknown platforms and label/platform mismatches (0.556333ms)
+✔ offer parser carries the live price and rejects every out-of-range or missing field (0.359292ms)
+✔ library and import parsers are closed; removal receipt is the only version-0 shape (0.213292ms)
+✔ price input: exact decimal minor units, never float, bounded to the currency's places (14.579ms)
+✔ live-tools copy exists in all three locales with the same conflict reasons (1.089666ms)
+✔ claims BFF allowlist is exactly M1–M7 per method (0.979834ms)
+✔ M7 link response shape is closed (0.18375ms)
+✔ host prompt copy is the frozen text, verbatim (0.682ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 152.654375
+
+> live-commerce-workspace@ build:storefront /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/storefront build
+
+
+> @live-commerce/storefront@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/storefront
+> next build
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 112ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 940ms
+  Running TypeScript ...
+  Finished TypeScript in 303ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/2) ...
+✓ Generating static pages using 9 workers (2/2) in 45ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/cart
+├ ƒ /[locale]/checkout
+├ ƒ /[locale]/claim
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/collections/[slug]
+├ ƒ /[locale]/data-deletion
+├ ƒ /[locale]/legal/[slug]
+├ ƒ /[locale]/legal/anti-fraud
+├ ƒ /[locale]/order-link
+├ ƒ /[locale]/orders/[orderID]
+├ ƒ /[locale]/orders/lookup
+├ ƒ /[locale]/pages/[slug]
+├ ƒ /[locale]/privacy
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[slug]
+├ ƒ /[locale]/search
+├ ƒ /api/buyer/[...path]
+├ ƒ /api/shop/product/[key]
+├ ƒ /api/shop/products
+├ ƒ /feeds/meta.csv
+├ ƒ /media/c/[collectionID]/[imageID]
+├ ƒ /media/p/[productID]/[imageID]
+├ ƒ /media/s/[imageID]
+├ ƒ /payment/return
+├ ƒ /products/[productID]
+├ ƒ /robots.txt
+└ ƒ /sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 23ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1146ms
+  Running TypeScript ...
+  Finished TypeScript in 272ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15) 
+  Generating static pages using 9 workers (7/15) 
+  Generating static pages using 9 workers (11/15) 
+✓ Generating static pages using 9 workers (15/15) in 65ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserLiveClaimsRealChain
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49969: remote error: tls: unknown certificate
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49978: remote error: tls: unknown certificate
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49981: remote error: tls: unknown certificate
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49983: remote error: tls: unknown certificate
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49982: remote error: tls: unknown certificate
+2026/10/05 16:57:39 http: TLS handshake error from 127.0.0.1:49980: remote error: tls: unknown certificate
+    browser_live_claims_test.go:293: KC16 browser chain failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/admin-visual/output/playwright/live-claims-668164909
+--- FAIL: TestBrowserLiveClaimsRealChain (21.77s)
+FAIL
+FAIL	livecommerce/tests/foundation	23.078s
+FAIL

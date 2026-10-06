@@ -1,0 +1,1224 @@
+[
+  {
+    "id": "ADM-01",
+    "severity": "P2",
+    "group": "A. Tokens and colour",
+    "category": "consistency/colour",
+    "title": "Accent and primary colour is defined six times; the same CTA changes colour between sibling pages",
+    "routes": [
+      "/",
+      "/inventory",
+      "/products",
+      "/orders",
+      "/settings",
+      "/design",
+      "/studio/claims",
+      "/products/new",
+      "/products/[product]"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: left rail: active nav item is orange (x 8-212, y 115-158) while the page CTA 建立訂單 is green (x 267-361, y 1257-1300); breadcrumb 總覽 (x 244-270, y 94-108) is orange underlined",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: 新增商品 is GREEN teal (x 1414-1552, y 129-174); tab underline is BLUE (x 259-328, y 237-240)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-1586x992.png :: the same 新增商品 is ORANGE-BROWN (x 1436-1556, y 131-175); tab underline orange (x 244-316, y 268); 庫存帳 link blue (x 1382-1424, y 153)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: 套用篩選 is orange (x 1133-1215, y 562-605) and the active status tab is an orange outlined pill (x 244-311, y 625-668) - orders use a third primary style",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: 請求驗證 is orange (x 1449-1540, y 1645-1686) in a card whose other buttons (繼續, 新增專頁) are green",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: tab underline is green (x 353-441, y 338-342)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio/zh-TW-1586x992.png :: selected scene row is blue (#e8f3fc with blue left bar, x 245-545, y 288-375) - fourth accent"
+    ],
+    "suspected_source": "packages/ui/src/tokens.css (--ui-brand #ff6a00, --ui-brand-text #a84300) and AppShell.module.css (active #ffab70); apps/admin/app/globals.css (--teal #247965, --focus #1264ba, .primary); components/ProductDocument.css:4 and :334-341 (--pe-accent #b84b00, .pe-catalog .product-primary override); components/orders-v2.css:13 (#c45222); components/settings.css:417 (#b94700); danger/amber #975016 repeated in ProductAdmin.css, customers.css, ads.css.",
+    "why_it_matters": "The merchant cannot learn what 'primary action' or 'selected' looks like: 新增商品 is green on /inventory and orange on /products, the rail says orange is the brand, buttons say green. The owner already rejected orange-vs-green in the editor; the same split runs through the whole admin, so fixing only the editor leaves the product inconsistent.",
+    "fix_direction": "One semantic palette (primary, selected/active, link, focus, success, warning, danger, info, neutral) defined once in the shared tokens and consumed by shell and domain pages. Decide whether rail active state follows the primary hue or is neutral. Delete per-page colour overrides (pe-accent, orders-v2, storefront-domains) and re-point .primary / .product-primary / tab / pill styles to tokens. Add a lint rule: no raw hex colours in component CSS.",
+    "covered_by": "partial: orange-vs-green inside the product editor is covered-by-product-editor-visual; the cross-page scope is not",
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-02",
+    "severity": "P2",
+    "group": "A. Tokens and colour",
+    "category": "consistency/destructive actions",
+    "title": "Destructive or negative actions are styled as primary (green) or as warning amber; the danger token is never used",
+    "routes": [
+      "/settings",
+      "/team",
+      "/customers/[customer]"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: 取消發佈 (unpublish the storefront) is a solid GREEN primary button, right-aligned alone below a divider (x 1415-1566, y 1318-1357)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: 移除 member button is an amber/brown outline (x 1326-1386, y 710-750), same weight as an edit button",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers-customer/zh-TW-1586x992.png :: 抹除客戶 (erase customer) amber outline next to the neutral 下載資料 (x 371-461, y 1132-1172)"
+    ],
+    "suspected_source": "packages/ui/src/tokens.css defines --ui-danger #b42318 but nothing in apps/admin references it; .danger is re-implemented as #975016 in components/ProductAdmin.css:49, customers.css:23-24, ads.css:31; StorefrontSettings.tsx storefront-toggle uses className primary.",
+    "why_it_matters": "Taking a shop offline or erasing a customer must not look like the main call to action nor like an ordinary secondary button; a hurried merchant on a phone can hit the green button by habit.",
+    "fix_direction": "One danger variant from the shared token (outline for reversible, solid only inside the confirm step), one 'warning' variant for caution. Unpublish becomes a secondary/warning button; keep the existing confirm dialogs.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-03",
+    "severity": "P2",
+    "group": "A. Tokens and colour",
+    "category": "consistency/links",
+    "title": "Links have three unrelated styles; several are the raw browser default blue",
+    "routes": [
+      "/",
+      "/settings",
+      "/products/import",
+      "/ads",
+      "/ads/attribution",
+      "/products/new",
+      "/products/[product]",
+      "/studio/claims"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: order id links (x 282-344, y 857-1122) and 全部訂單 (x 267-319, y 1168) are default #0000EE underlined, while the breadcrumb link is orange",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: https://buyer.example under 網域 is default blue (x 266-410, y 1173) while the same URL in the 商店網址 card is ink-coloured underlined (x 269-415, y 1538)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-1586x992.png :: 回到總覽 default blue (x 244-296, y 607)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads/zh-TW-1586x992.png :: 廣告歸因與直播復盤 default blue eyebrow link ABOVE the H1 (x 305-430, y 139)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-new/zh-TW-1586x992.png :: 管理分類 default blue (x 494-550, y 1598) next to design-token blue ← 全部商品 (x 250-324, y 136)"
+    ],
+    "suspected_source": "apps/admin/app/globals.css has no base style for a; .mt-table a, .mt-note a, .entry-* a inherit the UA colour; components/ProductAdmin.css .product-link uses --focus; packages/ui AppShell.module.css .crumbs a uses --ui-brand-text; settings.css:423 .storefront-domains-card a uses ink.",
+    "why_it_matters": "Same kind of control (a text link) reads as three different things; the default blue is the clearest 'unfinished' signal in an otherwise styled UI.",
+    "fix_direction": "A single link token (colour, underline offset, hover, focus) applied globally to a, with explicit variants only where needed (nav, table id link). Remove per-component link colours.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-04",
+    "severity": "P3",
+    "group": "A. Tokens and colour",
+    "category": "states/disabled",
+    "title": "Disabled primary buttons are washed out (about 2.3:1) and give no reason",
+    "routes": [
+      "/design",
+      "/studio",
+      "/products/import",
+      "/orders/new",
+      "/studio/claims"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: 發佈 pale green, white label (x 1374-1436, y 228-270)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders-new/zh-TW-1586x992.png :: 建立訂單 disabled (x 244-338, y 935-979); the only explanation 請至少加入一項商品 sits in a different card at y 355",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: 匯入全部關鍵字庫關鍵字 and 複製關鍵字商品 near-invisible (x 611-1195, y 853-889)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-390x844.png :: 檢查檔案 / 匯入此檔案 both disabled stacked (y 794-891)"
+    ],
+    "suspected_source": "apps/admin/app/globals.css: button:disabled { opacity: .55 } applied to every variant (teal #247965 at 55% over white is roughly #86B5AA; white text about 2.3:1).",
+    "why_it_matters": "Disabled is a legitimate state, but at this contrast the label is hard to read and the merchant cannot tell what unlocks the button.",
+    "fix_direction": "Dedicated disabled tokens (keep 3:1 on label), plus a short inline reason beside or under the button where the action is blocked by a prerequisite.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-05",
+    "severity": "P3",
+    "group": "A. Tokens and colour",
+    "category": "consistency/badges",
+    "title": "Status badges are five different components with inconsistent shape and semantics",
+    "routes": [
+      "/products",
+      "/orders",
+      "/customers",
+      "/customers/[customer]",
+      "/team",
+      "/promotions",
+      "/studio/claims",
+      "/"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-1586x992.png :: 上架中 pill, radius 20px (x 524-582, y 466-496)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: 未付款 / 備貨中 / 已確認 are rectangular 5px-radius bars stretched to the full column (x 1029-1189 and 1209-1369, y 832-1340); unpaid and in-progress share the same pale blue, only 已確認 is green",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers/zh-TW-1586x992.png :: DM: 未授權 / Ads: 未授權 grey chips stacked (x 1183-1267, y 367-420)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: 您 chip glued to the text 無電子郵件登入 with no gap (x 372-406, y 711-740)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: count pills (orange 1/2, grey 0) at x 1486-1524"
+    ],
+    "suspected_source": "globals.css .status; orders.css .orders-badge + -confirmed/-awaiting_payment/-review_required variants (awaiting_payment is blue #e5f2ff); ProductAdmin.css .product-status-*; claims.css .claims-badge; merchant-tools.css .mt-count.",
+    "why_it_matters": "Colour is not stable meaning (awaiting payment is calm blue; draft is orange), so merchants cannot scan lists by colour.",
+    "fix_direction": "One Badge component (tone neutral/info/success/warning/danger; inline-size fit-content) and one status-to-tone map per domain (order, payment, shipment, product).",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-06",
+    "severity": "P2",
+    "group": "B. Shell, navigation, naming",
+    "category": "copy/IA consistency",
+    "title": "Nav label, breadcrumb and page title disagree on many routes; /products/new breadcrumb says 'Edit product'",
+    "routes": [
+      "/products/new",
+      "/customers",
+      "/team",
+      "/settings",
+      "/collections",
+      "/studio/claims",
+      "/products/import",
+      "/inventory"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-new/zh-TW-1586x992.png :: breadcrumb 總覽 / 商品與庫存 / 編輯商品 above H1 新增商品 (x 244-426, y 94-108); also products-new-variants. Beyond the owner's editor list",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers/zh-TW-1586x992.png :: breadcrumb 總覽 / 顧客 / 顧客 (duplicate segment), rail 顧客, H1 客戶",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: rail and crumb 員工, H1 團隊",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: rail and crumb 商店設定, H1 物流與收款設定 (the page holds four unrelated sections, see ADM-30)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/collections/zh-TW-1586x992.png :: rail and crumb 分類, H1 商品集合",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: shell crumb 留言認領 plus a SECOND in-page crumb 直播工作室 › 留言關鍵字登記 (x 248-424, y 135) and H1 留言關鍵字登記",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-1586x992.png :: crumb 匯入商品, H1 匯入與匯出商品",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/en-1586x992.png :: H1 'Products & inventory' equals the group name while the leaf is 'Inventory'"
+    ],
+    "suspected_source": "apps/admin/src/shell-copy.ts:129 claims '留言認領', :134 product '編輯商品' (used for both create and edit), :137, :139, :145, :146 versus page titles in apps/admin/lib/*-copy.ts (for example lib/customers-copy.ts:284-285 uses 客戶 while the shell says 顧客). Two copy catalogues, no single source of truth.",
+    "why_it_matters": "Merchants navigate by words; a different word on arrival (顧客 to 客戶, 員工 to 團隊, 分類 to 商品集合) reads as being on the wrong page. 'Edit product' on a create form is wrong on its face.",
+    "fix_direction": "One title per route used by nav leaf, breadcrumb and H1 (zh-TW glossary: pick 顧客 or 客戶, 員工 or 團隊, 分類 or 集合). Separate create and edit keys. Remove the in-page crumb in claims and the repeated crumb segment on /customers.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-07",
+    "severity": "P2",
+    "group": "B. Shell, navigation, naming",
+    "category": "mobile/tap target",
+    "title": "Breadcrumb link is 15-18px tall on every page at 390 and the root page repeats its own title",
+    "routes": [
+      "all shell pages (22 of 27)"
+    ],
+    "viewports": [
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/ads/zh-TW-390x844-R5-1.png :: R5: crumb link 26x18 px (lint records it on 22 pages x 3 locales = 66 instances, the largest single R5 group)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: root page shows breadcrumb 總覽 directly above H1 總覽 (x 244-270, y 94-108)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-390x844.png :: crumb row y 129-147 above the title, 13px text"
+    ],
+    "suspected_source": "packages/ui/src/AppShell.module.css .crumbs (13px, gap 8px, no padding) and .crumbs a (colour only).",
+    "why_it_matters": "First tap target on every page of a phone-first merchant tool is the hardest to hit; on home it adds a row that says nothing.",
+    "fix_direction": "Give crumb links a 40-44px hit area without changing the visual size; hide the breadcrumb on the root route; collapse middle segments on narrow screens.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-08",
+    "severity": "P3",
+    "group": "B. Shell, navigation, naming",
+    "category": "shell polish",
+    "title": "Rail and top bar: duplicate store identity, wrapping nav labels in English, duplicate icon, heavy two-row mobile top bar",
+    "routes": [
+      "all shell pages"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: rail shows brand block plus 'P payment moc...' truncated (x 16-200, y 60-92) while the top bar shows the real store select (x 245-416, y 13-55): two store-identity widgets",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/en-1586x992.png :: 'Products & inventory' wraps to two lines, active item grows to 62px vs 44px (x 8-212, y 250-312)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: 訂單與出貨 (y 218-234) and 收款與報表 (y 443-459) use the same document icon",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-390x844.png :: top bar takes two rows, y 0-112 (13% of the 844 viewport), then a breadcrumb row"
+    ],
+    "suspected_source": "packages/ui/src/AppShell.tsx and AppShell.module.css (.brand, .navButton, .topbar grid at <=1023px); rail registry in apps/admin/src/routes.ts / shell-copy.ts.",
+    "why_it_matters": "Small, but it is on every page: truncated store name, unequal rail items and a tall mobile header all eat attention before content.",
+    "fix_direction": "Show store identity once (selector in the top bar, or in the rail), allow two-line nav labels with equal item height or shorter labels, unique icons, one-row mobile header (menu, store, account menu).",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-09",
+    "severity": "P3",
+    "group": "B. Shell, navigation, naming",
+    "category": "entry/auth shell",
+    "title": "Signed-out and invite pages: chrome that does not apply, misaligned actions, unbranded invite card",
+    "routes": [
+      "/ (signed-out)",
+      "/signup",
+      "/reset",
+      "/invite/[token]"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/signed-out-home/zh-TW-1586x992.png :: signed-out header shows a workspace switcher 工作區管理 (x 245-440, y 14-59) and an account chip 'M 商家帳號' (x 1452-1560) - not shown at 390; brand block is navy #193c61 (x 0-223) unlike the app rail",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/signed-out-home/zh-TW-1586x992.png :: primary 繼續 right-aligned (x 968-1060, y 630-678) but links 忘記密碼？· 建立帳號 and 或 + secondary button are centred (y 689-797)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/reset/zh-TW-390x844.png :: 返回登入 link sits ~11px under the full-width button (y 468) and is 56x16 (R5)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/invite-token/zh-TW-1586x992.png :: bare card at the top (x 529-1057, y 48-231): no brand, no language switch, H1 just 團隊, links underlined inside bordered buttons (x 556-718, y 168-208)"
+    ],
+    "suspected_source": "apps/admin/components/Entry.tsx and the .entry-* rules in app/globals.css (~line 1233); invite page outside the shell.",
+    "why_it_matters": "The login page is the first screen every merchant sees; alignment mismatch and logged-in chrome make it look unfinished.",
+    "fix_direction": "Entry layout with brand + language only, one column alignment (full-width primary, links below at consistent spacing and 40px hit area); give the invite page the same entry layout and a title that says what it is.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-10",
+    "severity": "P3",
+    "group": "B. Shell, navigation, naming",
+    "category": "i18n",
+    "title": "Operator footer sentence is English on zh-TW and zh-CN pages",
+    "routes": [
+      "all pages"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: 'DaWan Live is operated by Hong Kong Da Wan Trading Limited' centred under the content (x 720-1086, y 1457)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-390x844.png :: same line wraps to two lines at the bottom of the page"
+    ],
+    "suspected_source": "apps/admin/components/OperatorFooter.tsx.",
+    "why_it_matters": "Only untranslated UI sentence found; the legal entity name can stay in English but the frame should follow the locale.",
+    "fix_direction": "Translate the sentence frame per locale (keep the entity name verbatim); confirm with legal whether the English form is required.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-11",
+    "severity": "P2",
+    "group": "C. Page layout and spacing",
+    "category": "alignment/grid",
+    "title": "Page heading is inset 4-12px from the content edge on 19 pages and 60-116px on three pages (each page owns its container)",
+    "routes": [
+      "/",
+      "/orders",
+      "/inventory",
+      "/products",
+      "/customers",
+      "/studio",
+      "/studio/claims",
+      "/billing",
+      "/finance",
+      "/ads",
+      "/ads/attribution",
+      "/design"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: measured by pixel scan (includes 1-2px glyph side bearing): breadcrumb and cards start at x 244, H1 glyphs at x 251 (orders 251, inventory 256, products 252, billing 252, studio 250, claims 248)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads/zh-TW-1586x992.png :: container is max-width 1200 centred: cards x 300-1486, H1 at x 309 while the breadcrumb stays at x 244",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads-attribution/zh-TW-1586x992.png :: cards x 303-1503, H1 at x 303",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: container max-width 1100 centred: H1 at x 360, cards x 353-1453, breadcrumb x 244",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: CTA right edge 1552 vs card edge 1561 (header padded 10px on both sides)"
+    ],
+    "suspected_source": "components/orders.css:5-6 (.orders-page max-width 1500; .orders-heading padding 5px 6px), app/globals.css .heading-row { padding: 0 10px } and .studio-heading { margin: 8px 4px 17px }, components/ads.css:4-5 and attribution.css:1-4 (max-width 1200; margin auto), components/design.css:3 (max-width 1100), settings.css (.settings-heading padding 5px 6px).",
+    "why_it_matters": "The eye finds a clean left edge shared by breadcrumb, title and cards; here it jumps 6, 10, 60 and 116px between pages, so pages feel like different products.",
+    "fix_direction": "The shell owns one page container (max-width, gutters) and one PageHeader slot (title, description, actions) with no side padding; domain pages stop setting their own max-width/auto margins.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-12",
+    "severity": "P3",
+    "group": "C. Page layout and spacing",
+    "category": "structure/page header",
+    "title": "Page-header patterns differ: back links, CTAs and refresh buttons are placed differently on every page",
+    "routes": [
+      "/products/new",
+      "/products/[product]",
+      "/customers/[customer]",
+      "/ads",
+      "/ads/attribution",
+      "/studio/claims",
+      "/products/import",
+      "/inventory",
+      "/products",
+      "/collections"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-new/zh-TW-1586x992.png :: '← 全部商品' under the breadcrumb (x 250-324, y 136) repeats the breadcrumb",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers-customer/zh-TW-1586x992.png :: 全部客戶 under the subtitle (x 250-305, y 225)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads-attribution/zh-TW-1586x992.png :: 返回廣告 above H1 (x 303-359, y 136)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: second breadcrumb under the shell breadcrumb (x 248-424, y 135)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-1586x992.png :: 回到總覽 at the bottom (x 244-296, y 607)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads/zh-TW-1586x992.png :: 重新整理 under the subtitle (x 300-414, y 229-269) vs top-right on studio and claims"
+    ],
+    "suspected_source": "No shared PageHeader: each component renders .orders-heading, .heading-row, .studio-heading, .ads-heading, .settings-heading itself.",
+    "why_it_matters": "Where the primary action and the way back live changes page to page.",
+    "fix_direction": "PageHeader with slots: title, description, primary action (right), secondary actions, back link (only when the breadcrumb cannot express it).",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-13",
+    "severity": "P2",
+    "group": "C. Page layout and spacing",
+    "category": "spacing",
+    "title": "Dashboard cards touch each other (0px gap) while the same page uses 16px elsewhere",
+    "routes": [
+      "/"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: pixel scan at x 700: 待辦事項 bottom border y 562 and 訂單 top border y 563 (0 gap); 最新訂單 bottom y 1200 and 快速操作 top y 1202; between 訂單 and 最新訂單 the gap is 16px (y 719-737)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-390x844.png :: pixel scan at x 200: 最新訂單 bottom y 1609 and 快速操作 top y 1611 (0 gap) while 待辦 to 訂單 is 16px"
+    ],
+    "suspected_source": "apps/admin/components/Dashboard.tsx + components/merchant-tools.css: .mt-card has no margin, only .mt-grid has margin 0 0 16px, so sibling cards outside the grid touch.",
+    "why_it_matters": "Visible double-border seam on the landing page.",
+    "fix_direction": "Vertical rhythm owned by the page container (stack gap token), not by individual card margins.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-14",
+    "severity": "P3",
+    "group": "C. Page layout and spacing",
+    "category": "typography/hierarchy",
+    "title": "Section heading sizes vary 14-19px and sub-sections use the same heading style as the card title",
+    "routes": [
+      "/customers/[customer]",
+      "/ads/attribution",
+      "/studio/claims",
+      "/studio",
+      "/products/new",
+      "/billing"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers-customer/zh-TW-1586x992.png :: 歷史紀錄 (y 937) inside the 授權 card and 隱私操作 (y 1199) inside the 隱私 card have the same weight and size as the card titles",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads-attribution/zh-TW-1586x992.png :: one giant card; 同一場次時間軸 / 觀眾輪廓 / 買家分佈 / 熱銷商品 / 每分鐘訂單 headings all at the same level (y 818-1176)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: section titles 19px (留言來源, 關鍵字商品, y 346-796) vs card titles 16px on /products/new"
+    ],
+    "suspected_source": "app/globals.css h2 { font-size: 14px }; .mt-card h2 16px; .product-section h2 16px; .studio-editor h2 / .claims-section h2 19px; .orders-expanded h2 16px.",
+    "why_it_matters": "Hierarchy is read from size and weight; inside-card sections cannot be told from cards.",
+    "fix_direction": "Three heading levels (page 29, card title 16-18, sub-section 14 bold) in the shared type scale.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-15",
+    "severity": "P1",
+    "group": "D. Forms and controls",
+    "category": "forms/locale expansion",
+    "title": "/studio/claims keyword-offer form collapses in English: Add offer label clipped, Product and SKU selects about 60px",
+    "routes": [
+      "/studio/claims"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/en-1586x992.png :: Offers section, x 611-1535, y 915-1105: labels run together as 'KeywordProduct', Product select shows 'Cho', SKU select shows an empty stub, the primary button reads 'dd offe' (text overflows), 'Add to library' wraps to three lines (x 669-735, y 1007-1072)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/studio-claims/en-1586x992-R2-1.png :: lint only reports the 20px label offset of the live-price field (R2); R7 clipped-text = 0, so the cut label was NOT detected",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: same row in zh-TW is readable but its fields are bottom-aligned with different label offsets (see ADM-16)"
+    ],
+    "suspected_source": "components/claims.css .claims-form: grid-template-columns minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr) 110px auto holds five fields plus two buttons; the auto 5th column (live price with a long hint) takes the width, the buttons auto-place into narrow minmax(0) cells; .claims-form > .primary { white-space: nowrap }.",
+    "why_it_matters": "Adding a keyword offer is the core set-up step of live-commerce claims. At the reference width, an English-locale merchant cannot read the pickers and the primary button label is cut off. English is a shipped locale.",
+    "fix_direction": "Lay the offer row out explicitly: row 1 keyword / product / SKU / limit with minimum control widths (selects at least about 160px); row 2 live price plus its hint; row 3 actions in their own flex row with auto width. Wrap to a new row before any control drops below its minimum. Verify with the longest locale (en) at 1160-1586.",
+    "lint_refs": [
+      "R2 en studio-claims",
+      "R7 missed"
+    ],
+    "covered_by": null,
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-16",
+    "severity": "P2",
+    "group": "D. Forms and controls",
+    "category": "forms/alignment",
+    "title": "Form rows are bottom-aligned with labels of different height, so labels and controls sit at different tops (measured, blocking)",
+    "routes": [
+      "/studio/claims",
+      "/team",
+      "/products/new",
+      "/products/[product]"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: offer row: labels 關鍵字/商品/SKU/單次上限 at y 992 but 直播專屬價 at y 969 (controls 1008 vs 985); manual-comment row: 買家標籤 label y 1364 vs 買家/留言內容 y 1387; 關鍵字 vs 平台 vs 回覆語言 hints end at different heights (y 619-651)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/studio-claims/zh-TW-1586x992-R2-4.png :: R2 label-top spread 27px (5 fields)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/studio-claims/zh-TW-1586x992-R2-1.png :: R2 select#claims-mode vs source select: label tops 425 vs 431.8, heights 39 vs 44",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: invite row: 電子郵件地址 label y 335 vs 角色 label y 329; input 39px vs select 45px (x 271-777, y 343-388)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/team/zh-TW-1586x992-R2-1.png :: R2 spread 6px; also en-/zh-CN- crops R2-1..3",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R2-1.png :: spec axis row spread 54px (covered by the editor fix)"
+    ],
+    "suspected_source": "components/claims.css .claims-form { align-items: end } and .claims-manual-form flex-wrap; TeamInvite.tsx row; labels contain their hint <small> inside the label stack, so label heights differ; .product-axis in ProductAdmin.css.",
+    "why_it_matters": "Misaligned controls are the owner's headline complaint about the editor and the same construction repeats on three other pages; lint marks 39 R2 instances as blocking.",
+    "fix_direction": "One shared Field/FormRow: label slot on top (fixed line-height), control slot, hint slot BELOW the control; rows top-align controls; the action button gets a spacer label so it aligns to the control, not to the hint.",
+    "covered_by": "partial: /products/new and /products/[product] rows are covered-by-product-editor-visual; claims and team are not",
+    "lint_refs": [
+      "R2 x39: studio-claims, team, products-new-variants, products-product"
+    ],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-17",
+    "severity": "P2",
+    "group": "D. Forms and controls",
+    "category": "forms/control height",
+    "title": "Control height is not a scale: 38, 39, 40, 42, 43, 44, 45 px coexist and sit side by side in one row",
+    "routes": [
+      "/team",
+      "/studio/claims",
+      "/orders",
+      "/inventory",
+      "/products",
+      "/customers",
+      "/ads",
+      "/design",
+      "/promotions",
+      "/studio"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: invite row: input 39px next to select 45px and button 39px",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/studio-claims/zh-CN-1586x992-R2-3.png :: R2 control-height: select 39 vs 44 in the same row",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: filters 39px (y 255-293) while orders filters are 45px (y 262-304) and products search 45px"
+    ],
+    "suspected_source": "app/globals.css button min-height 38 and input/select min-height 39; components/merchant-tools.css .mt-field 44; orders.css .orders-controls 45 and customers.css 45; ads.css 42; design.css .design-actions 42; promotions.css 40; globals.css .studio-fields 43; packages/ui tokens --ui-target 44 (used by shell only); ProductDocument.css .pe-catalog button 44.",
+    "why_it_matters": "Visible as ragged tops and baselines whenever two controls meet (R2 control-height records), and as an inconsistent feel page to page.",
+    "fix_direction": "One control-height token (44 on touch, optionally 40 compact on desktop) applied to input, select, button, tabs; delete per-page height rules.",
+    "lint_refs": [
+      "R2 control-height"
+    ],
+    "covered_by": null,
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-18",
+    "severity": "P2",
+    "group": "D. Forms and controls",
+    "category": "forms/field width",
+    "title": "Field widths ignore content: full-width inputs of 1000-1300px and an email field of 168px",
+    "routes": [
+      "/orders",
+      "/design",
+      "/studio",
+      "/orders/new",
+      "/team",
+      "/products/new"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: 搜尋訂單 input x 244-1561 (1317px), y 262-304",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: 店鋪名稱 / 一句話介紹 inputs x 372-1433 (1061px)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio/zh-TW-1586x992.png :: scene name / schedule / aspect fields x 573-1533 (960px)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-1586x992.png :: invite email input x 271-439 = 168px, too narrow for an address (y 349-388)"
+    ],
+    "suspected_source": "components/orders-v2.css .orders-v2-search { grid-column: 1 / -1 }; app/globals.css .studio-fields input { width: 100% }; Team/TeamInvite markup without a width class; ProductAdmin.css caps inputs at 640 only inside .product-form.",
+    "why_it_matters": "Over-wide short fields (name, search) hurt scanning; the owner already called out over-wide inputs in the editor. A 168px email field truncates the very value being entered.",
+    "fix_direction": "Width classes by content (code 160-240, name 320-400, email 320-420, search 320-480, text/URL up to 640, only textarea full width) enforced by the shared Field.",
+    "covered_by": "partial: editor inputs are covered-by-product-editor-visual",
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-19",
+    "severity": "P2",
+    "group": "D. Forms and controls",
+    "category": "typography/small text",
+    "title": "Helper text, counters and table text render at 9-11.7px; lint records 277 R4 hits on 51 admin page-variants",
+    "routes": [
+      "/orders",
+      "/inventory",
+      "/settings",
+      "/studio/claims",
+      "/collections",
+      "/products/new",
+      "/products/[product]",
+      "/ads/attribution"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/orders/zh-TW-1586x992-R4-1.png :: order search hint 10.83px (also date hints at y 591-603)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/inventory/zh-TW-390x844-R4-4.png :: SKU 9px; R4-5 repeats SKU 9px; product name 11px, table headers 11px (R4-1/R4-3)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/settings/zh-TW-390x844-R4-2.png :: stepper labels 11px (R4-1..4)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/studio-claims/zh-TW-1586x992-R4-6.png :: claims helper 11.67px (R4-6..10, five hints)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R4-4.png :: 10px counter '0 / 120' (editor)"
+    ],
+    "suspected_source": "Two mechanisms: (1) UA <small> (font-size: smaller, about 83%) compounding on 12-14px parents gives 10 / 10.83 / 11.67px in orders-v2, claims, product forms, settings; (2) explicit tiny sizes: app/globals.css:417 .product-cell small 11px, and the <=680px ledger block (~lines 870-891) .product-cell small 9px, .product-name 11px, .mobile-sku 9px, th/td padding 5px.",
+    "why_it_matters": "Taiwan merchants read hints on phones; 9-11px CJK is below comfortable reading size and the owner flagged 'tiny helper text'.",
+    "fix_direction": "Type scale with a 12px floor for helper/meta text (13 preferred), a global rule for small, and no shrink-to-fit on mobile ledgers: drop low-priority columns instead of shrinking text.",
+    "covered_by": "partial: editor helper text is covered-by-product-editor-visual",
+    "lint_refs": [
+      "R4 x277"
+    ],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-20",
+    "severity": "P2",
+    "group": "D. Forms and controls",
+    "category": "consistency/file input",
+    "title": "Raw browser file inputs ('Choose File / No file chosen') appear untranslated and unstyled on two pages while other pages have styled pickers",
+    "routes": [
+      "/products/import",
+      "/products/[product]"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-1586x992.png :: CSV picker x 934-1538, y 458-502 shows English 'Choose File' / bold 'No file chosen' on a zh-TW page; mobile x 33-357, y 736-779",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-product/zh-TW-1586x992.png :: photo section: native input in a 1020px box (x 518-1536, y 337-380) with a left vertical rule, unlike the dashed 新增圖片 tile on /products/new (beyond the owner's list)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: design page uses a styled 選擇圖片 button plus dashed preview tile (x 372-558, y 565-648)"
+    ],
+    "suspected_source": "Five <input type=file>: ProductImport.tsx:120 and ProductPhoto.tsx:209 render it bare; ProductDocumentMedia.tsx:111 (dropzone tile), DesignMedia.tsx:74 (button), CollectionManager.tsx:214 (not captured).",
+    "why_it_matters": "Native control text follows the browser language, not the app language, and looks unfinished next to the styled form.",
+    "fix_direction": "One FilePicker (visible localized button, file name, drag target, error state) used by import, product photos, design media and collections.",
+    "covered_by": "partial: product edit photo manager is beyond the owner's editor list",
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-21",
+    "severity": "P3",
+    "group": "D. Forms and controls",
+    "category": "mobile/tap target",
+    "title": "Tap targets: 38/39px buttons and inputs sit just under 40px, and in-text links are 15-20px tall",
+    "routes": [
+      "/",
+      "/customers/[customer]",
+      "/products/import",
+      "/products/new",
+      "/ads",
+      "/settings",
+      "/design",
+      "/studio",
+      "/team",
+      "/reset",
+      "/signup"
+    ],
+    "viewports": [
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/home/zh-TW-390x844-R5-2.png :: order id link 61x16",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/home/zh-TW-390x844-R5-3.png :: 全部訂單 link 52x15",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/customers-customer/zh-TW-390x844-R5-2.png :: 全部客戶 56x20; R5-3 order id 65x15",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/ads/zh-TW-390x844-R5-2.png :: checkbox label 傳送購買事件 24px tall",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/design/zh-TW-390x844-R5-2.png :: 選擇圖片 button 90x38 (R5-3 repeats)"
+    ],
+    "suspected_source": "app/globals.css .create-button at <=680 (height 38), button min-height 38 / input min-height 39 versus the 44px shell token; text links have no padding.",
+    "why_it_matters": "R5 reports 266 admin instances; the 38/39px controls are borderline, the 15-20px text links are the real offenders on a phone.",
+    "fix_direction": "Raise button/input to the single control height (ADM-17) and give inline links a padded hit area.",
+    "lint_refs": [
+      "R5 x266 admin"
+    ],
+    "covered_by": null,
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-22",
+    "severity": "P3",
+    "group": "D. Forms and controls",
+    "category": "i18n/native control",
+    "title": "Date inputs show the en-US pattern 'mm/dd/yyyy' under zh-TW and zh-CN, next to a hint that says 年/月/日",
+    "routes": [
+      "/orders",
+      "/finance",
+      "/promotions",
+      "/studio",
+      "/ads",
+      "/ads/attribution"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: start/end date fields show mm/dd/yyyy (x 244-1117, y 541-583) with hint 年／月／日（YYYY-MM-DD）underneath (y 597)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/finance/zh-TW-1586x992.png :: 09/06/2026 and 10/05/2026 (x 244-600, y 237-282)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/promotions/zh-TW-1586x992.png :: datetime-local 'mm/dd/yyyy, --:-- --' (x 1297-1535, y 314-354)"
+    ],
+    "suspected_source": "Native <input type=date/datetime-local> follows the browser locale, not the app locale; the capture browser is en-US. May be a capture artefact (see needs-interaction list).",
+    "why_it_matters": "Taiwan merchants expect yyyy/mm/dd and 24h; a mixed pattern next to the hint is contradictory if it reproduces on real devices.",
+    "fix_direction": "Verify on a zh-TW browser. If it reproduces, use a locale-aware date control (or text input with mask) driven by the app locale and drop the contradicting hint.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-23",
+    "severity": "P1",
+    "group": "E. Tables and lists",
+    "category": "tables/overlap",
+    "title": "/products list: status pill covers the product slug and variant count; inline-edit buttons are 44px boxes jammed against ragged left-aligned numbers",
+    "routes": [
+      "/products"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-1586x992.png :: rows x 297-590, y 445-650: 上架中 pill sits on top of '/sweep-ceramic-mug · 1 個規格' (reads '1 個:'), same for the other rows; pencil boxes about 44x44 next to NT$128 (x 783-826) and 庫存 40 (x 993-1036); numbers left-aligned so edit boxes land at 3 different x positions",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/en-1586x992.png :: '/sweep-ceramic-mug · 1 variant' wraps and '1 varia' is cut under the Active pill; '40 in stock' touches the pencil box",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products/zh-TW-1586x992-R3-1.png :: R3 cell-overflow: selection column 44.5px wide, content 66px, checkbox outside (7 instances per locale = 21 blocking); R3-2 same on data rows; en-/zh-CN- crops identical",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-390x844.png :: mobile cards: one lone checkbox row per card (y 535-560), label left / value right pushes the product photo and name to the right half, about 330px per product, 3 products = 1500px"
+    ],
+    "suspected_source": "components/ProductDocument.css: .pe-catalog button { min-height: 44px; min-width: 44px } (turns the inline-edit pencil into a 44px bordered square) and .pe-catalog .product-table th:first-child/td:first-child { width: 44px } versus components/ProductAdmin.css .product-table td:first-child { width: 46% }; ProductList.tsx (.product-cell, .pe-row-actions); app/globals.css td { border-right }.",
+    "why_it_matters": "The catalogue list is the merchant's main product screen; the variant count is hidden by the badge, the layout breaks outright in English, and lint marks it as the largest blocking group (21 of 70).",
+    "fix_direction": "Explicit column plan (select 44, product flexible with 2-line clamp and tooltip, status fixed nowrap, price/stock right-aligned fixed, actions); inline edit as a compact icon inside a fixed-width cell, not a 44px sibling; one primary row action (Edit) with Copy in a menu; mobile card with the product on top and label/value pairs below (customers page pattern).",
+    "covered_by": "not on the editor list; shares ProductDocument.css with the editor fix, so coordinate",
+    "lint_refs": [
+      "R3 x21 blocking"
+    ],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-24",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "mobile/tables",
+    "title": "Responsive tables are implemented five ways; at 390 columns are cut off without a scroll cue and CJK headers wrap one character per line",
+    "routes": [
+      "/",
+      "/promotions",
+      "/team",
+      "/orders",
+      "/products",
+      "/inventory",
+      "/customers"
+    ],
+    "viewports": [
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-390x844.png :: 最新訂單 table x 33-357, y 895-1560: 狀態 column breaks one character per line ('待貨到收款' = 5 lines, rows range 60-121px), 付款方式 column cut at the card edge with no cue",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/promotions/zh-TW-390x844.png :: 代碼 table y 1228-1405: headers 最低消費 / 已使用 wrap per character, 狀態 and 操作 columns cut off",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/team/zh-TW-390x844.png :: 成員 table y 760-856: 加入時間 cut ('加', '20'), the 移除 button column is not visible at all",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-390x844.png :: stacked cards: irregular label/value grid (建立時間 label left, value right-aligned; 收件人 label above value; 付款/配送 2 columns), about 370px per order",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers/zh-TW-390x844.png :: clean 2-column label/value cards, about 230px per customer (best current pattern)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-390x844.png :: columns 現有 / 預留 / 狀態 / 操作 hidden; 9-11px text (see ADM-29)"
+    ],
+    "suspected_source": "app/globals.css (table, th/td height 53 + border-right, <=900/<=680 ledger blocks ~760-892), components/merchant-tools.css .mt-table-frame (overflow-x only), orders.css mobile block rules (~line 85-100), ProductDocument.css:521-535, customers.css, claims.css:96-110, Team.tsx and Promotions.tsx tables.",
+    "why_it_matters": "Mobile is where live sellers work; destructive and primary row actions (移除, 編輯) can be off-screen, and char-per-line wrapping looks broken. Lint R1/R3 do not see content cut inside scroll frames.",
+    "fix_direction": "One DataTable with column priorities, nowrap headers, a card mode at <=680 using the customers pattern, and for any horizontal scroll an edge fade plus a sticky action column.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-25",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "tables/conventions",
+    "title": "Table conventions differ per page: number alignment, vertical alignment, gridlines, header and row heights",
+    "routes": [
+      "/inventory",
+      "/products",
+      "/customers",
+      "/ads/attribution",
+      "/billing",
+      "/promotions",
+      "/team",
+      "/customers/[customer]",
+      "/orders"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: numbers and headers right-aligned, 可售 bold, rows 54px - the correct convention",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-1586x992.png :: price and stock left-aligned (x 736-782 and 948-992)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/customers/zh-TW-1586x992.png :: 訂單, 已收款/已退款, 登記 left-aligned (x 584-984)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads-attribution/zh-TW-1586x992.png :: funnel table: header 留言 left, 喊單 and 結帳連結 centred, 已付款/收款訂單 right; values 0 at x 340, 694, 984, 1467",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/promotions/zh-TW-1586x992.png :: row: text y 732, badge y 739, buttons y 745 (top vs middle alignment); team row text y 717 vs controls y 729; customer-detail row id y 496 vs chips y 503",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: row heights 112-115px; products 75px; customers 79px; inventory 54px; header heights 38 vs 55"
+    ],
+    "suspected_source": "app/globals.css th/td { height: 53px; border-right } and thead th 38px; orders.css .orders-table (55px headers, no vertical rules); merchant-tools.css .mt-table; customers.css; claims.css .claims-table; ProductDocument.css.",
+    "why_it_matters": "Numbers that are not right-aligned cannot be compared down a column, and the same kind of list looks different on each page.",
+    "fix_direction": "One DataTable style: numeric columns right-aligned with right-aligned headers, middle vertical alignment, horizontal rules only, header 40px, row min-height by density token.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-26",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "tables/orders list",
+    "title": "/orders: full 36-character order ids wrap onto 3 lines and status badges are stretched full-width bars",
+    "routes": [
+      "/orders"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: first column x 255-510, y 820-1315: 'LC-CBA916C65DBBB427BAE67A6CE874C2ED5' breaks as 'LC-' / 'CBA916C65DBBB427BAE67A6CE874C' / '2ED5' in every row; 付款 and 配送 badges are full column-width bars (x 1029-1189 / 1209-1369); 未付款 and 備貨中 share one pale blue",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-390x844.png :: id printed in full on every card header (x 55-345, first at y 751)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: the dashboard shows 8-character ids (cba916c6) and customer detail shows '7240…81f5': three id formats for one order"
+    ],
+    "suspected_source": "components/orders-v2.css .orders-v2 .orders-table { table-layout: fixed }, td:first-child button { white-space: normal; flex-wrap }, .orders-v2 .orders-badge { max-width: 100% }, td > span { display: block }; orders.css badge colours.",
+    "why_it_matters": "The orders list is the busiest page; ids that wrap into three lines and look different from other pages slow scanning and make support conversations error-prone.",
+    "fix_direction": "Short order ref (first 8-10 characters) with copy-on-click and the full id in the detail panel, same format on dashboard, list and customer detail; inline fit-content badges with a status-to-tone map (awaiting payment = warning).",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-27",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "hierarchy/filters",
+    "title": "/orders: the filter block fills almost half of the first screen before the first row",
+    "routes": [
+      "/orders"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: filters y 230-680 (about 450px of the 992px fold) then status tabs, the table starts at y 736 and fewer than two rows are visible; the 訂單狀態 row mixes a select, 重新整理, 匯出未出貨訂單（CSV） and a 10.83px hint paragraph (x 739-1450, y 376-408)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-390x844.png :: 更多篩選, search, two buttons, a 3-line hint, 套用篩選 / 清除篩選, tabs: the first order starts at y 751 of a 3093px page"
+    ],
+    "suspected_source": "components/OrderListFilters.tsx; components/orders-v2.css .orders-v2-filters (3-column grid, .orders-v2-search spans all columns, .orders-v2-state-controls).",
+    "why_it_matters": "The merchant opens /orders to work the list; the layout makes them scroll past filters first, and the export hint competes with the buttons.",
+    "fix_direction": "Compact one-row filter bar (search, status, payment, shipping, date range in a popover), applied chips under it, export as a secondary header action with the hint in a tooltip; keep status tabs.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-28",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "consistency/tabs",
+    "title": "Four tab styles in the app and tab strips that truncate silently at 390",
+    "routes": [
+      "/products",
+      "/inventory",
+      "/design",
+      "/orders"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products/zh-TW-1586x992.png :: orange underline tabs (x 244-316, y 268)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: blue underline single tab (x 259-328, y 237)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/zh-TW-1586x992.png :: green underline tabs (x 353-441, y 338)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-1586x992.png :: orange outlined pill tabs (x 244-311, y 625-668)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders/zh-TW-390x844.png :: only 4 of 8 status tabs visible (全部 / 待付款 / 待核對轉帳 / 待出貨), no scroll cue (x 15-375, y 602-645)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/design/en-390x844.png :: 5th tab cut at the right edge ('F', 'P...' fragments, x 370-390, y 383)"
+    ],
+    "suspected_source": "components/ProductDocument.css .pe-status-tabs; app/globals.css .section-bar > span (border-bottom #245c8a); components/design.css .design-tabs button.active; components/orders-v2.css .orders-v2-tabs.",
+    "why_it_matters": "Same control, four looks; hidden tabs mean statuses such as 已完成 / 已取消 are undiscoverable on phones.",
+    "fix_direction": "One Tabs component (underline style on tokens, overflow with fade and scroll buttons, counts, roles).",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-29",
+    "severity": "P2",
+    "group": "E. Tables and lists",
+    "category": "tables/inventory",
+    "title": "/inventory: SKU printed twice per row, mobile rows shrink to 9-11px text and hide most columns",
+    "routes": [
+      "/inventory"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-1586x992.png :: SKU appears in the product cell sub-line (x 374-477, y 385) and again in the SKU column (x 640-753, y 372)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/inventory/zh-TW-390x844.png :: SKU printed twice inside one cell (y 520 and y 535, 9px) next to the 販售中 badge; product name 11px; headers 11px; 現有/預留/狀態/操作 hidden so the 選取 action is only the radio at x 24-40",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/inventory/zh-TW-390x844-R4-4.png :: R4: 9px SKU (R4-5 repeats); 21 R4 + 14 R5 on this page at 390"
+    ],
+    "suspected_source": "app/globals.css:417 .product-cell small (11px), .product-cell .mobile-sku (display none to block at <=900) and the <=680 block ~870-891 (small 9px, .product-name 11px, th/td padding 5px).",
+    "why_it_matters": "Top route in the lint ranking (115 warnings): the stock ledger is where merchants check numbers, and the numbers are the smallest text on the screen.",
+    "fix_direction": "Show the SKU once (own column on desktop, sub-line on mobile) at 12px; keep product name at body size; on mobile prioritise available stock and a visible Select action instead of shrinking type.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-30",
+    "severity": "P2",
+    "group": "F. Page structure",
+    "category": "structure/settings",
+    "title": "/settings is four unrelated sections in three container styles with misplaced actions",
+    "routes": [
+      "/settings"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: H1 物流與收款設定 vs rail 商店設定; card (y 292-890), flat 網店發佈 section with divider and grey inner box (y 920-1320), card 商店網址 (y 1385-1713), flat Facebook 主頁 / Instagram section (y 1769-2500)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: 新增專頁 primary sits in the middle between '已連接 1 / 10' and 選擇專頁重新授權 (x 826-917, y 1860-1903); 取消發佈 stands alone at the right below a divider (x 1415-1566, y 1318-1357)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/settings/zh-TW-1586x992.png :: wizard card: 600px tall with the left column about 150px of content (x 245-1130, y 292-890)"
+    ],
+    "suspected_source": "SettingsWizard.tsx, StorefrontSettings.tsx, MetaConnect.tsx stacked on one route; components/settings.css .settings-fields, .storefront-card, .storefront-domains-card (own primary colour, line 417).",
+    "why_it_matters": "The settings page is where merchants connect payment, logistics, domain and Meta; today each block has its own look, its own action position and its own accent.",
+    "fix_direction": "Same Card (header with title and action slot, footer for form actions) for every block; split into tabs or sub-routes that match the rail (payments and logistics, storefront, domain, Meta); title equals nav label.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-31",
+    "severity": "P2",
+    "group": "F. Page structure",
+    "category": "structural duplication",
+    "title": "Sections with identical shape and nothing real: duplicate status cards, repeated empty lines, stacked notices, empty half-cards",
+    "routes": [
+      "/billing",
+      "/ads",
+      "/ads/attribution",
+      "/products/import",
+      "/studio/claims"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/billing/zh-TW-1586x992.png :: 帳戶狀態 card (y 263-396: 未訂閱 / 本店沒有訂閱) and 訂閱 card (y 414-529: 尚未訂閱) say the same thing",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads/zh-TW-1586x992.png :: three stacked notices (sandbox, disabled, hard-cap note) y 285-420, and 成效 repeats the 'not a real-time hard cap' disclaimer (y 1052)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/ads-attribution/zh-TW-1586x992.png :: 尚未提供紀錄。 four times (y 913, 1066, 1135, 1203) and two empty lines in the 時間軸 block (y 884 and 913)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/ads-attribution/zh-TW-1586x992-R8-1.png :: R8 duplicate-label: 'no rows provided' x3 in the buyers block (15 R8 across the admin)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-import/zh-TW-1586x992.png :: 匯出 card holds one button and is stretched to the height of 匯入 (x 245-894, y 215-580, about 250px blank)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/studio-claims/zh-TW-1586x992.png :: 登記窗口 rail: nine counters, all 0 (y 646-855) plus an empty 主持人提示 (y 911-985)"
+    ],
+    "suspected_source": "Billing.tsx, Ads.tsx, Attribution.tsx, ProductImport.tsx, StudioClaims.tsx: each section renders its own empty state; no shared EmptyState; equal-height grid in .mt-grid.",
+    "why_it_matters": "Per the brief: sections with identical shape and no content dilute the page; the real task (connect Meta, read results) is buried.",
+    "fix_direction": "Merge status and subscription; one EmptyState per module instead of per line; one disclaimer; collapse zero counters; do not stretch single-button cards (align-items: start).",
+    "lint_refs": [
+      "R8 x15"
+    ],
+    "covered_by": null,
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-32",
+    "severity": "P3",
+    "group": "F. Page structure",
+    "category": "empty state",
+    "title": "/collections: two-pane layout leaves the right pane blank without an empty state",
+    "routes": [
+      "/collections"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/collections/zh-TW-1586x992.png :: list x 244-544, y 215-334; everything to the right and below is empty down to y 992, no 'select a collection' guidance",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/collections/zh-TW-1586x992-R4-1.png :: R4: slug and count sub-line 11.67px"
+    ],
+    "suspected_source": "CollectionManager.tsx, ProductAdmin.css .collections-layout.",
+    "why_it_matters": "Looks like a failed load rather than a deliberate empty editor.",
+    "fix_direction": "Empty state in the editor pane (what a collection is, 'New collection' action) or collapse to a single column until one is chosen.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-33",
+    "severity": "P3",
+    "group": "F. Page structure",
+    "category": "hierarchy/dashboard",
+    "title": "Dashboard: to-do rows stretch 1270px with the count at the far end; zero rows look like active ones; the main actions sit below the fold",
+    "routes": [
+      "/"
+    ],
+    "viewports": [
+      "1586x992"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: to-do rows x 267-1539: label at x 282, count pill at x 1486-1524; the two 0 rows (y 438-542) are as heavy as the 1 and 2 rows",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: 各付款方式的銷售額 card is a single sentence with about 100px blank (x 911-1561, y 563-720)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/home/zh-TW-1586x992.png :: 快速操作 card starts at y 1202 and 建立訂單 sits at y 1257-1300, below the 992 fold"
+    ],
+    "suspected_source": "components/Dashboard.tsx; merchant-tools.css .mt-todos a { justify-content: space-between }.",
+    "why_it_matters": "The landing page should say what needs doing now; today it has the same weight everywhere.",
+    "fix_direction": "Narrower rows (or a 2-column task grid), de-emphasise zero counts, move quick actions into the header, shrink or merge the empty sales card.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-34",
+    "severity": "P2",
+    "group": "G. Editor and coverage",
+    "category": "product editor (known)",
+    "title": "Product editor defects already being fixed - lint evidence for the record",
+    "routes": [
+      "/products/new",
+      "/products/[product]"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R2-1.png :: R2: spec name vs values rows, label tops 867.8 vs 813.8 (spread 54px)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R3-3.png :: R3: matrix row 109px with the stock cell stacked (checkbox and quantity input on 2 lines; 3 rows per locale)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/en-1586x992-R6-8.png :: R6: 'Unsaved changes' savebar text overlaps the 'Collections' nav item by 75x9px",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R8-8.png :: R8: 完成度 lists 圖片 twice (also products-new R8-2, products-product R8-8)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/crops/admin/products-new-variants/zh-TW-1586x992-R4-4.png :: R4: 10px counter, 10px axis hint, 10px 新增 / 既有 tags, 11px 不追蹤 ∞",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/products-new-variants/zh-TW-1586x992.png :: five 批量填入 buttons in a row (x 494-1137, y 1036-1081)"
+    ],
+    "suspected_source": "components/ProductDocument.css, ProductDocumentForm.tsx, ProductDocumentVariants.tsx.",
+    "why_it_matters": "Listed so the integrator can confirm the same measurements pass after Codex's fix.",
+    "fix_direction": "Owner's list stands. Beyond it: breadcrumb 編輯商品 on create (ADM-06), native file input on edit (ADM-20), '← 全部商品' repeating the breadcrumb (ADM-12), collapsed 物流 and SEO cards that are empty headers 80-100px tall (products-new zh-TW y 1647-1846).",
+    "covered_by": "covered-by-product-editor-visual",
+    "lint_refs": [
+      "R2",
+      "R3",
+      "R6",
+      "R8",
+      "R4"
+    ],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  },
+  {
+    "id": "ADM-35",
+    "severity": "P2",
+    "group": "G. Editor and coverage",
+    "category": "coverage gap",
+    "title": "/orders/cvs-print screenshots are the audit harness placeholder, not the page - lint 0 for this route is vacuous",
+    "routes": [
+      "/orders/cvs-print"
+    ],
+    "viewports": [
+      "1586x992",
+      "390x844"
+    ],
+    "locales": [
+      "zh-TW",
+      "zh-CN",
+      "en"
+    ],
+    "evidence": [
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders-cvs-print/zh-TW-1586x992.png :: page shows only the text 'external request blocked by the click sweep' (y 24)",
+      "/Volumes/data/live_commerce_architecture_v1/.worktrees/ui-visual-audit/output/ui-visual-audit/20261005T045559Z/shots/admin/orders-cvs-print/zh-TW-390x844.png :: same text; the image is 980x2121, not 390 wide (blank document)"
+    ],
+    "suspected_source": "Capture harness blocked the external ECPay/CVS form request; no mock label view was rendered.",
+    "why_it_matters": "One of 27 admin routes has no visual coverage at all; its lint zeros mean NOT_RUN, not clean.",
+    "fix_direction": "Render the print view against a mocked label response (or capture the page before the external redirect) and re-run the visual lint; until then record the route as NOT_RUN.",
+    "covered_by": null,
+    "lint_refs": [],
+    "baseline": "0cc63a1d (shots from 2c29cbab run 20261005T045559Z)"
+  }
+]

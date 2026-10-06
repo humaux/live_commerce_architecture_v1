@@ -1,5 +1,9 @@
 "use client";
 
+// Purpose: checkout delivery/address/payment over the buyer cart, with claim merge disclosure.
+// Depends on: buyer BFF cart/options/quotes/destination/checkout/orders and purchase recovery.
+// Used by: /{locale}/checkout, including claim and CVS returns.
+
 // Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
 // address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
 // minus the product picker: items are added on the product page / drawer / cart page (CartProvider), this page starts at the
@@ -30,7 +34,9 @@ import { checkoutPath } from "../lib/routes";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { freeShippingProgress } from "../lib/shop-contract";
 import { formatMoney } from "../lib/money";
+import { displayTime } from "../../../packages/format/src/index";
 import Link from "next/link";
+import { claimCopy } from "../lib/claim-copy";
 import { historyCopy } from "../lib/history-copy";
 import {
   assertPurchaseContext,
@@ -52,6 +58,7 @@ import {
 } from "../lib/purchase";
 import type { Cart, OptionRow, Quote, Order } from "../lib/purchase";
 
+/** Renders the existing purchase lifecycle; consumes the non-sensitive claim origin hint. */
 export default function CheckoutFlow({
   locale: initialLocale,
   demonstration = false,
@@ -60,6 +67,15 @@ export default function CheckoutFlow({
   demonstration?: boolean;
 }) {
   const [locale, setLocale] = useState(initialLocale);
+  const [fromClaim, setFromClaim] = useState<"claim" | "claim-recovery" | null>(null);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const source = url.searchParams.get("from");
+    if (source !== "claim" && source !== "claim-recovery") return;
+    setFromClaim(source);
+    url.searchParams.delete("from");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  }, []);
   const copy = purchaseCopy[locale];
   const [context, setContext] = useState("");
   const [cart, setCart] = useState<Cart | null>(null);
@@ -347,6 +363,7 @@ export default function CheckoutFlow({
         className="purchase-main"
         aria-busy={loading || busy || paymentBusy}
       >
+        {fromClaim && <p role="status" className="order-note" data-testid="claim-checkout-notice">{fromClaim === "claim-recovery" ? claimCopy[locale].recovery : claimCopy[locale].checkoutNotice}</p>}
         <nav
           className="purchase-navigation"
           aria-label={historyCopy[locale].title}
@@ -609,11 +626,7 @@ export default function CheckoutFlow({
                 </dl>
                 <p>
                   {copy.expires}{" "}
-                  {new Intl.DateTimeFormat(locale, {
-                    timeZone: "Asia/Taipei",
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(new Date(quote.expires_at))} · {copy.taipeiTime}
+                  {displayTime(locale, quote.expires_at)} · {copy.taipeiTime}
                 </p>
                 <p>{copy.noPayment}</p>
                 {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}

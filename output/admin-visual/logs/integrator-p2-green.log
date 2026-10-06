@@ -1,0 +1,16 @@
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.649833ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.997041ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.558875ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.973416ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.081791ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.133667ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (121.590666ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.206708ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 228.453666

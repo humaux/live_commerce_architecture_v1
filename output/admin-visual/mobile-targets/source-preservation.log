@@ -1,0 +1,1 @@
+CSS parses; removing only Ledger column and mobile target additions restores base byte-for-byte (inspector unchanged)

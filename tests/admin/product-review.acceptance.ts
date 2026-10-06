@@ -1,3 +1,6 @@
+// Purpose: Registers product editing regressions including lost receipts and authentication failures.
+// Depends on: @playwright/test, node:fs/promises, node:path, ../../apps/admin/lib/product-editor-copy; harness env: LC_BROWSER_STORE, LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_TAG
+// Used by: tests/admin/catalog-core.spec.ts, scripts/dev/test-local.sh
 // R5 review regressions: all merchant writes use real clicks on Next + Go + PG.
 // Routes/cookies below inject lost receipts/auth failures, never fake a success.
 import { expect, test, type Page } from "@playwright/test";
@@ -41,6 +44,7 @@ async function evidence(page: Page, name: string, row: object) {
     JSON.stringify({ ...row, status: "PASS" }, null, 2),
   );
 }
+/** Registers browser regressions with merchant clicks and receipt/auth failure injection. */
 export function registerProductReviewAcceptance() {
   test("review: bulk price 80 plus archive sends exclusive archive entry and persists", async ({
     page,
@@ -185,6 +189,7 @@ export function registerProductReviewAcceptance() {
         exact: true,
       });
       await expect(retry).toBeVisible();
+      if (action !== "copy") await expect(retry).toBeInViewport();
       const fenceKey =
         action === "copy"
           ? `catalog-command-pending:${store()}`
@@ -209,12 +214,14 @@ export function registerProductReviewAcceptance() {
           ? productEditorCopy.en.listRecoveryRequired
           : productEditorCopy.en.recoveryRequired;
       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
+      if (action !== "copy") await expect(page.getByText(recovery, { exact: true })).toBeInViewport();
       await expect(retry).toHaveCount(0);
       expect(
         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),
       ).toBe(originalKey);
       await page.reload();
       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
+      if (action !== "copy") await expect(page.getByText(recovery, { exact: true })).toBeInViewport();
       await expect(trigger()).toBeDisabled();
       expect(
         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),

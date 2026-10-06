@@ -29,6 +29,7 @@ const en = {
   recommended: "Recommended",
   missing: "Required items remaining",
   images: "Images",
+  recommendedImages: "At least 3 images",
   name: "Product name",
   price: "Price",
   stock: "Inventory",
@@ -202,6 +203,7 @@ const zhTW: Copy = {
   recommended: "建議",
   missing: "尚缺必填項目",
   images: "圖片",
+  recommendedImages: "至少 3 張圖片",
   name: "商品名稱",
   price: "售價",
   stock: "庫存",
@@ -359,6 +361,7 @@ const zhCN: Copy = {
   recommended: "建议",
   missing: "还缺必填项目",
   images: "图片",
+  recommendedImages: "至少 3 张图片",
   name: "商品名称",
   price: "售价",
   stock: "库存",
@@ -491,9 +494,11 @@ const zhCN: Copy = {
   cap: "每次最多选择 100 个商品。",
   membership: "加入分类时会保留该分类原有商品。",
 };
+/** Locale-matched presentation text; does not change validation or publishing rules. */
 export const productEditorCopy: Record<Locale, Copy> = {
   en,
   "zh-TW": zhTW,
   "zh-CN": zhCN,
 };
+/** Shared editor copy shape inferred from the English key set. */
 export type ProductEditorCopy = Copy;

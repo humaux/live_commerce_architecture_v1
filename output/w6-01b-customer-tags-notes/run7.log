@@ -1,0 +1,25 @@
+=== RUN   TestCustomerTags
+=== RUN   TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging
+=== RUN   TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists
+=== RUN   TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length
+=== RUN   TestCustomerTags/CT04_set_owner_tags_is_compare-and-set
+=== RUN   TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship
+=== RUN   TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body
+=== RUN   TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes
+=== RUN   TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone
+=== RUN   TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body
+--- PASS: TestCustomerTags (2.87s)
+    --- PASS: TestCustomerTags/CT01_create,_tag_and_filter_the_list_with_stable_paging (0.06s)
+    --- PASS: TestCustomerTags/CT02_same_name_in_another_case_is_tag_exists (0.02s)
+    --- PASS: TestCustomerTags/CT03_limits:_100_tags,_20_per_customer,_200_notes,_note_length (0.68s)
+    --- PASS: TestCustomerTags/CT04_set_owner_tags_is_compare-and-set (0.03s)
+    --- PASS: TestCustomerTags/CT05_permissions,_tenancy_and_note_authorship (0.05s)
+    --- PASS: TestCustomerTags/CT06_erasure_removes_links_and_notes,_audit_holds_no_body (0.15s)
+    --- PASS: TestCustomerTags/CT07_the_buyer_self-service_export_includes_tags_and_notes (0.12s)
+    --- PASS: TestCustomerTags/CT08_deleting_a_tag_detaches_it_and_leaves_customers_alone (0.03s)
+    --- PASS: TestCustomerTags/CT09_HTTP_routes_end_to_end,_nothing_logs_a_note_body (0.09s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.42s)
+PASS
+ok  	livecommerce/tests/foundation	9.046s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

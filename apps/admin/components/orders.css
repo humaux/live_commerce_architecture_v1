@@ -1,3 +1,8 @@
+/*
+ * Purpose: Styles shared order tables, toolbars and panels.
+ * Depends on: CSS custom properties and matching component DOM classes; no API calls.
+ * Used by: apps/admin/components/Billing.tsx, apps/admin/components/BillingBanner.tsx, apps/admin/components/CollectionManager.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/Customers.tsx, apps/admin/components/Dashboard.tsx, apps/admin/components/Design.tsx, apps/admin/components/Finance.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/ProductEditor.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/Team.tsx, apps/admin/components/TeamInvite.tsx
+ */
 .orders-page {
   --orders-muted: #5c6e83;
   max-width: 1500px;
@@ -7,8 +12,8 @@
 .orders-heading p { margin-top: 3px; color: var(--orders-muted); font-size: 15px; }
 .orders-controls { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; }
 .orders-controls label { display: grid; gap: 5px; color: var(--orders-muted); font-size: 12px; font-weight: 600; }
-.orders-controls select { min-width: 216px; height: 45px; color: var(--ink); font-size: 14px; }
-.orders-controls button { min-height: 45px; display: inline-flex; align-items: center; gap: 9px; padding: 9px 20px; }
+.orders-controls select { min-width: 216px; height: var(--ui-target); color: var(--ink); font-size: 14px; }
+.orders-controls button { min-height: var(--ui-target); display: inline-flex; align-items: center; gap: 9px; padding: 9px 20px; }
 .orders-table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; scrollbar-color: #71869e #edf2f7; scrollbar-width: thin; }
 .orders-table { width: 100%; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
 .orders-table > thead > tr > th { height: 55px; background: #f2f5f9; color: #4b5f78; font-size: 12px; font-weight: 700; padding: 14px 22px; }
@@ -18,20 +23,20 @@
 .orders-table > thead > tr > th:nth-child(3), .orders-table > tbody > tr > td:nth-child(3) { width: 18%; }
 .orders-table > thead > tr > th:nth-child(4), .orders-table > tbody > tr > td:nth-child(4) { width: 21%; }
 .orders-table > thead > tr > th:nth-child(5), .orders-table > tbody > tr > td:nth-child(5) { width: 20%; }
-.orders-table > tbody > tr > td:first-child button { display: inline-flex; align-items: center; gap: 20px; min-height: 40px; padding: 5px 0; border: 0; background: none; color: var(--ink); font-weight: 700; white-space: nowrap; }
+.orders-table > tbody > tr > td:first-child button { display: inline-flex; align-items: center; gap: 20px; min-height: var(--ui-control-compact); padding: 5px 0; border: 0; background: none; color: var(--ink); font-weight: 700; white-space: nowrap; }
 .orders-table > tbody > tr > td:first-child button:hover { color: var(--focus); background: none; }
 .orders-selected { background: #edf6ff; }
-.orders-badge { display: inline-flex; align-items: center; border-radius: 5px; padding: 6px 11px; min-height: 30px; max-width: 100%; font-size: 12px; font-weight: 700; white-space: normal; overflow-wrap: anywhere; background: #e8eef5; color: #455c74; }
-.orders-badge-confirmed, .orders-badge-captured, .orders-badge-ready { background: #d8f3e7; color: #126951; }
-.orders-badge-awaiting_payment, .orders-badge-pending, .orders-badge-draft, .orders-badge-authorized { background: #e5f2ff; color: #1769aa; }
-.orders-badge-review_required, .orders-badge-paid_allocation_failed { background: #fff0df; color: #975016; }
-.orders-badge-cancelled { background: #e9edf2; color: #5c6f84; }
+.orders-badge { display: inline-flex; align-items: center; width: fit-content; border-radius: 4px; padding: 3px 8px; max-width: 100%; font-size: var(--ui-text-helper); font-weight: 600; line-height: 1.5; white-space: normal; overflow-wrap: normal; background: var(--ui-neutral-soft); color: var(--ui-muted); }
+.orders-badge-confirmed, .orders-badge-captured, .orders-badge-ready { background: var(--ui-success-soft); color: var(--ui-success); }
+.orders-badge-awaiting_payment, .orders-badge-pending, .orders-badge-draft, .orders-badge-authorized { background: var(--ui-info-soft); color: var(--ui-info); }
+.orders-badge-review_required, .orders-badge-paid_allocation_failed { background: var(--ui-warning-soft); color: var(--ui-warning); }
+.orders-badge-cancelled { background: var(--ui-neutral-soft); color: var(--ui-muted); }
 .orders-test { display: inline-block; margin-left: 9px; color: #245f9a; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .orders-table > tbody > .orders-detail-row > td { padding: 0; height: auto; width: auto; background: #fff; }
 .orders-expanded { display: grid; grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr) minmax(190px, .68fr); padding: 26px 30px; gap: 26px; }
 .orders-expanded > div { min-width: 0; }
 .orders-expanded > div + div { border-left: 1px solid var(--line); padding-left: 24px; }
-.orders-expanded h2 { font-size: 16px; margin: 0 0 17px; }
+.orders-expanded h2 { font-size: var(--ui-heading-section); margin: 0 0 17px; }
 .orders-items-scroll { overflow-x: auto; }
 .orders-items table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; font-variant-numeric: tabular-nums; }
 .orders-items th:nth-child(1) { width: 46%; }
@@ -81,7 +86,7 @@
   .orders-table > tbody > tr:first-child { border-top: 0; }
   .orders-table > tbody > tr > td { display: flex; align-items: center; justify-content: space-between; gap: 7px; width: auto; height: auto; padding: 5px 3px; border: 0; font-size: 12px; min-width: 0; }
   .orders-table > tbody > tr:not(.orders-detail-row) > td { width: 100%; }
-  .orders-table > tbody > tr > td::before { content: attr(data-label); color: var(--orders-muted); font-size: 11px; }
+  .orders-table > tbody > tr > td::before { content: attr(data-label); color: var(--orders-muted); font-size: var(--ui-text-helper); }
   .orders-table > tbody > tr > td:first-child { grid-column: 1 / -1; }
   .orders-table > tbody > tr > td:first-child::before { display: none; }
   .orders-table > tbody > tr > td:first-child button { min-height: 44px; gap: 10px; }

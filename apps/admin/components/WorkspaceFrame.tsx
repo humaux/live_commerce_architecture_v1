@@ -1,3 +1,6 @@
+// Purpose: Owns admin workspace navigation, workspace loading and logout controls.
+// Depends on: react, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/src/shell-copy, @/src/page-title, @/src/routes, @/src/shell/api, @/lib/team-model, @/lib/model, ./BillingBanner, ./Icon, @/lib/company, ./OperatorFooter
+// Used by: apps/admin/components/Customers.tsx, apps/admin/components/StudioClaims.tsx, apps/admin/components/MerchantOrders.tsx, apps/admin/components/Finance.tsx, apps/admin/components/Ledger.tsx, apps/admin/components/Billing.tsx, apps/admin/components/Promotions.tsx, apps/admin/components/CustomerDetail.tsx, apps/admin/components/SettingsWizard.tsx, apps/admin/components/Attribution.tsx, apps/admin/components/Studio.tsx, apps/admin/components/ProductImport.tsx, apps/admin/components/ManualOrder.tsx, apps/admin/components/Dashboard.tsx, apps/admin/components/Ads.tsx, apps/admin/components/Team.tsx, apps/admin/components/Design.tsx, apps/admin/components/ProductList.tsx, apps/admin/components/CollectionManager.tsx, apps/admin/components/ProductEditor.tsx, apps/admin/app/[locale]/orders/cvs-print/page.tsx
 "use client";
 // W0 shell only. API boundary: src/shell/api.ts; existing child page bodies are unchanged.
 import {
@@ -16,6 +19,7 @@ import {
 } from "@live-commerce/i18n";
 import { AppShell, shellStyles as s } from "@live-commerce/ui";
 import { shellCopy } from "@/src/shell-copy";
+import { pageTitle } from "@/src/page-title";
 import { canOpen, matchRoute, visibleGroups } from "@/src/routes";
 import { readWorkspace, logoutWorkspace } from "@/src/shell/api";
 import { navAccessFrom } from "@/lib/team-model";
@@ -25,6 +29,7 @@ import { Icon } from "./Icon";
 import { company } from "@/lib/company";
 import { OperatorFooter } from "./OperatorFooter";
 
+/** Owns admin workspace navigation, workspace loading and logout controls. Loads workspace context and submits logout through src/shell/api. */
 export function WorkspaceFrame({
   locale,
   active,
@@ -155,8 +160,16 @@ export function WorkspaceFrame({
     );
   }
   useEffect(() => {
-    if (data && data.key === storeParam && route?.path === "/" && !allowed && home !== "/")
-      router.replace(`/${locale}${home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`);
+    if (
+      data &&
+      data.key === storeParam &&
+      route?.path === "/" &&
+      !allowed &&
+      home !== "/"
+    )
+      router.replace(
+        `/${locale}${home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`,
+      );
   }, [data, storeParam, route, allowed, home, locale, router]);
   async function signOut() {
     if (locked || busy.current) return;
@@ -231,7 +244,7 @@ export function WorkspaceFrame({
         {error === "expired" || signingOut
           ? c.signIn
           : route
-            ? c[route.labelKey]
+            ? pageTitle(locale, pathname)
             : "Commerce workspace"}
       </title>
       <AppShell
@@ -241,23 +254,12 @@ export function WorkspaceFrame({
         skipLabel={c.skip}
         rail={
           <>
-            <div className="platform-shell-brand" data-testid="shell-platform-brand">{company.productName}</div>
-            {selectedStore && (
-              <div className={s.brand} data-testid="shell-store-brand">
-                <span className={s.brandMark} aria-hidden="true">
-                  {Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(
-                    locale,
-                  )}
-                </span>
-                <span
-                  className={s.brandName}
-                  data-testid="shell-store-name"
-                  title={selectedStore.name}
-                >
-                  {selectedStore.name}
-                </span>
-              </div>
-            )}
+            <div
+              className="platform-shell-brand"
+              data-testid="shell-platform-brand"
+            >
+              {company.productName}
+            </div>
             {nav.length > 0 && (
               <nav className={s.navigation} aria-label={c.navigation}>
                 {nav.filter((g) => g.id !== "settings").map(groupView)}
@@ -285,6 +287,11 @@ export function WorkspaceFrame({
             {selectedStore && (
               <label className={s.store}>
                 <span className="sr-only">{c.store}</span>
+                <span className={s.brand} data-testid="shell-store-brand" aria-hidden="true">
+                  <span className={s.brandMark}>{Array.from(selectedStore.name.trim())[0]?.toLocaleUpperCase(locale)}</span>
+                  <span className={s.brandName} data-testid="shell-store-name" title={selectedStore.name}>{selectedStore.name}</span>
+                  <span className={s.storeChevron}>⌄</span>
+                </span>
                 <select
                   aria-label={c.store}
                   data-testid="shell-store-selector"
@@ -360,21 +367,25 @@ export function WorkspaceFrame({
             data-shell-route={route.path}
             aria-label={c.navigation}
           >
-            <a
-              href={`/${locale}/`}
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/");
-              }}
-            >
-              {c.overview}
-            </a>
             {route.id !== "dashboard" && (
               <>
+                <a
+                  href={`/${locale}/`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate("/");
+                  }}
+                >
+                  {c.overview}
+                </a>
+                {c[route.group] !== pageTitle(locale, pathname) && (
+                  <>
+                    <span aria-hidden="true">/</span>
+                    <span>{c[route.group]}</span>
+                  </>
+                )}
                 <span aria-hidden="true">/</span>
-                <span>{c[route.group]}</span>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">{c[route.labelKey]}</span>
+                <span aria-current="page">{pageTitle(locale, pathname)}</span>
               </>
             )}
           </nav>
@@ -401,7 +412,12 @@ export function WorkspaceFrame({
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
             <h1>{c.forbidden}</h1>
-            <button data-testid="route-forbidden-home" onClick={() => navigate(home)}>{c.back}</button>
+            <button
+              data-testid="route-forbidden-home"
+              onClick={() => navigate(home)}
+            >
+              {c.back}
+            </button>
           </div>
         ) : (
           <>
@@ -412,7 +428,7 @@ export function WorkspaceFrame({
             {children}
           </>
         )}
-        <OperatorFooter />
+        <OperatorFooter locale={locale} />
       </AppShell>
     </>
   );

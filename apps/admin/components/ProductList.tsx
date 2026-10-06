@@ -1,3 +1,6 @@
+// Purpose: Owns catalog product browsing, filtering and bulk-edit controls.
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/orders-model, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./ProductQuickEdit, ./Icon, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
+// Used by: apps/admin/app/[locale]/products/page.tsx
 "use client";
 
 // Merchant product list (/{locale}/products): one dense table of every product with search, status filter, cover
@@ -16,6 +19,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
+import { Badge, TabStrip, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -32,7 +36,7 @@ import {
   type ProductStatus,
   type Collection,
 } from "@/lib/catalog-v2-model";
-import { catalogCopy } from "@/lib/catalog-v2-copy";
+import { catalogCopy, catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { parseBulk, type BulkResult } from "@/lib/product-document";
 import { useWrite } from "@/lib/catalog-v2-write";
@@ -40,6 +44,7 @@ import { useProductLeaveGuard } from "@/lib/use-product-leave-guard";
 import { displayTime } from "@/lib/orders-model";
 import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
+import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductPhoto } from "./ProductPhoto";
 import { ProductQuickEdit } from "./ProductQuickEdit";
 import { Icon } from "./Icon";
@@ -61,9 +66,11 @@ const href = (
   if (after) params.set("after", after);
   return `/${locale}/products${params.size ? `?${params}` : ""}`;
 };
+/** Builds the localized product editor URL without a network request. */
 export const editHref = (locale: Locale, store: string, id: string) =>
   `/${locale}/products/${id}${store ? `?store=${store}` : ""}`;
 
+/** Owns catalog product browsing, filtering and bulk-edit controls. User actions submit catalog commands through catalog-v2-client. */
 export function ProductList({
   locale,
   store,
@@ -240,32 +247,36 @@ export function ProductList({
         className="orders-page product-admin pe-catalog"
         data-testid="products-page"
       >
-        <header className="orders-heading product-heading">
-          <div>
-            <h1>{l.title}</h1>
-            <p>{l.subtitle}</p>
-          </div>
-          <div className="product-heading-actions">
-            <Link
-              className="product-link"
-              href={`/${locale}/inventory${sid ? `?store=${sid}` : ""}`}
-              data-testid="products-ledger-link"
-            >
-              {l.inventory}
-            </Link>
-            {store && (
+        <AdminPageHeader
+          locale={locale}
+          description={l.subtitle}
+          actions={
+            <>
               <Link
-                className="product-primary"
-                href={`/${locale}/products/new?store=${sid}`}
-                data-testid="product-new"
+                className="product-link"
+                href={`/${locale}/inventory${sid ? `?store=${sid}` : ""}`}
+                data-testid="products-ledger-link"
               >
-                <Icon name="product" size={18} />
-                {l.newProduct}
+                {l.inventory}
               </Link>
-            )}
-          </div>
-        </header>
-        <div className="pe-status-tabs" aria-label={l.status}>
+              {store && (
+                <Link
+                  className="product-primary"
+                  href={`/${locale}/products/new?store=${sid}`}
+                  data-testid="product-new"
+                >
+                  <Icon name="product" size={18} />
+                  {l.newProduct}
+                </Link>
+              )}
+            </>
+          }
+        />
+        <TabStrip
+          label={l.status}
+          previousLabel={catalogPresentationCopy[locale].previousTabs}
+          nextLabel={catalogPresentationCopy[locale].nextTabs}
+        >
           {productStatuses.map((s) => (
             <button
               key={s}
@@ -283,7 +294,7 @@ export function ProductList({
               {page ? (s === "all" ? page.total : page.status_counts[s]) : ""}
             </button>
           ))}
-        </div>
+        </TabStrip>
         <form className="orders-controls" role="search" onSubmit={search}>
           <label className="product-search">
             {l.search}
@@ -435,11 +446,23 @@ export function ProductList({
               </section>
             )}
             {rows.length > 0 && (
-              <div className="orders-table-scroll">
+              <TableFrame
+                label={l.title}
+                scrollHint={catalogPresentationCopy[locale].tableScroll}
+              >
                 <table
                   className="orders-table product-table"
                   data-testid="products-table"
                 >
+                  <colgroup>
+                    <col className="pe-col-select" />
+                    <col className="pe-col-product" />
+                    <col className="pe-col-status" />
+                    <col className="pe-col-price" />
+                    <col className="pe-col-stock" />
+                    <col className="pe-col-updated" />
+                    <col className="pe-col-actions" />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>
@@ -519,7 +542,7 @@ export function ProductList({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </TableFrame>
             )}
             {rows.length === 0 && (
               <p className="orders-message" role="status" aria-live="polite">
@@ -610,7 +633,7 @@ function Row({
         : `${money(locale, row.currency, row.price_min_minor)} – ${money(locale, row.currency, row.price_max_minor)}`;
   return (
     <tr data-testid={`product-row-${row.id}`}>
-      <td>
+      <td className="pe-selection-cell">
         <label className="pe-select">
           <input
             type="checkbox"
@@ -621,7 +644,7 @@ function Row({
           />
         </label>
       </td>
-      <td data-label={l.product}>
+      <td className="pe-product-cell" data-label={l.product}>
         <Link
           className="product-cell"
           href={editHref(locale, store, row.id)}
@@ -637,62 +660,79 @@ function Row({
                 : undefined
             }
           />
-          <span>
-            <strong>{row.name}</strong>
-            <small>
+          <span className="pe-product-identity">
+            <strong title={row.name}>{row.name}</strong>
+            <small title={`/${row.slug} · ${l.variants(row.sku_count)}`}>
               /{row.slug} · {l.variants(row.sku_count)}
             </small>
             {row.keyword && <span className="pe-keyword">{row.keyword}</span>}
           </span>
         </Link>
       </td>
-      <td data-label={l.status}>
-        <span
-          className={`orders-badge product-status product-status-${row.status}`}
+      <td className="pe-status-cell" data-label={l.status}>
+        <Badge
+          className="product-status"
+          tone={
+            row.status === "active"
+              ? "success"
+              : row.status === "draft"
+                ? "warning"
+                : "neutral"
+          }
         >
           {c.status[row.status]}
-        </span>
+        </Badge>
       </td>
-      <td data-label={l.price}>
-        {price}
-        <button
-          type="button"
-          data-testid="quick-price"
-          disabled={locked || row.sku_count === 0}
-          aria-label={`${pc.editPrice}: ${row.name}`}
-          onClick={() => quick("price")}
-        >
-          ✎
-        </button>
+      <td className="pe-price-cell" data-label={l.price}>
+        <div className="pe-number-edit">
+          <span>{price}</span>
+          <button
+            type="button"
+            className="pe-edit-icon"
+            data-testid="quick-price"
+            disabled={locked || row.sku_count === 0}
+            aria-label={`${pc.editPrice}: ${row.name}`}
+            onClick={() => quick("price")}
+          >
+            <EditPencil />
+          </button>
+        </div>
         {inlineField === "price" && inlineEditor}
       </td>
-      <td data-label={l.stock}>
-        {row.sku_count === 0 ? (
-          "—"
-        ) : !row.inventory_tracked ? (
-          row.sku_count === 1 ? (
-            "∞"
-          ) : (
-            pc.mixedTracking
-          )
-        ) : row.available <= 0 ? (
-          <span className="product-out">{l.outOfStock}</span>
-        ) : (
-          l.units(row.available)
-        )}
-        <button
-          type="button"
-          data-testid="quick-stock"
-          disabled={locked || row.sku_count === 0}
-          aria-label={`${pc.editStock}: ${row.name}`}
-          onClick={() => quick("stock")}
-        >
-          ✎
-        </button>
+      <td className="pe-stock-cell" data-label={l.stock}>
+        <div className="pe-number-edit">
+          <span>
+            {row.sku_count === 0 ? (
+              "—"
+            ) : !row.inventory_tracked ? (
+              row.sku_count === 1 ? (
+                "∞"
+              ) : (
+                pc.mixedTracking
+              )
+            ) : row.available <= 0 ? (
+              <span className="product-out">{l.outOfStock}</span>
+            ) : (
+              l.units(row.available)
+            )}
+          </span>
+          <button
+            type="button"
+            className="pe-edit-icon"
+            data-testid="quick-stock"
+            disabled={locked || row.sku_count === 0}
+            aria-label={`${pc.editStock}: ${row.name}`}
+            onClick={() => quick("stock")}
+          >
+            <EditPencil />
+          </button>
+        </div>
         {inlineField === "stock" && inlineEditor}
       </td>
-      <td data-label={pc.updated}>{displayTime(locale, row.updated_at)}</td>
-      <td>
+      <td className="pe-updated-cell" data-label={pc.updated}>
+        {displayTime(locale, row.updated_at)}
+      </td>
+      <td className="pe-actions-cell">
         <div className="pe-row-actions">
           <Link href={editHref(locale, store, row.id)}>{l.edit}</Link>
           <button type="button" disabled={locked} onClick={duplicate}>
@@ -701,5 +741,23 @@ function Row({
         </div>
       </td>
     </tr>
+  );
+}
+
+function EditPencil() {
+  return (
+    <svg
+      aria-hidden="true"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.65"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15l-1 5z" />
+    </svg>
   );
 }
