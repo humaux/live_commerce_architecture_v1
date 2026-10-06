@@ -1,0 +1,34 @@
+# w6-02b-reports delivery
+- Branch/commit: unit/w6-02b-reports @ see `git log -1` (feature commit 9a296243, this file committed after)   Base: e883b9e7 (r3/integration)   Model: Claude Sonnet 5.5
+- Summary: read-only reports over existing data, no table/column/role/cache. `migrations/0147_reports.sql`: definers `identity.read_report_products|channels|funnel|manual_orders`
+  (owner commerce_auth, EXECUTE commerce_runtime) + one audited dispatcher `identity.export_report`; internal helpers `identity.report_open`, `identity.report_money_events`
+  (no EXECUTE for anyone else); domain definers `claims.report_order_bundles`, `claims.report_funnel_bundles` (owner commerce_claims_writer) and `checkout.report_manual_creators`
+  (owner commerce_checkout_writer), EXECUTE commerce_auth only; one policy `auth_report_export_audit` (INSERT `reports.exported`). Money = the finance rows (payments.facts CAPTURED,
+  refund_facts SUCCEEDED, COD/pickup COLLECTED, transfer CONFIRMED) spread over the FROZEN `checkout.orders.snapshot` lines (largest remainder), per currency+environment; offline money in its own
+  `offline_*` figure. Go: `internal/reporting/{report,products,channels,funnel,manual}.go` (strict decode, nested/sorted/net checks, CSV with formula guard);
+  `internal/httpapi/reports.go` (8 routes `GET /v1/admin/stores/{store_id}/reports/{products|channels|funnel|manual-orders}[.csv]?from&to[&session_id]`, 60 s budget, registered in NewHandler -> cmd/api).
+  Contract draft: `contracts/reporting-v2.md`.
+- Contract/interface changes: new `contracts/reporting-v2.md` (DRAFT for integrator freeze); migration 0147; ACL pins updated: `live_claims_schema_test.go` (claims_writer 35 -> 37 functions, EXECUTE list, definer map, release-only list +`identity.read_report_channels`),
+  `customers_billing_schema_test.go` (+8 functions, comment word), `r2_integration_upgrade_test.go` (67 -> 68).
+- Tests: `bash scripts/dev/test-focused.sh '^TestReport'` -> exit 0 (6 tests PASS, output/w6-02b-reports/green.log); red first: same command with 0147 absent -> exit 1, 6 FAIL (red.log);
+  mutation red (remainder allocation removed) -> RP01 fails (mutation-red.log); DB-free `go test ./internal/reporting ./internal/httpapi -run 'Report|Finance|Customer'` -> exit 0 (unit.log);
+  ACL pins `test-focused '^(TestCustomersBillingCB02Comments|TestLiveClaimsKC03Schema|TestR2IntegrationUpgradeFromReleaseHead|TestReport)'` -> exit 0 (acl-and-green.log); before the pin edits
+  TestLiveClaimsKC03Schema/R2Upgrade failed as expected, then TestCustomersBillingCB02Schema/Comments, TestWAS01..06, TestMerchantOrdersV2Domain*/PickList*, TestAdsAttributionR12CheckoutDefinerACL, TestCogTransferACL all PASS in one run (13/14 then 15/15 after the pin fix).
+- Gates run: `bash scripts/dev/check-gates.sh` -> exit 0 (gofmt, headers, registry); `go vet ./internal/reporting ./internal/httpapi ./tests/foundation` -> ok.
+- RP coverage: RP01 hand-calculated numbers (2+ SKUs, 4 channels, 1 refund, Sep-30/Oct-1 Taipei boundary, remainder allocation) + parity with the finance summary totals (captured/refunded/net/offline per env) PASS; RP02 offline (COD 10000+5000 surcharge, bank transfer 8000) in `offline_*`, not in captured/net PASS;
+  RP04 nested funnel per session and whole store (rejected, out-of-range, cancelled-order and foreign-session cases) PASS; RP05 93 days / reversed / malformed = 422 on all 8 routes, 92 days = 200 PASS; RP06 no orders:export = 403 and no audit row, 4 exports = 4 `reports.exported` rows, reads write none, CSV formula guard PASS;
+  RP07 another store's token = 404 with no numbers, each store sees only its own PASS; RP08 10,000 synthetic orders over 200 days (~4,600 in the 92-day window): products 76-88 ms, channels 27-33 ms, funnel 125-152 ms, manual-orders 22-24 ms (limit 5 s). Read-only proven by row counts before/after.
+- Evidence class: REAL_PG on MOCK data (disclosed synthetic fixtures written under session_replication_role=replica, every CHECK on).
+- Risks / deviations (all listed for the integrator):
+  1. One `identity.export_report(report)` dispatcher instead of four `export_report_*` twins (it re-runs the matching read definer, so export and read cannot diverge).
+  2. Read definers are VOLATILE (like `read_finance_summary`: they call resolve_access / the audit fence), not STABLE as the brief says.
+  3. Funnel "link sent" counts only SUCCEEDED `meta.private_reply` operations (the only action commerce_claims_writer may read, policy `claim_reply_operation_read`); `meta.dm_send` links are not counted. Widening that policy is a privilege decision I did not take.
+  4. Manual-order creator = the `merchanttools.order.manual` receipt in `ops.command_results` (read through a checkout-owned definer; the plain audit row carries no order id). A missing receipt gives `principal_id: null`.
+  5. Channel precedence per brief: a merchant-created order that has a facebook/instagram origin is `facebook_live`/`instagram_live` in the channel report and still listed in the manual-order report.
+  6. Funnel is a cohort of claimed bundles (stages not date-limited, nested; `ordered_without_link` shows the hand-delivered ones). `live:read` is required in addition to `orders:read`.
+  7. The export audit row has no details (report name); adding it needs an INSERT(details) grant to commerce_auth, not done.
+  8. Reports read no index of their own: order_origins has no (tenant,store) index, so it is probed by order id (PK prefix) through the claims definers; measured fine at 10k orders.
+- NOT_RUN / BLOCKED: RP03 (W5-03B historical imports never appear) NOT_RUN: the import archive is not merged in this tree; structurally no report reads any table other than those listed in the contract §7. Full foundation suite, `--browser-*`, G07 strict: not run locally (CI).
+- CI gates (integrator pushes branch, runs .github/workflows/gates.yml): full foundation suite (the ACL pins changed: live_claims_schema, customers_billing_schema, r2_integration_upgrade, plus WAS/merchant-orders ACL tests I ran focused);
+  `bash scripts/dev/release-gate.sh --strict --only G07` (migration + definer + policy change); `test-local.sh --browser-customers-billing` (finance page regression); `--browser-ads-attribution`.
+- Integrator to-do: freeze `contracts/reporting-v2.md`; add `test-local.sh --reports` (`go test ./tests/foundation -run '^TestReport'`) + GATES.md row; BFF mirror `/api/admin/reports/*` and the W6-U1 UI (Codex) consume the 8 routes; decide risks 1/3/7; migration number 0147 used (brief's 0142 was a placeholder) -> r2 pin 68.
