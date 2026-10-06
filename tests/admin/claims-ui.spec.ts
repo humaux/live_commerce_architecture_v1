@@ -493,8 +493,9 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   // 404: unknown token, no token, and the old token after a rotation.
   await buyer.goto(`${buyerOrigin}/en/claim#t=${randomBytes(32).toString("base64url")}`);
   await expect(buyer.getByTestId("claim-not-found")).toHaveText("This link expired or was replaced. Message the seller for a new link.");
+  // No fragment at all: ClaimLink shows the "reopen the seller's link" copy (7e18c149), not the expired/replaced copy.
   await buyer.goto(`${buyerOrigin}/zh-CN/claim`);
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("链接已失效或已更换，请私信商家重新取得");
+  await expect(buyer.getByTestId("claim-not-found")).toHaveText("请重新打开商家私信中的链接查看这些商品，或从购物车继续。");
   const secondURL = await issueLink("Replace link");
   const secondToken = secondURL.split("#t=")[1];
   expect(secondToken).not.toBe(firstToken);
@@ -503,7 +504,7 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   await shot(buyer, "buyer-claim-404-zh-TW-390");
   await buyer.goto(secondURL);
   await expect(buyer.getByTestId("claim-line-B2")).toContainText("Already in your cart");
-  pass("unknown, missing and rotated-out tokens show the 404 copy in each locale; the new link still serves the bound buyer");
+  pass("unknown and rotated-out tokens show the 404 copy, a missing token the reopen copy, across locales; the new link still serves the bound buyer");
 
   // The token only ever travelled as the claim header on B1/B2.
   for (const token of [firstToken, secondToken]) {
