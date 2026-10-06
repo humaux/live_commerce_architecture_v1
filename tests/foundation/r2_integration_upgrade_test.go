@@ -65,9 +65,11 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0150 (W4-S2 platform settlement ledger) adds one more: 78 -> 79.
 	// 0155 (W3-08B returns + merchant cancel) adds one more: 79 -> 80.
 	// 0154 (W3-05B buyer blocklist) adds one more: 80 -> 81.
-	// 0160 (W6-06B ads unbind + catalog feed URL entry) adds one more: 81 -> 82.
-	if len(r2) != 82 {
-		t.Fatalf("R2 migration set = %d files %v, want 82", len(r2), r2)
+	// 0157 (perf-dashboard-todos: stats-proof order lookup in order_money_shippable/manual_shipment_eligible) adds one more: 81 -> 82.
+	// 0156 (W5-03B historical order import) adds one more: 82 -> 83.
+	// 0160 (W6-06B Meta ad-account unbind + catalog feed URL) adds one more: 83 -> 84.
+	if len(r2) != 84 {
+		t.Fatalf("R2 migration set = %d files %v, want 84", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

@@ -1,0 +1,17 @@
+commit 14eda261ec95f9f23e760db781789faadb852408 (tree clean except output/)
+15:--- PASS: TestOrderHistoryImport (6.50s)
+16:    --- PASS: TestOrderHistoryImport/OH02_an_order_of_a_never-imported_customer_fails_and_creates_no_customer (0.03s)
+17:    --- PASS: TestOrderHistoryImport/OH01_preview_rolls_back;_commit_archives_3_orders_from_7_lines (0.03s)
+18:    --- PASS: TestOrderHistoryImport/OH03_I05_the_archive_touches_no_money,_order_or_inventory_row_and_no_such_function_reads_it (0.39s)
+19:    --- PASS: TestOrderHistoryImport/OH04_the_full_address_never_reaches_the_database;_only_the_city_does (0.33s)
+20:    --- PASS: TestOrderHistoryImport/OH05_the_same_order_again_is_updated;_another_customer's_order_number_is_refused (0.01s)
+21:    --- PASS: TestOrderHistoryImport/OH09_the_keyset_read_pages_newest_first_with_a_total (0.01s)
+22:    --- PASS: TestOrderHistoryImport/OH07_permissions,_store_scope_and_table_grants (0.02s)
+23:    --- PASS: TestOrderHistoryImport/OH10_the_merchant_privacy_export_contains_the_archive (0.01s)
+24:    --- PASS: TestOrderHistoryImport/OH12_the_batch_and_results.csv_carry_row_numbers_and_codes_only (0.00s)
+25:    --- PASS: TestOrderHistoryImport/OH06_erasure_deletes_the_archive_and_the_stale_file_fails_erased (0.03s)
+26:    --- PASS: TestOrderHistoryImport/OH13_only_the_22_cities_are_archived_as_a_city;_anything_else_is_dropped,_counted_and_never_stored (0.62s)
+27:    --- PASS: TestOrderHistoryImport/OH08_limits (0.04s)
+28:    --- PASS: TestOrderHistoryImport/OH11_2000_archive_rows_per_customer,_then_order_limit_and_a_bounded_export (0.15s)
+30:ok  	livecommerce/tests/foundation	9.497s
+31:test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

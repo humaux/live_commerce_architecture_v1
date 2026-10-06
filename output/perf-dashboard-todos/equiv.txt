@@ -1,0 +1,19 @@
+== BANKTRANSFER_LIFECYCLE ==
+CONFIRMED            bank_transfer      MANUAL_UNASSIGNED  n=2 money_shippable=1 eligible=1 mismatch=0 probe_mismatch=0
+DRAFT                card               MANUAL_UNASSIGNED  n=1 money_shippable=0 eligible=0 mismatch=0 probe_mismatch=0
+TOTAL orders=3 eligible_true=1 mismatches=0
+== HOMECOD_ELIGIBILITY ==
+AWAITING_COLLECTION  cash_on_delivery   MANUAL_UNASSIGNED  n=2 money_shippable=2 eligible=2 mismatch=0 probe_mismatch=0
+CONFIRMED            bank_transfer      MANUAL_UNASSIGNED  n=2 money_shippable=1 eligible=1 mismatch=0 probe_mismatch=0
+DRAFT                card               MANUAL_UNASSIGNED  n=2 money_shippable=0 eligible=0 mismatch=0 probe_mismatch=0
+TOTAL orders=6 eligible_true=3 mismatches=0
+== MTO02 ==
+AWAITING_COLLECTION  cash_on_delivery   MANUAL_UNASSIGNED  n=2 money_shippable=2 eligible=2 mismatch=0 probe_mismatch=0
+AWAITING_TRANSFER    bank_transfer      MANUAL_UNASSIGNED  n=1 money_shippable=0 eligible=0 mismatch=0 probe_mismatch=0
+CONFIRMED            bank_transfer      MANUAL_UNASSIGNED  n=3 money_shippable=2 eligible=2 mismatch=0 probe_mismatch=0
+CONFIRMED            pay_at_pickup      MANUAL_UNASSIGNED  n=1 money_shippable=1 eligible=1 mismatch=0 probe_mismatch=0
+DRAFT                card               MANUAL_UNASSIGNED  n=3 money_shippable=0 eligible=0 mismatch=0 probe_mismatch=0
+TOTAL orders=10 eligible_true=5 mismatches=0
+== PICKLIST_REFUND_REVIEW ==
+CONFIRMED            card               MANUAL_UNASSIGNED  n=3 money_shippable=1 eligible=1 mismatch=0 probe_mismatch=0
+TOTAL orders=3 eligible_true=1 mismatches=0

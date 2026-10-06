@@ -843,7 +843,7 @@ func TestPlatformSettlement(t *testing.T) {
 				t.Fatalf("line: %+v", l)
 			}
 		}
-		for _, body := range [][]byte{raw, mustJSON(t, list)} {
+		for _, body := range [][]byte{raw, psMustJSON(t, list)} {
 			s := string(body)
 			for _, bad := range []string{"txn_Charge", "txn_Refund", "txn_Dispute", "txn_Reverse", e.refundA1, e.oa1.pi, e.oa2.pi, e.plat.account, "tenant", "HKD", "settle_", "exchange_rate"} {
 				if strings.Contains(s, bad) {
@@ -924,7 +924,7 @@ func TestPlatformSettlement(t *testing.T) {
 	})
 }
 
-func mustJSON(t *testing.T, v any) []byte {
+func psMustJSON(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
 	if err != nil {
