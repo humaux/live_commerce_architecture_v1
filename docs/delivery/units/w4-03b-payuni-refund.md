@@ -1,5 +1,7 @@
 # Unit W4-03B — PAYUNi 信用卡退款（后端，钱路）
 
+**CANCELLED（owner 2026-10-06，同上）。** Stripe 退款沿用 stripe-refund-v1；迁移号 0138 改给 W4-S2。正文仅存档，勿实现。
+
 状态：DRAFT（起草人 Claude Opus 子代理 2026-10-06，待 integrator 审核/冻结）。Base `r3/integration` `bb71f966`。
 迁移号占位 **0138**（+ 若需 `post_river/` 一条，integrator 给号）。覆盖 M14-11（偏差 B23「必须与启用同批交付」）。
 **ID 说明**：计划 W4-03B（日对账）延后；本 ID 用于 PAYUNi 退款。worktree `.worktrees/w4-03b-payuni-refund`。UI 复用现有 `OrderRefunds.tsx`（W4-U1 只改文案/可用性）。
