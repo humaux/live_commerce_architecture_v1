@@ -1,3 +1,7 @@
+// Purpose: launch a test-owned Chromium (real window, default context) and attach over loopback CDP so MOU03 can observe native
+//   visibility/focus/bfcache, which Playwright's own launch cannot.
+// Depends on: @playwright/test chromium executable; a display (xvfb-run on Linux CI, .github/workflows/gates.yml).
+// Used by: tests/admin/orders-ui.spec.ts (MOU03).
 import { chromium, expect, type Browser } from "@playwright/test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
@@ -8,8 +12,14 @@ export async function nativePage(evidence: string, profilePrefix: string) {
   const profile = await mkdtemp(`${evidence}/${profilePrefix}`);
   const child = spawn(chromium.executablePath(), [
     `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check", "about:blank",
-  ], { stdio: "ignore" });
+    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
+    // Ubuntu 24.04 runners block unprivileged user namespaces (AppArmor), so Chromium's sandbox aborts startup before CDP opens
+    // (CI run 37457009669). Playwright's own launches pass the same flag; the test page is our local admin, not untrusted content.
+    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
+    "about:blank",
+  ], { stdio: ["ignore", "ignore", "pipe"] });
+  let stderr = ""; // last 2 KiB of Chromium's stderr, attached to a startup failure so a CI red names its cause
+  child.stderr?.on("data", (chunk: Buffer) => { stderr = (stderr + chunk.toString()).slice(-2048); });
   let browser: Browser | undefined;
   let launchError: Error | undefined;
   child.once("error", (error) => { launchError = error; });
@@ -41,7 +51,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
       if (Number.isInteger(port) && port > 0 && port < 65_536) break;
       await delay(100);
     }
-    if (!port) throw new Error("owned Chromium did not expose loopback CDP");
+    if (!port) throw new Error(`owned Chromium did not expose loopback CDP (exit ${child.exitCode ?? child.signalCode ?? "running"}); stderr tail:\n${stderr}`);
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
     if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
     const context = browser.contexts()[0];
