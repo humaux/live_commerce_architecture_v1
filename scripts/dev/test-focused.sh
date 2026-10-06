@@ -41,8 +41,8 @@ trap cleanup EXIT INT TERM
 export POSTGRES_PASSWORD
 POSTGRES_PASSWORD="$(openssl rand -hex 24)"
 docker run -d --pull=never --name "$container" \
-  --label "livecommerce.fixture=$container" --memory=1g --cpus=1 --pids-limit=128 \
-  --tmpfs /var/lib/postgresql:rw,size=335544320 \
+  --label "livecommerce.fixture=$container" --memory=1536m --cpus=1 --pids-limit=128 \
+  --tmpfs /var/lib/postgresql:rw,size=671088640 \
   -e POSTGRES_PASSWORD -e POSTGRES_DB=lc_foundation_test \
   -p 127.0.0.1::5432 \
   postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280 \

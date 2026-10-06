@@ -13,7 +13,6 @@ package claims
 import (
 	"context"
 	"errors"
-	"net/http"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -44,9 +43,10 @@ func forBuyerError(err error) error {
 	if errors.As(err, &pg) && pg.Code == "PT409" {
 		switch pg.Message {
 		case "bundle_already_ordered":
-			return &ForBuyerError{Status: http.StatusConflict, Code: pg.Message, OrderID: pg.Detail}
+			// 409 = HTTP Conflict as a literal: importing net/http here would trip MCI10 (claims does no network I/O).
+			return &ForBuyerError{Status: 409, Code: pg.Message, OrderID: pg.Detail}
 		case "bundle_buyer_mismatch", "idempotency_conflict": // the same key with another request body
-			return &ForBuyerError{Status: http.StatusConflict, Code: pg.Message}
+			return &ForBuyerError{Status: 409, Code: pg.Message}
 		}
 	}
 	return mapError(err)
