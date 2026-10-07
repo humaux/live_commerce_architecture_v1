@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/smoke.sh
+# Depends on: lib.sh, smoke-r3.sh, Compose, pinned images and deploy fixtures; Go/Node tools for static gates.
+# Used by: deploy-smoke CI and integrator release acceptance; full mode uses only its isolated project.
 # Purpose: automated acceptance of the deploy package (deploy-design §17).
-#   static  S01-S06: script syntax (+shellcheck when installed), digest pins, compose config for
+#   static  S01-S06 + S48: script syntax (+shellcheck when installed), digest pins, compose config for
 #           all profile sets (+ two-host override), lcentry vet/tests/coverage, Caddyfile
 #           validate/fmt, ignore files. Needs no running containers.
 #   full    static + S07-S44 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
@@ -17,6 +19,7 @@
 #           R1 additions (deploy-release unit): S13 also checks the ruling-19 River privileges and the
 #           registrar EXECUTE grants (S13n injects two drifts: both must fail provisioning by name), S16 the claims-worker + Stripe-enabled sandbox worker, S19 the
 #           Stripe webhook route, S44 the operator one-shots stripe-admin / meta-admin / store-admin.
+#           S48 R3 dispatch/preflight/probe control tests; S49 R3 unauthenticated route refusals.
 #           R2 U08: S46 retention-admin on the claims-worker's retention-job login: `status` works and
 #           shows a run (RunOnStart), every other subcommand refuses the job login (exit 2), no service
 #           mounts an operator DSN (claims-retention-purge-v1 §10(5), CRP09).
@@ -46,6 +49,8 @@
 set -Eeuo pipefail
 # shellcheck source-path=SCRIPTDIR source=lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source-path=SCRIPTDIR source=smoke-r3.sh
+source "$LC_SCRIPTS_DIR/smoke-r3.sh"
 
 mode=${1:-static}
 [[ "$mode" == static || "$mode" == full ]] || lc_die "usage: smoke.sh static|full" 2
@@ -140,7 +145,7 @@ if "egress" not in (ew.get("networks") or {}):
     bad.append("expiry-worker lacks the egress network (SMTP)")
 if str((ew.get("environment") or {}).get("COMMERCE_BUYER_MAIL_ENABLED")) != "0":
     bad.append("expiry-worker mail loop is not off by default")
-for one_shot in ("stripe-admin", "meta-admin", "store-admin"):
+for one_shot in ("stripe-admin", "meta-admin", "store-admin", "platform-admin"):
     if svcs[one_shot].get("profiles") != ["ops"]:
         bad.append(one_shot + " is not profile ops only")
 print("S03w problems: " + ("; ".join(bad) if bad else "none"))
@@ -223,12 +228,19 @@ PY
     grep -qxF -- "$pat" "$LC_DEPLOY_DIR/.gitignore" || miss+=" deploy/.gitignore:$pat"
   done
   if [[ -z "$miss" ]]; then rec S06 PASS "ignore patterns"; else rec S06 FAIL "missing:$miss"; fi
+  # R3: bounded MOCK cases verify allowlists, env refusals, custody and denied-probe negative controls.
+  if runc S48 node --test "$LC_REPO_ROOT/tests/deploy/deploy-prep-r3.test.mjs"; then
+    rec S48 PASS "R3 operator/env/probe controls (MOCK, no database or provider calls)"
+  else rec S48 FAIL "R3 controls (logs/S48.log)"; fi
 }
 
 # make_config DIR MODE — temp compose.env + env/*.env for smoke (placeholders, *.localhost).
 make_config() {
   local dir=$1 kind=$2 svc
   mkdir -p "$dir/env" "$dir/secrets" "$dir/backup/dumps" "$dir/backup/base" "$dir/backup/wal" "$dir/state"
+  mkdir -p "$dir/state/settlements"
+  chmod 0700 "$dir/state/settlements"
+  if [[ "$kind" == full ]]; then chown 65532:65532 "$dir/state/settlements"; fi
   for svc in api admin storefront payment-worker expiry-worker meta-worker claims-worker ads-worker caddy postgres; do
     cp "$LC_DEPLOY_DIR/env/$svc.env.example" "$dir/env/$svc.env"
   done
@@ -280,7 +292,7 @@ EOF
 }
 
 # ================================ full ============================================================
-ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S46 S17 S18 S19 S47 S45 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
+ALL_FULL=(S07 S08 S09 S10 S11 S12 S13 S13n S14 S15 S16 S44 S46 S17 S18 S19 S47 S45 S49 S20 S21 S22 S23 S24 S25 S26 S27 S28 S29 S29m S30 S31 S32 S33 S34 S35 S36 S37 S38 S39 S40 S41 S42 S43)
 block_rest() { # reason — mark every full case not yet recorded as BLOCKED
   local id
   for id in "${ALL_FULL[@]}"; do
@@ -581,12 +593,19 @@ full_cases() {
     --origin https://smoke.example.com 2>&1 || true)
   printf '%s\n' "$out44" >"$EV/logs/S44-store-suspend.log"
   [[ "$out44" == *store_admin_not_found* ]] || why44+=" store-admin domain-suspend: got [${out44:0:60}] want store_admin_not_found"
+  # OPS-01B/02B: audit is read-only and must load the dedicated operator DSN through lcentry.
+  if out44=$("$LC_SCRIPTS_DIR/ops-admin.sh" platform-admin audit 2>"$EV/logs/S44-platform.err"); then
+    printf '%s\n' "$out44" >"$EV/logs/S44-platform.log"
+    if ! python3 -c 'import json,sys; assert isinstance(json.load(sys.stdin),list)' <<<"$out44"; then
+      why44+=" platform-admin audit invalid JSON"
+    fi
+  else why44+=" platform-admin audit refused (S44-platform.err)"; fi
   for s in api expiry-worker payment-worker-sandbox meta-worker claims-worker; do
     if lc_compose config --format json 2>/dev/null | python3 -c '
 import json, sys
 svc = json.load(sys.stdin)["services"][sys.argv[1]]
 names = set(svc.get("secrets") and [x["source"] if isinstance(x, dict) else x for x in svc["secrets"]] or [])
-sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar", "dsn_lc_store_registrar"} else 0)' "$s"; then :; else why44+=" $s mounts a registrar DSN"; fi
+sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar", "dsn_lc_store_registrar", "dsn_lc_platform_operator"} else 0)' "$s"; then :; else why44+=" $s mounts an operator/registrar DSN"; fi
   done
   # S44b: the sanctioned wrapper itself. A syntactically valid dummy token must be forwarded by NAME and
   # reach the CLI (fixed meta_admin_* code, exit 1, audit line without values); a live-shaped Stripe key
@@ -619,7 +638,7 @@ sys.exit(1 if names & {"dsn_lc_stripe_registrar", "dsn_lc_meta_registrar", "dsn_
   after_lines=$(awk 'END { print NR }' "$ops_log" 2>/dev/null || echo 0)
   ((after_lines == before_lines + 1)) && grep -Eq 'tool=store-admin sub=status live_pair=[01] exit=1' "$ops_log" ||
     why44+=" ops-admin store-admin audit line missing"
-  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin/store-admin one-shots run isolated, registrar logins admitted, no long-running service mounts them; ops-admin.sh forwards by name, audits without values, refuses sk_live_ keys and --profile LIVE without the pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
+  if [[ -z "$why44" ]]; then rec S44 PASS "stripe-admin/meta-admin/store-admin/platform-admin one-shots isolated, operator logins admitted, no runtime service mounts them; wrapper forwards by name, audits without values, refuses live keys/LIVE without pair"; else rec S44 FAIL "$why44 (logs/S44-*.log)"; fi
 
   # S46 U08 retention job login (claims-retention-purge-v1 §5, §10(5)). Smoke has no operator login by design,
   # so the policy stays report-only (enforced=0, LC_REQUIRE_RETENTION_ENFORCED=0 in the smoke compose.env).
@@ -687,6 +706,25 @@ sys.exit(1 if bad else 0)'; then :; else why46+=" an operator retention DSN is c
   if [[ "$s45" =~ ^list=40[13]\ claims=40[13]\ source=40[13]\ media=404$ ]]; then
     rec S45 PASS "Studio planning + claims + claim-source mounted (auth required), media route 404: $s45"
   else rec S45 FAIL "$s45 (want 401/403 x3, media 404)"; fi
+
+  # S49: the admin shares API's loopback netns. fetch has no cookies/auth and a three-second bound.
+  # POST bodies are valid MOCK values so 422 cannot masquerade as an authentication refusal.
+  lc_r3_request() {
+    lc_compose exec -T admin node -e '
+      const [method,path,body,key] = process.argv.slice(1);
+      const headers = body ? {"Content-Type":"application/json"} : {};
+      if (key) headers["Idempotency-Key"] = key;
+      fetch("http://127.0.0.1:8080"+path, {method,headers,body:body||undefined,
+        redirect:"manual",signal:AbortSignal.timeout(3000)})
+        .then(r=>console.log(r.status)).catch(()=>process.exit(1));
+    ' "$@"
+  }
+  local r3_claims r3_ads=0
+  r3_claims=$(lc_env_file_get "$LC_ENV_DIR/api.env" COMMERCE_CLAIMS_ENABLED) || r3_claims=0
+  [[ -z "$(lc_env_file_get "$LC_ENV_DIR/api.env" COMMERCE_META_ADS_APP_ID)" ]] || r3_ads=1
+  if runc S49 lc_r3_smoke "$r3_claims" "$r3_ads"; then
+    rec S49 PASS "R3 operations/returns/settlements/keyword/ads/feed deny unauthenticated requests (401; 404 only for disabled mounts)"
+  else rec S49 FAIL "R3 route refusal drift (logs/S49.log)"; fi
 
   r=$(edge shop.localhost /payment/return)
   if [[ "${r%%|*}" == 200 ]] && grep -q 'data-testid="payment-return"' "$EV/logs/body" && [[ "$(hdr content-security-policy)" == *"default-src 'none'"* ]]; then
@@ -1082,8 +1120,8 @@ def ver(cmd):
         return subprocess.run(cmd, capture_output=True, text=True, timeout=10).stdout.strip().splitlines()[0]
     except Exception:
         return "unavailable"
-static_ids = ["S01", "S02", "S03", "S04", "S05", "S06"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 46)] + ["S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S10r", "S13n", "S29m"]
+static_ids = ["S01", "S02", "S03", "S04", "S05", "S06", "S48"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 48)] + ["S49", "S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S10r", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

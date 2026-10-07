@@ -77,6 +77,8 @@ mkdirp 0750 0 0 "$config"
 mkdirp 0750 0 0 "$config/env"
 mkdirp 0750 0 "$gid" "$config/secrets"
 mkdirp 0750 0 0 "$state"
+# W4-S2: required by the stripe-admin bind even for non-export commands; never make it world-writable.
+mkdirp 0700 65532 65532 "$state/settlements"
 for d in "$backup" "$backup/dumps" "$backup/base" "$backup/wal"; do mkdirp 0700 999 999 "$d"; done
 touch "$state/deployments.log" && chmod 0640 "$state/deployments.log"
 
