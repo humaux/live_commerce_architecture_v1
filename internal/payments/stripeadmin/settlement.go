@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -275,7 +276,7 @@ func (r *Registrar) SettlementResolve(ctx context.Context, s Scope, environment,
 	}
 	if !balanceTxnPattern.MatchString(balanceTxn) || (resolution != ResolveNotStoreRevenue && resolution != ResolveAssignedToStore) ||
 		(resolution == ResolveAssignedToStore) != (targetTenant != "") || !operatorPattern.MatchString(operator) ||
-		!refPattern.MatchString(ticket) || utf8.RuneCountInString(note) < 1 || utf8.RuneCountInString(note) > 500 {
+		!refPattern.MatchString(ticket) || strings.TrimSpace(note) == "" || utf8.RuneCountInString(note) > 500 {
 		return ResolvedUnattributed{}, ErrRejected
 	}
 	var targetT, targetS any

@@ -4,7 +4,9 @@
 --   resolve step: one append-only resolution row per unattributed balance transaction, and an in-place patch of
 --   payments.close_settlement so a resolved row no longer refuses close. v1 moves NO money: an assigned_to_store
 --   resolution is recorded and printed by close as an operator note; the owner pays the store out of band.
--- Depends on: 0150 (settlement_unattributed, close_settlement, scope/advisory-lock/policy patterns), 0137 (stripe_platform,
+--   A resolution is FINAL: record_settlement_lines is patched in place (one anchor) so a later sync never attributes a resolved row
+--   to a store's statement (the owner would otherwise pay it twice: once from the note, once from the statement).
+-- Depends on: 0150 (settlement_unattributed, close_settlement, record_settlement_lines, scope/advisory-lock/policy patterns), 0137 (stripe_platform,
 --   platform_stripe_enrollments), 0061 (require_stripe_registrar_scope, control.stores read), ops.audit_events.
 -- Used by: internal/payments/stripeadmin (settlement.go: SettlementResolve, SettlementClose operator_notes),
 --   cmd/stripe-admin settlement-resolve (operator CLI), deploy/scripts/ops-admin.sh (allowlist),
@@ -24,7 +26,7 @@ CREATE TABLE payments.settlement_unattributed_resolutions (
  target_tenant_id uuid,target_store_id uuid,                -- both set iff resolution='assigned_to_store'
  operator text NOT NULL CHECK(operator ~ '^[A-Za-z0-9._:@-]{2,64}$'),
  ticket text NOT NULL CHECK(ticket ~ '^[A-Za-z0-9._:-]{8,128}$'),
- note text NOT NULL CHECK(char_length(note) BETWEEN 1 AND 500),
+ note text NOT NULL CHECK(char_length(note) BETWEEN 1 AND 500 AND btrim(note)<>''),
  resolved_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  FOREIGN KEY(tenant_id,store_id) REFERENCES control.stores(tenant_id,id),
  FOREIGN KEY(target_tenant_id,target_store_id) REFERENCES control.stores(tenant_id,id),
@@ -44,6 +46,22 @@ DO $$ DECLARE v_col record; BEGIN
    'payments owner; append-only resolution of one unmapped_source row (contracts/stripe-platform-account-v1.md §6.6); operator-entered via settlement-resolve only; moves no money');
  END LOOP;
 END $$;
+
+-- Append-only in depth (the 0078/0143 pattern): no role holds UPDATE/DELETE, and even the table owner or a superuser session
+-- cannot edit or remove a resolution (nor TRUNCATE the table). A wrong resolution is escalated to the owner (contract §9), never edited.
+CREATE FUNCTION payments.guard_settlement_resolution() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog AS $$
+BEGIN
+ RAISE EXCEPTION 'settlement_resolution_immutable' USING ERRCODE='PT409';
+END $$;
+ALTER FUNCTION payments.guard_settlement_resolution() OWNER TO commerce_payment_registry_writer;
+REVOKE ALL ON FUNCTION payments.guard_settlement_resolution() FROM PUBLIC;
+CREATE TRIGGER guard_settlement_resolution BEFORE UPDATE OR DELETE ON payments.settlement_unattributed_resolutions
+ FOR EACH ROW EXECUTE FUNCTION payments.guard_settlement_resolution();
+CREATE TRIGGER guard_settlement_resolution_truncate BEFORE TRUNCATE ON payments.settlement_unattributed_resolutions
+ FOR EACH STATEMENT EXECUTE FUNCTION payments.guard_settlement_resolution();
+COMMENT ON FUNCTION payments.guard_settlement_resolution() IS
+ 'payments owner (S2-OPEN-1, 0163); BEFORE UPDATE OR DELETE OR TRUNCATE trigger of settlement_unattributed_resolutions: a resolution is append-only and is never edited or removed (defence in depth beside the missing grants)';
 
 -- Same policy shape as settlement_unattributed (0150): own (platform) scope only; privileges are narrowed by the grants above.
 CREATE POLICY settlement_resolution_rw ON payments.settlement_unattributed_resolutions TO commerce_payment_registry_writer
@@ -69,7 +87,7 @@ BEGIN
   OR p_resolution IS NULL OR p_resolution NOT IN ('not_store_revenue','assigned_to_store')
   OR p_operator IS NULL OR p_operator !~ '^[A-Za-z0-9._:@-]{2,64}$'
   OR p_ticket IS NULL OR p_ticket !~ '^[A-Za-z0-9._:-]{8,128}$'
-  OR p_note IS NULL OR char_length(p_note) NOT BETWEEN 1 AND 500
+  OR p_note IS NULL OR char_length(p_note) NOT BETWEEN 1 AND 500 OR btrim(p_note)=''
   OR (p_target_tenant IS NULL)<>(p_target_store IS NULL)
   OR (p_resolution='assigned_to_store')<>(p_target_tenant IS NOT NULL) THEN
   RAISE EXCEPTION 'invalid settlement resolution' USING ERRCODE='22023'; END IF;
@@ -169,5 +187,30 @@ BEGIN
  EXECUTE replace(v_fn, v_needle, v_repl);
 END $$;
 ALTER FUNCTION payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text) OWNER TO commerce_payment_registry_writer;
+
+-- ---------------------------------------------------------------------------------------------------------
+-- record_settlement_lines, patched IN PLACE (same pattern, one anchor): a resolved row is FINAL. 0150 retries an unmapped row on every
+-- identical re-sync ("a session or refund may have been recorded since") and would then INSERT a line for it. After a resolution that
+-- double-counts: an assigned_to_store note makes the owner pay the target store out of band AND the new line would pay it again from
+-- that store's statement; a not_store_revenue row would leak into a store's totals. Resolved rows are counted as duplicates instead.
+-- Signature, owner and grants unchanged.
+-- ---------------------------------------------------------------------------------------------------------
+DO $$
+DECLARE v_fn text; v_needle text; v_repl text;
+BEGIN
+ v_needle := 'IF v_old_reason=''unsupported_type'' THEN v_dup:=v_dup+1; CONTINUE; END IF;';
+ -- alias res (no variable of that name in record_settlement_lines)
+ v_repl := 'IF v_old_reason=''unsupported_type''' || chr(10)
+  || '     OR EXISTS(SELECT 1 FROM payments.settlement_unattributed_resolutions res WHERE res.balance_txn_id=v_id) THEN' || chr(10)
+  || '     v_dup:=v_dup+1; CONTINUE; END IF;';
+ v_fn := pg_get_functiondef('payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)'::regprocedure);
+ IF (length(v_fn) - length(replace(v_fn, v_needle, ''))) <> length(v_needle) THEN
+  RAISE EXCEPTION 'payments.record_settlement_lines has an unexpected shape for the 0163 resolved-row patch';
+ END IF;
+ EXECUTE replace(v_fn, v_needle, v_repl);
+END $$;
+ALTER FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text) OWNER TO commerce_payment_registry_writer;
+COMMENT ON FUNCTION payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text) IS 'payments owner (W4-S2, resolved-row rule S2-OPEN-1/0163); operator definer (stripe-admin settlement-sync, registrar only, platform store scope): records Stripe balance transactions (charge, refund, refund failure, dispute, reversal) as per-store ledger lines attributed in SQL from Stripe ids, cross-checked against payments.facts and refund_facts; unmapped or foreign rows go to settlement_unattributed; an identical re-sync re-checks lines that have no statement and retries an unattributed row, EXCEPT a row that has a 0163 resolution (final: counted as a duplicate, never attributed afterwards); the last chunk records the sync window (never ending inside the last 15 minutes). Idempotent by balance transaction id; changed content is PT409. Never pays anyone';
+
 COMMENT ON FUNCTION payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text) IS
  'payments owner (W4-S2, resolve step S2-OPEN-1/0163); operator definer (stripe-admin settlement-close, registrar only): closes the weekly Asia/Taipei statement of one store or of every store with lines or an earlier statement: captured minus refunded minus disputes plus Stripe fees (negative) minus platform fee plus a negative carry-in, assigns the lines once, refuses while the period is not +72 h old, a sync did not cover it, a mismatch or an UNRESOLVED unmapped source exists (a 0163 resolution row clears the refusal; resolved assigned_to_store rows are returned as operator_notes and move no money). Idempotent per store and period. Records what the platform owes the store; moves no money';
