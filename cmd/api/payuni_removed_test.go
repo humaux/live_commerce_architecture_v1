@@ -1,5 +1,7 @@
 // Purpose: PAY-RM1 gate RM03 — the API mount chain no longer reserves /v1/hooks/payuni: a notify POST
-//   falls through to the base httpapi router and 404s, while the neighbouring webhook mounts are unchanged.
+//
+//	falls through to the base httpapi router and 404s, while the neighbouring webhook mounts are unchanged.
+//
 // Depends on: internal/httpapi (NewHandler with a nil pool: DB-free), the cmd/api mount* wrappers.
 // Used by: go test ./cmd/api (unit gate); referenced by output/pay-rm1-remove-payuni/DELIVERY.md.
 // Invariants: removal must not reroute any other namespace (I18: the 404 is asserted, not assumed).

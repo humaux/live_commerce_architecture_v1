@@ -1,8 +1,12 @@
 // Purpose: PAY-RM1 removal gates RM01/RM02 — after migrations/0161 the never-deployed W4-01B PAYUNi
-//   notify receiver is gone (role, tables, four definers, review_cases relaxations, wake grant) while the
-//   old PAYUNi hosted/query/capture path (0014–0018) is untouched; 0161 refuses to run over real data.
+//
+//	notify receiver is gone (role, tables, four definers, review_cases relaxations, wake grant) while the
+//	old PAYUNi hosted/query/capture path (0014–0018) is untouched; 0161 refuses to run over real data.
+//
 // Depends on: migrations.Apply (embedded SQL), per-test PG containers via mciStartPG, the shared
-//   mustExec/countRows helpers; pg_catalog only (pg_constraint, pg_policy, to_regclass/regprocedure/regrole).
+//
+//	mustExec/countRows helpers; pg_catalog only (pg_constraint, pg_policy, to_regclass/regprocedure/regrole).
+//
 // Used by: scripts/dev/test-focused.sh '^TestRemovePayuniNotify' (local gate); CI full foundation suite.
 // Invariants: never delete data silently — RM02 pins the RAISE-over-seeded-rows refusal (22023).
 // Status: REAL_PG (no provider is called; seeded rows are synthetic).
