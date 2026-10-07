@@ -24,5 +24,30 @@
     "file": "p3-green.log",
     "raw_sha256": "758210f70aa282382c6c0e5b4793e690c3404d03588771bf336f9e624e0cb7dc",
     "archive": "p3-green.log.raw.gz"
+  },
+  {
+    "file": "p1-green.log",
+    "raw_sha256": "ba016a3ad7748b4fca12d398982d30594eb8fa863cf0ab452b0bc2c3e7b0507d",
+    "archive": "p1-green.log.raw.gz"
+  },
+  {
+    "file": "p1-red-origin.log",
+    "raw_sha256": "ab84fe89b10df72230c63a402d391cc50efa811cadf1604effc402c930520106",
+    "archive": "p1-red-origin.log.raw.gz"
+  },
+  {
+    "file": "final-focused.log",
+    "raw_sha256": "688e3de06c19d5ad6f2cdfca02de9c059eb42a3d73ea37f9013f5d583086cfa7",
+    "archive": "final-focused.log.raw.gz"
+  },
+  {
+    "file": "tests/compile-fixture-corrected.log",
+    "raw_sha256": "7421ab2120699dced3e6399adaca19402a54c10ead33eb2af046176c53cdd085",
+    "archive": "tests/compile-fixture-corrected.log.raw.gz"
+  },
+  {
+    "file": "tests/compile.log",
+    "raw_sha256": "3489e69920776eeee79be02ee127cec8d08463ea2cbed2bcdb5793e1f30b7407",
+    "archive": "tests/compile.log.raw.gz"
   }
 ]

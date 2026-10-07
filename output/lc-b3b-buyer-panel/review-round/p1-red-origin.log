@@ -10,6 +10,6 @@
     live_console_buyer_panel_test.go:472: orders=[map[created_at:2026-10-07T16:49:02.349123Z number:LC-23E15141D92F4558916394E1EEC22B77 order_id:23e15141-d92f-4558-9163-94e1eec22b77 state:CONFIRMED total_minor:900]] want [23e15141-d92f-4558-9163-94e1eec22b77 e4b5d4b4-dfb9-453c-823c-308c794dc893] (price-neutral origin included, deduped)
 --- FAIL: TestLiveConsoleBuyerPanelPriceNeutralOrigin (0.03s)
 FAIL
-FAIL	livecommerce/tests/foundation	3.816s
+FAIL    livecommerce/tests/foundation   3.816s
 FAIL
 test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

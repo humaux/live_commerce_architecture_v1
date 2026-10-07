@@ -1,0 +1,6 @@
+{
+  "scanner": "foundation exact key-literal regex/exemptions, filename-only",
+  "grep_exit": 1,
+  "matched_files": [],
+  "passed": true
+}
