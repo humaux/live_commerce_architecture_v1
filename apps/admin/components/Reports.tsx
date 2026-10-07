@@ -12,7 +12,7 @@ import { useGuardedRead, ReadError, type ReadCode } from "@/lib/customers-client
 import { financeDay } from "@/lib/customers-model";
 import { readOrderActions, OrderReadError } from "@/lib/orders-client";
 import { reportNames, validReportsQuery, type ReportName } from "@/lib/reports-request";
-import { readReport, downloadReport, type ReportDownload } from "@/lib/reports-client";
+import { readReport, downloadReport, exportOutcome, type ReportDownload } from "@/lib/reports-client";
 import { reportsCopy } from "@/lib/reports-copy";
 import type { ProductSort } from "@/lib/reports-presentation";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -41,6 +41,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const [tab, setTab] = useState<ReportName>("products");
   const [sort, setSort] = useState<ProductSort>("net_minor"), [ascending, setAscending] = useState(false);
   const [exportView, setExportView] = useState<{ scope: string; outcome: ReportDownload | "busy" } | null>(null);
+  const [uncertainScopes, setUncertainScopes] = useState<string[]>([]); // reset only by a new server render (workspace key)
   const exporting = useRef(false), exportController = useRef<AbortController | null>(null);
   const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`;
   const valid = validReportsQuery("products", `/?from=${draftFrom}&to=${draftTo}`);
@@ -91,7 +92,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     id: `reports-tab-${name}`, role: "tab", "aria-selected": tab === name, "aria-controls": `reports-panel-${name}`,
     tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => setTab(name), type: "button" as const,
   });
-  const outcome = exportView?.scope === scope ? exportView.outcome : null;
+  const outcome = exportOutcome(scope, exportView, uncertainScopes);
   const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
   const exportCSV = async () => {
     if (!store || !canExport || !read.boundary) return;
@@ -101,6 +102,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     const result = await downloadReport(store.id, tab, from, to, read.boundary, active.signal);
     exporting.current = false;
     setExportView({ scope, outcome: result });
+    if (result === "uncertain") setUncertainScopes((u) => (u.includes(scope) ? u : [...u, scope]));
     // A signed-out result must hide stale numbers; the guarded read rechecks server session authority.
     if (result === "signed-out") read.reload();
   };

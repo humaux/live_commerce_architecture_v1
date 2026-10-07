@@ -246,3 +246,15 @@ test("CSV end-to-end deadline covers store lookup and report budget; aborted pre
   } finally {AbortSignal.timeout=original;}
  });
 });
+
+// Codex review P2 (PR #3): an uncertain export stays locked for its scope even after another tab exports (I06: no resubmission
+// of a keyless audited GET that may already have committed); only a new server render clears it.
+test("an uncertain export stays locked for its scope after another scope's export", () => {
+  const client = downloadClient({cookie:"csrf-pair",boundary:"session"});
+  const a = "render|en|store|2026-09-01|2026-09-30|products", b = "render|en|store|2026-09-01|2026-09-30|channels";
+  const uncertain = [a];
+  assert.equal(client.exportOutcome(a, {scope:b,outcome:"done"}, uncertain), "uncertain");
+  assert.equal(client.exportOutcome(b, {scope:b,outcome:"done"}, uncertain), "done");
+  assert.equal(client.exportOutcome(b, null, []), null);
+  assert.equal(client.exportOutcome(a, {scope:a,outcome:"busy"}, []), "busy");
+});

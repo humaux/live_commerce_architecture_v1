@@ -54,6 +54,13 @@ export async function readReport(store: Store, name: ReportName, from: string, t
 /** Download outcome distinguishes definite refusal from a possibly committed audit. */
 export type ReportDownload = "done" | "signed-out" | "forbidden" | "not-found" | "unavailable" | "uncertain";
 
+/** I06 across tabs: an export scope that ever came back uncertain stays locked (no resubmission of a keyless audited GET that
+ * may have committed) even after another scope exports; only a new server render (a fresh workspace) clears it. */
+export function exportOutcome(scope: string, last: { scope: string; outcome: ReportDownload | "busy" } | null, uncertain: readonly string[]): ReportDownload | "busy" | null {
+  if (uncertain.includes(scope)) return "uncertain";
+  return last?.scope === scope ? last.outcome : null;
+}
+
 /** Perform one CSV GET after a session/CSRF check; a changed session conceals bytes, never retries. */
 export async function downloadReport(store: string, name: ReportName, from: string, to: string, boundary: string, signal: AbortSignal): Promise<ReportDownload> {
   const csrf = csrfCookie();
