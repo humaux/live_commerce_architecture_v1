@@ -1,0 +1,17 @@
+Source751bb9cc + inherited publication/origin fix
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-bundle-browser.test.ts"]
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.460875ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.13525ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.125875ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (114.07375ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (3.480625ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 194.452542
+
+Exit 0

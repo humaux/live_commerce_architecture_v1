@@ -8,24 +8,27 @@ import { createRequire } from "node:module";
 import { createHash, webcrypto } from "node:crypto";
 import { runInNewContext } from "node:vm";
 const go = readFileSync("tests/foundation/browser_inbox_ui_test.go", "utf8");
-const spec = readFileSync("tests/admin/inbox-ui.spec.ts", "utf8");
+const spec = readFileSync("tests/admin/inbox-bundle-ui.spec.ts", "utf8");
 
 test("bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early", () => {
-  for (const seam of ["Studio: true", "ClaimLabels: &e.h.labels", "e.h.draft(t", "e.h.open(t", "e.h.offer(t", "e.h.accepted(t", "link_pending_manual=true", "bhPublish(t, bcHarness{cqHarness: e.h.cqHarness}"])
+  for (const seam of ["Studio: true", "ClaimLabels: &e.h.labels", "e.h.draft(t", "e.h.open(t", "e.h.offer(t", "e.h.accepted(t", "link_pending_manual=true"])
     assert.ok(go.includes(seam), `missing real fixture seam: ${seam}`);
+  assert.doesNotMatch(go, /\bbhPublish\(/, "lbSetup already owns publication and domain cleanup");
+  assert.match(go, /"LC_BROWSER_INBOX_BUYER_ORIGIN": e\.origin/);
   assert.doesNotMatch(go, /e\.h\.(?:link|issue)\(/, "only the real UI may issue this link");
 });
 
 test("sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads", () => {
-  const scenario = spec.slice(spec.indexOf('test.describe("bundle recovery credential boundary"'));
-  assert.ok(scenario.length > 0, "real sensitive scenario is required");
-  assert.match(scenario, /trace: "off"/);
-  assert.match(scenario, /video: "off"/);
+  const start = spec.indexOf('test("INU09');
+  assert.ok(start >= 0, "real sensitive scenario is required");
+  const scenario = spec.slice(start);
+  assert.match(spec, /trace: "off"/);
+  assert.match(spec, /video: "off"/);
   assert.match(scenario, /grantPermissions\(\["clipboard-read", "clipboard-write"\]/);
   assert.match(scenario, /getByTestId\("bundle-copy-link"\)\.click\(\)/);
   assert.match(spec, /navigator\.clipboard\.readText\(\)/);
   assert.match(spec, /crypto\.subtle\.digest\("SHA-256"/);
-  assert.doesNotMatch(scenario, /page\.route\(|addInitScript|Object\.defineProperty|(?:response|issued|receipt)\.(?:json|text|body)\(/, "no request/clipboard mocks or credential response reads");
+  assert.equal(/page\.route\(|addInitScript|Object\.defineProperty|(?:response|issued|receipt)\.(?:json|text|body)\(/.test(scenario), false, "no request/clipboard mocks or credential response reads");
 });
 
 test("persisted link and token-free command receipt are compared without disclosing credentials", () => {
@@ -50,9 +53,10 @@ test("actual clipboard evaluator exports only safe summary and detects malformed
   }).outputText;
   const proof = new Function(code)();
   const credential = "X".repeat(43);
-  const original = `https://inbox-bundle.example/en/claim#t=${credential}`;
+  const expectedOrigin = "https://published-mock.example.test";
+  const original = `${expectedOrigin}/en/claim#t=${credential}`;
   for (const variant of ["safe", "DOM", "storage", "URL", "invalid", "origin"] as const) {
-    const copied = variant === "invalid" ? "SYNTHETIC-NON-URL" : variant === "origin" ? original.replace("inbox-bundle.example", "wrong.example") : original;
+    const copied = variant === "invalid" ? "SYNTHETIC-NON-URL" : variant === "origin" ? original.replace(expectedOrigin, "https://wrong.example") : original;
     const result = await proof({ evaluate(callback: Function, publishedOrigin: string) {
       const globals = {
         navigator: { clipboard: { readText: async () => copied } }, URL, TextEncoder, Uint8Array, crypto: webcrypto,
@@ -63,14 +67,19 @@ test("actual clipboard evaluator exports only safe summary and detects malformed
         publishedOrigin,
       };
       return runInNewContext(`(${callback.toString()})(publishedOrigin)`, globals);
-    } });
+    } }, expectedOrigin);
     assert.deepEqual(Object.keys(result).sort(), ["credentialSHA256", "fragment_valid", "origin_valid", "path_valid", "private_boundary"]);
     assert.ok(!JSON.stringify(result).includes(credential), "raw synthetic credential cannot leave the evaluator");
     if (variant === "invalid") assert.equal(result.fragment_valid, false);
     else assert.equal(result.credentialSHA256, createHash("sha256").update(credential).digest("hex"));
     if (["DOM", "storage", "URL", "invalid"].includes(variant)) assert.equal(result.private_boundary, false);
     if (variant === "origin") assert.equal(result.origin_valid, false);
-    if (variant === "safe") assert.equal(result.private_boundary, true);
+    if (variant === "safe") {
+      assert.equal(result.private_boundary, true);
+      assert.equal(result.origin_valid, true, "compare against the actual fixture's published origin");
+      assert.equal(result.path_valid, true);
+      assert.equal(result.fragment_valid, true);
+    }
   }
 });
 

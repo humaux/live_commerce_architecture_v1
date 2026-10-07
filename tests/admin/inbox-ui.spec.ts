@@ -4,46 +4,13 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
 import { nativePage } from "./fixtures/native-device";
-
-const required = (name: string) => {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is required`);
-  return value;
-};
-const origin = required("LC_BROWSER_PUBLIC_ORIGIN");
-const api = required("LC_BROWSER_API_ORIGIN");
-const evidence = required("LC_BROWSER_EVIDENCE");
-const store = required("LC_BROWSER_INBOX_STORE");
-const otherStore = required("LC_BROWSER_INBOX_OTHER_STORE");
-const ids = JSON.parse(required("LC_BROWSER_INBOX_IDS")) as Record<string, string>;
-const sentinels = [
-  "SYNTHETIC-INBOX-DM-PRIVATE-7c32",
-  "SYNTHETIC-INBOX-NAME-7c32",
-  "900007320001",
-  "SYNTHETIC-INBOX-REPLY-7c32",
-  "SYNTHETIC-INBOX-ACK-LOST-7c32",
-];
-const dm = sentinels[0];
-const ledger: Array<{
-  page: string;
-  control: string;
-  action: string;
-  expected: string;
-  actual: string;
-  status: string;
-}> = [];
+import { required, origin, api, evidence, store, otherStore, ids, sentinels, dm,
+  createInboxLedger, writeInboxLedger, selectFixtureStore, login, privateBoundary } from "./inbox-browser-support";
+const { ledger, record } = createInboxLedger();
 const consoleMessages: string[] = [];
-const record = (control: string, action: string, actual: string) =>
-  ledger.push({
-    page: "Messages",
-    control,
-    action,
-    expected: actual,
-    actual,
-    status: "PASS",
-  });
+
+
 test.use({
   baseURL: origin,
   headless: false,
@@ -69,36 +36,9 @@ test.afterEach(async ({}, info) => {
     });
 });
 test.afterAll(async () => {
-  await writeFile(resolve(evidence, "click-ledger.json"), JSON.stringify(ledger, null, 2), { mode: 0o600 });
+  await writeInboxLedger(ledger);
   await writeFile(resolve(evidence, "browser-console.json"), JSON.stringify(consoleMessages), { mode: 0o600 });
 });
-
-async function selectFixtureStore(page: Page, next: string) {
-  // The shell performs a full overview navigation; selector state alone can be a pre-navigation snapshot.
-  const overview = new URL(`/en?store=${next}`, origin).href;
-  const selector = page.getByTestId("shell-store-selector");
-  await expect(selector).toBeVisible();
-  if ((await selector.inputValue()) !== next) await selector.selectOption(next);
-  await expect(page).toHaveURL(overview);
-  await expect(page.getByTestId("inbox-page")).toHaveCount(0);
-  await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
-  await expect(page.getByTestId("nav-group-messages")).toBeVisible();
-}
-
-async function login(page: Page) {
-  await page.goto(new URL("/en/", origin).href);
-  await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  // Wait for the signed landing's default-store navigation before driving another real store change.
-  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en" &&
-    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.searchParams.get("store") ?? ""));
-  await expect(page.getByTestId("nav-group-messages")).toBeVisible();
-  await selectFixtureStore(page, store);
-  await page.getByTestId("nav-group-messages").click();
-  await expect(page).toHaveURL(new URL(`/en/messages?store=${store}`, origin).href);
-  await expect(page.getByTestId("inbox-page")).toBeVisible();
-  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
-  await expect(page.getByTestId(`conversation-${ids.open}`)).toContainText(sentinels[1]);
-}
 
 async function session(context: BrowserContext, token: string) {
   // Synthetic role credentials are fixture setup; admission is checked through real navigation/API.
@@ -131,25 +71,6 @@ async function facts(page: Page, conversation = "open") {
     reads: number;
     writes: number;
   };
-}
-
-async function privateBoundary(page: Page) {
-  for (const sentinel of sentinels) expect(page.url(), "I11 page URL").not.toContain(sentinel);
-  // G-UI8 audit [READ/MEASURE]: reads browser storage and resource URLs; never changes product state.
-  const state = await page.evaluate(async () => ({
-    local: JSON.stringify(Object.entries(localStorage)),
-    session: JSON.stringify(Object.entries(sessionStorage)),
-    databases: await indexedDB.databases(),
-    caches: await caches.keys(),
-    urls: performance.getEntriesByType("resource").map((entry) => entry.name),
-  }));
-  const serialized = JSON.stringify(state);
-  for (const sentinel of sentinels) expect(serialized, "I11 URL/storage sentinel leak").not.toContain(sentinel);
-  // Inbox may not create a persistence channel for customer text. Existing shell uses localStorage only.
-  expect(state.databases, "I11 IndexedDB must not persist inbox data").toEqual([]);
-  expect(state.caches, "I11 Cache Storage must not persist inbox data").toEqual([]);
-  for (const text of consoleMessages)
-    for (const sentinel of sentinels) expect(text, "I11 browser log leak").not.toContain(sentinel);
 }
 
 async function action(page: Page, id: string, suffix: string, click: () => Promise<unknown>) {
@@ -257,7 +178,7 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await open(page, ids.open);
   await expect(page.getByTestId("takeover")).toBeEnabled();
   record("release", "click then refresh/reopen", "auto mode persisted in real PG");
-  await privateBoundary(page);
+  await privateBoundary(page, consoleMessages);
 });
 
 test("INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is 404", async ({ page, context }) => {
@@ -293,7 +214,7 @@ test("INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is
   expect(denied.status()).toBe(403);
   expect(await denied.text()).not.toContain(dm);
   record("viewer denial", "navigate with catalogue viewer", "inbox nav absent; real backend denies 403 with no DM");
-  await privateBoundary(page);
+  await privateBoundary(page, consoleMessages);
 });
 
 test("INU08 committed send with lost acknowledgment retries exact body/key once", async ({ page }) => {
@@ -350,7 +271,7 @@ test("INU08 committed send with lost acknowledgment retries exact body/key once"
   await page.reload();
   await open(page, ids.retry);
   await expect(page.getByTestId("inbox-thread")).toContainText(sentinels[4]);
-  await privateBoundary(page);
+  await privateBoundary(page, consoleMessages);
   record(
     "ambiguous acknowledgment",
     "click send; committed response dropped; click Retry this submission",
@@ -383,7 +304,7 @@ test("INU03 closed message window and missing capability disable sends with visi
   await expect(page.getByTestId("reply-send")).toBeDisabled();
   await expect(page.getByTestId("inbox-thread")).toContainText(/permission|capability|權限/);
   record("missing capability", "reload and open conversation", "send disabled with capability reason");
-  await privateBoundary(page);
+  await privateBoundary(page, consoleMessages);
 });
 
 test("INU04 stale decrypted responses cannot repaint another conversation or store", async ({ page }) => {
@@ -457,7 +378,7 @@ test("INU04 stale decrypted responses cannot repaint another conversation or sto
     await expect(page.getByTestId(`conversation-${ids.foreign}`)).toBeVisible();
     await expect(page.getByTestId(`conversation-${ids.open}`)).toHaveCount(0);
     await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
-    await privateBoundary(page);
+    await privateBoundary(page, consoleMessages);
     record(
       "late response/store switch",
       "open pending A then B and switch shell store",
@@ -504,7 +425,7 @@ test("INU05 native hide clears private thread; visible return reauthorizes befor
     await expect(page.getByTestId("inbox-thread"), "INU05 hidden thread retains private DM").toHaveCount(0);
     await expect(page.locator("body")).not.toContainText(dm);
     await expect(page.locator("body")).not.toContainText(sentinels[1]);
-    await privateBoundary(page);
+    await privateBoundary(page, consoleMessages);
     const whileHidden = (await facts(page)).reads;
     expect(whileHidden).toBe(beforeHide);
     let seen = () => {};
@@ -605,7 +526,7 @@ for (const copy of localeCases) {
       // G-UI8 audit [READ/MEASURE]: geometry after real locale/filter/row clicks.
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: resolve(evidence, `inbox-${copy.locale}-${width}.png`), fullPage: true });
-      await privateBoundary(page);
+      await privateBoundary(page, consoleMessages);
       record(
         `viewport ${copy.locale}/${width}`,
         "select Messenger/open conversation",
@@ -627,7 +548,7 @@ for (const copy of localeCases) {
       await expect(page.getByTestId("reply-send")).toHaveText(copy.send);
       await expect(page.getByTestId("buyer-panel").getByRole("heading", { level: 2 })).toHaveText(copy.buyer);
       await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
-      await privateBoundary(page);
+      await privateBoundary(page, consoleMessages);
       record(
         `locale ${copy.locale}/${width}`,
         "switch locale and open conversation",
@@ -636,130 +557,3 @@ for (const copy of localeCases) {
     }
   });
 }
-
-
-// I11: the one-time credential stays inside this browser evaluation; the Node driver sees only booleans/digest.
-async function bundleClipboardProof(page: Page) {
-  return page.evaluate(async (publishedOrigin) => {
-    const copied = await navigator.clipboard.readText();
-    let target: URL;
-    try { target = new URL(copied); }
-    catch { return { origin_valid: false, path_valid: false, fragment_valid: false, private_boundary: false, credentialSHA256: "" }; }
-    const token = target.hash.startsWith("#t=") ? target.hash.slice(3) : "";
-    const fragmentValid = /^[A-Za-z0-9_-]{43}$/.test(token) && target.search === "";
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-    const privateState = JSON.stringify({
-      url: location.href, html: document.documentElement.outerHTML,
-      local: Object.entries(localStorage), session: Object.entries(sessionStorage),
-      resources: performance.getEntriesByType("resource").map((entry) => entry.name),
-    });
-    return {
-      origin_valid: target.origin === publishedOrigin && target.protocol === "https:",
-      path_valid: target.pathname === "/en/claim",
-      fragment_valid: fragmentValid,
-      private_boundary: fragmentValid && !privateState.includes(token) &&
-        (await indexedDB.databases()).length === 0 && (await caches.keys()).length === 0,
-      credentialSHA256: Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join(""),
-    };
-  }, "https://inbox-bundle.example");
-}
-
-async function bundleFacts(page: Page, credentialSHA256 = "", idempotencyKey = "") {
-  // POST carries the digest in a bounded body, never a URL/log; this test endpoint only SELECTs PG.
-  const response = await page.request.post(`${api}/__test/inbox-bundle-facts`, { data: { credentialSHA256, idempotencyKey } });
-  expect(response.status(), "credential-safe PG observation").toBe(200);
-  return await response.json() as {
-    links: number; generation: number; hash_matches: boolean; principal_matches: boolean;
-    ttl_valid: boolean; receipt_count: number; receipt_valid: boolean; pending_manual: boolean; dm_operations: number;
-  };
-}
-
-test.describe("bundle recovery credential boundary", () => {
-  // M7 contains a one-time token: retain-on-failure tracing would retain the response even when an assertion fails.
-  test.use({ trace: "off", video: "off", screenshot: "off" });
-  test.afterEach(async ({ page }) => {
-    // CI native clipboard is task-owned; clear the synthetic capability even after a failed assertion.
-    await page.evaluate(() => navigator.clipboard.writeText(""));
-  });
-  test("INU09 flagged bundle copies actual M7 link through native clipboard and persists one token-free receipt", async ({ page, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin });
-    // The generic diagnostic collector stores text. This sensitive case retains only local digests, never log bodies.
-    const consoleDigests: string[] = [];
-    const measureConsole = (text: string) => {
-      for (const candidate of text.match(/[A-Za-z0-9_-]{43}/g) ?? [])
-        consoleDigests.push(createHash("sha256").update(candidate).digest("hex"));
-    };
-    page.removeAllListeners("console");
-    page.removeAllListeners("pageerror");
-    page.on("console", (message) => measureConsole(message.text()));
-    page.on("pageerror", (error) => measureConsole(error.message));
-    await login(page);
-    const before = await bundleFacts(page);
-    expect(before.links).toBe(0);
-    expect(before.generation).toBe(0);
-    expect(before.receipt_count).toBe(0);
-    expect(before.pending_manual).toBe(true);
-    await page.getByTestId(`conversation-${ids.bundle}`).click();
-    await expect(page.getByTestId("bundle-recovery")).toBeVisible();
-    await expect(page.getByTestId("buyer-panel")).toBeVisible();
-    await expect(page.getByTestId("bundle-copy-link")).toBeEnabled();
-    await expect(page.getByTestId("reply-send")).toHaveCount(0);
-    const endpoint = `/api/stores/${store}/live-sessions/${ids.bundle_session}/claims/bundles/${ids.bundle}/link`;
-    let linkPosts = 0;
-    page.on("request", (request) => {
-      if (request.method() === "POST" && new URL(request.url()).pathname === endpoint) linkPosts++;
-    });
-    const bundlesRead = page.waitForResponse((response) => response.request().method() === "GET" &&
-      new URL(response.url()).pathname === `/api/stores/${store}/live-sessions/${ids.bundle_session}/claims/bundles`);
-    const issued = page.waitForResponse((response) => response.request().method() === "POST" &&
-      new URL(response.url()).pathname === endpoint);
-    await page.getByTestId("bundle-copy-link").click();
-    expect((await bundlesRead).status(), "real M6 generation read").toBe(200);
-    const response = await issued;
-    expect(response.status(), "real BFF M7 issuance").toBe(200);
-    expect(response.headers()["cache-control"]).toContain("no-store");
-    expect(response.headers()["referrer-policy"]).toBe("no-referrer");
-    const key = response.request().headers()["idempotency-key"];
-    expect(/^[A-Za-z0-9_-]{8,128}$/.test(key), "M7 uses a real command key").toBe(true);
-    expect(response.request().postDataJSON()).toEqual({ expected_generation: 0, release_binding: false });
-    // Never read, attach or log the credential-bearing M7 response body.
-    await expect(page.getByTestId("bundle-recovery").getByRole("status")).toHaveText("Link copied");
-    const copied = await bundleClipboardProof(page);
-    expect(copied.origin_valid).toBe(true);
-    expect(copied.path_valid).toBe(true);
-    expect(copied.fragment_valid).toBe(true);
-    expect(copied.private_boundary).toBe(true);
-    expect(/^[0-9a-f]{64}$/.test(copied.credentialSHA256)).toBe(true);
-    const after = await bundleFacts(page, copied.credentialSHA256, key);
-    expect(after.links).toBe(1);
-    expect(after.generation).toBe(1);
-    expect(after.hash_matches).toBe(true);
-    expect(after.principal_matches).toBe(true);
-    expect(after.ttl_valid).toBe(true);
-    expect(after.receipt_count).toBe(1);
-    expect(after.receipt_valid).toBe(true);
-    expect(after.pending_manual).toBe(false);
-    expect(after.dm_operations).toBe(before.dm_operations);
-    await page.getByTestId("bundle-copy-link").click();
-    await expect(page.getByTestId("bundle-recovery").getByRole("status")).toHaveText("Link copied");
-    const second = await bundleClipboardProof(page);
-    expect(second.credentialSHA256 === copied.credentialSHA256, "native recopy uses the cached credential").toBe(true);
-    expect(second.private_boundary).toBe(true);
-    expect(consoleDigests.includes(copied.credentialSHA256), "credential absent from console/errors").toBe(false);
-    const recopied = await bundleFacts(page, second.credentialSHA256, key);
-    expect(recopied.links).toBe(1);
-    expect(recopied.generation).toBe(1);
-    expect(recopied.hash_matches).toBe(true);
-    expect(recopied.receipt_count).toBe(1);
-    expect(recopied.receipt_valid).toBe(true);
-    expect(recopied.dm_operations).toBe(before.dm_operations);
-    expect(linkPosts).toBe(1);
-    const refreshed = page.waitForResponse((r) => r.request().method() === "GET" &&
-      new URL(r.url()).pathname === `/api/stores/${store}/inbox/conversations`);
-    await page.getByTestId("inbox-page").getByRole("button", { name: "Refresh", exact: true }).click();
-    expect((await refreshed).status()).toBe(200);
-    await expect(page.getByTestId(`conversation-${ids.bundle}`)).toHaveCount(0);
-    await privateBoundary(page);
-    record("Copy claim link", "select flagged bundle; click copy twice; refresh", "native clipboard matches one persisted M7 link; token-free receipt; no DM; manual flag clears");
-  });
-});

@@ -1,12 +1,12 @@
 // Purpose: execute the actual inbox login helper against a pending auth/store navigation counterexample.
-// Depends on: Node test/assert/fs, typescript-api; reads the real inbox-ui.spec.ts without running a browser.
+// Depends on: Node test/assert/fs, typescript-api; reads the real shared inbox-browser-support.ts without running a browser.
 // Used by: LC-U2b Node/static gate; MOCK Page covers navigation ordering only, browser acceptance remains CI.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 const ts = createRequire(import.meta.url)("typescript-api");
-const spec = readFileSync("tests/admin/inbox-ui.spec.ts", "utf8");
+const spec = readFileSync("tests/admin/inbox-browser-support.ts", "utf8");
 const source = ts.createSourceFile("inbox-ui.spec.ts", spec, ts.ScriptTarget.Latest, true);
 const origin = "https://mock-admin.invalid";
 const fixture = "10000000-0000-4000-8000-000000000001";

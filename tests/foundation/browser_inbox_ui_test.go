@@ -32,7 +32,7 @@ import (
 	"livecommerce/internal/oidclogin"
 )
 
-const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[\t ]+(?:tests/admin/)?inbox-ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[\t ]+›[\t ]+(INU[0-9]{2})\b`
+const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[\t ]+(?:tests/admin/)?inbox-(?:bundle-)?ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[\t ]+›[\t ]+(INU[0-9]{2})\b`
 const inboxFailureCountPattern = `(?m)^[\t ]*([0-9]{1,6}) (failed|passed|skipped|timed out|interrupted)\b`
 
 // inboxPlaywrightFailureSummary discards titles, assertions and DOM text before anything enters the Go/CI log.
@@ -49,7 +49,11 @@ func inboxPlaywrightFailureSummary(output []byte) []string {
 		add(fmt.Sprintf("%s %s", match[1], match[2]))
 	}
 	for _, match := range regexp.MustCompile(inboxFailureCasePattern).FindAllSubmatch(output, 20) {
-		add(fmt.Sprintf("failed %s (inbox-ui.spec.ts:%s:%s)", match[3], match[1], match[2]))
+		file := "inbox-ui.spec.ts"
+		if strings.Contains(string(match[0]), "inbox-bundle-ui.spec.ts") {
+			file = "inbox-bundle-ui.spec.ts"
+		}
+		add(fmt.Sprintf("failed %s (%s:%s:%s)", match[3], file, match[1], match[2]))
 	}
 	return lines
 }
@@ -66,7 +70,8 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	t.Run("failure_diagnostics", func(t *testing.T) {
 		const private = "SYNTHETIC_PRIVATE_DM_NAME_PSID"
 		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + " INU99 inbox-ui.spec.ts:999:9 › INU98\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
-		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)"
+		output = append(output, []byte("  3) tests/admin/inbox-bundle-ui.spec.ts:32:1 › INU09 "+private+"\n")...)
+		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)\nfailed INU09 (inbox-bundle-ui.spec.ts:32:1)"
 		if got := strings.Join(inboxPlaywrightFailureSummary(output), "\n"); got != want {
 			t.Fatal("failure summary differs or admits private text")
 		}
@@ -128,8 +133,17 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	e.h.open(t, ids["bundle_session"], claims.MatchExact)
 	ids["bundle"] = e.h.accepted(t, ids["bundle_session"], "", "SYNTHETIC-BUNDLE-BUYER", "BR1+1").BundleID
 	mustExec(t, f.owner, `UPDATE claims.bundles SET link_pending_manual=true WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, ids["bundle"])
-	const bundleOrigin = "https://inbox-bundle.example"
-	bhPublish(t, bcHarness{cqHarness: e.h.cqHarness}, bundleOrigin, f.tenantA, f.storeA1)
+	// lbSetup -> mciSetup already owns publication/domain setup and cleanup; reuse its single eligible origin.
+	var publishedFixture bool
+	if err := f.owner.QueryRow(ctx, `SELECT
+		EXISTS(SELECT 1 FROM control.storefront_publications WHERE tenant_id=$1 AND store_id=$2 AND published)
+		AND (SELECT count(*) FROM control.storefront_domains WHERE tenant_id=$1 AND store_id=$2 AND state='ACTIVE'
+		 AND ownership_verified_at IS NOT NULL AND tls_verified_at IS NOT NULL AND valid_until>clock_timestamp())=1
+		AND EXISTS(SELECT 1 FROM control.storefront_domains WHERE tenant_id=$1 AND store_id=$2 AND origin=$3
+		 AND state='ACTIVE' AND ownership_verified_at IS NOT NULL AND tls_verified_at IS NOT NULL AND valid_until>clock_timestamp())`,
+		f.tenantA, f.storeA1, e.origin).Scan(&publishedFixture); err != nil || !publishedFixture {
+		t.Fatal("inbox fixture needs its inherited published storefront and single eligible domain")
+	}
 	// Match command.Run's canonical IssueLink request; no credential is part of this receipt digest.
 	linkRequest, err := json.Marshal(struct {
 		PrincipalID        string `json:"principal_id"`
@@ -302,7 +316,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	log := browserLog(t, playwrightLog)
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/inbox-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
 	browser.Stdout, browser.Stderr = log, log
 	runErr := browser.Run()
 	closeErr := log.Close()
