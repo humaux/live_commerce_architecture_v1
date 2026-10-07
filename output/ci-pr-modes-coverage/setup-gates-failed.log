@@ -1,0 +1,50 @@
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'typescript-api'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/scripts/dev/ui-architecture-gate.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/scripts/dev/ui-architecture-gate.mjs:8:42
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/ci-pr-modes-coverage/scripts/dev/ui-architecture-gate.mjs'
+  ]
+}
+
+Node.js v24.15.0
+✖ tests/admin/shell-architecture.test.mjs (155.610208ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.621292ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.172542ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.713916ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (57.062042ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.608708ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.091792ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.137917ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (285.392ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.536042ms)
+✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.278709ms)
+✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.248875ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 694.278667
+
+✖ failing tests:
+
+test at tests/admin/shell-architecture.test.mjs:1:1
+✖ tests/admin/shell-architecture.test.mjs (155.610208ms)
+  'test failed'
