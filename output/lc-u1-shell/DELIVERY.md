@@ -1,7 +1,11 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: LC-U1 PR5 explicit list refresh, source08a560c2, trunk35abffca and prior CI37612856598.
+Depends on: PR5 SessionCopy title repair/comment4206805918, trunk1aad42d0 and automatic PR required-set workflow.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 PR5 — list-refresh driver and trunk conflict repair
+# LC-U1 PR5 — SessionCopy title and latest trunk repair
+
+Latest: [PR5-TITLE-DELIVERY.md](PR5-TITLE-DELIVERY.md). Fetch/merge **49dca3b8** includes **1aad42d0** and preceding PR4 fixes; preserve PR6 required workflow and LC sweep isolation. Closed-only title sync fixes same-session rename without erasing open input or remounting an UNKNOWN owner. Actual-component red→green; Node **672/672**, admin tsc, check-gates **79**, check-pkgdocs and depmap --check all exit0. **Commit only, no push; integrator pushes PR5, full required set runs automatically. New-source full PR acceptance remains NOT_RUN.**
+
+Earlier source and CI checkpoints below are historical, not this candidate's whole-runtime verdict.
 
 Current source **`08a560c2435bd45196870acfafe030577357f495`**, merge **a97f013c** includes trunk **35abffca** with both sides' routes/modes/Node tests. [PR5-DELIVERY.md](PR5-DELIVERY.md) records the explicit existing-button list refresh, 503→200/retry/no-new-receipt assertions and all15s waiter budgets. New regressions **3 RED → 4 GREEN**; Node **663/663**, admin tsc and check-gates **79** exit0. No automatic list poll restored. **Commit only; integrator pushes PR5 and reruns CI. Browser/full PR acceptance remains NOT_RUN on this candidate.**
 
