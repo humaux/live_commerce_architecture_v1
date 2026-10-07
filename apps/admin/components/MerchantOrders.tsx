@@ -1,5 +1,5 @@
 // Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
-// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css
+// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css, ./ParcelGroup, @/lib/parcels-copy
 // Used by: apps/admin/app/[locale]/orders/page.tsx
 "use client";
 
@@ -51,6 +51,8 @@ import { PickList } from "./PickList";
 import { selectOrders } from "@/lib/picklist-model";
 import { picklistCopy } from "@/lib/picklist-copy";
 import { TrackingImport } from "./TrackingImport";
+import { ParcelMerge, type ParcelGroupView } from "./ParcelGroup";
+import { parcelCopy } from "@/lib/parcels-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./orders-v2.css";
@@ -111,6 +113,13 @@ export function MerchantOrders({
   const [bulk, setBulk] = useState<{scope:string; rows:Record<string,boolean>}>({scope:"",rows:{}});
   const bulkRows = bulk.scope === bulkScope ? bulk.rows : {};
   const selectedIDs = Object.keys(bulkRows);
+  // W3-07B: parcel groups this session created/shipped/dissolved, fenced by the same store+session scope as the bulk
+  // selection. Membership knowledge survives list polls but not reloads (no group list route exists); the server guard
+  // in_parcel_group stays the authority for stale single-order shipments.
+  const parcelC = parcelCopy[locale];
+  const [parcels, setParcels] = useState<{ scope: string; groups: ParcelGroupView[] }>({ scope: "", groups: [] });
+  const parcelGroups = parcels.scope === bulkScope ? parcels.groups : [];
+  const groupOf = (orderID: string) => parcelGroups.find((g) => g.orderIDs.includes(orderID));
   function checkRows(rows:OrderSummaryV2[], checked:boolean) {
     setBulk(current => {
       const retained = current.scope === bulkScope ? current.rows : {};
@@ -609,6 +618,21 @@ export function MerchantOrders({
           canExport={!!actions?.orders_export} canShip={!!actions?.fulfillment_write} disabled={current.status !== "ready"}
           onClear={()=>setBulk({scope:bulkScope,rows:{}})}
           onViewOrder={id=>{previous.current=[];navigate(store.id,"all","",id,{...emptyFilters,q:`LC-${id.replaceAll("-","").toUpperCase()}`});}} />}
+        {/* W3-07B: merge-suggestion banner + group panels, above the list; only writers may merge (Go re-checks). */}
+        {store && session.current && actions?.fulfillment_write && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && (
+          <ParcelMerge
+            key={bulkScope}
+            locale={locale}
+            store={store.id}
+            boundary={session.current}
+            disabled={current.status !== "ready"}
+            c={parcelC}
+            shipmentCopy={c}
+            groups={parcelGroups}
+            onGroups={(next) => setParcels({ scope: bulkScope, groups: next })}
+            onChanged={() => setRefresh((v) => v + 1)}
+          />
+        )}
         {current.status === "ready" && current.page && (
           <>
             <TabStrip label={v2.counts} previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next} data-testid="orders-tabs">
@@ -648,6 +672,10 @@ export function MerchantOrders({
                       locale={locale}
                       selected={order === row.order_id}
                       isNew={fresh.has(row.order_id)}
+                      parcelBadge={(() => {
+                        const g = groupOf(row.order_id);
+                        return g ? parcelC.badge(g.short) : undefined;
+                      })()}
                       onSelect={() => choose(row)}
                       detail={order === row.order_id ? current.detail : null}
                       detailStatus={
@@ -662,6 +690,9 @@ export function MerchantOrders({
                               actions: actions ?? noActions,
                               boundary: session.current,
                               onChanged: reload,
+                              // W3-07B: OPEN group members get the group hint instead of the single-order shipment form.
+                              parcelBlockText: (orderID) =>
+                                groupOf(orderID)?.state === "OPEN" ? parcelC.blocked : undefined,
                             }
                           : null
                       }
@@ -711,6 +742,7 @@ function OrderRow({
   locale,
   selected,
   isNew,
+  parcelBadge,
   onSelect,
   detail,
   detailStatus,
@@ -726,6 +758,8 @@ function OrderRow({
   detail: OrderDetail | null;
   detailStatus: Status;
   sections: Sections | null;
+  // W3-07B: 合包 badge text when the order sits in a parcel group this session knows about.
+  parcelBadge?: string;
 }) {
   const v2 = ordersV2Copy[locale];
   return (
@@ -754,6 +788,11 @@ function OrderRow({
             {isNew && (
               <span className="orders-badge" data-testid={`order-new-${row.order_id}`}>
                 {c.newOrder}
+              </span>
+            )}
+            {parcelBadge && (
+              <span className="orders-badge" data-testid={`parcel-badge-${row.order_id}`}>
+                {parcelBadge}
               </span>
             )}
             {row.source === "merchant_manual" && (
