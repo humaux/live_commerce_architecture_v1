@@ -31,3 +31,7 @@ fi
 
 # W3-U1b pure selection, wire and request boundary negatives (no browser).
 node --test --experimental-strip-types tests/admin/picklist-model.test.ts
+
+# CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
+node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
+node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs

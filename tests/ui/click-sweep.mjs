@@ -11,6 +11,11 @@
 // is stale. tests/ui/click-sweep-known-defects.json is the explicit list (id, route, kind, owner unit): it classifies, it never silences.
 // Env: LC_SWEEP_ADMIN_ORIGIN LC_SWEEP_STORE LC_SWEEP_EVIDENCE LC_SWEEP_OUT LC_SWEEP_FACTS LC_SWEEP_CONTROL LC_SWEEP_CONTROL_KEY COMMERCE_BUYER_*;
 // optional LC_SWEEP_ONLY=admin,storefront,journeys  LC_SWEEP_PAGES=<route substrings>  LC_SWEEP_WORKERS=3  LC_SWEEP_SAMPLE=3 (alike controls per class).
+// LC_SWEEP_SHARD=i/N (CI): run only this shard's slice of the units (route x variant, storefront variant session, journeys; tests/ui/sweep-shard-lib.mjs). A shard checks
+// coverage and writes its slice in ledger.json summary.shard; tests/ui/sweep-aggregate.mjs fails the whole run if any unit is missing. Workers default to 1 when sharded:
+// every shard has its own PG/store, so the shared-store fingerprint of destructive controls cannot be raced by a sibling worker.
+// LC_SWEEP_INJECT_FAULT=drop-unit (gate calibration through gates.yml extra_env, never set by a real run): the shard silently skips its first admin unit; the coverage check
+// then writes coverage-missing and the aggregate names the unit, proving a dropped unit goes red (CLAUDE.md: a new gate needs one injected red run).
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -24,6 +29,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
+import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
 import {
   CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
@@ -39,8 +45,12 @@ const facts = JSON.parse(await readFile(env("LC_SWEEP_FACTS"), "utf8"));
 const control = { url: env("LC_SWEEP_CONTROL"), key: env("LC_SWEEP_CONTROL_KEY") };
 const only = new Set((process.env.LC_SWEEP_ONLY || "").split(",").filter(Boolean));
 const pageFilter = (process.env.LC_SWEEP_PAGES || "").split(",").filter(Boolean);
-const WORKERS = Number(process.env.LC_SWEEP_WORKERS || 3), SAMPLE = Number(process.env.LC_SWEEP_SAMPLE || 3), LAYER_ITEMS = 6;
+const shard = parseShard(process.env.LC_SWEEP_SHARD);
+const sweepPlan = planClick(adminRoutes, await loadWeights(), shard?.of ?? 1);
+const mine = (unitKey) => !shard || sweepPlan.owner.get(unitKey) === shard.index; // unsharded: every unit is mine
+const WORKERS = Number(process.env.LC_SWEEP_WORKERS || (shard ? 1 : 3)), SAMPLE = Number(process.env.LC_SWEEP_SAMPLE || 3), LAYER_ITEMS = 6;
 const run = (part) => only.size === 0 || only.has(part);
+let injectDrop = process.env.LC_SWEEP_INJECT_FAULT === "drop-unit"; // true until the one injected skip happened
 const wanted = (route) => pageFilter.length === 0 || pageFilter.some((f) => (f.startsWith("=") ? route === f.slice(1) : route.includes(f))); // "=/" selects exactly the route /
 const origin = facts.store_origin, HOST = new URL(origin).host;
 const t0 = Date.now();
@@ -50,11 +60,7 @@ const known = JSON.parse(await readFile(new URL("./click-sweep-known-defects.jso
 await mkdir(path.join(outDir, "screenshots"), { recursive: true });
 
 // ---- variants -----------------------------------------------------------------------------------------------------------------------------------------------
-const VARIANTS = [
-  { viewport: "desktop", size: { width: 1586, height: 992 }, locale: "zh-TW", mobile: false },
-  { viewport: "mobile", size: { width: 390, height: 844 }, locale: "zh-TW", mobile: true },
-  { viewport: "desktop", size: { width: 1586, height: 992 }, locale: "en", mobile: false },
-];
+const VARIANTS = CLICK_VARIANTS; // shared with sweep-aggregate.mjs: the aggregate counts the same three variants
 const ctxOptions = (v, extra = {}) => ({ viewport: v.size, screen: v.size, isMobile: v.mobile, hasTouch: v.mobile, locale: v.locale === "en" ? "en-US" : "zh-TW", deviceScaleFactor: 1, ignoreHTTPSErrors: true, ...extra });
 
 // ---- storefront process: production Next + synthetic https edge + CONNECT-only proxy (the pattern of tests/storefront/shop-real-gate.mjs) ----------------------
@@ -348,7 +354,7 @@ async function placeCodOrder(page, v, product) {
 }
 
 async function journeyProduct(state, journeys) {
-  const unit = { app: "journey", journey: "J1", route: "J1 product editor -> storefront", viewport: "desktop", locale: "zh-TW" };
+  const unit = { app: "journey", journey: "J1", route: JOURNEY_PAGES.J1[0], viewport: "desktop", locale: "zh-TW" };
   const tag = facts.journey_tag, title = `Sweep Journey Tee ${tag}`;
   const c = await browser.newContext(ctxOptions(VARIANTS[0], { storageState: state }));
   const page = await c.newPage();
@@ -424,7 +430,7 @@ async function journeyProduct(state, journeys) {
     // the storefront: a buyer finds it by clicking
     const sc = await browser.newContext(ctxOptions(VARIANTS[0]));
     const sp = await sc.newPage();
-    await step({ ...unit, route: "J1 storefront" }, "the buyer opens All products and clicks the new product", "its page opens with the title and an enabled Add to cart", async () => {
+    await step({ ...unit, route: JOURNEY_PAGES.J1[1] }, "the buyer opens All products and clicks the new product", "its page opens with the title and an enabled Add to cart", async () => {
       await sp.goto(`${origin}/zh-TW/products`);
       await sp.getByTestId("product-card").filter({ hasText: title }).first().click();
       await expect(sp.getByRole("heading", { level: 1 })).toHaveText(title);
@@ -435,7 +441,7 @@ async function journeyProduct(state, journeys) {
 }
 
 async function journeyAdminOrder(state, placed, journeys) {
-  const unit = { app: "journey", journey: "J3", route: "J2/J3 admin orders", viewport: "desktop", locale: "zh-TW" };
+  const unit = { app: "journey", journey: "J3", route: JOURNEY_PAGES.J23[0], viewport: "desktop", locale: "zh-TW" };
   const order = placed.get("desktop/zh-TW");
   if (!order) { ledger.add(rowBase(unit, "journey", "(no order)", { kind: "journey", result: "fail", failure: "journey-step", actual: "the storefront journey did not place the COD order" })); return; }
   journeys.cod_order = order.id;
@@ -483,7 +489,7 @@ async function journeyAdminOrder(state, placed, journeys) {
     // the buyer's lookup: a fresh browser finds the order by clicking
     const lc = await browser.newContext(ctxOptions(VARIANTS[0]));
     const lp = await lc.newPage();
-    await step({ ...unit, journey: "J2b", route: "J2 storefront order lookup" }, "a fresh buyer browser looks the order up (order id + phone) and sees it collected", "the lookup shows the order with the collected amount", async () => {
+    await step({ ...unit, journey: "J2b", route: JOURNEY_PAGES.J23[1] }, "a fresh buyer browser looks the order up (order id + phone) and sees it collected", "the lookup shows the order with the collected amount", async () => {
       await lp.goto(`${origin}/zh-TW/orders/lookup`);
       await lp.getByTestId("lookup-ref").fill(order.id);
       await lp.getByTestId("lookup-contact").fill(pii.phone);
@@ -496,7 +502,7 @@ async function journeyAdminOrder(state, placed, journeys) {
 }
 
 async function journeyDomain(state, journeys) {
-  const unit = { app: "journey", journey: "J4", route: "J4 custom domain", viewport: "desktop", locale: "zh-TW" };
+  const unit = { app: "journey", journey: "J4", route: JOURNEY_PAGES.J4[0], viewport: "desktop", locale: "zh-TW" };
   const host = `shop-${facts.journey_tag}.example.net`;
   const c = await browser.newContext(ctxOptions(VARIANTS[0], { storageState: state }));
   const page = await c.newPage();
@@ -526,7 +532,7 @@ async function journeyDomain(state, journeys) {
 }
 
 async function journeySignOut(state) {
-  const unit = { app: "journey", journey: "J5", route: "J5 sign out", viewport: "desktop", locale: "zh-TW" };
+  const unit = { app: "journey", journey: "J5", route: JOURNEY_PAGES.J5[0], viewport: "desktop", locale: "zh-TW" };
   const c = await browser.newContext(ctxOptions(VARIANTS[0], { storageState: state }));
   const page = await c.newPage();
   try {
@@ -588,40 +594,44 @@ try {
     const units = [];
     for (const route of adminRoutes) {
       if (!wanted(route.path)) continue;
-      // one task per route keeps the three variants of a route sequential (a state-changing click never races its own sibling variant)
-      units.push(async () => { for (const [i, v] of VARIANTS.entries()) { await adminUnit(state, route, v, route.path === "/" && !route.public); log(`admin ${route.path} ${v.viewport}/${v.locale} done`); } });
+      // one task per route keeps this shard's variants of a route sequential (a state-changing click never races its own sibling variant)
+      units.push(async () => { for (const v of VARIANTS) { if (!mine(pageKey("admin", route.path, v.viewport, v.locale))) continue; if (injectDrop) { injectDrop = false; log(`INJECTED FAULT: admin ${route.path} ${v.viewport}/${v.locale} silently skipped`); continue; } await adminUnit(state, route, v, route.path === "/" && !route.public); log(`admin ${route.path} ${v.viewport}/${v.locale} done`); } });
     }
     await pool(units, WORKERS);
   }
-  if (run("storefront")) await pool(VARIANTS.map((v) => () => storefrontSession(v, placed)), WORKERS);
-  if (run("journeys")) {
-    await journeyProduct(state, journeys);
-    await journeyAdminOrder(state, placed, journeys);
-    await journeyDomain(state, journeys);
-    await journeySignOut(state);
+  if (run("storefront")) await pool(VARIANTS.filter((v) => mine(`storefront|${v.viewport}|${v.locale}`)).map((v) => () => storefrontSession(v, placed)), WORKERS);
+  if (run("journeys")) { // J2/J3 read the COD order the storefront desktop/zh-TW session placed, so they run in the shard that owns that session (J23_OWNER)
+    if (mine(sweepPlan.journeyOwner.J1)) await journeyProduct(state, journeys);
+    if (mine(J23_OWNER)) await journeyAdminOrder(state, placed, journeys);
+    if (mine(sweepPlan.journeyOwner.J4)) await journeyDomain(state, journeys);
+    if (mine(sweepPlan.journeyOwner.J5)) await journeySignOut(state); // last: it ends the admin session every other unit of this shard used
   }
   await writeFile(path.join(outDir, "journeys.json"), JSON.stringify(journeys, null, 2));
 
-  // ---- coverage: every registry route and every buyer route x every variant must have been opened (a silent skip is a failure) ------------------------------
-  if (only.size === 0 && pageFilter.length === 0) {
-    const storefrontRoutes = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]"];
-    const opened = new Set(ledger.rows.filter((r) => r.control === "(page load)").map((r) => `${r.app}|${r.page}|${r.viewport}|${r.locale}`));
-    const expected = [...adminRoutes.map((r) => ["admin", r.path]), ...storefrontRoutes.map((r) => ["storefront", r])].flatMap(([app, route]) => VARIANTS.map((v) => `${app}|${route}|${v.viewport}|${v.locale}`));
+  // ---- coverage: every registry route and every buyer route x every variant OF THIS SHARD must have been opened (a silent skip is a failure) ----------------
+  // Unsharded, "this shard" is the whole universe. Sharded, tests/ui/sweep-aggregate.mjs proves the shards' slices together are the whole universe.
+  const complete = only.size === 0 && pageFilter.length === 0;
+  const ownedJourneys = Object.keys(sweepPlan.journeyOwner).filter((j) => mine(sweepPlan.journeyOwner[j]));
+  if (complete) {
+    const opened = new Set(ledger.rows.filter((r) => r.control === "(page load)").map((r) => pageKey(r.app, r.page, r.viewport, r.locale)));
+    const expected = sweepPlan.pages.filter((p) => mine(p.unit)).map((p) => p.page);
     const missing = expected.filter((e) => !opened.has(e));
     for (const m of missing) { const [app, page, viewport, locale] = m.split("|"); ledger.add(rowBase({ app, route: page, viewport, locale }, "page", "(coverage)", { result: "fail", failure: "coverage-missing", expected: "the route is opened at every viewport/locale", actual: "no page-load row was written for this route/variant" })); }
-    // /live (S6, a buyer live-room page) has no page in this base: stated, not hidden
-    ledger.add(rowBase({ app: "storefront", route: "/live", viewport: "-", locale: "-" }, "page", "(not implemented)", { result: "skip", expected: "ui-architecture section 4 lists /live (S6)", actual: "apps/storefront/app/[locale] has no live route in this base; nothing to click" }));
+    // /live (S6, a buyer live-room page) has no page in this base: stated, not hidden (written once: by the unsharded run or shard 1)
+    if (!shard || shard.index === 1) ledger.add(rowBase({ app: "storefront", route: "/live", viewport: "-", locale: "-" }, "page", "(not implemented)", { result: "skip", expected: "ui-architecture section 4 lists /live (S6)", actual: "apps/storefront/app/[locale] has no live route in this base; nothing to click" }));
   }
 
   // ---- verdict ------------------------------------------------------------------------------------------------------------------------------------------------
   const counts = ledger.counts();
   const failures = ledger.failures();
-  const { classified, stale } = matchKnown(failures, known);
+  const { classified, stale: staleAll } = matchKnown(failures, known);
+  const stale = shard ? [] : staleAll; // a known defect may belong to another shard's unit: staleness is decided over every shard's failures by sweep-aggregate.mjs
   const summary = {
     generated: new Date().toISOString(), engine: "chromium",
-    line: `${counts.pages} page/viewport/locale units opened (${counts.loads.fail} with a page-load failure), ${counts.controls.total} control clicks (${counts.controls.pass} pass, ${counts.controls.fail} fail, ${counts.controls.skip} skip), ${counts.journeys.total} journey steps (${counts.journeys.pass} pass, ${counts.journeys.fail} fail); failures: known ${classified.filter((c) => c.known).length}, new ${classified.filter((c) => !c.known).length}; stale known-defect entries ${stale.length}.`,
+    line: `${shard ? `shard ${shard.index}/${shard.of}: ` : ""}${counts.pages} page/viewport/locale units opened (${counts.loads.fail} with a page-load failure), ${counts.controls.total} control clicks (${counts.controls.pass} pass, ${counts.controls.fail} fail, ${counts.controls.skip} skip), ${counts.journeys.total} journey steps (${counts.journeys.pass} pass, ${counts.journeys.fail} fail); failures: known ${classified.filter((c) => c.known).length}, new ${classified.filter((c) => !c.known).length}; stale known-defect entries ${stale.length}.`,
     counts, failures: classified.map((c) => ({ id: c.row.id, app: c.row.app, page: c.row.page, viewport: c.row.viewport, locale: c.row.locale, control: c.row.control, failure: c.row.failure, actual: c.row.actual, known: c.known, screenshot: c.row.screenshot })),
     stale: stale.map((s) => s.id),
+    shard: shard ? shardReport(shard, sweepPlan.pages.map((p) => p.page), sweepPlan.pages.filter((p) => mine(p.unit)).map((p) => p.page), { complete, journeys: ownedJourneys }) : null,
   };
   await writeLedger(outDir, ledger.rows, summary);
   log(summary.line);
