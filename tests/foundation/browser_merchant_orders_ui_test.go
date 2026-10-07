@@ -421,8 +421,9 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	// the first order of a capability prepares cart + destination + quote, later ones re-select them at the live versions (prepare is
 	// single-use) and every order has two units (a one-unit total is not whole TWD and cannot start payment). paid=false stops at the
 	// hold (a DRAFT order that is never captured).
-	// The CVS pickup fixture above left the shared delivery service as a CVS kind at version 2; restore it to home first.
-	homeService := pfRestoreHome(t, q, 2)
+	// The read-only phase left a CVS service and a non-whole-TWD catalogue price sentinel. Reset fresh-checkout inputs only
+	// after all of its frozen-detail, read-only and native-visibility assertions above have passed.
+	homeService := pfRestoreParcelInputs(t, q, 2)
 	parcelBuyers := map[string]*pfBuyer{}
 	parcelOrder := func(buyerCap buyer.Capability, tag string, paid bool) string {
 		t.Helper()

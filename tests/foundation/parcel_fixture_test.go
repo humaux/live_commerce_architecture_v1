@@ -26,10 +26,10 @@ type pfBuyer struct {
 	service int64 // delivery service version every checkout input must carry (prepare hard-codes 1)
 }
 
-// pfRestoreHome flips the shared delivery service back to q.delivery's home kind at expectedVersion (a CVS fixture earlier in the
-// MOU harness left it as a CVS service) and returns the new version, which pfNewBuyer must be given: begin refuses a stale
-// ServiceVersion (checkout.go service.Version != in.ServiceVersion) and a home destination cannot use a CVS service.
-func pfRestoreHome(t *testing.T, q pqFixture, expectedVersion int64) int64 {
+// pfRestoreParcelInputs restores the home service and seed price after the MOU read-only/frozen-detail proof.
+// Fresh parcel orders must not inherit that proof's non-whole-TWD price sentinel; existing order snapshots are never changed.
+// The returned live service version is required by begin; a home destination cannot use the earlier CVS service.
+func pfRestoreParcelInputs(t *testing.T, q pqFixture, expectedVersion int64) int64 {
 	t.Helper()
 	home := q.delivery
 	home.ExpectedVersion = expectedVersion
@@ -37,11 +37,13 @@ func pfRestoreHome(t *testing.T, q pqFixture, expectedVersion int64) int64 {
 	if err != nil {
 		t.Fatalf("restore the home delivery service: %v", err)
 	}
+	// Fixture-only catalog.skus reset, after the earlier frozen-order/read-only assertions; no payment guard is bypassed.
+	mustExec(t, q.f.owner, `UPDATE catalog.skus SET price_minor=$2 WHERE id=$1`, q.stock.skus[0].ID, q.stock.skus[0].PriceMinor)
 	return svc.Version
 }
 
 // pfNewBuyer starts a buyer on a COPY of q bound to capability cap (q itself is never mutated); service is the live delivery
-// service version (1 when nothing changed it, else the value pfRestoreHome returned).
+// service version (1 when nothing changed it, else the value pfRestoreParcelInputs returned).
 func pfNewBuyer(q pqFixture, cap buyer.Capability, service int64) *pfBuyer {
 	clone := q
 	clone.cap = cap
@@ -111,13 +113,20 @@ func (b *pfBuyer) rehome(t *testing.T, tag string, items []storefront.Item) {
 // capability at the identical home destination, then proves they are one owner / one destination hash (so one merge suggestion).
 func TestParcelFixtureSameBuyerTwoOrders(t *testing.T) {
 	q := pqSetup(t)
+	var frozenBefore string
+	if err := q.f.owner.QueryRow(context.Background(), `SELECT md5(snapshot::text) FROM checkout.orders WHERE id=$1`, q.hold.OrderID).Scan(&frozenBefore); err != nil {
+		t.Fatal(err)
+	}
+	// The earlier MOU frozen-detail proof changes the live catalogue after creating its original orders.
+	// Fresh parcel checkouts must not inherit that non-whole-TWD sentinel price.
+	mustExec(t, q.f.owner, `UPDATE catalog.skus SET price_minor=99999 WHERE id=$1`, q.stock.skus[0].ID)
 	// The MOU harness flips the shared delivery service to a CVS kind (version 2) for its pickup fixture BEFORE the parcel stage.
 	cvs := q.delivery
 	cvs.ExpectedVersion, cvs.DeliveryKind = 1, "cvs_familymart"
 	if _, err := dsSet(q.cqHarness, t04Key("pf-cvs-service"), cvs); err != nil {
 		t.Fatalf("flip the service to CVS: %v", err)
 	}
-	b := pfNewBuyer(q, mustIssue(t, q.cqHarness.service, q.f.storeA1), pfRestoreHome(t, q, 2))
+	b := pfNewBuyer(q, mustIssue(t, q.cqHarness.service, q.f.storeA1), pfRestoreParcelInputs(t, q, 2))
 	o1, o2 := b.order(t, "a", true), b.order(t, "b", true)
 	if o1 == o2 {
 		t.Fatalf("both orders have id %s", o1)
@@ -131,5 +140,9 @@ func TestParcelFixtureSameBuyerTwoOrders(t *testing.T) {
 	}
 	if owners != 1 || hashes != 1 {
 		t.Fatalf("two paid orders of the pair: %d owners, %d destination hashes, want 1 and 1", owners, hashes)
+	}
+	var frozenAfter string
+	if err := q.f.owner.QueryRow(context.Background(), `SELECT md5(snapshot::text) FROM checkout.orders WHERE id=$1`, q.hold.OrderID).Scan(&frozenAfter); err != nil || frozenAfter != frozenBefore {
+		t.Fatal("parcel fixture reset changed the original order snapshot", err)
 	}
 }
