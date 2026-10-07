@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:http";
-import { registerHooks } from "node:module";
+import { createRequire, registerHooks } from "node:module";
 import type { AddressInfo } from "node:net";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -12,6 +12,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const adminRoot = fileURLToPath(new URL("../../apps/admin/", import.meta.url));
 registerHooks({
   resolve(specifier, context, next) {
+    if (specifier === "next/constants") return {
+      // Next's CJS constants need a named-export bridge under Node strip-types; values remain the installed module's.
+      url: "data:text/javascript," + encodeURIComponent(`import constants from ${JSON.stringify(pathToFileURL(adminRoot + "node_modules/next/constants.js").href)}; export const PHASE_PRODUCTION_BUILD = constants.PHASE_PRODUCTION_BUILD;`),
+      shortCircuit: true,
+    };
     if (specifier === "server-only")
       return { url: "data:text/javascript,", shortCircuit: true };
     // Authenticated Request-driven handlers must never call the ambient fixture adapter.
@@ -25,7 +30,7 @@ registerHooks({
         url: pathToFileURL(adminRoot + specifier.slice(2) + ".ts").href,
         shortCircuit: true,
       };
-    if (specifier.startsWith(".") && !/\.[a-z]+$/.test(specifier))
+    if (specifier.startsWith(".") && !context.parentURL?.includes("/node_modules/") && !/\.[a-z]+$/.test(specifier))
       return next(specifier + ".ts", context);
     return next(specifier, context);
   },
@@ -454,4 +459,25 @@ test("non-JSON upstream 401 still expires both authentication cookies without di
     JSON.stringify(result.body),
     /PRIVATE_UPSTREAM_DIAGNOSTIC/,
   );
+});
+
+
+test("real M7 response keeps no-referrer after matching Next production header rules", async () => {
+  const nextConfig = (await import(pathToFileURL(adminRoot + "next.config.ts").href)).default("inbox-node-test");
+  const rules = await nextConfig.headers();
+  const { getPathMatch } = createRequire(adminRoot + "package.json")("next/dist/shared/lib/router/utils/path-match.js");
+  const path = `live-sessions/${cid}/claims/bundles/${customer}/link`;
+  for (const status of [200, 401, 403]) {
+    answer = { status, body: JSON.stringify(status === 200 ? { token: "M".repeat(42) + "A", generation: 1,
+      expires_at: "2099-01-01T00:00:00Z", released: false, replayed: false } : { code: status === 401 ? "unauthorized" : "forbidden" }) };
+    const result = await call(path, { method: "POST", body: { expected_generation: 0, release_binding: false } });
+    assert.equal(result.status, status);
+    assert.equal(result.headers.get("referrer-policy"), "no-referrer", "actual handler with real Request");
+    const effective = new Headers(result.headers);
+    for (const rule of rules) {
+      if (getPathMatch(rule.source)(`/api/stores/${store}/${path}`))
+        for (const header of rule.headers) effective.set(header.key, header.value);
+    }
+    assert.equal(effective.get("referrer-policy"), "no-referrer", "global Next header rules must not replace M7 privacy policy");
+  }
 });
