@@ -55,6 +55,9 @@ escalates to the integrator instead of looping (`AGENTS.md`).
    ("try to break it"). P0/P1 block merge.
 6. **Integrate** (integrator): merge into the release branch, run the affected focused suites,
    push, let CI run the full suite. Record evidence (§4). Update `contracts/tasks.json`.
+   - **Integration is by PR only** into `r3/integration`. The required gates are fixed by the repo (`scripts/dev/pr-modes.mjs`, table in GATES.md "Pull-request gates"); the merging agent does not pick
+     modes. Calibration and fault-injection runs stay an extra `workflow_dispatch`. Squash-merge only after the check `Gates (GitHub runners) / required` is green AND the commit status
+     `review/independent` (posted on the PR head SHA by the reviewer or integrator) is success.
    - **Full G07 is mandatory** (`release-gate.sh --strict --only G07`) for any unit that touches `migrations/`,
      a GRANT/POLICY/definer, or the checkout/storefront runtime path — in the unit's own acceptance AND right after
      the integrator's merge, not only at the final gate. Focused regexes miss other domains' frozen ACL inventories
