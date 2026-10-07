@@ -1,3 +1,6 @@
+// Purpose: Strict frozen ADS DTO parsing and display-only input hints.
+// Depends on: No runtime packages; contracts/meta-ads-v1.md.
+// Used by: ads-client.ts, ADS components and pure node tests.
 // Admin ads model: strict parsers for the frozen ads DTOs plus the pure money/date/draft-input rules.
 // Read by components/Ads.tsx and lib/ads-client.ts; BFF `/api/stores/{store}/ads/*`
 // -> Go `internal/httpapi/ads.go` (contracts/meta-ads-v1.md §5.1, §5.2, §7; docs/delivery/units/ads-core.md "Frozen HTTP").
@@ -32,6 +35,7 @@ export const adsServerCodes = [
   "revision_changed", "over_allowance", "billing_restricted", "attempt_changed", "prior_attempt_not_paused",
   "draft_approved", "budget_below_minimum", "not_whole_unit", "currency_mismatch", "starts_too_soon",
   "binding_disabled", "source_not_owned", "product_not_published", "forbidden", "not_found", "invalid_request",
+  "operations_in_flight", "binding_in_use",
 ] as const;
 export const adsSessionCodes = [
   "unauthorized", "retry_later", "rate_limited", "invalid_json", "json_required", "method_not_allowed", "conflict",
@@ -509,3 +513,53 @@ export function validCapi(enabled: boolean, datasetBindingID: string, testCode: 
 
 // Meta account_status (Marketing API AdAccount): only 1 lets an ad account run ads.
 export const accountReady = (status: number) => status === 1;
+
+
+// W6-06B: these DTOs are exact allowlists; token material and operation payloads never reach the view.
+function exact(value: unknown, keys: readonly string[], name: string): Rec {
+  const o = rec(value, name);
+  if (Object.keys(o).length !== keys.length || keys.some((key) => !Object.hasOwn(o,key))) throw new AdsParseError(name);
+  return o;
+}
+export type AdsUnbind = {unbound:boolean; ad_account_id:string; binding_ids:string[]; already_unbound:boolean};
+/** Reads the frozen unbind receipt, with no side effects. */
+export function parseAdsUnbind(value: unknown): AdsUnbind {
+  const o = exact(value,["unbound","ad_account_id","binding_ids","already_unbound"],"unbind");
+  const ad_account_id = str(o,"ad_account_id",40);
+  if (!/^[0-9]{1,40}$/.test(ad_account_id)) throw new AdsParseError("ad_account_id");
+  const binding_ids = list(o.binding_ids,"binding_ids",100,(value)=>uuid({value},"value"));
+  const unbound = bool(o,"unbound"), already_unbound = bool(o,"already_unbound");
+  if (unbound === already_unbound || unbound !== (binding_ids.length > 0) || new Set(binding_ids).size !== binding_ids.length) throw new AdsParseError("unbind_outcome");
+  return {unbound,ad_account_id,binding_ids,already_unbound};
+}
+export type AdsInFlight = {operations:{operation_id:string;action:string;state:"DISPATCHING"|"UNKNOWN"|"ACKNOWLEDGED"}[];operations_total:number};
+/** Reads only the frozen safe details of an operations_in_flight refusal. */
+export function parseAdsInFlight(value: unknown): AdsInFlight {
+  const o = exact(value,["operations","operations_total"],"in_flight");
+  const operations = list(o.operations,"operations",50,(value)=> {
+    const r = exact(value,["operation_id","action","state"],"operation");
+    const action = str(r,"action",64);
+    if (!/^[a-z][a-z0-9_.]{0,63}$/.test(action)) throw new AdsParseError("action");
+    return {operation_id:uuid(r,"operation_id"),action,state:oneOf(r,"state",["DISPATCHING","UNKNOWN","ACKNOWLEDGED"] as const)};
+  });
+  const operations_total = int(o,"operations_total",1,Number.MAX_SAFE_INTEGER);
+  if (!operations.length || operations_total < operations.length) throw new AdsParseError("operations_total");
+  return {operations,operations_total};
+}
+export type CatalogFeed = {feed_url:string|null;domains:{origin:string;feed_url:string}[];path:"/feeds/meta.csv"};
+/** Reads public scheduled-feed URLs; never accepts credentials, query strings or mismatched domains. */
+export function parseCatalogFeed(value: unknown): CatalogFeed {
+  const o = exact(value,["feed_url","domains","path"],"catalog_feed");
+  if (o.path !== "/feeds/meta.csv") throw new AdsParseError("path");
+  const domains = list(o.domains,"domains",100,(value)=> {
+    const r = exact(value,["origin","feed_url"],"domain");
+    const origin = str(r,"origin",2048), feed_url = str(r,"feed_url",2080);
+    let url: URL;
+    try { url = new URL(origin); } catch {throw new AdsParseError("origin");}
+    if (url.protocol !== "https:" || url.origin !== origin || url.username || url.password || feed_url !== origin+o.path) throw new AdsParseError("feed_url");
+    return {origin,feed_url};
+  });
+  const feed_url = o.feed_url === null ? null : str(o,"feed_url",2080);
+  if ((domains.length === 0) !== (feed_url === null) || (domains.length > 0 && feed_url !== domains.map(d=>d.origin).sort()[0]+o.path) || new Set(domains.map(d=>d.origin)).size !== domains.length) throw new AdsParseError("feed_url");
+  return {feed_url,domains,path:"/feeds/meta.csv"};
+}

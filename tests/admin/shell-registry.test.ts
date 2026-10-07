@@ -158,3 +158,8 @@ test("G-UI1 dynamic and public routes match, details never appear as navigation"
   for (const r of routes.filter((r) => r.path.includes("[") || r.public))
     assert.equal(r.nav, false);
 });
+
+test("W6-U2 ledger is a settings in-page route, preserving existing navigation",()=>{
+ const ledger=matchRoute("/settings/operations")!;assert.equal(ledger.nav,false);assert.equal(ledger.permission,"integration:read");assert.equal(ledger.spec,"tests/admin/operations-ads.spec.ts");
+ assert.deepEqual(routes.filter(r=>r.group==="settings"&&r.nav).map(r=>r.id),["settings","team","billing"]);
+});

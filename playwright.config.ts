@@ -4,6 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 // silently run signed-identity tests against a ledger's shared dev bearer.
 const suite = process.env.LC_BROWSER_SUITE ?? "ledger";
 const suites: Record<string, string[]> = {
+  "operations-ads": ["operations-ads.spec.ts"],
   ledger: ["ledger.spec.ts", "production.spec.ts", "visual-states.spec.ts"],
   "identity-mock": ["auth.spec.ts"],
   "entry-mock": ["entry.spec.ts"],

@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
+  parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
   canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, emptyForm, epochToLocal,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
@@ -20,6 +20,7 @@ const frozenCodes = [
   "revision_changed", "over_allowance", "billing_restricted", "attempt_changed", "prior_attempt_not_paused",
   "draft_approved", "budget_below_minimum", "not_whole_unit", "currency_mismatch", "starts_too_soon",
   "binding_disabled", "source_not_owned", "product_not_published", "forbidden", "not_found", "invalid_request",
+  "operations_in_flight", "binding_in_use",
 ];
 const frozenStatuses = ["DRAFT", "APPROVED", "SUBMITTING", "REMOTE_PAUSED", "ACTIVE", "PAUSED", "UNKNOWN", "FAILED", "ENDED", "REJECTED"];
 
@@ -327,4 +328,52 @@ test("capi body and validation", () => {
   assert.equal(validCapi(true, uuid(4), "TEST_1-a"), true);
   assert.equal(validCapi(true, uuid(4), "bad code"), false);
   assert.equal(validCapi(false, "junk", ""), false);
+});
+
+
+test("W6-06B unbind response: exact keys, account, UUIDs and outcome semantics", () => {
+  const value = {unbound:true,ad_account_id:"9002",binding_ids:[uuid(1)],already_unbound:false};
+  assert.deepEqual(parseAdsUnbind(value),value);
+  assert.deepEqual(parseAdsUnbind({...value,unbound:false,binding_ids:[],already_unbound:true}).binding_ids,[]);
+  for (const bad of [{...value,token:"never"},{...value,ad_account_id:"act_9002"},{...value,binding_ids:["bad"]},
+    {...value,already_unbound:true},{...value,unbound:false},{...value,binding_ids:[]}, {...value,binding_ids:[uuid(1),uuid(1)]}])
+    assert.throws(()=>parseAdsUnbind(bad),AdsParseError);
+});
+
+test("W6-06B in-flight details preserve bounded items and total, reject unknown shapes", () => {
+  const row = {operation_id:uuid(1),action:"meta.ads.pause",state:"UNKNOWN"};
+  const value = {operations:[row],operations_total:51};
+  assert.deepEqual(parseAdsInFlight(value),value);
+  for (const state of ["DISPATCHING","UNKNOWN","ACKNOWLEDGED"])
+    assert.equal(parseAdsInFlight({...value,operations:[{...row,state}]}).operations[0].state,state);
+  for (const bad of [{...value,request:{}},{...value,operations:[]},{...value,operations_total:0},
+    {...value,operations_total:1.5},{...value,operations:[{...row,payload:{}}]},
+    {...value,operations:[{...row,state:"READY"}]},{...value,operations:[{...row,operation_id:"bad"}]},
+    {...value,operations:Array.from({length:51},()=>row)}]) assert.throws(()=>parseAdsInFlight(bad),AdsParseError);
+});
+
+test("W6-06B catalog feed has exact public URL/domain pairs or published-store empty", () => {
+  const domain = {origin:"https://shop.example",feed_url:"https://shop.example/feeds/meta.csv"};
+  const value = {feed_url:domain.feed_url,domains:[domain],path:"/feeds/meta.csv"};
+  assert.deepEqual(parseCatalogFeed(value),value);
+  assert.deepEqual(parseCatalogFeed({feed_url:null,domains:[],path:"/feeds/meta.csv"}).domains,[]);
+  for (const bad of [{...value,token:"never"},{...value,path:"/other"},{...value,feed_url:null},
+    {...value,domains:[]},{...value,domains:[{...domain,token:"never"}]},
+    {...value,feed_url:"javascript:alert(1)"},{...value,domains:[{...domain,origin:"https://user:pw@shop.example"}]},
+    {...value,domains:[{...domain,feed_url:domain.feed_url+"?token=secret"}]}]) assert.throws(()=>parseCatalogFeed(bad),AdsParseError);
+});
+
+test("W6-06B copy preserves unbind boundaries and feed recovery in three locales", () => {
+  for (const c of Object.values(adsCopy)) {
+    for (const key of ["unbindButton","unbindTitle","unbindHistory","unbindPause","unbindLocal","unbindCapi","unbindConfirm","unbound",
+      "feedTitle","feedHowTo","feedEmpty","feedCopy","feedCopied","feedCopyFailed"]) assert.ok(c[key as keyof typeof c],key);
+    assert.equal(typeof c.inFlightTotal(51,50),"string");
+  }
+});
+
+
+test("W6-06B feed selection follows origin order, not full feed URL order", () => {
+  const domains = ["https://a.example","https://a.example.xyz"].map(origin=>({origin,feed_url:origin+"/feeds/meta.csv"}));
+  assert.equal(parseCatalogFeed({feed_url:domains[0].feed_url,domains,path:"/feeds/meta.csv"}).feed_url,domains[0].feed_url);
+  assert.throws(()=>parseCatalogFeed({feed_url:domains[1].feed_url,domains,path:"/feeds/meta.csv"}),AdsParseError);
 });

@@ -1,0 +1,16 @@
+$ LC_BROWSER_SUITE=operations-ads (synthetic required env) /Volumes/data/live_commerce_architecture_v1/node_modules/.bin/playwright test --config playwright.config.ts --list
+Listing tests:
+  operations-ads.spec.ts:76:1 › ledger filters, details, capabilities, object links, next page and store isolation
+  operations-ads.spec.ts:112:1 › cancel, registered read retry and query persist after refresh
+  operations-ads.spec.ts:128:1 › fresh server CAS and daily query cap refuse stale confirmations
+  operations-ads.spec.ts:156:1 › read-only permissions hide mutation controls after reload
+  operations-ads.spec.ts:171:1 › ad unbind refuses counting/in-flight operations, then preserves history after refresh; feed copies
+  operations-ads.spec.ts:203:3 › labels and no overflow zh-TW 1586
+  operations-ads.spec.ts:203:3 › labels and no overflow zh-TW 390
+  operations-ads.spec.ts:203:3 › labels and no overflow en 1586
+  operations-ads.spec.ts:203:3 › labels and no overflow en 390
+  operations-ads.spec.ts:203:3 › labels and no overflow zh-CN 1586
+  operations-ads.spec.ts:203:3 › labels and no overflow zh-CN 390
+Total: 11 tests in 1 file
+
+exit_code=0

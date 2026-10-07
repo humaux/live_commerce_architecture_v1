@@ -23,6 +23,7 @@ import {
   type FormEvent,
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { operationsCopy } from "@/lib/operations-copy";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
@@ -1645,6 +1646,7 @@ export function SettingsWizard({
     >
       <div className="settings-page" data-testid="settings-wizard">
         <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
+        {store && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
         <ol className="settings-steps" aria-label={c.title}>
           {c.steps.map((label, index) => {
             const number = (index + 1) as 1 | 2 | 3 | 4;

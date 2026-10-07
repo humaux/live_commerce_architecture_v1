@@ -1,0 +1,46 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.500292ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.359291ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.259334ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.286417ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.538167ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.207333ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.2025ms)
+✔ money: whole units to minor with integer math; TWD must be whole (27.876833ms)
+✔ draft input: exact 11-key body and every local rule (1.898792ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.162375ms)
+✔ settings parser: environment enum, connections, identities, capi (0.346417ms)
+✔ connect state parser: pick list kinds and id match (0.115875ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.286084ms)
+✔ capi body and validation (0.088375ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.169375ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.163459ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.196083ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.062458ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.063667ms)
+✔ route grammar: exactly the frozen resources except meta/connect and meta/callback (1.28725ms)
+✔ query rule: only report has a query, from+to exactly once, real dates, at most 92 days (0.246209ms)
+✔ headers: If-Match is a bare revision, Idempotency-Key is the repo grammar (0.119833ms)
+✔ connect cookie: httpOnly, Secure, Lax, Path is the callback only, 10 minutes; cleared with Max-Age=0 (0.137875ms)
+✔ connect body: exactly {store: uuid} (0.305167ms)
+✔ dialog URL: only exactly https://www.facebook.com (0.400083ms)
+✔ callback parameters: bounded charset/length, duplicates rejected, Meta cancel is denied, extras ignored (3.060667ms)
+✔ callback redirect: only fixed codes and canonical uuids ever reach the URL (never code/state) (0.163083ms)
+✔ callback Go answers map to the fixed connect_error values (0.143333ms)
+✔ Go transport split: pause/end bodiless, approve keyless, nothing else (0.25025ms)
+✔ W6-06B route grammar and exact unbind body (0.196834ms)
+✔ W6-U2 unbind rejects literal and escaped duplicate account keys (0.047375ms)
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (0.819792ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.967916ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (22.366291ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.174917ms)
+✔ read-only store capability never exposes a command even if the state allows one (0.059125ms)
+✔ duplicate escaped keys cannot bypass the exact command grammar (0.045083ms)
+✔ query backoff affects only its operation and expires without another action (0.046209ms)
+ℹ tests 38
+ℹ suites 0
+ℹ pass 38
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 139.911583

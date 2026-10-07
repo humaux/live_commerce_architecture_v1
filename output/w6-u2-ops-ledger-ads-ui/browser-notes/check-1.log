@@ -1,0 +1,3 @@
+$ go vet -tags browser ./tests/foundation
+
+exit_code=0
