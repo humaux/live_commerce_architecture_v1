@@ -58,13 +58,13 @@ async function writeInboxLedger(ledger: ReturnType<typeof createInboxLedger>["le
 }
 /** Switch through the real shell control and await its completed store navigation. */
 async function selectFixtureStore(page: Page, next: string) {
-  // The shell goes through overview, then redirects live_operator to its allowed Messages home.
-  const destination = new URL(`/en/messages?store=${next}`, origin).href;
+  // The two fixture stores have different role homes. Both redirect away from Overview after a full store navigation.
   const selector = page.getByTestId("shell-store-selector");
   await expect(selector).toBeVisible();
-  if ((await selector.inputValue()) !== next) {
+  if ((await selector.inputValue()) !== next || new URL(page.url()).searchParams.get("store") !== next) {
     await selector.selectOption(next);
-    await expect(page).toHaveURL(destination);
+    await expect(page).toHaveURL((url) => url.origin === origin && url.searchParams.get("store") === next &&
+      url.pathname !== "/en" && url.pathname !== "/en/");
   }
   await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
   await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
@@ -75,9 +75,11 @@ async function selectFixtureStore(page: Page, next: string) {
 async function login(page: Page) {
   await page.goto(new URL("/en/", origin).href);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  // This role cannot view dashboard: wait for its actual signed-in home before selecting a store.
-  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+  // Default-store permissions decide the role home; enter Messages through its real navigation first.
   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+  await page.getByTestId("nav-group-messages").click();
+  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
+  await expect(page.getByTestId("inbox-page")).toBeVisible();
   await selectFixtureStore(page, store);
   await page.getByTestId("nav-group-messages").click();
   await expect(page).toHaveURL(new URL(`/en/messages?store=${store}`, origin).href);

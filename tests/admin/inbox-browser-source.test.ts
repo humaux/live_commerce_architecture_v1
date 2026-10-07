@@ -13,7 +13,9 @@ const fixture = "10000000-0000-4000-8000-000000000001";
 const other = "20000000-0000-4000-8000-000000000002";
 
 for (const initialStore of [other, fixture]) {
-test(`actual login settles the role home and fixture store (${initialStore === fixture ? "already selected" : "real switch"})`, async () => {
+for (const home of ["/en/inventory", "/en/messages"]) {
+for (const scoped of [false, true]) {
+test(`actual login settles ${home} and fixture store (${initialStore === fixture ? "already selected" : "real switch"}, scoped=${scoped})`, async () => {
   const helpers = source.statements.filter((n: any) => ts.isFunctionDeclaration(n) &&
     ["login", "selectFixtureStore"].includes(n.name?.text)).map((n: any) => n.getText(source)).join("\n");
   assert.ok(helpers.includes("async function login"), "exercise the real login declaration");
@@ -21,12 +23,15 @@ test(`actual login settles the role home and fixture store (${initialStore === f
   const events: string[] = [];
   const matches = (value: string | RegExp | ((url: URL) => boolean)) =>
     typeof value === "string" ? url === value : value instanceof RegExp ? value.test(url) : value(new URL(url));
+  const settleAuth = () => {
+    if (authPending) { authPending = false; url = `${origin}${home}${scoped ? `?store=${initialStore}` : ""}`; selected = initialStore; events.push("auth settled"); }
+  };
   const page: any = {
     async goto(value: string) { url = value; events.push("goto"); },
     url: () => url,
     async waitForURL(value: any) {
-      if (authPending) { authPending = false; url = `${origin}/en/messages`; selected = initialStore; events.push("auth settled"); }
-      else if (switching) { selected = switching; switching = null; url = `${origin}/en/messages?store=${selected}`; events.push("store settled"); }
+      if (authPending) settleAuth();
+      else if (switching) { selected = switching; switching = null; url = `${origin}${selected === fixture ? "/en/inventory" : "/en/messages"}?store=${selected}`; events.push("store settled"); }
       assert.equal(matches(value), true, "actual navigation destination must match the requested wait");
     },
     getByRole: () => ({ async click() { authPending = true; events.push("sign in"); } }),
@@ -39,15 +44,14 @@ test(`actual login settles the role home and fixture store (${initialStore === f
           if (id === "nav-group-messages") {
             assert.equal(authPending, false, "do not use a pre-authentication navigation snapshot");
             assert.equal(switching, null, "await the full store navigation before entering Messages");
-            assert.equal(selected, fixture, "enter Messages only in the exact fixture store");
-            url = `${origin}/en/messages?store=${selected}`; events.push("Messages");
+            url = `${origin}/en/messages${new URL(url).search}`; events.push("Messages");
           }
         },
       };
     },
   };
   const expect = (target: any) => ({
-    async toBeVisible() {},
+    async toBeVisible() { if (target.id === "nav-group-messages") settleAuth(); },
     async toContainText() {},
     async toHaveCount() {},
     async toHaveValue(value: string) { assert.equal(selected, value, "selector must retain the fixture store"); },
@@ -63,12 +67,14 @@ test(`actual login settles the role home and fixture store (${initialStore === f
     origin, fixture, { open: "30000000-0000-4000-8000-000000000003" }, ["MOCK_DM", "MOCK_NAME"], expect,
   );
   await login(page);
-  assert.equal(events.filter((event) => event === "real selectOption").length, initialStore === fixture ? 0 : 1);
+  assert.equal(events.filter((event) => event === "real selectOption").length, initialStore === fixture && scoped ? 0 : 1);
   assert.ok(events.indexOf("auth settled") < events.indexOf("Messages"));
-  if (initialStore !== fixture) {
+  if (initialStore !== fixture || !scoped) {
     assert.ok(events.indexOf("auth settled") < events.indexOf("real selectOption"));
-    assert.ok(events.indexOf("store settled") < events.indexOf("Messages"));
+    assert.ok(events.indexOf("store settled") < events.lastIndexOf("Messages"));
   }
   assert.equal(url, `${origin}/en/messages?store=${fixture}`);
 });
+}
+}
 }
