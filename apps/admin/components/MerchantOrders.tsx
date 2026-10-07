@@ -113,9 +113,9 @@ export function MerchantOrders({
   const [bulk, setBulk] = useState<{scope:string; rows:Record<string,boolean>}>({scope:"",rows:{}});
   const bulkRows = bulk.scope === bulkScope ? bulk.rows : {};
   const selectedIDs = Object.keys(bulkRows);
-  // W3-07B: parcel groups this session created/shipped/dissolved, fenced by the same store+session scope as the bulk
-  // selection. Membership knowledge survives list polls but not reloads (no group list route exists); the server guard
-  // in_parcel_group stays the authority for stale single-order shipments.
+  // W3-07B: parcel group panels, fenced by the same store+session scope as the bulk selection. OPEN groups come from GET
+  // parcel-groups on every load (so a reload keeps them, W3-U4); groups this session shipped/dissolved stay as history until
+  // closed. The server guard in_parcel_group stays the authority for stale single-order shipments.
   const parcelC = parcelCopy[locale];
   const [parcels, setParcels] = useState<{ scope: string; groups: ParcelGroupView[] }>({ scope: "", groups: [] });
   const parcelGroups = parcels.scope === bulkScope ? parcels.groups : [];

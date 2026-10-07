@@ -1,37 +1,34 @@
 "use client";
 
 // Purpose: W3-07B parcel-merge UI on the merchant orders page: the merge-suggestion banner (N groups can ship as one
-//   parcel), the suggestion cards with the 合併 action and the per-group panel (members, 填寫運單, 解除合併, close).
-//   The owner ruling sentence (parcels only, never payments/amounts; every order priced and notified on its own) is
-//   always visible next to the banner. Groups are session knowledge: create/ship answers carry the membership, and no
-//   group list route exists, so a reload drops the panels (the server guard in_parcel_group still covers stale edits).
+//   parcel, recipient shown MASKED like the list row), the suggestion cards with the 合併 action and the per-group panel
+//   (members, 填寫運單, 解除合併, close). The owner ruling sentence (parcels only, never payments/amounts; every order priced
+//   and notified on its own) is always visible next to the banner. The OPEN groups come from GET parcel-groups on every load
+//   and refresh (W3-U4), so a reload rebuilds the ship/dissolve panels; create/ship answers update them in the session and
+//   the server guards (in_parcel_group, group_not_open, CAS) stay the authority for stale edits.
 // Depends on: @/lib/parcels-client (BFF orders/merge-suggestions + parcel-groups* -> Go internal/httpapi/parcels.go),
-//   @/lib/parcels-model, @/lib/parcels-copy, ./OrderShipment (ShipmentFields + shipmentFieldsError), ./orders.css classes.
+//   @/lib/parcels-model (parsers, reconcileGroups), @/lib/parcels-copy, ./OrderShipment (ShipmentFields + shipmentFieldsError),
+//   ./orders.css classes.
 // Used by: apps/admin/components/MerchantOrders.tsx (rendered above the orders table, groups state lifted there for badges).
 // Invariants: every mutating click sends one Idempotency-Key per logical write (an uncertain retry reuses it); dissolve is
 //   CAS-guarded by the group version; COD/pay-at-pickup/CVS orders never appear (the server excludes them; create would
-//   refuse with cod_not_mergeable/cvs_not_mergeable).
+//   refuse with cod_not_mergeable/cvs_not_mergeable); a refusal that says the group is no longer open refetches the OPEN
+//   groups so the panel reflects the server instead of staying OPEN; a merge/load error stays visible without suggestions.
 
 import { useEffect, useRef, useState } from "react";
 import {
   createParcelGroup,
   dissolveParcelGroup,
   readMergeSuggestions,
+  readOpenParcelGroups,
   shipParcelGroup,
 } from "@/lib/parcels-client";
-import { parcelShort, type MergeSuggestion } from "@/lib/parcels-model.ts";
+import { parcelShort, reconcileGroups, type MergeSuggestion, type ParcelGroupView } from "@/lib/parcels-model.ts";
 import type { ParcelCopy } from "@/lib/parcels-copy";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import { ShipmentFields, shipmentFieldsError, type ShipmentFieldValues } from "./OrderShipment";
 
-// A group this session created (or shipped/dissolved); the only group knowledge the frozen API gives the UI.
-export type ParcelGroupView = {
-  id: string;
-  short: string;
-  state: "OPEN" | "SHIPPED" | "DISSOLVED";
-  version: number;
-  orderIDs: string[];
-};
+export type { ParcelGroupView };
 
 const emptyFields: ShipmentFieldValues = { carrier: "", carrierName: "", tracking: "", url: "", note: "" };
 
@@ -39,7 +36,7 @@ function errorText(c: ParcelCopy, code: string) {
   return (c.errors as Record<string, string>)[code] ?? c.errors.default;
 }
 
-/** Banner + suggestion cards + group panels. Reads suggestions; every write re-reads orders via onChanged. */
+/** Banner + suggestion cards + group panels. Reads suggestions and the OPEN groups; every write re-reads orders via onChanged. */
 export function ParcelMerge({
   store,
   boundary,
@@ -66,16 +63,35 @@ export function ParcelMerge({
   const [problem, setProblem] = useState("");
   // One Idempotency-Key per logical create; only a byte-identical retry after an unknown outcome reuses it.
   const pending = useRef<{ key: string; body: string } | null>(null);
+  // The latest groups for async callbacks, and a counter bumped by every create so a groups read that started before it
+  // (and would not list the new group) is discarded instead of dropping the fresh panel.
+  const groupsRef = useRef(groups);
+  groupsRef.current = groups;
+  const created = useRef(0);
 
   useEffect(() => {
     const active = new AbortController();
+    const startedAt = created.current;
     readMergeSuggestions(store, active.signal).then(
       (value) => setSuggestions(value),
       () => {
         if (!active.signal.aborted) setSuggestions([]); // a failed probe hides the banner; the list below stays authoritative
       },
     );
+    // Calls BFF GET parcel-groups -> Go fulfillment.read_open_parcel_groups (migration 0164): the OPEN groups, so ship/dissolve
+    // panels exist after a reload; the server's version replaces the session's so the dissolve CAS is live.
+    readOpenParcelGroups(store, active.signal).then(
+      (open) => {
+        if (active.signal.aborted || created.current !== startedAt) return;
+        onGroups(reconcileGroups(groupsRef.current, open));
+        setProblem((p) => (p === c.groupsUnavailable ? "" : p)); // a retry that works clears only its own earlier load error
+      },
+      () => {
+        if (!active.signal.aborted) setProblem(c.groupsUnavailable); // never leave an OPEN group silently without its panel
+      },
+    );
     return () => active.abort();
+    // onGroups and c are re-created every render by design: the reads are keyed by store, session boundary and tick only.
   }, [store, boundary, tick]);
 
   async function merge(suggestion: MergeSuggestion) {
@@ -90,8 +106,9 @@ export function ParcelMerge({
     setBusy(false);
     if (result.ok) {
       pending.current = null;
+      created.current += 1;
       onGroups([
-        ...groups,
+        ...groupsRef.current,
         { id: result.value.id, short: parcelShort(result.value.id), state: "OPEN", version: result.value.version, orderIDs: result.value.order_ids },
       ]);
       setTick((v) => v + 1);
@@ -112,31 +129,40 @@ export function ParcelMerge({
   function dismiss(id: string) {
     onGroups(groups.filter((g) => g.id !== id));
   }
+  // A panel hit a refusal that says its group moved on (group_not_open: shipped/dissolved elsewhere or by an uncertain dissolve that
+  // did land; version_changed: the CAS version is stale). Refetch the OPEN groups: a group no longer OPEN is dropped, a changed
+  // one gets its live version. group_not_open also leaves its message here, because the dropped panel takes its own with it.
+  function groupMoved(code: string) {
+    if (code === "group_not_open") setProblem(errorText(c, code));
+    setTick((v) => v + 1);
+  }
 
-  if (suggestions.length === 0 && groups.length === 0) return null;
+  if (suggestions.length === 0 && groups.length === 0 && !problem) return null;
   return (
     <>
-      {suggestions.length > 0 && (
+      {(suggestions.length > 0 || problem) && (
         <section className="orders-section" data-testid="parcel-merge" aria-label={c.banner(suggestions.length)}>
-          <p>
-            <strong data-testid="parcel-merge-count">{c.banner(suggestions.length)}</strong>{" "}
-            <button
-              type="button"
-              className="orders-compact"
-              data-testid="parcel-suggestions-toggle"
-              aria-expanded={open}
-              onClick={() => setOpen((v) => !v)}
-            >
-              {open ? c.hide : c.show}
-            </button>
-          </p>
+          {suggestions.length > 0 && (
+            <p>
+              <strong data-testid="parcel-merge-count">{c.banner(suggestions.length)}</strong>{" "}
+              <button
+                type="button"
+                className="orders-compact"
+                data-testid="parcel-suggestions-toggle"
+                aria-expanded={open}
+                onClick={() => setOpen((v) => !v)}
+              >
+                {open ? c.hide : c.show}
+              </button>
+            </p>
+          )}
           <p className="orders-hint" data-testid="parcel-merge-rule">{c.rule}</p>
           {problem && <p className="orders-bad" role="alert" data-testid="parcel-merge-problem">{problem}</p>}
-          {open && (
+          {open && suggestions.length > 0 && (
             <ul>
               {suggestions.map((s) => (
                 <li key={s.order_ids[0]} data-testid="parcel-suggestion">
-                  <span>{c.suggestionFor}: {s.recipient_name}</span>{" "}
+                  <span>{c.suggestionFor}: {s.recipient_masked}</span>{" "}
                   <span>{c.suggestionOrders(s.order_ids.length)}</span>
                   <ul>
                     {s.order_ids.map((id) => (
@@ -171,6 +197,7 @@ export function ParcelMerge({
           onDismiss={dismiss}
           onChanged={onChanged}
           onSuggestions={() => setTick((v) => v + 1)}
+          onMoved={groupMoved}
         />
       ))}
     </>
@@ -189,6 +216,7 @@ function ParcelGroupPanel({
   onDismiss,
   onChanged,
   onSuggestions,
+  onMoved,
 }: {
   group: ParcelGroupView;
   store: string;
@@ -200,6 +228,7 @@ function ParcelGroupPanel({
   onDismiss: (id: string) => void;
   onChanged: () => void;
   onSuggestions: () => void;
+  onMoved: (code: string) => void;
 }) {
   const [fields, setFields] = useState<ShipmentFieldValues>(emptyFields);
   const [shipOpen, setShipOpen] = useState(false);
@@ -244,6 +273,7 @@ function ParcelGroupPanel({
     }
     pending.current = null;
     setProblem(errorText(c, result.code));
+    if (result.code === "group_not_open" || result.code === "version_changed") onMoved(result.code);
   }
 
   async function dissolve() {
@@ -262,6 +292,8 @@ function ParcelGroupPanel({
       return;
     }
     setProblem(errorText(c, result.code));
+    // An uncertain dissolve that actually landed answers group_not_open on the same-version retry: reconcile instead of staying OPEN.
+    if (result.code === "group_not_open" || result.code === "version_changed") onMoved(result.code);
   }
 
   return (
@@ -272,9 +304,15 @@ function ParcelGroupPanel({
       <p className="orders-hint">{c.rule}</p>
       <p>{c.members}:</p>
       <ul>
-        {group.orderIDs.map((id) => (
-          <li key={id} className="orders-mono" data-testid={`parcel-group-member-${id}`}>{id}</li>
-        ))}
+        {group.orderIDs.map((id) => {
+          // Order number + masked recipient once the server's OPEN-groups read has filled them in; the id until then.
+          const member = group.members?.find((m) => m.order_id === id);
+          return (
+            <li key={id} className="orders-mono" data-testid={`parcel-group-member-${id}`}>
+              {member ? `${member.order_number} · ${member.recipient_masked}` : id}
+            </li>
+          );
+        })}
       </ul>
       {problem && <p className="orders-bad" role="alert" data-testid={`parcel-problem-${group.short}`}>{problem}</p>}
       {notice && <p className="orders-notice" role="status" data-testid={`parcel-notice-${group.short}`}>{notice}</p>}

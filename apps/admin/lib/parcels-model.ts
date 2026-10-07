@@ -1,18 +1,33 @@
 // Purpose: strict exact-key parsers for the W3-07B parcel-group DTOs (BFF parcel routes -> Go internal/httpapi/parcels.go
-//   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B). The server stays the authority for every
-//   write; these parsers only refuse malformed reads, so a drifting Go response fails closed instead of painting bad state.
+//   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B), the recipient mask the suggestion banner shows
+//   and the pure reconcile of the session's group panels with the server's OPEN-groups read (W3-U4, migration 0164). The server
+//   stays the authority for every write; these parsers only refuse malformed reads, so a drifting Go response fails closed.
 // Depends on: ./orders-model.ts (canonicalUUID, parseShipmentVersion, ShipmentVersion).
-// Used by: apps/admin/lib/parcels-client.ts; tests/admin/parcels-model.test.ts.
+// Used by: apps/admin/lib/parcels-client.ts; apps/admin/components/ParcelGroup.tsx; tests/admin/parcels-model.test.ts.
 // Invariants: a group is 2..20 distinct orders (0146); create answers OPEN with members, dissolve DISSOLVED without members,
-//   ship SHIPPED with one shipment version per member. Merging parcels never touches money (I05).
+//   ship SHIPPED with one shipment version per member; the OPEN-groups read lists OPEN groups only, each order in at most one
+//   group, members with masked recipients (never a full name). The UI never keeps a full recipient name: suggestions are masked
+//   at parse time with the orders-list rule. Merging parcels never touches money (I05).
 import { canonicalUUID, parseShipmentVersion, type ShipmentVersion } from "./orders-model.ts";
 
 export const parcelGroupStates = ["OPEN", "SHIPPED", "DISSOLVED"] as const;
 export type ParcelGroupState = (typeof parcelGroupStates)[number];
 
-// One "same buyer, same address" candidate set the merchant may confirm.
-export type MergeSuggestion = { recipient_name: string; order_ids: string[] };
-// The group projection. order_ids is present on create (the UI learns membership only here: no group list route exists).
+// One "same buyer, same address" candidate set the merchant may confirm. Only the MASKED recipient is kept (list rule).
+export type MergeSuggestion = { recipient_masked: string; order_ids: string[] };
+// One OPEN group of GET parcel-groups: display fields only (masked recipient), newest first.
+export type OpenParcelMember = { order_id: string; order_number: string; recipient_masked: string };
+export type OpenParcelGroup = { group_id: string; version: number; created_at: string; members: OpenParcelMember[] };
+// What a group panel needs: from create/ship answers during the session, from GET parcel-groups after a reload.
+export type ParcelGroupView = {
+  id: string;
+  short: string;
+  state: ParcelGroupState;
+  version: number;
+  orderIDs: string[];
+  members?: OpenParcelMember[];
+};
+// The group projection. order_ids is present on create.
 export type ParcelGroup = { id: string; state: ParcelGroupState; version: number; order_ids: string[] };
 export type ParcelGroupDissolved = { id: string; state: "DISSOLVED"; version: number };
 export type ParcelShipment = { order_id: string; shipment: ShipmentVersion };
@@ -62,14 +77,78 @@ function recipient(value: unknown): string {
   return value;
 }
 
-/** GET orders/merge-suggestions: {items:[{recipient_name, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps). */
+// The orders-list mask (migration 0110 recipient_masked): first non-whitespace character + "***", "—" for a blank name. The
+// leading-blank class is the SQL one verbatim (Unicode spaces and zero-width marks are skipped, not shown as the initial).
+const leadingBlank = /^[\s\u0085\u00a0\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f\u2060\u3000\ufeff]+/u;
+
+/** Mask a recipient name exactly like the orders list row: "王小明" -> "王***", blank or unprintable initial -> "—". */
+export function maskRecipient(name: string): string {
+  const first = Array.from(name.replace(leadingBlank, ""))[0];
+  return first && !/[\p{C}\p{Z}]/u.test(first) ? `${first}***` : "—";
+}
+
+/** GET orders/merge-suggestions: {items:[{recipient_name, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps). The full name is masked here and never kept. */
 export function parseMergeSuggestions(value: unknown): MergeSuggestion[] {
   const v = exact(value, ["items"]);
   if (!Array.isArray(v.items) || v.items.length > 100) throw new Error("unavailable");
   return v.items.map((raw) => {
     const s = exact(raw, ["recipient_name", "order_ids"]);
-    return { recipient_name: recipient(s.recipient_name), order_ids: orderIDs(s.order_ids) };
+    return { recipient_masked: maskRecipient(recipient(s.recipient_name)), order_ids: orderIDs(s.order_ids) };
   });
+}
+
+const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * GET parcel-groups (migration 0164): {items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]};
+ * at most 200 OPEN groups of 2..20 members; a group id or an order id appears once in the whole answer; order_number is LC-<id>
+ * and recipient_masked is "—" or one character + "***" (the list rule). Anything else fails closed.
+ */
+export function parseOpenParcelGroups(value: unknown): OpenParcelGroup[] {
+  const v = exact(value, ["items"]);
+  if (!Array.isArray(v.items) || v.items.length > 200) throw new Error("unavailable");
+  const groupsSeen = new Set<string>();
+  const ordersSeen = new Set<string>();
+  return v.items.map((raw): OpenParcelGroup => {
+    const g = exact(raw, ["group_id", "version", "created_at", "members"]);
+    if (typeof g.group_id !== "string" || !canonicalUUID.test(g.group_id) || groupsSeen.has(g.group_id) ||
+      typeof g.created_at !== "string" || !isoInstant.test(g.created_at) || Number.isNaN(Date.parse(g.created_at)) ||
+      !Array.isArray(g.members) || g.members.length < 2 || g.members.length > 20)
+      throw new Error("unavailable");
+    groupsSeen.add(g.group_id);
+    const members = g.members.map((m): OpenParcelMember => {
+      const o = exact(m, ["order_id", "order_number", "recipient_masked"]);
+      if (typeof o.order_id !== "string" || !canonicalUUID.test(o.order_id) || ordersSeen.has(o.order_id) ||
+        o.order_number !== `LC-${o.order_id.replaceAll("-", "").toUpperCase()}` || typeof o.recipient_masked !== "string" ||
+        (o.recipient_masked !== "—" && (Array.from(o.recipient_masked).length !== 4 || !o.recipient_masked.endsWith("***"))))
+        throw new Error("unavailable");
+      ordersSeen.add(o.order_id);
+      return { order_id: o.order_id, order_number: o.order_number, recipient_masked: o.recipient_masked };
+    });
+    return { group_id: g.group_id, version: version(g.version), created_at: g.created_at, members };
+  });
+}
+
+/**
+ * Reconcile the session's group panels with a fresh GET parcel-groups answer (the server is the authority for OPEN groups):
+ * a local OPEN group the server no longer lists is gone (shipped, dissolved or cancelled elsewhere) and is dropped; a listed one
+ * takes the server's version and members (so the dissolve CAS uses the live version); an OPEN group the session did not know
+ * (page reload, another tab) is added after the known ones in the server's newest-first order. A local SHIPPED/DISSOLVED panel is
+ * session history until the merchant closes it and is never touched.
+ */
+export function reconcileGroups(local: ParcelGroupView[], open: OpenParcelGroup[]): ParcelGroupView[] {
+  const view = (g: OpenParcelGroup): ParcelGroupView => ({
+    id: g.group_id,
+    short: parcelShort(g.group_id),
+    state: "OPEN",
+    version: g.version,
+    orderIDs: g.members.map((m) => m.order_id),
+    members: g.members,
+  });
+  const byID = new Map(open.map((g) => [g.group_id, g]));
+  const known = new Set(local.map((g) => g.id));
+  const kept = local.flatMap((g) => (g.state !== "OPEN" ? [g] : byID.has(g.id) ? [view(byID.get(g.id)!)] : []));
+  return [...kept, ...open.filter((g) => !known.has(g.group_id)).map(view)];
 }
 
 /** POST parcel-groups 201: exactly {id, state:"OPEN", version, order_ids}. */

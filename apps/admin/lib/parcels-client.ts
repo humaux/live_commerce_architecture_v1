@@ -1,7 +1,7 @@
 // Purpose: browser client for the W3-07B parcel-group routes: BFF `/api/stores/{store}/orders/merge-suggestions` and
-//   `parcel-groups*` -> Go internal/httpapi/parcels.go. Reads parse the frozen DTOs; the keyed writes reuse writeSettings
-//   (cookie CSRF + session fence + Idempotency-Key) and keep the parsed response (the create/ship answers carry the group
-//   the UI then tracks; no group list route exists). Dissolve is a keyless, bodyless DELETE guarded by expected_version.
+//   `parcel-groups*` -> Go internal/httpapi/parcels.go. Reads parse the frozen DTOs (GET parcel-groups lists the OPEN groups so a
+//   reload rebuilds the panels, W3-U4); the keyed writes reuse writeSettings (cookie CSRF + session fence + Idempotency-Key) and
+//   keep the parsed response. Dissolve is a keyless, bodyless DELETE guarded by expected_version.
 // Depends on: ./settings-client (csrfCookie, sessionBoundary, safeError, writeSettings), ./orders-client (read,
 //   OrderReadError), ./parcels-model.ts (parsers).
 // Used by: apps/admin/components/ParcelGroup.tsx.
@@ -11,10 +11,12 @@ import { csrfCookie, safeError, sessionBoundary, writeSettings } from "./setting
 import { read, OrderReadError } from "./orders-client";
 import {
   parseMergeSuggestions,
+  parseOpenParcelGroups,
   parseParcelGroupCreated,
   parseParcelGroupDissolved,
   parseParcelGroupShipped,
   type MergeSuggestion,
+  type OpenParcelGroup,
   type ParcelGroupDissolved,
   type ParcelGroupShipment,
 } from "./parcels-model.ts";
@@ -23,6 +25,16 @@ import {
 export async function readMergeSuggestions(store: string, signal: AbortSignal): Promise<MergeSuggestion[]> {
   try {
     return parseMergeSuggestions(await read(`/api/stores/${store}/orders/merge-suggestions`, signal));
+  } catch (error) {
+    if (error instanceof OrderReadError) throw error;
+    throw new OrderReadError("unavailable");
+  }
+}
+
+/** Read the store's OPEN parcel groups (Go GET parcel-groups, orders:read; migration 0164). Throws OrderReadError like the order reads. */
+export async function readOpenParcelGroups(store: string, signal: AbortSignal): Promise<OpenParcelGroup[]> {
+  try {
+    return parseOpenParcelGroups(await read(`/api/stores/${store}/parcel-groups`, signal));
   } catch (error) {
     if (error instanceof OrderReadError) throw error;
     throw new OrderReadError("unavailable");
