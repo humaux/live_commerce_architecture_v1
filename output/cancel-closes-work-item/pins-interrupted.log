@@ -1,0 +1,230 @@
+962d495c28bbe0136b461d1916d9584b5eca929a
+Wed Oct  7 06:28:55 UTC 2026
+=== RUN   TestMerchantOrdersAuthorityAndOnboarding
+--- PASS: TestMerchantOrdersAuthorityAndOnboarding (1.44s)
+=== RUN   TestMerchantOrdersUpgradeDoesNotBackfillOldMembership
+--- PASS: TestMerchantOrdersUpgradeDoesNotBackfillOldMembership (2.58s)
+=== RUN   TestMerchantOrdersSQLProjectionAndIsolation
+--- PASS: TestMerchantOrdersSQLProjectionAndIsolation (1.01s)
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revoked_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/expired_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_orders_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_store_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/membership_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revision_changed
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/principal_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/tenant_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/store_disabled
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_detail_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/foreign_detail_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/empty_list_after_revoke
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_revoked_session
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_missing_orders_grant
+=== RUN   TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_empty_list_after_revoke
+--- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock (2.30s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revoked_session (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/expired_session (1.24s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_orders_grant (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_store_grant (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/membership_disabled (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/revision_changed (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/principal_disabled (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/tenant_disabled (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/store_disabled (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/missing_detail_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/foreign_detail_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/empty_list_after_revoke (0.03s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_revoked_session (0.05s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_missing_orders_grant (0.04s)
+    --- PASS: TestMerchantOrdersFinalSQLFenceAfterObservedDataLock/v2_empty_list_after_revoke (0.03s)
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/pending
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/authorized
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/captured
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/review
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft
+=== RUN   TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure
+--- PASS: TestMerchantOrdersActualPaymentAndExpiryStates (1.80s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/pending (0.29s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/authorized (0.30s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/captured (0.32s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/review (0.33s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/expired_draft (0.28s)
+    --- PASS: TestMerchantOrdersActualPaymentAndExpiryStates/paid_allocation_failure (0.29s)
+=== RUN   TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects
+--- PASS: TestMerchantOrdersHTTPPaginationPrivacyAndNoEffects (0.37s)
+=== RUN   TestMerchantOrdersFrozenHistoryAfterMutableEdits
+--- PASS: TestMerchantOrdersFrozenHistoryAfterMutableEdits (0.31s)
+=== RUN   TestMerchantOrdersV2DomainReadAuthority
+=== RUN   TestMerchantOrdersV2DomainReadAuthority/claims.order_live_sources(uuid,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2DomainReadAuthority/live.order_session_labels(uuid,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2DomainReadAuthority/fulfillment.order_cvs_tracking(uuid,uuid,uuid[])
+--- PASS: TestMerchantOrdersV2DomainReadAuthority (0.00s)
+    --- PASS: TestMerchantOrdersV2DomainReadAuthority/claims.order_live_sources(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2DomainReadAuthority/live.order_session_labels(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2DomainReadAuthority/fulfillment.order_cvs_tracking(uuid,uuid,uuid[]) (0.00s)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.cancel_rma(bytea,uuid,uuid,text,bytea,bigint)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.close_rma(bytea,uuid,uuid,text,bytea,bigint,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.read_order_returns(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.list_returns(bytea,uuid,text)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.list_cancel_refund_gaps(bytea,uuid)
+--- PASS: TestMerchantOrdersV2PickListReadAuthority (0.01s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.cancel_rma(bytea,uuid,uuid,text,bytea,bigint) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.close_rma(bytea,uuid,uuid,text,bytea,bigint,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.read_order_returns(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.list_returns(bytea,uuid,text) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.list_cancel_refund_gaps(bytea,uuid) (0.00s)
+=== RUN   TestMerchantOrdersV2DomainReadScope
+--- PASS: TestMerchantOrdersV2DomainReadScope (1.61s)
+=== RUN   TestMerchantOrdersV2LegacyDisplayFallback
+--- PASS: TestMerchantOrdersV2LegacyDisplayFallback (0.31s)
+=== RUN   TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient
+--- PASS: TestMerchantOrdersV2LegacyUnicodeWhitespaceRecipient (0.29s)
+=== RUN   TestMerchantOrdersV2TenThousandScopedSearch
+    merchant_orders_v2_perf_test.go:164: 10k 7654: n=10 p50=58.896416ms max=61.059ms
+    merchant_orders_v2_perf_test.go:164: 10k SYNTHETIC-TRACK-7654: n=10 p50=50.794625ms max=56.090125ms
+--- PASS: TestMerchantOrdersV2TenThousandScopedSearch (14.25s)
+=== RUN   TestMerchantOrdersV2ReadContract
+--- PASS: TestMerchantOrdersV2ReadContract (0.34s)
+=== RUN   TestMerchantOrdersV2SearchStreamLimit
+--- PASS: TestMerchantOrdersV2SearchStreamLimit (0.00s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.63s)
+=== RUN   TestReturns
+=== RUN   TestReturns/RT01_register_2,_receive_2,_1_sellable_+_1_scrap:_one_DEALLOCATE_row,_stock_back_once,_payments_untouched
+=== RUN   TestReturns/RT02_refusals:_unshipped,_over_the_shipped_quantity_(closed_RMAs_count),_unknown_line,_cross-store
+=== RUN   TestReturns/RT03_inspect_and_close_need_inventory:write_on_top_of_fulfillment:write;_state_unchanged
+=== RUN   TestReturns/RT07_a_refund_neither_restocks_nor_moves_the_order;_the_RMA_only_links_it,_a_foreign_refund_is_refused
+=== RUN   TestReturns/RT09_replay_returns_the_original,_other_body_on_the_same_key_conflicts,_stale_version_drifts
+=== RUN   TestReturns/two_concurrent_closes_of_one_RMA_restock_exactly_once
+=== RUN   TestReturns/two_RMAs_of_one_line_closed_concurrently_each_restock_their_own_units,_never_more_than_shipped
+=== RUN   TestReturns/P1-1_a_shipment_cannot_be_voided_while_a_live_RMA_exists_(a_return_presumes_the_parcel_left)
+=== RUN   TestReturns/P1-2_a_collected_home-COD_order_can_be_returned_(commercial_state_stays_AWAITING_COLLECTION);_uncollected_is_refused
+=== RUN   TestReturns/the_ledger_refuses_forged_rows_with_the_reserved_operations
+--- PASS: TestReturns (13.57s)
+    --- PASS: TestReturns/RT01_register_2,_receive_2,_1_sellable_+_1_scrap:_one_DEALLOCATE_row,_stock_back_once,_payments_untouched (0.06s)
+    --- PASS: TestReturns/RT02_refusals:_unshipped,_over_the_shipped_quantity_(closed_RMAs_count),_unknown_line,_cross-store (1.91s)
+    --- PASS: TestReturns/RT03_inspect_and_close_need_inventory:write_on_top_of_fulfillment:write;_state_unchanged (0.96s)
+    --- PASS: TestReturns/RT07_a_refund_neither_restocks_nor_moves_the_order;_the_RMA_only_links_it,_a_foreign_refund_is_refused (0.99s)
+    --- PASS: TestReturns/RT09_replay_returns_the_original,_other_body_on_the_same_key_conflicts,_stale_version_drifts (0.97s)
+    --- PASS: TestReturns/two_concurrent_closes_of_one_RMA_restock_exactly_once (0.96s)
+    --- PASS: TestReturns/two_RMAs_of_one_line_closed_concurrently_each_restock_their_own_units,_never_more_than_shipped (0.96s)
+    --- PASS: TestReturns/P1-1_a_shipment_cannot_be_voided_while_a_live_RMA_exists_(a_return_presumes_the_parcel_left) (0.94s)
+    --- PASS: TestReturns/P1-2_a_collected_home-COD_order_can_be_returned_(commercial_state_stays_AWAITING_COLLECTION);_uncollected_is_refused (0.09s)
+    --- PASS: TestReturns/the_ledger_refuses_forged_rows_with_the_reserved_operations (1.91s)
+=== RUN   TestMerchantCancel
+=== RUN   TestMerchantCancel/RT04_an_unpaid_hold_is_cancelled:_reservation_released,_sellable_quantity_restored,_replay_safe
+=== RUN   TestMerchantCancel/RT05_a_payment_in_progress_cannot_be_cancelled_by_the_merchant
+=== RUN   TestMerchantCancel/RT06_a_paid_order_needs_refunds_covering_the_capture_first_(409_refund_first);_never_an_automatic_refund;_then_it_cancels
+=== RUN   TestMerchantCancel/a_shipped_order_is_not_cancellable_(returns_path);_permissions_are_enforced
+=== RUN   TestMerchantCancel/concurrent_cancels_of_one_refunded_order:_one_wins,_stock_released_once
+=== RUN   TestMerchantCancel/RT08_cancelling_a_member_of_an_OPEN_parcel_group_removes_it;_the_last_survivor_dissolves_the_group
+=== RUN   TestMerchantCancel/a_refused_cancel_leaves_its_parcel_group_untouched
+=== RUN   TestMerchantCancel/RT10_cancelling_a_hold_while_its_payment_starts:_exactly_one_wins,_stock_stays_consistent
+=== RUN   TestMerchantCancel/a_pay-at-pickup_order_cancels_through_the_same_command_(existing_§16.8_release)
+--- PASS: TestMerchantCancel (12.13s)
+    --- PASS: TestMerchantCancel/RT04_an_unpaid_hold_is_cancelled:_reservation_released,_sellable_quantity_restored,_replay_safe (0.06s)
+    --- PASS: TestMerchantCancel/RT05_a_payment_in_progress_cannot_be_cancelled_by_the_merchant (0.47s)
+    --- PASS: TestMerchantCancel/RT06_a_paid_order_needs_refunds_covering_the_capture_first_(409_refund_first);_never_an_automatic_refund;_then_it_cancels (1.03s)
+    --- PASS: TestMerchantCancel/a_shipped_order_is_not_cancellable_(returns_path);_permissions_are_enforced (1.91s)
+    --- PASS: TestMerchantCancel/concurrent_cancels_of_one_refunded_order:_one_wins,_stock_released_once (0.98s)
+    --- PASS: TestMerchantCancel/RT08_cancelling_a_member_of_an_OPEN_parcel_group_removes_it;_the_last_survivor_dissolves_the_group (2.77s)
+    --- PASS: TestMerchantCancel/a_refused_cancel_leaves_its_parcel_group_untouched (1.80s)
+    --- PASS: TestMerchantCancel/RT10_cancelling_a_hold_while_its_payment_starts:_exactly_one_wins,_stock_stays_consistent (0.04s)
+    --- PASS: TestMerchantCancel/a_pay-at-pickup_order_cancels_through_the_same_command_(existing_§16.8_release) (0.06s)
+=== RUN   TestReturnsBankTransfer
+=== RUN   TestReturnsBankTransfer/AWAITING_TRANSFER_is_422_not_cancellable_(the_expiry_or_the_offline_refund_ends_it)
+=== RUN   TestReturnsBankTransfer/RMA_restock_then_an_offline_refund_WITH_restock:_the_second_release_is_refused,_no_phantom_stock
+--- PASS: TestReturnsBankTransfer (1.31s)
+    --- PASS: TestReturnsBankTransfer/AWAITING_TRANSFER_is_422_not_cancellable_(the_expiry_or_the_offline_refund_ends_it) (0.07s)
+    --- PASS: TestReturnsBankTransfer/RMA_restock_then_an_offline_refund_WITH_restock:_the_second_release_is_refused,_no_phantom_stock (0.16s)
+=== RUN   TestReturnsHelperACLAndGuardBodies
+--- PASS: TestReturnsHelperACLAndGuardBodies (0.01s)
+=== RUN   TestMerchantCancelRefundGap
+--- PASS: TestMerchantCancelRefundGap (9.29s)
+=== RUN   TestMerchantCancelGroupRace
+--- PASS: TestMerchantCancelGroupRace (4.86s)
+=== RUN   TestMerchantCancelClosesWorkItem
+=== RUN   TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE
+=== RUN   TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162)
+=== RUN   TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list
+=== RUN   TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY
+--- PASS: TestMerchantCancelClosesWorkItem (12.54s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE (0.07s)
+    --- PASS: TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162) (2.30s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list (2.60s)
+    --- PASS: TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY (4.43s)
+=== RUN   TestStripeRF05HappyMock
+=== RUN   TestStripeRF05HappyMock/full_refund:_REQUESTED_->_SUCCEEDED_->_REFUNDED,_one_key,_pre-send_read,_no_side_effects
+=== RUN   TestStripeRF05HappyMock/two_partial_refunds:_PARTIALLY_REFUNDED_then_REFUNDED
+--- PASS: TestStripeRF05HappyMock (12.85s)
+    --- PASS: TestStripeRF05HappyMock/full_refund:_REQUESTED_->_SUCCEEDED_->_REFUNDED,_one_key,_pre-send_read,_no_side_effects (5.76s)
+    --- PASS: TestStripeRF05HappyMock/two_partial_refunds:_PARTIALLY_REFUNDED_then_REFUNDED (3.43s)
+=== RUN   TestStripeRF06Unknown
+=== RUN   TestStripeRF06Unknown/drop_after_execute:_the_same-key_replay_pins_the_same_refund
+=== RUN   TestStripeRF06Unknown/cached_500:_resends_replay_the_500_until_resend_until,_then_the_list_pins_the_executed_refund
+=== RUN   TestStripeRF06Unknown/cached_500_with_nothing_executed:_list_finds_none,_UNKNOWN_+_REFUND_UNRESOLVED,_capacity_held,_no_second_POST
+=== RUN   TestStripeRF06Unknown/first-send_400:_REJECTED_and_capacity_released
+=== RUN   TestStripeRF06Unknown/400_after_an_earlier_send_does_not_release_capacity
+=== RUN   TestStripeRF06Unknown/429_backs_off;_409_and_idempotency_error_keep_the_same_key
+=== RUN   TestStripeRF06Unknown/at_most_one_distinct_create_key_per_refund,_ever
+--- PASS: TestStripeRF06Unknown (49.76s)
+    --- PASS: TestStripeRF06Unknown/drop_after_execute:_the_same-key_replay_pins_the_same_refund (1.72s)
+    --- PASS: TestStripeRF06Unknown/cached_500:_resends_replay_the_500_until_resend_until,_then_the_list_pins_the_executed_refund (9.13s)
+    --- PASS: TestStripeRF06Unknown/cached_500_with_nothing_executed:_list_finds_none,_UNKNOWN_+_REFUND_UNRESOLVED,_capacity_held,_no_second_POST (8.72s)
+    --- PASS: TestStripeRF06Unknown/first-send_400:_REJECTED_and_capacity_released (3.31s)
+    --- PASS: TestStripeRF06Unknown/400_after_an_earlier_send_does_not_release_capacity (8.43s)
+    --- PASS: TestStripeRF06Unknown/429_backs_off;_409_and_idempotency_error_keep_the_same_key (14.83s)
+    --- PASS: TestStripeRF06Unknown/at_most_one_distinct_create_key_per_refund,_ever (0.00s)
+=== RUN   TestStripeRF07Lifecycle
+=== RUN   TestStripeRF07Lifecycle/pending_(insufficient_balance)_then_succeeded
+=== RUN   TestStripeRF07Lifecycle/succeeded_then_a_later_refund.failed:_FAILED_fact,_capacity_released,_state_reverts
+=== RUN   TestStripeRF07Lifecycle/canceled_before_success_releases_capacity
+=== RUN   TestStripeRF07Lifecycle/every_failure_reason_is_mapped
+=== RUN   TestStripeRF07Lifecycle/amount_and_currency_drift:_review,_no_fact
+=== RUN   TestStripeRF07Lifecycle/replay_in_any_order_converges_(A1_received_at_rules)
+=== RUN   TestStripeRF07Lifecycle/a_review_after_capture_and_shipment_never_changes_order_or_work_state_(A1_guard)
+=== RUN   TestStripeRF07Lifecycle/late_first_send_(now_>=_resend_until-1h):_no_POST,_REJECTED_send_window_closed
+=== RUN   TestStripeRF07Lifecycle/list_finds_none_within_15_min_of_the_last_send:_snooze_and_list_again,_no_REFUND_UNRESOLVED_yet
+--- PASS: TestStripeRF07Lifecycle (48.03s)
+    --- PASS: TestStripeRF07Lifecycle/pending_(insufficient_balance)_then_succeeded (2.57s)
+    --- PASS: TestStripeRF07Lifecycle/succeeded_then_a_later_refund.failed:_FAILED_fact,_capacity_released,_state_reverts (2.55s)
+    --- PASS: TestStripeRF07Lifecycle/canceled_before_success_releases_capacity (2.91s)
+    --- PASS: TestStripeRF07Lifecycle/every_failure_reason_is_mapped (15.54s)
+    --- PASS: TestStripeRF07Lifecycle/amount_and_currency_drift:_review,_no_fact (6.22s)
+    --- PASS: TestStripeRF07Lifecycle/replay_in_any_order_converges_(A1_received_at_rules) (2.94s)
+    --- PASS: TestStripeRF07Lifecycle/a_review_after_capture_and_shipment_never_changes_order_or_work_state_(A1_guard) (1.29s)
+    --- PASS: TestStripeRF07Lifecycle/late_first_send_(now_>=_resend_until-1h):_no_POST,_REJECTED_send_window_closed (1.32s)
+    --- PASS: TestStripeRF07Lifecycle/list_finds_none_within_15_min_of_the_last_send:_snooze_and_list_again,_no_REFUND_UNRESOLVED_yet (9.18s)
+=== RUN   TestStripeRF12Guards
+=== RUN   TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta
+Terminated: 15
+test-focused: top-level PASS=26 FAIL=0 SKIP=0 exit=0

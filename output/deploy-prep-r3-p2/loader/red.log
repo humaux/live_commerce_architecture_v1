@@ -1,0 +1,33 @@
+✖ shared loader makes API/worker LIVE pair file-only before Compose interpolation (300.616625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 358.994
+
+✖ failing tests:
+
+test at tests/deploy/deploy-prep-r3.test.mjs:122:1
+✖ shared loader makes API/worker LIVE pair file-only before Compose interpolation (300.616625ms)
+  AssertionError [ERR_ASSERTION]: api
+  
+  '1' !== '0'
+  
+      at assertPair (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:134:14)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:141:3
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:122:95)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '1',
+    expected: '0',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

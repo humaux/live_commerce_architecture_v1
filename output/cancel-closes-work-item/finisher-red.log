@@ -1,0 +1,16 @@
+fbf7674170fd1ccdbe3893ed5fa781468efb5f37
+Wed Oct  7 09:09:05 UTC 2026
+--- tests edited, migration 0162 UNCHANGED (fbf76741 body): expected RED on the two backfill subtests
+--- PASS: TestBuyerPaymentCaptureACLAndObservationBinding (3.63s)
+    returns_test.go:1317: backfill left 1 rows on the open-gap legacy cancel (ruling: every READY row of a CANCELLED order closes)
+    returns_test.go:1355: backfill as a NOBYPASSRLS role must raise the RLS-bypass error, got <nil>
+--- FAIL: TestMerchantCancelClosesWorkItem (17.55s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE (0.10s)
+    --- PASS: TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162) (2.27s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list (2.62s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_every_legacy_cancelled_READY_row_(open_gap_included)_and_spares_live_and_review_rows (6.25s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/the_backfill_block_refuses_to_run_without_RLS_bypass_and_fails_loudly_when_a_delete_is_suppressed (1.74s)
+FAIL
+FAIL	livecommerce/tests/foundation	22.199s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1

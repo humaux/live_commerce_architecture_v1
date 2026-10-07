@@ -1,0 +1,28 @@
+✔ COD collect projection admits the server amount and rejects inconsistent money (2.304833ms)
+✔ MOU parser accepts exact frozen DTO and rejects malformed identity, money and state (1.087417ms)
+✔ MOU detail parser rejects spoofed recipient, pickup and mismatched money (0.98225ms)
+✔ summary admits the refunded and shipped states with the amended invariants (0.106208ms)
+✔ summary rejects the shipped/refunded combinations the contract forbids (0.195625ms)
+✔ order filter values and detail shipment stay in step with MERCHANT_SHIPPED (0.528333ms)
+✔ tracking url rules: https only, dotted host, no userinfo, port, fragment or control characters (0.0885ms)
+✔ shipment history carries merchant-only fields and stays consistent (0.217ms)
+✔ refund list parser checks capacity arithmetic, closed enums and optional failure_reason (0.324125ms)
+✔ order-actions is exactly three booleans (0.428875ms)
+✔ refund amount entry converts exactly and enforces the TWD whole-dollar step as a hint (8.384875ms)
+✔ CVSA01 pay-at-pickup summary: CONFIRMED without payment is valid only in that mode (0.463291ms)
+✔ CVSA02 detail: pickup_source must agree with the pickup verification kind; new chains and kinds parse (0.390959ms)
+✔ CVSA03 the cvs_pending list filter exists beside the older filters (0.054166ms)
+✔ BTA01 bank-transfer summary: valid states, and every card or pickup invariant it must not borrow (0.211959ms)
+✔ READY work is valid on a merchant-cancelled captured order, still refused when never captured or not cancelled (0.070792ms)
+✔ legacy display sentinels preserve a list row without admitting arbitrary or private data (2.119542ms)
+✔ orders-v2 accepts bounded filters and Taipei inclusive dates; rejects ambiguity (1.812667ms)
+✔ orders-v2 rejects client count approximations, unbounded or extra response data (0.276792ms)
+✔ all three locales label every task queue, payment and delivery mode (0.737875ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.543917

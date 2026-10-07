@@ -18,7 +18,7 @@
 # Depends on: deploy/compose.yml (service names), deploy/compose.two-host-db.yml.
 # Status: DESIGN; exercised by smoke S01 (syntax) and every runtime case.
 # Change rules: never add `set -x`; never echo a variable that may hold a secret; keep
-#   lc_load_env semantics aligned with Compose (existing environment wins over the file).
+#   ordinary environment overrides remain; the Stripe LIVE approval pair is file-only before Compose interpolation.
 
 if [[ -n "${LC_LIB_LOADED:-}" ]]; then return 0; fi
 LC_LIB_LOADED=1
@@ -49,9 +49,11 @@ lc_die() {
 }
 
 # lc_load_env FILE — parse KEY=VALUE lines (Compose env-file subset) and export them.
-# Variables already present in the environment win, exactly like Compose interpolation.
+# Ordinary variables retain Compose's caller-over-file precedence. LIVE approval is the exception:
+# reset both names on every load, so a stale caller value cannot arm api/payment-worker interpolation.
 lc_load_env() {
   local file=$1 line key val
+  unset LC_STRIPE_LIVE_ENABLED LC_STRIPE_LIVE_APPROVAL_REF || lc_die "cannot clear caller Stripe LIVE pair (readonly variables refused)"
   [[ -r "$file" ]] || lc_die "env file not readable: $file (run host-setup.sh / copy the template)"
   while IFS= read -r line || [[ -n "$line" ]]; do
     line="${line%$'\r'}"

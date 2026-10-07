@@ -89,8 +89,8 @@ lc_load_env "$LC_COMPOSE_ENV"
 # O3/§5.2: the flag+ref pair comes from compose.env (LC_STRIPE_LIVE_*), is mapped to COMMERCE_STRIPE_LIVE_*
 # and forwarded by NAME; a COMMERCE_STRIPE_LIVE_* value in the caller's env is never trusted.
 pair_re='^[A-Za-z0-9._:-]{8,128}$'
-live_flag=${LC_STRIPE_LIVE_ENABLED:-}
-live_ref=${LC_STRIPE_LIVE_APPROVAL_REF:-}
+live_flag=$(lc_env_file_get "$LC_COMPOSE_ENV" LC_STRIPE_LIVE_ENABLED) || live_flag=
+live_ref=$(lc_env_file_get "$LC_COMPOSE_ENV" LC_STRIPE_LIVE_APPROVAL_REF) || live_ref=
 pair_ok=0
 if [[ "$live_flag" == 1 && "$live_ref" =~ $pair_re ]]; then pair_ok=1; fi
 unset COMMERCE_STRIPE_LIVE_ENABLED COMMERCE_STRIPE_LIVE_APPROVAL_REF

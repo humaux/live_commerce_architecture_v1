@@ -1,0 +1,17 @@
+f97eca08913902ea388abf77e703e59f2800c73f
+Wed Oct  7 06:22:11 UTC 2026
+=== RUN   TestMerchantCancelClosesWorkItem
+=== RUN   TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE
+=== RUN   TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162)
+=== RUN   TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list
+=== RUN   TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY
+    returns_test.go:1298: the legacy gap row must stay listed: map[]
+--- FAIL: TestMerchantCancelClosesWorkItem (14.43s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE (0.07s)
+    --- PASS: TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162) (2.35s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list (2.64s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY (4.15s)
+FAIL
+FAIL	livecommerce/tests/foundation	15.478s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
