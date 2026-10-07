@@ -14,5 +14,15 @@
     "file": "p2-green.log",
     "raw_sha256": "c481b72886b82cc4f278d67263f57f8a8cf9a534291ed325ef82ecf128766848",
     "archive": "p2-green.log.raw.gz"
+  },
+  {
+    "file": "p3-red.log",
+    "raw_sha256": "81aab3dd43119b42c4d8b93d6959c36679a435bb18d66e31fbd22d82f7c649c1",
+    "archive": "p3-red.log.raw.gz"
+  },
+  {
+    "file": "p3-green.log",
+    "raw_sha256": "758210f70aa282382c6c0e5b4793e690c3404d03588771bf336f9e624e0cb7dc",
+    "archive": "p3-green.log.raw.gz"
   }
 ]

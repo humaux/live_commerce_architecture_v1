@@ -33,7 +33,8 @@ type ListRequest struct {
 	CursorID  *string
 }
 
-// ListConversations is A8: conversation metadata only (no ciphertext), ordered by last_at DESC, conversation_id DESC.
+// ListConversations is A8: metadata only (no ciphertext), keyset-ordered by last_at/conversation_id;
+// live_comment uses the bundle's created_at/id instead, without changing the other filters.
 func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequest) (ConversationList, error) {
 	out := ConversationList{Items: []ConversationItem{}}
 	// Calls social.list_conversations (0165: session filter + link_version). filter=live_comment matches no conversation there.
@@ -70,9 +71,9 @@ func (s *Service) ListConversations(ctx context.Context, tx pgx.Tx, req ListRequ
 	if err := s.fillDisplayNames(ctx, tx, out.Items); err != nil {
 		return out, err
 	}
-	// Bundle-only rows (no conversation, no keyset cursor, first page only). filter=live_comment: the store's live-comment bundles
-	// (LC-B3b, §11 A8). Otherwise Amendment 1 P2-2: bundles whose claim link could not be sent (copy-link only).
-	if req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram" {
+	// Live comments have their own bundle keyset on every page. Other eligible filters retain
+	// Amendment 1 P2-2's first-page-only pending-link append (copy-link only).
+	if req.Filter == "live_comment" || (req.LastAt == nil && req.Filter != "messenger" && req.Filter != "instagram") {
 		var bundles []ConversationItem
 		var err error
 		if req.Filter == "live_comment" {
@@ -153,10 +154,11 @@ func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, session *stri
 }
 
 // liveCommentItems is A8 filter=live_comment (LC-B3b): the bundle-only rows of the store's live comments (inbox.live_comment_bundles,
-// migration 0165), newest first, at most req.Limit, optional session filter. Platform facebook renders as the console name messenger.
+// migration 0165), newest first, at most req.Limit, with session and keyset predicates before LIMIT.
+// Platform facebook renders as the console name messenger.
 func (s *Service) liveCommentItems(ctx context.Context, tx pgx.Tx, req ListRequest) ([]ConversationItem, error) {
 	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, platform, created_at, link_pending_manual
-		FROM inbox.live_comment_bundles($1::uuid, $2::integer)`, req.SessionID, req.Limit)
+		FROM inbox.live_comment_bundles($1::uuid, $2::integer, $3::timestamptz, $4::uuid)`, req.SessionID, req.Limit, req.LastAt, req.CursorID)
 	if err != nil {
 		return nil, databaseError(err)
 	}

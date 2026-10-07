@@ -67,7 +67,18 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 			if err != nil {
 				return nil, err
 			}
-			// Bundle-only items (Amendment 1 P2-2) follow the conversations and never carry the keyset cursor.
+			// LC-B3b live_comment is a homogeneous bundle list: use its created_at/id as the
+			// existing opaque keyset. Other filters keep their conversation-only cursor below.
+			if req.Filter == "live_comment" {
+				if len(out.Items) == req.Limit && len(out.Items) > 0 {
+					last := out.Items[len(out.Items)-1]
+					if last.BundleID != nil {
+						out.NextCursor = encodeInboxCursor(last.LastAt, *last.BundleID)
+					}
+				}
+				return out, nil
+			}
+			// Appended pending-link rows (Amendment 1 P2-2) never advance the conversation keyset.
 			conversations := 0
 			for _, it := range out.Items {
 				if !it.BundleOnly {
@@ -332,9 +343,10 @@ func parseInboxBuyerPanel(u *url.URL) (conversationID, bundleID string, err erro
 	return conversationID, bundleID, nil
 }
 
-// encodeInboxCursor is the opaque A8 keyset cursor: base64url of "<RFC3339Nano last_at>|<conversation_id>".
-func encodeInboxCursor(lastAt time.Time, conversationID string) string {
-	return base64.RawURLEncoding.EncodeToString([]byte(lastAt.UTC().Format(time.RFC3339Nano) + "|" + conversationID))
+// encodeInboxCursor is the opaque A8 keyset: base64url of "<RFC3339Nano last_at>|<row_id>".
+// row_id is the conversation ID, or the bundle ID for filter=live_comment (LC-B3b).
+func encodeInboxCursor(lastAt time.Time, rowID string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(lastAt.UTC().Format(time.RFC3339Nano) + "|" + rowID))
 }
 
 func decodeInboxCursor(c string) (time.Time, string, error) {

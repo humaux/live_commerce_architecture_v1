@@ -370,6 +370,36 @@ GRANT EXECUTE ON FUNCTION inbox.live_comment_bundles(uuid, int) TO commerce_runt
 COMMENT ON FUNCTION inbox.live_comment_bundles(uuid, int) IS
  'internal/inbox (0165 LC-B3b; caller: internal/inbox ListConversations filter=live_comment): bundle-only A8 rows of the store''s live comments (facebook/instagram bundles, non-purged), newest first, optional session filter, limit 1..50. inbox:read required. Raw claims platform values (facebook/instagram); the Go layer maps facebook to the console name messenger. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
 
+-- Additive keyset form; keep the two-argument entry point for existing callers.
+CREATE FUNCTION inbox.live_comment_bundles(p_session uuid, p_limit int, p_cursor_last_at timestamptz, p_cursor_id uuid)
+RETURNS TABLE(bundle_id uuid, session_id uuid, platform text, created_at timestamptz, link_pending_manual boolean)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+DECLARE v uuid[];
+BEGIN
+    v := inbox.lcn_scope();
+    IF p_limit IS NULL OR p_limit < 1 OR p_limit > 50
+       OR (p_cursor_last_at IS NULL) <> (p_cursor_id IS NULL) THEN
+        RAISE EXCEPTION 'invalid_request' USING ERRCODE = 'PT422';
+    END IF;
+    IF NOT identity.principal_holds(v[1], v[2], v[3], ARRAY['inbox:read']::text[]) THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403';
+    END IF;
+    RETURN QUERY
+    SELECT b.id, b.session_id, b.platform, b.created_at, b.link_pending_manual
+      FROM claims.bundles b
+     WHERE b.tenant_id = v[1] AND b.store_id = v[2]
+       AND b.platform IN ('facebook','instagram') AND b.purged_at IS NULL
+       AND (p_session IS NULL OR b.session_id = p_session)
+       AND (p_cursor_last_at IS NULL OR (b.created_at, b.id) < (p_cursor_last_at, p_cursor_id))
+     ORDER BY b.created_at DESC, b.id DESC
+     LIMIT p_limit;
+END $$;
+ALTER FUNCTION inbox.live_comment_bundles(uuid, int, timestamptz, uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.live_comment_bundles(uuid, int, timestamptz, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.live_comment_bundles(uuid, int, timestamptz, uuid) TO commerce_runtime;
+COMMENT ON FUNCTION inbox.live_comment_bundles(uuid, int, timestamptz, uuid) IS
+ 'internal/inbox (0165 LC-B3b; caller: liveCommentItems): bundle-only A8 live_comment rows with authenticated tenant/store, optional session and created_at/id DESC keyset before limit 1..50. Cursor fields are both present or both absent. Non-purged facebook/instagram only; inbox:read required; no identity linkage or writes. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
+
 -- A9 binding_id: the binding the send path would use for this conversation (plan_dm rule: provider from the
 -- conversation object, matching external_asset_id, enabled; first by id). NULL when the store has no such
 -- binding. Read-only echo of the capability row; send-time authority stays with plan_dm's own checks.

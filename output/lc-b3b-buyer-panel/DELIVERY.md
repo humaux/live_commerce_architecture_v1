@@ -18,7 +18,14 @@
 - REAL_PG RED `bash scripts/dev/test-focused.sh '^TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit$'` → PASS=0 FAIL=1 SKIP=0 exit=1: all/unreplied each returned0 instead of the desired older pending bundle behind51 newer other-session rows. Positive control proves distractors are visible. `p2-red.log`.
 - REAL_PG GREEN `bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel|TestLiveClaimsKC03|TestLiveConsoleSendMigration0128ExactACL'` → PASS=15 FAIL=0 SKIP=0 exit=0. `p2-green.log`; E3 local, source unchanged during each run.
 
-## Remaining review steps
+## 4209955037 — complete live-comment keyset pagination
 
-- 4209955037: additive live-comment opaque keyset and LC-B3b A8 amendment, separate REAL_PG red/green + commit pending.
+- Root cause: only non-bundle conversations contributed next_cursor, and liveCommentItems ran only on the first page. Added the four-argument `inbox.live_comment_bundles(uuid,int,timestamptz,uuid)` overload with `(created_at,id)` descending keyset/session/scope predicates before LIMIT. The two-argument function remains. Live-comment pages use the existing opaque A8 cursor format with the last returned stored timestamp and bundle ID; other filters retain their conversation cursor and first-page pending-link append.
+- LC-B3b §11 A8 and its amendment now describe keyset pagination and the permitted empty tail after a full final page. New function retains all definer/security attributes; exactACL and KC03 pins add exactly the new signature. No new table privilege, dependency or migration number.
+- REAL_PG RED `bash scripts/dev/test-focused.sh '^TestLiveConsoleBuyerPanelReviewLiveCommentPagination$'` → PASS=0 FAIL=1 SKIP=0 exit=1: first page had7 unseen rows and no cursor. Positive3-row session control passed. `p3-red.log`.
+- REAL_PG GREEN `bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel|TestLiveClaimsKC03|TestClaimsRetentionCRP02|TestLiveConsoleSendMigration0128ExactACL|Inbox'` → PASS=41 FAIL=0 SKIP=0 exit=0. `p3-green.log`. Independent test covers11 rows/limit4, timestamp ties crossing page boundaries, exact UUID order, no duplicates/missing rows, both sessions, full-page terminal tail, excluded manual/purged/foreign rows and positive foreign-tenant control. E3 local REAL_PG, no assertion weakened.
+- Read-only mapper reread production diff: no concrete issue found in its scope; old signatures, scope/permission checks, keyset pairing and exact inventories retained. This is source review, not the integrator's independent acceptance.
+
+## Final validation
+
 - Final specified focused regex, go vet and go build pending. No G07 will run in this author round.

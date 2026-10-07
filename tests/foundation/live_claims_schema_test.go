@@ -951,6 +951,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"inbox.link_pending_bundles(integer,uuid)", // 0165: same bounded read with session filtering before LIMIT.
 				// 0165 (LC-B3b): A13 panel facts and A8 live-comment bundle rows (inbox:read re-checked inside; the panel reads bundles only through inbox.bundle_peers, never owner_id).
 				"inbox.buyer_panel(uuid,uuid)", "inbox.live_comment_bundles(uuid,integer)",
+				"inbox.live_comment_bundles(uuid,integer,timestamp with time zone,uuid)", // 0165: additive bounded keyset read, no binding writes.
 				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
 				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
 				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",

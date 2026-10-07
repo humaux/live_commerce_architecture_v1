@@ -973,6 +973,9 @@ func TestLiveConsoleBuyerPanelExactACL(t *testing.T) {
 		{"inbox.live_comment_bundles(uuid,int)", "commerce_integration_writer",
 			"TABLE(bundle_id uuid, session_id uuid, platform text, created_at timestamp with time zone, link_pending_manual boolean)", true,
 			[]string{"commerce_integration_writer", "commerce_runtime"}},
+		{"inbox.live_comment_bundles(uuid,int,timestamptz,uuid)", "commerce_integration_writer",
+			"TABLE(bundle_id uuid, session_id uuid, platform text, created_at timestamp with time zone, link_pending_manual boolean)", true,
+			[]string{"commerce_integration_writer", "commerce_runtime"}},
 		{"inbox.conversation_binding(uuid)", "commerce_integration_writer", "uuid", true,
 			[]string{"commerce_integration_writer", "commerce_runtime"}},
 	}
