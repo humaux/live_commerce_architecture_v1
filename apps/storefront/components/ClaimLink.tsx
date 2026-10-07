@@ -339,7 +339,7 @@ export default function ClaimLink({
             <p className="claim-note">{copy.price}</p>
             <p className="claim-note">{copy.stock}</p>
             <p className="claim-note">
-              {copy.expires(displayTime(locale, preview.expires_at))}
+              {copy.expires(displayTime(locale, preview.expires_at))} · {copy.taipeiTime}
             </p>
             {notice === "added" && <p role="status" className="claim-success" data-testid="claim-added">{copy.added}</p>}
             {notice === "recovery" && <p role="status">{copy.recovery}</p>}

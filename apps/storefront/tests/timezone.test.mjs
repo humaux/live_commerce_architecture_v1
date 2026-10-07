@@ -71,6 +71,8 @@ test("ClaimLink renders claim expiry in Taipei", () => {
   assert.match(shown, /01\/01\/2027|1\/1\/2027/);
   assert.match(shown, /(?:00|24):30/);
   assert.ok(shown.includes(fmt));
+  // Codex review P2 (PR #7): the Taipei instant is labelled so non-UTC+8 buyers read the deadline correctly.
+  assert.ok(shown.includes("Taipei time (UTC+8)"), "claim expiry lacks the Taipei/UTC+8 label");
 });
 
 test("BankTransfer renders deadline and proof instant in Taipei", () => {
