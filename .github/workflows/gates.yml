@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
-          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }} # the PR diff needs the merge base
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }} # the PR diff needs the merge base ('0' quoted: a bare 0 is falsy in an expression, so `&& 0 || 1` always gave 1)
       - id: pr
         if: github.event_name == 'pull_request'
         env:
