@@ -1,0 +1,19 @@
+{
+  "state": "complete",
+  "runs": [
+    {
+      "name": "verified-chromium",
+      "exit_code": 0,
+      "source_sha256": "cba5fb94b7d531ab9f3760a455a4a7f2d93f24830d5fcdc50d1f34932d5675f1",
+      "source_unchanged": true,
+      "engine_confirmed": true
+    },
+    {
+      "name": "verified-pr7-webkit",
+      "exit_code": 0,
+      "source_sha256": "86f491c100079053994048f6eceb0863b597b20e9bf613e0ca32ae84e7d9db83",
+      "source_unchanged": true,
+      "engine_confirmed": true
+    }
+  ]
+}
