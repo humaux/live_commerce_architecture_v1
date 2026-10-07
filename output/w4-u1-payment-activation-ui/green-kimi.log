@@ -1,0 +1,41 @@
+✔ collector projection: admitted for derived connections, absent/null for primary (0.862459ms)
+✔ collector rejects identifiers, extra keys and malformed text (0.230583ms)
+✔ disclosure renders the contract §5 line with all three slots substituted (0.352625ms)
+✔ BPT03 exact valid projection and Go nanosecond UTC timestamps (25.230166ms)
+✔ BPT03 view rejects private fields, inconsistent state and malformed names (5.731125ms)
+✔ BPT03 prepared receipt enforces exact original credit-card amount (0.704583ms)
+✔ BPT03 hosted form and replay are exact, bounded and action-allowlisted (0.569959ms)
+✔ SU01 Stripe views: fresh, both methods, attempt states, PAYUNi unchanged (0.204833ms)
+✔ SU01 Stripe view negatives (0.17675ms)
+✔ SU01 prepared amounts follow the corrected per-currency table (0.1575ms)
+✔ SU01 Stripe handoff union and every redirect_url negative (1.028459ms)
+✔ SU01 payment signal is exactly {order_id, scheduled:boolean} (0.15825ms)
+✔ RUI01 refund summary: refunded states, pending money, absent ≡ null (0.161334ms)
+✔ RUI01 refund summary negatives (0.14225ms)
+✔ card-payments copy: identical key sets in all three locales (4.812209ms)
+✔ merchant terms are quoted verbatim (contract §5) in the enable dialog (2.846791ms)
+✔ ruling-fixed strings: platform not OPEN and BLOCKED note (0.107625ms)
+✔ error map covers every frozen refusal code from migrations/0137 (0.239041ms)
+✔ no Stripe account id, key or approval id shape appears in any copy string (1.545958ms)
+✔ storefront collector disclosure matches contract §5 templates in three languages (0.1375ms)
+✔ card summary accepts the frozen shape incl. all-null platform NONE (0.774375ms)
+✔ card summary rejects unknown keys, bad enums, bad money, bad version (0.433334ms)
+✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.102375ms)
+✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.165333ms)
+✔ suffix budget derives from descriptor_preview as the base (L + 2 + suffix <= 22, charset caps at 10) (0.063292ms)
+✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.044375ms)
+✔ settlement list accepts statements without payout/lines keys (omitempty) (0.310583ms)
+✔ settlement detail carries lines whose count matches line_count (0.206ms)
+✔ settlement parsers reject malformed reads (1.229667ms)
+✔ route table: exactly the four resources, nothing generic (0.765375ms)
+✔ query grammar: card and settlement-detail are exact; settlements takes before/limit only (2.492834ms)
+✔ request fence: keyless PUT (CAS), bodyless GETs, no transfer-encoding (44.296958ms)
+✔ PUT body is the exact frozen shape {enabled, terms_version, descriptor_suffix, expected_version} (0.507208ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 187.232834

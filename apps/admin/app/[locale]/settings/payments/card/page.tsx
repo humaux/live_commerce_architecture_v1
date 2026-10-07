@@ -1,3 +1,6 @@
+// Purpose: server page of /{locale}/settings/payments/card: resolves locale, query and the authorized stores (customers/page-data.ts) and renders CardPayments; it fetches no card data itself.
+// Depends on: @/components/CardPayments, ../../../customers/page-data (loadPage).
+// Used by: Next routing (route registry entry "card-payments", permission integration:read, nav:false; entry link in SettingsWizard step 1).
 // Route /{locale}/settings/payments/card. BFF (browser, via CardPayments.tsx): GET /api/stores/{store}/payments/card,
 // PUT .../payments/card -> Go /v1/admin/stores/{id}/payments/card (internal/httpapi/payment_card.go;
 // integration:read / billing:manage, contract stripe-platform-account-v1).

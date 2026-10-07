@@ -4,6 +4,8 @@
 // Synthetic fixtures only; no Stripe account ids, keys or approval data may ever appear (integrator ruling).
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { canOpen, matchRoute, routes, visibleGroups } from "../../apps/admin/src/routes.ts";
+import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 import {
   buildCardInput,
   cardView,
@@ -402,4 +404,35 @@ test("payout state: paid, pending only when money is due, none when the week net
   assert.equal(payoutState({ paid: false, net_payable_minor: 100 }), "pending");
   assert.equal(payoutState({ paid: false, net_payable_minor: 0 }), "none");
   assert.equal(payoutState({ paid: false, net_payable_minor: -900 }), "none");
+});
+
+// ---- shell registry: the pages are reachable by permission only and add no nav button (W3-U5 incident) ----
+
+test("card-payments and settlements are nav:false routes, so no group loses or gains a nav button", () => {
+  for (const id of ["card-payments", "settlements"]) {
+    const route = routes.find((r) => r.id === id);
+    assert.ok(route, id);
+    assert.equal(route.nav, false, `${id}: a second nav:true route would replace the group's own nav-<group> button`);
+    assert.equal(route.group, "settings");
+    assert.ok(shellCopy.en[route.labelKey] && shellCopy["zh-TW"][route.labelKey] && shellCopy["zh-CN"][route.labelKey], id);
+  }
+  // the settings group still shows exactly its three pre-existing entries
+  const owner = { role: "owner", permissions: [] };
+  assert.deepEqual(
+    visibleGroups(owner).find((g) => g.id === "settings")?.routes.map((r) => r.id),
+    ["settings", "team", "billing"],
+  );
+});
+
+test("settlements need billing:manage, the card page integration:read; the owner opens both", () => {
+  const settlements = matchRoute("/settings/settlements")!;
+  const card = matchRoute("/settings/payments/card")!;
+  assert.deepEqual([settlements.permission, card.permission], ["billing:manage", "integration:read"]);
+  const staff = (...permissions: string[]) => ({ role: "staff", permissions });
+  assert.equal(canOpen(settlements, staff("integration:read")), false, "no billing:manage: the settlements page is hidden");
+  assert.equal(canOpen(settlements, staff("billing:manage")), true);
+  assert.equal(canOpen(card, staff("billing:manage")), false);
+  assert.equal(canOpen(card, staff("integration:read")), true);
+  assert.equal(canOpen(settlements, { role: "owner", permissions: [] }) && canOpen(card, { role: "owner", permissions: [] }), true);
+  assert.equal(canOpen(settlements, null), false);
 });
