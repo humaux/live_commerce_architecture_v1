@@ -148,7 +148,7 @@ ALTER FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) OWNER TO commerce_cl
 REVOKE ALL ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) TO commerce_integration_writer;
 COMMENT ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) IS
- 'internal/claims (0165 LC-B3b; caller: the inbox.buyer_panel definer): DISTINCT order ids created from the given bundles, via claims.live_price_uses (claim checkout) or inbox.order_for_buyer (A16). Any state; facts come from checkout.order_panel_facts. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to integration_writer only.';
+ 'internal/claims (0165 LC-B3b; caller: the inbox.buyer_panel definer, owner commerce_integration_writer): DISTINCT order ids created from the given bundles, via claims.live_price_uses (claim checkout) or inbox.order_for_buyer (A16). Any state; facts come from checkout.order_panel_facts. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to integration_writer only.';
 
 -- A8 session filter support: does this session have at least one non-purged bundle whose bundle_peers row
 -- matches the conversation's peer (same app/object/asset/peer_key)? Called by the social.list_conversations

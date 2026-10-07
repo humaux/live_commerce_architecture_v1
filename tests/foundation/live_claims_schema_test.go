@@ -394,6 +394,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0148 (LC-B7): the console session facts helper it owns (EXECUTE: commerce_auth only).
 				"claims.console_session_facts",
 				// 0154 (W3-05B): the four blocklist definers it owns (EXECUTE: commerce_runtime).
+				"claims.buyer_panel_claims", "claims.orders_of_bundles", "claims.session_peer_linked", // 0165 (LC-B3b)
 				"claims.block_actor", "claims.unblock_actor", "claims.list_blocked_actors", "claims.actor_restricted_for_bundle", "claims.bundle_actor_restricted",
 				// 0123 (LC-B2): the comment read-through definers it owns (EXECUTE to commerce_claims_worker / commerce_runtime only).
 				"live.comment_poll_sources", "live.console_source", "live.console_marks", "live.comment_print",
@@ -609,8 +610,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_ads_writer' AND p.proname IN ('attribution_funnel','attribution_sources'))
 			       OR (r.rolname IN ('commerce_media_writer','commerce_integration_writer') AND p.proname='attribution_sources')
 			       OR (r.rolname='commerce_claims_intake' AND p.proname IN ('intake_scope','lease_meta_intake','fail_meta_intake'))
-			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply','bundle_actor_restricted')) -- 0154: reminder predicate; 0151: the owner of the two sold-out settings definers
-			       OR (r.rolname='commerce_meta_writer' AND p.proname='insert_meta_intake')
+			       OR (r.rolname='commerce_integration_writer' AND p.proname IN ('intake_scope','issue_system_link','get_sold_out_reply','set_sold_out_reply','bundle_actor_restricted','buyer_panel_claims','orders_of_bundles')) -- 0154: reminder predicate; 0151: the owner of the two sold-out settings definers
+			       OR (r.rolname='commerce_meta_writer' AND p.proname IN ('insert_meta_intake','session_peer_linked')) -- 0165 (LC-B3b): A8 session filter predicate
 			       OR (r.rolname='commerce_claims_worker' AND p.proname='check_meta_reply')
 			       -- 0151 (W3-04B): the merchant transaction reads/saves the sold-out reply setting.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('get_sold_out_reply','set_sold_out_reply'))
