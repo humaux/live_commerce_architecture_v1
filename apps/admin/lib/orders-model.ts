@@ -278,10 +278,14 @@ export function parseOrderSummary(value: unknown): OrderSummary {
     (row.fulfillment_state === "CANCELLED" && row.commercial_state !== "CANCELLED") ||
     (row.fulfillment_state === "PAID_ALLOCATION_FAILED" &&
       (row.payment_state !== "REVIEW_REQUIRED" || row.work_state !== "REVIEW_REQUIRED")) ||
+    // Mirrors Go validSummary (internal/merchantorders/orders.go): READY also belongs to a merchant-cancelled paid order
+    // (W3-08B; the payment work item is never closed and a cancel-refund gap leaves it READY). Refusing it blanked the list.
     (row.work_state === "READY" &&
-      (!capturedStates.includes(row.payment_state) || row.commercial_state !== "CONFIRMED" ||
-        (row.fulfillment_state !== "MANUAL_UNASSIGNED" && row.fulfillment_state !== "MERCHANT_SHIPPED" &&
-          row.fulfillment_state !== "PROVIDER_LABEL_CREATED"))) ||
+      (!capturedStates.includes(row.payment_state) ||
+        !((row.commercial_state === "CONFIRMED" &&
+          (row.fulfillment_state === "MANUAL_UNASSIGNED" || row.fulfillment_state === "MERCHANT_SHIPPED" ||
+            row.fulfillment_state === "PROVIDER_LABEL_CREATED")) ||
+          (row.commercial_state === "CANCELLED" && row.fulfillment_state === "CANCELLED")))) ||
     (row.work_state === "REVIEW_REQUIRED" && row.payment_state !== "REVIEW_REQUIRED") ||
     ((row.fulfillment_state === "MERCHANT_SHIPPED" || row.fulfillment_state === "PROVIDER_LABEL_CREATED") &&
       (row.work_state !== "READY" || row.commercial_state !== "CONFIRMED")) ||

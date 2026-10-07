@@ -1,0 +1,11 @@
+=== RUN   TestLiveClaimsKC04Offers
+--- PASS: TestLiveClaimsKC04Offers (1.75s)
+=== RUN   TestLiveToolsExpiryOffersAndForgedOrigin
+    live_tools_test.go:213: raw UPDATE refused (ERROR: permission denied for table cart_lines (SQLSTATE 42501)); forging through DELETE+INSERT instead
+    live_tools_test.go:256: a paused offer must keep the granted live price (owner decision 2026-10-07): {SKUID:3e6a24e6-3a9c-44a3-bd9c-61480db2542e ProductID:75abecb3-c400-44ef-9cda-648e226cc1c8 Code:T04-93cb30a7a760-0 Name:t04-93cb30a7a760 Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:1250 Amount:{SubtotalMinor:2500 DiscountMinor:0 TaxMinor:125 TotalMinor:2625} PriceRule: CatalogUnitPriceMinor:0 ClaimBundleID: ClaimOfferID:}
+--- FAIL: TestLiveToolsExpiryOffersAndForgedOrigin (0.30s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.038s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1
+exit=1

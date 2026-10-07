@@ -1,0 +1,21 @@
+# red-fix.log: fix-round mutation reds. Committed tree under test: 378020db3f7b3b1137ad64b711c805617d674193 (git rev-parse HEAD).
+# Each run: bash scripts/dev/test-focused.sh '^TestOperationsQueue' with ONE mutation applied to migrations/0159_operations_ledger.sql on top of that tree (file restored with git checkout after every run; mutation recipes: the M-names below).
+# M12 protective guard removed | M13 query hard cap removed | M4 SQL DTO adds semantic_key (now red through TestOperationsQueueSQLDTOHasExactKeys; the HTTP DTO alone masks it) | M11 operation row lock removed (deterministic race) | M14 guard narrowed to the literal meta.ads.pause (name rule must cover the stop-class family)
+
+== M12_protective_guard_removed (exit 1)
+--- FAIL: TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- FAIL: TestOperationsQueueProtectiveOperationsCannotBeCancelled
+test-focused: top-level PASS=14 FAIL=2 SKIP=0 exit=1
+== M13_query_cap_removed (exit 1)
+--- FAIL: TestOperationsQueueQueryHardCap
+test-focused: top-level PASS=15 FAIL=1 SKIP=0 exit=1
+== M4_sql_dto_leak (exit 1)
+--- FAIL: TestOperationsQueueSQLDTOHasExactKeys
+test-focused: top-level PASS=15 FAIL=1 SKIP=0 exit=1
+== M11_no_row_lock (exit 1)
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect
+--- FAIL: TestOperationsQueueCancelRacesDispatchClaim
+test-focused: top-level PASS=14 FAIL=2 SKIP=0 exit=1
+== M14_protective_only_exact_pause_in_ads_lane_ignored_by_name (exit 1)
+--- FAIL: TestOperationsQueueProtectiveOperationsCannotBeCancelled
+test-focused: top-level PASS=15 FAIL=1 SKIP=0 exit=1

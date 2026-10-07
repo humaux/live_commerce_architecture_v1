@@ -79,7 +79,7 @@ classes without fixed days; UI BLOCKED pending composition approval (T10b).
   Keyword and SKU are immutable; `max_quantity_per_claim` 1..999 and `active` change
   with version CAS. Keyword unique per session (active or not); at most one **active**
   offer per SKU per session, so a redeem has at most one applicable line per SKU (a cart
-  merge never sums two claim lines; lines on inactive offers are skipped, §4.4). A keyword
+  merge never sums two claim lines; a line is skipped when another claim line of the bundle wins its SKU, §4.4 and amendment "Live price kept on pause"). A keyword
   typo is fixed by deactivating the offer and creating the right keyword for the same SKU.
   ≤200 offers per session.
 - A **claim window** per session is `CLOSED`/`OPEN` with `match_mode` `EXACT`
@@ -771,10 +771,12 @@ expected_bundle_version}, &out, fn)`, where fn:
 
 1. `claims.redeem_link(hash, expected)`; zero rows → `ErrNotFound`; `PT409` →
    `ErrConflict` (the whole command, including the bind, rolls back).
-2. Pending lines whose offer is inactive or SKU/product unavailable are `skipped` and
+2. Pending lines superseded on their SKU or whose SKU/product is unavailable are `skipped` and
    **stay pending**; the rest override the cart quantity for that SKU (absolute).
-   Non-claim and non-pending lines are untouched. `live_offer_active_sku` leaves at most
-   one applicable line per SKU in the `redeem_link` snapshot; Go asserts it (`ErrConflict`).
+   Non-claim and non-pending lines are untouched. (Owner decision 2026-10-07, amendment "Live price
+   kept on pause": a pending line whose offer is merely paused is applied, not skipped; the active
+   offer's line wins a SKU that two lines compete for.) `live_offer_active_sku` allows at most
+   one ACTIVE offer per SKU; Go asserts it (`ErrConflict` for two active lines on one SKU).
 3. Nothing to apply → `out.Cart = storefront.GetCart` (no cart write).
 4. Otherwise `storefront.LockCartOwner` → `storefront.GetCart` → merged set (>50 SKUs →
    `ErrInvalid`, bind rolled back) → `storefront.SetCart(ctx, tx, s, "clm:" +
@@ -943,7 +945,7 @@ amendment, §10), one top-level `TestLiveClaimsKCnn…` per gate. Pure tests liv
 | KC08 | `TestLiveClaimsKC08ManualPrivacy` | REAL_PG | Replay identical receipt after later commands; changed body 409; same key with a different `actor_label` 409 (I02), same key with `@Amy ` vs `amy` replays; new actor with a used label 409; two labels → two bundles; rejected first comment leaves no bundle/label; **sentinel scan** of every column of claims/live/ops/buyer receipts, audit, storefront events and captured logs finds no `0912345678`, `A1是不是红色` or text sentinel; label sentinel found only in `claims.bundles.label`, its unkeyed SHA-256 nowhere |
 | KC09 | `TestLiveClaimsKC09Link` | REAL_PG | 43-char token; DB-wide scan finds only its SHA-256; token absent from receipts/audit/logs; replay → `token:""`, `replayed:true`; concurrent issue → one CAS winner; rotation kills old token; first issue, then 3 rotations and 3 release+rotations: each resets `issued_at` and `expires_at = issued_at+72h` exactly (DB, no 23514); release+rotate: old token 404, new owner binds, previous owner's preview 404; direct `claims.issue_link` by a `live:read`-only principal → PT403, and `live:manage` revoked while it waits on the bundle lock → PT403 (`pg_stat_activity`, not sleeps), nothing changed in either case; other-session/store/tenant bundle 404 |
 | KC10 | `TestLiveClaimsKC10Preview` | REAL_PG | Read-only (row counts, versions, receipts, events identical after repeated previews by several owners); unknown/expired/rotated/other-owner/other-store/other-tenant → identical not-found; bound flag; pending/available flags; exact projection keys (no title/label/actor/platform/owner/principal) |
-| KC11 | `TestLiveClaimsKC11Redeem` | REAL_PG | Bind + set targets keeping unrelated lines; replay identical, no new cart version; stale `expected_bundle_version` → 409 and **no binding**; second owner 404, no write; later `A1+3` then new-key redeem sets 3; buyer-removed line not re-added unless its claim changed; inactive offer/archived SKU skipped and still pending, applied after reactivation; pre-existing archived non-claim cart item → 409, bind rolled back; >50 → 422 rolled back; release → new owner receives all lines; two bundles same SKU → last apply wins; no inventory/reservation/order rows |
+| KC11 | `TestLiveClaimsKC11Redeem` | REAL_PG | Bind + set targets keeping unrelated lines; replay identical, no new cart version; stale `expected_bundle_version` → 409 and **no binding**; second owner 404, no write; later `A1+3` then new-key redeem sets 3; buyer-removed line not re-added unless its claim changed; archived SKU skipped and still pending; a pending line of a PAUSED offer is applied like any other (owner decision 2026-10-07, amendment "Live price kept on pause"), except a line superseded on its SKU (the active offer's or an already-applied line wins), which stays pending and is skipped as `offer_inactive` until it wins; pre-existing archived non-claim cart item → 409, bind rolled back; >50 → 422 rolled back; release → new owner receives all lines; two bundles same SKU → last apply wins; no inventory/reservation/order rows |
 | KC12 | `TestLiveClaimsKC12Isolation` | REAL_PG | 2 tenants × 2 stores: forged buyer GUCs + foreign token hash → zero rows / 22023; merchant with another store's GUC sees nothing; merchant cannot read `token_hash`/`owner_id` or write `owner_id`/`applied_version`/`claims.links` (42501); `claims.issue_link` with a `live:read`-only principal, a foreign `p_store`, or GUCs not matching the resolved session → PT403/PT404, no write; every policy executed as every role raises no 42P17 |
 | KC13 | `TestLiveClaimsKC13MerchantHTTP` | HTTP_PG | M1–M7 exact routes/methods/keys/status codes; api refuses to start without a valid, distinct `COMMERCE_CLAIMS_LABEL_KEY`; live:read vs live:manage 403; cross-store 404; no-store/no-referrer; query rejection; token only in first M7 body and only after COMMIT (fault-injected commit failure → no token); replay body byte-identical except `token`/`replayed` |
 | KC14 | `TestLiveClaimsKC14BuyerHTTP` | HTTP_PG | B1–B2 exact routes; token header only there (path/query/body/other route rejected); strict JSON; identical 404; first and replay B2 bodies byte-identical; `PUT cart` with `clm:` key → 422; log capture has no token/text/actor key |
@@ -1054,7 +1056,9 @@ delta and gates.
   immutable per offer; a typo is fixed by deactivating it and creating the right keyword
   for the same SKU (SKU uniqueness covers active offers only; KC04). Lines already
   accepted on the deactivated offer stay pending and are skipped; they apply only if that
-  offer is reactivated, which first requires deactivating its replacement.
+  offer is reactivated, which first requires deactivating its replacement. (SUPERSEDED for the skip by
+  amendment "Live price kept on pause": such a line is applied at its live price unless the buyer also
+  holds a claim on the SKU's active replacement offer, which then wins the cart line.)
 - Strict grammar rejects `A1 +2`, `A1+02`, emoji, interior spaces, Chinese numerals;
   merchants should avoid keywords shaped `<keyword>X<digits>` (`a1x2` hazard).
 - One OPEN window per store; window close drops in-flight commands (fail-closed). A
@@ -1180,7 +1184,7 @@ Append-only; the §13 "Live-only price" row now points here. Binding for the liv
    `apps/storefront/lib/claim-contract.ts` is exact-keys), so only `unit_price_minor` changes value; showing the struck-out
    catalog price needs a coordinated storefront change (follow-up). The Quote still decides the charged price.
 7. **Gate.** A buyer cannot obtain a live price via a direct cart, via an expired link, via another session's offer on the
-   same SKU, via a bundle bound to another buyer, via an inactive or price-less offer, or by raising the quantity above the
+   same SKU, via a bundle bound to another buyer, via a price-less offer (amended: a paused offer still prices the claim lines granted before the pause, see "Live price kept on pause"), or by raising the quantity above the
    claimed quantity, nor by ordering again after the claimed quantity was ordered (re-sending the same cart after checkout,
    0105): a second order of an already-ordered claim line is priced at catalog until the first order is CANCELLED. KC03 gains
    the 0092 grants/functions and the 0105 ledger, definer and column grants; no other KC03 row changes. Gate:
@@ -1221,7 +1225,8 @@ reply says when the claimed offer has no stock. The claim itself is unchanged.
 - **Sold-out predicate** (same rule as "Direct checkout" B1, evaluated in SQL at reply-planning time for the bundle-creating ACCEPTED event):
   the offer's SKU tracks inventory (A6) and `SUM(on_hand - reserved - allocated - unavailable)` over the store is below the **claimed quantity**
   (a partial shortfall, 3 claimed with 1 left, counts as sold out: no partial link), **or** the offer is inactive. An untracked SKU is never sold
-  out. Ingest rejects a paused offer as `OFFER_INACTIVE` (no bundle, so no reply of any kind); the inactive clause only closes a late deactivation.
+  out. Ingest rejects a paused offer as `OFFER_INACTIVE` (no bundle, so no reply of any kind). The inactive clause is unreachable on the auto-reply path (the reply is planned in the ingest transaction, which holds
+  the offer `FOR SHARE`, and a pause waits for it; see amendment "Live price kept on pause" rule 7), so it never turns an accepted claim into a sold-out reply.
   `inventory.claim_sku_sold_out(uuid,integer) RETURNS boolean` (owner `commerce_inventory_writer`, EXECUTE `commerce_integration_writer` only, scope
   from the transaction GUCs) is the boolean-only seam; `integration.claim_sold_out_facts(uuid,uuid,uuid)` is the shared private helper.
 - **Reply**: `integration.plan_claim_reply` (signature, owner and EXECUTE unchanged) plans the same single `meta.private_reply` operation on the same
@@ -1303,3 +1308,103 @@ no claim link and sends no automatic private reply. Nothing is shown to the buye
   an automatic reply and shows no mark; with `private_reply=false` on the source the planner never runs, so such a claim has no `restricted` mark either (no link or reply leaks); a conversation with several
   actors needs a bundle choice; list, check and unblock routes sit under a session path but are store-level (the session id is only a path prefix there); no cross-store or cross-tenant sharing, no rule-based or phone/address blocking.
 - Gates: `TestBlocklist*` (BL01-BL08, race, erasure, ACL pins), `internal/httpapi` blocklist transport tests. Evidence MOCK (REAL_PG; no Graph call is made for a restricted claim).
+
+## Amendment "W3-06B keyword tools and match simulator" (2026-10-07, no migration)
+
+Four merchant routes under the claims base path `/v1/admin/stores/{store_id}/live-sessions/{session_id}/claims` (`internal/claims/{simulate.go,keyword_tools.go}`, `internal/httpapi/keyword_tools.go`).
+No table, grant, definer or role changes: offers stay immutable in keyword and SKU (0060), so nothing here needs migration 0158 (it stays unused). Owner ruling 2026-10-07: the store default match mode is **EXACT**, the frozen default (a session without a window row reads EXACT). No store-level setting is added.
+Integrator ruling 2026-10-07 (small, binding): when `match_mode` is omitted the **simulator uses the session's current claim-window mode** and falls back to EXACT only when the session has no window,
+so the merchant sees exactly what would happen live; an explicit `match_mode` always overrides. The keyword check (rule 2) takes an optional `match_mode` with the same default (the window's mode, EXACT without a window), and the batch rename warnings (rule 4) use the window's mode.
+The simulator always reports the window's actual state and mode (`window_state`, `window_match_mode`) next to the mode it simulated.
+
+1. **Simulator** `POST .../claims/simulate`, body `{comment, match_mode?}` (`match_mode` omitted = the window's mode, EXACT without a window; `comment` 0..1024 bytes of UTF-8; longer is 422; control characters are allowed so multi-line samples work; unknown keys 400),
+   live:read; an Idempotency-Key is optional and ignored (a malformed or repeated one is 422). Pure read: no row, no receipt, no audit, no Meta call, the comment is neither stored nor returned.
+   It runs the **same matcher as ingest**, not a copy: `grammar.ParseForIngest` (§2.5) then `effective` (the mode gate) then the offer lookup then `offerReason` (§2.3), the exact functions
+   `ingest()` calls, against the session's offers at the database clock. Gate SIM-PARITY runs `RecordManualClaim` and the simulator on the same session and compares outcome, reason, offer and quantity.
+   200 body: `{outcome, reason, match_mode, grammar_version, kind, parsed_keyword, parsed_quantity, explicit, offer, target_quantity, window_state, window_match_mode, window_closed, not_simulated}`. `reason` is one of
+   `NO_MATCH | UNKNOWN_KEYWORD | OFFER_INACTIVE | INVALID_QUANTITY | QUANTITY_REQUIRED | QUANTITY_OVER_MAX` (`""` when ACCEPTED). `kind` is the parse kind after the mode gate (a kwc result
+   outside CONTAINS reads NO_MATCH). `offer` is the session's Offer (the M1 shape) when the keyword resolves, else `null`. `target_quantity` is what an ACCEPTED claim **sets the line to** (§1: `A1+2` sets 2,
+   never adds); 0 otherwise. `parsed_keyword`/`parsed_quantity` echo the grammar head (also for UNKNOWN_KEYWORD, where real ingest stores nothing; the response only goes back to the typing merchant).
+   Honesty flags for the UI: `window_closed` is true when the window is not OPEN (`window_state` CLOSED): the parse result and rule outcome above are still reported, but real ingest answers WINDOW_CLOSED
+   (nothing recorded) before them, and so does a comment older than `opened_at`; the UI must show it. `not_simulated` is always `["bundle_limit","rate_limit"]`: the real-ingest outcomes `BUNDLE_LIMIT` (51st line of one
+   buyer) and `RATE_LIMITED` (Meta per-actor / per-session caps) depend on bundle and Meta rows a read must not touch. Also not reflected: the sold-out flag (inventory is not read here; it does not change the claim outcome) and previous quantity / bundle versions.
+2. **Keyword conflict check** `POST .../claims/keywords/check`, body `{keywords: [string] (0..50, required), match_mode?}` (omitted = the window's mode, EXACT without a window), live:read, Idempotency-Key optional and ignored as on the simulator. `keywords: []` checks only the existing offers.
+   200 body `{session_id, match_mode, items: [{input, canonical, valid, conflicts: [Finding]}], existing: [Finding]}`; `Finding = {kind, severity, keyword, with?, offer_id?}`. `canonical` is
+   `NormalizeKeyword(input)` (full-width and lower case folded; `""` when invalid). Kinds, all derived from the frozen grammar, none invented:
+   - errors: `invalid_keyword` (not `^[A-Z0-9]{1,16}$` after normalisation), `keyword_taken` (an offer of this session already has the canonical keyword, active or not, since keywords are unique per session),
+     `duplicate_in_request` (the same raw text twice in one request), `normalization_collision` (two different raw texts, or a raw text and an existing keyword, fold to one canonical keyword, e.g. `ＡＢ` vs `ab`).
+   - warnings: `quantity_lookalike` (keyword B equals keyword A + `X` + digits, e.g. `A1` and `A1X2`: a buyer's `a1x2` parses to head `A1X2`, §12 hazard R09, in every mode), `numeric_in_contains`
+     (mode `KEYWORD_QTY_CONTAINS` and a digits-only keyword. kwc-v2 rule 3 accepts a digits-only head with `+N` only when the whole comment is ASCII, so a Chinese sentence such as 「我要101+2」 **never** matches a numeric
+     keyword (NO_MATCH), while an ASCII line such as `101+2!` does, and `101+2 minutes` is two fragments and NO_MATCH. The warning tells the merchant a numeric keyword behaves unlike a lettered one under CONTAINS.)
+   Plain prefix / contained forms (`A1` vs `A10`, `H1` vs `2H1`) are **not** reported: no mode ever matches a substring (§2.2; kwc-v2 carves one whole `[A-Z0-9+]` fragment), so they cannot route a comment
+   to the wrong offer. Findings never block by themselves; the HTTP layer reports them, the merchant decides.
+3. **Auto-numbering** `GET .../claims/keywords/next?prefix=&count=` (live:read, no key; only these two query keys): `prefix` is 1..8 letters (default `A`, folded like keywords), `count` 1..20 (default 1).
+   200 body `{prefix, keywords: [..]}`: the next `count` free keywords `PREFIX<n>`, n from 1, skipping every keyword already used in the session (active or not) and any candidate that would raise a
+   `quantity_lookalike` warning against the session's offers or the earlier suggestions. A suggestion is advisory and not reserved: a concurrent create can still take it (M3 then answers 409). 409 when the session has no free number left. Offer
+   creation (M3) still requires `keyword`: its frozen request shape is unchanged.
+4. **Batch** `POST .../claims/offers/batch`, body `{items: [{offer_id, expected_version, action, keyword?}]}` (1..50 items; `action` is `deactivate` or `rename`; `keyword` required for `rename` and forbidden
+   otherwise; a repeated `offer_id` is 422), live:manage, Idempotency-Key required. One receipt `live.claim.offer.batch`, one audit row `live.claim.offer.batch.applied` (details: counts only), one transaction under the
+   session's `claims-offers` advisory lock (the CreateOffer lock), the touched offers locked FOR NO KEY UPDATE in id order. **All or nothing**: every item is checked first; any conflict returns 200
+   `{applied:false, conflicts:[{index, offer_id, keyword?, reason}], offers:[], unchanged:[], warnings:[]}` and writes nothing except the receipt. Conflict reasons: `offer_not_found`, `version_conflict`
+   (`expected_version` is each offer's CAS, as M4), `offer_inactive` (rename of an inactive offer: reactivate it first), `has_claims` (a rename of an offer that already has any claim line: renaming would strand the
+   buyers' lines, so create a new offer for the new keyword; deactivating the old one has the pause effect below), `sku_unavailable` (as M3), `session_full` (200-offer cap counts the new offers), `same_keyword`, and the check errors `invalid_keyword`, `keyword_taken`,
+   `duplicate_in_request`, `normalization_collision` against the session's offers (the old keyword of a renamed offer stays reserved, because it stays in the session as an inactive offer) and the other renames.
+   Applied: `deactivate` sets `active=false` (an already inactive offer is reported in `unchanged`, not an error). Deactivating an active offer that has claim lines is allowed and adds the warning
+   `deactivate_has_claims {keyword, offer_id}`: it is exactly one M4 pause. SUPERSEDED by amendment "Live price kept on pause" (owner decision 2026-10-07): those buyers KEEP the live price their claim
+   granted (quote, checkout and redeem, including a link not yet opened) until the claim or link expires (a merchant re-issue of the link restarts its 72 h window, "Live price kept on pause" rule 2); only NEW claims on the paused offer are refused. The warning stays as information for the merchant. Warnings accompany applied results only; `rename` **deactivates the old offer and creates a new offer** with the new canonical keyword and
+   the old SKU, `max_quantity_per_claim` and `live_price_minor` (new offer: version 1, `activated_at` now, principal = caller). It is not an in-place keyword update (keywords are immutable, 0060; ingest dedup compares the
+   stored offer's keyword, S03). The old offer keeps its history and its inactive keyword. When the renamed offer is the console's recommended one (the latest `featured` `live.offer_timeline` row of the session), the same transaction appends a `featured`
+   row for the new offer, so `recommended` never points at the retired offer (the old rows stay as append-only history). Rename warnings (`quantity_lookalike`, `numeric_in_contains`) are analysed in the session window's mode. `{applied:true, offers:[Offer], unchanged:[offer_id], conflicts:[], warnings:[Finding]}` where `offers` are the
+   post-state of every offer written (deactivated and created). Allowed in any window state and any non-archived session (an archived session is read-only at the database, 0124, and answers 422); a rename on an
+   OPEN window takes effect for the next comment. Errors: 404 session, 422 shape, 409 same key with a different body, 403 without live:manage.
+5. **Quantity cap and validity time (M04 #14)**: the per-claim cap is `offers.max_quantity_per_claim` (`QUANTITY_OVER_MAX`, unchanged). A keyword validity window (start/end time per offer, instead of the
+   manual open/close of the claim window) is **deferred**: it needs offer columns and changes to the meta intake definers and `live_prices`, which is not a small change.
+6. **Privacy / limits**: the simulator and the checks hold the comment or keyword text only in memory for the request: nothing is logged, stored or put in a receipt, and `SimulateInput` has the redacting
+   formatters of `ManualClaimInput` (I11). Batch receipts store keywords of offers (merchant data), never comments. Gates: `TestSimulate*`, `TestKeywordTools*` (SIM-PARITY, SIM-KWC, KT conflict/next/batch, `TestKeywordToolsBatchDeactivateIsAPause` pinning the pause effect above),
+   `internal/httpapi` keyword-tools transport test. Evidence MOCK (REAL_PG; no Meta call).
+
+
+## Amendment "Live price kept on pause" (2026-10-07, migration 0158)
+
+Owner decision 2026-10-07 (binding; it overrides the frozen behaviour of gate LTG03, "Live tools (R4)" rules 5 and 7, the §12 sentence "Lines already accepted on
+the deactivated offer stay pending and are skipped" and the W3-06B deactivate text): 「已经认领的买家保留直播价，只拒绝新的认领。」 Unit `docs/delivery/units/live-price-keep-on-pause.md`.
+
+1. **New claims are refused, existing claims are not touched.** Ingest rejects a paused offer as `OFFER_INACTIVE` exactly as before (no new line, no bundle). A claim LINE
+   (bundle, offer, SKU) that exists was granted while the offer was active; pausing the offer never changes it. Reactivation (M4) therefore changes nothing for those buyers.
+2. **Quote authority (rule 5, amended).** `claims.live_prices` no longer requires `live.offers.active`. A live price is returned when ALL still hold at `clock_timestamp()`: the bundle
+   is bound to the calling buyer (or the 0129 merchant-origin grant branch) with an unexpired link; the claim line exists for that SKU; the line's quantity minus the quantity held by
+   non-CANCELLED orders covers the cart quantity (the cap per claim line is unchanged: no more than the claimed units, across all orders); the offer belongs to the bundle's session,
+   targets that SKU and has `live_price_minor IS NOT NULL`. The price is still evaluated at quote time (rule 3): clearing or changing `live_price_minor` on a paused or an active offer
+   changes later quotes, a pause alone changes nothing. `checkout.Begin` re-runs the same function through `RevalidateQuote`, so a live-priced quote of a paused offer places at the live price;
+   `claims.consume_live_prices` records the use as before (it never read `active`). Expiry is not extended by any BUYER action: an expired or rotated-away link ends the price exactly as in rule 5.
+   Two consequences are part of the rule and stand until the owner rules otherwise (Opus review P2-3, P2-4): (i) "keeps the live price" means the offer's CURRENT `live_price_minor` at quote time, not a
+   price frozen on the claim line: editing the price of a paused offer changes what its existing claimants pay at their next quote (a quote taken at the old price then fails closed at `Begin`, conflict and
+   zero facts, as for an active offer), and clearing it (`0`) ends the live price; (ii) a MERCHANT action that re-issues a link (`claims.issue_link`: the LC-B4 manual send, the 0144 reminder for
+   never-opened claims, the release path) restarts that link's 72 h window, so it also renews the price window of a paused offer's claim. Pre-existing for active offers; no buyer can trigger it.
+3. **Link display and redeem.** `claims.preview_live_prices` shows the live price of every priced line of the link whether or not its offer is active. B1 `available` is
+   `SKU/product active and SKU currency = store currency and the line is not superseded` (below); it no longer depends on the offer being active. B2 applies a pending line of a paused
+   offer like any other (it is NOT skipped as `offer_inactive`); stock is still the checkout's decision (`sold_out` precedence is unchanged, claims never reserve stock).
+   `claims.preview_link` / `claims.redeem_link` keep their signatures and keep reporting `offer_active` (a fact about the offer, no longer a gate).
+4. **One SKU, one claim line per cart.** The cart carries one origin per SKU. When a bundle holds several pending lines on one SKU (typo recovery: the paused `A11` and the active `A1`
+   on the same SKU) exactly one of them may carry the SKU, ranked in this order: (1) the line of the ACTIVE offer (the unique-active-offer-per-SKU index guarantees at most one); (2) otherwise the line that is
+   ALREADY APPLIED into the cart (`applied_version = version`: the line already carrying the SKU keeps it, so pausing the replacement offer after its redeem, e.g. an end-of-live batch deactivate,
+   never flips the cart back to the superseded typo claim and never lets that claim grant more live-price units after the replacement was ordered; Opus review P1-1); (3) otherwise the lowest
+   offer id (a deterministic final tie-break: it applies only when nothing is active and nothing was applied yet, e.g. the 0144 reminder flow after an end-of-live deactivate, where the buyer opens
+   the link for the first time. The claim time is NOT exposed by `claims.preview_link` / `claims.redeem_link`; ranking by earliest or latest claim would need a signature change and a KC03
+   pin change, an owner choice, open). The others are not applied: they stay pending, `available=false` in B1 and skipped with `reason:"offer_inactive"` in B2 (the only remaining use of that
+   reason, unchanged wire shape). Never `409`. Each line stays within its own claimed quantity, so no tie-break outcome grants units the buyer did not claim.
+5. **Merchant order-for-buyer prefill (LC-B6).** `claims.for_buyer_lines` reports `live_price_minor` whenever the offer has a live price (the former `active` condition is dropped) AND the line
+   is not superseded on its SKU by another line of the bundle under the rule 4 ranking (a superseded line reports NULL: no live price, so `merchanttools.pickOrigins` can never fall through to it
+   when the winning line does not cover the ordered quantity; the order then stays at the catalog price, never a partial live price). So the merchant-attested origin prices exactly the claim line the
+   buyer's own checkout would carry (Opus review P2-5). Within a bundle the active offers' lines are listed first.
+6. **Rule 7 gate, amended.** A buyer cannot obtain a live price via a direct cart, an expired link, another session's offer on the same SKU, a bundle bound to another buyer, a
+   price-less offer, by raising the quantity above the claimed quantity, nor by ordering again after the claimed quantity was ordered. A paused offer gives its live price ONLY to
+   a claim line granted before the pause. A buyer without a prior claim pays the catalog price and cannot claim (`OFFER_INACTIVE`). Gates: `TestLivePriceKeepOnPause*`
+   (cases a to g, the replacement-paused-after-redeem flow, the reminder flow, repricing a paused offer; REAL_PG), `TestLiveConsoleOrderForBuyer*Paused*` / `*Superseded*`, LTG03
+   `TestLiveToolsGateOfferLifecycleAndExpiry`, `TestKeywordToolsBatchDeactivateIsAPause`, `TestRedeemPlanning*`, KC04 typo recovery, KC11.
+7. **Known limits.** The auto sold-out reply (amendment "W3-04B", `OR NOT o.active` in `integration.claim_sold_out_facts`) cannot contradict this rule today: the poller accepts the claim and
+   plans the reply in ONE transaction (`internal/claimsintake/poller.go` apply: `IngestMetaIntake` then `planReply`), ingest holds the offer row `FOR SHARE` until commit, and both writers of
+   `live.offers.active` (M4 `UpdateOffer`, the W3-06B batch) take `FOR NO KEY UPDATE` first and so wait for that transaction. A claim accepted before a pause therefore always sees its offer active when
+   the reply is planned, and a claim after the pause is refused (`OFFER_INACTIVE`, no bundle, no reply). The clause is dead on the auto-reply path; if planning ever leaves the ingest transaction (for
+   example a deferred River leg), the clause must be dropped first (the ACCEPTED claim event already proves the offer was active at acceptance), in a migration owned by W3-04B. Migration 0158
+   changes only functions (CREATE OR REPLACE, same owners, EXECUTE lists and volatility): no table, column, grant or role change.

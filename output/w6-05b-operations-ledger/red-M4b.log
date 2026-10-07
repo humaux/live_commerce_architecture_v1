@@ -1,0 +1,37 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.55s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.28s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.25s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.31s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.14s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+    operations_queue_test.go:435: list item keys = [action actions attempts created_at object operation_id provider purpose reason_code semantic_key state updated_at], want exactly [action actions attempts created_at object operation_id provider purpose reason_code state updated_at]
+    operations_queue_test.go:436: detail keys = [action actions attempts created_at events object operation_id provider purpose reason_code semantic_key state updated_at], want exactly [action actions attempts created_at events object operation_id provider purpose reason_code state updated_at]
+    operations_queue_test.go:456: response leaks "oq.plan.febaa26869a5": {"items":[{"operation_id":"b1bb47b9-84b4-4e83-bdda-1233031c87e6","provider":"ecpay_logistics","action":"ecpay.cvs_create","purpose":"transactional","state":"FAILED_FINAL","reason_code":"ecpay.rejected","semantic_key":"oq.plan.febaa26869a5","attempts":2,"created_at":"2026-10-06T17:53:31.267989Z","updated_at":"2026-10-06T17:53:31.267989Z","object":{"kind":"order","id":"5cb9dd54-f3bb-4a7b-b10f-79e5fc7115ee"},"actions":{"query":{"available":false,"reason":"not_in_doubt"},"cancel":{"available":false,"reason":"operation_closed"},"retry":{"available":false,"reason":"retry_not_supported"}}}],"next_cursor":""}
+    operations_queue_test.go:456: response leaks "semantic_key": {"items":[{"operation_id":"b1bb47b9-84b4-4e83-bdda-1233031c87e6","provider":"ecpay_logistics","action":"ecpay.cvs_create","purpose":"transactional","state":"FAILED_FINAL","reason_code":"ecpay.rejected","semantic_key":"oq.plan.febaa26869a5","attempts":2,"created_at":"2026-10-06T17:53:31.267989Z","updated_at":"2026-10-06T17:53:31.267989Z","object":{"kind":"order","id":"5cb9dd54-f3bb-4a7b-b10f-79e5fc7115ee"},"actions":{"query":{"available":false,"reason":"not_in_doubt"},"cancel":{"available":false,"reason":"operation_closed"},"retry":{"available":false,"reason":"retry_not_supported"}}}],"next_cursor":""}
+    operations_queue_test.go:456: response leaks "oq.plan.febaa26869a5": {"operation_id":"b1bb47b9-84b4-4e83-bdda-1233031c87e6","provider":"ecpay_logistics","action":"ecpay.cvs_create","purpose":"transactional","state":"FAILED_FINAL","reason_code":"ecpay.rejected","semantic_key":"oq.plan.febaa26869a5","attempts":2,"created_at":"2026-10-06T17:53:31.267989Z","updated_at":"2026-10-06T17:53:31.267989Z","object":{"kind":"order","id":"5cb9dd54-f3bb-4a7b-b10f-79e5fc7115ee"},"actions":{"query":{"available":false,"reason":"not_in_doubt"},"cancel":{"available":false,"reason":"operation_closed"},"retry":{"available":false,"reason":"retry_not_supported"}},"events":[{"generation":0,"state":"READY","reason_code":"operation_planned","created_at":"2026-10-06T17:53:31.268529Z"}]}
+    operations_queue_test.go:456: response leaks "semantic_key": {"operation_id":"b1bb47b9-84b4-4e83-bdda-1233031c87e6","provider":"ecpay_logistics","action":"ecpay.cvs_create","purpose":"transactional","state":"FAILED_FINAL","reason_code":"ecpay.rejected","semantic_key":"oq.plan.febaa26869a5","attempts":2,"created_at":"2026-10-06T17:53:31.267989Z","updated_at":"2026-10-06T17:53:31.267989Z","object":{"kind":"order","id":"5cb9dd54-f3bb-4a7b-b10f-79e5fc7115ee"},"actions":{"query":{"available":false,"reason":"not_in_doubt"},"cancel":{"available":false,"reason":"operation_closed"},"retry":{"available":false,"reason":"retry_not_supported"}},"events":[{"generation":0,"state":"READY","reason_code":"operation_planned","created_at":"2026-10-06T17:53:31.268529Z"}]}
+--- FAIL: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.20s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.14s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.31s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.461s
+FAIL
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1

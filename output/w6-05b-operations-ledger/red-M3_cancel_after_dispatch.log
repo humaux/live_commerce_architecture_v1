@@ -1,0 +1,39 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.56s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.23s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.48s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:377: cancel won 11, claim won 9 of 20
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.34s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.13s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.11s)
+=== RUN   TestOperationsQueueCancelRules
+    operations_queue_test.go:546: cancel of UNKNOWN/ = 200 {"operation_id":"9cec4040-970f-46d6-affa-f103fc181ea8","state":"CANCELLED","attempts":3}
+        , want 409 already_dispatched
+    operations_queue_test.go:549: refused cancel moved UNKNOWN to CANCELLED
+    operations_queue_test.go:546: cancel of UNKNOWN/active = 422 {"code":"invalid_request","message":"Request validation failed.","request_id":"56c708bb7f62666888dc57acbe184aeb","retryable":false,"details":{}}
+        , want 409 already_dispatched
+    operations_queue_test.go:546: cancel of ACKNOWLEDGED/ = 200 {"operation_id":"d317f8b1-4877-49a3-89c9-4db89e75262d","state":"CANCELLED","attempts":3}
+        , want 409 already_dispatched
+    operations_queue_test.go:549: refused cancel moved ACKNOWLEDGED to CANCELLED
+--- FAIL: TestOperationsQueueCancelRules (0.20s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.24s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.16s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.37s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.09s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.804s
+FAIL
+test-focused: top-level PASS=12 FAIL=1 SKIP=0 exit=1

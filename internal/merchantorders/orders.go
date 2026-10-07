@@ -410,8 +410,12 @@ func validSummary(v Summary) bool {
 		return false
 	}
 	// stripe-refund-v1 §7.1 / manual-fulfilment-v1 §5.1 invariants.
-	if v.WorkState == "READY" && (v.CommercialState != "CONFIRMED" || !captured(v.PaymentState) ||
-		(v.FulfillmentState != "MANUAL_UNASSIGNED" && v.FulfillmentState != "MERCHANT_SHIPPED" && v.FulfillmentState != "PROVIDER_LABEL_CREATED")) {
+	// READY work belongs to a CONFIRMED order that is still being shipped, or (W3-08B, returns-v1 §3) to a merchant-cancelled paid order:
+	// nothing ever closes the payment work item, and a cancel after a full refund or after a failed in-flight refund (the cancel-refund
+	// gap) leaves it READY. Rejecting that row 503'd the WHOLE store list and the order detail.
+	if v.WorkState == "READY" && !(captured(v.PaymentState) &&
+		((v.CommercialState == "CONFIRMED" && (v.FulfillmentState == "MANUAL_UNASSIGNED" || v.FulfillmentState == "MERCHANT_SHIPPED" || v.FulfillmentState == "PROVIDER_LABEL_CREATED")) ||
+			(v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))) {
 		return false
 	}
 	if v.PaymentMode == "pay_at_pickup" {

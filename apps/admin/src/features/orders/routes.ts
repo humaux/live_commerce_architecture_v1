@@ -24,6 +24,19 @@ export const ordersRoutes = [
     spec: "tests/admin/shell-browser.mjs",
   },
   {
+    id: "returns",
+    path: "/returns",
+    group: "orders",
+    labelKey: "returns",
+    icon: "orders",
+    permission: "orders:read",
+    template: "list",
+    // nav: false — a second rail entry would make the orders group non-singleton and drop the `nav-orders` button every
+    // browser spec clicks (WorkspaceFrame). Reached from the orders list ("退貨與取消" link in OrderListFilters).
+    nav: false,
+    spec: "tests/admin/returns-ui.spec.ts",
+  },
+  {
     id: "cvs-print",
     path: "/orders/cvs-print",
     group: "orders",
