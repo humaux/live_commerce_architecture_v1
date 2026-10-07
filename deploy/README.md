@@ -80,8 +80,20 @@ deploy/scripts/ops-admin.sh stripe-admin settlement-payout --statement "$STATEME
 ```
 
 Use readback IDs and minor-unit totals, reconcile every statement/receipt, and preserve HOLD/discrepancy evidence.
-`unmapped_source` is an integrator/owner escalation: LIVE requires an append-only resolution procedure; do not delete
-rows or force-close a held week. LIVE sync/open stays behind the owner approval pair; this unit grants no LIVE authority.
+A close that stops with `settlement_unattributed` is held by an `unmapped_source` row: a charge on the platform account this
+system never created. Clear it with the append-only resolve step (contract `stripe-platform-account-v1` §6.6), one call per
+`balance_txn_id`; never delete or edit the row, never force-close a held week. `settlement-close` prints every
+`assigned_to_store` resolution as an `operator_notes` entry: v1 moves no money, so the owner pays that store out of band.
+A resolution is final and cannot be edited; a late row in an already-closed week cannot be resolved here (owner escalation).
+
+```sh
+# MOCK identifiers. SQL only: never calls Stripe and never reads the LIVE pair. Ticket and note are mandatory (note <= 500 chars).
+deploy/scripts/ops-admin.sh stripe-admin settlement-resolve --environment SANDBOX --balance-txn "$BALANCE_TXN_ID" \
+  --resolution not_store_revenue --note "$WHY" --operator "$OPERATOR" --ticket "$TICKET"
+# or: --resolution assigned_to_store --target-tenant "$TENANT_ID" --target-store "$STORE_ID" (a store enrolled on the platform account)
+```
+
+LIVE sync/open stays behind the owner approval pair; this unit grants no LIVE authority.
 Platform allow/disallow/block/unblock are local controls; platform-close/live-revoke remain kill switches.
 
 ### Support grants and suspension

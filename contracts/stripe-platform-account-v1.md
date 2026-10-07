@@ -400,7 +400,7 @@ platform (OQ-3).
 
 | Function | Caller | Contract |
 | --- | --- | --- |
-| `payments.record_settlement_lines(tenant, store, principal, environment text, lines jsonb) RETURNS jsonb` | registrar (operator CLI, scoped to the platform store) | `lines` is an array (≤ 500) of the exact projection keys in §6.5. Attribution happens in SQL (§4.4), never by input tenant or store. The function sets the target scope per line, inserts lines or unattributed rows and cross-checks against `payments.facts` (CAPTURED amount/currency) and `refund_facts` (SUCCEEDED). Returns counts `{inserted, duplicate, unattributed, mismatch}`. Audit `stripe.settlement.sync` (platform scope, counts only). |
+| `payments.record_settlement_lines(tenant, store, principal, environment text, lines jsonb) RETURNS jsonb` | registrar (operator CLI, scoped to the platform store) | `lines` is an array (≤ 500) of the exact projection keys in §6.5. Attribution happens in SQL (§4.4), never by input tenant or store. A row with a §6.6 resolution is final: counted as a duplicate, never attributed (0163). The function sets the target scope per line, inserts lines or unattributed rows and cross-checks against `payments.facts` (CAPTURED amount/currency) and `refund_facts` (SUCCEEDED). Returns counts `{inserted, duplicate, unattributed, mismatch}`. Audit `stripe.settlement.sync` (platform scope, counts only). |
 | `payments.close_settlement(tenant, store, principal, environment, period_start date, operator text, target_store uuid NULL) RETURNS jsonb` | registrar | Closes one store, or every store with unassigned lines when `target_store` is NULL, applying the §6.2 rules. Sets `statement_id` on the lines. Returns statement ids and totals, plus `operator_notes` (0163): one entry per `assigned_to_store` resolution (§6.6) in the window, printed by the CLI. Audit `stripe.settlement.close` per statement (platform scope; the target store is in the details). |
 | `payments.record_settlement_resolution(tenant, store, principal, environment text, balance_txn text, resolution text, operator text, ticket text, note text, target_tenant uuid NULL, target_store uuid NULL) RETURNS jsonb` (0163) | registrar | §6.6. Appends one resolution row for one `unmapped_source` row; never touches the unattributed row itself. Idempotent: an identical replay returns the stored row (`replayed:true`); a different payload for the same `balance_txn_id` raises PT409. Audit `stripe.settlement.resolve` (platform scope; ticket in the details). |
 | `payments.record_settlement_payout(tenant, store, principal, statement uuid, payout_ref text, payout_minor bigint, paid_at timestamptz, operator text) RETURNS timestamptz` | registrar | Sets the payout triple once. It requires `net_payable > 0` and `payout_minor = net_payable`. `paid_at ≤ now`. An identical replay returns the stored time; anything else raises PT409. Audit `stripe.settlement.payout`. |
@@ -439,7 +439,10 @@ the whole environment's close (§6.2). Before 0163 the only remedy was a red-lin
 replaces it, **append-only**:
 
 - **One row per transaction.** `settlement_unattributed_resolutions` (§6.1) keys on the unattributed `balance_txn_id`
-  (FK + UNIQUE). Nothing ever UPDATEs or DELETEs an unattributed row or a resolution row; no role holds those grants.
+  (FK + UNIQUE). Nothing ever UPDATEs or DELETEs an unattributed row or a resolution row; no role holds those grants,
+  and a `BEFORE UPDATE OR DELETE OR TRUNCATE` trigger refuses it even for the table owner (PT409
+  `settlement_resolution_immutable`; the FK keeps the resolved unattributed row from being deleted as well). A wrong
+  resolution is never edited: it escalates to the owner (§9).
 - **Two resolutions.** `not_store_revenue` (Stripe fee/adjustment/unknown money that is not any store's sale) needs
   nothing else. `assigned_to_store` says the money belongs to a target store; the target pair is required, the store
   must exist, and it must have used the platform account (an enrollment for the environment, or the platform store
@@ -452,7 +455,8 @@ replaces it, **append-only**:
   (`unattributed_unavailable`), the reason is `foreign_connection`/`unsupported_type` (`unresolvable_reason`), the
   row's weekly period (§6.2, Asia/Taipei) is already closed for **any** store (`period_already_closed`), and for
   `assigned_to_store` the target store is unknown/foreign (`unknown_target_store`). Structural input errors (bad
-  txn id, resolution value, operator/ticket/note shape, target pairing) raise 22023 before any read.
+  txn id, resolution value, operator/ticket shape, a blank or longer-than-500 note, target pairing) raise 22023 before
+  any read.
 - **Idempotent (I02/I06).** Same `balance_txn_id` + identical payload → the stored row is returned with
   `replayed:true`, no second row, no second audit entry. Different payload → PT409 `resolution_conflict`.
 - **Same lock, same scope.** The function is `SECURITY DEFINER`, owner `commerce_payment_registry_writer`, EXECUTE
@@ -460,6 +464,11 @@ replaces it, **append-only**:
   sync/close, and requires the platform-store registrar scope (`integration.require_stripe_registrar_scope`). The
   0150 close check is patched **in place** (0163) to skip unresolved rows only — resolved rows no longer refuse close,
   and totals are unchanged because resolutions are not lines.
+- **A resolution is final (sync guard).** `record_settlement_lines` retries an unattributed row on every identical
+  re-sync (§4.4: a session or refund may have been recorded since). 0163 patches it in place so a row that has a
+  resolution is counted as a duplicate and **never attributed afterwards**. Without it an `assigned_to_store` note
+  would make the owner pay the store out of band **and** the new line would pay it again from the statement, and a
+  `not_store_revenue` row would leak into a store's totals. Rows without a resolution behave exactly as in 0150.
 - **CLI.** `settlement-resolve` (§6.5), allowlisted in `ops-admin.sh`; it never calls Stripe and never reads the LIVE
   key pair. Audit action `stripe.settlement.resolve` in the same transaction.
 
@@ -533,7 +542,7 @@ hand stays a red-line action requiring owner approval; the resolve step is the s
 | PF12 | S2 | `TestPlatformSettlementPF12Payout` | REAL_PG | payout set-once; amount ≠ net refused; non-positive net refused; replay |
 | PF13 | S2 | `TestPlatformSettlementPF13Read` | HTTP_PG | merchant sees only their store; `billing:manage` required; no settlement-currency or other-store data; CSV has no PII columns and formula guards hold |
 | PF14 | S1+S2 | regression | CI | SP01–SP21, RF01–RF12 and SL01–SL09 unchanged and green, SP03 with the new key vectors, plus `--stripe-browser` and `--browser-payment` |
-| PF15 | S2-OPEN-1 | `TestPlatformSettlementPF15Resolve` | REAL_PG + MOCK | 0163 §6.6: `not_store_revenue` resolve clears the close refusal with totals unchanged; identical replay returns the stored row; different payload PT409; `foreign_connection`/`unsupported_type` refused; `assigned_to_store` without target / unknown / foreign store refused; already-closed period refused; runtime and merchant roles hold no privilege on the resolutions table; CLI e2e (one JSON line + audit row); PF11 clears its blocking row through the resolve path, no owner-pool DELETE |
+| PF15 | S2-OPEN-1 | `TestPlatformSettlementPF15Resolve` | REAL_PG + MOCK | 0163 §6.6: `not_store_revenue` resolve clears the close refusal with totals unchanged; identical replay returns the stored row; different payload PT409; `foreign_connection`/`unsupported_type` refused; `assigned_to_store` without target / unknown / foreign store refused; already-closed period refused; blank note refused; runtime and merchant roles hold no privilege on the resolutions table and not even the owner can UPDATE/DELETE/TRUNCATE a resolution; a resolved row is never attributed by a later sync (an unresolved control row still is); CLI e2e (one JSON line + audit row); PF11 clears its blocking row through the resolve path, no owner-pool DELETE |
 | PF-SBX | S1 | SANDBOX | owner test keys | two SANDBOX stores enrolled on the platform's `sk_test`/`rk_test` account; one paid order and one refund each; ledger sync shows two attributed charges. NOT_RUN without keys. |
 | PF-LIVE | — | owner | LIVE | after the platform canary: the first non-developer Taiwan merchant's real order and refund (I17). NOT_RUN. |
 
