@@ -194,3 +194,5 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 ## Finisher 8 (Sonnet) — Codex P2s 4208254249 and 4208254260
 
 Pure helpers in `parcels-model.ts` (`parcelGenAfterPoll`, `parcelGenAfterShipmentRefusal`) with node tests (red `red-finisher8-gen.log`: missing exports). `MerchantOrders` bumps the parcel generation on every successful poll before the `if (cursor) return` (list pagination unchanged); `OrderShipment` reports the refusal code via `onRefused` -> `sections.onShipmentRefused`, and an `in_parcel_group` refusal bumps the same generation so the OPEN panel appears and the single-order form is replaced by the group hint. No browser step added (NOT_RUN).
+
+Finisher 9: parcel-merge.spec.ts asserts, without a reload after the real-click in_parcel_group refusal, the OPEN panel, the row badge and the group hint replacing the single-order form (proves onShipmentRefused -> pollGen -> parcel reads). Browser: NOT_RUN.

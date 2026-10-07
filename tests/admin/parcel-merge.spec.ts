@@ -336,6 +336,13 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     // Server 409 in_parcel_group maps to the same sentence as the client hint (orders-copy errors.in_parcel_group).
     await expect(detail.getByTestId("shipment-problem")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
     await expect(detail.getByTestId("shipment-record")).toHaveCount(0);
+    // WITHOUT a reload: the refusal (onShipmentRefused -> parcel generation -> both parcel reads) rebuilds the group state in this tab.
+    const panel = groupPanel(page, ps1);
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
+    await expect(page.getByTestId(`parcel-badge-${ps1}`)).toBeVisible();
+    await expect(detail.getByTestId("shipment-parcel-block")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
+    await expect(detail.getByTestId("shipment-form")).toHaveCount(0);
   });
 
   await test.step("a failed OPEN-groups read shows its error and Retry; the real retry rebuilds the panel and the row badge", async () => {
