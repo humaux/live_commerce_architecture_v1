@@ -1,0 +1,24 @@
+## 1. baseline (real plan, real tests)
+shard-plan: ok (1217 top-level tests, each in exactly one of 10 groups)
+exit=0
+
+## 2. add a fake top-level test (tests/foundation/zz_fake_shard_test.go): it lands in the catch-all, still exactly one shard (note printed)
+shard-plan: note: 1 test(s) are in no list and run in the catch-all g06: TestZZFakeShardProbe
+shard-plan: ok (1218 top-level tests, each in exactly one of 10 groups)
+exit=0
+
+## 3. RED: same fake test, plan loses its catch-all group (a stale or hand-edited plan): the fake test falls outside every shard
+shard-plan: note: 1 test(s) are in no list and run in the catch-all undefined: TestZZFakeShardProbe
+shard-plan: exactly one group must be catch_all
+shard-plan: TestZZFakeShardProbe is selected by 0 shard(s) [], want exactly 1
+exit=1
+
+## 4. RED: a test listed in two groups
+shard-plan: note: 1 test(s) are in no list and run in the catch-all g06: TestZZFakeShardProbe
+shard-plan: TestAdsAttributionAT1BeginFreeze is listed in both g01 and g02
+shard-plan: TestAdsAttributionAT1BeginFreeze is selected by 2 shard(s) [g01,g02], want exactly 1
+exit=1
+
+## 5. GREEN: plan restored, fake test removed
+shard-plan: ok (1217 top-level tests, each in exactly one of 10 groups)
+exit=0

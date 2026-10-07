@@ -448,6 +448,8 @@ if [[ "$test_mode" == --browser-click-sweep ]]; then
   test -f tests/ui/click-sweep-lib.mjs
   test -f tests/ui/click-sweep-known-defects.json
   node --test tests/ui/click-sweep-lib.test.mjs
+  # LC_SWEEP_SHARD=i/N (CI): reject a malformed value before the stack is built (the runner would only throw after the Next builds).
+  node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
   mkdir -p output/playwright output/ui-click-sweep
 fi
 if [[ "$test_mode" == --browser-visual-lint ]]; then
@@ -459,6 +461,7 @@ if [[ "$test_mode" == --browser-visual-lint ]]; then
   test -f tests/ui/visual-lint-lib.mjs
   node --test tests/ui/visual-lint-lib.test.mjs
   node tests/ui/visual-lint-canary.mjs
+  node --input-type=module -e 'import { parseShard } from "./tests/ui/sweep-shard-lib.mjs"; parseShard(process.argv[1])' "${LC_SWEEP_SHARD:-}"
   mkdir -p output/playwright output/ui-click-sweep output/ui-visual-audit
 fi
 if [[ "$test_mode" == --browser-buyer-comms ]]; then
@@ -763,8 +766,16 @@ elif [[ "$test_mode" == --browser-click-sweep ]]; then
   LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep$' -v ./tests/foundation
   # PS5: public routes are separate from the admin registry; include every public
   # route in all three locales and both widths, with their own real-click ledger.
-  node tests/admin/platform-runner.mjs
+  # Sharded (LC_SWEEP_SHARD=i/N) it is independent of the sweep slice, so exactly shard 1 runs it; the marker is what sweep-aggregate.mjs checks.
+  if [[ -z "${LC_SWEEP_SHARD:-}" || "${LC_SWEEP_SHARD%%/*}" == 1 ]]; then
+    node tests/admin/platform-runner.mjs
+    printf '%s\n' "$(git rev-parse HEAD)" > output/ui-click-sweep/platform-runner.pass
+  fi
+  if [[ -n "${LC_SWEEP_SHARD:-}" ]]; then
+    printf 'PASS: G-UI8 real-click sweep SHARD %s (this slice only: the whole-run verdict is `node tests/ui/sweep-aggregate.mjs click` over every shard); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD"
+  else
   printf 'PASS: G-UI8 real-click sweep (every admin registry route and storefront route at 1586x992 + 390x844 zh-TW and en desktop, 5 click journeys); ledger in output/ui-click-sweep/; signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
+  fi
 elif [[ "$test_mode" == --browser-visual-lint ]]; then
   # The click-sweep Go test seeds the stack and starts tests/ui/click-sweep.mjs, which hands over to tests/ui/visual-audit.mjs when LC_SWEEP_ONLY=visual-audit.
   # The Go test reads <output/ui-click-sweep>/journeys.json after the runner: an empty one stands in for it (the audit has no journeys) and the G-UI8 file
@@ -793,7 +804,11 @@ elif [[ "$test_mode" == --browser-visual-lint ]]; then
     printf 'FAIL: G-UI9 visual lint (lint verdict exit %s, go test exit %s): blocking violations (R1 R2 R3 R6 R9, R7 clipped controls), a missing shot or a page that did not load; R4 R5 R8 R10 R11 and clipped labels are WARN.\n' "$va_lint" "$va_rc" >&2
     exit 1
   fi
+  if [[ -n "${LC_SWEEP_SHARD:-}" ]]; then
+    printf 'PASS: G-UI9 visual lint SHARD %s (this slice only: the whole-matrix verdict is `node tests/ui/sweep-aggregate.mjs visual` over every shard); signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n' "$LC_SWEEP_SHARD"
+  else
   printf 'PASS: G-UI9 visual lint (every admin registry route, buyer storefront route and platform-site page at 1586x992 + 390x844 in zh-TW, zh-CN and en, shot and measured against R1-R11); signed MOCK IdP, MOCK payments/carrier/Meta, no provider or deployment acceptance.\n'
+  fi
 elif [[ "$test_mode" == --browser-buyer-comms ]]; then
   LC_BROWSER_BUYER_COMMS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserBuyerComms$' -v ./tests/foundation
   printf 'PASS: buyer-comms browser gate (BROWSER, MOCK mailbox): bank_transfer order with e-mail in the storefront shell, placed mail captured by a loopback SMTP fake, fresh-browser guest lookup (view-only, identical refusals); zh-TW + en, desktop + 390px; no real mailbox.\n'
@@ -974,11 +989,14 @@ else
   # 2026-09-30: with the R2 lanes merged the foundation package alone needs ~54 min on the dev Mac (release gate at
   # 57c5aaa: panic "test timed out after 45m0s" with 61 tests not started; those took a further 527 s). -timeout is a
   # hang bound, not a gate: 4500s, and the CI job bound moves to 90 min with it (.github/workflows/foundation.yml).
-  # CI shards (2026-10-06, the serial suite reached 76 min on GitHub): LC_FOUNDATION_PKGS narrows the package set and
-  # LC_FOUNDATION_RUN the -run regex; .github/workflows/gates.yml runs 1 unit shard + 5 tests/foundation shards in
-  # parallel whose regexes cover Test[A-Z] exactly once. Unset = the whole suite, unchanged.
+  # CI shards (2026-10-06, the serial suite reached 76 min on GitHub): LC_FOUNDATION_PKGS narrows the package set,
+  # LC_FOUNDATION_RUN the -run regex and LC_FOUNDATION_SKIP the -skip regex; .github/workflows/gates.yml runs 1 unit shard + the
+  # tests/foundation groups of scripts/dev/shard-plan.json in parallel (each top-level test in exactly one group, enforced by
+  # `node scripts/dev/shard-plan.mjs --check` in check-gates.sh). Unset = the whole suite, unchanged.
   # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
-  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_PKGS:-./...}
-  GOTOOLCHAIN=go1.27.1 go vet ./...
+  GOTOOLCHAIN=go1.27.1 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...}
+  # go vet ./... checks the whole repository, not the shard's tests: a tests/foundation test-subset shard (RUN/SKIP set) leaves it to the
+  # unit shard / the whole-suite run, so a full run vets exactly once instead of once per shard.
+  if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then GOTOOLCHAIN=go1.27.1 go vet ./...; fi
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
 fi
