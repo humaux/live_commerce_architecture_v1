@@ -1,3 +1,6 @@
+// Purpose: focused W6-01B tag/note DTO and transport grammar tests.
+// Depends on: customer-tags model, request grammar and copy; frozen Go contracts.
+// Used by: W6-U1 local Node verification and independent integration review.
 // W6-U1 Node half (customers-billing-v1 Amendment W6-01B): the admin BFF fence and decoders for the nine tag/note
 // resources plus the tag-filtered customer list must admit exactly the amendment's grammar (Idempotency-Key on every
 // write including both DELETEs, no body on the DELETEs, closed JSON bodies), and decode exactly what
@@ -26,7 +29,7 @@ import {
 import { customerTagsCopy } from "../../apps/admin/lib/customer-tags-copy.ts";
 import { tagColors } from "../../apps/admin/lib/customers-model.ts";
 
-const id = "11111111-1111-4111-8111-111111111111";
+const id = "abcdef11-1111-4111-8111-111111111111";
 const other = "22222222-2222-4222-8222-222222222222";
 const revision = "a".repeat(64);
 const origin = "http://127.0.0.1:3100";
@@ -48,7 +51,7 @@ test("exactly the nine W6-01B resources are admitted, each only under its own me
   for (const [method, path, kind] of table) {
     assert.equal(customerTagsRoute(method, path), kind, `${method} ${path}`);
     for (const wrong of ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].filter((m) => m !== method))
-      assert.equal(customerTagsRoute(wrong, path), null, `${wrong} ${path} must not be admitted`);
+      assert.equal(customerTagsRoute(wrong, path), table.find(([m, p]) => m === wrong && p === path)?.[2] ?? null, `${wrong} ${path} must match its own declared route`);
   }
 });
 
@@ -285,16 +288,19 @@ test("customer-tags copy: three locales, identical key sets, the integrator's ru
 
 // ---------------------------------------------------------------------------------------------- source ratchet
 test("components wire the ruled copy and the tag/note controls the specs click", () => {
-  const detail = readFileSync("apps/admin/components/CustomerDetail.tsx", "utf8");
-  const list = readFileSync("apps/admin/components/Customers.tsx", "utf8");
-  const tags = readFileSync("apps/admin/components/CustomerTags.tsx", "utf8");
-  assert.match(detail, /customer-tags-copy/);
-  assert.match(detail, /data-testid="note-privacy-hint"/);
-  assert.match(detail, /data-testid="customer-tags-editor"/);
-  assert.match(detail, /data-testid="customer-notes"/);
-  assert.match(list, /data-testid="customers-tag-filter"/);
-  assert.match(list, /data-testid="customers-tag-manage"/);
-  assert.match(list, /TagBadges/);
+  const tags = readFileSync("apps/admin/components/CustomerTags.tsx", "utf8") + readFileSync("apps/admin/components/CustomerTagsNotes.tsx", "utf8");
+  assert.match(tags, /customer-tags-copy/);
+  assert.match(tags, /data-testid="note-privacy-hint"/);
+  assert.match(tags, /data-testid="customer-tags-editor"/);
+  assert.match(tags, /data-testid="customer-notes"/);
+  assert.match(tags, /TagBadges/);
   assert.match(tags, /data-testid="tag-manage-dialog"/);
   assert.doesNotMatch(tags, /force: true|dispatchEvent/);
+});
+
+// Strict reads must refuse a backend drift rather than silently inventing a normalized server fact.
+test("tag read names must already be trimmed NFC and Unicode code-point bounded", () => {
+  for (const name of [" VIP", "VIP ", "e\u0301", "\u200bVIP"])
+    throws(() => parseTagCatalog({ items: [{ ...tagRecord, name }] }));
+  assert.equal(parseTagCatalog({ items: [{ ...tagRecord, name: "😀".repeat(20) }] }).items[0].name.length, 40);
 });

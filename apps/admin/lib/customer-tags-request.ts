@@ -4,13 +4,14 @@
 //   is listed here. Idempotency-Key is required on all seven writes (Go customerRoute demands exactly one on every
 //   non-GET, including both DELETEs); the two DELETEs declare an empty body; reads carry no query except the two lists.
 // Depends on: ./customer-tags-model.ts (validTagName, validNoteBody), ./customers-model.ts (tagColors).
-// Used by: apps/admin/app/api/stores/[store]/[...resource]/route.ts, tests/admin/customer-tags-bff.test.ts
+// Used by: customer-tags-proxy.ts and exact customer tag/note BFF leaves; tests/admin/customer-tags-bff.test.ts.
 import { validNoteBody, validTagName } from "./customer-tags-model.ts";
 import { tagColors } from "./customers-model.ts";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const uuidPattern = new RegExp(`^${uuid}$`);
 
+/** W6-01B CustomerTagsRouteKind closed request grammar; never forwards a request itself. */
 export type CustomerTagsRouteKind =
   | "customer-list"
   | "tag-list"
@@ -37,6 +38,7 @@ const routes: [string, RegExp, CustomerTagsRouteKind][] = [
 
 // `search` is the raw URL search string ("" when absent). GET customers is claimed here only when a tag filter is
 // present; without one, lib/customers-request.ts stays the owner of the list grammar (one resource, one grammar).
+/** W6-01B customerTagsRoute closed request grammar; never forwards a request itself. */
 export function customerTagsRoute(method: string, path: string, search?: string): CustomerTagsRouteKind | null {
   const found = routes.find(([m, re]) => m === method && re.test(path))?.[2] ?? null;
   if (found) return found;
@@ -52,6 +54,7 @@ const withBody: readonly CustomerTagsRouteKind[] = ["tag-create", "tag-patch", "
 
 // Query fence. customer-list: the customers list grammar plus tag=<uuid>; note-list: limit/after only; every other
 // resource is exact (no query at all, including a bare trailing '?').
+/** W6-01B validCustomerTagsQuery closed request grammar; never forwards a request itself. */
 export function validCustomerTagsQuery(kind: CustomerTagsRouteKind, rawURL: string): boolean {
   const at = rawURL.indexOf("?");
   if (at < 0) return kind !== "customer-list"; // customer-list needs its tag
@@ -83,7 +86,8 @@ export function validCustomerTagsQuery(kind: CustomerTagsRouteKind, rawURL: stri
 }
 
 // Headers/body presence fence. Body *content* is checked by validCustomerTagsBody after the BFF reads it. The DELETEs
-// declare an empty body (the shared non-GET gate still requires the JSON content type; route.ts strips both).
+// declare an empty body; the exact leaf adapter forwards neither body nor content type for them.
+/** W6-01B validCustomerTagsRequest closed request grammar; never forwards a request itself. */
 export function validCustomerTagsRequest(kind: CustomerTagsRouteKind, request: Request): boolean {
   if (!validCustomerTagsQuery(kind, request.url)) return false;
   const key = request.headers.get("idempotency-key");
@@ -98,6 +102,7 @@ export function validCustomerTagsRequest(kind: CustomerTagsRouteKind, request: R
 const isColor = (value: unknown): boolean => (tagColors as readonly unknown[]).includes(value);
 
 // Exact bodies (W6-01B frozen shapes): unknown or missing key = invalid; deletes and reads must carry no body at all.
+/** W6-01B validCustomerTagsBody closed request grammar; never forwards a request itself. */
 export function validCustomerTagsBody(kind: CustomerTagsRouteKind, text: string): boolean {
   if (!withBody.includes(kind)) return text === "";
   let value: unknown;

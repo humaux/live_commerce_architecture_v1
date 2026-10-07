@@ -1,0 +1,95 @@
+// Purpose: controlled-hook regression of actual CustomerNotes callbacks/effects when parent reads refresh.
+// Depends on: CustomerTagsNotes source, TypeScript API, synthetic React hooks and frozen model/copy modules.
+// Used by: W6-U1 local draft-loss red/green evidence; does not replace real browser clicks.
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
+import { customerTagsCopy } from "../../apps/admin/lib/customer-tags-copy.ts";
+import * as model from "../../apps/admin/lib/customer-tags-model.ts";
+import { displayTime } from "../../packages/format/src/index.ts";
+
+const id = "abcdef11-1111-4111-8111-111111111111";
+const note = { id, author_id: id, body: "old synthetic note", version: 2, created_at: "2026-10-07T00:00:00Z", edited_at: null };
+const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/components/CustomerTagsNotes.tsx", import.meta.url), "utf8"), {
+  compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+}).outputText;
+
+function harness() {
+  const slots = []; let cursor = 0; const effects = []; const writes = [];
+  const react = {
+    useId: () => { const index = cursor++; return slots[index] ??= `synthetic-${index}`; },
+    useState: (initial) => {
+      const index = cursor++; if (!(index in slots)) slots[index] = { value: initial };
+      return [slots[index].value, (value) => { slots[index].value = typeof value === "function" ? value(slots[index].value) : value; }];
+    },
+    useRef: (initial) => { const index = cursor++; return slots[index] ??= { current: initial }; },
+    useEffect: (effect, deps) => {
+      const index = cursor++; const old = slots[index];
+      if (!old || !deps || deps.some((v, i) => !Object.is(v, old.deps[i]))) {
+        slots[index] = { deps, cleanup: old?.cleanup };
+        effects.push(() => { slots[index].cleanup?.(); slots[index].cleanup = effect(); });
+      }
+    },
+  };
+  const jsx = (type, props) => ({ type, props }); const module = { exports: {} };
+  runInNewContext(source, { module, exports: module.exports, AbortController, Intl, Set,
+    require: (path) => {
+      if (path === "react") return react;
+      if (path === "react/jsx-runtime") return { jsx, jsxs: jsx };
+      if (path === "../lib/customer-tags-copy") return { customerTagsCopy };
+      if (path === "../lib/customer-tags-model") return model;
+      if (path === "../lib/orders-model") return { displayTime };
+      // Pending read fixture deliberately never returns: only parent prop/effect/callback behavior is under test.
+      if (path === "../lib/customer-tags-client") return { readTagData: () => new Promise(() => {}) };
+      throw new Error(`Unexpected fixture import ${path}`);
+    },
+  });
+  const props = { locale: "en", store: { id, permissions: ["customers:read", "customers:write", "customers:privacy"] },
+    detail: { customer_id: id, active: true, notes: [note] }, boundary: "a".repeat(64), refresh: async () => {},
+    write: { locked: false, run: (...args) => writes.push(args), setNotice: () => {} } };
+  const render = (current = props) => { cursor = 0; return module.exports.CustomerNotes(current); };
+  const flush = () => { for (const effect of effects.splice(0)) effect(); };
+  const nodes = (tree) => {
+    const all = []; const walk = (n) => {
+      if (Array.isArray(n)) { for (const child of n) walk(child); }
+      else if (n && typeof n === "object" && n.props) { all.push(n); walk(n.props.children); }
+    }; walk(tree); return all;
+  };
+  const textarea = (tree) => nodes(tree).find((n) => n.type === "textarea");
+  const button = (tree, label) => nodes(tree).find((n) => n.type === "button" && n.props.children === label);
+  const form = (tree) => nodes(tree).find((n) => n.type === "form");
+  render(); flush();
+  return { props, render, flush, nodes, textarea, button, form, writes };
+}
+
+test("passive tag/detail refresh preserves an unsaved new-note draft", () => {
+  const h = harness(); let tree = h.render();
+  h.textarea(tree).props.onChange({ target: { value: "unsaved synthetic add" } });
+  const next = { ...h.props, detail: { ...h.props.detail, notes: [{ ...note }] } };
+  h.render(next); h.flush(); tree = h.render(next);
+  assert.equal(h.textarea(tree).props.value, "unsaved synthetic add");
+  h.form(tree).props.onSubmit({ preventDefault() {} });
+  assert.equal(h.writes[0][0], "POST"); assert.equal(h.writes[0][2].body, "unsaved synthetic add");
+});
+test("passive refresh updates visible notes but preserves edit draft and original CAS version", () => {
+  const h = harness(); let tree = h.render();
+  h.button(tree, "Edit").props.onClick(); tree = h.render();
+  h.textarea(tree).props.onChange({ target: { value: "unsaved synthetic edit" } });
+  const newer = { ...note, body: "new server synthetic note", version: 3 };
+  const next = { ...h.props, detail: { ...h.props.detail, notes: [newer] } };
+  h.render(next); h.flush(); tree = h.render(next);
+  assert.equal(h.textarea(tree).props.value, "unsaved synthetic edit");
+  assert.ok(h.nodes(tree).some((n) => n.type === "p" && n.props.children === newer.body));
+  h.form(tree).props.onSubmit({ preventDefault() {} });
+  assert.equal(h.writes[0][0], "PATCH"); assert.equal(h.writes[0][1], `customers/${id}/notes/${id}`);
+  assert.equal(h.writes[0][2].body, "unsaved synthetic edit"); assert.equal(h.writes[0][2].version, 2);
+});
+test("explicit refresh signal clears old edit draft while passive array changes do not", () => {
+  const h = harness(); let tree = h.render(); h.button(tree, "Edit").props.onClick(); tree = h.render();
+  h.textarea(tree).props.onChange({ target: { value: "unsaved synthetic edit" } });
+  const next = { ...h.props, reloadVersion: 1 };
+  h.render(next); h.flush(); tree = h.render(next);
+  assert.equal(h.textarea(tree).props.value, ""); assert.equal(h.button(tree, "Cancel"), undefined);
+});

@@ -1,5 +1,5 @@
 // Purpose: Owns customer detail and merchant privacy-action controls.
-// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
@@ -31,6 +31,7 @@ import { ordersCopy } from "@/lib/orders-copy";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
+import { CustomerTags } from "./CustomerTags";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -81,7 +82,7 @@ export function CustomerDetail({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Body detail={read.data} store={store.id} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
+          <Body detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
         )}
       </div>
     </WorkspaceFrame>
@@ -97,6 +98,7 @@ type Pending = {
 
 function Body({
   detail,
+  storeInfo,
   store,
   boundary,
   refresh,
@@ -104,6 +106,7 @@ function Body({
   c,
 }: {
   detail: Detail;
+  storeInfo: Store;
   store: string;
   boundary: string;
   refresh: () => Promise<boolean>;
@@ -157,6 +160,8 @@ function Body({
   const label = (purpose: string) => (purpose === "marketing_messages" ? c.marketing : c.ads);
   return (
     <>
+      {detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
+        detail={detail} boundary={boundary} onChanged={refresh} />}
       {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
       <section className="customers-section" aria-label={c.facts}>
         <h2>{c.facts}</h2>

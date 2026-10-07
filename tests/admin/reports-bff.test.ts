@@ -1,3 +1,6 @@
+// Purpose: report request/DTO/response and localized UI acceptance negatives.
+// Depends on: node:test/assert/fs and report-only pure modules.
+// Used by: focused Node gate and parent independent verification.
 // W6-U1 Node half (contracts/reporting-v2.md): the admin BFF fence and decoders for the eight report resources
 // (GET reports/{products|channels|funnel|manual-orders}[.csv]) must admit exactly the Go query grammar (from/to once
 // each, 0..91 days, session_id only on the funnel, <=512 raw bytes, no key/body on reads) and decode exactly what
@@ -15,7 +18,9 @@ import {
   parseManualReport,
   parseProductReport,
 } from "../../apps/admin/lib/reports-model.ts";
+import { reportCSVFilename, reportJSON, privateReportHeaders } from "../../apps/admin/lib/reports-response.ts";
 import { reportsCopy } from "../../apps/admin/lib/reports-copy.ts";
+import { sortedProducts, conversion } from "../../apps/admin/lib/reports-presentation.ts";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const origin = "http://127.0.0.1:3100";
@@ -78,7 +83,7 @@ test("session_id: only on the funnel (json and csv), a canonical uuid, once", ()
   for (const kind of ["products", "channels", "manual-orders", "products-csv", "channels-csv", "manual-orders-csv"] as ReportsRouteKind[])
     assert.equal(validReportsRequest(kind, req(`reports/${kind.replace(/-csv$/, "")}?from=${from}&to=${to}&session_id=${id}`)), false, kind);
   assert.equal(validReportsRequest("funnel", req(`reports/funnel?from=${from}&to=${to}&session_id=not-a-uuid`)), false);
-  assert.equal(validReportsRequest("funnel", req(`reports/funnel?from=${from}&to=${to}&session_id=${id.toUpperCase()}`)), false);
+  assert.equal(validReportsRequest("funnel", req(`reports/funnel?from=${from}&to=${to}&session_id=${"abcdefab-cdef-4abc-8abc-abcdefabcdef".toUpperCase()}`)), false);
   assert.equal(validReportsRequest("funnel", req(`reports/funnel?from=${from}&to=${to}&session_id=${id}&session_id=${id}`)), false);
 });
 
@@ -194,9 +199,45 @@ test("Reports.tsx: four tabs, CSV per tab, ruled annotation, CSS/SVG charts only
     assert.match(reports, new RegExp(`data-testid="reports-tab-${tab}"`), tab);
     assert.match(reports, new RegExp(`data-testid="reports-csv-${tab}"`), `${tab} csv`);
   }
-  assert.match(reports, /<svg/); // CSS/SVG only
+  const views = readFileSync("apps/admin/components/ReportViews.tsx", "utf8");
+  assert.match(views, /<svg/); // actual chart renderer, CSS/SVG only
   assert.doesNotMatch(reports, /recharts|chart\.js|d3|canvas/i);
   assert.match(reports, /TabStrip/);
   const manifest = readFileSync("apps/admin/package.json", "utf8");
   assert.doesNotMatch(manifest, /recharts|chart\.js|d3-/);
+});
+
+// Audited CSVs are never relayed as arbitrary upstream files or HTML errors.
+test("report CSV closed headers use actual Go slug, echoed dates and private no-store", () => {
+  const headers = () => new Headers({ "content-type": "text/csv; charset=utf-8", "cache-control": "no-store, private", "content-disposition": `attachment; filename="report-manual_orders-${from}-${to}.csv"` });
+  assert.equal(reportCSVFilename(headers(), "manual-orders", from, to), `report-manual_orders-${from}-${to}.csv`);
+  for (const [key, value] of [["content-type", "text/html"], ["cache-control", "public, no-store"], ["content-disposition", `attachment; filename="report-products-${from}-${to}.csv"`]]) {
+    const h = headers(); h.set(key, value); assert.throws(() => reportCSVFilename(h, "manual-orders", from, to));
+  }
+  assert.equal(privateReportHeaders(new Headers({ "cache-control": "private, no-store" })), true);
+  assert.equal(privateReportHeaders(new Headers({ "cache-control": "private, no-store, public" })), false);
+});
+test("report response projection rejects unknown keys, mismatched range and non-private responses", async () => {
+  const response = (body: unknown, headers = {}) => Response.json(body, { headers: { "Cache-Control": "private, no-store", ...headers } });
+  assert.deepEqual(await reportJSON(response({ ...head, rows: [] }), "channels", from, to), { ...head, rows: [] });
+  await assert.rejects(() => reportJSON(response({ ...head, rows: [], tenant_id: id }), "channels", from, to));
+  await assert.rejects(() => reportJSON(response({ ...head, rows: [] }), "channels", "2026-09-02", to));
+  await assert.rejects(() => reportJSON(response({ ...head, rows: [] }, { "Cache-Control": "public" }), "channels", from, to));
+});
+
+test("manual buckets follow Go's uncapped row count rather than a made-up 500-row limit", () => {
+ const rows = Array.from({length: 501}, () => ({principal_id: null, session_id: null, currency: "TWD", orders: 0, cancelled_orders: 0, money: []}));
+ assert.equal(parseManualReport({...head, rows}, from, to).rows.length, 501);
+});
+
+test("display sorts only inside currency/environment groups, never sums money or mutates server rows", () => {
+ const base = {sku_id:id,product_id:id,code:"SKU",name:"Cup",currency:"TWD",environment:"LIVE" as const,units:1,captured_minor:100,refunded_minor:0,net_minor:100,offline_units:0,offline_minor:0};
+ const rows = [{...base,currency:"USD",net_minor:1}, {...base,environment:"SANDBOX" as const,net_minor:9000}, {...base,net_minor:200}, base];
+ const before = JSON.stringify(rows);
+ assert.deepEqual(sortedProducts(rows,"net_minor",false,"en").map(r=>[r.currency,r.environment,r.net_minor]),[
+  ["TWD","LIVE",200],["TWD","LIVE",100],["TWD","SANDBOX",9000],["USD","LIVE",1]
+ ]);
+ assert.equal(JSON.stringify(rows),before);
+ assert.equal(conversion("en",0,0,"No starting count"),"No starting count");
+ assert.equal(conversion("en",1,4,"No starting count"),"25%");
 });

@@ -59,9 +59,7 @@ export type ManualReport = { from: string; to: string; timezone: string; rows: M
 export const reportTimezone = "Asia/Taipei";
 export const maxProductRows = 1000; // reporting.MaxProductRows; truncation must declare exactly this many
 export const reportChannels = ["facebook_live", "instagram_live", "storefront", "manual"] as const;
-// The channel vocabulary is closed and currencies per store are few; manual rows are (principal, session, currency)
-// buckets. This bound only refuses absurd payloads, never a real store's report.
-const maxBucketRows = 500;
+// Channel/manual row counts have no backend cap; never invent a 500-bucket contract.
 
 const currencyPattern = /^[A-Z]{3}$/;
 function int(value: unknown): value is number {
@@ -93,6 +91,7 @@ function parseMoneyList(value: unknown): ReportMoney[] {
   return money;
 }
 
+/** Decode exact product DTO and verify money/truncation; no side effects. */
 export function parseProductReport(value: unknown, from: string, to: string): ProductReport {
   const v = head(value, ["from", "to", "timezone", "truncated", "rows"], from, to);
   if (typeof v.truncated !== "boolean" || !Array.isArray(v.rows) || v.rows.length > maxProductRows ||
@@ -102,7 +101,7 @@ export function parseProductReport(value: unknown, from: string, to: string): Pr
     const r = object(row, ["sku_id", "product_id", "code", "name", "currency", "environment", "units",
       "captured_minor", "refunded_minor", "net_minor", "offline_units", "offline_minor"]);
     if (typeof r.sku_id !== "string" || !canonicalUUID.test(r.sku_id) || typeof r.product_id !== "string" || !canonicalUUID.test(r.product_id) ||
-      typeof r.code !== "string" || Array.from(r.code).length > 64 || typeof r.name !== "string" || Array.from(r.name).length > 200 ||
+      typeof r.code !== "string" || typeof r.name !== "string" ||
       typeof r.currency !== "string" || !currencyPattern.test(r.currency) || !isEnvironment(r.environment) ||
       !int(r.units) || !int(r.captured_minor) || !int(r.refunded_minor) || !int(r.offline_units) || !int(r.offline_minor) ||
       !Number.isSafeInteger(r.net_minor) || r.net_minor !== (r.captured_minor as number) - (r.refunded_minor as number) ||
@@ -113,9 +112,10 @@ export function parseProductReport(value: unknown, from: string, to: string): Pr
   return { from, to, timezone: reportTimezone, truncated: v.truncated, rows };
 }
 
+/** Decode exact channel DTO and verify per-environment money; no side effects. */
 export function parseChannelReport(value: unknown, from: string, to: string): ChannelReport {
   const v = head(value, ["from", "to", "timezone", "rows"], from, to);
-  if (!Array.isArray(v.rows) || v.rows.length > maxBucketRows) throw new Error("unavailable");
+  if (!Array.isArray(v.rows)) throw new Error("unavailable");
   let last = -1;
   const rows = v.rows.map((row) => {
     const r = object(row, ["channel", "currency", "orders", "cancelled_orders", "money"]);
@@ -128,6 +128,7 @@ export function parseChannelReport(value: unknown, from: string, to: string): Ch
   return { from, to, timezone: reportTimezone, rows };
 }
 
+/** Decode a nested cohort funnel with exact session/range echoes; no side effects. */
 export function parseFunnelReport(value: unknown, from: string, to: string, sessionId: string): FunnelReport {
   const v = head(value, ["from", "to", "timezone", "session_id", "claimed", "link_sent", "ordered", "paid", "ordered_without_link"], from, to);
   const session = v.session_id;
@@ -145,9 +146,10 @@ export function parseFunnelReport(value: unknown, from: string, to: string, sess
   };
 }
 
+/** Decode manual-order buckets with nullable identities; no side effects. */
 export function parseManualReport(value: unknown, from: string, to: string): ManualReport {
   const v = head(value, ["from", "to", "timezone", "rows"], from, to);
-  if (!Array.isArray(v.rows) || v.rows.length > maxBucketRows) throw new Error("unavailable");
+  if (!Array.isArray(v.rows)) throw new Error("unavailable");
   const rows = v.rows.map((row) => {
     const r = object(row, ["principal_id", "session_id", "currency", "orders", "cancelled_orders", "money"]);
     if (!(r.principal_id === null || (typeof r.principal_id === "string" && canonicalUUID.test(r.principal_id))) ||

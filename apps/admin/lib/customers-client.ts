@@ -1,3 +1,6 @@
+// Purpose: scoped customer reads/privacy commands and session-bound page lifecycle, including tag-filtered lists.
+// Depends on: frozen customers DTOs, exact BFF routes and settings-client CSRF/session boundaries.
+// Used by: Customers, CustomerDetail, Finance, Billing and Reports; private records remain memory-only.
 // Admin customers/finance/billing client: browser -> BFF `/api/stores/{store}/{customers*,finance/*,billing*}`
 // -> Go `internal/httpapi/{customers,finance,billing}.go` (contract customers-billing-v1 §5). Reads parse the frozen
 // DTOs (customers-model / billing-model); writes carry the cookie CSRF + session fence of settings-client and never
@@ -55,8 +58,8 @@ export async function get<T>(path: string, parse: (value: unknown) => T, signal:
 
 const base = (store: string) => `/api/stores/${store}`;
 // Go GET customers (customers:read): q is trimmed server-side; the cursor is opaque.
-export const readCustomers = (store: string, q: string, after: string, signal: AbortSignal): Promise<CustomerList> =>
-  get(`${base(store)}/customers?limit=25${after ? `&after=${after}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`, parseCustomerList, signal);
+export const readCustomers = (store: string, q: string, after: string, signal: AbortSignal, tag = ""): Promise<CustomerList> =>
+  get(`${base(store)}/customers?limit=25${after ? `&after=${after}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}${tag ? `&tag=${encodeURIComponent(tag)}` : ""}`, parseCustomerList, signal);
 // Go GET customers/{id} (customers:read).
 export const readCustomer = (store: string, id: string, signal: AbortSignal): Promise<CustomerDetail> =>
   get(`${base(store)}/customers/${id}`, (value) => parseCustomerDetail(value, id), signal);

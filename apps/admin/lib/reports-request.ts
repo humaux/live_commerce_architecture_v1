@@ -4,7 +4,7 @@
 //   raw query at most 512 bytes, and reads carry no body, no key and no transfer-encoding. Go re-validates everything;
 //   this is a fence, not the authority.
 // Depends on: Native JavaScript/static data; no imported runtime modules.
-// Used by: apps/admin/app/api/stores/[store]/[...resource]/route.ts, tests/admin/reports-bff.test.ts
+// Used by: apps/admin/app/api/stores/[store]/reports/[report]/route.ts, tests/admin/reports-bff.test.ts
 export const reportNames = ["products", "channels", "funnel", "manual-orders"] as const;
 export type ReportName = (typeof reportNames)[number];
 export type ReportsRouteKind = ReportName | `${ReportName}-csv`;
@@ -15,6 +15,7 @@ const routes: [RegExp, ReportsRouteKind][] = reportNames.flatMap((name) => [
   [new RegExp(`^reports/${name}\\.csv$`), `${name}-csv` as ReportsRouteKind],
 ]) as [RegExp, ReportsRouteKind][];
 
+/** Identify one of eight report GETs; no forwarding or side effects. */
 export function reportsRoute(method: string, path: string): ReportsRouteKind | null {
   if (method !== "GET") return null;
   return routes.find(([re]) => re.test(path))?.[1] ?? null;
@@ -25,13 +26,15 @@ const day = /^(\d{4})-(\d{2})-(\d{2})$/;
 function dayNumber(value: string): number | null {
   const match = day.exec(value);
   if (!match) return null;
-  const parsed = Date.UTC(+match[1], +match[2] - 1, +match[3]);
-  const back = new Date(parsed);
+  const back = new Date(0);
+  back.setUTCFullYear(+match[1], +match[2] - 1, +match[3]);
+  const parsed = back.getTime();
   return back.getUTCFullYear() === +match[1] && back.getUTCMonth() === +match[2] - 1 && back.getUTCDate() === +match[3]
     ? parsed / 86_400_000
     : null;
 }
 
+/** Accept bounded canonical date/session parameters; Go remains the authority. */
 export function validReportsQuery(kind: ReportsRouteKind, rawURL: string): boolean {
   const at = rawURL.indexOf("?");
   if (at < 0) return false; // every report read requires from/to
@@ -52,6 +55,7 @@ export function validReportsQuery(kind: ReportsRouteKind, rawURL: string): boole
   return from !== null && to !== null && to - from >= 0 && to - from <= 91;
 }
 
+/** Validate keyless bodyless report GET requests before authorization/forwarding. */
 export function validReportsRequest(kind: ReportsRouteKind, request: Request): boolean {
   if (request.method !== "GET" || !validReportsQuery(kind, request.url)) return false;
   if (request.headers.has("idempotency-key") || request.headers.has("transfer-encoding")) return false;
