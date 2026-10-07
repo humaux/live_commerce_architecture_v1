@@ -33,7 +33,7 @@ export class InboxFence {
   }
   /** A focus/pageshow event alone cannot revive a document that is still natively hidden. */
   reveal(state: string): boolean {
-    if (state !== "visible" || this.terminal) return false;
+    if (state !== "visible" || this.terminal || this.visible) return false;
     this.invalidate(true);
     return true;
   }

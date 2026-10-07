@@ -5,6 +5,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   InboxFence,
+  ReplyReceipt,
   permitted,
   textLimit,
 } from "../../apps/admin/src/features/messages/privacy.ts";
@@ -131,4 +132,22 @@ test("a ticket from another store/page fence is never accepted", () => {
   const first = new InboxFence();
   const other = new InboxFence();
   assert.equal(first.current(other.begin()), false);
+});
+
+test("focus while already visible preserves the active epoch and the uncertain reply receipt", () => {
+  const fence = new InboxFence();
+  const ticket = fence.begin();
+  const receipt = new ReplyReceipt(() => "MOCK_FOCUS_RECEIPT");
+  const submission = receipt.prepare({
+    text: "MOCK_FOCUS_DRAFT",
+    expected_generation: 3,
+  });
+  receipt.failed("retry_later");
+  assert.equal(fence.reveal("visible"), false);
+  assert.equal(ticket.signal.aborted, false);
+  assert.equal(fence.current(ticket), true);
+  assert.equal(receipt.pending(), submission);
+  fence.invalidate(false);
+  assert.equal(fence.reveal("visible"), true);
+  assert.equal(fence.current(ticket), false);
 });

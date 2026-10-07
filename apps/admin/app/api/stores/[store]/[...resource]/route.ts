@@ -371,6 +371,13 @@ async function route(request: Request, context: Context) {
   }
   const response = await callBackend(path + url.search, init, token, store);
   if (inbox) {
+    // Authentication denial revokes cookies even when the upstream body is non-JSON or truncated.
+    if (response.status === 401) {
+      const denied = error(401, "unauthorized");
+      clearAuthCookies(denied.headers);
+      try { await response.body?.cancel(); } catch { /* Cookie revocation is independent of body cleanup. */ }
+      return denied;
+    }
     // Calls Go frozen A8-A14/template reads; body text is never logged and diagnostic payloads never escape.
     let body: string;
     let value: unknown;

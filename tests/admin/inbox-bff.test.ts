@@ -42,7 +42,7 @@ const seen: {
   headers: Record<string, unknown>;
   body: string;
 }[] = [];
-let answer = {
+let answer: { status: number; body: string; contentType?: string } = {
   status: 200,
   body: JSON.stringify({ items: [], next_cursor: "", unread_total: 0 }),
 };
@@ -67,6 +67,7 @@ const upstream = createServer((req, res) => {
       );
       return;
     }
+    res.setHeader("content-type", answer.contentType ?? "application/json");
     seen.push({
       url: req.url ?? "",
       method: req.method ?? "",
@@ -434,4 +435,23 @@ test("A9 admits a full page of valid Unicode replies while bounding private resp
   const excessive = await call(`${base}/messages`, { query: "?limit=50" });
   assert.equal(excessive.status, 503);
   assert.equal(excessive.body.code, "retry_later");
+});
+
+test("non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage", async () => {
+  answer = {
+    status: 401,
+    body: "MOCK_PRIVATE_UPSTREAM_DIAGNOSTIC",
+    contentType: "text/html",
+  };
+  const result = await call(`${base}/messages`);
+  assert.equal(result.status, 401);
+  assert.equal(result.body.code, "unauthorized");
+  const cookies = result.headers.get("set-cookie") ?? "";
+  assert.match(cookies, /__Host-commerce_session=.*Max-Age=0/);
+  assert.match(cookies, /__Host-commerce_csrf=.*Max-Age=0/);
+  assert.match(result.headers.get("cache-control") ?? "", /no-store/);
+  assert.doesNotMatch(
+    JSON.stringify(result.body),
+    /PRIVATE_UPSTREAM_DIAGNOSTIC/,
+  );
 });

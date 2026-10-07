@@ -34,6 +34,7 @@ export function InboxThread({
   const c = inboxCopy(locale),
     cid = conversation.conversation_id;
   const fence = useRef(new InboxFence());
+  const gone = useRef(false);
   const callbacks = useRef({ onUnauthorized, onRead });
   callbacks.current = { onUnauthorized, onRead };
   const [thread, setThread] = useState<Thread | null>(null);
@@ -48,6 +49,20 @@ export function InboxThread({
   const [delivery, setDelivery] = useState<string | null>(null);
   const [retry, setRetry] = useState(false);
   const pending = useRef(new ReplyReceipt());
+  const clearGone = useCallback(() => {
+    // Any authoritative 404 ends this conversation epoch; later failed reads cannot restore erased data.
+    gone.current = true;
+    fence.current.revoke();
+    setThread(null);
+    setText("");
+    setTemplate("");
+    setTemplates([]);
+    pending.current.clear();
+    setRetry(false);
+    setDelivery(null);
+    inFlight.current = false;
+    setBusy(false);
+  }, []);
   const [clock, setClock] = useState(0);
   const reply = permitted(store, "inbox:reply");
   const health = useMetaHealth(reply ? store.id : null, revision);
@@ -77,7 +92,7 @@ export function InboxThread({
   );
   const load = useCallback(
     async (before?: number) => {
-      if (!cid || inFlight.current) return;
+      if (!cid || inFlight.current || gone.current) return;
       inFlight.current = true;
       setBusy(true);
       const ticket = fence.current.begin();
@@ -110,6 +125,9 @@ export function InboxThread({
       } catch (cause) {
         if (!fence.current.current(ticket)) return;
         const code = cause instanceof InboxError ? cause.code : "unavailable";
+        if (cause instanceof InboxError && cause.status === 404) {
+          clearGone();
+        }
         if (cause instanceof InboxError && [401, 403].includes(cause.status))
           callbacks.current.onUnauthorized();
         setError(code);
@@ -120,7 +138,7 @@ export function InboxThread({
         }
       }
     },
-    [cid, store.id, reply],
+    [cid, store.id, reply, clearGone],
   );
   useEffect(() => {
     fence.current.invalidate(true);
@@ -152,6 +170,7 @@ export function InboxThread({
   }, [load, store.id, reply]);
   const action = async (kind: "takeover" | "release") => {
     if (
+      gone.current ||
       !cid ||
       !thread ||
       !reply ||
@@ -182,6 +201,7 @@ export function InboxThread({
     } catch (cause) {
       if (!fence.current.current(ticket)) return;
       const code = cause instanceof InboxError ? cause.code : "unavailable";
+      if (cause instanceof InboxError && cause.status === 404) clearGone();
       setError(code);
       if (cause instanceof InboxError && [401, 403].includes(cause.status))
         callbacks.current.onUnauthorized();
@@ -195,6 +215,7 @@ export function InboxThread({
   };
   const send = async () => {
     if (
+      gone.current ||
       !cid ||
       !thread ||
       !reply ||
@@ -247,6 +268,7 @@ export function InboxThread({
     } catch (cause) {
       if (!fence.current.current(ticket)) return;
       const code = cause instanceof InboxError ? cause.code : "unavailable";
+      if (cause instanceof InboxError && cause.status === 404) clearGone();
       setError(code);
       pending.current.failed(code);
       setRetry(pending.current.pending() !== null);
@@ -264,7 +286,9 @@ export function InboxThread({
     thread?.items.flatMap((item) => (item.seq ? [item.seq] : [])) ?? [];
   return (
     <div data-testid="inbox-thread" aria-busy={busy}>
-      <h2>{conversation.display_name ?? c.unnamed}</h2>
+      <h2>
+        {gone.current ? c.not_found : (conversation.display_name ?? c.unnamed)}
+      </h2>
       {!thread && (
         <p className={styles.notice}>{busy ? c.loading : c.unavailable}</p>
       )}

@@ -138,6 +138,10 @@ export function BuyerPanel({
     } catch (cause) {
       if (!privacy.fence.current(ticket)) return;
       const code = cause instanceof InboxError ? cause.code : "unavailable";
+      if (cause instanceof InboxError && cause.status === 404) {
+        privacy.fence.invalidate(true);
+        clear();
+      }
       setError(code);
       if (cause instanceof InboxError && [401, 403].includes(cause.status)) {
         privacy.expire();

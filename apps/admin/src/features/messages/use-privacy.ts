@@ -4,13 +4,14 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { csrfCookie } from "../../../lib/settings-client";
+import { csrfCookie, sessionBoundary } from "../../../lib/settings-client";
 import { InboxFence } from "./privacy";
 
 /** Bind a private component to visible-page and session lifetime; reveal always starts a fresh read. */
 export function useInboxPrivacy(clear: () => void, calibration = false) {
   const fence = useRef(new InboxFence());
   const blocked = useRef(false);
+  const hidden = useRef(false);
   const [visible, setVisible] = useState(true);
   const [departing, setDeparting] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -28,9 +29,11 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
   }, [clear]);
   useEffect(() => {
     const cookie = csrfCookie();
+    let current = true;
     const hide = () => {
       // CI calibration is fixture-only and deliberately violates the real hide assertion.
       if (calibration) return;
+      hidden.current = true;
       fence.current.invalidate(false);
       flushSync(() => {
         clear();
@@ -38,18 +41,39 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
       });
     };
     const reveal = () => {
-      if (blocked.current || !fence.current.reveal(document.visibilityState))
+      if (
+        !hidden.current ||
+        blocked.current ||
+        document.visibilityState !== "visible"
+      )
         return;
       if (csrfCookie() !== cookie) {
         expire();
         return;
       }
+      if (!fence.current.reveal(document.visibilityState)) return;
+      hidden.current = false;
       clear();
       setVisible(true);
       setRevision((value) => value + 1);
     };
     const visibility = () =>
       document.visibilityState === "hidden" ? hide() : reveal();
+    const focus = () => {
+      if (hidden.current) {
+        reveal();
+        return;
+      }
+      if (blocked.current) return;
+      if (csrfCookie() !== cookie) {
+        expire();
+        return;
+      }
+      // A normal focus must preserve the active send/receipt; only a changed session revokes it.
+      void sessionBoundary(cookie).catch(() => {
+        if (current) expire();
+      });
+    };
     const storage = (event: StorageEvent) => {
       if (event.key === "commerce-session-logout") expire();
     };
@@ -65,17 +89,18 @@ export function useInboxPrivacy(clear: () => void, calibration = false) {
     }
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("pagehide", hide);
-    window.addEventListener("pageshow", reveal);
-    window.addEventListener("focus", reveal);
+    window.addEventListener("pageshow", focus);
+    window.addEventListener("focus", focus);
     window.addEventListener("storage", storage);
     window.addEventListener("commerce-session-logout", expire);
     if (document.visibilityState === "hidden") hide();
     return () => {
+      current = false;
       fence.current.invalidate(false);
       document.removeEventListener("visibilitychange", visibility);
       window.removeEventListener("pagehide", hide);
-      window.removeEventListener("pageshow", reveal);
-      window.removeEventListener("focus", reveal);
+      window.removeEventListener("pageshow", focus);
+      window.removeEventListener("focus", focus);
       window.removeEventListener("storage", storage);
       window.removeEventListener("commerce-session-logout", expire);
       channel?.close();
