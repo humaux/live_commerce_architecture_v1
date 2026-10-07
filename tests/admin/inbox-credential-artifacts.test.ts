@@ -1,5 +1,5 @@
-// Purpose: independently prove the sensitive worker suppresses installed Playwright ARIA capture and restores diagnostics.
-// Depends on: actual installed ArtifactsRecorder._takePageSnapshot body, actual worker fixture callback and Node/TypeScript API.
+// Purpose: prove private fallback and matcher snapshot suppression without masking installed Playwright failures.
+// Depends on: actual installed snapshot/worker serializer/builder bodies, actual fixture callbacks and Node/TypeScript API.
 // Used by: Node privacy gate; fake page/use drive real functions, no browser/server/Go/PG starts here.
 // Invariants: I11 credential-bearing DOM never enters a sensitive-worker snapshot; I18 browser artifacts remain NOT_RUN.
 import test from "node:test";
@@ -30,7 +30,7 @@ const takeSnapshot = new Function(
   "debugLogger",
   `return async function(context) ${method.body.getText(installedAST)};`,
 )({ log() {} });
-function workerDefinition() {
+function workerDefinition(name = "_inboxPrivateEvidence") {
   if (!existsSync(fixturePath)) {
     // Baseline has no private fixture: the actual ordinary recorder receives the sensitive page too.
     return { scope: "absent", auto: false, run: async (_args: object, use: () => Promise<void>) => use() };
@@ -43,9 +43,13 @@ function workerDefinition() {
     ts.forEachChild(node, visit);
   };
   visit(ast);
-  const registration = declaration?.properties.find(
-    (node: any) => node.name?.getText(ast) === "_inboxPrivateEvidence",
-  )?.initializer;
+  const registration = declaration?.properties.find((node: any) => node.name?.getText(ast) === name)?.initializer;
+  if (!registration && name !== "_inboxPrivateEvidence")
+    return {
+      scope: "absent",
+      auto: false,
+      run: async (_args: object, use: () => Promise<void>, _info: object) => use(),
+    };
   assert.ok(
     registration && ts.isArrayLiteralExpression(registration),
     "actual exported fixture must register the worker guard",
@@ -133,4 +137,93 @@ test("fixture is worker-auto and module collection does not suppress ordinary di
   assert.equal(process.env[key], undefined, "import/collection must not change process environment");
   const ordinary = await snapshot();
   assert.equal(ordinary.reads, 1);
+});
+
+// Exercise the installed worker serializer (including its matcher-specific path), not an invented diagnostic DTO.
+const workerPath = resolve(dirname(pwPackage), "lib/worker/workerProcessEntry.js");
+const workerSource = readFileSync(workerPath, "utf8");
+const workerAST = ts.createSourceFile(workerPath, workerSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+const installedFunctions = ["filterStackTrace", "serializeError", "testInfoError"].map((name) => {
+  const declaration = workerAST.statements.find(
+    (node: any) => ts.isFunctionDeclaration(node) && node.name?.text === name,
+  );
+  assert.ok(declaration?.body, `actual installed ${name} function required`);
+  return declaration.getText(workerAST);
+});
+const workerRequire = createRequire(workerPath);
+const serializeMatcher = new Function(
+  "require",
+  `
+  const {stringifyStackFrames,filteredStackTrace} = require("playwright-core/lib/coreBundle").utils;
+  const import_util = {default: require("node:util")};
+  ${installedFunctions.join("\n")}
+  return testInfoError;
+`,
+)(workerRequire);
+const { buildErrorContext } = require(resolve(dirname(pwPackage), "lib/errorContext.js"));
+const matcherSentinel = "SYNTHETIC_NONCREDENTIAL_MATCHER_SNAPSHOT";
+function matcherError() {
+  const error = new Error("MOCK_LOCATOR_ASSERTION_FAILED");
+  (error as any).matcherResult = { ariaSnapshot: `- paragraph: ${matcherSentinel}` };
+  return serializeMatcher(error);
+}
+function matcherContext(errors: object[]) {
+  return buildErrorContext({
+    titlePath: ["MOCK private diagnostic"],
+    location: { file: "/mock/no-test-source.ts", line: 1, column: 1 },
+    errors,
+  });
+}
+test("ordinary matcher ARIA context bypasses fallback flag and remains in actual installed diagnostics", (t) => {
+  environment(t, "1");
+  const error = matcherError();
+  assert.equal(error.errorContext.includes(matcherSentinel), true);
+  assert.equal(matcherContext([error]).includes(matcherSentinel), true);
+});
+for (const reject of [false, true]) {
+  test(`private test teardown removes only matcher page context while preserving failure (${reject ? "rejected use" : "failed status"})`, async (t) => {
+    environment(t);
+    const fixture = workerDefinition("_inboxPrivateMatcherEvidence");
+    const serialized = matcherError(),
+      plain = { message: "MOCK_SECOND_FAILURE", stack: "MOCK_SECOND_STACK" };
+    const errors = [serialized, plain],
+      before = errors.map(({ errorContext, ...rest }: any) => rest);
+    const info = { errors, status: "failed", expectedStatus: "passed" };
+    const failure = new Error("MOCK_UNMASKED_USE_FAILURE");
+    const work = fixture.run(
+      {},
+      async () => {
+        assert.equal(
+          matcherContext(errors).includes(matcherSentinel),
+          true,
+          "control proves installed serializer carries snapshot before teardown",
+        );
+        if (reject) throw failure;
+      },
+      info,
+    );
+    if (reject) await assert.rejects(work, (cause: unknown) => cause === failure);
+    else await work;
+    assert.equal(
+      matcherContext(errors).includes(matcherSentinel),
+      false,
+      "private matcher snapshot must not enter error-context.md",
+    );
+    assert.equal(info.errors, errors);
+    assert.equal(errors.length, 2);
+    assert.equal(errors[0], serialized);
+    assert.equal(errors[1], plain);
+    assert.deepEqual(errors, before, "only errorContext is removed; message/stack/cause are unchanged");
+    assert.equal(info.status, "failed");
+    assert.equal(info.expectedStatus, "passed");
+    assert.equal(matcherContext(errors).includes("MOCK_LOCATOR_ASSERTION_FAILED"), true);
+    assert.equal(matcherContext(errors).includes("MOCK_SECOND_FAILURE"), true);
+  });
+}
+test("matcher guard is test-auto without replacing the installed artifact auto fixture", () => {
+  const fixture = workerDefinition("_inboxPrivateMatcherEvidence");
+  assert.equal(fixture.scope, '\"test\"');
+  assert.equal(fixture.auto, true);
+  const source = readFileSync(fixturePath, "utf8");
+  assert.equal(source.includes("_setupArtifacts:"), false, "installed artifact lifecycle remains intact");
 });

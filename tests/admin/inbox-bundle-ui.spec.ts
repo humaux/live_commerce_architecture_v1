@@ -110,6 +110,10 @@ test("INU09 flagged bundle copies actual M7 link through native clipboard and pe
       leaked.textContent = await navigator.clipboard.readText();
       document.body.append(leaked);
     });
+    // Exercise matcher-provided ARIA diagnostics as well as the fallback snapshot path.
+    // The assertion reports only fixed status text; the separate credential DOM node must not enter evidence.
+    await expect(page.getByTestId("bundle-recovery").getByRole("status"))
+      .toHaveText("MOCK_CALIBRATION_EXPECTED_FAILURE", { timeout: 500 });
   }
   const copied = await bundleClipboardProof(page, buyerOrigin);
   expect(copied.origin_valid).toBe(true);

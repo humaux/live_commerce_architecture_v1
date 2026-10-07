@@ -1,0 +1,84 @@
+task_id: c975698a-sub-private-matcher
+base_commit: c6c628fcd6fde4a367b14902582a9aefb933ed04
+status: MOCK actual installed Playwright serializer/buildErrorContext and actual fixture callback; browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-credential-artifacts.test.ts
+exit_code: 1
+sha256 c26a7b153cdc66ba43a5a6129cdeb9238b3b24b0d526ae6a43e260028606a41a tests/admin/inbox-private-evidence.ts
+sha256 49bffffff1b27b7e78ce04acefe60f762f18cfec644904140e799601d201b161 tests/admin/inbox-credential-artifacts.test.ts
+sha256 3d6676ca271c075b1e7c8e2cd6ad5331430cf29a3332d1f621054ff7d8e06478 node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/worker/workerProcessEntry.js
+sha256 ffc1843cebb3e90e1674c07ee2607a4a63152eff609e5f9865bbb2f9eb02e9a1 node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/errorContext.js
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (0.555583ms)
+✔ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (13.55125ms)
+✔ worker restores prior environment even when use rejects (absent) (1.991042ms)
+✔ worker restores prior environment even when use rejects (empty) (1.297042ms)
+✔ worker restores prior environment even when use rejects (existing-policy) (1.143833ms)
+✔ fixture is worker-auto and module collection does not suppress ordinary diagnostics (25.801166ms)
+✔ ordinary matcher ARIA context bypasses fallback flag and remains in actual installed diagnostics (0.651042ms)
+✖ private test teardown removes only matcher page context while preserving failure (failed status) (0.71825ms)
+✖ private test teardown removes only matcher page context while preserving failure (rejected use) (0.365917ms)
+✖ matcher guard is test-auto without replacing the installed artifact auto fixture (0.239666ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 7
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 387.864375
+
+✖ failing tests:
+
+test at tests/admin/inbox-credential-artifacts.test.ts:173:3
+✖ private test teardown removes only matcher page context while preserving failure (failed status) (0.71825ms)
+  AssertionError [ERR_ASSERTION]: private matcher snapshot must not enter error-context.md
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:186:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:173:3
+✖ private test teardown removes only matcher page context while preserving failure (rejected use) (0.365917ms)
+  AssertionError [ERR_ASSERTION]: private matcher snapshot must not enter error-context.md
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:186:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:198:1
+✖ matcher guard is test-auto without replacing the installed artifact auto fixture (0.239666ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  'absent' !== '"test"'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:200:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'absent',
+    expected: '"test"',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
