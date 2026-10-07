@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { cardView, parseCardSummary } from "../../apps/admin/lib/card-payments-model.ts";
-import { parseSettlementDetail, parseSettlementList, payoutState } from "../../apps/admin/lib/card-payments-settlements-model.ts";
+import { parseSettlementDetail, parseSettlementList, payoutState, statementCells } from "../../apps/admin/lib/card-payments-settlements-model.ts";
 
 const dir = new URL("./fixtures/card-payments-wire/", import.meta.url);
 const read = (name: string): unknown => JSON.parse(readFileSync(new URL(name, dir), "utf8"));
@@ -51,4 +51,21 @@ test("an empty ledger parses to no statements", () => {
 test("no account id, key or approval shape is in any real body", () => {
   for (const name of ["card-enabled.json", "settlements-list.json", "settlement-paid.json", "settlement-carried.json", "settlement-pending.json", "settlements-empty.json"])
     assert.doesNotMatch(raw(name), /:"(?:acct_|sk_(?:live|test)_|rk_(?:live|test)_|whsec_|txn_|dp_|re_)[A-Za-z0-9]|approval/i, name);
+});
+
+// Review P1-1, on the REAL ledger rows: literal strings, not a re-run of the formatter. Sign = what the store receives.
+test("the real statements display literally as signed contributions that add up to the server's net", () => {
+  const rows = parseSettlementList(read("settlements-list.json")).map((s) => statementCells("en", s));
+  assert.deepEqual(rows, [
+    // week of a dispute REVERSAL (+NT$25, a credit) and a RETURNED Stripe fee (+NT$58, a credit) with the debt of the week before carried in
+    ["2026-09-14 – 2026-09-20", "+NT$25", "NT$0", "+NT$25", "+NT$58", "NT$0", "-NT$68", "NT$40"],
+    // week of a refund (-NT$8), a dispute (-NT$25) and the fees: nets below zero, never paid
+    ["2026-09-07 – 2026-09-13", "+NT$25", "-NT$8", "-NT$25", "-NT$60", "NT$0", "NT$0", "-NT$68"],
+    ["2026-08-31 – 2026-09-06", "+NT$25", "NT$0", "NT$0", "-NT$1", "NT$0", "NT$0", "NT$24"],
+  ]);
+  const minor = (text: string) => {
+    const m = /^([+-]?)NT\$([\d,]+)$/.exec(text)!;
+    return (m[1] === "-" ? -1 : 1) * Number(m[2].replace(/,/g, "")) * 100;
+  };
+  for (const row of rows) assert.equal(row.slice(1, 7).map(minor).reduce((a, b) => a + b, 0), minor(row[7]), row[0]);
 });

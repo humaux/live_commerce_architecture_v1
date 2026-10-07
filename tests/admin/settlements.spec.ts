@@ -63,6 +63,17 @@ async function detailOf(page: Page, id: string): Promise<Statement> {
   expect(response.status()).toBe(200);
   return ((await response.json()) as { statement: Statement }).statement;
 }
+// What the store receives (review P1-1), restated from the 0150 identity (net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in)
+// and independent of the page's helper: + is added to the payout, - is deducted.
+const contributions = (s: Statement) => [s.captured_minor, -s.refunded_minor, -s.dispute_minor, s.stripe_fee_minor, -s.platform_fee_minor, s.carried_in_minor].map((v) => v + 0);
+const signed = (currency: string, minor: number) => (minor > 0 ? "+" : "") + money("en", currency, minor === 0 ? 0 : minor);
+// "+NT$1,234.50" / "-NT$8" / "NT$0" back to minor units, to add up what is literally displayed
+const minorOf = (text: string): number => {
+  const m = /^([+-]?)NT\$([\d,]+)(?:\.(\d{2}))?$/.exec(text);
+  expect(m, `not a money string: ${text}`).not.toBeNull();
+  const value = Number(m![2].replace(/,/g, "")) * 100 + Number(m![3] ?? 0);
+  return m![1] === "-" ? -value : value;
+};
 const flat = (text: string | null) => (text ?? "").replace(/ /g, " ").trim();
 async function noLeaks(page: Page) {
   const html = await page.content();
@@ -101,13 +112,20 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
     const cells = page.getByTestId(`settlement-row-${s.statement_id}`).locator("td");
     const expected = [
       periodLabel(s.period_start, s.period_end),
-      ...[s.captured_minor, s.refunded_minor, s.dispute_minor, s.stripe_fee_minor, s.platform_fee_minor, s.carried_in_minor, s.net_payable_minor].map((minor) =>
-        money("en", s.currency, minor)),
+      ...contributions(s).map((minor) => signed(s.currency, minor)),
+      money("en", s.currency, s.net_payable_minor), // the net is the server's own number, never a displayed sum
       label[state[s.statement_id]],
     ];
     for (const [index, text] of expected.entries()) expect(flat(await cells.nth(index).textContent()), `${s.statement_id} column ${index}`).toBe(text);
     await expect(page.getByTestId(`settlement-status-${s.statement_id}`)).toHaveAttribute("data-state", state[s.statement_id]);
+    // what is on screen adds up: the six signed columns equal the net cell (review P1-1)
+    const shown = [];
+    for (let index = 1; index <= 7; index++) shown.push(minorOf(flat(await cells.nth(index).textContent())));
+    expect(shown.slice(0, 6).reduce((a, b) => a + b, 0), `${s.statement_id}: displayed columns vs net`).toBe(shown[6]);
+    expect(shown[6]).toBe(s.net_payable_minor);
   }
+  await expect(page.getByTestId("settlements-legend")).toContainText(en.legend);
+  await expect(page.getByTestId("settlements-formula")).toHaveText(en.formula);
   // the three sign cases are really on screen: a negative net, a negative dispute total (reversal), a carried debt
   expect(statements.find((s) => s.statement_id === carried)!.net_payable_minor).toBeLessThan(0);
   expect(statements.find((s) => s.statement_id === pending)!.dispute_minor).toBeLessThan(0);
@@ -125,15 +143,19 @@ test("STL2 detail: lines, payout reference of the paid statement, none for the o
     await page.getByTestId(`settlement-open-${id}`).click();
     await expect(page.getByTestId("settlement-detail")).toBeVisible();
     await expect(page.getByTestId("settlement-detail-period")).toHaveText(periodLabel(s.period_start, s.period_end));
+    const detailKeys = ["captured", "refunded", "dispute", "stripe-fee", "platform-fee", "carried-in"];
+    for (const [index, minor] of contributions(s).entries())
+      await expect(page.getByTestId(`settlement-detail-${detailKeys[index]}`)).toHaveText(signed(s.currency, minor));
     await expect(page.getByTestId("settlement-detail-net")).toHaveText(money("en", s.currency, s.net_payable_minor));
+    await expect(page.getByTestId("settlement-detail").getByTestId("settlements-formula")).toHaveText(en.formula);
     const lines = page.locator('[data-testid^="settlement-line-"]');
     await expect(lines).toHaveCount(s.line_count);
     for (const [index, line] of (s.lines ?? []).entries()) {
       const cells = lines.nth(index).locator("td");
       expect(flat(await cells.nth(0).textContent())).toBe(line.order_number);
       expect(flat(await cells.nth(1).textContent())).toBe(en[`kind${line.kind}` as keyof typeof en]);
-      expect(flat(await cells.nth(2).textContent())).toBe(money("en", s.currency, line.store_minor));
-      expect(flat(await cells.nth(3).textContent())).toBe(money("en", s.currency, line.fee_store_minor));
+      expect(flat(await cells.nth(2).textContent())).toBe(signed(s.currency, line.store_minor));
+      expect(flat(await cells.nth(3).textContent())).toBe(signed(s.currency, line.fee_store_minor));
       expect(flat(await cells.nth(4).textContent())).toBe(line.txn_date);
     }
     if (id === paid) {

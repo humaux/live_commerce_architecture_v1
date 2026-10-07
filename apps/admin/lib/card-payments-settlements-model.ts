@@ -1,10 +1,11 @@
 // Purpose: admin settlements model — strict parsers for the frozen settlement ledger DTOs (migrations/0150 signs and CHECKs).
-// Depends on: customers-model.ts (object/count helpers), Go internal/payments/settlement.
+// Depends on: customers-model.ts (object/count helpers), packages/format (money), Go internal/payments/settlement.
 // Used by: card-payments-client.ts, Settlements.tsx, tests/admin/card-payments-model.test.ts.
 // BFF `/api/stores/{store}/settlements[/{id}]` -> Go `internal/httpapi` settlement reads (billing:manage;
 // W4-S2 platform-settlement). List statements omit `lines`; the detail includes them. Payout fields are
 // omitempty and may appear only on paid statements. No settlement-currency amounts or Stripe ids exist here.
 import { count, object } from "./customers-model.ts";
+import { money as formatMoney } from "../../../packages/format/src/index.ts";
 
 // jsonb renders timestamptz with the session offset ("2026-09-14T08:00:05.123456+08:00"); Go passes the string through,
 // so Z-only (customers-model isInstant) would refuse every real statement.
@@ -68,6 +69,31 @@ function dayNumber(value: unknown): number | null {
 export type PayoutState = "paid" | "pending" | "none";
 export const payoutState = (s: Pick<SettlementStatement, "paid" | "net_payable_minor">): PayoutState =>
   s.paid ? "paid" : s.net_payable_minor > 0 ? "pending" : "none";
+// ---- display convention (review P1-1): every column shows what the STORE RECEIVES. + is added to the payout, - is deducted. ----
+// The server's fields mix two senses (migrations/0150: net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in), so
+// refunded, dispute and platform_fee are flipped for DISPLAY ONLY by these fixed per-column rules; the others already read that way.
+// Nothing here is summed or recomputed: the net is always the server's value, and the six displayed columns add up to it by the identity above
+// (checked by parseSettlementStatement before a statement is ever shown).
+export const columnSign = { captured: 1, refunded: -1, dispute: -1, stripe_fee: 1, platform_fee: -1, carried_in: 1 } as const;
+const shown = (value: number, sign: 1 | -1) => (sign === 1 || value === 0 ? value : -value); // never -0: "-NT$0" would be a lie
+// A signed contribution as text: credits carry "+", deductions the "-" of money(); a column that moved nothing carries no sign.
+export function signedAmountText(locale: string, currency: string, minor: number): string {
+  return (minor > 0 ? "+" : "") + formatMoney(locale, currency, minor);
+}
+/** The row of a statement as displayed: [period, captured, refunds, disputes, Stripe fee, platform fee, carried in, net payable]. */
+export function statementCells(locale: string, s: SettlementStatement): string[] {
+  const signed = (value: number, sign: 1 | -1) => signedAmountText(locale, s.currency, shown(value, sign));
+  return [
+    periodLabel(s.period_start, s.period_end),
+    signed(s.captured_minor, columnSign.captured),
+    signed(s.refunded_minor, columnSign.refunded),
+    signed(s.dispute_minor, columnSign.dispute),
+    signed(s.stripe_fee_minor, columnSign.stripe_fee),
+    signed(s.platform_fee_minor, columnSign.platform_fee),
+    signed(s.carried_in_minor, columnSign.carried_in),
+    formatMoney(locale, s.currency, s.net_payable_minor),
+  ];
+}
 // period_end is exclusive in the ledger (start + 7 days); a merchant reconciling a weekly bank transfer reads Mon..Sun, so the label
 // shows the last day inside the period.
 export function periodLabel(start: string, end: string): string {
@@ -189,5 +215,8 @@ export function parseSettlementList(value: unknown): SettlementStatement[] {
 
 export function parseSettlementDetail(value: unknown): SettlementStatement {
   const v = object(value, ["statement"]);
-  return parseSettlementStatement(v.statement);
+  const statement = parseSettlementStatement(v.statement);
+  // Go omits an empty lines array (a quiet week has line_count 0), but a statement that has lines and arrives without them is truncated.
+  if (statement.line_count > 0 && statement.lines === null) throw new Error("unavailable");
+  return statement;
 }

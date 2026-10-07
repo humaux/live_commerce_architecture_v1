@@ -96,14 +96,8 @@ export function validDescriptorSuffix(value: string): boolean {
   return descriptorSuffixPattern.test(value) && /[A-Za-z]/.test(value);
 }
 
-export const descriptorMaxLength = 22;
-// Live budget for the suffix field: L + 2 + len(suffix) <= 22, with L taken from descriptor_preview
-// (which equals the platform base while no suffix is configured). The charset rule independently caps a
-// suffix at 10 chars. Null preview = the server has not published a base; it stays the authority (PT422).
-export function suffixBudget(preview: string | null): number | null {
-  if (preview === null) return null;
-  return Math.max(0, Math.min(10, descriptorMaxLength - Array.from(preview).length - 2));
-}
+// The page checks only what the contract §3.1 charset rule already caps at 10. The 22-character total (SANDBOX L = 10, LIVE the approval's
+// PrefixLength) stays the server's: it answers descriptor_suffix_too_long (PT422) and the page shows that refusal.
 // The contract projection the card statement shows: descriptor_display + ('* ' + suffix when set).
 export function descriptorPreview(base: string, suffix: string | null): string {
   return suffix === null ? base : `${base}* ${suffix}`;
@@ -130,15 +124,19 @@ export function descriptorSuffixOf(preview: string | null): string | null {
 // (allowlist, OPEN, block, terms); this only decides what to SHOW. Integrator ruling: platform not OPEN -> "not open yet" and
 // no enable control; BLOCKED -> suspended note and disable only. Contract 3.3: disable is never gated, so an ENABLED store keeps
 // a disable control even while the platform is CLOSED (the enable toggle is what the ruling hides).
-export type CardView = { notOpen: boolean; notAllowed: boolean; blocked: boolean; canEnable: boolean; canDisable: boolean };
+// A store that is not allowlisted (AD-PF2: every third-party store) reads exactly like not open: the same message, no "platform
+// open" badge (it would contradict the message), no enable. It is never sent to support for an allowlist it cannot join.
+export type CardView = { notOpen: boolean; showPlatform: boolean; blocked: boolean; canEnable: boolean; canDisable: boolean };
 export function cardView(summary: CardSummary, canManage: boolean): CardView {
   const open = summary.platform_state === "OPEN";
   const state = summary.store_state;
+  const idle = state === "NONE" || state === "DISABLED";
+  const denied = open && !summary.allowed && idle;
   return {
-    notOpen: !open,
-    notAllowed: open && !summary.allowed,
+    notOpen: !open || denied,
+    showPlatform: !denied,
     blocked: state === "BLOCKED",
-    canEnable: canManage && open && summary.allowed && summary.terms_version !== null && (state === "NONE" || state === "DISABLED"),
+    canEnable: canManage && open && summary.allowed && summary.terms_version !== null && idle,
     canDisable: canManage && (state === "ENABLED" || state === "BLOCKED"),
   };
 }

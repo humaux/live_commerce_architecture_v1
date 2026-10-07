@@ -180,6 +180,15 @@ func (c *w4uControl) block(ctx context.Context, blocked bool) error {
 	return err
 }
 
+// allow is the operator's platform-allow / platform-disallow (the real definer). Withdrawing the allowlist of an enrolled, unblocked store also
+// BLOCKS it (migrations/0137 P2-4); re-allowing does not unblock.
+func (c *w4uControl) allow(ctx context.Context, allowed bool) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, err := c.e.reg.PlatformAllow(ctx, c.e.op, c.e.a.f.tenantA, c.e.a.f.storeA1, "SANDBOX", allowed, "op@test", "tk-"+t04Tag())
+	return err
+}
+
 // bump is another merchant session changing the enrollment (a real enable with a new suffix): the browser's page now holds a stale version.
 func (c *w4uControl) bump(ctx context.Context) error {
 	c.mu.Lock()
@@ -338,6 +347,29 @@ func TestW4U1StateSequence(t *testing.T) {
 	if err := ctl.block(ctx, false); err != nil {
 		t.Fatalf("unblock: %v", err)
 	}
+	// CPU6b: not allowlisted. Withdrawing the allowlist of the enrolled store blocks it; once unblocked it is DISABLED and still not allowlisted: the
+	// page reads that as "not open" (no enable offered) and a PUT would be refused platform_stripe_not_allowed; re-allowing restores the toggle.
+	if err := ctl.allow(ctx, false); err != nil {
+		t.Fatalf("disallow: %v", err)
+	}
+	if s = read(); s.StoreState != "BLOCKED" || s.Allowed {
+		t.Fatalf("CPU6b disallowed: %+v", s)
+	}
+	if err := ctl.block(ctx, false); err != nil {
+		t.Fatalf("unblock after disallow: %v", err)
+	}
+	s = read()
+	if s.StoreState != "DISABLED" || s.Allowed || s.PlatformState != "OPEN" {
+		t.Fatalf("CPU6b unblocked but not allowlisted: %+v", s)
+	}
+	status, body = put(true, str(s.TermsVersion), nil, s.Version)
+	want("CPU6b enable while not allowlisted", status, body, 403, "platform_stripe_not_allowed")
+	if err := ctl.allow(ctx, true); err != nil {
+		t.Fatalf("allow: %v", err)
+	}
+	if s = read(); s.StoreState != "DISABLED" || !s.Allowed {
+		t.Fatalf("CPU6b re-allowed: %+v", s)
+	}
 	// CPU7: the dialog pre-fills the retained suffix; the merchant clears it and enables again: no suffix remains
 	s = read()
 	if s.StoreState != "DISABLED" || !strings.HasSuffix(str(s.DescriptorPreview), "* BUMPED") {
@@ -345,6 +377,16 @@ func TestW4U1StateSequence(t *testing.T) {
 	}
 	status, body = put(true, str(s.TermsVersion), nil, s.Version)
 	want("CPU7 enable", status, body, 200, `"descriptor_preview":"LCPLATFORM"`)
+	// CPU7b: the platform closes while the store is ENABLED: the page says "not open", offers no enable, keeps disable (the server allows it)
+	if err := ctl.platformOpen(ctx, false); err != nil {
+		t.Fatalf("platform close (enabled store): %v", err)
+	}
+	if s = read(); s.PlatformState != "CLOSED" || s.StoreState != "ENABLED" {
+		t.Fatalf("CPU7b: %+v", s)
+	}
+	if err := ctl.platformOpen(ctx, true); err != nil {
+		t.Fatalf("platform reopen: %v", err)
+	}
 	// the audit facts the browser harness asserts: every UI write is one definer call; refused or no-op requests write none
 	n := func(action string) int {
 		return countRows(t, e.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND principal_id=$2 AND action=$3`, store, principal, action)

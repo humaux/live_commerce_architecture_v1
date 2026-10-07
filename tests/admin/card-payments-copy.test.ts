@@ -3,6 +3,7 @@
 // ruling-fixed strings (「信用卡收款尚未開放」, 「已被平台暫停，請聯絡客服」) are pinned verbatim; no string may
 // ever contain a Stripe account id, key or approval id.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { cardPaymentsCopy } from "../../apps/admin/lib/card-payments-copy.ts";
 import { cardPaymentsSettlementsCopy } from "../../apps/admin/lib/card-payments-settlements-copy.ts";
@@ -94,4 +95,62 @@ test("storefront collector disclosure matches contract §5 templates in three la
   for (const locale of locales)
     for (const slot of ["{display_name}", "{store_name}", "{descriptor_preview}"])
       assert.ok(paymentCopy[locale].collector.includes(slot), `${locale}:${slot}`);
+});
+
+// ---- review P2-8: the contract text itself, not a copy of it in this file ----
+
+// The quoted strings of contracts/stripe-platform-account-v1.md §5, with the markdown line wraps removed (the CJK text has no spaces).
+const contract = readFileSync("contracts/stripe-platform-account-v1.md", "utf8");
+const quoted = (anchor: RegExp) => {
+  const at = contract.search(anchor);
+  assert.ok(at >= 0, `contract text not found: ${anchor}`);
+  const open = contract.indexOf("「", at);
+  return contract.slice(open + 1, contract.indexOf("」", open)).replace(/\s*\n\s*/g, "");
+};
+
+test("the merchant terms in the dialog are the contract §5 sentence, extracted from the contract", () => {
+  assert.equal(cardPaymentsCopy["zh-TW"].terms, quoted(/Merchant terms\./));
+});
+
+test("the storefront templates are the contract §5 lines, extracted from the contract", () => {
+  const line = (label: string) => {
+    const at = contract.indexOf(`- ${label}: `);
+    assert.ok(at >= 0, label);
+    const start = at + `- ${label}: `.length;
+    return contract.slice(start, contract.indexOf("\n", start)).trim();
+  };
+  // zh: 「本筆…顯示「{descriptor_preview}」。」  (outer 「」 are the contract's quotation marks)
+  const unwrap = (text: string) => (text.startsWith("「") && text.endsWith("」") ? text.slice(1, -1) : text);
+  assert.equal(paymentCopy["zh-TW"].collector, unwrap(line("zh-TW")));
+  assert.equal(paymentCopy["zh-CN"].collector, unwrap(line("zh-CN")));
+  assert.equal(paymentCopy.en.collector, unwrap(line("en")).replace(/^"|"$/g, ""));
+});
+
+// ---- review P1-1: the settlement columns say which way they move, and the net formula is on screen ----
+
+test("settlement copy: deduction columns are labelled as deductions in every language, with a legend and the net formula", () => {
+  for (const locale of locales) {
+    const c = cardPaymentsSettlementsCopy[locale];
+    for (const key of ["refunded", "disputes", "stripeFee", "platformFee", "carriedIn"] as const)
+      assert.match(c[key], /扣除|deducted/, `${locale}.${key}`);
+    assert.doesNotMatch(c.captured, /扣除|deducted/, locale);
+    assert.doesNotMatch(c.netPayable, /扣除|deducted/, locale);
+    // the legend explains the sign convention, including that a credit shows with a plus
+    assert.match(c.legend, /＋|\+/, locale);
+    assert.match(c.legend, /－|-|−/, locale);
+    // the formula names every column (labels without their direction note) and ends in the net
+    for (const key of ["captured", "refunded", "disputes", "stripeFee", "platformFee", "carriedIn"] as const) {
+      const name = c[key].replace(/\s*[（(].*[)）]/, "");
+      assert.ok(c.formula.includes(name), `${locale}: formula lacks ${name}`);
+    }
+    assert.ok(c.formula.includes(c.netPayable), `${locale}: formula lacks ${c.netPayable}`);
+  }
+});
+
+test("there is no separate 'not on the allowlist' message: it reads as not open (review P1-2)", () => {
+  for (const locale of locales) {
+    assert.equal("notAllowed" in cardPaymentsCopy[locale], false, locale);
+    // a PUT refused as not allowlisted after the page loaded says the same thing the page now says
+    assert.equal(cardPaymentsCopy[locale].errors.platform_stripe_not_allowed, cardPaymentsCopy[locale].notOpen, locale);
+  }
 });

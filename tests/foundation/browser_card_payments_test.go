@@ -11,7 +11,7 @@ package foundation_test
 // the production admin Next build with a signed mock IdP and, for the buyer half, the real buyerhttp handler behind the production storefront Next build.
 //
 // Admin half: tests/admin/card-payments.spec.ts and tests/admin/settlements.spec.ts (Playwright; en + zh-TW + zh-CN, desktop 1586x992 + 390 px,
-// screenshots hashed). The runner-only control listener changes the platform and the store through the real operator definers (platform close/open,
+// screenshots hashed). The runner-only control listener changes the platform and the store through the real operator definers (platform close/open, store allow/disallow,
 // store block/unblock, a competing enrollment change); Node never receives a database credential. Buyer half: tests/storefront/collector-buyer.mjs
 // (the §5 disclosure above the pay button, on the paid order page, and its absence for a primary connection). Evidence: output/playwright/card-payments/<timestamp>/.
 
@@ -103,6 +103,10 @@ func TestBrowserCardPayments(t *testing.T) {
 			err = ctl.platformOpen(r.Context(), false)
 		case "/platform/open":
 			err = ctl.platformOpen(r.Context(), true)
+		case "/store/allow":
+			err = ctl.allow(r.Context(), true)
+		case "/store/disallow":
+			err = ctl.allow(r.Context(), false)
 		case "/store/block":
 			err = ctl.block(r.Context(), true)
 		case "/store/unblock":

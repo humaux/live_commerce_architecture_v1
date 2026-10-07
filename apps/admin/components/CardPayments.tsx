@@ -21,7 +21,6 @@ import {
   descriptorBase,
   descriptorPreview,
   descriptorSuffixOf,
-  suffixBudget,
   validDescriptorSuffix,
   type CardSummary,
   type PlatformState,
@@ -87,7 +86,7 @@ export function CardPayments({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Sections summary={read.data} store={store} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
+          <Sections summary={read.data} store={store} boundary={read.boundary} refresh={read.refresh} reload={read.reload} locale={locale} c={c} />
         )}
       </div>
     </WorkspaceFrame>
@@ -99,6 +98,7 @@ function Sections({
   store,
   boundary,
   refresh,
+  reload,
   locale,
   c,
 }: {
@@ -106,6 +106,7 @@ function Sections({
   store: Store;
   boundary: string;
   refresh: () => Promise<boolean>;
+  reload: () => void;
   locale: Locale;
   c: CardPaymentsCopy;
 }) {
@@ -114,7 +115,12 @@ function Sections({
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ kind: "saved" | "conflict" | "error"; code?: string } | null>(null);
   // The display state machine lives in card-payments-model.ts (unit-tested): not-open, not-allowlisted, BLOCKED, enable/disable.
-  const { notOpen, notAllowed, blocked, canEnable, canDisable } = cardView(summary, canManage);
+  const { notOpen, showPlatform, blocked, canEnable, canDisable } = cardView(summary, canManage);
+
+  // A failed re-read (tab hidden, network) must not leave "Saved." beside a stale badge: fall back to the full reload.
+  async function resync() {
+    if (!(await refresh())) reload();
+  }
 
   async function submit(enabled: boolean, suffix: string | null) {
     setBusy(true);
@@ -124,7 +130,7 @@ function Sections({
     if (outcome.ok) {
       setDialog(null);
       setNote({ kind: "saved" });
-      await refresh();
+      await resync();
       return;
     }
     // CAS lost, terms drifted, or the platform moved underneath us: reload-and-retry, never blind-retry.
@@ -137,14 +143,14 @@ function Sections({
     ) {
       setDialog(null);
       setNote({ kind: "conflict" });
-      await refresh();
+      await resync();
       return;
     }
     // The platform suspended or de-listed the store while the dialog was open: say why, and reload so the badge catches up.
     if (outcome.code === "platform_stripe_blocked" || outcome.code === "platform_stripe_not_allowed") {
       setDialog(null);
       setNote({ kind: "error", code: outcome.code });
-      await refresh();
+      await resync();
       return;
     }
     setNote({ kind: "error", code: outcome.code });
@@ -159,12 +165,14 @@ function Sections({
             {c[`state${summary.store_state}`]}
           </Badge>
         </p>
-        <p>
-          {c.platformLabel}{" "}
-          <Badge tone={platformTone[summary.platform_state]} data-testid="platform-state-badge">
-            {c[`platform${summary.platform_state}`]}
-          </Badge>
-        </p>
+        {showPlatform && (
+          <p>
+            {c.platformLabel}{" "}
+            <Badge tone={platformTone[summary.platform_state]} data-testid="platform-state-badge">
+              {c[`platform${summary.platform_state}`]}
+            </Badge>
+          </p>
+        )}
         {summary.descriptor_preview && (
           <p data-testid="card-descriptor-preview">
             {c.previewLabel}: {summary.descriptor_preview}
@@ -172,7 +180,6 @@ function Sections({
         )}
       </section>
       {notOpen && <p className="orders-message" data-testid="card-not-open">{c.notOpen}</p>}
-      {notAllowed && <p className="orders-message" data-testid="card-not-allowed">{c.notAllowed}</p>}
       {blocked && <p className="orders-message" data-testid="card-blocked-note">{c.blockedNote}</p>}
       {(summary.currency || summary.min_minor !== null || summary.max_minor !== null) && (
         <section data-testid="card-limits">
@@ -216,6 +223,12 @@ function Sections({
           )}
         </div>
       )}
+      {/* the settlement statements have no nav entry (nav:false); billing:manage holders reach them from here */}
+      {canManage && dialog === null && (
+        <p>
+          <a href={`/${locale}/settings/settlements?store=${store.id}`} data-testid="card-settlements-link">{c.settlementsLink}</a>
+        </p>
+      )}
       {dialog === "enable" && (
         <EnableDialog summary={summary} busy={busy} c={c} onConfirm={(suffix) => void submit(true, suffix)} onCancel={() => setDialog(null)} />
       )}
@@ -257,11 +270,10 @@ function EnableDialog({
   // The summary preview carries a DISABLED store's retained suffix; descriptorBase strips it back to the
   // platform base so the live check and preview never double-count ("* " can appear in neither part).
   const base = summary.descriptor_preview ? descriptorBase(summary.descriptor_preview) : null;
-  const budget = suffixBudget(base);
   const value = suffix === "" ? null : suffix;
-  // Length first (the server answers descriptor_suffix_too_long before the charset rule): the budget is 22 minus the platform base
-  // minus "* ", and never more than the 10 the charset rule allows (also while the server has published no base).
-  const tooLong = value !== null && Array.from(value).length > (budget ?? 10);
+  // Length first (the server answers descriptor_suffix_too_long before the charset rule). The page enforces only the 10 the charset rule
+  // allows; the 22-character total (SANDBOX L=10, LIVE the approval's PrefixLength) is the server's and comes back as its refusal.
+  const tooLong = value !== null && Array.from(value).length > 10;
   const invalid = value !== null && !tooLong && !validDescriptorSuffix(value);
   const canConfirm = accepted && !invalid && !tooLong && !busy && summary.terms_version !== null;
   return (

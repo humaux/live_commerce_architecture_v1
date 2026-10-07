@@ -145,6 +145,8 @@ test("CPU1 enabled store: badges, limits from the server, no credential input, e
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await expect(page.getByTestId("card-disable-open")).toBeVisible();
+  // the settlement statements have no nav entry: billing:manage holders reach them from here (review P2-6)
+  await expect(page.getByTestId("card-settlements-link")).toHaveAttribute("href", `/en/settings/settlements?store=${store}`);
   await shot(page, "card-enabled", "en", "desktop");
   await spy.assertClean();
 });
@@ -281,6 +283,33 @@ test("CPU6 BLOCKED: the suspended note, disable only (never enable), and unblock
   await spy.assertClean();
 });
 
+test("CPU6b not allowlisted reads like not open (same message, no 'platform open' badge, no enable); withdrawing the allowlist of an enrolled store blocks it", async ({ page }) => {
+  const spy = watch(page);
+  await signedLogin(page);
+  await ctl("store/disallow"); // the real platform-disallow definer: the allowlist is withdrawn AND the enrolled store is blocked (PF11)
+  await page.goto(cardUrl("zh-TW"));
+  await expect(page.getByTestId("card-blocked-note")).toHaveText(BLOCKED_ZH_TW);
+  await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
+  await ctl("store/unblock"); // the block is cleared, the allowlist is still withdrawn: DISABLED and not allowlisted
+  for (const locale of ["zh-TW", "en"] as const) {
+    await page.goto(cardUrl(locale));
+    await expect(page.getByTestId("card-not-open")).toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
+    await expect(page.getByTestId("platform-state-badge")).toHaveCount(0); // "platform open" would contradict the message
+    await expect(page.getByTestId("card-blocked-note")).toHaveCount(0);
+    await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
+    await expect(page.getByTestId("card-disable-open")).toHaveCount(0);
+    // never sent to support for an allowlist spot it cannot get (AD-PF2)
+    await expect(page.getByTestId("card-payments-page")).not.toContainText(/allowlist|允許名單|允许名单/);
+  }
+  await shot(page, "card-not-allowlisted", "en", "desktop");
+  await ctl("store/allow");
+  await page.goto(cardUrl("en"));
+  await expect(page.getByTestId("card-not-open")).toHaveCount(0);
+  await expect(page.getByTestId("platform-state-badge")).toHaveText(en.platformOPEN);
+  await expect(page.getByTestId("card-enable-open")).toBeVisible();
+  await spy.assertClean();
+});
+
 test("CPU7 three languages: the terms are quoted verbatim in zh-TW, translated in zh-CN; zh-TW enable ends ENABLED", async ({ page }) => {
   const spy = watch(page);
   await signedLogin(page);
@@ -302,6 +331,24 @@ test("CPU7 three languages: the terms are quoted verbatim in zh-TW, translated i
   expect(put.body.descriptor_suffix).toBeNull();
   await expect(badge(page)).toHaveText(cardPaymentsCopy["zh-TW"].stateENABLED);
   await expect(page.getByTestId("card-saved")).toHaveText(cardPaymentsCopy["zh-TW"].saved);
+  await spy.assertClean();
+});
+
+test("CPU7b platform not OPEN while the store is ENABLED: 'not open yet' and no enable, but the way out (disable) stays (contract §3.3)", async ({ page }) => {
+  const spy = watch(page);
+  await signedLogin(page);
+  await page.goto(cardUrl("en"));
+  await expect(badge(page)).toHaveText(en.stateENABLED);
+  await ctl("platform/close");
+  await page.goto(cardUrl("zh-TW"));
+  await expect(page.getByTestId("card-not-open")).toHaveText(NOT_OPEN_ZH_TW);
+  await expect(page.getByTestId("platform-state-badge")).toHaveText(cardPaymentsCopy["zh-TW"].platformCLOSED);
+  await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
+  await expect(page.getByTestId("card-disable-open")).toBeVisible();
+  await ctl("platform/open");
+  await page.goto(cardUrl("en"));
+  await expect(page.getByTestId("card-not-open")).toHaveCount(0);
+  await expect(page.getByTestId("card-disable-open")).toBeVisible();
   await spy.assertClean();
 });
 

@@ -14,7 +14,6 @@ import {
   descriptorSuffixOf,
   parseCardResult,
   parseCardSummary,
-  suffixBudget,
   validDescriptorSuffix,
 } from "../../apps/admin/lib/card-payments-model.ts";
 import {
@@ -22,6 +21,7 @@ import {
   parseSettlementList,
   payoutState,
   periodLabel,
+  statementCells,
 } from "../../apps/admin/lib/card-payments-settlements-model.ts";
 
 const summary = () => ({
@@ -111,12 +111,12 @@ test("descriptor suffix rule: charset, 2..10 chars, must contain a letter", () =
     assert.equal(validDescriptorSuffix(no), false, JSON.stringify(no));
 });
 
-test("suffix budget derives from descriptor_preview as the base (L + 2 + suffix <= 22, charset caps at 10)", () => {
-  assert.equal(suffixBudget(null), null);
-  assert.equal(suffixBudget("LCPLATFORM"), 10);
-  assert.equal(suffixBudget("A".repeat(20)), 0);
-  assert.equal(suffixBudget("A".repeat(22)), 0);
-  assert.equal(suffixBudget("SHORT"), 10);
+test("the suffix length rule is the charset rule's 10; the 22-character descriptor total stays the server's (SANDBOX L=10, LIVE PrefixLength)", () => {
+  // a long platform display name must not shrink the suffix below what the server accepts (review P2-2)
+  const longBase = parseCardSummary({ ...summary(), descriptor_preview: "HK BOWL TRADING" });
+  assert.equal(longBase.descriptor_preview, "HK BOWL TRADING");
+  assert.equal(validDescriptorSuffix("ABCDEFGHIJ"), true);
+  assert.equal(validDescriptorSuffix("ABCDEFGHIJK"), false);
 });
 
 test("descriptor preview mirrors the contract projection (base + '* ' + suffix)", () => {
@@ -328,30 +328,45 @@ test("a payout reference shaped like a Stripe key or account id is never display
 
 const view = (patch: Record<string, unknown>, manage = true) => cardView(parseCardSummary({ ...summary(), ...patch }), manage);
 
-test("platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state", () => {
+test("platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state; the platform badge still tells why", () => {
   for (const platform_state of ["NONE", "DESIGNATED", "CLOSED", "REVOKED"])
     for (const store_state of ["NONE", "DISABLED"]) {
       const v = view({ platform_state, store_state });
       assert.equal(v.notOpen, true, `${platform_state}/${store_state}`);
       assert.equal(v.canEnable, false, `${platform_state}/${store_state}`);
       assert.equal(v.canDisable, false, `${platform_state}/${store_state}`);
+      assert.equal(v.showPlatform, true, `${platform_state}/${store_state}`);
     }
   // contract 3.3: disable is always allowed, so an enabled store can still turn itself off while the platform is CLOSED
   const closed = view({ platform_state: "CLOSED", store_state: "ENABLED" });
   assert.deepEqual([closed.notOpen, closed.canEnable, closed.canDisable], [true, false, true]);
 });
 
-test("allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED; not allowlisted hides the enable control", () => {
+test("allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED", () => {
   assert.deepEqual(
     [view({ store_state: "NONE" }).canEnable, view({ store_state: "DISABLED" }).canEnable, view({ store_state: "ENABLED" }).canEnable],
     [true, true, false],
   );
   assert.deepEqual([view({ store_state: "ENABLED" }).canDisable, view({ store_state: "NONE" }).canDisable, view({ store_state: "DISABLED" }).canDisable], [true, false, false]);
-  const denied = view({ store_state: "NONE", allowed: false });
-  assert.deepEqual([denied.notAllowed, denied.canEnable], [true, false]);
-  assert.equal(view({ store_state: "NONE" }).notAllowed, false);
+  const ok = view({ store_state: "NONE" });
+  assert.deepEqual([ok.notOpen, ok.showPlatform], [false, true]);
   // the terms are the thing being accepted: no terms_version, no enable
   assert.equal(view({ store_state: "NONE", terms_version: null }).canEnable, false);
+});
+
+test("not allowlisted on an OPEN platform reads exactly like not open: the same message, no 'platform open' badge, no enable (review P1-2)", () => {
+  // third-party stores can never be allowlisted (AD-PF2), so they are never sent to support for an allowlist spot
+  for (const store_state of ["NONE", "DISABLED"]) {
+    const v = view({ store_state, allowed: false });
+    assert.deepEqual(v, { notOpen: true, blocked: false, showPlatform: false, canEnable: false, canDisable: false }, store_state);
+  }
+  assert.equal("notAllowed" in view({ store_state: "NONE", allowed: false }), false, "there is no separate not-allowlisted message any more");
+  // a withdrawn allowlist never hides the way out: an ENABLED store keeps disable and keeps selling as before (no 'not open' for it)
+  const enabled = view({ store_state: "ENABLED", allowed: false });
+  assert.deepEqual([enabled.notOpen, enabled.canEnable, enabled.canDisable, enabled.showPlatform], [false, false, true, true]);
+  // withdrawing the allowlist of a selling store blocks it (PF11): the suspended note, not 'not open'
+  const blocked = view({ store_state: "BLOCKED", allowed: false });
+  assert.deepEqual([blocked.blocked, blocked.notOpen, blocked.canEnable, blocked.canDisable], [true, false, false, true]);
 });
 
 test("BLOCKED: the suspended note, disable only, never enable (whatever the platform says)", () => {
@@ -435,4 +450,51 @@ test("settlements need billing:manage, the card page integration:read; the owner
   assert.equal(canOpen(card, staff("integration:read")), true);
   assert.equal(canOpen(settlements, { role: "owner", permissions: [] }) && canOpen(card, { role: "owner", permissions: [] }), true);
   assert.equal(canOpen(settlements, null), false);
+});
+
+// ---- review P1-1: one sign convention on screen, what the store receives (+ added to the payout, - deducted) ----
+
+// "NT$1,234.50" / "+NT$25" / "-NT$8" back to minor units (TWD x100), so the test can add up what is literally displayed.
+const minorOf = (text: string): number => {
+  const m = /^([+-]?)NT\$([\d,]+)(?:\.(\d{2}))?$/.exec(text.replace(/\u00a0/g, " "));
+  assert.ok(m, `not a money string: ${text}`);
+  const value = Number(m[2].replace(/,/g, "")) * 100 + Number(m[3] ?? 0);
+  return m[1] === "-" ? -value : value;
+};
+
+test("statement cells: a dispute reversal and a returned fee read as credits (+) and every deduction as -, and the columns add up to the server's net", () => {
+  // captured 100, a refund of 30, a dispute REVERSAL of 20 (credit), a RETURNED Stripe fee of 5 (credit), platform fee 2, debt carried in 10
+  const s = parseSettlementList({
+    statements: [{
+      ...statement(),
+      captured_minor: 10000,
+      refunded_minor: 3000,
+      dispute_minor: -2000,
+      stripe_fee_minor: 500,
+      platform_fee_bps: 200,
+      platform_fee_minor: 200,
+      carried_in_minor: -1000,
+      net_payable_minor: 10000 - 3000 + 2000 + 500 - 200 - 1000,
+      line_count: 0,
+    }],
+  })[0];
+  assert.deepEqual(statementCells("en", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$83"]);
+  assert.deepEqual(statementCells("zh-TW", s), ["2026-09-07 – 2026-09-13", "+NT$100", "-NT$30", "+NT$20", "+NT$5", "-NT$2", "-NT$10", "NT$83"]);
+  // the six contributions literally add up to the net the server computed; nothing is recomputed (the net cell is the server's value)
+  const cells = statementCells("en", s);
+  assert.equal(cells.slice(1, 7).map(minorOf).reduce((a, b) => a + b, 0), minorOf(cells[7]));
+  assert.equal(minorOf(cells[7]), s.net_payable_minor);
+  // a zero is never signed ("-NT$0" would be a lie about a column that moved nothing)
+  const quiet = parseSettlementList({ statements: [{ ...statement(), captured_minor: 0, refunded_minor: 0, dispute_minor: 0, stripe_fee_minor: 0, platform_fee_minor: 0, platform_fee_bps: 0, net_payable_minor: 0, line_count: 0 }] })[0];
+  assert.deepEqual(statementCells("en", quiet).slice(1), ["NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0", "NT$0"]);
+});
+
+// ---- review P2-5: a detail without its lines is not a statement ----
+
+test("the detail parser requires the lines of a statement that has lines; a quiet week (line_count 0) may omit them", () => {
+  const withLines = detailOf([line()]);
+  const { lines: _lines, ...without } = withLines;
+  assert.throws(() => parseSettlementDetail({ statement: without }), "line_count 1 but no lines key");
+  const quiet = { ...statement(), captured_minor: 0, refunded_minor: 0, dispute_minor: 0, stripe_fee_minor: 0, platform_fee_minor: 0, platform_fee_bps: 0, net_payable_minor: 0, line_count: 0 };
+  assert.equal(parseSettlementDetail({ statement: quiet }).lines, null);
 });

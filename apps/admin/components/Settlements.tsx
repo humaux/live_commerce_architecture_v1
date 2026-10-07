@@ -10,10 +10,9 @@ import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
-import { money } from "@/lib/client";
 import { readSettlementDetail, readSettlements } from "@/lib/card-payments-client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import { payoutState, periodLabel, type SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
+import { payoutState, signedAmountText, statementCells, type SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
 import { cardPaymentsSettlementsCopy, type CardPaymentsSettlementsCopy } from "@/lib/card-payments-settlements-copy.ts";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -113,91 +112,82 @@ function List({
         <p>{c.emptyHint}</p>
       </div>
     );
-  const amount = (s: SettlementStatement, minor: number) => money(locale, s.currency, minor);
   return (
-    <TableFrame label={c.tableLabel} scrollHint={c.scrollHint}>
-      <table>
-        <thead>
-          <tr>
-            <th>{c.period}</th>
-            <th>{c.captured}</th>
-            <th>{c.refunded}</th>
-            <th>{c.disputes}</th>
-            <th>{c.stripeFee}</th>
-            <th>{c.platformFee}</th>
-            <th>{c.carriedIn}</th>
-            <th>{c.netPayable}</th>
-            <th>{c.status}</th>
-            <th>{c.detail}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {statements.map((s) => (
-            <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}>
-              <td data-testid={`settlement-period-${s.statement_id}`}>{periodLabel(s.period_start, s.period_end)}</td>
-              <td>{amount(s, s.captured_minor)}</td>
-              <td>{amount(s, s.refunded_minor)}</td>
-              <td>{amount(s, s.dispute_minor)}</td>
-              <td>{amount(s, s.stripe_fee_minor)}</td>
-              <td>{amount(s, s.platform_fee_minor)}</td>
-              <td>{amount(s, s.carried_in_minor)}</td>
-              <td>{amount(s, s.net_payable_minor)}</td>
-              <td>
-                <Badge tone={payoutTone[payoutState(s)]} data-testid={`settlement-status-${s.statement_id}`} data-state={payoutState(s)}>
-                  {payoutText(c, payoutState(s))}
-                </Badge>
-              </td>
-              <td>
-                <button type="button" data-testid={`settlement-open-${s.statement_id}`} onClick={() => onOpen(s.statement_id)}>
-                  {c.detail}
-                </button>
-              </td>
+    <>
+      <TableFrame label={c.tableLabel} scrollHint={c.scrollHint}>
+        <table>
+          <thead>
+            <tr>
+              <th>{c.period}</th>
+              <th>{c.captured}</th>
+              <th>{c.refunded}</th>
+              <th>{c.disputes}</th>
+              <th>{c.stripeFee}</th>
+              <th>{c.platformFee}</th>
+              <th>{c.carriedIn}</th>
+              <th>{c.netPayable}</th>
+              <th>{c.status}</th>
+              <th>{c.detail}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </TableFrame>
+          </thead>
+          <tbody>
+            {statements.map((s) => (
+              <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}>
+                {/* period, then the six signed contributions (what the store receives), then the server's net; see statementCells */}
+                {statementCells(locale, s).map((text, index) => (
+                  <td key={index} data-testid={index === 0 ? `settlement-period-${s.statement_id}` : undefined}>{text}</td>
+                ))}
+                <td>
+                  <Badge tone={payoutTone[payoutState(s)]} data-testid={`settlement-status-${s.statement_id}`} data-state={payoutState(s)}>
+                    {payoutText(c, payoutState(s))}
+                  </Badge>
+                </td>
+                <td>
+                  <button type="button" data-testid={`settlement-open-${s.statement_id}`} onClick={() => onOpen(s.statement_id)}>
+                    {c.detail}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
+      <Legend c={c} />
+    </>
+  );
+}
+
+/** The sign legend and the net formula, quoted from the 0150 identity; shown under every statement table and detail. */
+function Legend({ c }: { c: CardPaymentsSettlementsCopy }) {
+  return (
+    <div data-testid="settlements-legend">
+      <p>{c.legend}</p>
+      <p data-testid="settlements-formula">{c.formula}</p>
+    </div>
   );
 }
 
 function Detail({ statement: s, locale, c }: { statement: SettlementStatement; locale: Locale; c: CardPaymentsSettlementsCopy }) {
-  const amount = (minor: number) => money(locale, s.currency, minor);
+  const cells = statementCells(locale, s);
+  // the same six signed contributions and the server's net as the list row (statementCells), so the detail adds up the same way
+  const rows = [
+    ["captured", c.captured], ["refunded", c.refunded], ["dispute", c.disputes], ["stripe-fee", c.stripeFee],
+    ["platform-fee", c.platformFee], ["carried-in", c.carriedIn], ["net", c.netPayable],
+  ] as const;
   return (
     <section data-testid="settlement-detail">
       <h2>{c.detail}</h2>
       <dl>
         <div>
           <dt>{c.period}</dt>
-          <dd data-testid="settlement-detail-period">{periodLabel(s.period_start, s.period_end)}</dd>
+          <dd data-testid="settlement-detail-period">{cells[0]}</dd>
         </div>
-        <div>
-          <dt>{c.captured}</dt>
-          <dd>{amount(s.captured_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.refunded}</dt>
-          <dd>{amount(s.refunded_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.disputes}</dt>
-          <dd>{amount(s.dispute_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.stripeFee}</dt>
-          <dd>{amount(s.stripe_fee_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.platformFee}</dt>
-          <dd>{amount(s.platform_fee_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.carriedIn}</dt>
-          <dd>{amount(s.carried_in_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.netPayable}</dt>
-          <dd data-testid="settlement-detail-net">{amount(s.net_payable_minor)}</dd>
-        </div>
+        {rows.map(([key, label], index) => (
+          <div key={key}>
+            <dt>{label}</dt>
+            <dd data-testid={`settlement-detail-${key}`}>{cells[index + 1]}</dd>
+          </div>
+        ))}
         <div>
           <dt>{c.status}</dt>
           <dd>
@@ -236,14 +226,15 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
               <tr key={`${line.order_number}-${index}`} data-testid={`settlement-line-${line.order_number}`}>
                 <td>{line.order_number}</td>
                 <td>{c[`kind${line.kind}`]}</td>
-                <td>{amount(line.store_minor)}</td>
-                <td>{amount(line.fee_store_minor)}</td>
+                <td>{signedAmountText(locale, s.currency, line.store_minor)}</td>
+                <td>{signedAmountText(locale, s.currency, line.fee_store_minor)}</td>
                 <td>{line.txn_date}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </TableFrame>
+      <Legend c={c} />
     </section>
   );
 }
