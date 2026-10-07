@@ -1,14 +1,15 @@
 // Purpose: LC-U1 browser requests through /api/stores/{store}/live-sessions → Go A1/A7/A6 and A5 flow endpoints.
-// Depends on: existing studio-client.ts authenticated read/write; catalog-v2-client.ts inventory transport; closed DTO parsers.
+// Depends on: existing Studio read/write and catalog send transport; balance and closed console receipt parsers.
 // Used by: LiveWorkspace and LiveConsole; each user submit owns its supplied idempotency key.
 // Invariants: I01/I02/I03/I05/I06/I11/I14; no automatic retries, secret storage or client inventory truth.
 import { read, write, StudioError } from "../../../lib/studio-client";
 import { parseOffer, type Offer } from "../../../lib/claims-model.ts";
-import { send } from "../../../lib/catalog-v2-client";
 import { parseBalance } from "../../../lib/catalog-v2-model.ts";
+import { send } from "../../../lib/catalog-v2-client";
 import { sessionBoundary } from "../../../lib/settings-client";
 import { parseConsole, parseCopyResult, parseLifecycleResult, parseRecommendResult, parseSessionResults } from "./console-model.ts";
 import { validConsoleID, validConsoleBody } from "./console-request.ts";
+import { validLiveRequest, type LiveRequest } from "./command-journal";
 
 function base(store: string, session?: string): string {
   if (!validConsoleID(store) || (session !== undefined && !validConsoleID(session))) throw new StudioError("invalid");
@@ -78,21 +79,40 @@ export function toggleOffer(store: string, id: string, offerID: string, version:
     return write(`${base(store, id)}/claims/offers/${offerID}`, "PATCH", { expected_version: version, active, max_quantity_per_claim: maxQuantityPerClaim }, key, boundary);
   }, (v) => parseOffer(v, id), true);
 }
-/** Inventory adjustment through the existing catalog boundary. Go still requires inventory:write until LC-B7 arrives. */
+/** Inventory adjustment through LC-B7's bounded live_adjust authority (or existing inventory:write). */
 export async function adjustLiveStock(store: string, body: { warehouse_id: string; sku_id: string; delta: number; expected_version: number; reason: "live_console_edit" }, key: string, boundary: string): Promise<{ sku_id: string }> {
   if (!validConsoleID(store) || !validConsoleID(body.warehouse_id) || !validConsoleID(body.sku_id) || !Number.isSafeInteger(body.delta) ||
     body.delta === 0 || Math.abs(body.delta) > 1000 || !Number.isSafeInteger(body.expected_version) || body.expected_version < 0 || body.reason !== "live_console_edit")
     throw new StudioError("invalid", "invalid_request");
-  const result = await send(store, { key, method: "POST", resource: "inventory/adjustments", body: JSON.stringify(body) }, boundary, parseBalance);
+  let status = 0;
+  const result = await send(store, { key, method: "POST", resource: "inventory/adjustments", body: JSON.stringify(body) }, boundary, parseBalance, (value) => { status = value; });
   if (!result.ok) {
     const api = /^[a-z0-9_]{1,64}$/.test(result.code) ? result.code : "";
     throw new StudioError(result.uncertain ? "uncertain" : result.code === "forbidden" ? "forbidden" :
       result.reconcile ? "signed-out" : ["version_conflict", "version_changed", "conflict", "idempotency_conflict"].includes(result.code) ? "conflict" :
-      ["invalid_request", "insufficient_inventory", "below_reserved"].includes(result.code) ? "invalid" : "unavailable", result.uncertain ? "" : api);
+      ["invalid_request", "insufficient_inventory", "below_reserved"].includes(result.code) ? "invalid" : "unavailable", result.uncertain ? "" : api, 0, status);
   }
   try { if ((await sessionBoundary()) !== boundary) throw new Error("session_changed"); }
-  catch { throw new StudioError("signed-out"); }
-  // The catalog parser establishes the existing identity receipt; never update a displayed balance from it.
+  catch { throw new StudioError("signed-out", "", 0, status); }
   if (result.value.sku_id !== body.sku_id) throw new StudioError("uncertain");
   return result.value;
+}
+
+/** Replay a validated journal via the existing closed clients and their authoritative receipt parsers. */
+export function executeLiveRequest(request: LiveRequest, key: string, boundary: string): Promise<unknown> {
+  const match = /^\/api\/stores\/([^/]+)\/(?:live-sessions\/([^/]+)\/|inventory\/adjustments$)/.exec(request.path);
+  const store = match?.[1], scene = match?.[2];
+  if (!store || !validConsoleID(key)) throw new StudioError("invalid");
+  const body = JSON.parse(request.body);
+  // Inventory is store-scoped, not session-scoped; the validator's scene segment is not consumed for this route.
+  if (!scene) {
+    if (!validLiveRequest(request, `${store}:${store}`)) throw new StudioError("invalid");
+    return adjustLiveStock(store, body, key, boundary);
+  }
+  if (!validLiveRequest(request, `${store}:${scene}`)) throw new StudioError("invalid");
+  if (request.path.endsWith("/copy")) return copySession(store, scene, body, key, boundary);
+  if (request.path.endsWith("/lifecycle")) return changeLifecycle(store, scene, body.action, body.expected_version, key, boundary);
+  const offer = /\/claims\/offers\/([^/]+)(\/recommend)?$/.exec(request.path)!;
+  return offer[2] ? recommendOffer(store, scene, offer[1], body.expected_version, key, boundary) :
+    toggleOffer(store, scene, offer[1], body.expected_version, body.active, body.max_quantity_per_claim, key, boundary);
 }

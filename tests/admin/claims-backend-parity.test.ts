@@ -4,6 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import * as claims from "../../apps/admin/lib/claims-model.ts";
 import { hostPrompt, hostPromptLanguages } from "../../apps/admin/lib/claims-copy.ts";
 import { parseClaimSource } from "../../apps/admin/lib/claim-source-model.ts";
@@ -31,19 +32,13 @@ test("claims window modes match Go constants and every SQL match_mode CHECK", as
     assert.throws(() => claims.parseWindow({ session_id: sid, state: "CLOSED", match_mode: mode, generation: 0, version: 1, opened_at: null, closed_at: null }, sid));
 });
 
-test("contains prompt requires explicit quantity and removes the exact-only instruction", () => {
-  assert.equal(hostPrompt("zh-TW", "KEYWORD_QTY_CONTAINS", "A1"), "留言「A1+數量」就能登記，例如「我要A1+2」；只留 A1 不會登記；一則留言只寫一個商品，不要問句；A1+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。留言不代表已保留庫存，結帳時才確認。");
-  assert.equal(hostPrompt("en", "KEYWORD_QTY_CONTAINS", "A1"), "Comment A1+quantity, e.g. \"A1+2\"; A1 alone is not counted; one item per comment, no questions; A1+2 = set your quantity to 2 (it does not add 2 more). Your latest comment replaces the earlier quantity. Claims don't reserve stock; stock is confirmed at checkout.");
-  const ja = hostPrompt("ja", "KEYWORD_QTY_CONTAINS", "A1");
-  assert.match(ja, /A1\+2/);
-  assert.match(ja, /A1 だけでは登録されません/);
-  assert.match(ja, /1コメントにつき1商品/);
-  assert.match(ja, /在庫は確保されず/);
-  assert.doesNotMatch(ja, /コードだけをコメント/);
-});
-
-test("Japanese is copy-only and never widens Meta reply_locale", () => {
-  assert.ok(hostPromptLanguages.includes("ja"));
+test("host prompt stays verbatim at the frozen trunk contract; Japanese is absent", async () => {
+  assert.deepEqual([...hostPromptLanguages].sort(), ["zh-TW", "zh-CN", "en"].sort());
+  const source = await src("apps/admin/lib/claims-copy.ts");
+  const block = source.slice(source.indexOf("// FROZEN host prompt copy"), source.indexOf("/** The private message sent"));
+  // Integrator 2026-10-07 ruling: pin the origin0813424a frozen block, not new UI-authored prompt text.
+  assert.equal(createHash("sha256").update(block).digest("hex"), "178058ae529501b844806c5858dd11e71898b15221455fc301a9d52c488c4e03");
+  for (const locale of hostPromptLanguages) assert.equal(hostPrompt(locale, "KEYWORD_QTY_CONTAINS", "A1"), hostPrompt(locale, "KEYWORD_QTY_ONLY", "A1"));
   const wire = { id: sid, platform: "facebook", object: "page", asset_id: "synthetic-page", source_object_id: "123",
     private_reply: true, reply_locale: "ja", active: true, version: 1, verified: false, intake_count: 0, intake_capped: 0, updated_at: "2026-10-06T00:00:00Z" };
   assert.throws(() => parseClaimSource(wire));

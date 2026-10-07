@@ -35,7 +35,7 @@ export type ConsoleStream = {
   poll_interval_ms: number; last_ok_at: string | null; lag_ms: number | null;
   source_platform: "facebook" | "instagram"; video_embeddable: boolean; reason?: string;
 };
-/** Frozen A1 snapshot; parser support is MOCK, not evidence that LC-B7 is mounted. */
+/** Frozen LC-B7 A1 snapshot; runtime parsing never substitutes missing authority or array fields. */
 export type ConsoleSnapshot = {
   session: { id: string; title: string; lifecycle: Lifecycle; version: number; started_at: string | null; ended_at: string | null };
   window: { state: "OPEN" | "CLOSED"; generation: number; opened_at: string | null; match_mode: ConsoleMatchMode };

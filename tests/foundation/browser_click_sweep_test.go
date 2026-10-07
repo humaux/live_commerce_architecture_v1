@@ -228,7 +228,7 @@ func TestBrowserClickSweep(t *testing.T) {
 		t.Fatal(err)
 	}
 	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, CommentStream: stream, ClaimLabels: &labels, RefundJobs: e.jobs,
-		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example"}
+		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example", PaymentProfile: "PROVIDER_MOCK"}
 	api := httpapi.NewHandler(f.runtime, options)
 	call := func(method, path, key string, body any, want int, out any) {
 		t.Helper()

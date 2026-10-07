@@ -191,7 +191,7 @@ for (const cell of cells) {
       await expect(merchant.getByLabel(claims.mode, { exact: true })).toBeDisabled();
       await merchant.locator("#claims-prompt-keyword").selectOption(kw);
       await merchant.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: admin });
-      for (const promptLocale of ["zh-TW", "en", "ja"] as const) {
+      for (const promptLocale of ["zh-TW", "zh-CN", "en"] as const) {
         await merchant.locator("#claims-prompt-language").selectOption(promptLocale);
         const expectedPrompt = hostPrompt(promptLocale, "KEYWORD_QTY_CONTAINS", kw);
         await expect(merchant.getByTestId("host-prompt")).toHaveText(expectedPrompt);

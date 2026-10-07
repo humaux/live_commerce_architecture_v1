@@ -19,6 +19,7 @@ registerHooks({ resolve(specifier, context, next) {
 const client = await import("../../apps/admin/src/features/live/console-client.ts");
 const { sessionBoundary } = await import("../../apps/admin/lib/settings-client.ts");
 const { StudioError } = await import("../../apps/admin/lib/studio-client.ts");
+const { liveRequest, parseLiveJournal, validLiveRequest } = await import("../../apps/admin/src/features/live/command-journal.ts");
 const store = "11111111-1111-4111-8111-111111111111";
 const sid = "22222222-2222-4222-8222-222222222222";
 const oid = "33333333-3333-4333-8333-333333333333";
@@ -331,4 +332,39 @@ test("stock client reuses catalog transport/key/parser and fences a changed logi
   assert.equal(fetch.mock.callCount(), 5);
   await assert.rejects(client.adjustLiveStock(store, { ...body, delta: 1001 }, "stock-console-key", boundary), (e: unknown) => e instanceof StudioError && e.code === "invalid");
   assert.equal(fetch.mock.callCount(), 5);
+});
+
+test("journal replay sends the exact original method/path/body/key for all five commands", async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` } });
+  t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
+  const boundary = await sessionBoundary(), seen: { path: unknown; init?: RequestInit }[] = [];
+  let status = 503;
+  t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    seen.push({ path, init }); return Response.json({ code: "retry_later" }, { status, headers: { "cache-control": "private, no-store" } });
+  });
+  const commands = [
+    liveRequest(store, sid, "lifecycle", "POST", { action: "start", expected_version: 1 }),
+    liveRequest(store, sid, "copy", "POST", { title: "Next", scheduled_at: null, expected_version: 1 }),
+    liveRequest(store, sid, `claims/offers/${oid}/recommend`, "POST", { expected_version: 1, post_comment: false }),
+    liveRequest(store, sid, `claims/offers/${oid}`, "PATCH", { expected_version: 1, active: false, max_quantity_per_claim: 7 }),
+    liveRequest(store, sid, "inventory/adjustments", "POST", { warehouse_id: oid, sku_id: sid, delta: 2, expected_version: 0, reason: "live_console_edit" }),
+  ];
+  for (const command of commands) {
+    const restored = parseLiveJournal(JSON.stringify({ ...command, key: oid, mayHaveCommitted: true }), `${store}:${sid}`)!;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await assert.rejects(client.executeLiveRequest(restored, restored.key, boundary), (e: unknown) => e instanceof StudioError && e.code === "uncertain");
+      const sent = seen.at(-1)!; assert.equal(sent.path, command.path); assert.equal(sent.init?.method, command.method); assert.equal(sent.init?.body, command.body);
+      assert.equal(new Headers(sent.init?.headers).get("idempotency-key"), oid);
+    }
+  }
+  const stock = commands.at(-1)!;
+  for (const code of [401, 403, 404, 409, 422, 429]) {
+    status = code; await assert.rejects(client.executeLiveRequest(stock, oid, boundary), (e: unknown) => e instanceof StudioError && e.status === code);
+  }
+  assert.equal(validConsoleBody(`${root}/claims/offers/${oid}/recommend`, JSON.stringify({ expected_version: 1, post_comment: true })), false);
+  assert.equal(validLiveRequest({ ...commands[0], body: JSON.stringify({ action: "start", expected_version: 1, open_window: false }) }, `${store}:${sid}`), false);
+  for (const poisoned of [{ ...commands[0], path: "https://attacker.invalid" }, { ...commands[0], method: "DELETE" }, { ...commands[0], body: '{"expected_version":1,"action":"start"}' }])
+    assert.equal(validLiveRequest(poisoned, `${store}:${sid}`), false);
+  assert.equal(parseLiveJournal(JSON.stringify({ ...commands[0], key: oid, mayHaveCommitted: true }), `${oid}:${sid}`), null);
 });

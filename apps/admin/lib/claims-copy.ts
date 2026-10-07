@@ -421,49 +421,34 @@ export const claimsCopy: Record<Locale, ClaimsCopy> = {
   },
 };
 
+export const hostPromptLanguages = locales;
+export type HostPromptLanguage = Locale;
+export const hostPromptLanguageNames = localeNames;
+
 // FROZEN host prompt copy (contract §11.1), verbatim; {KW} is an active offer keyword.
-// Prompt language is presentation only; reply_locale and storefront/admin routes keep their existing Locale contract.
-export const hostPromptLanguages = [...locales, "ja"] as const;
-export type HostPromptLanguage = (typeof hostPromptLanguages)[number];
-export const hostPromptLanguageNames = { ...localeNames, ja: "日本語" };
-export const hostPromptExact: Record<HostPromptLanguage, string> = {
+export const hostPromptExact: Record<Locale, string> = {
   "zh-TW": "留言關鍵字就能登記：{KW} = 1 件；{KW}+2 = 數量改成 2 件（不是再加 2 件）。之後再留言，以最新數量為準。請只留關鍵字，不要加其他文字。留言不代表已保留庫存，結帳時才確認。",
   "zh-CN": "评论口令即可登记：{KW} = 1 件；{KW}+2 = 数量改成 2 件（不是再加 2 件）。再次评论以最新数量为准。请只发口令，不要加其他文字。评论不代表已保留库存，结账时才确认。",
   en: "Comment the code to claim: {KW} = 1 item; {KW}+2 = set your quantity to 2 (it does not add 2 more). Your latest comment replaces the earlier quantity. Comment only the code. Claims don't reserve stock; stock is confirmed at checkout.",
-  ja: "商品コードをコメントして申し込めます：{KW} = 1個；{KW}+2 = 数量を2個に変更します（2個追加ではありません）。次のコメントは前の数量を置き換えます。コードだけをコメントし、他の文言は付けないでください。コメントでは在庫は確保されず、決済時に確認されます。",
 };
 // KEYWORD_QTY_ONLY replaces the first clause (the text before the first semicolon) with
 // the frozen replacement; the rest of the prompt stays verbatim.
-const exactFirstClause: Record<HostPromptLanguage, string> = {
+const exactFirstClause: Record<Locale, string> = {
   "zh-TW": "留言關鍵字就能登記：{KW} = 1 件", "zh-CN": "评论口令即可登记：{KW} = 1 件",
   en: "Comment the code to claim: {KW} = 1 item",
-  ja: "商品コードをコメントして申し込めます：{KW} = 1個",
 };
-const hostPromptQtyOnlyClause: Record<HostPromptLanguage, string> = {
+const hostPromptQtyOnlyClause: Record<Locale, string> = {
   "zh-TW": "請留言「{KW}+數量」，例如 {KW}+1；只留 {KW} 不會登記",
   "zh-CN": "请评论“{KW}+数量”，例如 {KW}+1；只发 {KW} 不会登记",
   en: "Comment {KW}+quantity, e.g. {KW}+1; {KW} alone is not counted",
-  ja: "「{KW}+数量」をコメントしてください。例：{KW}+1；{KW} だけでは登録されません",
-};
-const hostPromptContainsClause: Record<HostPromptLanguage, string> = {
-  "zh-TW": "留言「{KW}+數量」就能登記，例如「我要{KW}+2」；只留 {KW} 不會登記；一則留言只寫一個商品，不要問句",
-  "zh-CN": "评论“{KW}+数量”即可登记，例如“我要{KW}+2”；只发 {KW} 不会登记；一条评论只写一个商品，不要问句",
-  // kwc-v2 rejects multiple ASCII fragments: the old brief's "I'll take KW+2" example would not register.
-  en: "Comment {KW}+quantity, e.g. \"{KW}+2\"; {KW} alone is not counted; one item per comment, no questions",
-  ja: "「{KW}+数量」で申し込めます。例：「{KW}+2 をください」；{KW} だけでは登録されません；1コメントにつき1商品、質問は書かないでください",
-};
-const exactOnlyInstruction: Record<HostPromptLanguage, string> = {
-  "zh-TW": "請只留關鍵字，不要加其他文字。", "zh-CN": "请只发口令，不要加其他文字。",
-  en: "Comment only the code. ", ja: "コードだけをコメントし、他の文言は付けないでください。",
 };
 
 /** The host prompt for one language, window mode and canonical keyword. Pure. */
 /** Formats a localized keyword host prompt without sending it. */
-export function hostPrompt(language: HostPromptLanguage, mode: MatchMode, keyword: string) {
+export function hostPrompt(language: Locale, mode: MatchMode, keyword: string) {
   const exact = hostPromptExact[language];
-  const text = mode === "EXACT" ? exact : mode === "KEYWORD_QTY_ONLY"
-    ? hostPromptQtyOnlyClause[language] + exact.slice(exactFirstClause[language].length)
-    : hostPromptContainsClause[language] + exact.slice(exactFirstClause[language].length).replace(exactOnlyInstruction[language], "");
+  const text = mode === "EXACT" ? exact
+    : hostPromptQtyOnlyClause[language] + exact.slice(exactFirstClause[language].length);
   return text.replaceAll("{KW}", keyword);
 }
 

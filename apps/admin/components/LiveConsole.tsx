@@ -9,8 +9,9 @@ import { money, displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { readStudioDetail } from "@/lib/studio-client";
 import { readClaimSource } from "@/lib/claims-client";
-import { readConsole, readOfferControls, changeLifecycle, copySession, recommendOffer, toggleOffer, adjustLiveStock } from "@/src/features/live/console-client";
-import type { ConsoleOffer } from "@/src/features/live/console-model";
+import { readConsole, readOfferControls } from "@/src/features/live/console-client";
+import type { ConsoleOffer, CopyResult } from "@/src/features/live/console-model";
+import { liveRequest } from "@/src/features/live/command-journal";
 import { primaryAction, stockDelta, facebookPostLink, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
 import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
@@ -18,11 +19,17 @@ import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace
 /** Shows server-authored lifecycle and snapshots; unresolved writes remain fenced across refreshes. */
 export function LiveConsole({ locale, store, sessionID, navigationGuard }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean> }) {
   const c = workspaceCopy[locale], router = useRouter(), scope = `${store.id}:${sessionID}`;
-  const view = useLiveRead(scope, true, async (signal) => {
-    const [console, detail, source, controls] = await Promise.all([readConsole(store.id, sessionID, signal), readStudioDetail(store.id, sessionID, signal), readClaimSource(store.id, sessionID, signal), readOfferControls(store.id, sessionID, signal)]);
-    return { console, detail, source, controls };
+  const view = useLiveRead(scope, true, (signal) => readConsole(store.id, sessionID, signal), true);
+  const detailView = useLiveRead(`${scope}:detail`, true, (signal) => readStudioDetail(store.id, sessionID, signal));
+  const sourceView = useLiveRead(`${scope}:source`, true, (signal) => readClaimSource(store.id, sessionID, signal));
+  const controlView = useLiveRead(`${scope}:controls`, true, (signal) => readOfferControls(store.id, sessionID, signal));
+  const refresh = () => { view.refresh(); detailView.refresh(); sourceView.refresh(); controlView.refresh(); };
+  const signedOut = [view, detailView, sourceView, controlView].some((v) => v.error === "signed-out");
+  const command = useLiveCommand(scope, signedOut ? "" : view.boundary, refresh, (request, value) => {
+    if (!request.path.endsWith("/copy")) return;
+    const result = value as CopyResult;
+    router.push(`/${locale}/studio/${result.conflicts.length ? "claims" : "console"}?store=${store.id}&scene=${result.session.session_id}`);
   });
-  const command = useLiveCommand(scope, view.boundary, view.refresh);
   useEffect(() => {
     navigationGuard.current = () => {
       if ((command.busy || command.canRetry) && !window.confirm(c.leavePending)) return false;
@@ -32,8 +39,9 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
   }, [navigationGuard, command.busy, command.canRetry, c.leavePending, command.invalidate]);
   const [copying, setCopying] = useState(false), [title, setTitle] = useState(""), [copyConflict, setCopyConflict] = useState("");
   const can = (permission: string) => store.role === "owner" || store.permissions?.includes(permission) === true;
-  const data = view.data?.console, detail = view.data?.detail;
-  const source = view.data?.source.source;
+  const data = signedOut ? null : view.data, detail = detailView.error ? null : detailView.data;
+  const source = sourceView.error ? null : sourceView.data?.source;
+  const controls = controlView.error ? [] : controlView.data ?? [];
   const facebookLink = source?.active && source.verified ? facebookPostLink(source.platform, source.source_object_id) : null;
   const action = data ? primaryAction(data.session.lifecycle) : null;
   const manage = can("live:manage") && detail?.can_manage === true;
@@ -46,22 +54,22 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
     if (!data || !action || !manage) return;
     if (action === "copy") { setTitle(data.session.title); setCopying(true); return; }
     if (action === "end" && !window.confirm(c.confirmEnd)) return;
-    await command.run(async (key) => { await changeLifecycle(store.id, sessionID, action, data.session.version, key, view.boundary); });
+    await command.run(liveRequest(store.id, sessionID, "lifecycle", "POST", { action, expected_version: data.session.version }));
   };
   const submitCopy = async () => {
     if (!detail || !title.trim()) return;
-    await command.run(async (key) => {
-      // A5 copy uses the planning version, never the separate A7 lifecycle CAS.
-      return copySession(store.id, sessionID, { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }, key, view.boundary);
-    }, (result) => {
+    // A5 copy uses the planning version, never the separate A7 lifecycle CAS.
+    await command.run<CopyResult>(liveRequest(store.id, sessionID, "copy", "POST", { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }), (result) => {
       setCopying(false);
       if (result.conflicts.length) setCopyConflict(result.session.session_id);
       else router.push(`/${locale}/studio/console?store=${store.id}&scene=${result.session.session_id}`);
     });
   };
   return <section className="live-console" data-testid="live-console">
-    <div className="live-status-toolbar"><p>{c.polling}</p><button type="button" data-testid="live-console-refresh" onClick={view.refresh}>{c.refresh}</button></div>
-    {!data ? <p role={view.error ? "alert" : "status"} data-testid="live-console-unavailable">{view.error === "signed-out" ? c.signedOut : view.error === "forbidden" ? c.forbidden : view.error ? c.unavailable : c.loading}</p> : <>
+    <div className="live-status-toolbar"><p>{c.polling}</p><button type="button" data-testid="live-console-refresh" disabled={signedOut || view.error === "forbidden"} onClick={refresh}>{c.refresh}</button></div>
+    {!data ? <p role={view.error || signedOut ? "alert" : "status"} data-testid="live-console-unavailable">{signedOut ? c.signedOut : view.error === "forbidden" ? c.forbidden : view.error ? c.unavailable : c.loading}</p> : <>
+      {view.error && <p role="alert">{c.unavailable}</p>}
+      {[detailView, sourceView, controlView].some((v) => !!v.error) && <p role="alert">{c.secondaryUnavailable}</p>}
       <div className="live-phase-header">
         <div><h2>{data.session.title}</h2><ol className="live-phases" data-testid="live-phase" data-phase={data.session.lifecycle}>
           {([['draft', c.before], ['live', c.during], ['ended', c.after]] as const).map(([phase, label]) => <li key={phase} aria-current={data.session.lifecycle === phase || (phase === "ended" && data.session.lifecycle === "archived") ? "step" : undefined}>{label}</li>)}
@@ -89,17 +97,17 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard }: { loc
       <div className="live-console-columns">
         <section className="live-preview"><h3>{c.facebook}</h3>
           {facebookLink ? <><p className="live-helper">{c.facebookLinkNotice}</p><a href={facebookLink} target="_blank" rel="noopener noreferrer">{c.openFacebook}</a></> : <p>{c.noFacebookLink}</p>}
-          <p className="live-instagram-notice">{c.instagram}</p>
+          {(data.stream.source_platform === "instagram" || !data.stream.video_embeddable) && <p className="live-instagram-notice">{c.instagram}</p>}
           <a href={`/${locale}/studio/claims?store=${store.id}&scene=${sessionID}`}>{c.configure}</a>
         </section>
         <section className="live-products"><h3>{c.offers}</h3>
           {!editable && manage && !["draft", "live"].includes(data.session.lifecycle) && <p>{c.endReadOnly}</p>}
           {!data.offers.length && <p>{c.empty}</p>}
           <ul>{data.offers.map((offer) => <OfferRow key={`${offer.offer_id}:${offer.version}:${offer.stock.balance_version}`} offer={offer} c={c} locale={locale} currency={data.stats.currency}
-            editable={editable} stockEditable={sessionEditable} canToggle={view.data?.controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version) === true} canStock={liveStockAllowed(store)} recommended={data.recommended?.offer_id === offer.offer_id}
-            onToggle={() => { const control = view.data?.controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return command.run(async (key) => { await toggleOffer(store.id, sessionID, offer.offer_id, offer.version, !offer.active, control.max_quantity_per_claim, key, view.boundary); }); }}
-            onRecommend={() => command.run(async (key) => { await recommendOffer(store.id, sessionID, offer.offer_id, offer.version, key, view.boundary); })}
-            onStock={(delta) => command.run(async (key) => { if (!offer.stock.warehouse_id) return; await adjustLiveStock(store.id, { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: offer.stock.balance_version, reason: "live_console_edit" }, key, view.boundary); })}
+            editable={editable} stockEditable={sessionEditable} canToggle={controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version)} canStock={liveStockAllowed(store)} recommended={data.recommended?.offer_id === offer.offer_id}
+            onToggle={() => { const control = controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}`, "PATCH", { expected_version: offer.version, active: !offer.active, max_quantity_per_claim: control.max_quantity_per_claim })); }}
+            onRecommend={() => command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}/recommend`, "POST", { expected_version: offer.version, post_comment: false }))}
+            onStock={(delta) => offer.stock.warehouse_id ? command.run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: offer.stock.balance_version, reason: "live_console_edit" })) : Promise.resolve()}
           />)}</ul>
         </section>
       </div>

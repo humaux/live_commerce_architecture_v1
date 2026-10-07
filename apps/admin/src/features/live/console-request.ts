@@ -35,7 +35,7 @@ export function validConsoleBody(path: string, body: string): boolean {
   const keys = Object.keys(r);
   if (path.endsWith("/lifecycle")) return ["start", "end", "archive"].includes(r.action as string) &&
     keys.every((k) => ["action", "expected_version", "open_window"].includes(k)) && (!Object.hasOwn(r, "open_window") || typeof r.open_window === "boolean");
-  if (path.endsWith("/recommend")) return keys.length === 2 && keys.every((k) => ["expected_version", "post_comment"].includes(k)) && typeof r.post_comment === "boolean";
+  if (path.endsWith("/recommend")) return keys.length === 2 && keys.every((k) => ["expected_version", "post_comment"].includes(k)) && r.post_comment === false;
   if (path.endsWith("/copy")) {
     if (keys.length !== 3 || keys.some((k) => !["title", "scheduled_at", "expected_version"].includes(k)) ||
       typeof r.title !== "string" || r.title.trim() !== r.title || Array.from(r.title).length < 1 || Array.from(r.title).length > 200 || /[\p{Cc}]/u.test(r.title)) return false;

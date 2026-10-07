@@ -1,4 +1,4 @@
-// Purpose: Next packaging and response security headers, including the narrowly scoped public Facebook console embed.
+// Purpose: Next packaging and response security headers; the console uses an external Facebook link, never an embedded frame.
 // Depends on: Next build phases, companyConfig and NODE_ENV; no provider credentials.
 // Used by: admin Next build/server and header/security acceptance tests.
 import type { NextConfig } from "next";

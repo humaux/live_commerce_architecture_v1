@@ -1,12 +1,13 @@
 // Purpose: A5 copy action for the existing session list without introducing a second draft writer.
-// Depends on: console-client copySession, opaque receipt fence hook, existing Draft DTO and Next router.
+// Depends on: validated command journal/fence hook, existing Draft/copy DTO and Next router.
 // Used by: Studio's selected-session panel; Go copies the source and offers in one transaction.
 "use client";
 import { useEffect, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import type { Draft } from "@/lib/studio-model";
-import { copySession } from "./console-client";
+import { liveRequest } from "./command-journal";
+import type { CopyResult } from "./console-model";
 import { useLiveCommand } from "./use-live-workspace";
 import { workspaceCopy } from "./workspace-copy";
 
@@ -15,7 +16,8 @@ export function SessionCopy({ locale, store, draft, boundary, disabled, refresh,
   locale: Locale; store: string; draft: Draft; boundary: string; disabled: boolean; refresh: () => void; navigationGuard: RefObject<() => boolean>;
 }) {
   const c = workspaceCopy[locale], router = useRouter();
-  const command = useLiveCommand(`${store}:${draft.session_id}`, boundary, refresh);
+  const copied = (result: CopyResult) => router.push(`/${locale}/studio/${result.conflicts.length ? "claims" : "console"}?store=${store}&scene=${result.session.session_id}`);
+  const command = useLiveCommand(`${store}:${draft.session_id}`, boundary, refresh, (request, value) => { if (request.path.endsWith("/copy")) copied(value as CopyResult); });
   const [open, setOpen] = useState(false), [title, setTitle] = useState(draft.title);
   useEffect(() => {
     navigationGuard.current = () => {
@@ -26,10 +28,8 @@ export function SessionCopy({ locale, store, draft, boundary, disabled, refresh,
   }, [navigationGuard, command.busy, command.canRetry, command.invalidate, c.leavePending]);
   return <section className="live-copy-section">
     <button type="button" data-testid="live-copy-session" disabled={disabled || command.blocked} onClick={() => setOpen(true)}>{c.copyLast}</button>
-    {open && <form className="live-copy-form" onSubmit={(event) => { event.preventDefault(); void command.run(async (key) => {
-      return copySession(store, draft.session_id, { title: title.trim(), scheduled_at: null, expected_version: draft.version }, key, boundary);
-    }, (result) => {
-      router.push(`/${locale}/studio/${result.conflicts.length ? "claims" : "console"}?store=${store}&scene=${result.session.session_id}`);
+    {open && <form className="live-copy-form" onSubmit={(event) => { event.preventDefault(); void command.run<CopyResult>(liveRequest(store, draft.session_id, "copy", "POST", { title: title.trim(), scheduled_at: null, expected_version: draft.version }), (result) => {
+      copied(result);
     }); }}>
       <label>{c.name}<input value={title} maxLength={200} onChange={(event) => setTitle(event.target.value)} /></label>
       <button type="submit" disabled={disabled || command.blocked || !title.trim()}>{c.confirmCopy}</button>

@@ -247,11 +247,18 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId(`live-offer-toggle-${copiedOffer}`)).toBeDisabled();
     await expect(page.getByTestId(`live-stock-save-${copiedOffer}`)).toBeDisabled();
     await expect(page.getByTestId(`live-recommend-${copiedOffer}`)).toBeDisabled();
-    await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+    await expect(page.getByTestId("live-command-retry")).toBeVisible();
     const reloadReads = (await facts(request)).scenes[copied!]!.Reads?.length ?? 0;
     await expect.poll(async () => (await facts(request)).scenes[copied!]!.Reads?.length ?? 0, { timeout: 8_000 }).toBeGreaterThan(reloadReads);
     expect((await facts(request)).receipts.filter((receipt) => receipt.key_hash === reloadUnknown.key_hash)).toHaveLength(1);
     await screenshot(page, `${name}-unknown-reload`);
+    // An explicit replay after reload must reuse the persisted original request, never make a new operation.
+    await page.getByTestId("live-command-retry").click();
+    await expect.poll(async () => (await facts(request)).receipts.filter((receipt) => receipt.key_hash === reloadUnknown.key_hash).length).toBe(2);
+    const replayed = (await facts(request)).receipts.filter((receipt) => receipt.key_hash === reloadUnknown.key_hash);
+    expect(replayed[1].body_hash).toBe(replayed[0].body_hash);
+    expect(replayed.filter((receipt) => receipt.effect)).toHaveLength(1);
+    await expect(page.getByTestId("live-primary-action")).toBeEnabled();
 
     // The existing shell store control navigates through the real context; old Console data must disappear.
     await page.getByTestId("shell-store-selector").selectOption(otherStore);
@@ -293,7 +300,7 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await phase(page, "draft");
   await expect(page.getByTestId("live-primary-action")).toBeDisabled();
   await expect(page.getByTestId(`live-recommend-${offer}`)).toBeDisabled();
-  await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+  await expect(page.getByTestId("live-command-retry")).toBeVisible();
   expect((await facts(request)).receipts.filter((r) => r.key_hash === receipt.key_hash)).toHaveLength(1);
   await screenshot(page, "en-reauth-receipt-fence");
 });
