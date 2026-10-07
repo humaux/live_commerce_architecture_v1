@@ -451,10 +451,10 @@ replaces it, **append-only**:
   statement total. It is recorded and printed by `settlement-close` as an `operator_notes` entry (§6.4) so the owner
   pays the store out of band against the note (operator, ticket, amount visible on the unattributed row). Moving the
   money into a later statement needs an amendment.
-- **Refusals.** PT409/22023 unless: the row exists in the caller's scoped environment with reason `unmapped_source`
-  (`unattributed_unavailable`), the reason is `foreign_connection`/`unsupported_type` (`unresolvable_reason`), the
-  row's weekly period (§6.2, Asia/Taipei) is already closed for **any** store (`period_already_closed`), and for
-  `assigned_to_store` the target store is unknown/foreign (`unknown_target_store`). Structural input errors (bad
+- **Refusals.** PT409 when the row does not exist in the caller's environment (`unattributed_unavailable`), its reason is
+  `foreign_connection`/`unsupported_type` (`unresolvable_reason`: those never block close and are not attribution
+  questions), the row's weekly period (§6.2, Asia/Taipei) is already closed for **any** store (`period_already_closed`),
+  or, for `assigned_to_store`, the target store is unknown, foreign or never enrolled (`unknown_target_store`). Structural input errors (bad
   txn id, resolution value, operator/ticket shape, a blank or longer-than-500 note, target pairing) raise 22023 before
   any read.
 - **Idempotent (I02/I06).** Same `balance_txn_id` + identical payload → the stored row is returned with
