@@ -1,0 +1,219 @@
+task_id: 0b278eb7-323b-4f94-9c9c-bcb96772c6df-sub-review2-tests
+base_commit: 4ba673ba4704a8b3d5ded14f41893c8ccb39cdc3
+status: MOCK actual-component Node lifecycle; BROWSER/Go/PG/build NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-review-recovery.test.ts"]
+exit_code: 1
+old13 regression: node --test --experimental-strip-types tests/admin/inbox-review.test.ts -> exit0,13PASS
+sha256 97de7f60b0451cda009482ee419feed8efb26c479efd2d9848fd17b8bedc7a9a tests/admin/inbox-review.test.ts
+sha256 70c777a94ad16388edaff0cf3834b3b01e0ee79d2ba65ead91906bbfcd30f266 tests/admin/inbox-review-host.test.ts
+sha256 a77c731be7d8c3155782024561e98acd9951f4e32e501cf755fe182a5e98a1f3 tests/admin/inbox-review-recovery.test.ts
+sha256 e407ff5bff48401faaa92059014bd0c573f6f737cd41d3fd8fa102e95c950a7d apps/admin/components/Inbox.tsx
+sha256 311b739329d4100d13df4ce2f36f8a7eaed2afd185cc75e25c55e204ea67c6a5 apps/admin/components/InboxThread.tsx
+sha256 d0280415210abff8e3f4f82376d61d47fa7ce654add30e4c48312e0c8bbc8b9a apps/admin/components/BuyerPanel.tsx
+sha256 416bc2fb4bf0e4497f6b88029148c63054ab31ba2c8a54661eed4b8dc093e3a7 apps/admin/lib/claims-client.ts
+sha256 5cd6222d4588254ae44a516adebacd182a4a40ac15d54c8b8b9b6cb7f83d4bed apps/admin/lib/studio-client.ts
+sha256 b898299a3e1644e1d07d4446653b3bd2abec9545642b0d07a682a873d23b87cb apps/admin/lib/claims-model.ts
+sha256 34fd60bb0d9977002da7fa49d6e1e68043d994b34622b8088c42593d75ea7b03 apps/admin/src/features/messages/use-privacy.ts
+
+✖ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (18.197208ms)
+✖ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.705583ms)
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.193291ms)
+✖ review2 P1 late issued-link completion after hide cannot write clipboard (3.337125ms)
+✖ review2 P1 late issued-link completion after selection cannot write clipboard (2.100375ms)
+✖ review2 P1 late issued-link completion after unmount cannot write clipboard (2.455209ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (1.595959ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (1.765833ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (2.5175ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (2.853375ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (5.121917ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (1.033542ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (0.965791ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.871ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (1.37975ms)
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.384084ms)
+✖ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.534083ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (1.041125ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 8
+ℹ fail 10
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 355.195834
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:97:1
+✖ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (18.197208ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:105:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:111:1
+✖ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (2.705583ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:115:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:120:1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (2.193291ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:123:39)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:137:3
+✖ review2 P1 late issued-link completion after hide cannot write clipboard (3.337125ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:140:41)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:137:3
+✖ review2 P1 late issued-link completion after selection cannot write clipboard (2.100375ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:140:41)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:137:3
+✖ review2 P1 late issued-link completion after unmount cannot write clipboard (2.455209ms)
+  AssertionError [ERR_ASSERTION]: bundle-only recovery has an enabled explicit claim-link action
+
+  true !== false
+
+      at copyAction (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:84:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:140:41)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:194:3
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (0.871ms)
+  AssertionError [ERR_ASSERTION]: unrelated Page state cannot block current conversation
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:197:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:194:3
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (1.37975ms)
+  AssertionError [ERR_ASSERTION]: unrelated Page state cannot block current conversation
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:197:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:194:3
+✖ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (1.384084ms)
+  AssertionError [ERR_ASSERTION]: ambiguity has a visible advisory instead of inferred binding authority
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:198:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review-recovery.test.ts:202:1
+✖ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (1.534083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at submit (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:223:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:205:104)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
