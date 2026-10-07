@@ -1,0 +1,6 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+    settlement_resolve_test.go:46: resolution row: {"note": "Stripe-side dispute adjustment, not a store sale.", "ticket": "TICKET-2026-1001", "operator": "op@test", "replayed": false, "resolution": "not_store_revenue", "resolved_at": "2026-10-07T10:27:33.079189+00:00", "balance_txn_id": "txn_PF15Odd", "target_store_id": null, "target_tenant_id": null}
+--- PASS: TestPlatformSettlementPF15Resolve (15.40s)
+PASS
+ok  	livecommerce/tests/foundation	18.116s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

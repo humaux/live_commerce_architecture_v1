@@ -124,6 +124,9 @@ var stripeRegistrarFunctions = []string{
 	"payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)",
 	"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamp with time zone,text,text)",
 	"payments.read_settlement_statement(uuid,uuid,uuid,uuid)",
+	// settlement-resolve (S2-OPEN-1, migration 0163, contract §6.6): appends ONE resolution row for one unmapped_source
+	// row so close can proceed. Same registrar authority; SQL-only, no secret, no Stripe or bank call, moves no money.
+	"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)",
 }
 
 func validateStripeAuthority(ctx context.Context, pool *pgxpool.Pool, authority string) error {
