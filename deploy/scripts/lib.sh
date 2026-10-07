@@ -32,7 +32,7 @@ LC_SCRIPT_NAME="${LC_SCRIPT_NAME:-$(basename "$0")}"
 export LC_SCRIPTS_DIR LC_DEPLOY_DIR LC_REPO_ROOT LC_CONFIG_DIR LC_COMPOSE_ENV
 
 # Core services with no long-running process (excluded from health/watchdog loops).
-LC_ONESHOT_SERVICES=(migrate provision-logins pg-ops stripe-admin meta-admin store-admin)
+LC_ONESHOT_SERVICES=(migrate provision-logins pg-ops stripe-admin meta-admin store-admin platform-admin)
 
 lc_ts() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 lc_log() {

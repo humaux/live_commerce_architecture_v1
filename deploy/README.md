@@ -25,6 +25,104 @@ Runbooks (Chinese): [deploy](../docs/runbooks/deploy.md) ·
 
 R1 acceptance command (whole repo, one PASS/FAIL/NOT_RUN table): `bash scripts/dev/release-gate.sh --strict`.
 
+## R3 release preparation and operating procedures
+
+Owner: 「等全部做完後再上線」. This section is a preparation checklist; execution needs a separate owner release approval.
+The integrator binds CI and the review verdict to the **final release SHA**, including all pending UI units. See
+[collected delivery notes](../output/deploy-prep-r3/CHECKLIST.md) and
+[release gate plan](../output/deploy-prep-r3/RELEASE-GATE-PLAN.md). No provider credentials belong in these documents.
+
+Release order after approval: backup DB/config/key custody, stop API/admin/storefront and workers behind the existing
+maintenance response, **migrate → provision-logins → API/workers → admin + storefront → smoke/readback**. Use one
+release image tag for every process. Product-media-v2 migration 0149 changes the media contract: neither old admin/API
+against the migrated DB nor a new storefront against the old schema is supported during the swap. Migration 0159 must
+precede API/claims-worker/ads-worker. After migrations, application rollback to a schema-incompatible image is refused:
+forward-fix, or an owner-approved tested restore of the backup. `deploy.sh upgrade` already stops the processes before
+migration; this unit never runs it.
+
+Before any R3 `stripe-admin` command on an existing installation, the owner/operator prepares
+`$LC_STATE_DIR/settlements` with `install -d -o 65532 -g 65532 -m 0700 "$LC_STATE_DIR/settlements"`.
+New `host-setup.sh` and full smoke fixtures do this automatically; preflight P02 refuses a missing/symlink/wrong-owner
+directory. Compose binds it to `/exports` with no automatic root-owned path creation. CSVs are new files at mode 0600,
+contain sensitive merchant settlement data, and remain on that host after the one-shot exits; retain/restrict them under
+the owner's data policy. The wrapper accepts one `--out /exports/<filename>.csv`, refusing traversal and subdirectories.
+No app or worker receives the platform operator DSN. The `platform-admin` service is profile `ops`, database-only,
+NO restart, and inherits only `commerce_platform_operator` with SET ROLE disabled. Provisioning checks four control
+and five support definers. Invoke operator CLIs through `deploy/scripts/ops-admin.sh` only.
+
+### Weekly settlement (sandbox preparation; no bank call)
+
+Sync a completed Stripe balance-transaction window (UTC RFC3339, `--to` at least 15 minutes behind now), then close the
+week, inspect/export the statement, and record a payment only after the owner confirms the independent bank receipt.
+Use the designated connection/version from authenticated readback; the restricted test key requires Balance transactions
+read permission. The CLI's actual close flag is `--target-store` (optional when closing all eligible stores).
+
+```sh
+# MOCK identifiers/example window only. Commands are operator-run after approval, not part of this unit's execution.
+STRIPE_SANDBOX=1 deploy/scripts/ops-admin.sh stripe-admin settlement-sync --environment SANDBOX \
+  --connection "$CONNECTION_ID" --expected-version "$VERSION" \
+  --from 2026-09-28T00:00:00Z --to 2026-10-05T00:00:00Z --operator "$OPERATOR" --ticket "$TICKET"
+deploy/scripts/ops-admin.sh stripe-admin settlement-close --environment SANDBOX \
+  --period-start 2026-09-28 --target-store "$STORE_ID" --operator "$OPERATOR" --ticket "$TICKET"
+deploy/scripts/ops-admin.sh stripe-admin settlement-export --statement "$STATEMENT_ID" \
+  --out /exports/sandbox-week-20260928.csv --operator "$OPERATOR" --ticket "$TICKET"
+# Records an independently completed transfer, never creates a bank/Stripe payout.
+deploy/scripts/ops-admin.sh stripe-admin settlement-payout --statement "$STATEMENT_ID" \
+  --payout-ref "$RECEIPT_REF" --amount "$MINOR_UNITS" --paid-at "$PAID_AT_RFC3339" \
+  --operator "$OPERATOR" --ticket "$TICKET"
+```
+
+Use readback IDs and minor-unit totals, reconcile every statement/receipt, and preserve HOLD/discrepancy evidence.
+`unmapped_source` is an integrator/owner escalation: LIVE requires an append-only resolution procedure; do not delete
+rows or force-close a held week. LIVE sync/open stays behind the owner approval pair; this unit grants no LIVE authority.
+Platform allow/disallow/block/unblock are local controls; platform-close/live-revoke remain kill switches.
+
+### Support grants and suspension
+
+Enroll a dedicated support principal with `platform-admin support-principal-add --principal ... --operator ... --ticket ...`;
+grant only the needed read permissions using `support-grant --store ... --principal ... --hours 4 --perm store:read,catalog:read
+--operator ... --ticket ...`. Allowed hours are 1–72. Use `support-list --store ...` for persisted readback; revoke with
+`support-revoke --grant ... --operator ... --ticket ...`, then confirm access stops. `support-principal-revoke` removes
+eligibility. Grant/audit metadata must name an operator and ticket, never PII. Support order pages remain limited by
+the underlying membership fences; SG-OPEN-1/2 PII/merchant consent requires integrator/owner resolution.
+
+`store-suspend|store-resume` uses `--store`; `tenant-suspend|tenant-resume` uses `--tenant`, plus operator/ticket.
+Suspend requires a fixed `--reason` (`fraud|non_payment|legal|owner_request|other`); resume omits reason.
+Read back via `status --store ...` / `status --tenant ...` and `audit`. Suspension stops new commerce actions without
+discarding payment observations, refunds already requested, or settlement records; never stop reconciliation as a suspension workaround.
+
+### Failed-operations ledger triage
+
+Use the authenticated store-scoped operations list/detail and the operator ticket; capture operation ID, kind, state,
+generation/version, last fixed error and reconciliation evidence. UNKNOWN requires **query/reconcile first**, with no
+live lease/job and the 60-second spacing enforced by the API; never blindly retry an unknown external outcome.
+Retry is limited to registered read-only kinds or undispatched READY operations; cancel only undispatched READY via
+the existing CAS. Ads lane is read/cancel only. Refresh and verify the persisted transition/job lineage. Escalate
+ambiguous money/provider results to the integrator; this runbook does not authorize external side effects or new endpoints.
+
+### Ads unbind and catalogue feed
+
+Unbind through the authenticated settings flow with the current binding/version and idempotency key; read back that
+the local binding is gone. `binding_in_use` / `operations_in_flight` requires waiting/reconciling the named work, never
+forcing deletion. Unbind changes local binding/token state and **does not revoke the merchant's Meta grant**; the merchant
+can revoke it in Facebook settings. Copy the catalogue feed URL from authenticated readback and treat its capability
+token as a secret: do not paste it into logs, tickets or this repo. The smoke only probes the authenticated feed-info
+endpoint with no authorization, never a token-bearing feed URL or real unbind.
+
+### R3 configuration defaults
+
+`api.env`: `COMMERCE_PAYUNI_NOTIFY_ENABLED=0` (owner cancelled PAYUNi); preflight refuses enabling it and provisions no
+PAYUNi ingress login. `claims-worker.env`: empty `COMMERCE_META_PAGE_APP_ID` disables the optional Page health probe;
+set only a verified numeric app id. API and claims-worker share empty `COMMERCE_META_ADVANCED_ACCESS` and
+`COMMERCE_META_DM_RECEIVER_CONFIRMED=0`; update them together only from the owner's review/probe evidence.
+`COMMERCE_ADMIN_ORIGIN` is derived from `LC_ADMIN_HOST` for expiry-worker health-alert links. Existing claims bridge URL,
+token/cursor custody and payload rings remain in Compose/manifest; no host port or new secret literal is needed.
+
+Smoke static S48 executes MOCK operator/env/probe controls. Full S49 uses unauthenticated synthetic requests on API
+loopback: operations/returns/settlements require 401; keyword simulate requires 401 when claims is enabled; ads unbind/
+feed require 401 when Ads is enabled and 404 when intentionally disabled. 2xx/403/422/transport failure cannot pass.
+The default full fixture keeps Ads disabled, so enabled Ads acceptance remains in the full foundation and W6 UI CI.
+
 ## Quick start (single host, as root)
 
 ```sh

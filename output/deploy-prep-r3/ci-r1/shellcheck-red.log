@@ -1,0 +1,7 @@
+
+In deploy/scripts/ops-admin.sh line 75:
+  export_out= export_count=0
+             ^-- SC1007 (warning): Remove space after = if trying to assign a value (for empty string, use var='' ... ).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC1007 -- Remove space after = if trying to...
