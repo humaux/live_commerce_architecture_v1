@@ -4,7 +4,9 @@ package foundation_test
 //   fulfillment.read_open_parcel_groups) lists exactly the store's OPEN groups with version and masked members, so the orders page
 //   can rebuild ship/dissolve panels after a reload. Pins: empty store, newest first, SHIPPED/DISSOLVED absent, other store absent,
 //   orders:read authority (no token 401, fulfillment:write-only 403, foreign-store member 404), masking identical to the orders
-//   list (incl. leading ideographic space and a blank name), and no name/phone/address/amount in the body.
+//   list (incl. leading ideographic space and a blank name), and no name/phone/address/amount in the body. W3-U4 finisher:
+//   GET /orders/merge-suggestions (0146 read_merge_suggestions, amended in place by 0164) is a LIST-level read the orders page
+//   fires on every load, so it returns recipient_masked (the list mask), never the full recipient name or phone.
 // Depends on: tcvEnv (stripe mode, card home orders), pgHome/pgCreate/pgShip helpers of parcel_groups_test.go, e.pgMemberOn
 //   (promotions_gate_test.go), the 0164 definer, routes /parcel-groups, /orders (v2 list), DELETE /parcel-groups/{id}.
 // Used by: go test ./tests/foundation (-run '^TestParcelGroupOpenRead'); evidence class REAL_PG with MOCK Stripe fakes.
@@ -189,4 +191,66 @@ func TestParcelGroupOpenRead(t *testing.T) {
 			t.Fatalf("%d unexpected roles can execute read_open_parcel_groups", n)
 		}
 	})
+}
+
+// TestParcelGroupMergeSuggestionsMasked pins the P1-A leak fix: the suggestions read is fetched on every orders-page load, so like
+// the orders list it may carry only the masked recipient. Three buyers at the shared home address (owner pool fixtures give two of
+// them a legacy-looking name) must yield exactly {recipient_masked, order_ids} items whose mask equals the orders-list row mask,
+// and the raw body must contain neither the full name nor the phone.
+func TestParcelGroupMergeSuggestionsMasked(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	f := e.p.f
+
+	b, c, d := e.newBuyer(), e.newBuyer(), e.newBuyer()
+	b1, b2 := e.pgHome(b), e.pgHome(b)
+	c1, c2 := e.pgHome(c), e.pgHome(c)
+	d1, d2 := e.pgHome(d), e.pgHome(d)
+	for _, id := range []string{c1, c2} { // leading ideographic space: the mask starts at the first non-blank rune
+		mustExec(t, f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{destination,recipient_name}',to_jsonb(E'　　王小明'::text)) WHERE id=$1`, id)
+	}
+	for _, id := range []string{d1, d2} { // blank name: the placeholder
+		mustExec(t, f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{destination,recipient_name}','"   "') WHERE id=$1`, id)
+	}
+
+	st, out, raw := e.mcall(e.token(), "GET", e.pgPath("/orders/merge-suggestions"), "", "")
+	if st != 200 {
+		t.Fatalf("merge-suggestions answered %d: %s", st, raw)
+	}
+	for _, leak := range []string{hcodName, hcodPhone, "recipient_name", "Synthetic"} {
+		if strings.Contains(string(raw), leak) {
+			t.Fatalf("merge-suggestions leaks %q to the browser: %s", leak, raw)
+		}
+	}
+	want := map[string]string{pgSorted(b1, b2)[0]: "王***", pgSorted(c1, c2)[0]: "王***", pgSorted(d1, d2)[0]: "—"}
+	items, _ := out["items"].([]any)
+	if len(items) != 3 {
+		t.Fatalf("suggestions %s, want 3 sets (one per buyer)", raw)
+	}
+	st, list, rawList := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/orders?view=v2&state=unshipped&limit=100", "", "")
+	rows, _ := list["items"].([]any)
+	if st != 200 || len(rows) == 0 {
+		t.Fatalf("orders list: %d %s", st, rawList)
+	}
+	listMask := map[string]any{}
+	for _, r := range rows {
+		row := r.(map[string]any)
+		listMask[row["order_id"].(string)] = row["recipient_masked"]
+	}
+	for _, it := range items {
+		s := it.(map[string]any)
+		ids := pgIDs(s["order_ids"])
+		if len(s) != 2 || len(ids) != 2 {
+			t.Fatalf("item %v: want exactly recipient_masked and two order_ids", s)
+		}
+		if w := want[ids[0]]; s["recipient_masked"] != w {
+			t.Fatalf("set %v: recipient_masked %v, want %q", ids, s["recipient_masked"], w)
+		}
+		for _, id := range ids {
+			if listMask[id] != s["recipient_masked"] {
+				t.Fatalf("order %s: orders-list mask %v differs from the suggestion mask %v", id, listMask[id], s["recipient_masked"])
+			}
+		}
+	}
 }
