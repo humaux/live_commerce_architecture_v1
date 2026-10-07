@@ -392,7 +392,7 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
 // Reports/Finance component loaders (SSR, stubbing only the guarded-read hook and layout shells).
 const shellOf = ({children}) => createElement("div", null, children);
 const proxyCopy = new Proxy({tabs:{}}, {get:(t,k)=>k in t?t[k]:String(k)});
-function loadReports(read, exportOutcome) {
+function loadReports(read, exportOutcome, overrides = {}) {
   return load("../../apps/admin/components/Reports.tsx", {
     "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
     "@/lib/model":{}, "@/lib/customers-client":{ReadError:class extends Error{},useGuardedRead:()=>read},
@@ -402,9 +402,37 @@ function loadReports(read, exportOutcome) {
     "@/lib/reports-copy":{reportsCopy:{en:proxyCopy}}, "@/lib/reports-presentation":{},
     "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null},
     "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
-    "./orders.css":{}, "./reports.css":{},
+    "./orders.css":{}, "./reports.css":{}, ...overrides,
   }).Reports;
 }
+
+test("channel and funnel data retain their applied dates while draft dates wait for Show", () => {
+  const react = adminRequire("react");
+  for (const locale of ["en", "zh-TW", "zh-CN"]) for (const name of ["channels", "funnel"]) {
+    const renderRange = (appliedFrom, appliedTo, pending) => {
+      const read = {status:"ready",boundary:"b",data:{canExport:true,permissionKnown:true,view:{name,report:{from:appliedFrom,to:appliedTo}}},reload(){}};
+      const Component = loadReports(read, () => null, {
+        "@/lib/reports-copy":{reportsCopy:copy},
+        react: {...react, useState(initial) {
+          const state = react.useState(initial);
+          // Model unsubmitted date-input state only; the report read and its echoed range stay unchanged.
+          return pending && (initial === from || initial === to) ? [initial === from ? "2026-10-01" : "2026-10-31", state[1]] : state;
+        }},
+      });
+      return render(Component, {locale,stores:[],store:{id,name:"Synthetic",currency:"TWD"},initialError:null,renderKey:"range",initialFrom:appliedFrom,initialTo:appliedTo,initialTab:name});
+    };
+    const draft = renderRange(from, to, true);
+    const label = /data-testid="reports-applied-range"[^>]*>(.*?)<\/p>/.exec(draft)?.[1];
+    assert.ok(label, "APPLIED-RANGE-MUST-BE-VISIBLE");
+    assert.ok(label.includes(from) && label.includes(to)); assert.doesNotMatch(label,/2026-10/);
+    assert.match(draft, /data-testid="reports-range-pending"/);
+    assert.ok(draft.includes(copy[locale].rangePending));
+    const applied = renderRange("2026-10-01", "2026-10-31", false);
+    const updated = /data-testid="reports-applied-range"[^>]*>(.*?)<\/p>/.exec(applied)?.[1];
+    assert.ok(updated?.includes("2026-10-01") && updated.includes("2026-10-31"));
+    assert.doesNotMatch(applied, /data-testid="reports-range-pending"/);
+  }
+});
 // Codex review P2 (PR #3): another user signing in within the same tab (new session boundary) must not inherit an uncertain lock.
 test("an uncertain export lock is bound to the session boundary, so a different user does not inherit it", () => {
   const real = downloadClient({cookie:"csrf-pair",boundary:"session"}).exportOutcome;

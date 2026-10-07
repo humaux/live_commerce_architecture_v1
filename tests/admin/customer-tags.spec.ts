@@ -116,7 +116,8 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
 
       await page.goto(`${origin}/${locale}/customers?store=${store}`);
       await step(page, "Manage tags", "catalogue modal opens", async () => { await page.getByTestId("customers-tag-manage").click(); await expect(page.getByTestId("tag-manage-dialog")).toBeVisible(); });
-      const dialog = page.getByTestId("tag-manage-dialog"), item = () => dialog.locator("li").filter({ has: dialog.locator(".ct-badge", { hasText: created }) });
+      // `has` resolves inside each li: its inner locator must not include the ancestor dialog again.
+      const dialog = page.getByTestId("tag-manage-dialog"), item = () => dialog.locator("li").filter({ has: page.locator(".ct-badge", { hasText: created }) });
       await step(page, "Rename/recolour", "saved name and green colour persist in catalogue", async () => {
         await item().getByRole("button", { name: `${c.rename} · ${c.colorLabel}`, exact: true }).click();
         await dialog.getByLabel(c.nameLabel, { exact: true }).fill(`${created}R`);
@@ -125,7 +126,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         }
         await dialog.getByRole("button", { name: c.save, exact: true }).click(); await expect(dialog.locator(".ct-green", { hasText: `${created}R` })).toBeVisible();
       });
-      const renamed = dialog.locator("li").filter({ has: dialog.locator(".ct-badge", { hasText: `${created}R` }) });
+      const renamed = dialog.locator("li").filter({ has: page.locator(".ct-badge", { hasText: `${created}R` }) });
       await step(page, "Delete tag cancel/confirm", "cancel retains catalogue tag; confirm removes it", async () => {
         await renamed.getByRole("button", { name: c.remove, exact: true }).click(); await dialog.getByRole("group").getByRole("button", { name: c.cancel, exact: true }).click(); await expect(renamed).toHaveCount(1);
         await renamed.getByRole("button", { name: c.remove, exact: true }).click(); await dialog.getByRole("group").getByRole("button", { name: c.remove, exact: true }).click(); await expect(renamed).toHaveCount(0);
@@ -188,13 +189,14 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
 });
 
 test("CTUI real CAS conflicts, refresh discards only explicit user intent", async ({ browser }) => {
+  // Keep assertions on the feature's feedback; Next also renders an empty route-announcer alert.
   const { page, context } = await signed(browser, "en", 1440), c = customerTagsCopy.en;
   try {
     const editor = page.getByTestId("customer-tags-editor"), notes = page.getByTestId("customer-notes");
     await editor.getByRole("checkbox", { name: "Seed01", exact: true }).uncheck();
     await ctl("concurrent-tags");
     await step(page, "stale Save tags", "actual 409 keeps winning tag set and offers explicit Refresh", async () => {
-      await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await expect(page.getByRole("alert")).toContainText(c.errors.version_changed);
+      await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
       await page.getByRole("button", { name: c.refresh, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: "Seed02", exact: true })).toBeChecked(); await expect(editor.getByRole("checkbox", { name: "Seed01", exact: true })).not.toBeChecked();
     });
     const seed = noteRow(page, "w6ui-seed-note-51");
@@ -205,7 +207,7 @@ test("CTUI real CAS conflicts, refresh discards only explicit user intent", asyn
     await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await expect(page.getByText(c.editorSaved, { exact: true })).toBeVisible();
     await expect(notes.getByRole("textbox"), "CTUI-DRAFT-VERSION-FENCE").toHaveValue("w6ui-stale-draft");
     await step(page, "stale Save note", "409 refuses silent version rebase; draft survives until explicit Refresh", async () => {
-      await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(page.getByRole("alert")).toContainText(c.errors.version_changed);
+      await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
       await expect(notes.getByRole("textbox")).toHaveValue("w6ui-stale-draft"); await page.getByRole("button", { name: c.refresh, exact: true }).click();
       await expect(notes.getByRole("textbox")).toHaveValue(""); await expect(noteRow(page, "w6ui-concurrent-version")).toHaveCount(1);
     });
@@ -219,17 +221,25 @@ test("CTUI UNKNOWN explicit same-key retry commits once, revoked session cannot 
     page.on("request", (request) => { if (request.method() === "POST" && new URL(request.url()).pathname.endsWith(`/customers/${customer}/notes`)) sent.push(request.headers()["idempotency-key"] ?? ""); });
     const before = await state(); await ctl("fault", "drop-note"); await fill(page, notes.getByRole("textbox"), "w6ui-unknown-once", c.noteAdd);
     await step(page, "unknown Add note / Retry", "unknown locks controls, no automatic retry, explicit retry keeps exact key", async () => {
-      await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(page.getByRole("alert")).toContainText(c.unknown);
+      await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.unknown);
       await expect(notes.getByRole("textbox")).toBeDisabled();
       await expect.poll(async () => (await state()).unknown_notes).toBe(1); const committed = await state(); expect(committed.note_posts - before.note_posts).toBe(1);
       await page.waitForTimeout(500); expect((await state()).note_posts).toBe(committed.note_posts); expect(sent).toHaveLength(1);
       await page.getByRole("button", { name: c.retry, exact: true }).click(); await expect(noteRow(page, "w6ui-unknown-once")).toHaveCount(1);
       expect(sent).toHaveLength(2); expect(sent[0]).not.toBe(""); expect(sent[1]).toBe(sent[0]); await page.reload(); await expect(noteRow(page, "w6ui-unknown-once")).toHaveCount(1);
     });
-    await ctl("fault", "drop-note"); await fill(page, notes.getByRole("textbox"), "w6ui-revoked-unknown", c.noteAdd); await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(page.getByRole("alert")).toContainText(c.unknown);
-    const pending = await state(); await ctl("revoke");
-    await step(page, "Retry after session revocation", "expired boundary cannot submit saved command again", async () => {
-      await page.getByRole("button", { name: c.retry, exact: true }).click(); await expect(page.getByRole("alert")).toContainText(c.errors.unauthorized);
+    await ctl("fault", "drop-note"); await fill(page, notes.getByRole("textbox"), "w6ui-revoked-unknown", c.noteAdd); await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.unknown);
+    const pending = await state(), postsBeforeRevocation = sent.length; await ctl("revoke");
+    await step(page, "Retry after session revocation", "server refuses the same-key retry without another backend write and clears private UI", async () => {
+      const refused = page.waitForResponse((response) => response.request().method() === "POST" && new URL(response.url()).pathname.endsWith(`/customers/${customer}/notes`));
+      await page.getByRole("button", { name: c.retry, exact: true }).click();
+      expect((await refused).status()).toBe(401);
+      // signalLogout replaces the whole feature with the shell's expired-session state; private notes must disappear.
+      await expect(page.getByTestId("shell-session-expired")).toBeVisible();
+      await expect(page.getByTestId("shell-sign-in")).toBeVisible();
+      for (const section of ["customer-detail", "customer-notes", "customer-tags-editor"]) await expect(page.getByTestId(section)).toHaveCount(0);
+      expect(sent).toHaveLength(postsBeforeRevocation + 1);
+      expect(sent.at(-1)).toBe(sent.at(-2));
       expect((await state()).note_posts).toBe(pending.note_posts);
     });
   } finally { await context.close(); }
@@ -244,7 +254,9 @@ test("CTUI signed reader and non-privacy writer show conservative note permissio
       if (actor === "reader") {
         await expect(notes).toContainText(c.readOnly); await expect(notes.getByRole("textbox")).toHaveCount(0); await expect(editor.getByRole("checkbox")).toHaveCount(0);
       } else {
-        await expect(notes).toContainText(c.ownNotesOnly); await expect(noteRow(page, "w6ui-concurrent-version").getByRole("button", { name: c.noteEdit, exact: true })).toHaveCount(0);
+        await expect(notes).toContainText(c.ownNotesOnly);
+        await expect(noteRow(page, "w6ui-concurrent-version")).toBeVisible();
+        await expect(noteRow(page, "w6ui-concurrent-version").getByRole("button", { name: c.noteEdit, exact: true })).toHaveCount(0);
         await fill(page, notes.getByRole("textbox"), "w6ui-writer-own", c.noteAdd);
         await step(page, "writer creates/edits own note", "write-only staff may edit their own note", async () => {
           await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(noteRow(page, "w6ui-writer-own")).toHaveCount(1);
@@ -253,6 +265,7 @@ test("CTUI signed reader and non-privacy writer show conservative note permissio
         });
         // After a reload the server's own flag still proves authorship: own notes keep Edit/Delete, another author's note does not.
         await page.reload();
+        await expect(noteRow(page, "w6ui-concurrent-version")).toBeVisible();
         for (const name of [c.noteEdit, c.noteDelete]) {
           await expect(noteRow(page, "w6ui-writer-edited").getByRole("button", { name, exact: true })).toHaveCount(1);
           await expect(noteRow(page, "w6ui-concurrent-version").getByRole("button", { name, exact: true })).toHaveCount(0);

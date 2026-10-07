@@ -55,6 +55,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const exporting = useRef(false), exportController = useRef<AbortController | null>(null);
   const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`; // read lifecycle: new per server render
   const valid = validReportsQuery("products", `/?from=${draftFrom}&to=${draftTo}`);
+  const rangePending = draftFrom !== from || draftTo !== to;
   const validQuery = validReportsQuery("products", `/?from=${from}&to=${to}`);
   const permissions = store?.permissions;
   const denied = !!permissions && (!permissions.includes("orders:read") || (tab === "funnel" && !permissions.includes("live:read")));
@@ -107,7 +108,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => selectTab(name), type: "button" as const,
   });
   const outcome = exportOutcome(lockScope, exportView, uncertainScopes);
-  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && outcome !== "lock-failed" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
+  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && outcome !== "lock-failed" && valid && !rangePending; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
   const exportCSV = async () => {
     if (!store || !canExport || !read.boundary) return;
     exporting.current = true;
@@ -127,7 +128,8 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const exportMessage = outcome === "lock-failed" ? c.csvLockFailed : outcome === "uncertain" ? c.csvUnknown : outcome === "done" ? c.csvDone : outcome === "forbidden" ? c.csvForbidden
     : outcome === "signed-out" ? c.signedOut : outcome === "not-found" ? c.notFound : outcome === "unavailable" ? c.csvUnavailable : "";
   const view = read.status === "ready" ? read.data?.view : null;
-  const panel = (name: ReportName) => ({ id: `reports-panel-${name}`, role: "tabpanel", "aria-labelledby": `reports-tab-${name}`, hidden: tab !== name, tabIndex: 0 });
+  const panel = (name: ReportName) => ({ id: `reports-panel-${name}`, role: "tabpanel", "aria-labelledby": `reports-tab-${name}`,
+    "aria-describedby": view ? `reports-applied-range${rangePending ? " reports-range-pending" : ""}` : undefined, hidden: tab !== name, tabIndex: 0 });
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">
     <div className="orders-page reports-page" data-testid="reports-page">
       <AdminPageHeader locale={locale} title={c.title} description={c.subtitle} />
@@ -136,13 +138,17 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
           onChange={(event) => navigate(event.target.value)}>{!stores.length && <option value="">{c.noStore}</option>}
           {stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
         <label>{c.from}<DateControl emptyLabel={c.from} lang={locale} type="date" value={draftFrom} required data-testid="reports-from"
+          aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftFrom(event.target.value)} /></label>
         <label>{c.to}<DateControl emptyLabel={c.to} lang={locale} type="date" value={draftTo} required data-testid="reports-to"
+          aria-describedby={rangePending ? "reports-range-pending" : undefined}
           onChange={(event) => setDraftTo(event.target.value)} /></label>
         <button type="submit" disabled={!store || !valid} data-testid="reports-show">{c.show}</button>
         {!valid && <p role="alert" data-testid="reports-range-invalid">{c.rangeInvalid}</p>}
+        {rangePending && <p id="reports-range-pending" role="status" data-testid="reports-range-pending">{c.rangePending}</p>}
       </form>
       <div className="reports-basis"><p data-testid="reports-money-basis"><strong>{c.moneyBasis}</strong></p><p>{c.moneyDetails}</p><p>{c.rangeBasis}</p></div>
+      {view && <p id="reports-applied-range" data-testid="reports-applied-range">{c.appliedRange}: {view.report.from} – {view.report.to} ({c.taipeiTime})</p>}
       <TabStrip role="tablist" className="reports-tabs" label={c.tabsLabel} previousLabel={c.previous} nextLabel={c.next} onKeyDown={keyTabs}>
         <button {...tabProps("products")} data-testid="reports-tab-products">{c.tabs.products}</button>
         <button {...tabProps("channels")} data-testid="reports-tab-channels">{c.tabs.channels}</button>

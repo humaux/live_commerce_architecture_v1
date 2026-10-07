@@ -511,7 +511,7 @@ func TestReportRP06ExportPermissionAuditAndCSV(t *testing.T) {
 	}
 	for i, slug := range []string{"products", "channels", "funnel", "manual-orders"} {
 		status, body, hdr := w.get(w.exporter, slug+".csv"+rpQ)
-		if status != 200 || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store" ||
+		if status != 200 || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store, private" ||
 			!strings.Contains(hdr.Get("Content-Disposition"), "attachment; filename=\"report-") {
 			t.Fatalf("%s.csv: %d %v %s", slug, status, hdr, body)
 		}
