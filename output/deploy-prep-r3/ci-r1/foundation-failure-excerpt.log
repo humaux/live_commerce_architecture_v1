@@ -1,0 +1,40 @@
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3491893Z     stripe_live_process_test.go:168: R3 operator controls failed: exit status 1
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3496061Z         ✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (865.307522ms)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3497244Z         ✖ platform operator custody, export mount and binary are wired (2475.685182ms)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3499300Z         ✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (2890.680323ms)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3505582Z         ✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (72.553247ms)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3506563Z         ℹ tests 4
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3507225Z         ℹ suites 0
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3507695Z         ℹ pass 3
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3508362Z         ℹ fail 1
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3508638Z         ℹ cancelled 0
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3508918Z         ℹ skipped 0
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3509187Z         ℹ todo 0
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3509533Z         ℹ duration_ms 6370.850003
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3509794Z         
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3510062Z         ✖ failing tests:
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3510300Z         
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3510713Z         test at tests/deploy/deploy-prep-r3.test.mjs:106:1
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3511501Z         ✖ platform operator custody, export mount and binary are wired (2475.685182ms)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3512289Z           AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3512760Z           + actual - expected
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3513016Z           
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3513248Z           + undefined
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3513925Z           - false
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3514286Z           
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3515429Z               at file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/deploy/deploy-prep-r3.test.mjs:122:10
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3517272Z               at fixture (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3519058Z               at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/deploy/deploy-prep-r3.test.mjs:106:76)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3520077Z               at Test.runInAsyncScope (node:async_hooks:227:14)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3520727Z               at Test.run (node:internal/test_runner/test:1402:25)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3521495Z               at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3522228Z               at Test.postRun (node:internal/test_runner/test:1542:19)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3522868Z               at Test.run (node:internal/test_runner/test:1467:12)
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3524138Z               at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3524754Z             generatedMessage: true,
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3525309Z             code: 'ERR_ASSERTION',
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3525682Z             actual: undefined,
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3526000Z             expected: false,
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3526545Z             operator: 'strictEqual',
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3526902Z             diff: 'simple'
+gate (shard:^Test[S-Z])	Gate	2026-10-07T07:13:52.3527149Z           }

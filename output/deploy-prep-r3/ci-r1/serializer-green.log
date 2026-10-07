@@ -1,0 +1,14 @@
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (5.806958ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1674.7515ms)
+✔ platform operator custody, export mount and binary are wired (1034.699208ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (1261.089459ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (2413.994708ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (117.4945ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6572.467125
