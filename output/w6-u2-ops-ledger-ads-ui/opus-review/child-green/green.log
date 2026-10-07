@@ -1,0 +1,17 @@
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (0.835917ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.930792ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (19.063458ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.173875ms)
+✔ read-only store capability never exposes a command even if the state allows one (0.059375ms)
+✔ duplicate escaped keys cannot bypass the exact command grammar (0.046375ms)
+✔ query backoff affects only its operation and expires without another action (0.051833ms)
+✔ merchant reason text translates ledger events and conceals unknown or prototype codes (0.103125ms)
+✔ ledger read navigation requires effective integration:read permission regardless of role (0.072208ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.241791

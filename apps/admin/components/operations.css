@@ -1,0 +1,160 @@
+/* Purpose: responsive ledger rows and native dialogs in the existing merchant ledger palette.
+ * Depends on: shared tokens and browser dialog focus/backdrop semantics.
+ * Used by: OperationsLedger; no visual identity changes outside this surface. */
+.operations-page {
+  max-width: 1100px;
+  padding: 24px;
+  color: var(--ledger-ink, #142942);
+}
+.operations-links,
+.operations-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+.operations-toolbar {
+  /* Labels may stack above their select, including at 390px; align the action to the control's bottom. */
+  align-items: end;
+}
+.operations-page label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.operations-page select,
+.operations-page button,
+.operations-drawer button,
+.operations-confirm button {
+  font: inherit;
+  min-height: 40px;
+  border: 1px solid #dde5ee;
+  border-radius: 5px;
+  padding: 8px 12px;
+  background: #fff;
+  color: #142942;
+  cursor: pointer;
+}
+.operations-page button:hover,
+.operations-drawer button:hover,
+.operations-confirm button:hover {
+  background: #e5f2ff;
+}
+.operations-page button:disabled,
+.operations-drawer button:disabled,
+.operations-confirm button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.operations-page a,
+.operations-drawer a {
+  color: #1264ba;
+  text-underline-offset: 3px;
+}
+.operations-page :focus-visible,
+.operations-drawer :focus-visible,
+.operations-confirm :focus-visible {
+  outline: 2px solid #1264ba;
+  outline-offset: 3px;
+}
+.operations-list {
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #dde5ee;
+}
+.operations-list > li {
+  padding: 18px 0;
+  border-bottom: 1px solid #dde5ee;
+}
+.operations-list > li > div {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.operations-list p {
+  margin: 8px 0;
+}
+.operations-list time,
+.operations-drawer time {
+  font-variant-numeric: tabular-nums;
+}
+.operations-object,
+.operations-id,
+.operations-drawer dd {
+  overflow-wrap: anywhere;
+}
+.operations-feedback {
+  padding: 12px;
+  background: #e5f2ff;
+}
+.operations-drawer,
+.operations-confirm {
+  color: #142942;
+  background: #fff;
+  border: 1px solid #dde5ee;
+  border-radius: 7px;
+  padding: 24px;
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  width: min(640px, calc(100% - 32px));
+  box-sizing: border-box;
+}
+.operations-drawer {
+  margin: 16px 16px 16px auto;
+  height: calc(100dvh - 32px);
+}
+.operations-drawer::backdrop,
+.operations-confirm::backdrop {
+  background: rgb(20 41 66 / 0.35);
+}
+.operations-drawer header {
+  display: flex;
+  align-items: start;
+  gap: 16px;
+  justify-content: space-between;
+}
+.operations-drawer h2 {
+  margin-top: 0;
+}
+.operations-drawer dl {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr);
+  gap: 10px;
+}
+.operations-drawer dd {
+  margin: 0;
+}
+.operations-actions p {
+  margin: 8px 0;
+}
+.operations-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.operations-drawer ol {
+  padding-left: 24px;
+}
+.operations-drawer li {
+  padding: 10px 0;
+}
+.operations-confirm button {
+  margin: 8px 8px 0 0;
+}
+@media (max-width: 600px) {
+  .operations-page {
+    padding: 16px;
+  }
+  .operations-drawer {
+    padding: 18px;
+  }
+  .operations-toolbar label {
+    align-items: start;
+    flex-direction: column;
+  }
+  .operations-list > li > div {
+    flex-direction: column;
+  }
+}

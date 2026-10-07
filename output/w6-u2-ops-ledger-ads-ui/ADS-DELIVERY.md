@@ -1,0 +1,22 @@
+# W6-U2 ADS subtask delivery
+- task_id: W6-U2-ADS; base_commit: 5d73d90b; branch: unit/w6-u2-ads-sub; model: gpt-6.1-sol; effort: medium; role: ui_worker.
+- Worktree: /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub. No commit/push/merge.
+- Implemented: frozen unbind validation/DTO/safe in-flight details, native focus-protected confirmation with local-only/CAPI/history/pause copy, exact public feed card and clipboard recovery; zh-TW/en/zh-CN. Parent owns BFF and browser harness.
+- Commands: git worktree add .worktrees/w6-u2-ads-sub -b unit/w6-u2-ads-sub 5d73d90b → 0; pnpm install --offline --frozen-lockfile → 0.
+- Red: node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/ads-request.test.ts → 1 (missing exports, ads-red.log).
+- Targeted semantic red: node --test --experimental-strip-types --test-name-pattern 'feed selection follows' tests/admin/ads-model.test.ts → 1 (origin versus URL order, ads-red.log).
+- Green: node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/ads-request.test.ts → 0, 30 pass/0 fail (ads-green.log).
+- Typecheck: pnpm --filter @live-commerce/admin typecheck → initial 0; intermediate 1 (union details), final 0 after explicit WriteResult<AdsUnbind> return type (ads-green.log).
+- Gate: LC_HEADER_BASE=5d73d90b bash scripts/dev/check-gates.sh → 0; existing long-file warnings retained (ads-gates.log); git diff --check → 0.
+- Evidence: E3 pure-node within MOCK/local typecheck scope only, tied to file hashes below; browser/mobile/clipboard-click/SANDBOX/LIVE/independent review NOT_RUN.
+- Risks: author is not independent acceptor; parent must integrate exact BFF detail sanitizer and run remote real-click/390px gate. No known P0/P1 from local checks.
+- UI selectors: ads-unbind, ads-unbind-confirm, ads-unbind-yes, ads-unbind-cancel, ads-unbind-error, ads-unbind-in-flight, ads-unbind-total, ads-catalog-feed, ads-feed-url, ads-feed-copy, ads-feed-copy-result, ads-feed-empty, ads-feed-retry.
+- Allowed/changed paths and SHA256:
+  - apps/admin/components/AdsConnection.tsx: c3ada01d86d737e2551c6c886f97609bc7fc7550920a63093c5d6802e48609b5
+  - apps/admin/components/ads.css: e739ef2aa780427450fd4cf531aadfba85b8b36fed3d4a9c574ef139bf08956a
+  - apps/admin/lib/ads-model.ts: 271a422ee4453949d33da72b0ef5f74546c9307453c3b2127574b23f56f4abc3
+  - apps/admin/lib/ads-request.ts: 100d6e4951d73d486e594befda1fdcaec1f78a787c5668cc4606a3d60565f243
+  - apps/admin/lib/ads-client.ts: b92956db813f3c8f2ca26905a2187d17094aaf6181eebf856dc0c98e55bba057
+  - apps/admin/lib/ads-copy.ts: ad85c549ded8d6c0882886cd2e39b544b175367b5ead9ee02adc5ea981c91a26
+  - tests/admin/ads-model.test.ts: 32efbdf9b144b374fcae24c7a095b70850d7f99d0e0662e7097fdd8f5633ccbf
+  - tests/admin/ads-request.test.ts: 8dfb55abb9218925e70bd977ad41ed0bb7e180807061737b1cc3d940a72bb11a

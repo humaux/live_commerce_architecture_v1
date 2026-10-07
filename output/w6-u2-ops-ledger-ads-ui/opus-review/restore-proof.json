@@ -1,0 +1,7 @@
+{
+  "clean_before": "4a3c3609adabe745dec4cd657c1ea17bac059b6821fed0929783f23b67ae0f6f",
+  "restored_sha256": "4a3c3609adabe745dec4cd657c1ea17bac059b6821fed0929783f23b67ae0f6f",
+  "mutation_failure": "loaded-order private-canary absence assertion",
+  "mutation_exit": 1,
+  "temporary_marker_absent": true
+}

@@ -1,0 +1,61 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/tests/admin/ads-model.test.ts:7
+  parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
+                                    ^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../../apps/admin/lib/ads-model.ts' does not provide an export named 'parseAdsInFlight'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ tests/admin/ads-model.test.ts (107.613917ms)
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/tests/admin/ads-request.test.ts:7
+  validAdsUnbindBody, adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
+  ^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../../apps/admin/lib/ads-request.ts' does not provide an export named 'validAdsUnbindBody'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ tests/admin/ads-request.test.ts (98.820916ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.204916
+
+✖ failing tests:
+
+test at tests/admin/ads-model.test.ts:1:1
+✖ tests/admin/ads-model.test.ts (107.613917ms)
+  'test failed'
+
+test at tests/admin/ads-request.test.ts:1:1
+✖ tests/admin/ads-request.test.ts (98.820916ms)
+  'test failed'
+✖ W6-06B feed selection follows origin order, not full feed URL order (0.754959ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.534084
+
+✖ failing tests:
+
+test at tests/admin/ads-model.test.ts:375:1
+✖ W6-06B feed selection follows origin order, not full feed URL order (0.754959ms)
+  Error: ads_parse: feed_url
+      at parseCatalogFeed (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/apps/admin/lib/ads-model.ts:560:199)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/tests/admin/ads-model.test.ts:377:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
