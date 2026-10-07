@@ -120,7 +120,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	ids["instagram"] = e.postIGDM(t, "900007320003", "SYNTHETIC-INSTAGRAM-DM", time.Now())
 	ids["retry"] = e.postDM(t, "900007320004", "SYNTHETIC-INBOX-RETRY-INBOUND", time.Now())
 	ids["foreign"] = lcConversation(t, f, f.tenantA, f.storeA2, "page")
-	// mciSetup already owns the store’s OPEN window. DM fixtures use conversation windows, not this claim window.
+	// Isolate recovery from mciSetup's unused claim window; 0122 permits several OPEN windows per store.
 	e.h.closeWindow(t, e.session)
 	// Real commands create the bundle; only its unavailable-private-reply flag is owner fixture setup.
 	ids["bundle_session"] = e.h.draft(t, f.storeA1)

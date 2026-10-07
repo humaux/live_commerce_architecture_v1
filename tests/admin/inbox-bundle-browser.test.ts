@@ -75,12 +75,15 @@ test("actual clipboard evaluator exports only safe summary and detects malformed
 });
 
 
-test("single-OPEN fixture closes the inherited intake window before opening bundle recovery", () => {
-  // SOURCE/static ordering guard: SQL0060 permits one OPEN per tenant/store; runtime PG remains NOT_RUN.
+test("claim-window fixture isolates recovery after the current migration permits multiple OPEN windows", () => {
+  // SOURCE/static setup guard: 0122 supersedes 0060; closing this unused window is fixture isolation.
   const inherited = readFileSync("tests/foundation/meta_claims_intake_flow_test.go", "utf8");
   const schema = readFileSync("migrations/0060_live_claims.sql", "utf8");
+  const lifecycle = readFileSync("migrations/0122_live_lifecycle.sql", "utf8");
   assert.match(inherited, /h\.open\(t, e\.session, claims\.MatchExact\)/);
   assert.match(schema, /CREATE UNIQUE INDEX live_claim_window_one_open[\s\S]*?WHERE state='OPEN'/);
+  assert.match(lifecycle, /DROP INDEX live\.live_claim_window_one_open;/);
+  assert.match(lifecycle, /CREATE INDEX live_claim_window_open[\s\S]*?WHERE state='OPEN'/);
   const inheritedClose = go.indexOf("e.h.closeWindow(t, e.session)");
   const recoveryOpen = go.indexOf('e.h.open(t, ids["bundle_session"], claims.MatchExact)');
   assert.ok(inheritedClose >= 0 && inheritedClose < recoveryOpen, "close the inherited OPEN window before opening the recovery session");
