@@ -458,7 +458,7 @@ replaces it, **append-only**:
   the signed amount in the note.
 - **Refusals.** PT409 when the row does not exist in the caller's environment (`unattributed_unavailable`), its reason is
   `foreign_connection`/`unsupported_type` (`unresolvable_reason`: those never block close and are not attribution
-  questions), the row's weekly period (§6.2, Asia/Taipei) is already closed for **any** store (`period_already_closed`),
+  questions), the row's weekly period (§6.2, Asia/Taipei) is already closed for **any** store, or, for `assigned_to_store` only, any statement exists for a LATER period (`period_already_closed`: a close prints only its own period's notes, so the note of such a late row would be printed by no close; `not_store_revenue` carries no payout and stays resolvable),
   the row already has a settlement line (`already_attributed`: 0150 keeps the unattributed row when a later sync attributes it, and
   resolving it would credit the store's statement AND tell the owner to pay again), or, for `assigned_to_store`, the target store is
   unknown, foreign or never enrolled (`unknown_target_store`). Structural input errors (bad
@@ -508,7 +508,8 @@ until the canary is verified. SANDBOX staging opens without those codes, since t
 **LIVE settlement runbook step (0163).** Before the first LIVE weekly close — and afterwards whenever a close refuses
 with `settlement_unattributed` — the operator runs `ops-admin.sh stripe-admin settlement-resolve` (§6.6) for every
 `unmapped_source` row that the close refusal names and that has no line (the refusal lists up to 20 ids; rerun the close for
-more), recording operator name and support ticket in each resolution. **No buyer PII in the note** (no name, e-mail, phone,
+more), recording operator name and support ticket in each resolution. A replayed or per-store close reprints that period's notes by design: settle each `balance_txn_id` exactly once, regardless of reprints.
+**No buyer PII in the note** (no name, e-mail, phone,
 address, card data): it is printed in CLI output and close notes, and the details belong in the ticket. Deleting or editing
 the row by hand stays a red-line action requiring owner approval; the resolve step is the sanctioned path.
 
@@ -532,6 +533,7 @@ the row by hand stays a red-line action requiring owner approval; the resolve st
 - **A late `unmapped_source` row in an already-closed period cannot be resolved** (§6.6 `period_already_closed`):
   it fails closed, keeps refusing every later close for the environment, and escalates to the owner as a red-line
   SQL fix with a ticket. This is accepted for v1 (rows normally surface within the +72 h close delay).
+  The same refusal applies to a late `assigned_to_store` row whose week precedes any closed statement.
   *Follow-up amendment (open):* closed-week rows resolvable as `not_store_revenue`, and a late `assigned_to_store` row for a
   closed week.
 - **Balance-transaction field names are UNVERIFIED** until W4-S2's WebFetch (PF-F5).

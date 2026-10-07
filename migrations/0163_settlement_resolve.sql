@@ -122,8 +122,12 @@ BEGIN
  END IF;
  -- the row's own weekly Asia/Taipei period (§6.2). A period already closed for ANY store is frozen: resolving a row that
  -- belongs to it would silently rewrite what that close had to refuse, so it fails closed and escalates to the owner (§9).
+ -- assigned_to_store is also refused for a row whose week PRECEDES any closed statement (s.period_start>v_monday): a close prints only its
+ -- own period's notes, so no later close would ever print that note and the payout instruction would be lost. not_store_revenue carries no
+ -- payout, stays resolvable there and keeps every later close unblocked.
  v_monday:=date_trunc('week',u.txn_created_at AT TIME ZONE 'Asia/Taipei')::date;
- IF EXISTS(SELECT 1 FROM payments.settlement_statements s WHERE s.environment=p_environment AND s.period_start=v_monday) THEN
+ IF EXISTS(SELECT 1 FROM payments.settlement_statements s WHERE s.environment=p_environment
+   AND (s.period_start=v_monday OR (p_resolution='assigned_to_store' AND s.period_start>v_monday))) THEN
   RAISE EXCEPTION 'period_already_closed' USING ERRCODE='PT409'; END IF;
  -- assigned_to_store: the target must be a store that has USED the platform account in this environment (an enrollment),
  -- or the platform store itself. Anything else (unknown, foreign, never enrolled) is refused; the FK proves existence.

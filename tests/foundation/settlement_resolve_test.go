@@ -473,5 +473,17 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		if err != nil || !again.Replayed {
 			t.Fatalf("replay of a resolved row in a closed period: %+v %v", again, err)
 		}
+		// Round 3 (fail closed): a LATE row dated BEFORE week 1 has no statement of its own (week 0 never closed) but weeks 1-3 are closed, and a
+		// close prints only its own period's notes, so an assigned_to_store note for it would be printed by no close and the payout instruction
+		// would be lost. It is refused (owner escalation); not_store_revenue carries no payout, stays resolvable and unblocks every later close.
+		e.sync(t, w0, w1, pslCharge("txn_PF15Early", "pi_pf15early", 2500, 641, 26, d(w0, 2)))
+		_, err = resolve("txn_PF15Early", stripeadmin.ResolveAssignedToStore, e.c.f.tenantA, e.storeC, "late row of an unclosed early week for C")
+		pslWantRefused(t, "assigned_to_store before a closed statement", err, "period_already_closed")
+		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed_resolutions WHERE balance_txn_id='txn_PF15Early'`); n != 0 {
+			t.Fatalf("a refused resolve wrote %d rows", n)
+		}
+		if r, err := resolve("txn_PF15Early", stripeadmin.ResolveNotStoreRevenue, "", "", "late early-week charge, not store revenue"); err != nil || r.Replayed {
+			t.Fatalf("not_store_revenue before a closed statement: %+v %v", r, err)
+		}
 	})
 }

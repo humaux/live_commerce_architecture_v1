@@ -87,6 +87,7 @@ Resolve each one that has no line with the append-only resolve step (contract `s
 phone, address, card data): it is printed in CLI output; the details belong in the ticket. `settlement-close` prints each
 `assigned_to_store` resolution of its own period as an `operator_notes` entry with the signed settlement-currency amount: v1
 moves no money, so the owner settles that signed amount with the store out of band (a negative one is recovered from it).
+A replayed or per-store close reprints that period's notes by design: settle each `balance_txn_id` exactly once, regardless of reprints.
 A resolution is final and cannot be edited or erased; a late row in an already-closed week cannot be resolved here (owner
 escalation).
 
