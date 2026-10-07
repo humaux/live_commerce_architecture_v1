@@ -1,10 +1,13 @@
 # Purpose: run the RAM-heavy gates (full foundation suite, browser modes, focused PG regexes) on GitHub-hosted
 #   runners instead of the dev Mac (owner 2026-10-06: "把所有需要高ram的，放到GitHub上去跑"). One matrix job per mode,
 #   each on its own 16 GB runner, so modes run in parallel instead of queueing on the local machine-wide PG lock.
-# Depends on: scripts/dev/test-local.sh (modes), scripts/dev/test-focused.sh (regex runs), the pinned postgres image,
-#   Playwright Chromium/WebKit for --browser-* modes. No secrets: every gate uses MOCK/SANDBOX fixtures only.
+#   2026-10-07 speed-up: a `plan` job fans the two long gates out (`--browser-click-sweep` -> N LC_SWEEP_SHARD slices, `--browser-visual-lint` -> M slices,
+#   `foundation-shards` -> the balanced groups of scripts/dev/shard-plan.json) and an `aggregate` job proves the slices together cover the full universe.
+# Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
+#   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
+#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
-#   the full foundation suite automatically.
+#   the sharded foundation suite automatically.
 name: Gates (GitHub runners)
 
 on:
@@ -14,9 +17,10 @@ on:
     inputs:
       modes:
         description: >-
-          JSON array of gates. "foundation" = full suite (test-local.sh); "--browser-x" / "--inbox-send" etc. =
-          test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
-        default: '["foundation"]'
+          JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;
+          "--browser-click-sweep" / "--browser-visual-lint" = the whole gate, run as parallel shards plus an aggregate verdict (a single slice: "--browser-click-sweep@3/10");
+          other "--browser-x" / "--inbox-send" etc. = test-local.sh mode; "focused:<go -run regex>" = test-focused.sh.
+        default: '["foundation-shards"]'
         required: true
       extra_env:
         description: >-
@@ -29,12 +33,30 @@ permissions:
   contents: read
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+      sweep_n: ${{ steps.plan.outputs.sweep_n }}
+      visual_n: ${{ steps.plan.outputs.visual_n }}
+    env:
+      # A push runs the sharded foundation suite (unit + groups, ~12 min wall); a dispatch runs what was asked for.
+      MODES: ${{ github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation-shards"]' }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - id: plan
+        run: node scripts/dev/ci-plan.mjs
+
   gate:
+    name: gate (${{ matrix.mode }})
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        # "foundation" alone = the serial whole suite (~76 min). Pushes run the sharded equivalent (~20 min wall).
-        mode: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.modes || '["shard:unit","shard:^Test(A|[N-R])","shard:^Test[B-K]","shard:^TestL","shard:^TestM","shard:^Test[S-Z]"]') }}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
@@ -65,9 +87,32 @@ jobs:
         run: |
           corepack enable
           pnpm install --frozen-lockfile --ignore-scripts
+      - name: Playwright version (cache key)
+        id: pw
+        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        # The version pnpm resolved from the frozen lockfile: a new Playwright (new browser revisions) is a new cache key, a lockfile change that keeps it is a hit.
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $NF}')" >> "$GITHUB_OUTPUT"
+      - name: Writable Playwright browser dir
+        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        run: sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+      - name: Restore Playwright browsers
+        id: pwcache
+        if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /opt/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
       - name: Browsers for browser modes
         if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
+        # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).
         run: pnpm exec playwright install --with-deps chromium webkit
+      - name: Save Playwright browsers
+        # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
+        if: ${{ (startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')) && steps.pwcache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: /opt/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.version }}-chromium-webkit
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
@@ -83,8 +128,12 @@ jobs:
           case "$MODE" in
             foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+            # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
+            shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
             focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+            # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
+            --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
             # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
             # Xvfb comes with `playwright install --with-deps`.
             --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
@@ -97,12 +146,52 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
-          name: gate-${{ strategy.job-index }}
+          name: ${{ matrix.art }}
           path: |
             output/ci-gates/
             output/ui-visual-audit/*/lint.md
             output/ui-visual-audit/*/lint.json
             output/ui-click-sweep/
             output/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Whole-run verdict of the sharded sweep / visual lint: fails when a shard is missing or incomplete, or when any route x variant, journey or shot of the live registry
+  # was not covered by exactly one shard. Runs even when a shard job failed (it then names what is missing). Skipped for a single-slice re-run (`@i/N`).
+  aggregate:
+    needs: [plan, gate]
+    if: ${{ always() && needs.plan.result == 'success' && (needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24" # tests/ui/sweep-aggregate.mjs imports apps/admin/src/routes.ts (type stripping); no pnpm install needed
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: ${{ always() && needs.plan.outputs.sweep_n != '0' }}
+        continue-on-error: true # no artifact at all is reported by the aggregate itself ("no shard evidence"), not as a download error
+        with:
+          pattern: gate-browser-click-sweep_*
+          path: evidence/click
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
+        continue-on-error: true
+        with:
+          pattern: gate-browser-visual-lint_*
+          path: evidence/visual
+      - name: Click sweep covers every route x variant and journey
+        if: ${{ always() && needs.plan.outputs.sweep_n != '0' }}
+        run: node tests/ui/sweep-aggregate.mjs click evidence/click
+      - name: Visual lint covers every shot
+        if: ${{ always() && needs.plan.outputs.visual_n != '0' }}
+        run: node tests/ui/sweep-aggregate.mjs visual evidence/visual
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: aggregate
+          path: output/ci-aggregate/
           retention-days: 14
           if-no-files-found: ignore

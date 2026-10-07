@@ -1,0 +1,37 @@
+✔ parseShard: i/N, empty means unsharded, anything malformed throws (0.776708ms)
+✔ assignShards: deterministic, every key owned once, near-balanced (LPT bound) (0.92875ms)
+✔ planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey) (1.562292ms)
+✔ planClick at N=10 keeps every shard within ~1.3x of the mean planned cost (0.15175ms)
+✔ aggregate click: honest shards pass for several N (2.55225ms)
+✖ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (1.714833ms)
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (0.53425ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (4.099459ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.847833
+
+✖ failing tests:
+
+test at tests/ui/sweep-shard-lib.test.mjs:73:1
+✖ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (1.714833ms)
+  AssertionError [ERR_ASSERTION]: /no page-load row/: no problem raised
+      at bad (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-speed/tests/ui/sweep-shard-lib.test.mjs:74:114)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/ci-speed/tests/ui/sweep-shard-lib.test.mjs:77:3)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

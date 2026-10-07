@@ -257,9 +257,9 @@ export function registerProductEditorAcceptance() {
           buffer: png,
         })),
       );
-      await expect(page.locator(".pe-photo")).toHaveCount(3);
+      await expect(page.getByTestId("media-main-list").locator(".pm-photo")).toHaveCount(3);
       await page
-        .getByRole("button", { name: "Move later 1", exact: true })
+        .getByRole("button", { name: "Move later Main images 1", exact: true })
         .click();
       const before = writes.length;
       await page.getByTestId("product-publish").dblclick();

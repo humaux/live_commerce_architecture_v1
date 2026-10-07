@@ -15,3 +15,4 @@ playwright-report/
 output/playwright/
 # Agent-tool isolated worktrees (Claude Code workflows); never repository content.
 .claude/worktrees/
+output/ui-click-sweep/platform-runner.pass

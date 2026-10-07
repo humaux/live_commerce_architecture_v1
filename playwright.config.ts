@@ -25,6 +25,7 @@ const suites: Record<string, string[]> = {
   "live-console": ["live-console.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
   "store-design": ["design.spec.ts"],
+  "product-media-v2": ["product-media-v2.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 
