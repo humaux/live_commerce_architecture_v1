@@ -11,16 +11,16 @@ const harness = readFileSync("tests/foundation/browser_inbox_ui_test.go", "utf8"
 const spec = readFileSync("tests/admin/inbox-ui.spec.ts", "utf8");
 
 test("inbox evidence is covered by the CI upload root", () => {
-  assert.match(harness, /filepath\.Join\(root, "output\/playwright\/inbox-ui",/);
+  assert.ok(/filepath\.Join\(root, "output\/playwright\/inbox-ui",/.test(harness), "inbox evidence must use the uploaded directory");
   const workflow = readFileSync(".github/workflows/gates.yml", "utf8");
-  assert.match(workflow, /output\/playwright\//);
+  assert.ok(/output\/playwright\//.test(workflow), "workflow must upload Playwright evidence");
 });
 
 test("failed Playwright closes its log and emits sanitized diagnostics before Fatalf", () => {
-  assert.match(harness, /runErr := browser\.Run\(\)[\s\S]*?log\.Close\(\)[\s\S]*?if runErr != nil/);
-  assert.match(harness, /inboxPlaywrightFailureSummary\(output\)/);
-  assert.match(harness, /t\.Logf\("Playwright %s", line\)/);
-  assert.match(harness, /t\.Run\("failure_diagnostics"/);
+  assert.ok(/runErr := browser\.Run\(\)[\s\S]*?log\.Close\(\)[\s\S]*?if runErr != nil/.test(harness), "close saved evidence before reading failure output");
+  assert.ok(/inboxPlaywrightFailureSummary\(output\)/.test(harness), "failure path must use the private summary parser");
+  assert.ok(/t\.Logf\("Playwright %s", line\)/.test(harness), "sanitized summary must enter the Go test log");
+  assert.ok(/t\.Run\("failure_diagnostics"/.test(harness), "the actual Go parser fixture must run on CI");
 });
 
 // Read the parser's actual RE2 patterns. These portable patterns are also verified by the Go subtest on CI.
