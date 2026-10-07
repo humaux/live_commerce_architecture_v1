@@ -7,8 +7,9 @@ package foundation_test
 // product sync path (the PF10 unmapped vectors), close and resolve run through stripeadmin.Registrar (what
 // cmd/stripe-admin calls), and settlement-resolve also runs as a REAL CLI process against a disposable registrar login
 // (the OP09 pattern). Owner-pool SQL is used only to read pins and to prove SQL-level refusals (22023) that the Go layer
-// refuses even earlier. No owner-pool fixture writes: nothing is deleted or edited anywhere in this test — that is
-// exactly the property under test.
+// refuses even earlier. Owner-pool statements are only (a) attempts to edit/delete/truncate a resolution that MUST be refused
+// (the append-only property under test) and (b) one disclosed fixture, PF15_resolved_row_is_final, that re-points two test
+// sessions' payment intent to reproduce the webhook lag that makes an unmapped row attributable later (the PF10 ambiguity pattern).
 
 import (
 	"bytes"
@@ -110,7 +111,7 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		e.sync(t, w1, w2,
 			pslCharge("txn_PF15A1", e.oa1.pi, e.oa1.captured, settleOf(e.oa1.captured), 31, d(w1, 1)),
 			pslCharge("txn_PF15Odd", "pi_pf15nevercreated", 2500, 641, 26, d(w1, 5)), // a charge the system never created
-			pslCharge("txn_PF15X1", e.ox1.pi, 2500, 641, 30, d(w1, 2)),                // another Stripe account
+			pslCharge("txn_PF15X1", e.ox1.pi, 2500, 641, 30, d(w1, 2)),               // another Stripe account
 			pslRaw("txn_PF15Payout", "payout", "payout", -5000, pslI(0), pslS("po_pf15"), d(w1, 3)),
 			odd2)
 		for txn, want := range map[string]string{"txn_PF15Odd": "unmapped_source", "txn_PF15Odd2": "unmapped_source",
@@ -141,6 +142,7 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 			`'PROD','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','not a store sale',NULL,NULL`,
 			`'SANDBOX','txn_PF15Odd','not_store_revenue','o','` + pslTicket + `','not a store sale',NULL,NULL`,
 			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','short','not a store sale',NULL,NULL`,
+			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','   ',NULL,NULL`, // a blank note is no note
 		} {
 			var out string
 			err := e.f.owner.QueryRow(ctx, `SELECT payments.record_settlement_resolution($1::uuid,$2::uuid,$3::uuid,`+args+`)::text`,
@@ -173,6 +175,11 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		// not_store_revenue must not carry a target (Go-side pairing refusal)
 		_, err = resolve("txn_PF15Odd", stripeadmin.ResolveNotStoreRevenue, e.c.f.tenantA, e.storeC, "wrong pairing")
 		pslWantRefused(t, "not_store_revenue with a target", err, "")
+		// a blank or oversized note is refused before any SQL: the audit trail must say why
+		_, err = resolve("txn_PF15Odd", stripeadmin.ResolveNotStoreRevenue, "", "", "   ")
+		pslWantRefused(t, "blank note", err, "")
+		_, err = resolve("txn_PF15Odd", stripeadmin.ResolveNotStoreRevenue, "", "", strings.Repeat("n", 501))
+		pslWantRefused(t, "oversized note", err, "")
 		// success: the never-created charge is assigned to enrolled store C; v1 RECORDS the assignment, it moves no money
 		assign, err := resolve("txn_PF15Odd", stripeadmin.ResolveAssignedToStore, e.c.f.tenantA, e.storeC,
 			"Buyer of store C paid through the platform page; owner pays C out of band.")
@@ -209,6 +216,29 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		if n := countRows(t, e.f.owner, `SELECT count(*) FROM ops.audit_events
 			WHERE action='stripe.settlement.resolve' AND details->>'ticket'=$1`, pslTicket); n != 2 {
 			t.Fatalf("%d resolve audit rows, want 2 (the replay is silent)", n)
+		}
+	})
+
+	// ---------------------------------------------------------------------------------------------------------
+	// Append-only in depth: not even the owner pool (a superuser session) can edit, delete or truncate a resolution, and the
+	// unattributed row a resolution points at cannot be deleted from under it. (Plain role privileges are pinned above.)
+	// ---------------------------------------------------------------------------------------------------------
+	t.Run("PF15_append_only_in_depth", func(t *testing.T) {
+		for what, stmt := range map[string]string{
+			"UPDATE":   `UPDATE payments.settlement_unattributed_resolutions SET note='edited after the fact' WHERE balance_txn_id='txn_PF15Odd'`,
+			"DELETE":   `DELETE FROM payments.settlement_unattributed_resolutions WHERE balance_txn_id='txn_PF15Odd'`,
+			"TRUNCATE": `TRUNCATE payments.settlement_unattributed_resolutions`,
+		} {
+			if _, err := e.f.owner.Exec(ctx, stmt); sqlState(err) != "PT409" || !strings.Contains(err.Error(), "settlement_resolution_immutable") {
+				t.Fatalf("%s of a resolution: want PT409 settlement_resolution_immutable, got %v", what, err)
+			}
+		}
+		// the resolved unattributed row cannot be removed either (FK): the red-line DELETE this unit replaced is closed for good
+		if _, err := e.f.owner.Exec(ctx, `DELETE FROM payments.settlement_unattributed WHERE balance_txn_id='txn_PF15Odd'`); sqlState(err) != "23503" {
+			t.Fatalf("DELETE of a resolved unattributed row: want 23503, got %v", err)
+		}
+		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed_resolutions WHERE note NOT LIKE 'edited%'`); n != 2 {
+			t.Fatalf("%d resolution rows survive the refused edits, want 2", n)
 		}
 	})
 
@@ -341,6 +371,45 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		if n := countRows(t, e.f.owner, `SELECT count(*) FROM ops.audit_events
 			WHERE action='stripe.settlement.resolve' AND details->>'balance_txn_id'='txn_PF15Cli' AND details->>'ticket'=$1`, pslTicket); n != 1 {
 			t.Fatalf("%d CLI resolve audit rows, want 1", n)
+		}
+	})
+
+	// ---------------------------------------------------------------------------------------------------------
+	// A resolution is FINAL. An unmapped row is retried on every identical re-sync (0150: a session may be recorded since), and
+	// without 0163's guard that retry would attribute a RESOLVED row to a store: an assigned_to_store note makes the owner pay
+	// the store out of band, and the new line would pay it again from the statement. Control: the same lag on an UNRESOLVED
+	// row still attributes it (0150 behaviour untouched). The week stays open: both rows leave nothing that blocks week 3.
+	// ---------------------------------------------------------------------------------------------------------
+	t.Run("PF15_resolved_row_is_final", func(t *testing.T) {
+		fin := pslCharge("txn_PF15Fin", "pi_pf15final", e.oc2.captured, settleOf(e.oc2.captured), 29, d(w3, 1))
+		ctl := pslCharge("txn_PF15FinCtl", "pi_pf15finalctl", e.oa2.captured, settleOf(e.oa2.captured), 31, d(w3, 2))
+		if rep := e.sync(t, w3, w4, fin, ctl); rep.Unattributed != 2 || rep.Inserted != 0 {
+			t.Fatalf("first sync of the two unmapped rows: %+v", rep)
+		}
+		// the operator resolves the first row: it is C's sale, paid out of band
+		if _, err := resolve("txn_PF15Fin", stripeadmin.ResolveAssignedToStore, e.c.f.tenantA, e.storeC, "C's buyer paid the platform page; owner pays C by transfer."); err != nil {
+			t.Fatalf("resolve txn_PF15Fin: %v", err)
+		}
+		// the lag ends: both sessions now carry the payment intents (disclosed fixture, restored after the test)
+		var origC, origA string
+		for attempt, dest := range map[string]*string{e.oc2.attempt: &origC, e.oa2.attempt: &origA} {
+			if err := e.f.owner.QueryRow(ctx, `SELECT payment_intent_id FROM payments.stripe_sessions WHERE attempt_id=$1`, attempt).Scan(dest); err != nil {
+				t.Fatal(err)
+			}
+		}
+		e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id='pi_pf15final' WHERE attempt_id=$1`, e.oc2.attempt)
+		e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id='pi_pf15finalctl' WHERE attempt_id=$1`, e.oa2.attempt)
+		defer e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id=$2 WHERE attempt_id=$1`, e.oc2.attempt, origC)
+		defer e.fixtureExec(t, `UPDATE payments.stripe_sessions SET payment_intent_id=$2 WHERE attempt_id=$1`, e.oa2.attempt, origA)
+		rep := e.sync(t, w3, w4, fin, ctl) // the identical rows again
+		if rep.Inserted != 1 || rep.Duplicate != 1 {
+			t.Fatalf("re-sync after the lag: %+v, want exactly the unresolved control attributed (inserted 1, duplicate 1)", rep)
+		}
+		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_lines WHERE balance_txn_id='txn_PF15Fin'`); n != 0 {
+			t.Fatalf("the resolved row was attributed to a store anyway (%d lines): the owner would pay it twice", n)
+		}
+		if kind, store, _, _, mismatch, _ := e.line(t, "txn_PF15FinCtl"); kind != "CHARGE" || store != e.storeA || mismatch != nil {
+			t.Fatalf("control line: %s %s %v", kind, store, mismatch)
 		}
 	})
 

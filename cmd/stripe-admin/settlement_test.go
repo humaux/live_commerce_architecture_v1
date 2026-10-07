@@ -29,8 +29,8 @@ func TestSettlementUsageErrorsAreFixedAndPrintNothing(t *testing.T) {
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-1 --amount 100 --paid-at nope" + slOp,
 		"settlement-export " + ids + " --statement " + slStmt + slOp, // no --out
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/x.csv --extra=SECRETLEAK" + slOp,
-		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee",          // no operator/ticket
-		"settlement-resolve " + ids + " --environment PROD --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp,       // bad environment
+		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee",     // no operator/ticket
+		"settlement-resolve " + ids + " --environment PROD --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp, // bad environment
 		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee --operator op@test --ticket short",
 		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note n --extra=SECRETLEAK" + slOp,
 	} {

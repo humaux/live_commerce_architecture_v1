@@ -275,7 +275,7 @@ func TestPlatformSettlement(t *testing.T) {
 			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":      {"commerce_payment_registrar", "commerce_payment_registry_writer"},
 			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                                       {"commerce_payment_registrar", "commerce_payment_registry_writer"},
 			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                                 {"commerce_runtime", "commerce_payment_registry_writer"},
-			"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)":  {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0163 (S2-OPEN-1)
+			"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)": {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0163 (S2-OPEN-1)
 			"payments.settlement_kind(text,text,text,bigint)":                                               {"commerce_payment_registry_writer"},
 			"payments.settlement_fee_store(bigint,bigint,bigint)":                                           {"commerce_payment_registry_writer"},
 			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                                    {"commerce_payment_registry_writer"},
