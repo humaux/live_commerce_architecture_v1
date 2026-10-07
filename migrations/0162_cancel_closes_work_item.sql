@@ -5,13 +5,15 @@
 --   (returns.list_cancel_refund_gaps), which never reads the work item.
 -- Depends on: fulfillment.payment_work_items (0018: state CHECK READY/REVIEW_REQUIRED, forced RLS private_writer on the tenant/store
 --   GUCs), fulfillment.merchant_cancel_order (0155 — full current body copied below, never anchor-patched since), checkout.orders,
---   checkout.payment_attempts, payments.facts, payments.stripe_refunds, payments.refund_facts (the gap predicate mirrors
---   returns.list_cancel_refund_gaps, 0155). Forward-only; no new table, no new engine, no external system.
+--   checkout.payment_attempts, payments.facts, payments.stripe_refunds, payments.refund_facts (the refund-coverage gate inside the
+--   definer, 0155). Forward-only; no new table, no new engine, no external system.
 -- Used by: cmd/migrate (embedded, checksummed); internal/fulfillment CancelOrder (unchanged wrapper of the definer replaced here);
---   tests/foundation TestMerchantCancelClosesWorkItem (its backfill subtest re-executes this whole file, 0117 runBackfill pattern);
+--   tests/foundation TestMerchantCancelClosesWorkItem (its backfill subtests re-execute this whole file, 0117 runBackfill pattern, and
+--   the DO block alone under a NOBYPASSRLS role / a suppressed delete); TestBuyerPaymentCaptureACLAndObservationBinding (pins the DELETE grant);
 --   identity.read_merchant_orders / read_merchant_orders_v2 project work_state=coalesce(w.state,'NONE') from the rows closed here.
 -- Invariants: I04 (the work item closes in the cancel's own transaction), I05/I13 (the cancel still never writes payments.* and never
---   starts a refund), I24 (an open cancel-refund gap keeps its READY row: money needing a human is never projected as no-work).
+--   starts a refund). Money that still needs a human after a cancel is NOT carried by the work item: it stays visible through
+--   returns.list_cancel_refund_gaps (fact-based), so the backfill below closes every READY row of a CANCELLED order.
 -- Status: REAL_PG (no external system). Contract: contracts/returns-v1.md §3 Amendment 0162.
 
 -- ---------------------------------------------------------------------------------------------------
@@ -174,47 +176,33 @@ GRANT EXECUTE ON FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text
 COMMENT ON FUNCTION fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) IS 'internal/fulfillment CancelOrder only; EXECUTE commerce_runtime. fulfillment:write, Idempotency-Key, CAS on expected_state. DRAFT hold -> RELEASE rows; CONFIRMED unshipped card order -> only after refunds cover the capture (else 409 refund_first) -> DEALLOCATE of the whole allocation, leaves its OPEN parcel group; pay-at-pickup/COD delegates to inventory.release_pay_at_pickup; AWAITING_PAYMENT 409 payment_in_flight; shipped 409 already_shipped. Never starts a refund, never writes payments.*. 0162: the card branch also DELETEs the order''s READY payment work item in the same transaction (the cancel closes the work; refund coverage was gated first, and a counted in-flight refund that later FAILS is a returns.list_cancel_refund_gaps row, never a re-opened work item).';
 
 -- ---------------------------------------------------------------------------------------------------
--- 3. Forward-only backfill (existing rows): close the READY work items the pre-0162 cancels left behind on CANCELLED orders,
---    EXCEPT rows whose money still needs a human — an outstanding cancel-refund gap (non-failed refunds below the CAPTURED
---    amount of the work item's own attempt: the same held/failed vocabulary as returns.list_cancel_refund_gaps, 0155, tied to
---    w.attempt_id). Those keep READY (I24; the relaxed Go/TS validators accept CANCELLED+READY for exactly these legacy rows).
---    REVIEW_REQUIRED rows are never touched. Count assertion: the DELETE's own row count (one data-modifying CTE statement, so
---    count and delete share one snapshot) plus a post-count that must be zero — a partial application fails the migration loudly.
---    Runs as the migration owner (RLS bypass, like every data migration here); idempotent — a re-run counts and deletes zero.
+-- 3. Forward-only backfill (existing rows): close EVERY READY work item the pre-0162 cancels left behind on CANCELLED orders
+--    (integrator ruling: no open-gap exception — an outstanding cancel-refund gap is carried by returns.list_cancel_refund_gaps, which
+--    never reads the work item, and the new definer already gives that business state NONE). REVIEW_REQUIRED rows and every row of a
+--    non-CANCELLED order are never touched.
+--    Guards: (a) the block must run with RLS bypass (superuser or BYPASSRLS): the table is FORCE ROW LEVEL SECURITY, so any other role
+--    sees zero rows and would "succeed" as a silent no-op; (b) the rows are counted BEFORE the delete (v_expected) and the DELETE's own
+--    row count must equal it — a suppressed or partial delete fails the migration loudly instead of being re-checked against the
+--    DELETE's own predicate. Idempotent: a re-run expects and deletes zero.
 -- ---------------------------------------------------------------------------------------------------
 DO $$
-DECLARE v_deleted bigint; v_left bigint;
+DECLARE v_expected bigint; v_deleted bigint;
 BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles r WHERE r.rolname=current_user AND (r.rolsuper OR r.rolbypassrls)) THEN
+  RAISE EXCEPTION '0162 backfill: role % has neither SUPERUSER nor BYPASSRLS, so FORCE ROW LEVEL SECURITY on fulfillment.payment_work_items would hide the rows and make the backfill a silent no-op', current_user;
+ END IF;
+ SELECT count(*) INTO v_expected FROM fulfillment.payment_work_items w
+  JOIN checkout.orders o ON o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.id=w.order_id
+  WHERE o.commercial_state='CANCELLED' AND w.state='READY';
  WITH gone AS (
   DELETE FROM fulfillment.payment_work_items w
    USING checkout.orders o
    WHERE o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.id=w.order_id
      AND o.commercial_state='CANCELLED' AND w.state='READY'
-     AND NOT EXISTS(
-      SELECT 1 FROM checkout.payment_attempts a
-      JOIN payments.facts f ON f.tenant_id=a.tenant_id AND f.store_id=a.store_id AND f.attempt_id=a.id
-       AND f.kind='CAPTURED' AND f.amount_minor=a.amount_minor
-      CROSS JOIN LATERAL (SELECT coalesce(sum(r.amount_minor),0) AS held FROM payments.stripe_refunds r
-       WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.attempt_id=a.id
-        AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id AND rf.store_id=r.store_id
-         AND rf.refund_id=r.id AND rf.kind IN ('FAILED','CANCELED','REJECTED'))) h
-      WHERE a.tenant_id=w.tenant_id AND a.store_id=w.store_id AND a.id=w.attempt_id AND h.held<f.amount_minor)
    RETURNING 1)
  SELECT count(*) INTO v_deleted FROM gone;
- SELECT count(*) INTO v_left FROM fulfillment.payment_work_items w
-  JOIN checkout.orders o ON o.tenant_id=w.tenant_id AND o.store_id=w.store_id AND o.id=w.order_id
-  WHERE o.commercial_state='CANCELLED' AND w.state='READY'
-    AND NOT EXISTS(
-     SELECT 1 FROM checkout.payment_attempts a
-     JOIN payments.facts f ON f.tenant_id=a.tenant_id AND f.store_id=a.store_id AND f.attempt_id=a.id
-      AND f.kind='CAPTURED' AND f.amount_minor=a.amount_minor
-     CROSS JOIN LATERAL (SELECT coalesce(sum(r.amount_minor),0) AS held FROM payments.stripe_refunds r
-      WHERE r.tenant_id=a.tenant_id AND r.store_id=a.store_id AND r.attempt_id=a.id
-       AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id AND rf.store_id=r.store_id
-        AND rf.refund_id=r.id AND rf.kind IN ('FAILED','CANCELED','REJECTED'))) h
-     WHERE a.tenant_id=w.tenant_id AND a.store_id=w.store_id AND a.id=w.attempt_id AND h.held<f.amount_minor);
- IF v_left<>0 THEN
-  RAISE EXCEPTION '0162 backfill: % cancelled-order work items without an outstanding gap are still READY', v_left;
+ IF v_deleted<>v_expected THEN
+  RAISE EXCEPTION '0162 backfill: expected to close % READY work item(s) of cancelled orders, the delete closed %', v_expected, v_deleted;
  END IF;
- RAISE NOTICE '0162 backfill: closed % READY work item(s) of merchant-cancelled orders (open-gap rows kept)', v_deleted;
+ RAISE NOTICE '0162 backfill: closed % READY work item(s) of merchant-cancelled orders', v_deleted;
 END $$;

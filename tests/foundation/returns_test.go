@@ -1149,8 +1149,10 @@ func TestMerchantCancelGroupRace(t *testing.T) {
 // cancel CLOSES the order's READY payment work item in the same transaction, so the merchant projection shows work_state=NONE for every
 // cancelled order — including the fully refunded one that kept work_state=READY on trunk (the W3-08B symptom the relaxed Go/TS validators
 // only papered over). Money that still needs a human after a cancel is the gap list's job (fact-based, never reads the work item): an
-// in-flight refund counted at cancel time that later FAILS keeps the order in GET /orders/cancel-refund-gaps. The last subtest re-runs the
-// 0162 file (the 0117 runBackfill pattern) over fabricated legacy rows: cancelled + no outstanding gap -> closed, open gap -> kept READY.
+// in-flight refund counted at cancel time that later FAILS keeps the order in GET /orders/cancel-refund-gaps. The backfill subtests re-run
+// the 0162 file (the 0117 runBackfill pattern) over fabricated legacy rows: every READY row of a CANCELLED order closes (open gap
+// included — the gap list stays), a REVIEW_REQUIRED row and a CONFIRMED order's READY row survive; the DO block itself refuses a role
+// without RLS bypass and fails loudly when a delete is suppressed.
 func TestMerchantCancelClosesWorkItem(t *testing.T) {
 	e := tcvNew(t, tcvOpts{stripe: true})
 	e.r.startWorker(t)
@@ -1266,52 +1268,108 @@ func TestMerchantCancelClosesWorkItem(t *testing.T) {
 		}
 	})
 
-	t.Run("the 0162 backfill closes legacy cancelled rows and keeps open-gap rows READY", func(t *testing.T) {
-		// Fabricate the two legacy shapes faithfully: cancel through the REAL definer — a pre-0162 cancel wrote the same
-		// CANCELLED/CANCELLED flip and the same checkout.merchant_cancel DEALLOCATE rows the gap list keys on — then
-		// re-insert the READY work item row the pre-0162 definer left behind (0162 deletes it; nothing else differs).
-		orderA, rfA := e.rtPaid() // A: refund SUCCEEDED before the cancel, no gap -> must be closed
+	// legacyCancel fabricates a pre-0162 cancelled order faithfully: cancel through the REAL definer — a pre-0162 cancel wrote the same
+	// CANCELLED/CANCELLED flip and the same checkout.merchant_cancel DEALLOCATE rows the gap list keys on — then re-insert the work item
+	// row the pre-0162 definer left behind (0018 shape; 0162 deletes it, nothing else differs). afterCancel (optional) runs between the
+	// two, so a refund can fail AFTER the cancel counted it without the re-inserted row existing yet.
+	legacyCancel := func(order string, rf rfxOrder, key string, afterCancel func()) {
+		t.Helper()
+		st, out := cancelConfirmed(order, key)
+		rtExpect(t, "cancel legacy fixture", st, out, 200, "")
+		if afterCancel != nil {
+			afterCancel()
+		}
+		mustExec(t, e.p.f.owner, `INSERT INTO fulfillment.payment_work_items(tenant_id,store_id,owner_id,order_id,attempt_id,capture_kind,state)
+			SELECT o.tenant_id,o.store_id,o.owner_id,o.id,$2::uuid,'CAPTURED','READY' FROM checkout.orders o WHERE o.id=$1`, order, rf.attempt)
+		if n := workRows(order); n != 1 {
+			t.Fatalf("legacy fixture %s: want the re-inserted READY row the old definer left, found %d", order, n)
+		}
+	}
+	workState := func(order string) string {
+		var s string
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT state FROM fulfillment.payment_work_items WHERE order_id=$1`, order).Scan(&s); err != nil {
+			t.Fatalf("work item state of %s: %v", order, err)
+		}
+		return s
+	}
+
+	t.Run("the 0162 backfill closes every legacy cancelled READY row (open gap included) and spares live and review rows", func(t *testing.T) {
+		orderA, rfA := e.rtPaid() // A: refund SUCCEEDED before the cancel, no gap -> closed
 		refundA := e.r.mustRefund(t, rfA, rfA.captured, "requested_by_customer")
 		e.r.awaitRefundFact(t, refundA, rfA.attempt, "SUCCEEDED")
-		orderB, rfB := e.rtPaid() // B: refund in flight at cancel time, FAILED afterwards -> gap outstanding -> must stay READY
+		orderB, rfB := e.rtPaid() // B: refund in flight at cancel time, FAILED afterwards -> outstanding gap -> ALSO closed (ruling: close all)
 		refundB := e.r.mustRefund(t, rfB, rfB.captured, "requested_by_customer")
-		st, out := cancelConfirmed(orderA, "cw-can-lgA01")
-		rtExpect(t, "cancel legacy fixture A", st, out, 200, "")
-		st, out = cancelConfirmed(orderB, "cw-can-lgB01") // held counts the in-flight refund (returns-v1 §3)
-		rtExpect(t, "cancel legacy fixture B", st, out, 200, "")
-		failRefund(rfB, refundB, "legacy") // B's counted refund fails after the cancel: the outstanding gap
-		// Re-insert what the pre-0162 definer left: the READY work item of the CAPTURED attempt (0018 shape).
-		reopenLegacyWorkItem := func(order, attempt string) {
-			mustExec(t, e.p.f.owner, `INSERT INTO fulfillment.payment_work_items(tenant_id,store_id,owner_id,order_id,attempt_id,capture_kind,state)
-				SELECT o.tenant_id,o.store_id,o.owner_id,o.id,$2::uuid,'CAPTURED','READY' FROM checkout.orders o WHERE o.id=$1`, order, attempt)
-			if n := workRows(order); n != 1 {
-				t.Fatalf("legacy fixture %s: want the re-inserted READY row the old definer left, found %d", order, n)
+		orderC, rfC := e.rtPaid() // C: cancelled, but its work row is REVIEW_REQUIRED -> negative control for the state filter
+		refundC := e.r.mustRefund(t, rfC, rfC.captured, "requested_by_customer")
+		e.r.awaitRefundFact(t, refundC, rfC.attempt, "SUCCEEDED")
+		orderD, _ := e.rtPaid() // D: still CONFIRMED with its READY row -> negative control for the order-state filter
+		legacyCancel(orderA, rfA, "cw-can-lgA01", nil)
+		// held counts the in-flight refund (returns-v1 §3); B's counted refund then fails after the cancel: the outstanding gap
+		legacyCancel(orderB, rfB, "cw-can-lgB01", func() { failRefund(rfB, refundB, "legacy") })
+		legacyCancel(orderC, rfC, "cw-can-lgC01", nil)
+		mustExec(t, e.p.f.owner, `UPDATE fulfillment.payment_work_items SET state='REVIEW_REQUIRED' WHERE order_id=$1`, orderC)
+		if workRows(orderD) != 1 || workState(orderD) != "READY" || e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='CONFIRMED'`, orderD) != 1 {
+			t.Fatal("control fixture D must be a CONFIRMED order with one READY row before the backfill")
+		}
+		runCancelClosesWorkItemMigration(t, e)
+		for _, o := range []struct{ name, order string }{{"refunded", orderA}, {"open-gap", orderB}} {
+			if n := workRows(o.order); n != 0 {
+				t.Fatalf("backfill left %d rows on the %s legacy cancel (ruling: every READY row of a CANCELLED order closes)", n, o.name)
+			}
+			if ws := projWorkState(o.order); ws != "NONE" {
+				t.Fatalf("%s legacy cancel projects work_state=%s after the backfill, want NONE", o.name, ws)
 			}
 		}
-		reopenLegacyWorkItem(orderA, rfA.attempt)
-		reopenLegacyWorkItem(orderB, rfB.attempt)
-		runCancelClosesWorkItemMigration(t, e)
-		if n := workRows(orderA); n != 0 {
-			t.Fatalf("backfill left %d rows on the refunded legacy cancel", n)
-		}
-		if ws := projWorkState(orderA); ws != "NONE" {
-			t.Fatalf("legacy refunded cancel projects work_state=%s after the backfill, want NONE", ws)
-		}
-		if n := workRows(orderB); n != 1 {
-			t.Fatalf("backfill closed the open-gap legacy row (%d rows): the money still needs a human", n)
-		}
-		if ws := projWorkState(orderB); ws != "READY" {
-			t.Fatalf("open-gap legacy cancel projects work_state=%s after the backfill, want READY", ws)
-		}
+		// The gap stays visible through the fact-based list, which never reads the work item.
 		if g := gapOf(orderB); g == nil || g["reason"] != "cancel_refund_failed" {
-			t.Fatalf("the legacy gap row must stay listed: %v", g)
+			t.Fatalf("the legacy gap row must stay listed after its work item closes: %v", g)
 		}
 		if g := gapOf(orderA); g != nil {
 			t.Fatalf("the refunded legacy cancel is not a gap: %v", g)
 		}
+		// Negative controls: the backfill's predicate is CANCELLED order AND READY row — nothing else is touched.
+		if workRows(orderC) != 1 || workState(orderC) != "REVIEW_REQUIRED" {
+			t.Fatalf("backfill touched the REVIEW_REQUIRED row of a cancelled order (rows=%d state=%q)", workRows(orderC), workState(orderC))
+		}
+		if workRows(orderD) != 1 || workState(orderD) != "READY" {
+			t.Fatalf("backfill touched the READY row of a CONFIRMED order (rows=%d)", workRows(orderD))
+		}
+		if ws := projWorkState(orderD); ws != "READY" {
+			t.Fatalf("live paid order projects work_state=%s after the backfill, want READY", ws)
+		}
 		runCancelClosesWorkItemMigration(t, e) // re-run: idempotent, and its count assertion must hold at zero
-		if workRows(orderA) != 0 || workRows(orderB) != 1 {
+		if workRows(orderA) != 0 || workRows(orderB) != 0 || workRows(orderC) != 1 || workRows(orderD) != 1 {
 			t.Fatal("the backfill re-run changed the outcome")
+		}
+	})
+
+	t.Run("the backfill block refuses to run without RLS bypass and fails loudly when a delete is suppressed", func(t *testing.T) {
+		orderE, rfE := e.rtPaid()
+		refundE := e.r.mustRefund(t, rfE, rfE.captured, "requested_by_customer")
+		e.r.awaitRefundFact(t, refundE, rfE.attempt, "SUCCEEDED")
+		legacyCancel(orderE, rfE, "cw-can-lgE01", nil)
+		// FORCE RLS hides every row from a role without BYPASSRLS, so count and delete would both see zero and "succeed": the block must
+		// refuse such a role up front instead (the SET LOCAL ROLE'd tx is always rolled back).
+		err := runCancelClosesWorkItemBackfill(t, e, `SET LOCAL ROLE commerce_checkout_writer`)
+		if err == nil || !strings.Contains(err.Error(), "0162 backfill:") || !strings.Contains(err.Error(), "BYPASSRLS") {
+			t.Fatalf("backfill as a NOBYPASSRLS role must raise the RLS-bypass error, got %v", err)
+		}
+		if workRows(orderE) != 1 {
+			t.Fatalf("the refused backfill changed data: %d rows", workRows(orderE))
+		}
+		// A BEFORE DELETE trigger that swallows the delete leaves the expected row in place: the pre-counted expectation must not match
+		// the DELETE's own row count, and the whole block (tx) must fail.
+		err = runCancelClosesWorkItemBackfill(t, e, `CREATE FUNCTION public.zz_cw_swallow() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NULL; END $f$;
+			CREATE TRIGGER zz_cw_swallow BEFORE DELETE ON fulfillment.payment_work_items FOR EACH ROW EXECUTE FUNCTION public.zz_cw_swallow()`)
+		if err == nil || !strings.Contains(err.Error(), "0162 backfill:") || !strings.Contains(err.Error(), "expected") {
+			t.Fatalf("a suppressed delete must fail the backfill with the count-mismatch error, got %v", err)
+		}
+		if workRows(orderE) != 1 {
+			t.Fatalf("the failed backfill changed data: %d rows", workRows(orderE))
+		}
+		runCancelClosesWorkItemMigration(t, e) // no trigger now (rolled back): closes E
+		if workRows(orderE) != 0 {
+			t.Fatalf("the clean backfill left %d rows on E", workRows(orderE))
 		}
 	})
 }
@@ -1335,4 +1393,25 @@ func runCancelClosesWorkItemMigration(t *testing.T, e *tcvEnv) {
 	if err := tx.Commit(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// runCancelClosesWorkItemBackfill executes ONLY the 0162 backfill DO block (section 3) as the migration owner after the given setup
+// statements (e.g. SET LOCAL ROLE, a fault-injecting trigger) inside a transaction that is ALWAYS rolled back, and returns its error.
+func runCancelClosesWorkItemBackfill(t *testing.T, e *tcvEnv, setup string) error {
+	t.Helper()
+	body, err := os.ReadFile("../../migrations/0162_cancel_closes_work_item.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	i := strings.Index(string(body), "\nDO $$")
+	if i < 0 {
+		t.Fatal("0162: backfill DO block not found")
+	}
+	tx, err := e.p.f.owner.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(context.Background())
+	_, err = tx.Exec(context.Background(), setup+";\n"+string(body)[i:])
+	return err
 }
