@@ -1,0 +1,38 @@
+actual docker run (pinned postgres Bash only, --network none, memory64m, pids64, no DB, container-local temporary fixtures) extracted make_config static/full: exit=0
+owner=65532:65532 mode=700
+
+actual Python extracted P02 (MOCK os metadata): valid admitted=True exit=0
+actual Python extracted P02 (MOCK os metadata): missing admitted=False exit=0
+actual Python extracted P02 (MOCK os metadata): symlink admitted=False exit=0
+actual Python extracted P02 (MOCK os metadata): wrong-owner admitted=False exit=0
+actual Python extracted P02 (MOCK os metadata): wrong-group admitted=False exit=0
+actual Python extracted P02 (MOCK os metadata): world-readable admitted=False exit=0
+actual node --test tests/deploy/deploy-prep-r3.test.mjs: exit=0
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (871.565083ms)
+✔ platform operator custody, export mount and binary are wired (183.041959ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (2672.8625ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (104.571709ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3900.312291
+
+actual node --check tests/deploy/deploy-prep-r3.test.mjs: exit=0
+
+actual bash -n deploy/scripts/ops-admin.sh deploy/scripts/preflight.sh deploy/scripts/smoke.sh deploy/scripts/smoke-r3.sh deploy/scripts/host-setup.sh deploy/postgres/provision-logins.sh: exit=0
+
+cd60aabb36d5d393ae5f565cc44396dd7699dfbb4e014ff7f594cb5efa8bb127  deploy/compose.yml
+a5f9ef70fedfef5309fcd6829250d8b4f7312f41d41fcf717bfd08a2cdc0177f  deploy/docker/go.Dockerfile
+c180e4b9b9944bd955c22932799f81c50cfc6b16f6e146b26151a3cbf0fb8a5d  deploy/scripts/ops-admin.sh
+8a2c60bc68fa792ded48d89010994064b5ff48dadac2ad9fa9cac62dbdf52412  deploy/scripts/preflight.sh
+d7d0145f4cc14e9ff1ede1c0f5fd2afffa7a8a3683a617685280bac17441af68  deploy/scripts/smoke.sh
+4194f9b02510985ab1438b832b27d76a8b57729c2b4db43a24fe4a63ed49514b  deploy/scripts/smoke-r3.sh
+63ea5493a9b2452e7436a4a512f8dac39279aef0174125af3134400236825310  deploy/scripts/host-setup.sh
+3665d8bc1542aadb1ec9d04250049337e3a2fceb5fe1abb73b0cc71bc7e17e78  deploy/postgres/provision-logins.sh
+6b4c2d44e98e2848323f02ce0db17822f0a3dae1b34aed51f41018a7f11fbcff  deploy/postgres/logins.tsv
+934507b0130703263d1bff3a0e783f24402d8a64fe35f7a8675d1dc003039317  deploy/secrets.manifest.tsv
+e6312a88ed320cf234bdeaf493e767f9a43d5a9bc6a4e290d9f3a25bd7ff17a7  tests/deploy/deploy-prep-r3.test.mjs

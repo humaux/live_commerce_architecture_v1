@@ -1,0 +1,38 @@
+✖ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (3579.6055ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3670.954333
+
+✖ failing tests:
+
+test at tests/deploy/deploy-prep-r3.test.mjs:68:1
+✖ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (3579.6055ms)
+  AssertionError [ERR_ASSERTION]: FAIL stripe-admin settlement-sync --environment LIVE expected=1 got=0
+  2026-10-07T09:44:31Z ops-admin.sh INFO: ops-admin stripe-admin settlement-sync (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL stripe-admin platform-open --environment LIVE expected=1 got=0
+  2026-10-07T09:44:31Z ops-admin.sh INFO: ops-admin stripe-admin platform-open (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  
+  
+  1 !== 0
+  
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:127:10
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:68:93)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

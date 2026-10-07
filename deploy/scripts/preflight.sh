@@ -106,6 +106,12 @@ rec("P19", len(base_zone) <= 253 and not base_zone.endswith(".localhost") and re
 
 # ---- P02 secrets dir/file modes ----------------------------------------------------------------
 sdir = E.get("LC_SECRETS_DIR", "")
+export_dir = os.path.join(E.get("LC_STATE_DIR", ""), "settlements")
+export_ok = False
+if os.path.isdir(export_dir) and not os.path.islink(export_dir):
+    export_stat = os.stat(export_dir)
+    export_ok = export_stat.st_uid == 65532 and export_stat.st_gid == 65532 and stat.S_IMODE(export_stat.st_mode) == 0o700
+rec("P02", export_ok, "LC_STATE_DIR/settlements is a real directory owned by 65532:65532 mode 0700 (stripe-admin export bind)")
 gid = int(E.get("LC_SECRETS_GID", "-1")) if E.get("LC_SECRETS_GID", "").isdigit() else -1
 manifest = []
 with open(os.path.join(deploy, "secrets.manifest.tsv"), encoding="utf-8") as fh:
@@ -306,11 +312,13 @@ allow = {
                 "COMMERCE_STUDIO_ENABLED", "COMMERCE_STUDIO_MEDIA_ENABLED", "COMMERCE_CLAIMS_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
                 "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "COMMERCE_META_ADS_APP_ID", "COMMERCE_META_ADS_CONFIG_ID",
                 "COMMERCE_META_ADS_REDIRECT_URI", "COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_LOGIN_CONFIG_ID",
-                "COMMERCE_META_LOGIN_REDIRECT_URI", "COMMERCE_META_LOGIN_GRAPH_VERSION", "TZ"},
+                "COMMERCE_META_LOGIN_REDIRECT_URI", "COMMERCE_META_LOGIN_GRAPH_VERSION", "COMMERCE_PAYUNI_NOTIFY_ENABLED",
+                "COMMERCE_META_ADVANCED_ACCESS", "COMMERCE_META_DM_RECEIVER_CONFIRMED", "TZ"},
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
     "payment-worker.env": {"COMMERCE_PAYMENT_WORKER_CONCURRENCY", "TZ"},
-    "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "TZ"},
+    "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "COMMERCE_META_PAGE_APP_ID",
+                          "COMMERCE_META_ADVANCED_ACCESS", "COMMERCE_META_DM_RECEIVER_CONFIRMED", "TZ"},
     "ads-worker.env": {"COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_ADS_PARTNER_AGENT", "TZ"},
     "expiry-worker.env": {"COMMERCE_EXPIRY_WORKER_CONCURRENCY", "TZ"},
     "meta-worker.env": {"COMMERCE_META_WORKER_CONCURRENCY", "TZ"},
@@ -352,16 +360,22 @@ password_login = flag("LC_PASSWORD_LOGIN_ENABLED", E.get("LC_PASSWORD_LOGIN_ENAB
 # storefront-v2 §E8: the buyer-mail loop of expiry-worker (default off). It needs the same mailbox grammar and owner secret as the
 # password-login mail, but not identity: the loop only reads notify.outbox.
 buyer_mail = flag("LC_BUYER_MAIL_ENABLED", E.get("LC_BUYER_MAIL_ENABLED", ""))
+merchant_mail_value = E.get("LC_MERCHANT_ALERT_MAIL", "0")
+rec("P06", merchant_mail_value in ("0", "1"), "LC_MERCHANT_ALERT_MAIL (0 or 1; default 0)")
+merchant_mail = merchant_mail_value == "1"
 rec("P06", not password_login or identity, "LC_PASSWORD_LOGIN_ENABLED requires LC_IDENTITY_ENABLED")
 buyer_on = flag("LC_BUYER_ENABLED", E.get("LC_BUYER_ENABLED", ""))
 accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED", ""))
 payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT_ENABLED", ""))
 meta = flag("COMMERCE_META_WEBHOOK_ENABLED", api.get("COMMERCE_META_WEBHOOK_ENABLED", ""))
+# PAYUNi runtime was removed; this legacy knob is only a stale-config tripwire, never runtime wiring.
+rec("P06", api.get("COMMERCE_PAYUNI_NOTIFY_ENABLED", "0") == "0", "COMMERCE_PAYUNI_NOTIFY_ENABLED must remain 0 (tripwire only; PAYUNi code removed)")
 studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
 studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_MEDIA_ENABLED", ""))
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 rec("P06", not buyer_mail or "app" in profiles, "LC_BUYER_MAIL_ENABLED requires the app profile (expiry-worker runs the loop)")
+rec("P06", not merchant_mail or "app" in profiles, "LC_MERCHANT_ALERT_MAIL requires the app profile (independent owner opt-in)")
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
 checkout_on = flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
 rec("P06", not checkout_on or stripe_on, "LC_STRIPE_CHECKOUT_ENABLED=1 requires LC_STRIPE_ENABLED=1 (checkout without the worker and webhook strands held stock)")
@@ -443,6 +457,19 @@ if "claims" in profiles:
     rec("P08", cw.get("COMMERCE_META_GRAPH_AUTH_HEADER", "") in ("", "0", "1"), "COMMERCE_META_GRAPH_AUTH_HEADER")
 aw = knobs.get("ads-worker.env", {})
 graph_version = re.compile(r"v[0-9]{1,3}\.[0-9]{1,2}")
+page_app = cw.get("COMMERCE_META_PAGE_APP_ID", "")
+rec("P08", not page_app or re.fullmatch(r"[0-9]{1,40}", page_app) is not None,
+    "COMMERCE_META_PAGE_APP_ID (optional numeric app id; empty disables health probe)")
+for fname in ("api.env", "claims-worker.env"):
+    health = knobs.get(fname, {})
+    advanced = health.get("COMMERCE_META_ADVANCED_ACCESS", "")
+    rec("P08", not advanced or re.fullmatch(r"[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*", advanced) is not None,
+        "COMMERCE_META_ADVANCED_ACCESS (" + fname + ": comma-separated verified permissions)")
+    rec("P08", health.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0") in ("0", "1"),
+        "COMMERCE_META_DM_RECEIVER_CONFIRMED (" + fname + ": 0 or 1)")
+rec("P08", api.get("COMMERCE_META_ADVANCED_ACCESS", "") == cw.get("COMMERCE_META_ADVANCED_ACCESS", "") and
+    api.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0") == cw.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0"),
+    "Meta health capability flags match in api.env and claims-worker.env")
 if ads_app:
     rec("P08", re.fullmatch(r"[0-9]{1,40}", ads_app) is not None, "COMMERCE_META_ADS_APP_ID (numeric Meta app id)")
     rec("P08", re.fullmatch(r"[0-9]{1,40}", api.get("COMMERCE_META_ADS_CONFIG_ID", "")) is not None, "COMMERCE_META_ADS_CONFIG_ID")
@@ -493,7 +520,7 @@ if identity:
     if password_login:
         rec("P08", E.get("LC_BREACH_CHECK", "hibp") == "hibp", "LC_BREACH_CHECK must be hibp outside loopback tests")
     rec("P08", not onboarding or bool(cur), "LC_ONBOARDING_CURRENCIES required by onboarding")
-if password_login or buyer_mail:
+if password_login or buyer_mail or merchant_mail:
     # cmd/api/identity.go loadPasswordConfig + cmd/expiry-worker/mail.go loadMailConfig grammar: DNS name host, From carries exactly the username.
     smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")
     rec("P08", re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", smtp_host) is not None, "LC_SMTP_HOST (DNS name)")
@@ -547,7 +574,7 @@ if ecpay_on:
 if identity and (not password_login or E.get("LC_OIDC_ISSUER", "")):
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)
-if (identity and password_login) or buyer_mail:
+if (identity and password_login) or buyer_mail or merchant_mail:
     rec("P09", values.get("commerce_smtp_password", "__UNSET__") != "__UNSET__",
         "commerce_smtp_password (owner-supplied SMTP authorization code of a dedicated sending mailbox)")
 

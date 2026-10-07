@@ -1,0 +1,26 @@
+actual node --test --test-name-pattern=shared loader|sanctioned operator tests/deploy/deploy-prep-r3.test.mjs exit=0
+✔ shared loader makes API/worker LIVE pair file-only before Compose interpolation (368.152375ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1232.22425ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1657.021333
+
+actual bash repeated on->off->on->absent loader/ordinary override controls exit=0
+
+actual bash readonly LC_STRIPE_LIVE_ENABLED refusal exit=1; refusal/no-value-leak=True
+/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/lib.sh: line 56: unset: LC_STRIPE_LIVE_ENABLED: cannot unset: readonly variable
+2026-10-07T10:10:31Z bash FATAL: cannot clear caller Stripe LIVE pair (readonly variables refused)
+
+actual bash readonly LC_STRIPE_LIVE_APPROVAL_REF refusal exit=1; refusal/no-value-leak=True
+/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/lib.sh: line 56: unset: LC_STRIPE_LIVE_APPROVAL_REF: cannot unset: readonly variable
+2026-10-07T10:10:31Z bash FATAL: cannot clear caller Stripe LIVE pair (readonly variables refused)
+
+actual bash -n deploy/scripts/lib.sh exit=0
+source stable=True
+40a5a19becfb3f856f31905a1450ef5e58e130fa2e221c2c3f8b8675f3fea568  deploy/scripts/lib.sh
+274e05bd3bfed37e831fb38776b6e70dd88785ae1fb906cd4426cdfcce30a488  tests/deploy/deploy-prep-r3.test.mjs

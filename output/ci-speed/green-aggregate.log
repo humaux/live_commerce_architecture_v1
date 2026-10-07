@@ -1,0 +1,16 @@
+✔ parseShard: i/N, empty means unsharded, anything malformed throws (0.782333ms)
+✔ assignShards: deterministic, every key owned once, near-balanced (LPT bound) (0.934792ms)
+✔ planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey) (1.093209ms)
+✔ planClick at N=10 keeps every shard within ~1.3x of the mean planned cost (0.1075ms)
+✔ aggregate click: honest shards pass for several N (2.390667ms)
+✔ aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure (3.1965ms)
+✔ aggregate click: a route added to the registry after the shards ran cannot pass (the registry is re-read) (0.381292ms)
+✔ aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail (4.150125ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 86.498041

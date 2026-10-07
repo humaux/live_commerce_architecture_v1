@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # File: deploy/scripts/ops-admin.sh
-# Purpose: the ONLY sanctioned way to run the operator CLIs (stripe-admin, meta-admin, store-admin) against a
+# Depends on: lib.sh, ops-only Compose services, provisioned registrar/operator logins and caller inputs below.
+# Used by: operator runbooks, smoke S44 and deploy-prep-r3 MOCK allowlist tests.
+# Purpose: the ONLY sanctioned way to run the operator CLIs (stripe-admin, meta-admin, store-admin, platform-admin) against a
 #   deployed stack: a one-shot container of profile `ops` that holds the registrar logins and the
 #   operator's own inputs, never one of the app containers (api/admin/storefront/workers hold neither).
 #   Prints the CLI's JSON result line (IDs and versions only); never prints a secret.
@@ -29,7 +31,7 @@
 #   until `--rm` removes it, readable only by host root, exactly like the secret files).
 # Reads secrets: none directly; the container mounts its own DSN + keyrings (compose.yml).
 # Used by: docs/runbooks/deploy.md §Stripe / §Meta, docs/runbooks/merchant-onboarding.md; smoke S44.
-# Depends on: compose services stripe-admin / meta-admin / store-admin, a running postgres with migrations and
+# Depends on: compose services stripe-admin / meta-admin / store-admin / platform-admin, a running postgres with migrations and
 #   provisioned logins (deploy.sh first).
 # Status: DESIGN; the registrar-login and container wiring is verified by smoke S13 and S44, a real
 #   SANDBOX registration is owner-run (NOT_RUN in CI: needs the owner's Stripe test key).
@@ -44,7 +46,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | platform-admin store-suspend|store-resume|tenant-suspend|tenant-resume|status|audit|support-grant|support-revoke|support-list|support-principal-add|support-principal-revoke [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -59,18 +61,36 @@ stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke)
 stripe-admin:platform-designate | stripe-admin:platform-open | stripe-admin:platform-close | stripe-admin:platform-allow | stripe-admin:platform-disallow | stripe-admin:platform-block | stripe-admin:platform-unblock) ;;
 # stripe-platform-account-v1 §6.5: settlement-* take no secret input (sync uses the STORED platform key; close/export/payout do not call Stripe).
 stripe-admin:settlement-sync | stripe-admin:settlement-close | stripe-admin:settlement-export | stripe-admin:settlement-payout) ;;
+# OPS-01B/OPS-02B: database-only actions, no caller secret input.
+platform-admin:store-suspend | platform-admin:store-resume | platform-admin:tenant-suspend | platform-admin:tenant-resume | platform-admin:status | platform-admin:audit) ;;
+platform-admin:support-grant | platform-admin:support-revoke | platform-admin:support-list | platform-admin:support-principal-add | platform-admin:support-principal-revoke) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
 store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set) ;;
 *) usage ;;
 esac
+
+# W4-S2: the CSV must reach the only writable bind, never an arbitrary container path.
+# O_EXCL in the CLI refuses overwrites; duplicate flags and traversal are refused here.
+if [[ "$tool:$sub" == stripe-admin:settlement-export ]]; then
+  export_out='' export_count=0
+  for ((i = 0; i < ${#args[@]}; i++)); do
+    case "${args[$i]}" in
+    --out=*) export_out=${args[$i]#--out=}; export_count=$((export_count + 1)) ;;
+    -out=*) export_out=${args[$i]#-out=}; export_count=$((export_count + 1)) ;;
+    --out | -out) export_out=${args[$((i + 1))]:-}; export_count=$((export_count + 1)); i=$((i + 1)) ;;
+    esac
+  done
+  [[ "$export_count" == 1 && "$export_out" =~ ^/exports/[A-Za-z0-9][A-Za-z0-9_.-]{0,119}\.csv$ ]] ||
+    lc_die "settlement_export_out_refused: give one --out /exports/<filename>.csv (no subdirectories); prepare LC_STATE_DIR/settlements as UID 65532 mode 0700"
+fi
 
 lc_load_env "$LC_COMPOSE_ENV"
 
 # O3/§5.2: the flag+ref pair comes from compose.env (LC_STRIPE_LIVE_*), is mapped to COMMERCE_STRIPE_LIVE_*
 # and forwarded by NAME; a COMMERCE_STRIPE_LIVE_* value in the caller's env is never trusted.
 pair_re='^[A-Za-z0-9._:-]{8,128}$'
-live_flag=${LC_STRIPE_LIVE_ENABLED:-}
-live_ref=${LC_STRIPE_LIVE_APPROVAL_REF:-}
+live_flag=$(lc_env_file_get "$LC_COMPOSE_ENV" LC_STRIPE_LIVE_ENABLED) || live_flag=
+live_ref=$(lc_env_file_get "$LC_COMPOSE_ENV" LC_STRIPE_LIVE_APPROVAL_REF) || live_ref=
 pair_ok=0
 if [[ "$live_flag" == 1 && "$live_ref" =~ $pair_re ]]; then pair_ok=1; fi
 unset COMMERCE_STRIPE_LIVE_ENABLED COMMERCE_STRIPE_LIVE_APPROVAL_REF

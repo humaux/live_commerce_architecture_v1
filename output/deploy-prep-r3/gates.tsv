@@ -1,0 +1,14 @@
+gate	command	exit	evidence
+red-baseline	node --test output/deploy-prep-r3/baseline/tests/deploy/deploy-prep-r3.test.mjs (a3122263 archive)	1 expected	red-baseline.log
+green	node --test tests/deploy/deploy-prep-r3.test.mjs tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs	0	green.log
+check-gates	bash scripts/dev/check-gates.sh	0	check-gates.log
+headers-strict	LC_HEADERS_STRICT=1 bash scripts/dev/check-headers.sh 86e404a4	0	headers-strict.log
+check-pins	bash deploy/scripts/check-pins.sh	0	check-pins.log
+smoke-static	bash deploy/scripts/smoke.sh static	0	smoke-static-result.json
+go-vet	go vet ./...	0	go-vet.log
+gen-deps	bash scripts/dev/gen-deps.sh	0	gen-deps.log
+depmap-generate	bash scripts/dev/depmap.sh	0	depmap-generate.log
+depmap-check	bash scripts/dev/depmap.sh --check	0	depmap-check.log
+release-list	bash scripts/dev/release-gate.sh --list	0	release-gate-list.log
+shellcheck-availability	command -v shellcheck	1; shellcheck NOT_RUN	shellcheck-availability.log
+diff-check	git diff --check	0	diff-check.log

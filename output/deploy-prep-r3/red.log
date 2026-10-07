@@ -1,0 +1,175 @@
+✖ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (950.961542ms)
+✖ platform operator custody, export mount and binary are wired (161.520625ms)
+✖ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (4.579959ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1170.428792
+
+✖ failing tests:
+
+test at tests/deploy/deploy-prep-r3.test.mjs:41:1
+✖ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (950.961542ms)
+  AssertionError [ERR_ASSERTION]: FAIL platform-admin store-suspend expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin store-resume expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin tenant-suspend expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin tenant-resume expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin status expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin audit expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin support-grant expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin support-revoke expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin support-list expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin support-principal-add expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL platform-admin support-principal-revoke expected=0 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  FAIL stripe-admin settlement-export --statement 00000000-0000-4000-8000-000000000001 expected=1 got=0
+  2026-10-07T04:07:53Z ops-admin.sh INFO: ops-admin stripe-admin settlement-export (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL stripe-admin settlement-export --out /tmp/report.csv expected=1 got=0
+  2026-10-07T04:07:53Z ops-admin.sh INFO: ops-admin stripe-admin settlement-export (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL stripe-admin settlement-export --out /exports/../report.csv expected=1 got=0
+  2026-10-07T04:07:53Z ops-admin.sh INFO: ops-admin stripe-admin settlement-export (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL stripe-admin settlement-export --out /exports/sub/report.csv expected=1 got=0
+  2026-10-07T04:07:53Z ops-admin.sh INFO: ops-admin stripe-admin settlement-export (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL stripe-admin settlement-export --out /exports/one.csv --out=/exports/two.csv expected=1 got=0
+  2026-10-07T04:07:53Z ops-admin.sh INFO: ops-admin stripe-admin settlement-export (one-shot container, profile ops)
+  FAIL docker ran after refusal
+  FAIL platform-admin audit expected=7 got=2
+  2026-10-07T04:07:53Z ops-admin.sh FATAL: usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]
+  
+  
+  1 !== 0
+  
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:84:10
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:41:93)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/deploy/deploy-prep-r3.test.mjs:87:1
+✖ platform operator custody, export mount and binary are wired (161.520625ms)
+  AssertionError [ERR_ASSERTION]: error while interpolating services.admin.environment.LC_COMPANY_CONTACT_EMAIL: required variable LC_COMPANY_CONTACT_EMAIL is missing a value: set LC_COMPANY_CONTACT_EMAIL
+  
+  
+  1 !== 0
+  
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:89:10
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:87:76)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/deploy/deploy-prep-r3.test.mjs:112:1
+✖ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (4.579959ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^COMMERCE_PAYUNI_NOTIFY_ENABLED=0$/m. Input:
+  
+  '# File: deploy/env/api.env.example -> copy to ${LC_ENV_DIR}/api.env (0640 root:root)\n' +
+    '# Purpose: per-service KNOBS for cmd/api only. Wiring (LISTEN_ADDR, origins, *_FILE secrets,\n' +
+    '#   shared flags) lives in deploy/compose.yml; redefining any of it here fails preflight P06.\n' +
+    '# Runs as/in: env_file of service "api" (lc-go /app/bin/api, UID 65532, edge netns).\n' +
+    '# Reads secrets: none here (secrets are files). Used by: compose.yml api; preflight P06/P08/P09.\n' +
+    '# Status: DESIGN. Change rules: allowed keys are exactly the ones below (+ TZ). Forbidden\n' +
+    '#   everywhere: COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS, COMMERCE_FIXTURE_*, LC_TEST_* (P07).\n' +
+    '\n' +
+    '# Merchant PSP-credential CRUD (needs LC_IDENTITY_ENABLED=1).\n' +
+    'COMMERCE_ACCOUNTS_ENABLED=1\n' +
+    '# Hosted payment start (needs LC_BUYER_ENABLED=1 and the matching payments-* profile).\n' +
+    'COMMERCE_BUYER_PAYMENT_ENABLED=1\n' +
+    '# FB/IG webhook ingress (needs the `meta` profile + commerce_meta_apps_json, an owner secret from the\n' +
+    '# Meta developer console). Comment intake -> claims also needs the `claims` profile (claims-worker).\n' +
+    'COMMERCE_META_WEBHOOK_ENABLED=0\n' +
+    '# Studio = live-session planning + keyword claims + claim-source (R1 ruling G2). Needs LC_IDENTITY_ENABLED=1\n' +
+    '# (the API refuses Studio without signed identity); preflight P06 checks it.\n' +
+    'COMMERCE_STUDIO_ENABLED=1\n' +
+    '# Keyword claims + the claim-source (comment post binding) routes. Needs COMMERCE_STUDIO_ENABLED=1 (P06) and\n' +
+    '# the commerce_claims_label_key secret (compose wires it).\n' +
+    'COMMERCE_CLAIMS_ENABLED=1\n' +
+    '# MUST stay 0: LiveKit media planning is MOCK-only and the media worker is not deployable (B5, F11).\n' +
+    '# preflight P06 enforces it; with 0 the media routes are not mounted (404).\n' +
+    'COMMERCE_STUDIO_MEDIA_ENABLED=0\n' +
+    '# OIDC client id registered at the IdP (redirect URI https://<LC_ADMIN_HOST>/api/auth/callback).\n' +
+    'COMMERCE_OIDC_CLIENT_ID=CHANGE_ME_CLIENT_ID\n' +
+    '# Stable label stored in identity.login_flows.provider_key (1-128 bytes, not a secret).\n' +
+    '# Never change it after the first merchant login.\n' +
+    'COMMERCE_IDENTITY_PROVIDER_KEY=oidc-primary-v1\n' +
+    '# Merchant session lifetime, Go duration 5m..24h.\n' +
+    'COMMERCE_SESSION_TTL=8h\n' +
+    '# SANDBOX | LIVE (PROVIDER_MOCK is test-only and has no env path). LIVE = real money, owner approval.\n' +
+    '# Stripe (LC_STRIPE_ENABLED in compose.env): LIVE admits Stripe only with LC_STRIPE_LIVE_ENABLED=1 +\n' +
+    '# LC_STRIPE_LIVE_APPROVAL_REF in compose.env (stripe-live-enable-v1 LD6); without the pair the API refuses it.\n' +
+    'COMMERCE_PAYMENT_PROFILE=SANDBOX\n' +
+    '# The ECPay logistics environment follows this profile; its switch is LC_CVS_ECPAY_ENABLED in compose.env (wiring, not a knob here).\n' +
+    '# Merchant Meta ads (meta-ads-v1). Empty = routes unmounted and nothing else is read. When set, the other\n' +
+    '# three are required, commerce_meta_ads_app_secret must be supplied (P09), the `ads` profile must run\n' +
+    '# ads-worker (P06), and ruling B15 keeps it empty until migrations/0080 (ads-capi) is merged (P06).\n' +
+    '# App 大梦 = 4291253377792879 (ruling O-C); CONFIG_ID from Facebook Login for Business; redirect URI must be\n' +
+    '# https://<LC_ADMIN_HOST>/api/ads/meta/callback, registered in the Meta app dashboard (owner step §11).\n' +
+    'COMMERCE_META_ADS_APP_ID=\n' +
+    'COMMERCE_META_ADS_CONFIG_ID=\n' +
+    'COMMERCE_META_ADS_REDIRECT_URI=\n' +
+    'COMMERCE_META_ADS_GRAPH_VERSION=v26.0\n' +
+    '# Merchant Facebook Page / Instagram connect (meta-connect, Settings card "Facebook 主頁 / Instagram"). Empty CONFIG_ID = routes\n' +
+    '# unmounted and nothing else is read. When set: COMMERCE_META_WEBHOOK_ENABLED=1 and LC_IDENTITY_ENABLED (preflight P06), the other two\n' +
+    '# values below are required (P08), and the Meta app is the one in commerce_meta_apps_json (no extra secret). The api seals Page tokens to the\n' +
+    '# HPKE PUBLIC ring only (commerce_meta_page_hpke_public_keys_json); the private ring is claims-worker-only. CONFIG_ID is the Facebook\n' +
+    '# Login for Business configuration; REDIRECT_URI must equal https://<LC_ADMIN_HOST>/api/meta/callback and be registered in the Meta\n' +
+    '# app dashboard (docs/runbooks/deploy.md §Meta). Pilot values (app 大梦, owner-registered 2026-10-01, not secrets):\n' +
+    '#   COMMERCE_META_LOGIN_CONFIG_ID=2952863798433821  COMMERCE_META_LOGIN_REDIRECT_URI=https://admin.xgdwm.com/api/meta/callback\n' +
+    'COMMERCE_META_LOGIN_CONFIG_ID=\n' +
+    'COMMERCE_META_LOGIN_REDIRECT_URI=\n' +
+    'COMMERCE_META_LOGIN_GRAPH_VERSION=v26.0\n' +
+    'TZ=UTC\n'
+  
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:121:10
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:112:103)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '# File: deploy/env/api.env.example -> copy to ${LC_ENV_DIR}/api.env (0640 root:root)\n# Purpose: per-service KNOBS for cmd/api only. Wiring (LISTEN_ADDR, origins, *_FILE secrets,\n#   shared flags) lives in deploy/compose.yml; redefining any of it here fails preflight P06.\n# Runs as/in: env_file of service "api" (lc-go /app/bin/api, UID 65532, edge netns).\n# Reads secrets: none here (secrets are files). Used by: compose.yml api; preflight P06/P08/P09.\n# Status: DESIGN. Change rules: allowed keys are exactly the ones below (+ TZ). Forbidden\n#   everywhere: COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS, COMMERCE_FIXTURE_*, LC_TEST_* (P07).\n\n# Merchant PSP-credential CRUD (needs LC_IDENTITY_ENABLED=1).\nCOMMERCE_ACCOUNTS_ENABLED=1\n# Hosted payment start (needs LC_BUYER_ENABLED=1 and the matching payments-* profile).\nCOMMERCE_BUYER_PAYMENT_ENABLED=1\n# FB/IG webhook ingress (needs the `meta` profile + commerce_meta_apps_json, an owner secret from the\n# Meta developer console). Comment intake -> claims also needs the `claims` profile (claims-worker).\nCOMMERCE_META_WEBHOOK_ENABLED=0\n# Studio = live-session planning + keyword claims + claim-source (R1 ruling G2). Needs LC_IDENTITY_ENABLED=1\n# (the API refuses Studio without signed identity); preflight P06 checks it.\nCOMMERCE_STUDIO_ENABLED=1\n# Keyword claims + the claim-source (comment post binding) routes. Needs COMMERCE_STUDIO_ENABLED=1 (P06) and\n# the commerce_claims_label_key secret (compose wires it).\nCOMMERCE_CLAIMS_ENABLED=1\n# MUST stay 0: LiveKit media planning is MOCK-only and the media worker is not deployable (B5, F11).\n# preflight P06 enforces it; with 0 the media routes are not mounted (404).\nCOMMERCE_STUDIO_MEDIA_ENABLED=0\n# OIDC client id registered at the IdP (redirect URI https://<LC_ADMIN_HOST>/api/auth/callback).\nCOMMERCE_OIDC_CLIENT_ID=CHANGE_ME_CLIENT_ID\n# Stable label stored in identity.login_flows.provider_key (1-128 bytes, not a secret).\n# Never change it after the first merchant login.\nCOMMERCE_IDENTITY_PROVIDER_KEY=oidc-primary-v1\n# Merchant session lifetime, Go duration 5m..24h.\nCOMMERCE_SESSION_TTL=8h\n# SANDBOX | LIVE (PROVIDER_MOCK is test-only and has no env path). LIVE = real money, owner approval.\n# Stripe (LC_STRIPE_ENABLED in compose.env): LIVE admits Stripe only with LC_STRIPE_LIVE_ENABLED=1 +\n# LC_STRIPE_LIVE_APPROVAL_REF in compose.env (stripe-live-enable-v1 LD6); without the pair the API refuses it.\nCOMMERCE_PAYMENT_PROFILE=SANDBOX\n# The ECPay logistics environment follows this profile; its switch is LC_CVS_ECPAY_ENABLED in compose.env (wiring, not a knob here).\n# Merchant Meta ads (meta-ads-v1). Empty = routes unmounted and nothing else is read. When set, the other\n# three are required, commerce_meta_ads_app_secret must be supplied (P09), the `ads` profile must run\n# ads-worker (P06), and ruling B15 keeps it empty until migrations/0080 (ads-capi) is merged (P06).\n# App 大梦 = 4291253377792879 (ruling O-C); CONFIG_ID from Facebook Login for Business; redirect URI must be\n# https://<LC_ADMIN_HOST>/api/ads/meta/callback, registered in the Meta app dashboard (owner step §11).\nCOMMERCE_META_ADS_APP_ID=\nCOMMERCE_META_ADS_CONFIG_ID=\nCOMMERCE_META_ADS_REDIRECT_URI=\nCOMMERCE_META_ADS_GRAPH_VERSION=v26.0\n# Merchant Facebook Page / Instagram connect (meta-connect, Settings card "Facebook 主頁 / Instagram"). Empty CONFIG_ID = routes\n# unmounted and nothing else is read. When set: COMMERCE_META_WEBHOOK_ENABLED=1 and LC_IDENTITY_ENABLED (preflight P06), the other two\n# values below are required (P08), and the Meta app is the one in commerce_meta_apps_json (no extra secret). The api seals Page tokens to the\n# HPKE PUBLIC ring only (commerce_meta_page_hpke_public_keys_json); the private ring is claims-worker-only. CONFIG_ID is the Facebook\n# Login for Business configuration; REDIRECT_URI must equal https://<LC_ADMIN_HOST>/api/meta/callback and be registered in the Meta\n# app dashboard (docs/runbooks/deploy.md §Meta). Pilot values (app 大梦, owner-registered 2026-10-01, not secrets):\n#   COMMERCE_META_LOGIN_CONFIG_ID=2952863798433821  COMMERCE_META_LOGIN_REDIRECT_URI=https://admin.xgdwm.com/api/meta/callback\nCOMMERCE_META_LOGIN_CONFIG_ID=\nCOMMERCE_META_LOGIN_REDIRECT_URI=\nCOMMERCE_META_LOGIN_GRAPH_VERSION=v26.0\nTZ=UTC\n',
+    expected: /^COMMERCE_PAYUNI_NOTIFY_ENABLED=0$/m,
+    operator: 'match',
+    diff: 'simple'
+  }
