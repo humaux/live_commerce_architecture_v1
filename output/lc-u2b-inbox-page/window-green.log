@@ -1,0 +1,22 @@
+source: 39abae9f218339fba579761d4ef178cac4ea08d6
+command: node --test --experimental-strip-types tests/admin/inbox-window.test.ts
+✔ window strict eligibility with 300001ms before hard 24h deadline (404.24575ms)
+✔ window strict eligibility with 300000ms before hard 24h deadline (9.663542ms)
+✔ window strict eligibility with 60000ms before hard 24h deadline (101.214083ms)
+✔ window strict eligibility with 0ms before hard 24h deadline (67.416333ms)
+✔ window invalid server deadline fails closed without preparing a send (12.099958ms)
+✔ window captured enabled form callback cannot POST after crossing safe cutoff (11.300417ms)
+✔ window deadline timer closes controls at cutoff and hard end without waiting for 15s poll (27.419875ms)
+✔ quota recovery gives exact zh-TW comment-quota and DM-window instructions beside copy only (3.491125ms)
+✔ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.553042ms)
+✔ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.465167ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4616.551333
+
+exit: 0

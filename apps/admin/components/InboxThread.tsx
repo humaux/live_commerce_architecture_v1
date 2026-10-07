@@ -112,6 +112,11 @@ export function InboxThread({
           ticket.signal,
         );
         if (!fence.current.current(ticket)) return;
+        // Go encodes a nil attachment slice as null; other malformed shapes must never reach rendering.
+        if (!Array.isArray(data.items) || data.items.some((item) =>
+          !item || (item.attachments !== null && (!Array.isArray(item.attachments) ||
+            item.attachments.some((attachment) => !attachment || typeof attachment.type !== "string")))))
+          throw new InboxError("unavailable", 503);
         setThread((old) =>
           before && old
             ? { ...data, items: [...data.items, ...old.items] }
@@ -380,7 +385,7 @@ export function InboxThread({
                   key={`${item.direction}:${item.seq ?? item.at ?? index}:${index}`}
                 >
                   <p>{item.unreadable ? c.unreadable : item.text}</p>
-                  {item.attachments.map((attachment, i) => (
+                  {(item.attachments ?? []).map((attachment, i) => (
                     <span className={styles.badge} key={i}>
                       {c.attachment}: {attachment.type}
                     </span>

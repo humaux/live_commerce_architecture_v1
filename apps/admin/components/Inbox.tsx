@@ -96,7 +96,7 @@ export function Inbox({
           [401, 403, 404].includes(cause.status)
         ) {
           privacy.expire();
-          setError(code);
+          setError(cause.status === 404 ? "inboxUnavailable" : code);
         } else setError(code);
       } finally {
         if (privacy.fence.current(ticket)) {

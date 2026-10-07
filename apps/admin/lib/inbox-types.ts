@@ -32,7 +32,7 @@ export type Message = {
   seq?: number;
   at: string | null;
   text: string;
-  attachments: { type: string }[];
+  attachments: { type: string }[] | null;
   kind?: string | null;
   send_state?: SendState | null;
   send_code?: string | null;

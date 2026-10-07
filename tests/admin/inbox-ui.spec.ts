@@ -72,16 +72,28 @@ test.afterAll(async () => {
   await writeFile(resolve(evidence, "browser-console.json"), JSON.stringify(consoleMessages), { mode: 0o600 });
 });
 
+async function selectFixtureStore(page: Page, next: string) {
+  // The shell performs a full overview navigation; selector state alone can be a pre-navigation snapshot.
+  const overview = new URL(`/en?store=${next}`, origin).href;
+  const selector = page.getByTestId("shell-store-selector");
+  await expect(selector).toBeVisible();
+  if ((await selector.inputValue()) !== next) await selector.selectOption(next);
+  await expect(page).toHaveURL(overview);
+  await expect(page.getByTestId("inbox-page")).toHaveCount(0);
+  await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
+  await expect(page.getByTestId("nav-group-messages")).toBeVisible();
+}
+
 async function login(page: Page) {
   await page.goto(new URL("/en/", origin).href);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  // Wait for the signed landing's default-store navigation before driving another real store change.
+  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en" &&
+    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.searchParams.get("store") ?? ""));
   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
-  const selector = page.getByTestId("shell-store-selector");
-  if ((await selector.inputValue()) !== store) {
-    await selector.selectOption(store);
-    await expect(selector).toHaveValue(store);
-  }
+  await selectFixtureStore(page, store);
   await page.getByTestId("nav-group-messages").click();
+  await expect(page).toHaveURL(new URL(`/en/messages?store=${store}`, origin).href);
   await expect(page.getByTestId("inbox-page")).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
   await expect(page.getByTestId(`conversation-${ids.open}`)).toContainText(sentinels[1]);
@@ -436,7 +448,7 @@ test("INU04 stale decrypted responses cannot repaint another conversation or sto
     });
     await page.getByTestId(`conversation-${ids.open}`).click();
     await switchSeen;
-    await page.getByTestId("shell-store-selector").selectOption(otherStore);
+    await selectFixtureStore(page, otherStore);
     await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
     switched();
     await switchDone;

@@ -1,0 +1,59 @@
+source: 39abae9f218339fba579761d4ef178cac4ea08d6
+command: node --test --experimental-strip-types tests/admin/inbox-review.test.ts tests/admin/inbox-review-recovery.test.ts tests/admin/inbox-window.test.ts
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (63.189ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (236.085209ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (59.923584ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (15.411667ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (26.397416ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (291.791209ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (13.033125ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (49.679ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (19.564458ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (6.066375ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (7.705875ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (5.457875ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (6.250834ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (21.607167ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (6.927458ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (8.457917ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (20.232541ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (8.294875ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (8.613167ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (4.308917ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (13.946417ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (7.253417ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (126.373875ms)
+✔ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (219.769958ms)
+✔ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (3.547458ms)
+✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.4335ms)
+✔ P1-1 changed-session visible focus expires even with a pending request (0.212041ms)
+✔ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (645.019959ms)
+✔ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (39.676584ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (0ms post-send A9) (145.506125ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (50ms post-send A9) (158.121ms)
+✔ actual A9 stale held completion cannot paint after component cleanup (7.551709ms)
+✔ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (5.030333ms)
+✔ safe authority errors remain the actual InboxError transport class (0.096917ms)
+✔ actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim (3.926583ms)
+✔ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (13.399834ms)
+✔ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (88.829458ms)
+✔ window strict eligibility with 300001ms before hard 24h deadline (113.47775ms)
+✔ window strict eligibility with 300000ms before hard 24h deadline (14.892292ms)
+✔ window strict eligibility with 60000ms before hard 24h deadline (5.997542ms)
+✔ window strict eligibility with 0ms before hard 24h deadline (9.444458ms)
+✔ window invalid server deadline fails closed without preparing a send (13.261875ms)
+✔ window captured enabled form callback cannot POST after crossing safe cutoff (117.595292ms)
+✔ window deadline timer closes controls at cutoff and hard end without waiting for 15s poll (4.865084ms)
+✔ quota recovery gives exact zh-TW comment-quota and DM-window instructions beside copy only (1.493958ms)
+✔ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.203333ms)
+✔ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.540666ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4903.386667
+
+exit: 0

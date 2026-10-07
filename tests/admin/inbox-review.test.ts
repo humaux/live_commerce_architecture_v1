@@ -21,6 +21,30 @@ import {
   InboxError,
 } from "./inbox-review-host.test.ts";
 import { useInboxPrivacy, BuyerPanel, nodes, react } from "./inbox-review-host.test.ts";
+import type { Host } from "./inbox-review-host.test.ts";
+
+// A held request changes no React state when it arrives, so observe the fixture transport itself.
+function arrival(description: string) {
+  const event = Promise.withResolvers<void>();
+  return {
+    notify: () => event.resolve(),
+    wait: () => {
+      let timer!: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`Timed out waiting for ${description}`)), 5000);
+      });
+      return Promise.race([event.promise, deadline]).finally(() => clearTimeout(timer));
+    },
+  };
+}
+const threadIdle = (host: Host) =>
+  nodes(host.output).some((n) => n.props["data-testid"] === "inbox-thread" && n.props["aria-busy"] === false);
+const threadLoaded = (host: Host) => threadIdle(host) && textOf(host.output).includes("MOCK_DM");
+const threadGone = (host: Host) =>
+  threadIdle(host) &&
+  nodes(host.output).some(
+    (n) => n.type === "h2" && textOf(n).includes("This conversation is unavailable in the current store."),
+  );
 test("P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt", async (t) => {
   const env = environment(t);
   let clears = 0,
@@ -120,11 +144,11 @@ test("P1-2 actual A9 refresh 404 removes rendered DM and unsent draft", async (t
   let reads = 0;
   transport(() => (++reads === 1 ? response(thread) : response({ code: "not_found" }, 404)));
   const host = mountThread(env);
-  await host.settle();
+  await host.waitFor(() => threadLoaded(host), "initial A9/A10 and visible thread");
   assert.ok(textOf(host.output).includes("MOCK_DM"), "baseline DM actually rendered");
   change(host, "reply-text", "MOCK_DRAFT");
   clickText(host, "Refresh");
-  await host.settle();
+  await host.waitFor(() => reads === 2 && threadGone(host), "Refresh 404 terminal purge");
   assert.equal(reads, 2, "actual Refresh callback re-read A9");
   assert.equal(textOf(host.output).includes("MOCK_DM"), false, "404 must remove previously authorized private DM");
   assert.equal(node(host, (n) => n.props["data-testid"] === "reply-text").props.value, "");
@@ -134,29 +158,32 @@ test("P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable 
   const env = environment(t);
   let reads = 0,
     rejectAuthority!: (value: Response) => void;
+  const authorityArrived = arrival("held send-finally A9 authority request");
   const calls = transport(
     () =>
       ++reads === 1
         ? response(thread)
         : new Promise<Response>((done) => {
             rejectAuthority = done;
+            authorityArrived.notify();
           }),
     () => {
       throw new Error("MOCK_LOST_ACK");
     },
   );
   const host = mountThread(env);
-  await host.settle();
+  await host.waitFor(() => threadLoaded(host), "initial A9/A10 before uncertain send");
   change(host, "reply-text", "MOCK_RETRY_DRAFT");
   submit(host);
-  await host.settle();
+  await authorityArrived.wait();
+  host.flush();
   const receipt = host.ref(ReplyReceipt).pending();
   assert.ok(receipt, "real uncertain receipt exists before A9 404");
   assert.equal(receipt.body.text, "MOCK_RETRY_DRAFT");
   assert.equal(node(host, (n) => n.props["data-testid"] === "reply-text").props.value, "MOCK_RETRY_DRAFT");
   assert.ok(rejectAuthority, "real send-finally A9 request reached held transport");
   rejectAuthority(response({ code: "not_found" }, 404));
-  await host.settle();
+  await host.waitFor(() => threadGone(host), "send-finally 404 terminal purge");
   assert.equal(reads, 2, "real send finally performs A9 authority read");
   assert.equal(calls.filter((c) => c.method === "POST" && c.path.endsWith("/messages")).length, 1, "no blind resend");
   assert.equal(textOf(host.output).includes("MOCK_DM"), false, "404 must drop earlier private rendering");
@@ -196,9 +223,12 @@ for (const authorityDelay of [0, 50]) {
       const rendered = nodes(host.output);
       return rendered.some((n) => n.props["data-testid"] === "inbox-thread" && n.props["aria-busy"] === false);
     };
-    const readyToReply = () => idle() && nodes(host.output).some((n) =>
-      n.props["data-testid"] === "reply-send" && n.props.disabled === false);
-    await host.waitFor(() => reads >= 1 && idle() && textOf(host.output).includes("MOCK_DM"), "initial A9/A10 completion");
+    const readyToReply = () =>
+      idle() && nodes(host.output).some((n) => n.props["data-testid"] === "reply-send" && n.props.disabled === false);
+    await host.waitFor(
+      () => reads >= 1 && idle() && textOf(host.output).includes("MOCK_DM"),
+      "initial A9/A10 completion",
+    );
     change(host, "reply-text", "MOCK_RETRY");
     submit(host);
     // Retry becomes safe only after send.finally's A9 and A10 have cleared the real in-flight guard.
@@ -219,19 +249,22 @@ for (const authorityDelay of [0, 50]) {
 test("actual A9 stale held completion cannot paint after component cleanup", async (t) => {
   const env = environment(t);
   let complete!: (value: Response) => void;
+  const readArrived = arrival("held stale A9 request");
   transport(
     () =>
       new Promise<Response>((done) => {
         complete = done;
+        readArrived.notify();
       }),
   );
   const host = mountThread(env);
-  await host.settle();
+  await readArrived.wait();
   assert.ok(complete, "real A9 request reached held MOCK transport");
   const fence = host.ref(InboxFence),
     ticket = fence.begin();
   host.dispose();
   complete(response(thread));
+  // The host is disposed: this is only an aborted-completion drain, not a readiness checkpoint.
   await host.settle();
   assert.equal(fence.current(ticket), false);
   assert.equal(textOf(host.output).includes("MOCK_DM"), false);
@@ -260,7 +293,10 @@ test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-v
     throw new Error("unexpected MOCK buyer route");
   };
   const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id } as any));
-  await host.settle();
+  await host.waitFor(
+    () => host.output.props["aria-busy"] === false && textOf(host.output).includes("MOCK_BUYER"),
+    "A13 buyer fields and idle link controls",
+  );
   assert.ok(textOf(host.output).includes("MOCK_BUYER"));
   const input = node(host, (n) => n.type === "input");
   assert.equal(input.props.disabled, false);
@@ -269,7 +305,10 @@ test("P2 actual A14 404 clears buyer facts and customer draft (explicit future-v
   });
   host.flush();
   clickText(host, "Link customer");
-  await host.settle();
+  await host.waitFor(
+    () => writes === 1 && !textOf(host.output).includes("MOCK_BUYER") && host.output.props["aria-busy"] === false,
+    "A14 404 buyer and customer-draft purge",
+  );
   assert.equal(writes, 1);
   assert.equal(textOf(host.output).includes("MOCK_BUYER"), false, "A14 authority-loss 404 removes old buyer facts");
   assert.ok(!nodes(host.output).some((n) => n.type === "input" && n.props.value), "customer draft removed");
@@ -295,7 +334,10 @@ test("actual current A13 without version keeps A14 disabled; future MOCK grants 
     });
   };
   const host = env.mount(() => BuyerPanel({ store, conversationId: conversation.conversation_id } as any));
-  await host.settle();
+  await host.waitFor(
+    () => textOf(host.output).includes("MOCK_BUYER_NO_VERSION") && host.output.props["aria-busy"] === false,
+    "A13 actual missing-version controls",
+  );
   assert.equal(node(host, (n) => n.type === "input").props.disabled, true);
   assert.equal(node(host, (n) => n.type === "button" && textOf(n) === "Link customer").props.disabled, true);
   assert.equal(writes, 0, "missing A13 version never synthesizes authority or mutation");
@@ -307,6 +349,7 @@ for (const kind of ["takeover", "messages"] as const) {
       writes = 0,
       followupFailures = 0;
     let rejectWrite!: (value: Response) => void;
+    const postArrived = arrival(`held ${kind} POST`);
     globalThis.fetch = async (input, init) => {
       const path = String(input),
         method = init?.method ?? "GET";
@@ -322,12 +365,13 @@ for (const kind of ["takeover", "messages"] as const) {
         writes++;
         return new Promise<Response>((done) => {
           rejectWrite = done;
+          postArrived.notify();
         });
       }
       throw new Error(`unexpected MOCK write404 route ${method} ${path}`);
     };
     const host = mountThread(env);
-    await host.settle();
+    await host.waitFor(() => reads === 1 && threadLoaded(host), "initial A9/A10 before write404 action");
     assert.ok(textOf(host.output).includes("MOCK_DM"), "actual authorized baseline DM rendered");
     change(host, "reply-text", "MOCK_WRITE404_DRAFT");
     if (kind === "messages") submit(host);
@@ -337,7 +381,8 @@ for (const kind of ["takeover", "messages"] as const) {
       button.props.onClick();
       host.flush();
     }
-    await host.settle();
+    await postArrived.wait();
+    host.flush();
     assert.equal(writes, 1, "actual A11/A12 callback reached held POST");
     const pending = host.ref(ReplyReceipt).pending();
     if (kind === "messages") {
@@ -345,7 +390,7 @@ for (const kind of ["takeover", "messages"] as const) {
       assert.equal(pending.body.text, "MOCK_WRITE404_DRAFT");
     } else assert.equal(pending, null, "A11 correctly has no reply receipt");
     rejectWrite(response({ code: "not_found" }, 404));
-    await host.settle();
+    await host.waitFor(() => threadGone(host), "write404 terminal thread/receipt/draft purge");
     assert.ok(reads <= 2, "write404 never loops or blind-retries A9");
     if (reads === 2) assert.equal(followupFailures, 1, "follow-up A9 could not grant authority");
     assert.equal(
