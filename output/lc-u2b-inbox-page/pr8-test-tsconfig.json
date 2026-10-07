@@ -18,6 +18,7 @@
     "../../tests/admin/inbox-bundle-ui.spec.ts",
     "../../tests/admin/inbox-browser-support.ts",
     "../../tests/admin/inbox-discovery.test.ts",
-    "../../tests/admin/inbox-credential-artifacts.test.ts"
+    "../../tests/admin/inbox-credential-artifacts.test.ts",
+    "../../tests/admin/inbox-shell-navigation.test.ts"
   ]
 }
