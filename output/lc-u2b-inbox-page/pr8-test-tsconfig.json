@@ -1,0 +1,5 @@
+{
+  "extends": "../../apps/admin/tsconfig.json",
+  "compilerOptions": {"incremental": false},
+  "include": ["../../tests/admin/inbox-review.test.ts", "../../apps/admin/next-env.d.ts"]
+}

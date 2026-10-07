@@ -1,0 +1,21 @@
+✔ P1-1 actual visible focus preserves pending ticket, selection, revision and real retry receipt (3.779042ms)
+✔ P1-1 actual unchanged-session pageshow checks without clearing; changed-session focus expires (0.403708ms)
+✔ P1-1 actual hide/reveal clears and requests fresh revision, never accepts obsolete completion (0.2985ms)
+✔ P1-1 changed-session visible focus expires even with a pending request (0.1925ms)
+✔ P1-2 actual A9 refresh 404 removes rendered DM and unsent draft (18.052625ms)
+✔ P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable receipt (2.38625ms)
+✔ actual uncertain send still retains exact receipt when A9 authority remains (2.621417ms)
+✔ actual A9 stale held completion cannot paint after component cleanup (1.181583ms)
+✔ P2 actual A14 404 clears buyer facts and customer draft (explicit future-version MOCK) (1.494292ms)
+✔ safe authority errors remain the actual InboxError transport class (0.063834ms)
+✔ actual current A13 without version keeps A14 disabled; future MOCK grants no backend claim (1.004042ms)
+✔ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (2.819292ms)
+✔ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (1.334375ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 342.878916

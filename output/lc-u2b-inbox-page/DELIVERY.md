@@ -1,9 +1,9 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
-- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `13ea07a8c069d2f2fefe788b5e279a764657ef46`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
+- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `08614fb63b80f98132851e6ecac9cbcd8e5c701e`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
 - Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. No push/merge/deployment.
-- Evidence: **E3 / MOCK for 17 focused Node tests; E1 for TypeScript/structure. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN.**
+- Evidence: **E3 / MOCK for 19 focused Node tests plus 13 actual-source component/hook tests; E1 for TypeScript/structure. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN.**
 
 ## Summary
 
@@ -41,7 +41,7 @@ Worker-only registration/static checks and historical failure commands are prese
 ## Deferred availability / NOT_RUN (integrator-approved merge sequence)
 
 1. **Resolved:** owner explicitly approved `tests/admin/shell-registry.test.ts` scope extension. Old owner/messages absent expectation now asserts owner visible plus orders-only staff invisible/direct route denied. Registry target 10/10, full Node and check-gates green; red logs retained.
-2. **Resolved by integrator ruling:** the brief was wrong to request ja. Correct admin locales are zh-TW/zh-CN/en. Proper Simplified Chinese replaces Japanese; INU06 and INU07 exercise all three at both widths. No packages/i18n changes.
+2. Correct admin locales are zh-TW/zh-CN/en; INU06 and INU07 exercise all three at both widths. No shared locale package changes or outstanding locale prerequisite.
 3. Frozen A13 `internal/inbox/read.go:262` still returns empty claims/orders, ordinal 0, no display name/auto-reply; A8/A9/A13 expose no link version for A14. Honest empty/unavailable states are rendered; manual customer-link controls remain disabled with a reason. No guessed version or read-via-write. The integrator confirmed these real gaps and opened LC-B3b to supply them; LC-U2b merges first, then a small follow-up enables controls. No field is fabricated.
 4. A8 validates session_id but does not use it in the query; live_comment projection is absent. Bundle-only rows have no usable conversation/source-link URL: read-only bundle panel and explicit unavailable copy-link control. No fabricated deep link or reply.
 5. A9 exposes no binding id for capability matching. UI conservatively requires every matching-provider named dm_session row to be ok/review_required; missing/unknown blocks sends, review_required shows the app-role-only badge. Go is authoritative.
@@ -56,6 +56,20 @@ Worker-only registration/static checks and historical failure commands are prese
 - The strict Playwright-spec TypeScript command above -> **0**, `ruling-spec-typecheck.log`.
 - `bash scripts/dev/test-node.sh` -> **0**, `ruling-node.log`; `bash scripts/dev/check-gates.sh` -> **0**, `ruling-check-gates.log` (78 modes, 1218 test names). Both pinned to 13ea07a8, supervised by Python stdlib with a 300-second timeout, 5-second owned-group termination grace, no source edits during execution. Optional R04 binary suite remains NOT_RUN.
 - Read-only reviewer (same security_reviewer configuration) found no new confirmed P0/P1 in this correction; source evidence Humaux `ee1a0d10-2ab9-49cf-abf1-1aefc9609787`. Browser/runtime behavior remains NOT_RUN. Normal --browser-inbox and retain-thread calibration run on the PR, by the integrator.
+
+## PR #8 Opus privacy fixes (source 08614fb6)
+
+- P1-1: window focus/pageshow while already visible now only checks the session. Only a real hide permits reveal, epoch refresh and private clearing; unchanged-session focus preserves the selected conversation, draft, pending A12 signal and immutable receipt. Changed CSRF/session still revokes immediately; late session checks after unmount cannot clear a new scope.
+- P1-2: a common terminal `clearGone` handles A9/A10/A11/A12 404, clearing DM/name display, draft, templates, delivery and reply receipt before invalidating follow-up work. `finally` cannot re-read after that epoch ends; a later 503/network failure cannot resurrect old text. Captured stale action/send callbacks are also refused.
+- Cheap P2s: non-JSON upstream 401 clears both auth cookies before body parsing; A14 404 clears BuyerPanel facts and the customer draft. Existing missing-version disabled controls remain unchanged.
+- RED before production: `node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts` -> **1**, `pr8-focus-red.log`; actual visible reveal invalidated the ticket. Real Request BFF command -> **1**, `pr8-cookie-red.log`, opaque 401 returned 503 without revocation.
+- Independent test-only worker commits `2327ae88`/`38713611`, gpt-6.1-sol high test_worker, separate `.worktrees/lc-u2b-pr8-tests`: original actual hook/component/client tests **6 PASS / 5 RED** and the two write-404 countercases **2 RED**, retained in `pr8-components-red.log` / `pr8-write404-red.log` with baseline hashes. Production privacy logic was never copied into the driver; React hook scheduling and fetch only are MOCK. Future-version BuyerPanel fixture is explicitly MOCK, never a claim that frozen Go publishes a version.
+- `node --test --experimental-strip-types tests/admin/inbox-review.test.ts` -> **0, 13/13**, `pr8-components-green.log` (actual TSX/hook/client/Fence/Receipt). Includes focus/pending send, same-session pageshow, true hide/revalidation, changed-session revocation, read/send-finally/write 404, immutable retry, stale completion, A14 404 and missing-version guard. Original assertions retained; the suite is registered in `test-node.sh`.
+- `node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/admin/inbox-copy.test.ts tests/admin/inbox-bff.test.ts` -> **0, 19/19**, `pr8-focused-green.log`.
+- `pnpm --filter @live-commerce/admin typecheck` -> **0**, `pr8-typecheck.log`. `pnpm exec tsc --noEmit -p output/lc-u2b-inbox-page/pr8-test-tsconfig.json` -> **0**, `pr8-review-project-typecheck.log`; it extends the real admin strict config. Initial standalone test compile -> **1** for missing @/ path configuration, retained in `pr8-review-typecheck.log`; no type threshold was relaxed.
+- `bash scripts/dev/test-node.sh` -> **0**, `pr8-node.log`; `bash scripts/dev/check-gates.sh` -> **0**, `pr8-check-gates.log`. Both run on immutable source 08614fb6 under the same 300-second owned-group supervisor documented above. Optional R04 binary suite remains NOT_RUN.
+- Targeted read-only security recheck found the missed A11/A12 write-404 retention; added red tests and shared cleanup solved it. Final recheck found no further confirmed P0/P1 in that fix, Humaux `2ec82daf-c65f-438c-a542-b0e62ca26939`. Opus final review/PR runtime acceptance still pending.
+- BROWSER/Go/PG/build/visual/provider modes remain **NOT_RUN** locally. `--browser-inbox` and `LC_INBOX_CALIBRATION=retain-thread` run on PR #8 after the integrator pushes. The intentional true-hide defect remains intact and must fail INU05 specifically; none of its assertions changed.
 
 ## Independent work and custody
 
