@@ -1,0 +1,12 @@
+✔ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (253.401334ms)
+✔ the existing console refresh also explicitly refreshes its parent list; no automatic list read (7.6835ms)
+✔ parent forwards only an explicit refresh callback and retains the scene when list is unavailable (12.825667ms)
+✔ every explicit browser response/event/navigation waiter has a finite sub-test budget (5.505875ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 556.205042

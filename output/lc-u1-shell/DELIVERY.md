@@ -1,7 +1,11 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: LC-U1 independent-review/UNKNOWN-403 rulings, source 1fe069cc, trunk 0813424a and prior CI 37597312124.
+Depends on: LC-U1 PR5 explicit list refresh, source08a560c2, trunk35abffca and prior CI37612856598.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — independent-review repairs; revised candidate awaits GitHub
+# LC-U1 PR5 — list-refresh driver and trunk conflict repair
+
+Current source **`08a560c2435bd45196870acfafe030577357f495`**, merge **a97f013c** includes trunk **35abffca** with both sides' routes/modes/Node tests. [PR5-DELIVERY.md](PR5-DELIVERY.md) records the explicit existing-button list refresh, 503→200/retry/no-new-receipt assertions and all15s waiter budgets. New regressions **3 RED → 4 GREEN**; Node **663/663**, admin tsc and check-gates **79** exit0. No automatic list poll restored. **Commit only; integrator pushes PR5 and reruns CI. Browser/full PR acceptance remains NOT_RUN on this candidate.**
+
+All review/checkpoints below are historical source evidence and do not establish this candidate's browser result.
 
 Current source **`1fe069ccc5c90670fb1f617897af2576ee87a1a4`**, trunk **0813424a** merged as **ae9493bc**. [REVIEW-FIXES-DELIVERY.md](REVIEW-FIXES-DELIVERY.md) lists each fix and shared-path rationale: A1-only exponential/Retry-After polling, independent auxiliary reads, exact durable replay and owner-approved UNKNOWN→403 retention, frozen three-locale host text/no external recommendation, platform notice and real A1 JSON parity. Node **649/649**, admin types, check-gates **78**, real-A1 focused PG **1/1** pass with red calibration. Prior integration **70b9f4e0** CI **37597312124** is verified **34/34 green**, but predates these repairs. **New-source full CI remains NOT_RUN; integrator owns push/rerun.** W2-U2 not started.
 
