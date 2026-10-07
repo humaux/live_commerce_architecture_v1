@@ -1,5 +1,5 @@
 // Purpose: preserve one customers navigation entry, authorize import links, and gate historical private data by active/import origin.
-// Depends on: Node/TypeScript AST, React SSR, actual Customers/CustomerDetail sources and shell registry.
+// Depends on: Node/TypeScript AST, React SSR, actual Customers/CustomerDetail sources, canSeeReports and shell registry.
 // Used by: W5-U1 local regression and Node CI; controlled hooks are MOCK, not browser acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -9,6 +9,7 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 import { routes, matchRoute } from "../../apps/admin/src/routes.ts";
 import { customersCopy } from "../../apps/admin/lib/customers-copy.ts";
+import { canSeeReports } from "../../apps/admin/lib/customers-model.ts";
 const appRequire = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
 const React = appRequire("react"), { renderToStaticMarkup } = appRequire("react-dom/server");
 function component(path: string, name: string, globals: Record<string, unknown>) {
@@ -31,7 +32,7 @@ test("the actual list offers import only to privacy holders and carries the curr
   for (const permission of [false, true]) {
     let read = 0;
     const Customers = component("../../apps/admin/components/Customers.tsx", "Customers", {
-      customersCopy, customerTagsCopy: { en: { filterLabel: "Tags", filterAll: "All" } },
+      customersCopy, canSeeReports, customerTagsCopy: { en: { filterLabel: "Tags", filterAll: "All" } },
       useState: (value: unknown) => [value, () => {}], useRef: (value: unknown) => ({ current: value }), useRouter: () => ({ push() {} }),
       useGuardedRead: () => ({ status: "ready", boundary: "scope", reload() {}, data: ++read === 1 ? { items: [], next_cursor: "" } : { items: [] } }),
       WorkspaceFrame: (p: any) => React.createElement("div", null, p.children), AdminPageHeader: () => null,
