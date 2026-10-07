@@ -357,3 +357,4 @@ Stripe login fails its privilege validation); see `output/promotions/tests/DEFEC
 | `--browser-reports` | W6-U1 four report tabs, 92-day range, currency/environment/offline splits, sort and audited CSV; real scoped Go/PG, signed MOCK IdP; zh-TW/en, 1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-reports` (GitHub only) |
 | `tests/admin/reports.spec.ts` | `--browser-reports` |
 | `tests/admin/customer-tags.spec.ts` | `--browser-customers-billing` |
+| `tests/admin/w6-route-seam.test.mjs` | `test-node.sh`: actual routes/shared auth/cookies/CSRF; bare/encoded tag query 422, valid tag and legacy list parity, report JSON/CSV private headers with `Vary: Cookie`, no Cookie/CSRF forwarding. Network-only MOCK; named P2 pre-fix red to green, browser acceptance remains GitHub. |

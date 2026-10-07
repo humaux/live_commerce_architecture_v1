@@ -1,0 +1,9 @@
+# Purpose: preserve current W6 P2 command evidence after this prologue.
+# Depends on: DELIVERY command and original main raw SHA256=f522f8bc73be30f82b36cdd1fa2c267e547395a8f6c8ce918a50b8ac9a14bf86.
+# Used by: integrator; full browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original main bytes and SHA above retained.
+=== RUN   TestW6UISeedFocused
+--- PASS: TestW6UISeedFocused (2.18s)
+PASS
+ok  	livecommerce/tests/foundation	3.970s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

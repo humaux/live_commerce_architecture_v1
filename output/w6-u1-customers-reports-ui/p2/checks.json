@@ -1,0 +1,47 @@
+{
+  "_header": {
+    "Purpose": "bind current P2 command or test source evidence",
+    "Depends on": "recorded command/hash/base/exit fields",
+    "Used by": "integrator CI retry"
+  },
+  "base_commit": "00979c2779bcdca384cc8cf31fd8e0678d5a748e",
+  "red": {
+    "exit_code": 1,
+    "pass": 6,
+    "fail": 3,
+    "skip": 0,
+    "source_hashes": {
+      "customers": "7d4b282eb1610366b7b79d326ba4507369f2ec79773f9502fe027edc82aacc88",
+      "reports": "ce6477857a2d81e4d5d4958c51019e2d34ecc29036679b2aada54aa6238dc124"
+    }
+  },
+  "green": {
+    "exit_code": 0,
+    "pass": 9,
+    "fail": 0,
+    "skip": 0,
+    "hashes": {
+      "apps/admin/app/api/stores/[store]/customers/route.ts": "9cc4be843615235d214db9fa2f332a6889022cdb01684041eb6a454d34348474",
+      "apps/admin/app/api/stores/[store]/reports/[report]/route.ts": "083268654682222a7ff0c30dab5f3d5c8adb03d13f37400e05d6cf7ad8046134",
+      "tests/admin/w6-route-seam.test.mjs": "4404a6c5361a654c2f34b706c57d0075b8786e24bd5741106d6fbdbb1ec0dbb4",
+      "tests/admin/w6-real-route-loader.mjs": "4c432abea09e572e9fe5df3174b5941ead4c001de234f9305ef8dc4cdd1dae98",
+      "tests/admin/w6-integration.test.ts": "653bcf5e715e5655fafebdf06df0b1ccc9a450478c46e5e691d4b21d3a51a9e6"
+    }
+  },
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/w6-route-seam.test.mjs",
+    "tests/admin/w6-integration.test.ts"
+  ],
+  "evidence_class": "E3 MOCK native route boundary only",
+  "not_run": [
+    "Next",
+    "PG",
+    "browser",
+    "Go",
+    "CI/build",
+    "independent review"
+  ]
+}

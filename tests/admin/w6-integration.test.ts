@@ -1,5 +1,6 @@
 // Purpose: protect customer filter dispatch/navigation/import badges and immediate private-subtree removal after erasure.
-// Depends on: Node test/assert/vm, typescript-api, actual Customers row/URL and CustomerDetail Body source, shell registry and current copy.
+// Depends on: Node test/assert/vm, typescript-api, actual Customers row/URL and CustomerDetail Body source, shell registry/current copy,
+// and w6-real-route-loader (real route/auth/backend boundary; only upstream fetch is faked).
 // Used by: W6-U1 focused regression and Node CI; does not replace real-click browser acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -9,6 +10,7 @@ import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
 import { customersCopy } from "../../apps/admin/lib/customers-copy.ts";
 import { routes, visibleGroups } from "../../apps/admin/src/routes.ts";
+import { w6RealBoundary, W6_TAG } from "./w6-real-route-loader.mjs";
 const source = readFileSync(new URL("../../apps/admin/components/Customers.tsx", import.meta.url), "utf8");
 const appRequire = createRequire(new URL("../../apps/admin/package.json", import.meta.url));
 const React = appRequire("react"), { renderToStaticMarkup } = appRequire("react-dom/server");
@@ -32,23 +34,22 @@ test("selected tag survives searches and cursor pagination while an empty filter
   assert.equal(new URL(url("en", "store", "", "", ""), "https://admin.example.invalid").searchParams.has("tag"), false);
 });
 test("customer list dispatch preserves legacy requests and sends every tag query to the closed W6 authority", async () => {
-  const leaf = readFileSync(new URL("../../apps/admin/app/api/stores/[store]/customers/route.ts", import.meta.url), "utf8");
-  const calls: any[] = [];
-  const { GET } = compiled(leaf, { require: (name: string) => {
-    if (name === "@/lib/customer-tags-bff") return { customerTagsBFF: async (...args: any[]) => { calls.push(["tags", ...args]); return new Response("tags"); } };
-    if (name === "../[...resource]/route") return { GET: async (request: Request, context: any) => { calls.push(["legacy", request, await context.params]); return new Response("legacy"); } };
-    throw new Error("unexpected import " + name);
-  }, URL, Response });
-  for (const query of ["", "?q=Buyer&after=cursor", "?tag=bad", "?tag=&tag=another", "?tag=bad&tenant_id=attacker"]) {
-    const request = new Request("https://admin.example.invalid/api/stores/store/customers" + query);
-    const response = await GET(request, { params: Promise.resolve({ store: "store" }) });
-    const tagged = query.includes("tag=");
-    assert.equal(await response.text(), tagged ? "tags" : "legacy");
-    const call = calls.at(-1)!;
-    assert.equal(call[1], request);
-    if (tagged) assert.deepEqual(call.slice(2), ["store", "customers"]);
-    else assert.deepEqual(JSON.parse(JSON.stringify(call[2])), { store: "store", resource: ["customers"] });
-  }
+  const boundary = await w6RealBoundary();
+  try {
+    // Preserve every old query case and its dispatch intent; prove the actual authority/status rather than fake string bodies.
+    for (const query of ["", "?q=Buyer&after=cursor", "?tag=bad", "?tag=&tag=another", "?tag=bad&tenant_id=attacker", `?tag=${W6_TAG}`]) {
+      boundary.calls.length = 0;
+      const response = await boundary.customers.GET(boundary.request(`customers${query}`), boundary.customerContext);
+      const valid = query === "" || query.startsWith("?q=") || query === `?tag=${W6_TAG}`;
+      assert.equal(response.status, valid ? 200 : 422, query);
+      if (valid) {
+        assert.deepEqual(await response.json(), { items: [], next_cursor: "" });
+        assert.equal(boundary.calls.length, 2);
+        assert.equal(boundary.calls[1].url.search, query);
+        for (const call of boundary.calls) assert.equal(call.headers.get("cookie"), null);
+      } else { assert.equal((await response.json()).code, "invalid_request"); assert.equal(boundary.calls.length, 0); }
+    }
+  } finally { boundary.restore(); }
 });
 test("reports are a finance subpage and preserve the existing single finance navigation entry", () => {
   const finance = routes.filter((route) => route.group === "finance");

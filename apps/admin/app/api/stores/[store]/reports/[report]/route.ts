@@ -8,7 +8,7 @@ import { reportsRoute, validReportsRequest, type ReportName } from "@/lib/report
 import { reportJSON, reportCSVFilename } from "@/lib/reports-response";
 
 type Context = { params: Promise<{ store: string; report: string }> };
-const privateHeaders = { "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
+const privateHeaders = { "Cache-Control": "private, no-store", "Vary": "Cookie", "X-Content-Type-Options": "nosniff" };
 
 /** Authorize one exact report request and project its response; CSV audits on Go, with no retries. */
 export async function GET(request: Request, context: Context): Promise<Response> {
