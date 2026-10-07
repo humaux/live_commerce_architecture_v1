@@ -754,7 +754,7 @@ elif [[ "$test_mode" == --browser-home-cod ]]; then
   printf 'PASS: home-cod BROWSER (MOCK) isolated admin + storefront Next, Go, PG: merchant enables cash on delivery (cap, surcharge, carrier) -> buyer home-delivery checkout with cash on delivery -> merchant records the manual shipment and the collected cash -> buyer sees COLLECTED, finance shows the COD columns; zh-TW + en, desktop + 390px; no PSP and no carrier API; not deployment acceptance.\n'
 elif [[ "$test_mode" == --browser-click-sweep ]]; then
   # One Go test owns PG + the Go API + both Next builds' processes and the seed; the runner (tests/ui/click-sweep.mjs) drives Chromium by real clicks.
-  LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep$' -v ./tests/foundation
+  LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep' -v ./tests/foundation
   # PS5: public routes are separate from the admin registry; include every public
   # route in all three locales and both widths, with their own real-click ledger.
   node tests/admin/platform-runner.mjs
@@ -774,7 +774,7 @@ elif [[ "$test_mode" == --browser-visual-lint ]]; then
   printf '{}\n' > "$va_sweep/journeys.json"
   va_wrote_journeys=1
   va_rc=0
-  LC_SWEEP_ONLY=visual-audit LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep$' -v ./tests/foundation || va_rc=$?
+  LC_SWEEP_ONLY=visual-audit LC_BROWSER_CLICK_SWEEP_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=5400s -run '^TestBrowserClickSweep' -v ./tests/foundation || va_rc=$?
   va_restore_journeys
   va_dir="$(cat output/ui-visual-audit/LATEST 2>/dev/null || true)"
   if [[ -z "$va_dir" || ! -f "$va_dir/lint.json" ]]; then

@@ -1,10 +1,10 @@
 //go:build browser
 
-package foundation_test
+// Purpose: Real-click full route/journey acceptance with isolated, finitely leased identity/domain fixtures.
+// Depends on: production Next/Go handlers, PG foundation fixtures, signed MOCK IdP and synthetic buyer HTTPS edge.
+// Used by: test-local.sh --browser-click-sweep/--browser-visual-lint; never a production authorization or expiry policy.
 
-// Purpose: Run the real-click sweep against a fully configured, isolated merchant/buyer MOCK stack.
-// Depends on: httpapi/buyerhttp, PG fixture, provider fakes and loopback metabridge CommentStream.
-// Used by: --browser-click-sweep and --browser-visual-lint; no real provider calls.
+package foundation_test
 
 // G-UI8 real-click sweep (owner 2026-10-03; docs/engineering/ui-architecture.md 10.6b). `TestBrowserClickSweep`, prefix `cs`.
 // Run through `bash scripts/dev/test-local.sh --browser-click-sweep` (isolated PG 18, production admin + storefront Next builds).
@@ -104,7 +104,7 @@ type csFacts struct {
 
 func TestBrowserClickSweep(t *testing.T) {
 	csRequire(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 85*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), csSweepBudget)
 	defer cancel()
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "click-sweep")
@@ -116,6 +116,17 @@ func TestBrowserClickSweep(t *testing.T) {
 	e := tcvNew(t, tcvOpts{origin: csOrigin})
 	f := e.p.f
 	owner := f.owner
+	leaseUntil, err := csFixtureLeaseUntil(ctx, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	// bhPublish's one-hour synthetic domain lease is shorter than this gate's
+	// 85-minute budget. Align only this isolated fixture; production expiry stays enforced.
+	result, err := owner.Exec(ctx, `UPDATE control.storefront_domains SET valid_until=$4
+		WHERE tenant_id=$1 AND store_id=$2 AND origin=$3`, f.tenantA, f.storeA1, csOrigin, leaseUntil)
+	if err != nil || result.RowsAffected() != 1 {
+		t.Fatalf("align task-owned domain lease: rows=%d error=%v", result.RowsAffected(), err)
+	}
 	// The store creator is the merchant the MOCK IdP signs in: the owner staff role and every permission of the live catalogue.
 	mustExec(t, owner, `INSERT INTO identity.store_staff(tenant_id,store_id,principal_id,role) VALUES($1,$2,$3,'owner') ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, f.principalA)
 	mustExec(t, owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
@@ -591,7 +602,14 @@ func csStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal, 
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := identity.New(authority, observedBrowserProvider{Provider: provider, t: t}, identity.Policy{ProviderKey: "browser-click-sweep-v1", SessionTTL: time.Hour, OnboardingEnabled: true, Currencies: []string{"TWD", "USD"}})
+	now := time.Now()
+	leaseUntil, err := csFixtureLeaseUntil(ctx, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Test-only signed sessions must survive the gate's remaining bounded work.
+	// Permission/CSRF/revocation checks and dedicated expired-session negatives are unchanged.
+	service, err := identity.New(authority, observedBrowserProvider{Provider: provider, t: t}, identity.Policy{ProviderKey: "browser-click-sweep-v1", SessionTTL: leaseUntil.Sub(now), OnboardingEnabled: true, Currencies: []string{"TWD", "USD"}})
 	if err != nil {
 		t.Fatal(err)
 	}
