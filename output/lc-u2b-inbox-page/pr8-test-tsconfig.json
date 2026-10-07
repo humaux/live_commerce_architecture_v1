@@ -20,6 +20,8 @@
     "../../tests/admin/inbox-discovery.test.ts",
     "../../tests/admin/inbox-credential-artifacts.test.ts",
     "../../tests/admin/inbox-shell-navigation.test.ts",
-    "../../tests/admin/inbox-recovery-locale.test.ts"
+    "../../tests/admin/inbox-recovery-locale.test.ts",
+    "../../tests/admin/inbox-browser-session.test.ts",
+    "../../tests/admin/inbox-bff.test.ts"
   ]
 }

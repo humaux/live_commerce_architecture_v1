@@ -181,11 +181,20 @@ test("INU01 live_operator actual list/filter/read/takeover/send/release persists
   await privateBoundary(page, consoleMessages);
 });
 
+async function browserInboxRead(page: Page, path: string) {
+  // G-UI8 audit [READ]: same-origin GET uses the already authenticated browser cookie policy.
+  // Playwright APIRequestContext omits Secure session cookies on HTTP 127.0.0.1; no cookie/header injection.
+  return page.evaluate(async (path) => {
+    const response = await fetch(path, { method: "GET", credentials: "same-origin", cache: "no-store" });
+    return { status: response.status, text: await response.text() };
+  }, path);
+}
+
 test("INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is 404", async ({ page, context }) => {
   await login(page);
-  const cross = await page.request.get(`/api/stores/${store}/inbox/conversations/${ids.foreign}/messages`);
-  expect(cross.status()).toBe(404);
-  expect(await cross.text()).not.toContain(dm);
+  const cross = await browserInboxRead(page, `/api/stores/${store}/inbox/conversations/${ids.foreign}/messages`);
+  expect(cross.status).toBe(404);
+  expect(cross.text).not.toContain(dm);
   await session(context, required("LC_BROWSER_INBOX_READER_TOKEN"));
   const writes: string[] = [];
   page.on("request", (r) => {
@@ -210,9 +219,9 @@ test("INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is
   await page.goto(`/en/messages?store=${store}`);
   await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
   await expect(page.getByTestId("nav-group-messages")).toHaveCount(0);
-  const denied = await page.request.get(`/api/stores/${store}/inbox/conversations`);
-  expect(denied.status()).toBe(403);
-  expect(await denied.text()).not.toContain(dm);
+  const denied = await browserInboxRead(page, `/api/stores/${store}/inbox/conversations`);
+  expect(denied.status).toBe(403);
+  expect(denied.text).not.toContain(dm);
   record("viewer denial", "navigate with catalogue viewer", "inbox nav absent; real backend denies 403 with no DM");
   await privateBoundary(page, consoleMessages);
 });

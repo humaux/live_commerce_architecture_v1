@@ -335,7 +335,7 @@ test("A12 fixed codes preserved; arbitrary upstream diagnostics stripped", async
 test("client preserves codes and receipt; changed/aborted session cannot publish private response", async () => {
   const { inboxRead, inboxWrite, InboxError } = await import(
     pathToFileURL(adminRoot + "lib/inbox-client.ts").href
-  );
+  ) as typeof import("../../apps/admin/lib/inbox-client");
   const originalFetch = globalThis.fetch;
   Object.defineProperty(globalThis, "document", {
     configurable: true,
