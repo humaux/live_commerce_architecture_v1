@@ -39,7 +39,7 @@ Command claims-worker owns the T10c claims host (meta-claims-intake-v1 §5.3, IR
 
 ## `cmd/expiry-worker`
 
-Command expiry-worker owns the process that runs the checkout-expiry River queue (jobqueue.CheckoutExpiry): it turns due unpaid checkout holds into released stock through internal/checkout.ExpiryWorker, using its own worker DB login.
+Purpose: own expiry jobs and independently opted-in notification mail loops.
 
 - Depends on (internal): `internal/checkout`, `internal/jobqueue`, `internal/mail`, `internal/notify`, `internal/platform`
 - Depends on (third-party): —

@@ -1,0 +1,46 @@
+actual node --test tests/deploy/deploy-prep-r3.test.mjs => exit=0
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (2.687709ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1229.128834ms)
+✔ platform operator custody, export mount and binary are wired (231.771792ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (539.813042ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (1647.58725ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (105.904958ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3830.302583
+
+actual node --check tests/deploy/deploy-prep-r3.test.mjs => exit=0
+
+actual bash -n deploy/scripts/ops-admin.sh => exit=0
+
+actual output/deploy-prep-r3/ci-r1/tools/shellcheck-v0.10.0/shellcheck -S warning -x deploy/scripts/ops-admin.sh => exit=0
+
+source stable=True
+23e5a494a11cc052f6afd227fb08644cb30a36cef6b75c613abb151950cfadf2  tests/deploy/deploy-prep-r3.test.mjs
+e32d37427ccfe094b2cb2ec604430ee5b90f045517aefdae5b10aef4fb34b907  deploy/scripts/ops-admin.sh
+cd60aabb36d5d393ae5f565cc44396dd7699dfbb4e014ff7f594cb5efa8bb127  deploy/compose.yml
+shellcheck red reference:
+
+In deploy/scripts/ops-admin.sh line 75:
+  export_out= export_count=0
+             ^-- SC1007 (warning): Remove space after = if trying to assign a value (for empty string, use var='' ... ).
+
+For more information:
+  https://www.shellcheck.net/wiki/SC1007 -- Remove space after = if trying to...
+
+
+actual serializer-compatible focused custody test: node --test --test-name-pattern=platform operator custody tests/deploy/deploy-prep-r3.test.mjs => exit=0
+✔ platform operator custody, export mount and binary are wired (302.491083ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 360.494041

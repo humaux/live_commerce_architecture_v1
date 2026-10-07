@@ -387,8 +387,10 @@ services:
     env_file: ["${LC_ENV_DIR:?set LC_ENV_DIR}/expiry-worker.env"]   # concurrency
     environment:
       COMMERCE_EXPIRY_WORKER_ENABLED: "1"
+      COMMERCE_ADMIN_ORIGIN: https://${LC_ADMIN_HOST:?set LC_ADMIN_HOST}  # Meta health alert links (w1-01b)
       COMMERCE_EXPIRY_WORKER_DATABASE_URL_FILE: /run/secrets/dsn_lc_expiry_worker
       COMMERCE_BUYER_MAIL_ENABLED: ${LC_BUYER_MAIL_ENABLED:-0}
+      COMMERCE_MERCHANT_ALERT_MAIL: ${LC_MERCHANT_ALERT_MAIL:-0}
       COMMERCE_SMTP_HOST: ${LC_SMTP_HOST:-}
       COMMERCE_SMTP_USERNAME: ${LC_SMTP_USERNAME:-}
       COMMERCE_MAIL_FROM: ${LC_MAIL_FROM:-}
@@ -562,8 +564,29 @@ services:
       COMMERCE_STRIPE_WEBHOOK_KEYS_JSON_FILE: /run/secrets/commerce_stripe_webhook_keys_json
       COMMERCE_STRIPE_WEBHOOK_ACTIVE_KEY_ID_FILE: /run/secrets/commerce_stripe_webhook_active_key_id
       COMMERCE_STRIPE_WEBHOOK_REPLAY_KEY_FILE: /run/secrets/commerce_stripe_webhook_replay_key
+    # W4-S2: CSVs survive --rm; operator pre-creates the UID65532-only directory.
+    volumes:
+      - type: bind
+        source: ${LC_STATE_DIR:?set LC_STATE_DIR}/settlements
+        target: /exports
+        bind: { create_host_path: false }
     secrets: [dsn_lc_stripe_registrar, commerce_account_keys_json, commerce_account_active_key_id, commerce_account_replay_key,
       commerce_stripe_webhook_keys_json, commerce_stripe_webhook_active_key_id, commerce_stripe_webhook_replay_key]
+    cpus: 0.5
+    mem_limit: 128m
+    stop_grace_period: 10s
+
+  platform-admin:
+    # OPS-01B/OPS-02B (0143/0153): DB-only suspend/resume, audit and expiring support grants.
+    # No runtime service receives this authority; invoke only via ops-admin.sh.
+    <<: *go
+    profiles: [ops]
+    command: ["/app/bin/platform-admin"]
+    restart: "no"
+    networks: [backend]
+    environment:
+      COMMERCE_PLATFORM_OPERATOR_DATABASE_URL_FILE: /run/secrets/dsn_lc_platform_operator
+    secrets: [dsn_lc_platform_operator]
     cpus: 0.5
     mem_limit: 128m
     stop_grace_period: 10s
@@ -701,6 +724,7 @@ services:
       - pw_lc_stripe_registrar
       - pw_lc_meta_registrar
       - pw_lc_store_registrar
+      - pw_lc_platform_operator
       - pw_lc_store_domain_verify
     volumes:
       - pgsocket:/var/run/postgresql
@@ -774,6 +798,7 @@ secrets:
   pw_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_stripe_registrar" }
   pw_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_meta_registrar" }
   pw_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_store_registrar" }
+  pw_lc_platform_operator: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_platform_operator" }
   pw_lc_store_domain_verify: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/pw_lc_store_domain_verify" }
   dsn_lc_api_runtime: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_runtime" }
   dsn_lc_api_identity: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_api_identity" }
@@ -794,6 +819,7 @@ secrets:
   dsn_lc_stripe_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_stripe_registrar" }
   dsn_lc_meta_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_meta_registrar" }
   dsn_lc_store_registrar: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_store_registrar" }
+  dsn_lc_platform_operator: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_platform_operator" }
   dsn_lc_store_domain_verify: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/dsn_lc_store_domain_verify" }
   commerce_bff_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_bff_key" }
   commerce_claims_label_key: { file: "${LC_SECRETS_DIR:?set LC_SECRETS_DIR}/commerce_claims_label_key" }

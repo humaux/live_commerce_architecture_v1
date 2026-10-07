@@ -1,0 +1,32 @@
+✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (189.1085ms)
+✔ preflight health permission grammars and API/worker consistency fail closed (1665.7925ms)
+✔ merchant alert flag is explicit 0|1 and independently requires SMTP (1319.214792ms)
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (1.283959ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1327.353458ms)
+✖ platform operator custody, export mount and binary are wired (92.171ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (373.8775ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (923.578333ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (100.887583ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6034.318417
+
+✖ failing tests:
+
+test at tests/deploy/deploy-prep-r3.test.mjs:217:1
+✖ platform operator custody, export mount and binary are wired (92.171ms)
+  TypeError: Cannot read properties of undefined (reading 'environment')
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:221:42
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:217:76)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

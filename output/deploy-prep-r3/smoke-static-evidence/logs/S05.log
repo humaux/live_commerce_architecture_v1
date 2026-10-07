@@ -1,0 +1,9 @@
+{"level":"info","ts":1791346995.0998514,"msg":"using config from file","file":"/etc/caddy/Caddyfile"}
+{"level":"info","ts":1791346995.1097636,"msg":"adapted config to JSON","adapter":"caddyfile"}
+{"level":"info","ts":1791346995.1111257,"msg":"redirected default logger","from":"stderr","to":"stdout"}
+{"level":"info","ts":1791346995.1267636,"logger":"tls.cache.maintenance","msg":"started background certificate maintenance","cache":"0x206d51592300"}
+{"level":"info","ts":1791346995.1269922,"logger":"http.auto_https","msg":"enabling automatic HTTP->HTTPS redirects","server_name":"srv1"}
+{"level":"info","ts":1791346995.1393757,"logger":"tls.cache.maintenance","msg":"stopped background certificate maintenance","cache":"0x206d51592300"}
+{"level":"info","ts":1791346995.1394064,"logger":"http","msg":"servers shutting down with eternal grace period"}
+Valid configuration
+log redaction ok

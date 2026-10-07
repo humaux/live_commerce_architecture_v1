@@ -1,0 +1,14 @@
+40a5a19becfb3f856f31905a1450ef5e58e130fa2e221c2c3f8b8675f3fea568  deploy/scripts/lib.sh
+557c2af50a3432510e3a23cebe1f854ef5c9f27dd65561a5bd20da49529b2ff1  output/deploy-prep-r3-p2/DELIVERY.md
+022f63bcff52e3bc0c6f23770650db42e22af80d4a5f704a06d803898a4e0542  output/deploy-prep-r3-p2/loader/DELIVERY.md
+e5b7831f8f74b66be1ae7445349f685ebc5ae6f8f3b486a357130d2cf2837e66  output/deploy-prep-r3-p2/loader/PROVENANCE.md
+d71c73756aff51bf4c9db9091f4cd068eb5bf6524f95b5b0764613fdcf1d75dc  output/deploy-prep-r3-p2/loader/check-gates.log
+bc065ebe2cbb112e2a51b1a48b56026be28550e45c3373f985f4ae2f3e770072  output/deploy-prep-r3-p2/loader/green.log
+e6d9c739d16b026453b029576b6e9935b99f3fd6faf78b416b54f24159e09e90  output/deploy-prep-r3-p2/loader/headers.log
+cee108e4bc21a48f9b52fff8006894c4bc7291f318e7233d4e16303509c0fd9e  output/deploy-prep-r3-p2/loader/independent-review.log
+ce8132a57fe38760ac6c3982d76a3afa24593cca299c7ea8e20516a722a61577  output/deploy-prep-r3-p2/loader/red.log
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  output/deploy-prep-r3-p2/loader/shellcheck.log
+7b5dfba2229539ab74aaba6108b800811a6ea661d23cd23d72c4eb54254688a2  output/deploy-prep-r3-p2/loader/smoke-static-result.json
+857ec15efbec73fc262462704fc0c8db4f77300a717b75018738c48d313d3906  output/deploy-prep-r3-p2/loader/smoke-static.log
+51ca9d9839ab9f4e3ad34f39a12337225700e5d1703789ffeaaf64cfda857e76  output/deploy-prep-r3-p2/loader/smoke-verdict.log
+d2c430e2cb1464aae50bff22ab9ad57b9b9a67d922b7d54d8c50712bce553134  tests/deploy/deploy-prep-r3.test.mjs

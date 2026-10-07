@@ -1,0 +1,10 @@
+COUNTEREXAMPLE make_config full provides stripe-admin /exports source: exit=1; state_exists=True; settlements_exists=False
+actual node --test tests/deploy/deploy-prep-r3.test.mjs exit=0 tests=4 pass=4 (prior command tool output)
+actual node --check tests/deploy/deploy-prep-r3.test.mjs exit=0; bash -n changed shell scripts exit=0
+cd60aabb36d5d393ae5f565cc44396dd7699dfbb4e014ff7f594cb5efa8bb127  deploy/compose.yml
+c180e4b9b9944bd955c22932799f81c50cfc6b16f6e146b26151a3cbf0fb8a5d  deploy/scripts/ops-admin.sh
+5c143e319b13e36b29f97cdcddaf930ad9a44e4ca6575c2ab252a43ddfcdf2fc  deploy/scripts/preflight.sh
+8e7e70a0260dab835c23a2221f7caaffa7da0299f0e45f481a59e93c80c1a6a3  deploy/scripts/smoke.sh
+4194f9b02510985ab1438b832b27d76a8b57729c2b4db43a24fe4a63ed49514b  deploy/scripts/smoke-r3.sh
+3665d8bc1542aadb1ec9d04250049337e3a2fceb5fe1abb73b0cc71bc7e17e78  deploy/postgres/provision-logins.sh
+979a2d6c4769504411574d06b258ade26dd7b436beb3e67883239d364d305fa3  tests/deploy/deploy-prep-r3.test.mjs

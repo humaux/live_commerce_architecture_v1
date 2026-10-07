@@ -1,0 +1,278 @@
+# File: deploy/caddy/Caddyfile
+# Purpose: edge routing + automatic TLS for the four public host names (deploy-design §12).
+# Runs as/in: service "caddy" (lc-caddy image, UID 10001) inside the shared edge netns, so every
+#   upstream below is plain HTTP on 127.0.0.1 (api :8080, admin :3100, storefront :3200).
+# Reads env: LC_ADMIN_HOST, LC_STORE_HOST, LC_API_HOST, LC_HOOKS_HOST (compose.env, wired by
+#   deploy/compose.yml) — the ONLY names Caddy serves (the storefront derives its origin from
+#   Host, so unknown Hosts must never be proxied); ACME_EMAIL (ACME account contact) and
+#   optional LC_ACME_CA (unset = Let's Encrypt production; staging URL for rehearsals) from
+#   env/caddy.env. `*.localhost` names automatically use Caddy's internal CA (smoke only).
+# Reads secrets: none. Certificates/ACME keys persist in the caddy-data volume (/data).
+# Used by: deploy/compose.yml caddy; deploy/scripts/smoke.sh S05, S17-S24 (S19: meta + stripe routes); deploy.sh post checks;
+#   docs/runbooks/deploy.md §证书与域名, incident.md §caddy.
+# Depends on: api/admin/storefront listening on the shared loopback; lc-caddy image.
+# Status: DESIGN; verified by smoke S05 (validate/fmt) and S17-S24 (runtime).
+# Change rules: the API host is default-deny — open more paths only with a published public
+#   API contract + security review. No `trusted_proxies`: Caddy is the edge, client
+#   X-Forwarded-* are replaced (AGENTS.md: never trust forwarded Host). A CDN/WAF in front (O9)
+#   requires trusted_proxies + DNS-01 and a new review. Reload without restart (one line):
+#   docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile --address unix//run/caddy/admin.sock
+{
+	# Admin API on a unix socket in a tmpfs: unreachable from the shared loopback (api/admin/storefront).
+	admin unix//run/caddy/admin.sock
+	email {$ACME_EMAIL}
+	acme_ca {$LC_ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+	# The read-only, non-root container cannot (and must not) edit a trust store.
+	skip_install_trust
+	servers {
+		timeouts {
+			read_header 10s
+			idle 2m
+		}
+	}
+	log {
+		output stdout
+		format json
+	}
+	# R5 store-domains (Decision 4): on-demand TLS for the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and
+	# merchant-owned domains, all served by the catch-all https:// site below. A certificate is issued only after
+	# the internal ask endpoint admits the host (an ACTIVE platform/merchant origin or a TLS_PENDING merchant
+	# origin); every other host gets no certificate (fail closed). The ask's in-memory admitted set in Go
+	# (internal/tlsask) is the only limiter: Caddy 2.11 dropped the on_demand_tls `interval`/`burst` knobs, so
+	# they are absent here. Caddy itself appends ?domain=<hostname> to the ask URL; the URL must carry NO query and
+	# NO placeholder: Caddy 2.11's ask replacer rejects {host} ("unrecognized placeholder"), so every on-demand
+	# certificate was refused and no store subdomain had TLS (pilot, 2026-10-05). smoke S05 asserts the adapted form.
+	on_demand_tls {
+		ask http://127.0.0.1:8080/internal/tls-ask
+	}
+}
+
+(edge) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+	# Access log: JSON to stdout -> json-file driver (kept ~100 MB per container, bundled by
+	# collect-diagnostics.sh). Caddy redacts Cookie/Set-Cookie/Authorization by default, but it logs
+	# the full request URI including the query string, so credential-bearing query parameters are
+	# rewritten to REDACTED before the line is written (review P1; AGENTS.md: no secrets in logs):
+	#   hub.verify_token, hub_verify_token  Meta webhook verification (Meta sends both spellings,
+	#                     observed 2026-09-30) (production value from the owner secret
+	#                     commerce_meta_apps_json; read from the query by
+	#                     internal/integrations/meta/handler.go challenge()).
+	#   code, state       OIDC authorization response on admin /api/auth/callback
+	#                     (apps/admin/app/api/auth/callback/route.ts); `state` also appears in the
+	#                     Location of /api/auth/login's redirect to the IdP.
+	#                     Also the Meta ads connect return on admin /api/ads/meta/callback
+	#                     (meta-ads-v1 §2 step 2, apps/admin/app/api/ads/meta/callback/route.ts).
+	#   token, access_token, id_token  defensive: bearer-style parameters must never be logged.
+	# The same rules apply to the Referer request header and the Location response header, which
+	# can carry those URLs as well. Other parameters stay visible (e.g. hub.challenge) for triage.
+	# Verified by smoke S40 (canary values through the hooks and admin hosts; none may reach any
+	# container log). Add a parameter here whenever a route starts taking a secret in its query.
+	# R5 store-domains: the per-row TLS proof nonce is a PATH segment (/.well-known/lc-domain-check/<nonce>,
+	# Decision 3), not a query parameter: those requests are not access-logged at all (log_skip below), so the
+	# nonce never reaches the json-file logs either (collect-diagnostics.sh bundles them). Do NOT add a second
+	# filter on request>uri: `fields` is a map, the last filter for a field wins, and a regexp filter here once
+	# replaced the query filter so verify_token/code/state were logged in clear (CI smoke S40, 2026-10-04).
+	# smoke S05 asserts the adapted config keeps exactly the query filter on request>uri.
+	# Contains client IPs: retention is owner decision O8.
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
+				}
+				request>headers>Referer query {
+					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
+				}
+				resp_headers>Location query {
+					replace hub.verify_token REDACTED
+					replace hub_verify_token REDACTED
+					replace code REDACTED
+					replace state REDACTED
+					replace token REDACTED
+					replace access_token REDACTED
+					replace id_token REDACTED
+					replace password REDACTED
+					replace new_password REDACTED
+					replace email REDACTED
+				}
+			}
+		}
+	}
+	# The TLS proof nonce is a path segment (see the log comment above): never access-log those requests.
+	log_skip /.well-known/lc-domain-check/*
+	# Upstream down (deploy.sh maintenance window, crash) -> explicit maintenance 503.
+	handle_errors 502 503 504 {
+		header Retry-After "60"
+		header Content-Type "text/plain; charset=utf-8"
+		respond "Service temporarily unavailable. 服务维护中，请稍后再试。" 503
+	}
+}
+
+# Public platform site (same Next standalone process; separate host allowlist).
+{$LC_PLATFORM_HOST} {
+	import edge
+	# Canonicalize only known documents. Unknown/admin/API paths remain denied.
+	@publicSlash {
+		method GET HEAD
+		expression !{http.request.uri.path}.endsWith('//')
+		path_regexp publicSlash ^(/(?:(?:zh-TW|zh-CN|en)(?:/(?:privacy|terms|data-deletion|contact))?|privacy|terms|data-deletion|contact))/$
+	}
+	handle @publicSlash {
+		redir {re.publicSlash.1}{?query} 301
+	}
+	# The public host never exposes the admin BFF. Keep this before the proxy:
+	# /api/auth is deliberately excluded from Next's body-buffering proxy matcher.
+	@public {
+		method GET HEAD
+		path / /zh-TW /zh-CN /en /privacy /terms /data-deletion /contact /zh-TW/privacy /zh-TW/terms /zh-TW/data-deletion /zh-TW/contact /zh-CN/privacy /zh-CN/terms /zh-CN/data-deletion /zh-CN/contact /en/privacy /en/terms /en/data-deletion /en/contact /robots.txt /sitemap.xml /_next/static/*
+	}
+	handle @public {
+		reverse_proxy 127.0.0.1:3100
+	}
+	handle {
+		respond 404
+	}
+}
+
+www.{$LC_PLATFORM_HOST} {
+	import edge
+	redir https://{$LC_PLATFORM_HOST}{uri} 301
+}
+
+# Merchant back office (Next standalone, lc-admin).
+{$LC_ADMIN_HOST} {
+	import edge
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy 127.0.0.1:3100
+}
+
+# Buyer storefront (next start, lc-storefront). Host passes through unchanged (origin derivation).
+{$LC_STORE_HOST} {
+	import edge
+	request_body {
+		max_size 1MB
+	}
+	# K3 authz F1: the guest-lookup / manual-order-link per-IP throttles key on the client IP, so the storefront
+	# edge must OVERWRITE (never append) X-Forwarded-For — a client-supplied value would otherwise pick another
+	# store's bucket. Caddy's no-trusted_proxies default already replaces it; this pins the rule for review, and
+	# preflight P18 proves no CDN sits in front (DNS-only), so {remote_host} is the real buyer address.
+	request_header X-Forwarded-For {remote_host}
+	reverse_proxy 127.0.0.1:3200
+}
+
+# R5 store-domains (Decision 4): the catch-all serves the storefront for every hostname the on_demand_tls ask
+# admits — the platform subdomains (*.<LC_STORE_BASE_DOMAIN>) and merchant-owned domains. The explicit hosts
+# above (admin, api, hooks, shop) are more specific and keep their own blocks, so this never shadows them; an
+# unadmitted host never gets a certificate and the handshake fails closed. The storefront derives its origin
+# from Host, so the same X-Forwarded-For overwrite as LC_STORE_HOST (P18) applies to every merchant domain.
+https:// {
+	import edge
+	# P0-4: on-demand TLS is per-site. The global on_demand_tls block only sets the ask;
+	# without this directive the catch-all never asks and an admitted host gets no certificate (fail closed).
+	tls {
+		on_demand
+	}
+	request_body {
+		max_size 1MB
+	}
+	request_header X-Forwarded-For {remote_host}
+	# P1-2: the per-row TLS proof path is answered by the api (control.tls_pending_nonce), not the storefront;
+	# it exists for TLS_PENDING hosts and that path only, so it routes to :8080 before the storefront fallback.
+	handle /.well-known/lc-domain-check/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	reverse_proxy 127.0.0.1:3200
+}
+
+# Default-deny: the Go API is a private BFF backend (loopback listener; BFF keys).
+# Open more paths only with a published public-API contract.
+{$LC_API_HOST} {
+	import edge
+	handle /healthz {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Inbound webhooks only. BFF credentials are stripped so a webhook caller can never present them.
+{$LC_HOOKS_HOST} {
+	import edge
+	# 2 MB > the API's own 1 MiB Meta limit, so the app returns its own 413 code.
+	request_body {
+		max_size 2MB
+	}
+	request_header -Authorization
+	request_header -X-Commerce-BFF-Key
+	request_header -X-Commerce-Buyer-BFF-Key
+	handle /v1/meta/webhooks/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Stripe webhook endpoint: POST /v1/stripe/webhook/{endpoint_id} (stripe-psp-v1 §0.2, §12). The
+	# signature is over the RAW body, so nothing here rewrites it (no encode/rewrite on this path is
+	# applied to the request; the 2 MB cap above is only a ceiling, the app enforces its own limit).
+	# The endpoint id in the URL is the operator-registered one (stripe-admin webhook), not a secret.
+	handle /v1/stripe/webhook/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Platform-fee billing webhook: POST /v1/platform/stripe/webhook (customers-billing-v1 §5, billing-core
+	# B9). Same raw-body rule as the PSP webhook above: nothing rewrites the signed bytes; the app caps the
+	# body at 64 KiB. Exact path only (cmd/api mountPlatformBilling).
+	handle /v1/platform/stripe/webhook {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Taiwan CVS (taiwan-cvs-logistics-v1 §12): ECPay's store-map return (a buyer's browser POST) and its logistics status
+	# notification. Only these two routes reach Go here; any other /v1/cvs/* path on this host, or on LC_API_HOST, falls to 404.
+	# The map return carries no MAC (the app checks the selection nonce); the status body is MAC-verified in Go over the RAW body.
+	handle /v1/cvs/ecpay/map-return/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	handle /v1/cvs/ecpay/status/* {
+		reverse_proxy 127.0.0.1:8080
+	}
+	# Reserved PAYUNi NotifyURL. No receiver exists yet (contracts/buyer-payment-http-v1.md:18); B4.
+	handle /payuni/notify {
+		respond 404
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Container-local health endpoint for the image HEALTHCHECK; bound to loopback only.
+http://127.0.0.1:2080 {
+	bind 127.0.0.1
+	handle /healthz {
+		respond "ok" 200
+	}
+	handle {
+		respond 404
+	}
+}

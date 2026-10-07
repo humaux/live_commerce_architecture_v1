@@ -1,0 +1,174 @@
+{
+  "run_id": "20261007T042311Z-7bee",
+  "task_id": "T22",
+  "commit": "a3122263e5e18d8f37ffcf6377cf6fa8fbd08f93",
+  "environment": {
+    "mode": "static",
+    "host": "Mac-mini.local",
+    "kernel": "27.0.0",
+    "status_vocabulary": "PASS|FAIL|BLOCKED|NOT_RUN; LOCAL smoke, not LIVE/production acceptance"
+  },
+  "dependency_pins": {
+    "docker": "29.8.1",
+    "compose": "5.5.1",
+    "go": "go version go1.27.1 darwin/arm64",
+    "images": "see deploy/docker/*.Dockerfile ARG *_IMAGE and deploy/compose.yml image: pins"
+  },
+  "actual_commands": [
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/build-images.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/check-pins.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/collect-diagnostics.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/deploy.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/host-setup.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/lib.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/ops-admin.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/pg-ops.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/preflight.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/prune-docker.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/secrets-init.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/smoke-r3.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/smoke.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/watchdog.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/archive-wal.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/provision-logins.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/backup.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/basebackup.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/lib.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/pitr-install.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/restore-dump.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/restore-pitr.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/restore-wal.sh",
+    "bash -n /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/postgres/ops/rotate-superuser.sh",
+    "/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/scripts/check-pins.sh",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.two-host-db.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.two-host-db.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.two-host-db.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml config -q",
+    "docker compose --project-directory /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy --env-file /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.8CbDlNAXut/compose.env -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.yml -f /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/compose.two-host-db.yml config -q",
+    "go vet ./deploy/tools/...",
+    "go test -count=1 -cover ./deploy/tools/...",
+    "docker run --rm --network none -e LC_PLATFORM_HOST=platform.localhost -e LC_ADMIN_HOST=admin.localhost -e LC_STORE_HOST=shop.localhost -e LC_API_HOST=api.localhost -e LC_HOOKS_HOST=hooks.localhost -e ACME_EMAIL=smoke@example.com -v /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile",
+    "node --test /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs"
+  ],
+  "exit_codes": {
+    "S01#0": 0,
+    "S01#1": 0,
+    "S01#2": 0,
+    "S01#3": 0,
+    "S01#4": 0,
+    "S01#5": 0,
+    "S01#6": 0,
+    "S01#7": 0,
+    "S01#8": 0,
+    "S01#9": 0,
+    "S01#10": 0,
+    "S01#11": 0,
+    "S01#12": 0,
+    "S01#13": 0,
+    "S01#14": 0,
+    "S01#15": 0,
+    "S01#16": 0,
+    "S01#17": 0,
+    "S01#18": 0,
+    "S01#19": 0,
+    "S01#20": 0,
+    "S01#21": 0,
+    "S01#22": 0,
+    "S01#23": 0,
+    "S02#24": 0,
+    "S03#25": 0,
+    "S03#26": 0,
+    "S03#27": 0,
+    "S03#28": 0,
+    "S03#29": 0,
+    "S03#30": 0,
+    "S03#31": 0,
+    "S03#32": 0,
+    "S04#33": 0,
+    "S04#34": 0,
+    "S05#35": 0,
+    "S48#36": 0
+  },
+  "fixtures": "temp config/secrets/backup dirs (deleted), *.localhost hosts, generated random secrets only",
+  "expected_cases": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S48"
+  ],
+  "observed_cases": [
+    "S01",
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S48"
+  ],
+  "results": [
+    {
+      "id": "S01",
+      "status": "PASS",
+      "note": "bash -n on all deploy scripts"
+    },
+    {
+      "id": "S01",
+      "status": "NOT_RUN",
+      "note": "shellcheck not installed"
+    },
+    {
+      "id": "S02",
+      "status": "PASS",
+      "note": "digest pins"
+    },
+    {
+      "id": "S03",
+      "status": "PASS",
+      "note": "compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv"
+    },
+    {
+      "id": "S04",
+      "status": "PASS",
+      "note": "coverage=96.7%"
+    },
+    {
+      "id": "S05",
+      "status": "PASS",
+      "note": "caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image caddy:2.11.4-alpine)"
+    },
+    {
+      "id": "S06",
+      "status": "PASS",
+      "note": "ignore patterns"
+    },
+    {
+      "id": "S48",
+      "status": "PASS",
+      "note": "R3 operator/env/probe controls (MOCK, no database or provider calls)"
+    }
+  ],
+  "artifacts": [
+    "S01.log",
+    "S02.log",
+    "S03.log",
+    "S04.log",
+    "S05.adapt.json",
+    "S05.fmt",
+    "S05.log",
+    "S48.log"
+  ],
+  "started_at": "2026-10-07T04:23:11Z",
+  "ended_at": "2026-10-07T04:23:19Z",
+  "reviewer": null,
+  "not_run": [
+    "S01: shellcheck not installed"
+  ],
+  "overall": "PASS"
+}

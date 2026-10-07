@@ -1,0 +1,33 @@
+smoke	smoke.sh static (S01-S06)	﻿2026-10-07T07:06:39.0837060Z ##[group]Run rc=0
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0837764Z [36;1mrc=0[0m
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0838274Z [36;1mpython3 .github/scripts/smoke-verdict.py --selftest[0m
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0838977Z [36;1mbash deploy/scripts/smoke.sh static || rc=$?[0m
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0839609Z [36;1mev=$(ls -td deploy/.evidence/*/ | head -n1)[0m
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0840401Z [36;1mpython3 .github/scripts/smoke-verdict.py "$ev/result.json" "$rc" static[0m
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0925036Z shell: /usr/bin/bash -e {0}
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0925311Z env:
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0925509Z   GOTOOLCHAIN: local
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0925743Z   GOFLAGS: -mod=readonly
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0926026Z   PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.0926336Z ##[endgroup]
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.1221070Z smoke-verdict selftest ok
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:39.1940492Z 2026-10-07T07:06:39Z smoke.sh CASE: S01 PASS bash -n on all deploy scripts
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:45.9325640Z 2026-10-07T07:06:45Z smoke.sh CASE: S01 FAIL shellcheck findings (logs/S01.log)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:45.9868839Z 2026-10-07T07:06:45Z smoke.sh CASE: S02 PASS digest pins
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:06:50.4701282Z 2026-10-07T07:06:50Z smoke.sh CASE: S03 PASS compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:08.1257226Z 2026-10-07T07:07:08Z smoke.sh CASE: S04 PASS coverage=96.7%
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:11.9198696Z 2026-10-07T07:07:11Z smoke.sh CASE: S05 PASS caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image caddy:2.11.4-alpine)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:11.9359869Z 2026-10-07T07:07:11Z smoke.sh CASE: S06 PASS ignore patterns
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:21.9759323Z 2026-10-07T07:07:21Z smoke.sh CASE: S48 FAIL R3 controls (logs/S48.log)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.0881079Z 2026-10-07T07:07:22Z smoke.sh INFO: evidence: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/deploy/.evidence/20261007T070639Z-9c6a/result.json  overall=FAIL
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1104845Z S01	PASS	bash -n on all deploy scripts
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1105929Z S01	FAIL	shellcheck findings (logs/S01.log)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1106527Z S02	PASS	digest pins
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1107835Z S03	PASS	compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1108923Z S04	PASS	coverage=96.7%
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1109937Z S05	PASS	caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image caddy:2.11.4-alpine)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1110846Z S06	PASS	ignore patterns
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1111378Z S48	FAIL	R3 controls (logs/S48.log)
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1112060Z smoke static: 6 PASS, 2 FAIL, BLOCKED=-, NOT_RUN=-
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1132537Z ##[error]smoke static: FAIL: S01,S48
+smoke	smoke.sh static (S01-S06)	2026-10-07T07:07:22.1149409Z ##[error]Process completed with exit code 1.
