@@ -81,10 +81,14 @@ deploy/scripts/ops-admin.sh stripe-admin settlement-payout --statement "$STATEME
 
 Use readback IDs and minor-unit totals, reconcile every statement/receipt, and preserve HOLD/discrepancy evidence.
 A close that stops with `settlement_unattributed` is held by an `unmapped_source` row: a charge on the platform account this
-system never created. Clear it with the append-only resolve step (contract `stripe-platform-account-v1` §6.6), one call per
-`balance_txn_id`; never delete or edit the row, never force-close a held week. `settlement-close` prints every
-`assigned_to_store` resolution as an `operator_notes` entry: v1 moves no money, so the owner pays that store out of band.
-A resolution is final and cannot be edited; a late row in an already-closed week cannot be resolved here (owner escalation).
+system never created. The refusal prints the blocking `balance_txn_id`s (up to 20, oldest first; rerun the close for more).
+Resolve each one that has no line with the append-only resolve step (contract `stripe-platform-account-v1` §6.6), one call per
+`balance_txn_id`; never delete or edit the row, never force-close a held week. **No buyer PII in `--note`** (no name, e-mail,
+phone, address, card data): it is printed in CLI output; the details belong in the ticket. `settlement-close` prints each
+`assigned_to_store` resolution of its own period as an `operator_notes` entry with the signed settlement-currency amount: v1
+moves no money, so the owner settles that signed amount with the store out of band (a negative one is recovered from it).
+A resolution is final and cannot be edited or erased; a late row in an already-closed week cannot be resolved here (owner
+escalation).
 
 ```sh
 # MOCK identifiers. SQL only: never calls Stripe and never reads the LIVE pair. Ticket and note are mandatory (note <= 500 chars).
