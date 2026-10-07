@@ -12,6 +12,7 @@
     "../../tests/admin/inbox-browser-source.test.ts",
     "../../tests/admin/inbox-ui.spec.ts",
     "../../apps/admin/next-env.d.ts",
-    "../../tests/admin/inbox-unknown.test.ts"
+    "../../tests/admin/inbox-unknown.test.ts",
+    "../../tests/admin/inbox-bundle-browser.test.ts"
   ]
 }

@@ -1,0 +1,68 @@
+✖ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.547292ms)
+✖ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.187541ms)
+✖ persisted link and token-free command receipt are compared without disclosing credentials (0.067708ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 103.937125
+
+✖ failing tests:
+
+test at tests/admin/inbox-bundle-browser.test.ts:10:1
+✖ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.547292ms)
+  AssertionError [ERR_ASSERTION]: missing real fixture seam: Studio: true
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bundle-browser/tests/admin/inbox-bundle-browser.test.ts:12:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bundle-browser.test.ts:16:1
+✖ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.187541ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /trace: "off"/. Input:
+
+  '\n'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bundle-browser/tests/admin/inbox-bundle-browser.test.ts:19:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '\n',
+    expected: /trace: "off"/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bundle-browser.test.ts:28:1
+✖ persisted link and token-free command receipt are compared without disclosing credentials (0.067708ms)
+  AssertionError [ERR_ASSERTION]: missing persisted proof: claims.links
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bundle-browser/tests/admin/inbox-bundle-browser.test.ts:30:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

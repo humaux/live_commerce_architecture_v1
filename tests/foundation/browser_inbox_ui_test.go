@@ -8,6 +8,8 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -22,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"livecommerce/internal/claims"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
@@ -117,6 +120,28 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	ids["instagram"] = e.postIGDM(t, "900007320003", "SYNTHETIC-INSTAGRAM-DM", time.Now())
 	ids["retry"] = e.postDM(t, "900007320004", "SYNTHETIC-INBOX-RETRY-INBOUND", time.Now())
 	ids["foreign"] = lcConversation(t, f, f.tenantA, f.storeA2, "page")
+	// mciSetup already owns the store’s OPEN window. DM fixtures use conversation windows, not this claim window.
+	e.h.closeWindow(t, e.session)
+	// Real commands create the bundle; only its unavailable-private-reply flag is owner fixture setup.
+	ids["bundle_session"] = e.h.draft(t, f.storeA1)
+	e.h.offer(t, ids["bundle_session"], "BR1", e.h.stock.skus[0].ID, 1)
+	e.h.open(t, ids["bundle_session"], claims.MatchExact)
+	ids["bundle"] = e.h.accepted(t, ids["bundle_session"], "", "SYNTHETIC-BUNDLE-BUYER", "BR1+1").BundleID
+	mustExec(t, f.owner, `UPDATE claims.bundles SET link_pending_manual=true WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, ids["bundle"])
+	const bundleOrigin = "https://inbox-bundle.example"
+	bhPublish(t, bcHarness{cqHarness: e.h.cqHarness}, bundleOrigin, f.tenantA, f.storeA1)
+	// Match command.Run's canonical IssueLink request; no credential is part of this receipt digest.
+	linkRequest, err := json.Marshal(struct {
+		PrincipalID        string `json:"principal_id"`
+		SessionID          string `json:"session_id"`
+		BundleID           string `json:"bundle_id"`
+		ExpectedGeneration int64  `json:"expected_generation"`
+		ReleaseBinding     bool   `json:"release_binding"`
+	}{operator, ids["bundle_session"], ids["bundle"], 0, false})
+	if err != nil {
+		t.Fatal("bundle fixture request encoding failed")
+	}
+	linkRequestHash := sha256.Sum256(linkRequest)
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -151,9 +176,52 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true, Inbox: e.svc, MetaHealth: &metaconnect.Health{}}))
+	mux.Handle("/", httpapi.NewHandler(f.runtime, httpapi.Options{SessionStoreList: true, Studio: true, ClaimLabels: &e.h.labels, Inbox: e.svc, MetaHealth: &metaconnect.Health{}}))
 	var reads, writes, stripped atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && r.URL.Path == "/__test/inbox-bundle-facts" {
+			// Read-only claims.links/ops.command_results observation. Digests are never returned or logged.
+			var input struct {
+				CredentialSHA256 string `json:"credentialSHA256"`
+				IdempotencyKey   string `json:"idempotencyKey"`
+			}
+			decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024))
+			decoder.DisallowUnknownFields()
+			if decoder.Decode(&input) != nil || (input.CredentialSHA256 != "" && !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(input.CredentialSHA256)) ||
+				(input.IdempotencyKey != "" && !regexp.MustCompile(`^[A-Za-z0-9_-]{8,128}$`).MatchString(input.IdempotencyKey)) {
+				http.Error(w, "fixture observation invalid", 400)
+				return
+			}
+			var links, generation, receipts, dmOperations int64
+			var hashMatches, principalMatches, ttlValid, receiptValid, pendingManual bool
+			err := f.owner.QueryRow(r.Context(), `SELECT
+			 (SELECT count(*) FROM claims.links WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3::uuid),
+			 coalesce(l.generation,0),coalesce(encode(l.token_hash,'hex')=$4 AND $4<>'',false),
+			 coalesce(l.principal_id=$5::uuid,false),
+			 coalesce(l.expires_at>clock_timestamp() AND l.expires_at-l.issued_at=interval '72 hours',false),
+			 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.operation='live.claim.link.issue' AND c.response->>'bundle_id'=$3::uuid::text),
+			 EXISTS(SELECT 1 FROM ops.command_results c WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.operation='live.claim.link.issue'
+			   AND c.idempotency_key=$6 AND c.principal_id=$5::uuid AND c.request_hash=$7::bytea
+			   AND c.response->>'bundle_id'=$3::uuid::text AND (c.response->>'generation')::bigint=l.generation
+			   AND (c.response->>'expires_at')::timestamptz=l.expires_at AND c.response->>'released'='false'
+			   AND c.response - ARRAY['bundle_id','generation','expires_at','released']::text[] = '{}'::jsonb),
+			 b.link_pending_manual,
+			 (SELECT count(*) FROM integration.operations WHERE tenant_id=$1 AND store_id=$2 AND action='meta.dm_send')
+			 FROM claims.bundles b LEFT JOIN claims.links l ON l.tenant_id=b.tenant_id AND l.store_id=b.store_id AND l.bundle_id=b.id
+			 WHERE b.tenant_id=$1 AND b.store_id=$2 AND b.id=$3::uuid`,
+				f.tenantA, f.storeA1, ids["bundle"], input.CredentialSHA256, operator, input.IdempotencyKey, linkRequestHash[:]).
+				Scan(&links, &generation, &hashMatches, &principalMatches, &ttlValid, &receipts, &receiptValid, &pendingManual, &dmOperations)
+			if err != nil {
+				http.Error(w, "fixture observation failed", 500)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Cache-Control", "no-store")
+			_ = json.NewEncoder(w).Encode(map[string]any{"links": links, "generation": generation, "hash_matches": hashMatches,
+				"principal_matches": principalMatches, "ttl_valid": ttlValid, "receipt_count": receipts, "receipt_valid": receiptValid,
+				"pending_manual": pendingManual, "dm_operations": dmOperations})
+			return
+		}
 		if r.Method == "GET" && r.URL.Path == "/__test/inbox-facts" {
 			// Read-only PG observation is evidence; it cannot substitute for the UI action.
 			conversation := ids["open"]
@@ -257,6 +325,37 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	}
 	if reads.Load() < 5 || writes.Load() < 4 || stripped.Load() != 0 {
 		t.Fatalf("BFF real-chain proof reads=%d writes=%d stripped=%d", reads.Load(), writes.Load(), stripped.Load())
+	}
+	// The copied credential must never appear in logs, DOM screenshots or retained traces.
+	var persistedHash []byte
+	if err := f.owner.QueryRow(ctx, `SELECT token_hash FROM claims.links WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3`, f.tenantA, f.storeA1, ids["bundle"]).Scan(&persistedHash); err != nil {
+		t.Fatal("bundle UI did not persist a link")
+	}
+	// No raw hash is logged: compare candidate credential digests inside the process only.
+	credentialPattern := regexp.MustCompile(`[A-Za-z0-9_-]{43}`)
+	if err := filepath.WalkDir(evidence, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		data, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+		if strings.Contains(string(data), hex.EncodeToString(persistedHash)) {
+			return fmt.Errorf("credential digest retained")
+		}
+		for _, candidate := range credentialPattern.FindAll(data, -1) {
+			digest := sha256.Sum256(candidate)
+			if hex.EncodeToString(digest[:]) == hex.EncodeToString(persistedHash) {
+				return fmt.Errorf("credential retained")
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal("I11 bundle evidence boundary failed")
 	}
 	// Each clicked submit flow (including committed-but-lost acknowledgment) creates exactly one operation.
 	for _, key := range []string{"open", "retry"} {
