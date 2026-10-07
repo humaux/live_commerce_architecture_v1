@@ -287,3 +287,38 @@ test("unavailable tab storage fails closed to the in-memory lock without throwin
   assert.deepEqual(client.rememberUncertainScope(id, "s", broken), ["s"]);
   assert.deepEqual(client.rememberUncertainScope(id, "s", null), ["s"]);
 });
+
+// Codex review P2 (PR #3): the lock is PENDING before the audited GET dispatches, so a refresh/close mid-request (the page never
+// sees a result) still counts as uncertain on the next mount; only a definitive outcome releases it.
+const pendingKey = `lc.reports.uncertain.${id}`;
+const csv = () => new Response("units\n1", {headers:{"Cache-Control":"private, no-store","Content-Type":"text/csv; charset=utf-8","Content-Disposition":`attachment; filename="report-products-${from}-${to}.csv"`}});
+test("export lock is stored before dispatch; refused/delivered outcomes release it, uncertain and cut-short keep it", async () => {
+  await browserFixture(async () => {
+    const scope = `${id}|${from}|${to}|products`;
+    const run = (client, storage) => client.exportWithLock(id, scope, () => client.downloadReport(id, "products", from, to, "session", new AbortController().signal), storage);
+    const cases = [["done", () => csv(), false], ["forbidden", () => new Response("{}", {status:403}), false], ["not-found", () => new Response("{}", {status:404}), false],
+      ["signed-out", () => new Response("{}", {status:401}), false], ["unavailable", () => new Response("{}", {status:422}), false],
+      ["uncertain", () => new Response("{}", {status:503}), true], ["uncertain", () => { throw new Error("aborted by pagehide"); }, true]];
+    for (const [expected, respond, locked] of cases) {
+      const storage = memoryStorage(); const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); let atDispatch = null;
+      globalThis.fetch = async () => { atDispatch = storage.getItem(pendingKey); return respond(); };
+      assert.equal(await run(client, storage), expected);
+      assert.deepEqual(JSON.parse(atDispatch), [scope], `${expected}: pending lock must exist when the GET is dispatched`);
+      assert.deepEqual(client.loadUncertainScopes(id, storage), locked ? [scope] : [], expected);
+    }
+    // Pre-dispatch refusal (no session cookie) never reached the server and is released too.
+    const storage = memoryStorage(); const client = downloadClient({cookie:"",boundary:"session"});
+    globalThis.fetch = async () => { throw new Error("must not send"); };
+    assert.equal(await run(client, storage), "signed-out"); assert.deepEqual(client.loadUncertainScopes(id, storage), []);
+    // Page goes away mid-request: the run never resolves, nothing releases the lock, and a fresh mount sees it as uncertain.
+    const cut = memoryStorage(); const fresh = downloadClient({cookie:"csrf-pair",boundary:"session"});
+    void fresh.exportWithLock(id, scope, () => new Promise(() => {}), cut);
+    assert.equal(fresh.exportOutcome(scope, null, fresh.loadUncertainScopes(id, cut)), "uncertain");
+  });
+});
+test("releasing one scope keeps the other uncertain scopes of the store", () => {
+  const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); const storage = memoryStorage();
+  client.rememberUncertainScope(id, "a", storage); client.rememberUncertainScope(id, "b", storage);
+  client.forgetUncertainScope(id, "a", storage); assert.deepEqual(client.loadUncertainScopes(id, storage), ["b"]);
+  client.forgetUncertainScope(id, "a", { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } });
+});

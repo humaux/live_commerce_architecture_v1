@@ -80,6 +80,27 @@ export function rememberUncertainScope(store: string, scope: string, storage = t
   return next;
 }
 
+/** Release a scope whose export outcome was definitive (see `definitiveExport`). */
+export function forgetUncertainScope(store: string, scope: string, storage = tabStorage()): void {
+  try { storage?.setItem(lockKey(store), JSON.stringify(loadUncertainScopes(store, storage).filter((s) => s !== scope))); } catch { /* lock stays */ }
+}
+
+/** Outcomes that prove the audited GET either never reached the server or was refused before auditing, or finished and
+ * delivered its one file. Everything else ("uncertain", or no outcome because the page went away) keeps the lock:
+ *  - done: 200 + file delivered, the one audit is known, so a deliberate new export is a new audit.
+ *  - forbidden/not-found/signed-out: 403/404/401 refusals (or a pre-dispatch session fence) happen before any audit.
+ *  - unavailable: pre-dispatch concealment or a 4xx other than 401/403/404, refused before auditing. */
+export const definitiveExport = (result: ReportDownload) => result !== "uncertain";
+
+/** Run one export under a PENDING lock written BEFORE dispatch: a refresh/close mid-request (pagehide aborts) never resolves
+ * `run`, so the lock stays and counts as uncertain on the next mount. Released only by a definitive outcome. */
+export async function exportWithLock(store: string, scope: string, run: () => Promise<ReportDownload>, storage = tabStorage()): Promise<ReportDownload> {
+  rememberUncertainScope(store, scope, storage);
+  const result = await run();
+  if (definitiveExport(result)) forgetUncertainScope(store, scope, storage);
+  return result;
+}
+
 /** Perform one CSV GET after a session/CSRF check; a changed session conceals bytes, never retries. */
 export async function downloadReport(store: string, name: ReportName, from: string, to: string, boundary: string, signal: AbortSignal): Promise<ReportDownload> {
   const csrf = csrfCookie();

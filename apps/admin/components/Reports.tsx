@@ -12,7 +12,7 @@ import { useGuardedRead, ReadError, type ReadCode } from "@/lib/customers-client
 import { financeDay } from "@/lib/customers-model";
 import { readOrderActions, OrderReadError } from "@/lib/orders-client";
 import { reportNames, validReportsQuery, type ReportName } from "@/lib/reports-request";
-import { readReport, downloadReport, exportOutcome, loadUncertainScopes, rememberUncertainScope, type ReportDownload } from "@/lib/reports-client";
+import { readReport, downloadReport, exportOutcome, loadUncertainScopes, exportWithLock, type ReportDownload } from "@/lib/reports-client";
 import { reportsCopy } from "@/lib/reports-copy";
 import type { ProductSort } from "@/lib/reports-presentation";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -48,7 +48,9 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const [exportView, setExportView] = useState<{ scope: string; outcome: ReportDownload | "busy" } | null>(null);
   // I06: unresolved uncertain exports persist per browser tab (sessionStorage by store), so re-renders and refresh never re-enable them.
   const [uncertainScopes, setUncertainScopes] = useState<string[]>([]);
-  useEffect(() => { if (store) setUncertainScopes((u) => [...new Set([...u, ...loadUncertainScopes(store.id)])]); }, [store]);
+  // A scope still stored on mount is uncertain: it either came back uncertain or its request was cut short (refresh/close mid-flight).
+  const storeId = store?.id;
+  useEffect(() => { if (storeId) setUncertainScopes((u) => [...new Set([...u, ...loadUncertainScopes(storeId)])]); }, [storeId]);
   const exporting = useRef(false), exportController = useRef<AbortController | null>(null);
   const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`; // read lifecycle: new per server render
   const lockScope = `${store?.id ?? ""}|${from}|${to}|${tab}`; // export lock: stable across renders
@@ -107,10 +109,10 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     exporting.current = true;
     const active = new AbortController(); exportController.current = active;
     setExportView({ scope: lockScope, outcome: "busy" });
-    const result = await downloadReport(store.id, tab, from, to, read.boundary, active.signal);
+    const result = await exportWithLock(store.id, lockScope, () => downloadReport(store.id, tab, from, to, read.boundary, active.signal));
     exporting.current = false;
     setExportView({ scope: lockScope, outcome: result });
-    if (result === "uncertain") { const kept = rememberUncertainScope(store.id, lockScope); setUncertainScopes((u) => [...new Set([...u, ...kept, lockScope])]); }
+    if (result === "uncertain") setUncertainScopes((u) => [...new Set([...u, lockScope])]);
     // A signed-out result must hide stale numbers; the guarded read rechecks server session authority.
     if (result === "signed-out") read.reload();
   };

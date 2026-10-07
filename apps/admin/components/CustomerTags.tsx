@@ -24,7 +24,8 @@ export function TagBadges({ tags, locale = "en" }: { tags: Tag[]; locale?: Local
   </span>;
 }
 
-function useCatalogue(store: string, boundary: string) {
+function useCatalogue(store: string, boundary: string, onScopeLost?: () => void) {
+  const lost = useRef(onScopeLost); lost.current = onScopeLost;
   const [catalog, setCatalog] = useState<TagRecord[] | null>(null);
   const [error, setError] = useState(false);
   const [tick, setTick] = useState(0);
@@ -35,14 +36,23 @@ function useCatalogue(store: string, boundary: string) {
       .then((v) => { if (!controller.signal.aborted) setCatalog(v.items); })
       // An unauthorized catalogue read ends the session for the whole page (Codex review P2, PR #3): the guarded customer
       // read listens for the global logout and clears names, orders and consents; a local error alone would leave them shown.
-      .catch((e) => { if (controller.signal.aborted) return; if (String((e as { message?: unknown } | null)?.message) === "unauthorized") signalLogout(); setError(true); });
+      // forbidden/not_found: the session is still valid but this store/permission scope is gone. Do not log out; ask the parent
+      // guarded read(s) to re-run so the server answers forbidden/not-found and the guard clears the customer PII. Transient
+      // failures (unavailable/retry_later) stay local.
+      .catch((e) => {
+        if (controller.signal.aborted) return;
+        const code = String((e as { message?: unknown } | null)?.message);
+        if (code === "unauthorized") signalLogout();
+        else if (code === "forbidden" || code === "not_found") lost.current?.();
+        setError(true);
+      });
     return () => controller.abort();
   }, [store, boundary, tick]);
   return { catalog, error, reload: () => setTick((v) => v + 1) };
 }
 
 /** Open the store catalogue dialog; explicit Store permissions control mutation affordances. */
-export function CustomerTagManager(props: { locale: Locale; store: Store; boundary: string; onChanged?: () => void }) {
+export function CustomerTagManager(props: { locale: Locale; store: Store; boundary: string; onChanged?: () => void; onScopeLost?: () => void }) {
   const [open, setOpen] = useState(false);
   const c = customerTagsCopy[props.locale];
   return <>
@@ -51,10 +61,10 @@ export function CustomerTagManager(props: { locale: Locale; store: Store; bounda
   </>;
 }
 
-function TagManagerDialog({ locale, store, boundary, onChanged, close }: {
-  locale: Locale; store: Store; boundary: string; onChanged?: () => void; close: () => void;
+function TagManagerDialog({ locale, store, boundary, onChanged, onScopeLost, close }: {
+  locale: Locale; store: Store; boundary: string; onChanged?: () => void; onScopeLost?: () => void; close: () => void;
 }) {
-  const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary);
+  const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary, onScopeLost);
   const write = useTagWrite(store.id, boundary);
   const dialog = useRef<HTMLDialogElement>(null);
   const [editing, setEditing] = useState<TagRecord | null>(null);
@@ -103,14 +113,14 @@ function TagManagerDialog({ locale, store, boundary, onChanged, close }: {
 }
 
 /** Customer tag editor and notes; read-only when permission or active customer authority is unavailable. */
-export function CustomerTags(props: { locale: Locale; store: Store; detail: CustomerDetail; boundary: string; onChanged: () => Promise<boolean> }) {
+export function CustomerTags(props: { locale: Locale; store: Store; detail: CustomerDetail; boundary: string; onChanged: () => Promise<boolean>; onScopeLost?: () => void }) {
   return <CustomerTagBody key={`${props.store.id}|${props.detail.customer_id}|${props.boundary}`} {...props} />;
 }
 
-function CustomerTagBody({ locale, store, detail, boundary, onChanged }: {
-  locale: Locale; store: Store; detail: CustomerDetail; boundary: string; onChanged: () => Promise<boolean>;
+function CustomerTagBody({ locale, store, detail, boundary, onChanged, onScopeLost }: {
+  locale: Locale; store: Store; detail: CustomerDetail; boundary: string; onChanged: () => Promise<boolean>; onScopeLost?: () => void;
 }) {
-  const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary);
+  const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary, onScopeLost);
   const write = useTagWrite(store.id, boundary);
   const canWrite = store.permissions?.includes("customers:write") === true && detail.active;
   const [selected, setSelected] = useState(detail.tags.map((tag) => tag.id));
