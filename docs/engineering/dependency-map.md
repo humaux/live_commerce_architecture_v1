@@ -231,7 +231,7 @@ Package command owns scoped replay records and small transaction primitives.
 
 ## `internal/csvguard`
 
-Package csvguard holds the one spreadsheet formula guard shared by every merchant CSV export (merchantorders carrier/order export, reporting).
+Package csvguard owns the one spreadsheet formula guard shared by every merchant CSV export (merchantorders carrier/order export, reporting).
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -511,7 +511,7 @@ Package metaconnect owns the merchant self-serve connection of Facebook Pages (u
 
 ## `internal/migrationimport`
 
-(no package doc — add one: PROCESS.md §5)
+Package migrationimport owns the merchant CSV import framework (W5-02B customers, W5-03B historical orders; contracts/migration-import-v1.md): coded refusals, the file digest that keys a batch, the preview/commit loop and the batch record / results readers over the migrationimport SECURITY DEFINER functions (migrations 0152, 0156).
 
 - Depends on (internal): `internal/command`, `internal/csvguard`, `internal/platform`, `internal/twcity`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `golang.org/x/text/unicode/norm`
@@ -519,7 +519,7 @@ Package metaconnect owns the merchant self-serve connection of Facebook Pages (u
 
 ## `internal/msgtemplates`
 
-(no package doc — add one: PROCESS.md §5)
+Package msgtemplates owns the merchant message templates of the live console (W2-05B, contracts/live-console-v1.md): template ids and versions, publishing, listing, resolving a published version for a send, and the public_safe check that a public-reply template must pass (§3.5).
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `golang.org/x/text/cases`, `golang.org/x/text/unicode/norm`
@@ -567,7 +567,7 @@ Package platformstripe owns the merchant-facing side of platform Stripe card pay
 
 ## `internal/payments/settlement`
 
-(no package doc — add one: PROCESS.md §5)
+Package settlement owns the operator CSV of one platform-Stripe settlement statement (contract §6.5 settlement-export): UTF-8 BOM, formula-guarded text cells (internal/csvguard), a totals block, written once with mode 0600.
 
 - Depends on (internal): `internal/command`, `internal/csvguard`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
@@ -679,7 +679,7 @@ Package tlsask owns the edge TLS ask endpoint (R5 unit store-domains, Decision 4
 
 ## `internal/twcity`
 
-(no package doc — add one: PROCESS.md §5)
+Package twcity owns the closed list of Taiwan's 22 cities and counties, the only "city" the historical-order archive may hold (W5-03B, migration-import-v1 §7), and Normalize, which maps a cell to the canonical spelling (臺 not 台).
 
 - Depends on (internal): —
 - Depends on (third-party): —
@@ -703,7 +703,7 @@ Package fakegraph owns a MOCK of the parts of Meta's Graph / Marketing API that 
 
 ## `tests/claims`
 
-(no package doc — add one: PROCESS.md §5)
+Package claimsadversarial holds the independent K3 adversarial corpus run (kwc-v1-adversarial.json) against the exported kwc-v2 keyword-claim grammar entry points (internal/claims/grammar).
 
 - Depends on (internal): —
 - Depends on (third-party): —
