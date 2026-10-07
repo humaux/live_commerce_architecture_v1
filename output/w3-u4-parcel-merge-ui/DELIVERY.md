@@ -173,3 +173,12 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 - P1 4207932348: `parcel-merge.spec.ts` dissolve step now clicks Dissolve, sees the confirmation, clicks `parcel-dissolve-back`, asserts the confirmation closed, the group Open and its ship/dissolve actions enabled, then dissolves for real. Browser step: NOT_RUN locally (CI); no red run is possible without the browser.
 - P2 4207932360: `MerchantOrders` passes `refreshGen = refresh + pollGen` (Refresh button/retry/writes bump `refresh`, every successful page-one poll bumps `pollGen`) into `ParcelMerge`, which includes it in the read effect dependencies.
 - P2 4207932374: suggestion cards show `parcelOrderNumber(id)` (`LC-<32 uppercase hex>`), the same function the OPEN-group parser now uses. Red: `red-finisher5-ordernumber.log`; green `node-finisher5.log`.
+
+---
+
+## Finisher 6 (Sonnet) — Codex P1 4208064711: every group-waybill control in the spec
+
+- `parcel-merge.spec.ts`: both shipped groups now type every control with real input. SHIP group = the `other` branch (carrier name, tracking, https link, note), preceded by two visible refusals (`other` without a name; a non-https link) with the group still Open. Re-merged DISSOLVE-pair group = a known carrier (black_cat, no name) with link and note. After a reload each member's persisted values are read back: record (carrier label, tracking, link href/host), history (note) and the correction form prefilled from the stored head (all five fields); nothing is submitted.
+- `browser_merchant_orders_ui_test.go`: PG assertion that both members of each shipped group carry the typed carrier, name, tracking, link and note on their head version.
+- NEW REAL_PG `TestParcelGroupWaybillFieldsPersist` (no browser): group ship with `other` + name + link + note and with a known carrier persists on every member; a non-https link is refused (4xx) and the group stays OPEN. It passed first time (`green-finisher6-waybill.log`): the product code for these controls was not broken, so no product change was needed.
+- NOT_RUN: the browser gate (spec steps never executed here).

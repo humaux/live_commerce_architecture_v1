@@ -489,6 +489,24 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if shippedMembers != 4 || openStale != 2 || dissolvedGroups != 2 || shippedOrders != 4 || staleShipped != 0 || groupedExcluded != 0 {
 		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openStale=%d dissolved=%d shippedOrders=%d staleOrExcludedShipped=%d groupedExcluded=%d; evidence=%s", shippedMembers, openStale, dissolvedGroups, shippedOrders, staleShipped, groupedExcluded, evidence)
 	}
+	// Group waybill persistence (Codex P1, PR #2): every member of the two shipped groups carries the carrier, optional carrier name,
+	// tracking number, https link and note the spec typed (values mirror shipWaybill / knownWaybill in parcel-merge.spec.ts).
+	waybillRows := func(ids []string, code, name, tracking, url, note string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.manual_shipment_heads h
+			JOIN fulfillment.manual_shipment_versions v ON (v.tenant_id,v.store_id,v.order_id,v.version)=(h.tenant_id,h.store_id,h.order_id,h.current_version)
+			WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.order_id=ANY($3::uuid[]) AND v.status='SHIPPED' AND v.carrier_code=$4
+			 AND coalesce(v.carrier_name,'')=$5 AND v.tracking_number=$6 AND v.tracking_url=$7 AND v.note=$8`,
+			q.f.tenantA, q.f.storeA1, ids, code, name, tracking, url, note).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	shipRows := waybillRows(shipPair[:], "other", "Synthetic Courier", "SYPARCEL1234567890", "https://track.example.com/t/SYPARCEL1234567890", "Group waybill: handle with care")
+	knownRows := waybillRows(dissolvePair[:], "black_cat", "", "RELOAD1234567890", "https://track.example.org/r/RELOAD1234567890", "Reloaded panel waybill")
+	if shipRows != 2 || knownRows != 2 {
+		t.Fatalf("W3-07B group waybill values in PG: other-carrier members=%d known-carrier members=%d, want 2 and 2; evidence=%s", shipRows, knownRows, evidence)
+	}
 	// P1-A: the wrapper saw the suggestions responses of every orders-page load plus the parcel merge flows, none with a full name/phone.
 	if suggestionCalls.Load() == 0 || suggestionLeaks.Load() != 0 {
 		t.Fatalf("merge-suggestions observed=%d leaked=%d (want >0 and 0); evidence=%s", suggestionCalls.Load(), suggestionLeaks.Load(), evidence)

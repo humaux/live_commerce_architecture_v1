@@ -4,12 +4,14 @@
 //   reconciled; single-order shipment blocked; a stale second tab gets the server 409 in_parcel_group copy. Every assertion is a
 //   user-visible result of a real click/fill/selectOption; page.evaluate is used once for a [READ/MEASURE] layout read only and
 //   page.route once as [FAULT INJECTION] (the click's own request is failed after it reached the server).
+//   Both group waybills type EVERY control (carrier select incl. `other` + name, tracking, link, note), after refusals for a missing
+//   `other` name and a non-https link; each member's persisted values are read back after a reload (record, history, correction form).
 //   Fixture orders come from the Go harness (LC_BROWSER_PARCEL_ORDERS).
 // Depends on: @playwright/test; harness env LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_ORDER_STORE, LC_BROWSER_PARCEL_ORDERS.
 // Used by: scripts/dev/test-local.sh (--browser-merchant-orders-ui), tests/foundation/browser_merchant_orders_ui_test.go.
 // Invariants: never imports helpers from orders-ui.spec.ts (module-level test() would re-register); never calls the
 //   API directly to mutate; the banner copy must state that only parcels merge, never payments/amounts.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -78,6 +80,46 @@ const suggestionCard = (page: Page, member: string) =>
 const groupPanel = (page: Page, member: string) =>
   page.locator('section[data-testid^="parcel-group-"]').filter({ has: page.getByTestId(`parcel-group-member-${member}`) });
 
+// Group-waybill values for the two shipped groups (the Go harness asserts the same rows in PG, browser_merchant_orders_ui_test.go):
+// the SHIP group uses the `other` branch (carrier name required), the DISSOLVE pair's re-merged group a known carrier with no name.
+const shipWaybill = {
+  code: "other", shown: "Synthetic Courier", name: "Synthetic Courier", tracking: "SYPARCEL1234567890",
+  url: "https://track.example.com/t/SYPARCEL1234567890", note: "Group waybill: handle with care",
+};
+const knownWaybill = {
+  code: "black_cat", shown: "Black Cat", name: "", tracking: "RELOAD1234567890",
+  url: "https://track.example.org/r/RELOAD1234567890", note: "Reloaded panel waybill",
+};
+type Waybill = typeof shipWaybill;
+
+// Fill EVERY group-waybill control with real input: carrier select, carrier name (typed only for `other`), tracking, link, note.
+async function fillGroupWaybill(panel: Locator, w: Waybill) {
+  await panel.locator('[data-testid="parcel-ship-carrier"]').selectOption(w.code);
+  if (w.name) await panel.locator('[data-testid="parcel-ship-carrier-name"]').fill(w.name);
+  await panel.locator('[data-testid="parcel-ship-tracking"]').fill(w.tracking);
+  await panel.locator('[data-testid="parcel-ship-url"]').fill(w.url);
+  await panel.locator('[data-testid="parcel-ship-note"]').fill(w.note);
+}
+
+// Read one member's persisted shipment back through the UI: the record (carrier label, tracking, link), the history (note) and the
+// correction form, which is prefilled from the stored head (all five fields). Nothing is submitted.
+async function expectPersistedWaybill(page: Page, id: string, w: Waybill) {
+  await expand(page, id);
+  const detail = page.getByTestId("order-detail");
+  const record = detail.getByTestId("shipment-record");
+  await expect(record).toContainText(w.shown);
+  await expect(record.locator("dd.orders-mono")).toHaveText(w.tracking);
+  await expect(record.getByRole("link")).toHaveAttribute("href", w.url);
+  await expect(record.getByRole("link")).toHaveText(new URL(w.url).hostname);
+  await expect(detail.getByTestId("shipment-history")).toContainText(`Note: ${w.note}`);
+  await detail.getByTestId("shipment-correct").click();
+  await expect(detail.getByTestId("ship-carrier")).toHaveValue(w.code);
+  await expect(detail.getByTestId("ship-carrier-name")).toHaveValue(w.name);
+  await expect(detail.getByTestId("ship-tracking")).toHaveValue(w.tracking);
+  await expect(detail.getByTestId("ship-url")).toHaveValue(w.url);
+  await expect(detail.getByTestId("ship-note")).toHaveValue(w.note);
+}
+
 test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409", async ({ page }) => {
   await signedLogin(page);
 
@@ -114,8 +156,18 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
   await test.step("fill the group waybill; both members ship", async () => {
     const panel = groupPanel(page, pm1);
     await panel.locator('[data-testid^="parcel-ship-open-"]').click();
-    await panel.locator('[data-testid="parcel-ship-carrier"]').selectOption("black_cat");
-    await panel.locator('[data-testid="parcel-ship-tracking"]').fill("PARCEL1234567890");
+    // Refusals first (client hints, visible copy, nothing sent, the group stays Open): `other` without a carrier name, then a non-https link.
+    await panel.locator('[data-testid="parcel-ship-carrier"]').selectOption(shipWaybill.code);
+    await panel.locator('[data-testid="parcel-ship-tracking"]').fill(shipWaybill.tracking);
+    await panel.locator('[data-testid^="parcel-ship-submit-"]').click();
+    await expect(panel.locator('[data-testid^="parcel-problem-"]')).toHaveText("Enter the carrier name (1–80 characters).");
+    await panel.locator('[data-testid="parcel-ship-carrier-name"]').fill(shipWaybill.name);
+    await panel.locator('[data-testid="parcel-ship-url"]').fill("http://track.example.com/t/not-https");
+    await panel.locator('[data-testid^="parcel-ship-submit-"]').click();
+    await expect(panel.locator('[data-testid^="parcel-problem-"]')).toHaveText("Tracking link must be a plain https address without a port or credentials.");
+    await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
+    // Then every control with valid input (carrier select incl. the `other` branch + name, tracking, link, note), and submit.
+    await fillGroupWaybill(panel, shipWaybill);
     await panel.locator('[data-testid^="parcel-ship-submit-"]').click();
     await expect(panel.locator('[data-testid^="parcel-notice-"]')).toContainText("group is shipped");
     await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Shipped");
@@ -124,7 +176,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
       await expect(page.getByTestId(`parcel-badge-${id}`)).toBeVisible();
       const detail = page.getByTestId("order-detail");
       await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
-      await expect(detail.getByTestId("shipment-record")).toContainText("PARCEL1234567890");
+      await expect(detail.getByTestId("shipment-record")).toContainText(shipWaybill.tracking);
     }
   });
 
@@ -132,8 +184,8 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await page.reload();
     await expect(page.getByTestId("orders-table")).toBeVisible();
     await expect(page.locator('section[data-testid^="parcel-group-"]')).toHaveCount(0);
-    await expand(page, pm1);
-    await expect(page.getByTestId("order-detail").getByTestId("shipment-record")).toContainText("PARCEL1234567890");
+    // Persisted values of EACH member after the reload (record, link, history note, prefilled correction form).
+    for (const id of [pm1, pm2]) await expectPersistedWaybill(page, id, shipWaybill);
   });
 
   await test.step("merge the dissolve pair; after a RELOAD the OPEN panel reappears and dissolves with the confirm pair", async () => {
@@ -206,14 +258,12 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.getByTestId(`parcel-badge-${pd1}`)).toBeVisible();
     await expect(page.getByTestId("order-detail").getByTestId("shipment-parcel-block")).toHaveText(hint);
     await panel.locator('[data-testid^="parcel-ship-open-"]').click();
-    await panel.locator('[data-testid="parcel-ship-carrier"]').selectOption("black_cat");
-    await panel.locator('[data-testid="parcel-ship-tracking"]').fill("RELOAD1234567890");
+    await fillGroupWaybill(panel, knownWaybill); // known carrier branch: no carrier name typed
     await panel.locator('[data-testid^="parcel-ship-submit-"]').click();
     await expect(panel.locator('[data-testid^="parcel-notice-"]')).toContainText("group is shipped");
-    for (const id of [pd1, pd2]) {
-      await expand(page, id);
-      await expect(page.getByTestId("order-detail").getByTestId("shipment-record")).toContainText("RELOAD1234567890");
-    }
+    await page.reload();
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    for (const id of [pd1, pd2]) await expectPersistedWaybill(page, id, knownWaybill);
   });
 
   await test.step("a stale second tab: the single-order submit gets the server in_parcel_group copy", async () => {

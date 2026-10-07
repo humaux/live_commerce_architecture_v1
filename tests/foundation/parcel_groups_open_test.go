@@ -254,3 +254,50 @@ func TestParcelGroupMergeSuggestionsMasked(t *testing.T) {
 		}
 	}
 }
+
+// TestParcelGroupWaybillFieldsPersist: the group waybill carries EVERY control the merchant UI offers (carrier incl. `other` + name,
+// tracking, https link, note) onto each member's shipment version, and a non-https link is refused with the group still OPEN
+// (Codex P1 on PR #2; the browser spec types the same values, here the backend is proven without a browser).
+func TestParcelGroupWaybillFieldsPersist(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	b := e.newBuyer()
+	o1, o2, k1, k2 := e.pgHome(b), e.pgHome(b), e.pgHome(b), e.pgHome(b)
+	create := func(key string, ids ...string) string {
+		st, out, raw := e.pgCreate(key, ids...)
+		if st != 201 {
+			t.Fatalf("create %s: %d %s", key, st, raw)
+		}
+		return out["id"].(string)
+	}
+	gOther, gKnown := create("pgw-create-0001", o1, o2), create("pgw-create-0002", k1, k2)
+	put := func(group, key, body string) (int, map[string]any, []byte) {
+		return e.mcall(e.token(), "PUT", e.pgPath("/parcel-groups/"+group+"/shipment"), key, body)
+	}
+	const url, note = "https://track.example.com/t/SYPARCEL1234567890", "Group waybill: handle with care"
+	if st, out, raw := put(gOther, "pgw-ship-bad-url", mfxShipBody(0, "SHIPPED", "other", "Synthetic Courier", "SYPARCEL1234567890", "http://track.example.com/t/x", note, "")); st != 422 && st != 400 {
+		t.Fatalf("non-https link: %d %v %s, want a 4xx refusal", st, out, raw)
+	}
+	if n := e.count(`SELECT count(*) FROM fulfillment.parcel_groups WHERE id=$1 AND state='OPEN'`, gOther); n != 1 {
+		t.Fatal("a refused waybill must leave the group OPEN")
+	}
+	if st, _, raw := put(gOther, "pgw-ship-other-01", mfxShipBody(0, "SHIPPED", "other", "Synthetic Courier", "SYPARCEL1234567890", url, note, "")); st != 200 {
+		t.Fatalf("ship other-carrier group: %d %s", st, raw)
+	}
+	if st, _, raw := put(gKnown, "pgw-ship-known-01", mfxShipBody(0, "SHIPPED", "black_cat", "", "RELOAD1234567890", "https://track.example.org/r/RELOAD1234567890", "Reloaded panel waybill", "")); st != 200 {
+		t.Fatalf("ship known-carrier group: %d %s", st, raw)
+	}
+	rows := func(ids []string, code, name, tracking, link, memo string) int {
+		return e.count(`SELECT count(*) FROM fulfillment.manual_shipment_heads h
+		 JOIN fulfillment.manual_shipment_versions v ON (v.tenant_id,v.store_id,v.order_id,v.version)=(h.tenant_id,h.store_id,h.order_id,h.current_version)
+		 WHERE h.store_id=$1 AND h.order_id=ANY($2::uuid[]) AND v.status='SHIPPED' AND v.carrier_code=$3 AND coalesce(v.carrier_name,'')=$4
+		  AND v.tracking_number=$5 AND v.tracking_url=$6 AND v.note=$7`, e.store(), ids, code, name, tracking, link, memo)
+	}
+	if n := rows([]string{o1, o2}, "other", "Synthetic Courier", "SYPARCEL1234567890", url, note); n != 2 {
+		t.Fatalf("other-carrier members with every field persisted: %d, want 2", n)
+	}
+	if n := rows([]string{k1, k2}, "black_cat", "", "RELOAD1234567890", "https://track.example.org/r/RELOAD1234567890", "Reloaded panel waybill"); n != 2 {
+		t.Fatalf("known-carrier members with every field persisted: %d, want 2", n)
+	}
+}
