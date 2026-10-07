@@ -110,3 +110,48 @@ all PASS — kept as `pins-interrupted.log`; it is NOT the authoritative pin evi
      under `output/cancel-closes-work-item/` and is COMMITTED with the final commit — nothing was copied to the main
      checkout. If the worktree is deleted before harvest, recover the evidence from the branch (`git show
      unit/cancel-closes-work-item:output/cancel-closes-work-item/DELIVERY.md` etc.).
+
+---
+
+## 8. Finisher (Sonnet) — independent-review fixes (verdict was MERGE-AFTER-FIXES)
+
+Role/model: Claude Sonnet 5.5 finisher, worktree `.worktrees/cancel-closes-work-item`, base `fbf76741` (Qwen's unit + trunk `49859ae2`
+merged, R2 pin already 88 there). Commits: `93a3d3c6` (migration + backfill test), `c94a0fe9` (privilege pin), `8bcaacc9` (texts), then
+the evidence/DELIVERY commit (output/ only — the code tree equals `8bcaacc9`). Nothing pushed, merged or stored in memory. 0162 is
+unmerged, so it was edited in place (no new migration). **This section supersedes §2/§3 wherever they describe the open-gap
+exception ("keeps READY", "I24") or the 86 -> 87 pin text.**
+
+| # | Finding | Change | Test (red -> green) | Exit |
+|---|---|---|---|---|
+| 1 | P1-b: backfill kept READY rows of CANCELLED orders with an outstanding refund gap | `0162` section 3: dropped the `NOT EXISTS(gap)` exception — every READY row of a CANCELLED order closes (gap stays visible via `returns.list_cancel_refund_gaps`, which never reads the work item). `contracts/returns-v1.md` Amendment 0162 (backfill bullet + Gates bullet), 0162 header, `docs/delivery/units/cancel-closes-work-item.md` ruling record, `internal/merchantorders/orders.go` comment updated | `TestMerchantCancelClosesWorkItem` backfill subtest now expects B (open gap) -> 0 rows, projection `NONE`, gap row still listed, A closed, idempotent re-run. RED on the old migration: `backfill left 1 rows on the open-gap legacy cancel` (`finisher-red.log`); GREEN after (`finisher-green-focused.log`) | red exit=1, green exit=0 |
+| 2 | P2-a: header cited I24 (paid orders without allocatable stock) for "open gap keeps READY" | Citation removed from the header and the section-3 comment; header now says the gap is carried by the fact-based list | text only (check-headers/check-gates) | 0 |
+| 3 | P2-b: post-count `v_left` re-ran the DELETE predicate (circular) | `v_expected` = CANCELLED+READY rows counted BEFORE the delete; `v_deleted <> v_expected` -> `RAISE EXCEPTION '0162 backfill: expected to close % ...'`; plus a first guard: the block refuses a role that is neither SUPERUSER nor BYPASSRLS (`0162 backfill: role % has neither SUPERUSER nor BYPASSRLS ...`) because the table is FORCE RLS and such a role would see zero rows and silently no-op | new subtest "refuses to run without RLS bypass and fails loudly when a delete is suppressed": runs ONLY the DO block (always rolled back) as `SET LOCAL ROLE commerce_checkout_writer` -> must raise the BYPASSRLS error; and with a BEFORE DELETE trigger that swallows the delete -> must raise the count-mismatch error; data untouched after both; clean re-run closes the row. RED on the old migration: the NOBYPASSRLS run returned `nil` (silent no-op proven), `finisher-red.log`; GREEN after | red exit=1, green exit=0 |
+| 4 | P2-c: new `GRANT DELETE` unpinned | `TestBuyerPaymentCaptureACLAndObservationBinding` (the existing work-item privilege pin, `payment_capture_test.go`): table-level grantees of DELETE == `commerce_checkout_writer` only; UPDATE/TRUNCATE/REFERENCES/TRIGGER have no non-owner grantee; column UPDATE for the writer = `state` only (not `order_id`) | Mutation record (`finisher-pin-red.log`): (1) writer DELETE removed + `GRANT DELETE,TRUNCATE ... TO commerce_runtime` -> RED (caught first by the pre-existing no-direct-write loop, exit 1); (2) writer DELETE replaced by TRUNCATE -> RED on the NEW pin (`DELETE grantees = "" want commerce_checkout_writer`, `TRUNCATE grantees = "commerce_checkout_writer" want ""`, exit 1); migration restored byte-identical (cmp) -> GREEN | red exit=1 x2, green exit=0 |
+| 5 | P2-d: stale texts | `apps/admin/lib/orders-model.ts` comment: merchant cancel closes the work item since 0162, relaxed READY-on-cancelled tolerance kept for pre-0162 databases (validator logic in Go and TS UNTOUCHED); `internal/merchantorders/orders.go` comment same; `contracts/returns-v1.md` pin text `86 -> 87` -> `87 -> 88 (0161 PAY-RM1 is 87)` | `node --test --experimental-strip-types tests/admin/orders-model.test.ts tests/admin/orders-v2.test.ts` (20/20, incl. the READY-on-cancelled tolerance test); `go test ./internal/merchantorders` | 0 / 0 |
+| 6 | P2-e: no negative control | Backfill subtest adds C (cancelled order whose work row is `REVIEW_REQUIRED` — state-filter control) and D (still-CONFIRMED paid order with READY row, projection stays `READY` — order-state filter control); both asserted unchanged after the migration and after the idempotent re-run | same subtest; GREEN | 0 |
+
+### Verification (all on the committed code tree `8bcaacc9`)
+
+| Command | Exit | Evidence |
+|---|---|---|
+| `bash scripts/dev/test-focused.sh '^(TestR2IntegrationUpgradeFromReleaseHead\|TestReturns\|TestMerchantCancel\|TestMerchantOrders\|TestRefund\|TestStripeRF\|TestWAS)'` | **0** (`PASS=40 FAIL=0 SKIP=1`, 363 s) | `finisher-green.log`. The 1 SKIP is `TestStripeRF10Sandbox` (needs `STRIPE_SANDBOX=1` + owner test key — NOT_RUN by design, SANDBOX class) |
+| `bash scripts/dev/test-focused.sh '^(TestBuyerPaymentCapture\|TestBuyerPaymentWorkerRealRiverTwoTenantCaptureAndRestart\|TestStripeSP\|TestStripeSL09Watchdog\|TestManualFulfilment)'` (every other test file that names `fulfillment.payment_work_items`) | **0** (`PASS=42 FAIL=0 SKIP=0`, 425 s) | `finisher-green-workitem-refs.log` |
+| `go vet ./...` | **0** | `finisher-gate-go-vet.log` |
+| `go vet -tags browser ./tests/foundation` | **0** | `finisher-gate-go-vet-browser.log` |
+| `bash scripts/dev/check-gates.sh` | **0** (77 modes, check-headers OK) | `finisher-gate-check-gates.log` |
+| `node --test --experimental-strip-types tests/admin/orders-model.test.ts tests/admin/orders-v2.test.ts` | **0** (20 pass) | `finisher-gate-node-orders.log` |
+| `go test ./internal/merchantorders` | **0** | `finisher-gate-go-test-merchantorders.log` |
+
+Summary of exit codes: `finisher-gates.txt`. Evidence class: REAL_PG with MOCK Stripe fakes; no LIVE/SANDBOX provider touched.
+
+### NOT_RUN / for the integrator
+
+* NOT_RUN: full foundation suite, browser/Playwright gates, `release-gate.sh --strict --only G07` (§5 stays mandatory — migration + GRANT +
+  SECURITY DEFINER), full `go test ./internal/... ./cmd/...` (only `internal/merchantorders`, the one Go package touched, was re-run),
+  `TestStripeRF10Sandbox` (SANDBOX key not provided), `TestBuyerPaymentWorker*` crash/signal tests (not referencing the work-item table
+  through the changed code; RAM policy).
+* New operational note: the 0162 backfill now **fails the migration** when the migrating role has neither SUPERUSER nor BYPASSRLS
+  (previously it would have silently closed nothing). The R2 upgrade test and the foundation fixture migrate as the PG superuser, so both
+  pass; confirm the production migration role (cmd/migrate) is a superuser/BYPASSRLS role before deploy — every other data migration
+  here already assumes it.
+* The mutation runs (§8 row 4) edited `migrations/0162` only transiently; the file was restored byte-identical (`cmp`) before the commit.
