@@ -1,0 +1,19 @@
+{
+  "name": "p2-green",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveConsoleBuyerPanel|TestLiveClaimsKC03|TestLiveConsoleSendMigration0128ExactACL"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b3b-buyer-panel",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-b3b-buyer-panel/review-round",
+  "timeout_seconds": 1200,
+  "head_sha": "e32399b192cb3702fc93026e3915be94832ebd83",
+  "source_sha256": "0a447b313b4d8fbec99abdd3303ebd6dadb348c4c24dbfc4f3424a07cf86006a",
+  "started_at": "2026-10-07T17:54:15Z",
+  "state": "complete",
+  "pid": 91027,
+  "exit_code": 0,
+  "elapsed_seconds": 30.421,
+  "source_unchanged": true
+}

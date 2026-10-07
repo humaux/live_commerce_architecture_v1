@@ -72,9 +72,15 @@ jobs:
         # No Docker/PG needed. tests/media/r04-input-runner.test.mjs needs a pinned LiveKit binary and is
         # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
         run: bash scripts/dev/test-node.sh
+      # PRs into r3/integration: the SAME suite (scripts/dev/test-local.sh, same -race/vet flags) already runs as the required
+      # `Gates (GitHub runners) / required` check, split into shard:unit + the shard-plan.json groups whose union the aggregate proves
+      # is the whole test universe. Running it here serially as well duplicated ~80 min per PR and hit the 4500 s go timeout on a slow
+      # runner (2026-10-07, PR #5 run 37634482705: timed out 10 s into TestStripeRF08Webhook, no assertion failed). Other events keep it.
       - name: Download pinned test image
+        if: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Real PostgreSQL, race detector and vet
+        if: ${{ !(github.event_name == 'pull_request' && github.base_ref == 'r3/integration') }}
         run: bash scripts/dev/test-local.sh
       - name: Reachable vulnerability scan
         # v1.1.4 bundles golang.org/x/tools v0.29.0, whose SSA builder panicked
