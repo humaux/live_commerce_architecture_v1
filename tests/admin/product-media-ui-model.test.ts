@@ -368,3 +368,25 @@ test("a valid active zero-main product keeps an inline repair hint rather than a
     );
   }
 });
+
+// Receipt budget of the create flow (tests/foundation/browser_merchant_buyer_chain_test.go): document, upload, order, publish.
+// image-axis `null` means "the first axis", which is already a new product's stored NULL, so it must not cost a command receipt.
+test("a new product issues the image-axis stage only for a chosen axis", () => {
+  const hook = readFileSync(
+    new URL("../../apps/admin/lib/use-product-document.ts", import.meta.url),
+    "utf8",
+  );
+  const guard = hook.match(
+    /if \((!op\.edit && [^\n]*op\.imageAxis[^\n]*)\) \{\n\s+op\.axisCommand/,
+  )?.[1];
+  assert.ok(guard, "the create workflow's actual axis-stage guard exists");
+  const stage = runInNewContext(`(op) => (${guard})`) as (op: object) => boolean;
+  assert.equal(stage({ edit: false, imageAxis: "Color" }), true);
+  for (const op of [
+    { edit: false, imageAxis: null },
+    { edit: false, imageAxis: undefined },
+    { edit: false, axisSet: true, imageAxis: "Color" },
+    { edit: true, imageAxis: "Color" },
+  ])
+    assert.equal(stage(op), false, JSON.stringify(op));
+});
