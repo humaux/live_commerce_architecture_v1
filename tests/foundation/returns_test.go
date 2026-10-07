@@ -1267,20 +1267,29 @@ func TestMerchantCancelClosesWorkItem(t *testing.T) {
 	})
 
 	t.Run("the 0162 backfill closes legacy cancelled rows and keeps open-gap rows READY", func(t *testing.T) {
-		// Fabricate the two legacy shapes (pre-0162 cancels left the READY row behind): flip the orders directly, like the
-		// old definer did, without touching the work item.
-		orderA, rfA := e.rtPaid() // A: refund SUCCEEDED, no gap -> must be closed
+		// Fabricate the two legacy shapes faithfully: cancel through the REAL definer — a pre-0162 cancel wrote the same
+		// CANCELLED/CANCELLED flip and the same checkout.merchant_cancel DEALLOCATE rows the gap list keys on — then
+		// re-insert the READY work item row the pre-0162 definer left behind (0162 deletes it; nothing else differs).
+		orderA, rfA := e.rtPaid() // A: refund SUCCEEDED before the cancel, no gap -> must be closed
 		refundA := e.r.mustRefund(t, rfA, rfA.captured, "requested_by_customer")
 		e.r.awaitRefundFact(t, refundA, rfA.attempt, "SUCCEEDED")
-		orderB, rfB := e.rtPaid() // B: refund later FAILED, gap outstanding -> must stay READY
+		orderB, rfB := e.rtPaid() // B: refund in flight at cancel time, FAILED afterwards -> gap outstanding -> must stay READY
 		refundB := e.r.mustRefund(t, rfB, rfB.captured, "requested_by_customer")
-		failRefund(rfB, refundB, "legacy")
-		for _, o := range []string{orderA, orderB} {
-			mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET commercial_state='CANCELLED',fulfillment_state='CANCELLED',updated_at=clock_timestamp() WHERE id=$1`, o)
-			if n := workRows(o); n != 1 {
-				t.Fatalf("legacy fixture %s: want the READY row the old definer left, found %d", o, n)
+		st, out := cancelConfirmed(orderA, "cw-can-lgA01")
+		rtExpect(t, "cancel legacy fixture A", st, out, 200, "")
+		st, out = cancelConfirmed(orderB, "cw-can-lgB01") // held counts the in-flight refund (returns-v1 §3)
+		rtExpect(t, "cancel legacy fixture B", st, out, 200, "")
+		failRefund(rfB, refundB, "legacy") // B's counted refund fails after the cancel: the outstanding gap
+		// Re-insert what the pre-0162 definer left: the READY work item of the CAPTURED attempt (0018 shape).
+		reopenLegacyWorkItem := func(order, attempt string) {
+			mustExec(t, e.p.f.owner, `INSERT INTO fulfillment.payment_work_items(tenant_id,store_id,owner_id,order_id,attempt_id,capture_kind,state)
+				SELECT o.tenant_id,o.store_id,o.owner_id,o.id,$2::uuid,'CAPTURED','READY' FROM checkout.orders o WHERE o.id=$1`, order, attempt)
+			if n := workRows(order); n != 1 {
+				t.Fatalf("legacy fixture %s: want the re-inserted READY row the old definer left, found %d", order, n)
 			}
 		}
+		reopenLegacyWorkItem(orderA, rfA.attempt)
+		reopenLegacyWorkItem(orderB, rfB.attempt)
 		runCancelClosesWorkItemMigration(t, e)
 		if n := workRows(orderA); n != 0 {
 			t.Fatalf("backfill left %d rows on the refunded legacy cancel", n)
