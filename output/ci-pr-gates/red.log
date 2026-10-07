@@ -1,0 +1,8 @@
+ℹ todo 0
+ℹ duration_ms 51.483417
+
+✖ failing tests:
+
+test at tests/ci/pr-modes.test.mjs:1:1
+✖ tests/ci/pr-modes.test.mjs (42.497708ms)
+  'test failed'

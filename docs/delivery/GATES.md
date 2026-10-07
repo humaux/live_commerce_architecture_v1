@@ -239,6 +239,23 @@ The two long gates and the foundation suite run as parallel slices; nothing is r
 
 Shard counts live in `scripts/dev/ci-plan.mjs` (`SWEEP_SHARDS`, `VISUAL_SHARDS`); the click-sweep unit costs used only for balancing are `tests/ui/click-sweep-weights.json` (a missing key gets a default, so a new route is still covered). Refresh the foundation plan after a trunk run: `gh run download <run> -D d; node scripts/dev/shard-plan.mjs --ingest d/*/ci-gates/shard_g*.log; node scripts/dev/shard-plan.mjs --write`. `go vet ./...` runs once per full run (the unit shard / the serial run), not in every foundation group. Playwright browsers are cached per Playwright version (`/opt/ms-playwright`).
 
+## Pull-request gates (`.github/workflows/gates.yml`, unit ci-pr-gates)
+
+Integration is by PR only. A PR into `r3/integration` runs a set the repo computes, never one the merging agent picks: `node scripts/dev/pr-modes.mjs <base> <head>` maps the changed paths to modes, `ci-plan.mjs` fans them out, and ONE job ends the run.
+
+| Changed paths | Modes run |
+| --- | --- |
+| only `internal/ cmd/ migrations/ contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`) or `*.md` (docs-only included) | `foundation-shards` (11 jobs) |
+| anything else (`apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ tests/foundation/browser_* scripts/ .github/ playwright.config.ts`, package files, unknown paths) | `foundation-shards` + every `--browser-*` mode of the test-local.sh usage line (derived like `release-gate.sh`, never a second list), click-sweep x10 and visual-lint x4 included (about 70 jobs) |
+| `deploy/` or `scripts/deploy*` (on top of the above) | also `deploy-smoke.yml`, called as a reusable workflow so the required check waits for it |
+
+Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-browser` (needs a Stripe test key; gates.yml has no secrets). It stays an integrator SANDBOX run.
+
+- **Required check (for the owner's branch ruleset): `Gates (GitHub runners) / required`.** It is red when plan, any gate leg, the sweep/visual aggregate or an expected deploy-smoke failed, was cancelled or was skipped. Individual `gate (<mode>)` names change with the plan: never require them.
+- `extra_env` is ignored on pull_request. Calibration and fault-injection runs stay a separate `workflow_dispatch`.
+- A newer push to the same PR cancels the older run (`gates-pr-<number>`).
+- Merge is a squash, only after `required` is green AND the commit status `review/independent` on the PR head SHA is success (posted by the reviewer or integrator).
+
 ## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI and release-gate G06n)
 
 | Suite | Covers | Note |

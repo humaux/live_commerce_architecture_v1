@@ -1,0 +1,30 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_schema_privileges
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse
+    settlement_resolve_test.go:129: close refusal does not list the blocking rows: stripeadmin: rejected: settlement_unattributed
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolve_flow
+    settlement_resolve_test.go:197: note with a control character: want a rejection carrying "", got <nil>
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth
+    settlement_resolve_test.go:256: 1 resolution rows survive the refused edits, want 2
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_close_with_notes
+    settlement_resolve_test.go:267: close after resolve: stripeadmin: rejected: settlement_unattributed
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_cli_e2e
+    settlement_resolve_test.go:352: [settlement-close --environment SANDBOX --period-start 2026-09-14 --tenant 3cd606c9-120a-4721-99b3-8939329760e4 --store e26d6b49-d2ff-45ac-bec9-724dcc75a9d8 --principal 45fdeb77-379c-4703-8cfe-f39e035ffc76 --operator op@test --ticket TICKET-2026-1001]: exit=1 stdout="" stderr="stripeadmin: rejected: settlement_unattributed\n", want exit 1 and "stripeadmin: rejected: settlement_unattributed: txn_PF15Cli"
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final
+    settlement_resolve_test.go:436: assigned_to_store on a row that has a line: want a rejection carrying "already_attributed", got <nil>
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_closed_period
+    settlement_resolve_test.go:453: close week 3: stripeadmin: rejected: settlement_unattributed
+--- FAIL: TestPlatformSettlementPF15Resolve (15.80s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_schema_privileges (0.04s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse (0.02s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_resolve_flow (0.01s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_close_with_notes (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_cli_e2e (2.45s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final (0.02s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_closed_period (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.068s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+EXIT=1

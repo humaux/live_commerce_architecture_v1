@@ -1,0 +1,87 @@
+=== RUN   TestRemovePayuniNotifyRM01Schema
+    payuni_removal_test.go:185: fresh apply with 0161: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestRemovePayuniNotifyRM01Schema (8.86s)
+=== RUN   TestRemovePayuniNotifyRM02SeededDataBlocks
+--- PASS: TestRemovePayuniNotifyRM02SeededDataBlocks (2.68s)
+=== RUN   TestPlatformOperatorOP08SchemaAndExecuteMatrix
+    platform_operator_authority_test.go:25: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformOperatorOP08SchemaAndExecuteMatrix (1.00s)
+=== RUN   TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns
+    platform_operator_authority_test.go:86: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns (0.00s)
+=== RUN   TestPlatformOperatorOP04bStripeRecordsForSuspendedStore
+    platform_operator_inflight_test.go:59: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformOperatorOP04bStripeRecordsForSuspendedStore (0.00s)
+=== RUN   TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags
+    platform_operator_inflight_test.go:96: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags (0.00s)
+=== RUN   TestPlatformOperatorOP09CLIProcess
+    platform_operator_test.go:466: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformOperatorOP09CLIProcess (0.00s)
+=== RUN   TestPlatformSettlement
+    platform_settlement_test.go:241: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformSettlement (0.00s)
+=== RUN   TestPlatformStripePF01Schema
+    platform_stripe_test.go:193: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformStripePF01Schema (0.00s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+    r2_integration_upgrade_test.go:101: R2 upgrade apply 1: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestR2IntegrationUpgradeFromReleaseHead (2.16s)
+=== RUN   TestPlatformSettlementPF15Resolve
+    settlement_resolve_test.go:33: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestPlatformSettlementPF15Resolve (0.00s)
+=== RUN   TestStripeAuthorityIngressMatrix
+    stripe_authority_test.go:365: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityIngressMatrix (0.00s)
+=== RUN   TestStripeAuthorityRegistrarMatrix
+    stripe_authority_test.go:373: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityRegistrarMatrix (0.00s)
+=== RUN   TestStripeAuthorityLegacyPoolsRejectStripeRoles
+    stripe_authority_test.go:382: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityLegacyPoolsRejectStripeRoles (0.00s)
+=== RUN   TestStripeAuthorityIngressPositive
+    payment_start_test.go:60: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityIngressPositive (0.00s)
+=== RUN   TestStripeAuthorityRegistrarPositive
+    payment_start_test.go:60: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityRegistrarPositive (0.00s)
+=== RUN   TestStripeAuthorityPlatformPolicies
+    stripe_authority_test.go:573: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeAuthorityPlatformPolicies (0.00s)
+=== RUN   TestStripeSL02Schema
+=== RUN   TestStripeSL02Schema/ledger_checksum_and_repeat
+    stripe_live_schema_test.go:53: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+=== RUN   TestStripeSL02Schema/widened_checks_sp19_and_amount_table
+    stripe_live_schema_test.go:93: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+=== RUN   TestStripeSL02Schema/approval_table_rls_privileges_and_definers
+    stripe_live_schema_test.go:157: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+=== NAME  TestStripeSL02Schema
+    stripe_live_schema_test.go:37: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeSL02Schema (0.00s)
+    --- FAIL: TestStripeSL02Schema/ledger_checksum_and_repeat (0.00s)
+    --- FAIL: TestStripeSL02Schema/widened_checks_sp19_and_amount_table (0.00s)
+    --- FAIL: TestStripeSL02Schema/approval_table_rls_privileges_and_definers (0.00s)
+=== RUN   TestStripeRF12Guards
+=== RUN   TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta
+    stripe_refund_guards_test.go:166: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+=== RUN   TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe
+=== RUN   TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column
+    stripe_refund_guards_test.go:333: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+=== RUN   TestStripeRF12Guards/package_comments_(PROCESS_§5)
+    stripe_refund_guards_test.go:398: DATA internal/httpapi: package comment lacks [owns] (pre-existing; reviewer decision)
+=== RUN   TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run
+    stripe_refund_guards_test.go:409: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeRF12Guards (0.23s)
+    --- FAIL: TestStripeRF12Guards/replaced_B1_functions_differ_from_their_last_definition_only_by_the_stated_delta (0.00s)
+    --- PASS: TestStripeRF12Guards/only_internal/integrations/psp/stripe_dials_Stripe (0.22s)
+    --- FAIL: TestStripeRF12Guards/COMMENT_ON_for_every_0062_object_and_column (0.00s)
+    --- PASS: TestStripeRF12Guards/package_comments_(PROCESS_§5) (0.01s)
+    --- FAIL: TestStripeRF12Guards/logs_and_rows_carry_no_key,_whsec,_body_or_ARN_after_a_full_MOCK_refund_run (0.00s)
+=== RUN   TestStripeRF03Schema
+    stripe_refund_schema_test.go:194: set up isolated foundation database: first migration apply: apply 0163_settlement_resolve.sql: ERROR: syntax error at or near "s" (SQLSTATE 42601)
+--- FAIL: TestStripeRF03Schema (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	15.702s
+FAIL
+test-focused: top-level PASS=1 FAIL=19 SKIP=0 exit=1
+EXIT=1
