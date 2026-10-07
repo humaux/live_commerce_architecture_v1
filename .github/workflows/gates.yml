@@ -124,6 +124,9 @@ jobs:
       - name: Browsers for browser modes
         if: startsWith(matrix.mode, '--browser') || startsWith(matrix.mode, '--stripe-browser')
         # With a cache hit the browser downloads are skipped; --with-deps still installs the system libraries and Xvfb (apt, not cacheable here).
+        # Bounded: on 2026-10-08 this apt step hung for the whole 150-min job limit on 10+ jobs at once (PR #10), holding runners of the
+        # 20-job free tier; a healthy install takes < 3 min, so a hang now fails fast and the integrator's triage reruns it as INFRA.
+        timeout-minutes: 15
         run: pnpm exec playwright install --with-deps chromium webkit
       - name: Save Playwright browsers
         # Saved right after the install (not at job end), so a run whose gate then fails still seeds the cache. Parallel jobs racing for the same key only log a warning.
