@@ -218,7 +218,7 @@ test("note bodies: create {body}; patch {body, version>=1}; deletes and reads ca
 
 // ---------------------------------------------------------------------------------------------- decoders
 const tagRecord = { id, name: "VIP", color: "red", created_at: "2026-10-01T02:03:04Z", customers_count: 2 };
-const note = { id, body: "note body", author_id: other, created_at: "2026-10-01T02:03:04.5Z", edited_at: null, version: 1 };
+const note = { id, body: "note body", author_id: other, created_at: "2026-10-01T02:03:04.5Z", edited_at: null, version: 1, own: false };
 const throws = (fn: () => unknown) => assert.throws(fn, /unavailable/);
 
 test("parseTagCatalog decodes {items: TagRecord[]} with the store-catalogue bounds", () => {
@@ -262,6 +262,9 @@ test("parseNoteRecord / parseNotePage decode notes with the Go note rules", () =
   throws(() => parseNoteRecord({ ...note, author_id: "x" }));
   throws(() => parseNoteRecord({ ...note, edited_at: "yesterday" }));
   throws(() => parseNoteRecord({ ...note, extra: 1 }));
+  throws(() => parseNoteRecord({ ...note, own: "yes" }));
+  const { own: _own, ...noOwn } = note; throws(() => parseNoteRecord(noOwn)); // own is required
+  assert.equal(parseNoteRecord({ ...note, own: true }).own, true);
   const page = parseNotePage({ items: [note], next_cursor: "" });
   assert.deepEqual(page.items, [note]);
   assert.equal(parseNotePage({ items: [], next_cursor: "Abc-_1" }).next_cursor, "Abc-_1");

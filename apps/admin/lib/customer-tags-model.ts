@@ -99,10 +99,10 @@ export function parseDeletedNote(value: unknown): DeletedNote {
 
 /** W6-01B parseNoteRecord contract; validates data without writes or storage. */
 export function parseNoteRecord(value: unknown): Note {
-  const v = object(value, ["id", "body", "author_id", "created_at", "edited_at", "version"]);
+  const v = object(value, ["id", "body", "author_id", "created_at", "edited_at", "version", "own"]);
   if (typeof v.id !== "string" || !canonicalUUID.test(v.id) || typeof v.author_id !== "string" || !canonicalUUID.test(v.author_id) ||
     !validNoteBody(v.body) || !isInstant(v.created_at) || !(v.edited_at === null || isInstant(v.edited_at)) ||
-    !Number.isSafeInteger(v.version) || (v.version as number) < 1) throw new Error("unavailable");
+    typeof v.own !== "boolean" || !Number.isSafeInteger(v.version) || (v.version as number) < 1) throw new Error("unavailable");
   return v as Note;
 }
 

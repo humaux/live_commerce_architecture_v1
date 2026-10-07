@@ -246,12 +246,17 @@ test("CTUI signed reader and non-privacy writer show conservative note permissio
       } else {
         await expect(notes).toContainText(c.ownNotesOnly); await expect(noteRow(page, "w6ui-concurrent-version").getByRole("button", { name: c.noteEdit, exact: true })).toHaveCount(0);
         await fill(page, notes.getByRole("textbox"), "w6ui-writer-own", c.noteAdd);
-        await step(page, "writer creates/edits own note", "write-only staff may edit proven current-session own note", async () => {
+        await step(page, "writer creates/edits own note", "write-only staff may edit their own note", async () => {
           await notes.getByRole("button", { name: c.noteAdd, exact: true }).click(); await expect(noteRow(page, "w6ui-writer-own")).toHaveCount(1);
           await noteRow(page, "w6ui-writer-own").getByRole("button", { name: c.noteEdit, exact: true }).click(); await notes.getByRole("textbox").fill("w6ui-writer-edited");
           await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(noteRow(page, "w6ui-writer-edited")).toHaveCount(1);
         });
-        await page.reload(); await expect(noteRow(page, "w6ui-writer-edited").getByRole("button", { name: c.noteEdit, exact: true })).toHaveCount(0);
+        // After a reload the server's own flag still proves authorship: own notes keep Edit/Delete, another author's note does not.
+        await page.reload();
+        for (const name of [c.noteEdit, c.noteDelete]) {
+          await expect(noteRow(page, "w6ui-writer-edited").getByRole("button", { name, exact: true })).toHaveCount(1);
+          await expect(noteRow(page, "w6ui-concurrent-version").getByRole("button", { name, exact: true })).toHaveCount(0);
+        }
       }
     } finally { await context.close(); }
   }

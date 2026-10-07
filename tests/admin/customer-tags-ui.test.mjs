@@ -12,7 +12,7 @@ const { renderToStaticMarkup } = require("react-dom/server");
 const { TagBadges, CustomerTags, CustomerTagManager } = await import("../../apps/admin/components/CustomerTags.tsx");
 const id = "abcdef11-1111-4111-8111-111111111111";
 const detail = { customer_id: id, active: true, tags: [{ id, name: "<VIP>", color: "blue" }], tags_revision: "a".repeat(64),
-  notes: [{ id, body: "<script>synthetic</script>\nline two", author_id: id, created_at: "2026-10-07T00:00:00Z", edited_at: null, version: 1 }] };
+  notes: [{ id, body: "<script>synthetic</script>\nline two", author_id: id, created_at: "2026-10-07T00:00:00Z", edited_at: null, version: 1, own: false }] };
 const store = { id, name: "Synthetic", currency: "TWD", permissions: ["customers:read"] };
 const props = { locale: "en", store, detail, boundary: "b".repeat(64), onChanged: async () => true };
 
@@ -32,7 +32,7 @@ test("unknown permissions and erased customer never offer note mutations", () =>
     assert.doesNotMatch(html, /<textarea|Save tags/);
   }
 });
-test("write-only notes permit add but not unproven old-note edit/delete; privacy permission permits both", () => {
+test("write-only notes permit add but not edit/delete of notes the server does not mark own; privacy permission permits both", () => {
   const writer = renderToStaticMarkup(createElement(CustomerTags, { ...props, store: { ...store, permissions: ["customers:read", "customers:write"] } }));
   assert.match(writer, /<textarea/); assert.match(writer, /earlier notes remain read-only/i);
   assert.doesNotMatch(writer, />Edit<|>Delete</);

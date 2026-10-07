@@ -11,12 +11,12 @@ import * as model from "../../apps/admin/lib/customer-tags-model.ts";
 import { displayTime } from "../../packages/format/src/index.ts";
 
 const id = "abcdef11-1111-4111-8111-111111111111";
-const note = { id, author_id: id, body: "old synthetic note", version: 2, created_at: "2026-10-07T00:00:00Z", edited_at: null };
+const note = { id, author_id: id, body: "old synthetic note", version: 2, created_at: "2026-10-07T00:00:00Z", edited_at: null, own: true };
 const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/components/CustomerTagsNotes.tsx", import.meta.url), "utf8"), {
   compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function harness(readTagData = () => new Promise(() => {}), logouts = []) {
+function harness(readTagData = () => new Promise(() => {}), logouts = [], override = {}) {
   const slots = []; let cursor = 0; const effects = []; const writes = [];
   const react = {
     useId: () => { const index = cursor++; return slots[index] ??= `synthetic-${index}`; },
@@ -49,7 +49,7 @@ function harness(readTagData = () => new Promise(() => {}), logouts = []) {
   });
   const props = { locale: "en", store: { id, permissions: ["customers:read", "customers:write", "customers:privacy"] },
     detail: { customer_id: id, active: true, notes: [note] }, boundary: "a".repeat(64), refresh: async () => {},
-    write: { locked: false, run: (...args) => writes.push(args), setNotice: () => {} } };
+    write: { locked: false, run: (...args) => writes.push(args), setNotice: () => {} }, ...override };
   const render = (current = props) => { cursor = 0; return module.exports.CustomerNotes(current); };
   const flush = () => { for (const effect of effects.splice(0)) effect(); };
   const nodes = (tree) => {
@@ -115,4 +115,17 @@ test("an unauthorized note read signals the global logout once; a transient fail
   assert.deepEqual(lost, ["logout"]);
   const kept = []; harness(() => Promise.reject(new Error("retry_later")), kept); await settle();
   assert.deepEqual(kept, []);
+});
+
+// Codex review P1 (PR #3): a writer WITHOUT customers:privacy keeps Edit/Delete on notes the server marks own after a
+// fresh mount (reload); another author's note gets neither. Authorship comes from the server flag, not session memory.
+test("non-privacy writer: own notes keep Edit and Delete on a fresh mount, others' notes do not", () => {
+  const other = { ...note, id: "abcdef22-2222-4222-8222-222222222222", body: "another author", own: false };
+  const h = harness(undefined, [], { store: { id, permissions: ["customers:read", "customers:write"] },
+    detail: { customer_id: id, active: true, notes: [note, other] } });
+  const tree = h.render();
+  const rows = h.nodes(tree).filter((n) => n.type === "li" && n.props.className === undefined);
+  const labels = (row) => h.nodes(row.props.children).filter((n) => n.type === "button").map((n) => n.props.children);
+  assert.deepEqual(labels(rows[0]), ["Edit", "Delete"]);
+  assert.deepEqual(labels(rows[1]), []);
 });

@@ -16,7 +16,7 @@ export type Consents = { marketing_messages: boolean; ads_personalization: boole
 export const tagColors = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple"] as const;
 export type TagColor = (typeof tagColors)[number];
 export type Tag = { id: string; name: string; color: TagColor };
-export type Note = { id: string; body: string; author_id: string; created_at: string; edited_at: string | null; version: number };
+export type Note = { id: string; body: string; author_id: string; created_at: string; edited_at: string | null; version: number; own: boolean };
 export type Customer = {
   customer_id: string;
   first_seen_at: string;
@@ -132,12 +132,12 @@ function parseTags(value: unknown): Tag[] {
   return tags;
 }
 function parseNote(value: unknown): Note {
-  const v = object(value, ["id", "body", "author_id", "created_at", "edited_at", "version"]);
+  const v = object(value, ["id", "body", "author_id", "created_at", "edited_at", "version", "own"]);
   // Bodies keep line breaks and tabs; every other control character is refused (Go ValidNoteBody).
   if (typeof v.id !== "string" || !canonicalUUID.test(v.id) || typeof v.author_id !== "string" || !canonicalUUID.test(v.author_id) ||
     typeof v.body !== "string" || Array.from(v.body).length < 1 || Array.from(v.body).length > 1000 || v.body.trim() === "" ||
     /[\p{Cc}]/u.test(v.body.replace(/[\n\r\t]/g, "")) || !isInstant(v.created_at) || !(v.edited_at === null || isInstant(v.edited_at)) ||
-    !Number.isSafeInteger(v.version) || (v.version as number) < 1) throw new Error("unavailable");
+    typeof v.own !== "boolean" || !Number.isSafeInteger(v.version) || (v.version as number) < 1) throw new Error("unavailable");
   return v as Note;
 }
 function customerFrom(v: Record<string, unknown>): Customer {

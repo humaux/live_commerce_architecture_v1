@@ -27,7 +27,6 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
   const [body, setBody] = useState("");
   const [editing, setEditing] = useState<Note | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [ownAuthors, setOwnAuthors] = useState<string[]>([]);
   const canWrite = detail.active && store.permissions?.includes("customers:write") === true;
   const privacy = store.permissions?.includes("customers:privacy") === true;
   const active = useRef<AbortController | null>(null);
@@ -97,8 +96,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
     {!canWrite && <p>{store.permissions ? c.readOnly : c.permissionUnknown}</p>}
     {canWrite && <form className="ct-note-form" onSubmit={(e) => { e.preventDefault(); if (!validNoteBody(body)) return;
       write.run(editing ? "PATCH" : "POST", editing ? `${resource}/${editing.id}` : resource,
-        editing ? { body, version: editing.version } : { body }, parseNoteRecord, async (note) => {
-          if (!editing) setOwnAuthors((old) => [...new Set([...old, note.author_id])]);
+        editing ? { body, version: editing.version } : { body }, parseNoteRecord, async () => {
           await changed(); write.setNotice(editing ? c.noteUpdated : c.noteCreated);
         });
     }}>
@@ -117,7 +115,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
         <time dateTime={note.created_at}>{stamp(note.created_at)}</time></div>
       {note.edited_at && <small>{c.noteEdited} <time dateTime={note.edited_at}>{stamp(note.edited_at)}</time></small>}
       <p className="ct-note-body">{note.body}</p>
-      {canWrite && (privacy || ownAuthors.includes(note.author_id)) && <div className="ct-actions">
+      {canWrite && (privacy || note.own) && <div className="ct-actions">
         <button type="button" disabled={write.locked} onClick={() => { setEditing(note); setBody(note.body); setDeleting(null); }}>{c.noteEdit}</button>
         <button type="button" disabled={write.locked} onClick={() => setDeleting(note.id)}>{c.noteDelete}</button>
       </div>}

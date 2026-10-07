@@ -534,7 +534,7 @@ points (architecture 14.3 inferred tags need their own contract). Evidence class
   `body` 1..1000 characters (not blank), at most 200 per customer.
 - **Permission** `customers:write` (new value in `store_grants_permission_check`): add/rename/delete tags, set a customer's
   tags, add notes, edit/delete own notes. Reads stay `customers:read`. A note may be edited or deleted by its author or by a
-  holder of `customers:privacy` (owner and admin bundles). Bundles: owner and admin gain `customers:write` through the live
+  holder of `customers:privacy` (owner and admin bundles). Additive: every note the API returns (detail, list, create/edit response) carries `own: boolean`, computed by Go as `author_id == caller principal` (not stored, not in idempotency receipts); the UI shows edit/delete when `customers:privacy` or `own`. Bundles: owner and admin gain `customers:write` through the live
   catalogue; viewer, live_operator and fulfilment do not (ruling: `live_operator` does not hold `customers:read` either).
 - **Definers** (owner `commerce_privacy_writer`, SECURITY DEFINER, `search_path=pg_catalog`, EXECUTE `commerce_runtime`):
   `customers.create_tag / rename_tag / delete_tag / set_owner_tags / add_note / edit_note / delete_note` (write) and
