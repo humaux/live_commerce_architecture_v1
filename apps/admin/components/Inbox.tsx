@@ -201,13 +201,15 @@ export function Inbox({
               </p>
             )}
             {!privacy.visible ? (
-              <p className={styles.notice}>
-                {privacy.departing
-                  ? c.loading
-                  : privacy.blocked.current
-                    ? c.signedOut
-                    : c.hidden}
-              </p>
+              status !== "inboxUnavailable" && (
+                <p className={styles.notice}>
+                  {privacy.departing
+                    ? c.loading
+                    : privacy.blocked.current
+                      ? c.signedOut
+                      : c.hidden}
+                </p>
+              )
             ) : (
               <div
                 className={`${styles.layout} ${selected ? styles.selected : ""}`}

@@ -2,7 +2,7 @@
 47a06f4199e05062ad4c4883da9891c14b83209450ead1e53019a7d181873823  apps/admin/app/[locale]/messages/page.tsx
 1e3b0ff053d3b1c01c7fa66a81716e9e53cc1c2900dc2b215efcb0639931ccfc  apps/admin/app/api/stores/[store]/[...resource]/route.ts
 d0280415210abff8e3f4f82376d61d47fa7ce654add30e4c48312e0c8bbc8b9a  apps/admin/components/BuyerPanel.tsx
-176a7716fefa8101d7d76a1a8772729dd235aa8cfb6223b6408d8407dfd13eca  apps/admin/components/Inbox.tsx
+df600c3cdca957668a0cbfb524486c4980ee40a64d1d0eb43ce3d4837d7e4c31  apps/admin/components/Inbox.tsx
 afd6a068f2a17ada0b902f8b22837fab5e11c4b1eea2615fcf8c591d79156017  apps/admin/components/InboxThread.tsx
 8530a38f01eae749c35df931252434b7d3a88be74e8ee6e669d0f7d7580f3b02  apps/admin/lib/inbox-bff.ts
 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88  apps/admin/lib/inbox-client.ts
@@ -21,7 +21,7 @@ bf1329ead52d10e0716ab4c9752e30b9583d9670d966406e716416177b729fff  playwright.con
 42624011d560e292a9cb6607dd4df1a14712e7c6fdd0713f247245e78e4bee72  tests/admin/inbox-bff.test.ts
 0b95873fdce68a040097e1b340f864d836eebf42cdb49178297b779fdc274c28  tests/admin/inbox-browser-source.test.ts
 dc922bdf9612ad7f615d67c80b50b0bfcc484ade2cac387757568c8808fb04bd  tests/admin/inbox-copy.test.ts
-4e23fae6971cbcffbafd9ebe8749426786f7c0350153cd69715da9fd8114e91b  tests/admin/inbox-entry.test.ts
+11cd26750c9900f82f2c2e156995b548fdf694176fa39e759f93bbe59ba62991  tests/admin/inbox-entry.test.ts
 35975d7555facbcda7d1606b68241041e9d401461e71d75288ecf5d61ac1556d  tests/admin/inbox-evidence.test.ts
 604201722d1c075fb11556ac1a8e491ba8ed751afb716569682bbda345a31618  tests/admin/inbox-privacy.test.ts
 fbbe0732daa9abf40cff885c251a21b6af9028e04fd874308f4bb9f0c9b4436f  tests/admin/inbox-review-host.test.ts

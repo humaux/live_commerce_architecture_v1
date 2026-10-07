@@ -164,6 +164,11 @@ const unavailable = {
   "zh-TW": "目前店鋪的收件匣無法使用。",
   "zh-CN": "当前店铺的收件箱无法使用。",
 };
+const signedOut: Record<string, string> = {
+  en: "Sign in again to read messages.",
+  "zh-TW": "請重新登入以查看訊息。",
+  "zh-CN": "请重新登录以查看消息。",
+};
 for (const [locale, expected] of Object.entries(unavailable)) {
   test(`C A8 list404 is scoped inbox unavailable in ${locale}, never an empty list or conversation denial`, async (t) => {
     const env = environment(t),
@@ -178,6 +183,8 @@ for (const [locale, expected] of Object.entries(unavailable)) {
     const alerts = nodes(host.output).filter((n) => n.props.role === "alert");
     assert.equal(alerts.length, 1);
     assert.equal(textOf(alerts[0]), expected);
+    assert.equal(textOf(host.output).includes(signedOut[locale]), false,
+      "authenticated unavailable inbox must not suggest a lost sign-in");
     assert.equal(listReads(transport.calls), 1, "scope failure remains fenced across render/focus");
     assert.equal(
       nodes(host.output).some((n) => ["inbox-list", "inbox-thread", "buyer-panel"].includes(n.props["data-testid"])),
