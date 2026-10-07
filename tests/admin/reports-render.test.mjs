@@ -357,3 +357,34 @@ test("product sort query parses strictly and defaults to net_minor descending", 
   for (const key of productSorts) for (const dir of ["asc", "desc"]) assert.deepEqual(parseProductSort(key, dir), { sort: key, ascending: dir === "asc" });
   for (const [sort, dir] of [["", undefined], ["Units", "asc"], ["sku_id", "asc"], ["__proto__", "asc"], ["units", ""], ["units", "ASC"], ["units", "up"]]) assert.equal(parseProductSort(sort, dir), null, `${sort}/${dir}`);
 });
+
+// Codex review P2 (PR #3): for a legacy Store (no permission list) the export-permission probe's authority refusals fail the whole
+// guarded read closed (the already-fetched report is hidden); only a transient probe failure falls back to "unknown hint".
+test("legacy-store permission probe: forbidden/not-found/signed-out fail the read closed, transient falls back", async () => {
+  class ReadError extends Error { constructor(code) { super(code); this.code = code; } }
+  class OrderReadError extends Error { constructor(code) { super(code); this.code = code; } }
+  let captured = null, probe = null;
+  const shell = ({children}) => createElement("div", null, children);
+  const Reports = load("../../apps/admin/components/Reports.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
+    "@/lib/model":{}, "@/lib/customers-client":{ReadError,useGuardedRead:(_scope,run)=>{captured=run;return {status:"loading",data:null,boundary:"",reload(){},refresh:async()=>false};}},
+    "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError,readOrderActions:async()=>{throw probe;}},
+    "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
+    "@/lib/reports-client":{readReport:async()=>({name:"products",report:{rows:[]}}),downloadReport:async()=>"done",exportOutcome:()=>null,exportWithLock:async()=>"done",loadUncertainScopes:()=>[]},
+    "@/lib/reports-copy":{reportsCopy:{en:new Proxy({tabs:{}},{get:(t,k)=>k in t?t[k]:"x"})}}, "@/lib/reports-presentation":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shell}, "./AdminPageHeader":{AdminPageHeader:()=>null},
+    "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
+    "./orders.css":{}, "./reports.css":{},
+  }).Reports;
+  renderToStaticMarkup(createElement(Reports, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
+  assert.equal(typeof captured, "function");
+  for (const code of ["forbidden","not-found","signed-out"]) {
+    probe = new OrderReadError(code);
+    await assert.rejects(() => captured(new AbortController().signal), (e) => e instanceof ReadError && e.code === code, code);
+  }
+  probe = new OrderReadError("unavailable");
+  const fallback = await captured(new AbortController().signal);
+  assert.equal(fallback.canExport, false); assert.equal(fallback.permissionKnown, false);
+  probe = new Error("network");
+  assert.equal((await captured(new AbortController().signal)).permissionKnown, false);
+});

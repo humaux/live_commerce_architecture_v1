@@ -38,7 +38,8 @@ function harness() {
   });
   const { useGuardedRead, ReadError } = module.exports;
   const mount = (run) => { cursor = 0; const out = useGuardedRead("scope", run, null); for (const e of effects.splice(0)) e(); return out; };
-  return { mount, ReadError, logouts };
+  const peek = (run) => { cursor = 0; const out = useGuardedRead("scope", run, null); effects.splice(0); return out; };
+  return { mount, peek, ReadError, logouts };
 }
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -52,4 +53,31 @@ test("forbidden/unavailable failures and a successful read signal no logout", as
     const h = harness(); h.mount(run); await settle(); assert.deepEqual(h.logouts, []);
   }
   const h = harness(); h.mount(async () => { throw new h.ReadError("forbidden"); }); await settle(); assert.deepEqual(h.logouts, []);
+});
+
+// Codex review P2 (PR #3): refresh() (the in-place re-GET after a write) handles authority outcomes exactly like load():
+// signed-out blocks and signals the global logout; forbidden / not-found clear the data; transient failures change nothing.
+async function readyThenRefresh(second) {
+  const h = harness(); let calls = 0;
+  const run = async () => { if (calls++ === 0) return { pii: "synthetic" }; return second(h); };
+  h.mount(run); await settle();
+  assert.equal(h.peek(run).status, "ready");
+  const result = await h.peek(run).refresh(); await settle();
+  return { h, result, view: h.peek(run) };
+}
+test("refresh ending signed-out clears the view, blocks and signals the global logout once", async () => {
+  const { h, result, view } = await readyThenRefresh(async (x) => { throw new x.ReadError("signed-out"); });
+  assert.equal(result, false); assert.equal(view.status, "signed-out"); assert.equal(view.data, null); assert.deepEqual(h.logouts, ["logout"]);
+});
+test("refresh ending forbidden or not-found clears the data without a logout", async () => {
+  for (const code of ["forbidden", "not-found"]) {
+    const { h, view } = await readyThenRefresh(async (x) => { throw new x.ReadError(code); });
+    assert.equal(view.status, code); assert.equal(view.data, null); assert.deepEqual(h.logouts, [], code);
+  }
+});
+test("a transient refresh failure keeps the ready view and signals nothing", async () => {
+  for (const fail of [async () => { throw new Error("boom"); }, async (x) => { throw new x.ReadError("unavailable"); }]) {
+    const { h, result, view } = await readyThenRefresh(fail);
+    assert.equal(result, false); assert.equal(view.status, "ready"); assert.deepEqual(view.data, { pii: "synthetic" }); assert.deepEqual(h.logouts, []);
+  }
 });

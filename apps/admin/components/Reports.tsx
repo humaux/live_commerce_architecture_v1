@@ -67,7 +67,8 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
       const actions = await readOrderActions(store.id, signal);
       return { view, canExport: actions.orders_export, permissionKnown: true };
     } catch (error) {
-      if (error instanceof OrderReadError && error.code === "signed-out") throw new ReadError("signed-out");
+      // Authority outcomes fail the whole read closed (the fetched report is hidden); only transient probe failures fall back.
+      if (error instanceof OrderReadError && error.code !== "unavailable") throw new ReadError(error.code);
       return { view, canExport: false, permissionKnown: false };
     }
   } : null, initialError ?? (denied ? "forbidden" : null));

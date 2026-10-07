@@ -294,7 +294,14 @@ export function useGuardedRead<T>(
       if (generation.current !== epoch || hidden.current || signal.aborted || (await sessionBoundary()) !== before) return false;
       setView((previous) => (previous.key === key ? { key, status: "ready", data } : previous));
       return true;
-    } catch {
+    } catch (error) {
+      // Authority outcomes end the view exactly like load(); only transient failures keep it (and return false).
+      if (generation.current !== epoch || hidden.current || signal.aborted) return false;
+      const code = error instanceof ReadError ? error.code : error instanceof Error && error.message === "session_changed" ? "signed-out" : "unavailable";
+      if (code === "unavailable") return false;
+      if (code === "signed-out") { blocked.current = true; signalLogout(); }
+      boundary.current = "";
+      setView((previous) => (previous.key === key ? { key, status: code, data: null } : previous));
       return false;
     }
   }, [key]);
