@@ -157,7 +157,7 @@ export default function OrderHistory({
       ) : (
         <>
           <h1>{copy.title}</h1>
-          <p className="order-note">{copy.scope}</p>
+          <p className="order-note">{copy.scope} {copy.timeZone}</p>
           {!busy && !failed && !items.length && <p>{copy.empty}</p>}
           <ol className="history-list">
             {items.map((order) => (

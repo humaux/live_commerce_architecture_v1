@@ -212,7 +212,7 @@ export default function BankTransfer({
       )}
       {open(view.state) && (
         <p data-testid="transfer-deadline">
-          {copy.deadline} {displayTime(locale, view.deadline_at)} ·{" "}
+          {copy.deadline} {displayTime(locale, view.deadline_at)} ({copy.storeTime}) ·{" "}
           {clock.expired ? copy.windowEnded : copy.timeLeft(clock.hours, clock.minutes)}
         </p>
       )}

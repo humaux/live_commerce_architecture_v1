@@ -116,3 +116,32 @@ test("ShopFooter uses Taipei year across UTC year boundary", () => {
   const design = { profile: { name: "Shop", contact: {} }, nav: { footer: [] } };
   assert.match(text(component({ locale: "en", design, preview: null })), /©\s+2027\s+Shop/);
 });
+
+// Codex review P2 (PR #7): every buyer-facing Taipei instant is labelled — the actionable transfer deadline per row,
+// and the order-history list once in its scope note (not on every row).
+for (const [locale, label] of [["en", "Store time (UTC+8)"], ["zh-TW", "店鋪時間（UTC+8）"], ["zh-CN", "店铺时间（UTC+8）"]]) {
+  test(`BankTransfer deadline labels store time in ${locale}`, () => {
+    const view = { state: "SUBMITTED", deadline_at: instant, currency: "TWD", amount_minor: 100, bank: null,
+      proof: { last5: "12345", amount_minor: 100, paid_at: instant } };
+    const component = load("BankTransfer", [view, false, Date.parse(instant), "", "", "", false, "", null], {
+      "../lib/buyer-client": { BuyerClientError: Error }, "../lib/purchase": {}, "../lib/bank-transfer-copy": { bankTransferCopy },
+      "../lib/browse-copy": { browseCopy }, "../lib/bank-transfer-contract": bankTransferContract,
+    }).default;
+    const tree = component({ context: "test", orderID: "order-1", locale, money: () => "NT$1", refreshToken: 0 });
+    const deadline = find(tree, (node) => node.type === "p" && node.props["data-testid"] === "transfer-deadline");
+    assert.ok(deadline, "deadline paragraph is rendered");
+    assert.ok(text(deadline).includes(format.displayTime(locale, instant)), "deadline instant is in that paragraph");
+    assert.ok(text(deadline).includes(label), `the deadline identifies ${label}`);
+  });
+}
+for (const [locale, label] of [["en", "Taipei time (UTC+8)"], ["zh-TW", "台北時間（UTC+8）"], ["zh-CN", "台北时间（UTC+8）"]]) {
+  test(`OrderHistory states the Taipei time zone once in ${locale}`, () => {
+    const order = { order_id: "order-1", created_at: instant, commercial_state: "CONFIRMED", total_minor: 100, currency: "TWD" };
+    const component = load("OrderHistory", [[order], "", null, false, false, false], {
+      "../lib/history-copy": { historyCopy }, "../lib/order-copy": { orderCopy },
+      "../lib/purchase": {}, "./OrderFlow": { OrderDetails() {} }, "../lib/buyer-client": { BuyerClientError: Error },
+    }).default;
+    const shown = text(component({ context: "test", locale, money: () => "NT$1", onError() {}, onPaymentBusy() {} }));
+    assert.equal(shown.split(label).length - 1, 1, `exactly one ${label} note`);
+  });
+}
