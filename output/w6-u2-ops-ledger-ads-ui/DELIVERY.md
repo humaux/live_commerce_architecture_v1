@@ -23,3 +23,4 @@
 - `bash scripts/dev/check-gates.sh`, `bash scripts/dev/test-node.sh`, admin tsc, `go vet -tags browser ./tests/foundation`.
 
 - Cleanup: subagent-only temporary worktrees removed after preserving exact diffs/untracked browser sources in `subagent-backups/` and all evidence above; assigned W6-U2 worktree/branch and tz-audit remain. No servers/containers were started locally.
+- Final cleanup gate: `bash scripts/dev/check-gates.sh` → exit0 (`check-gates-final.log`, 74 modes). The prior archive-name refusal is preserved in `check-gates-cleanup.log`; archived sources now use ordinary text names and are excluded from build/test discovery. Code hashes remain unchanged.
