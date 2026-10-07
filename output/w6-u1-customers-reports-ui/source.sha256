@@ -1,8 +1,9 @@
-# Purpose: pin W6 source and executable test/gate files to current verified bytes.
-# Depends on: original W6 source plus00979 originba1d merge,19a seed and4e readiness fixes.
-# Used by: integrator normal/calibration retry; excludes delivery metadata and unrelated trunk files.
+# Purpose: bind final W6 source and shared actual route dependencies to verified bytes.
+# Depends on: latestorigin35ab merge d997, retained19a seed/4e readiness and P2 source808.
+# Used by: integrator normal and named calibration retry; delivery metadata excluded.
 c7c79d41359e65487641dca29d0fc868310c35f66f78a07bd070d9f7c492425d  apps/admin/app/[locale]/customers/page.tsx
 7b8c298786f4d28608ec62debe37b535991ea456e90e478875984613213822d6  apps/admin/app/[locale]/finance/reports/page.tsx
+bdeb01398837c23c5058faa0d7123f5e62d608d70ac2c1c7489fe99ec4e80f7a  apps/admin/app/api/stores/[store]/[...resource]/route.ts
 7d2dc44f3c65165b030b8182ad26840907dffe7f871fbfe2af7acc333a8dbce7  apps/admin/app/api/stores/[store]/customers/[customer]/notes/[note]/route.ts
 2cdbef64829f06783f7017a389eb32303fa4dfd96dbe1e2313e4a85a61e51ae3  apps/admin/app/api/stores/[store]/customers/[customer]/notes/route.ts
 95752a9349e29d6d3926d6cb3501dc54fa2f46fe215ec7a34ef66a70167fe614  apps/admin/app/api/stores/[store]/customers/[customer]/tags/route.ts
@@ -37,10 +38,10 @@ f0ff829361a2c2fae6b315a1751d56932e888a834d2a478e83288a592d52405a  apps/admin/lib
 8c8c710aed601342afb60b7095ad2ee4dd4eea4c4160a87b1a91f8303fb1f30c  apps/admin/lib/reports-request.ts
 b2ae144e6ca1f9bc179dd27a237060b78030ed4423c9c86d4965a4db198eae8c  apps/admin/lib/reports-response.ts
 34271ebb5c12ced09ce573dd9cf1cd4e201927fa86b2a904c9c9eb0fb8be1858  apps/admin/src/features/finance/routes.ts
-20c898b30c19fc344ed443eff173045140fba2f0832b671f2dc6948e9c4acb4c  apps/admin/src/shell-copy.ts
-424aec8ec6c8118f4bacf452709b0607f7f5523a9ee75f8527efb9f8ff8a710a  docs/delivery/GATES.md
-6b0dcf55f70e7f52c4302768f216ac154f6dd5607b2ad5725723e7e8218f3276  scripts/dev/test-local.sh
-e99b381f541bd10a5702cba517cdb7016e3188ad80bb453a0a46e11b453f7635  scripts/dev/test-node.sh
+c313bff8ede47abba2148b6a4a34f9c6d1001c8020111c53e7afb5ea741d14c8  apps/admin/src/shell-copy.ts
+cd3f808673a886df71d2592d24f06abef5fcb209e297de95a54f2be8a3335afa  docs/delivery/GATES.md
+cf1af0e9399e5595d8cb0deb5512fceddd1e164e0b2f90b4da7c3fbf91eaf532  scripts/dev/test-local.sh
+548b1765a51cef80b3c12d608e8d6438275ddcaa0ebae3aa8d42043af0947e6d  scripts/dev/test-node.sh
 d6eaa878500f0f662a17802ccf806771cb7ba21d8cfd6ff69e587272fbf8f624  tests/admin/customer-tags-bff.test.ts
 ad0580c0cb5334bf20846c3e840845d49828a5da3e571552e599b1e010f427c8  tests/admin/customer-tags-client.test.mjs
 5cfa1276bb8163e66d35709febae53bd7a6b49eecaa9cf8ce8165f8388f40a71  tests/admin/customer-tags-draft.test.mjs
