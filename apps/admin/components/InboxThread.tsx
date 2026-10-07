@@ -97,8 +97,7 @@ export function InboxThread({
   const now = Date.now();
   const open = Number.isFinite(sendDeadline) && now < sendDeadline;
   const closing = Number.isFinite(hardDeadline) && !open && now < hardDeadline;
-  const uncertainDelivery = delivery === "unknown" ||
-    (thread?.items.some((item) => item.direction === "out" && item.send_state === "unknown") ?? false);
+  const uncertainDelivery = delivery === "unknown" || persistedUnknown.current;
   const limit = textLimit(conversation.platform, text);
   const templateRow = templates.find(
     (item) => `${item.template_id}:${item.version}` === template,
@@ -121,9 +120,9 @@ export function InboxThread({
           !item || (item.attachments !== null && (!Array.isArray(item.attachments) ||
             item.attachments.some((attachment) => !attachment || typeof attachment.type !== "string")))))
           throw new InboxError("unavailable", 503);
-        // A9 is final delivery authority; update the action guard before React can commit its warning.
-        persistedUnknown.current = data.items.some((item) => item.direction === "out" && item.send_state === "unknown") ||
-          (!!before && persistedUnknown.current);
+        // A9 pages can omit older outbound rows: absence cannot reconcile a known final UNKNOWN.
+        // Latch before React commits so previously captured callbacks also respect this authority.
+        persistedUnknown.current ||= data.items.some((item) => item.direction === "out" && item.send_state === "unknown");
         setThread((old) =>
           before && old
             ? { ...data, items: [...data.items, ...old.items] }

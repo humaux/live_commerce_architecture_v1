@@ -87,6 +87,30 @@ test("a captured previously enabled composer cannot bypass final UNKNOWN learned
   assert.equal(sends(calls).length, 0);
 });
 
+test("a later A9 page omitting the known UNKNOWN is not delivery reconciliation", async (t) => {
+  const env = environment(t);
+  let reads = 0;
+  const laterPage = { ...thread, items: Array.from({ length: 50 }, (_, index) => ({
+    ...thread.items[0], seq: index + 2, text: "MOCK_NEWER_INBOUND_PAGE",
+  })) };
+  const calls = transport(() => response(++reads === 1 ? projection("sent") :
+    reads === 2 ? projection("unknown") : laterPage));
+  const host = mount(env);
+  await loaded(host, "sent");
+  change(host, "reply-text", "MOCK_CAPTURED_DRAFT");
+  const captured = node(host, (n) => n.type === "form").props.onSubmit;
+  clickText(host, "Refresh");
+  await loaded(host, "unknown");
+  clickText(host, "Refresh");
+  await host.waitFor(() => reads === 3 && idle(host) && textOf(host.output).includes("MOCK_NEWER_INBOUND_PAGE"),
+    "newest full inbound page can omit an older final UNKNOWN outbound");
+  assert.ok(textOf(host.output).includes(warning.en), "absence from a page cannot clear a known uncertain outcome");
+  assert.equal(sendControl(host).props.disabled, true);
+  captured({ preventDefault() {} });
+  assert.equal(host.ref(ReplyReceipt).pending(), null);
+  assert.equal(sends(calls).length, 0);
+});
+
 for (const state of ["queued", "sent", "failed", "blocked"]) {
   test(`persisted ${state} is not mislabeled UNKNOWN and retains ordinary composer eligibility`, async (t) => {
     const env = environment(t);

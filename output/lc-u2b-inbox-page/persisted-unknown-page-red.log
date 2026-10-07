@@ -1,0 +1,38 @@
+Source7b50074c before latch correction
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "tests/admin/inbox-unknown.test.ts"]
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (76.524125ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (2.148791ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (1.999834ms)
+✔ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (2.786375ms)
+✔ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (1.969459ms)
+✖ a later A9 page omitting the known UNKNOWN is not delivery reconciliation (3.287542ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (5.955917ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.716167ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.717167ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (1.1125ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 507.609417
+
+✖ failing tests:
+
+test at tests/admin/inbox-unknown.test.ts:90:1
+✖ a later A9 page omitting the known UNKNOWN is not delivery reconciliation (3.287542ms)
+  AssertionError [ERR_ASSERTION]: absence from a page cannot clear a known uncertain outcome
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-unknown.test.ts:107:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+Exit 1
