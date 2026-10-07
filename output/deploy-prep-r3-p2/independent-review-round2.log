@@ -1,0 +1,91 @@
+actual node --test tests/deploy/deploy-prep-r3.test.mjs => exit=1
+✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (252.638209ms)
+✔ preflight health permission grammars and API/worker consistency fail closed (2763.394042ms)
+✔ merchant alert flag is explicit 0|1 and independently requires SMTP (2353.153458ms)
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (1.70675ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (2443.226584ms)
+✖ platform operator custody, export mount and binary are wired (102.169917ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (498.912625ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (1072.442792ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (98.846959ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9649.832708
+
+✖ failing tests:
+
+test at tests/deploy/deploy-prep-r3.test.mjs:217:1
+✖ platform operator custody, export mount and binary are wired (102.169917ms)
+  TypeError: Cannot read properties of undefined (reading 'environment')
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:221:42
+      at fixture (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:25:12)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/tests/deploy/deploy-prep-r3.test.mjs:217:76)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+actual go test ./cmd/expiry-worker -run ^(TestDisabledWorkerReadsOnlyFlag|TestWorkerConfigStrictAndRedacted|TestBuyerMailConfig|TestMerchantAlertMailOptIn)$ -count=1 => exit=1
+go: go.mod requires go >= 1.27.1 (running go 1.26.2; GOTOOLCHAIN=local)
+
+actual bash -n deploy/scripts/ops-admin.sh deploy/scripts/preflight.sh deploy/scripts/smoke.sh => exit=0
+
+actual output/deploy-prep-r3-p2/tools/shellcheck-v0.10.0/shellcheck -S warning -x deploy/scripts/ops-admin.sh deploy/scripts/preflight.sh deploy/scripts/smoke.sh => exit=0
+
+source stable=False
+a7edc7b513df3fff6afc096ebfa17c1fa257cc1b2eb718a33ea4485dc87566f3  cmd/expiry-worker/doc.go
+c6335254257e9883cbde89de2ba13e47edbccfc5af2e53f8ca5337769930d92b  cmd/expiry-worker/mail.go
+4f5e98930052dad851877020694b2a988e976d60d73150ca5123f007fdd75fe7  cmd/expiry-worker/main.go
+ea4e297695cb6b4a4bc2e8c64439d226e36fbcb90880b22b39c8c6aed66eca11  cmd/expiry-worker/main_test.go
+f6bffc4d853c6e8a12cfe498771bd4ff6f806ba8dca33d38953eb88dafcf60ee  deploy/README.md
+9ccb1283df9e039cbe91744b08a9e7c04568304a074236b69b498e92a7e38216  deploy/compose.yml
+24876ddebc30b0f040f6a1566277cda8082297573652944d91cbcfded5bce09a  deploy/env/api.env.example
+ca6e81b8c99f16c4d55e23c254a9526c71976d41574dbf6a9579948c7dd94d76  deploy/env/compose.env.example
+fde31780b922e9c51e1c01f51dbebc029eb00aa4be188765e867fe878032bfba  deploy/scripts/ops-admin.sh
+ba4ccd3b03d4c834f3055631f474191ef680dea47354749c5ca1f2101f7e1564  deploy/scripts/preflight.sh
+ef29d17033688f7b1b14467926ac6bb62e38c91750606965d5cf848237c34731  deploy/scripts/smoke.sh
+aafef1334b5b02bc94a18f10f9aa1b274e945211aa09c2feb8892250c761a221  tests/deploy/deploy-prep-r3.test.mjs
+
+actual /Users/luolimo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.1.darwin-arm64/bin/go test ./cmd/expiry-worker -run ^(TestDisabledWorkerReadsOnlyFlag|TestWorkerConfigStrictAndRedacted|TestBuyerMailConfig|TestMerchantAlertMailOptIn)$ -count=1 => exit=0
+ok  	livecommerce/cmd/expiry-worker	0.665s
+Go source stable=True
+4f5e98930052dad851877020694b2a988e976d60d73150ca5123f007fdd75fe7  cmd/expiry-worker/main.go
+c6335254257e9883cbde89de2ba13e47edbccfc5af2e53f8ca5337769930d92b  cmd/expiry-worker/mail.go
+ea4e297695cb6b4a4bc2e8c64439d226e36fbcb90880b22b39c8c6aed66eca11  cmd/expiry-worker/main_test.go
+
+actual profile-fix recheck node --test tests/deploy/deploy-prep-r3.test.mjs => exit=0
+✔ P02 settlements directory rejects missing/link/owner/group/mode with a valid control (194.288458ms)
+✔ preflight health permission grammars and API/worker consistency fail closed (2568.066917ms)
+✔ merchant alert flag is explicit 0|1 and independently requires SMTP (1378.586625ms)
+✔ export bind accepts omitted JSON false but rejects unsafe source/config mutations (1.239625ms)
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1344.4875ms)
+✔ platform operator custody, export mount and binary are wired (187.989125ms)
+✔ actual export bind refuses a missing directory; enabling auto-create is detected (424.195792ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (939.23ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (101.532166ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7196.839916
+tested source stable=True
+4f5e98930052dad851877020694b2a988e976d60d73150ca5123f007fdd75fe7  cmd/expiry-worker/main.go
+c6335254257e9883cbde89de2ba13e47edbccfc5af2e53f8ca5337769930d92b  cmd/expiry-worker/mail.go
+ea4e297695cb6b4a4bc2e8c64439d226e36fbcb90880b22b39c8c6aed66eca11  cmd/expiry-worker/main_test.go
+fde31780b922e9c51e1c01f51dbebc029eb00aa4be188765e867fe878032bfba  deploy/scripts/ops-admin.sh
+ba4ccd3b03d4c834f3055631f474191ef680dea47354749c5ca1f2101f7e1564  deploy/scripts/preflight.sh
+ef29d17033688f7b1b14467926ac6bb62e38c91750606965d5cf848237c34731  deploy/scripts/smoke.sh
+9ccb1283df9e039cbe91744b08a9e7c04568304a074236b69b498e92a7e38216  deploy/compose.yml
+ca6e81b8c99f16c4d55e23c254a9526c71976d41574dbf6a9579948c7dd94d76  deploy/env/compose.env.example
+132cd52e14418e83d57081c79b123bcd3eac9ae132841594b56a828fc8b4fd9e  tests/deploy/deploy-prep-r3.test.mjs
+de7a5b131086279f857ec446ccca402b8f922bfca993ecf449fbc6f848244369  tests/foundation/stripe_live_process_test.go

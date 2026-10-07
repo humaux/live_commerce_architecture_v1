@@ -1,6 +1,9 @@
+// Purpose: validate shared SMTP configuration and the explicitly opted-in merchant alert origin.
+// Depends on: internal/mail, SMTP secret env/files, COMMERCE_ADMIN_ORIGIN when merchant mail is enabled.
+// Used by: expiry-worker loadConfig; does not dial or send mail while loading.
 package main
 
-// mail.go: optional buyer-notification loop of this process (contracts/storefront-v2.md §E8). Off unless COMMERCE_BUYER_MAIL_ENABLED=1.
+// mail.go: shared SMTP settings for independently opted-in buyer notifications and merchant alerts.
 // Why this process: it is the only River-running worker that touches nothing but PostgreSQL (no PSP, no Meta token), so the SMTP credential
 // is the only new secret it holds, and the order lifecycle it already drives (expiry -> cancelled) is the first source of mail. The loop
 // itself is a plain poll of notify.outbox (internal/notify), not a River job: queue admission on river_job is guarded by post_river triggers
@@ -23,7 +26,7 @@ var smtpHostPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0
 
 // mailConfig is the SMTP account, the daily cap shared with the login-code mail (COMMERCE_MAIL_DAILY_CAP) and the admin
 // origin of the meta connection-health owner mail (COMMERCE_ADMIN_ORIGIN, contract meta-connection-health-v1 §10). adminOrigin
-// "" = the merchant-alert loop stays off (nothing mails until an admin origin is configured).
+// is stored only when the independent merchant-alert flag is opted in.
 type mailConfig struct {
 	smtp        *mail.SMTP
 	dailyCap    int
@@ -32,7 +35,7 @@ type mailConfig struct {
 
 // loadMailConfig mirrors cmd/api's password-mail variables (same names, same validation): COMMERCE_SMTP_HOST / _USERNAME / _PASSWORD
 // (or _FILE), COMMERCE_MAIL_FROM, COMMERCE_MAIL_DAILY_CAP (20..100000, default 200). Errors never carry a value.
-func loadMailConfig(getenv func(string) string) (*mailConfig, error) {
+func loadMailConfig(getenv func(string) string, merchantMail bool) (*mailConfig, error) {
 	loopback := getenv("COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS") == "1"
 	password, err := secretEnv(getenv, "COMMERCE_SMTP_PASSWORD")
 	if err != nil || len(password) > 256 || strings.IndexFunc(password, func(r rune) bool { return r < 32 || r == 127 }) != -1 {
@@ -53,10 +56,13 @@ func loadMailConfig(getenv func(string) string) (*mailConfig, error) {
 		}
 	}
 	// meta connection-health owner mail (0125 §10): the admin origin the reconnect CTA points at, https only, never a
-	// storefront or Meta URL. Unset = the merchant-alert loop stays off.
-	adminOrigin := strings.TrimSpace(getenv("COMMERCE_ADMIN_ORIGIN"))
-	if adminOrigin != "" && (!strings.HasPrefix(adminOrigin, "https://") || strings.ContainsAny(adminOrigin, " \r\n\"<>")) {
-		return nil, errWorkerConfig
+	// storefront or Meta URL. Do not even read it for buyer-only mail: an origin is not owner consent.
+	adminOrigin := ""
+	if merchantMail {
+		adminOrigin = strings.TrimSpace(getenv("COMMERCE_ADMIN_ORIGIN"))
+		if adminOrigin == "" || !strings.HasPrefix(adminOrigin, "https://") || strings.ContainsAny(adminOrigin, " \r\n\"<>") {
+			return nil, errWorkerConfig
+		}
 	}
 	// Port stays 0 (= 465, implicit TLS) and RootCAs nil (system roots), exactly as cmd/api.
 	smtp, err := mail.NewSMTP(mail.Config{Host: host, Username: getenv("COMMERCE_SMTP_USERNAME"), Password: password,

@@ -5,7 +5,7 @@
 # Purpose: automated acceptance of the deploy package (deploy-design §17).
 #   static  S01-S06 + S48: script syntax (+shellcheck when installed), digest pins, compose config for
 #           all profile sets (+ two-host override), lcentry vet/tests/coverage, Caddyfile
-#           validate/fmt, ignore files. Needs no running containers.
+#           validate/fmt, ignore files. Needs Docker (S48's isolated MOCK containers); never run on a production host.
 #   full    static + S07-S44 on an ISOLATED project "lc-smoke-<run>" with temp config, temp
 #           secrets and temp backup dir, *.localhost hosts on 127.0.0.1, identity=1 against a PUBLIC OIDC
 #           discovery document only (LC_SMOKE_OIDC_ISSUER, default https://accounts.google.com: no client
@@ -145,6 +145,8 @@ if "egress" not in (ew.get("networks") or {}):
     bad.append("expiry-worker lacks the egress network (SMTP)")
 if str((ew.get("environment") or {}).get("COMMERCE_BUYER_MAIL_ENABLED")) != "0":
     bad.append("expiry-worker mail loop is not off by default")
+if str((ew.get("environment") or {}).get("COMMERCE_MERCHANT_ALERT_MAIL")) != "0":
+    bad.append("expiry-worker merchant alerts are not off by default")
 for one_shot in ("stripe-admin", "meta-admin", "store-admin", "platform-admin"):
     if svcs[one_shot].get("profiles") != ["ops"]:
         bad.append(one_shot + " is not profile ops only")
@@ -480,6 +482,25 @@ full_cases() {
   # R5 store-domains: without a base zone claims-worker restart-loops (CI S37, 2026-10-04); preflight must refuse it offline.
   neg_r() { sed -i.bak '/^LC_STORE_BASE_DOMAIN=/d' "$1/compose.env" && rm -f "$1/compose.env.bak"; }
   negative S10r P19 neg_r
+  # P2: explicit merchant-mail opt-in and R3 directory/health metadata rules.
+  neg_s() { echo 'LC_MERCHANT_ALERT_MAIL=yes' >>"$1/compose.env"; }
+  neg_t() { echo 'LC_MERCHANT_ALERT_MAIL=1' >>"$1/compose.env"; } # no SMTP mailbox
+  pos_u() { pos_q "$1"; printf 'LC_BUYER_MAIL_ENABLED=0\nLC_MERCHANT_ALERT_MAIL=1\n' >>"$1/compose.env"; }
+  neg_v() { pos_u "$1"; printf '__UNSET__\n' >"$1/secrets/commerce_smtp_password"; }
+  neg_w() {
+    chmod 0755 "$1/state/settlements"
+    sed -i.bak '/^LC_STATE_DIR=/d' "$1/compose.env" && rm -f "$1/compose.env.bak"
+    printf 'LC_STATE_DIR=%s/state\n' "$1" >>"$1/compose.env"
+  }
+  neg_x() { printf 'COMMERCE_META_ADVANCED_ACCESS=bad-permission\n' >>"$1/env/api.env"; }
+  neg_y() { printf 'COMMERCE_META_ADVANCED_ACCESS=pages_read_engagement\n' >>"$1/env/api.env"; }
+  negative S10s P06 neg_s
+  negative S10t P08 neg_t
+  positive S10u pos_u
+  negative S10v P09 neg_v
+  negative S10w P02 neg_w
+  negative S10x P08 neg_x
+  negative S10y P08 neg_y
 
   # S37 (+ S11-S16): the real first-deploy path
   if runc S37 "$LC_SCRIPTS_DIR/deploy.sh" --smoke first; then rec S37 PASS "deploy.sh first"; else
@@ -1121,7 +1142,7 @@ def ver(cmd):
     except Exception:
         return "unavailable"
 static_ids = ["S01", "S02", "S03", "S04", "S05", "S06", "S48"]
-full_ids = static_ids + ["S%02d" % i for i in range(7, 48)] + ["S49", "S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S10r", "S13n", "S29m"]
+full_ids = static_ids + ["S%02d" % i for i in range(7, 48)] + ["S49", "S10a", "S10b", "S10c", "S10d", "S10e", "S10f", "S10g", "S10h", "S10i", "S10j", "S10k", "S10l", "S10m", "S10n", "S10o", "S10p", "S10q", "S10r", "S10s", "S10t", "S10u", "S10v", "S10w", "S10x", "S10y", "S13n", "S29m"]
 result = {
     "run_id": os.path.basename(ev), "task_id": "T22", "commit": commit,
     "environment": {"mode": mode, "host": platform.node(), "kernel": platform.release(),

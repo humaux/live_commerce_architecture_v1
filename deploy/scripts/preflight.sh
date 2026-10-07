@@ -360,17 +360,22 @@ password_login = flag("LC_PASSWORD_LOGIN_ENABLED", E.get("LC_PASSWORD_LOGIN_ENAB
 # storefront-v2 §E8: the buyer-mail loop of expiry-worker (default off). It needs the same mailbox grammar and owner secret as the
 # password-login mail, but not identity: the loop only reads notify.outbox.
 buyer_mail = flag("LC_BUYER_MAIL_ENABLED", E.get("LC_BUYER_MAIL_ENABLED", ""))
+merchant_mail_value = E.get("LC_MERCHANT_ALERT_MAIL", "0")
+rec("P06", merchant_mail_value in ("0", "1"), "LC_MERCHANT_ALERT_MAIL (0 or 1; default 0)")
+merchant_mail = merchant_mail_value == "1"
 rec("P06", not password_login or identity, "LC_PASSWORD_LOGIN_ENABLED requires LC_IDENTITY_ENABLED")
 buyer_on = flag("LC_BUYER_ENABLED", E.get("LC_BUYER_ENABLED", ""))
 accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED", ""))
 payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT_ENABLED", ""))
 meta = flag("COMMERCE_META_WEBHOOK_ENABLED", api.get("COMMERCE_META_WEBHOOK_ENABLED", ""))
-rec("P06", api.get("COMMERCE_PAYUNI_NOTIFY_ENABLED", "0") == "0", "COMMERCE_PAYUNI_NOTIFY_ENABLED must remain 0 (owner cancelled PAYUNi)")
+# PAYUNi runtime was removed; this legacy knob is only a stale-config tripwire, never runtime wiring.
+rec("P06", api.get("COMMERCE_PAYUNI_NOTIFY_ENABLED", "0") == "0", "COMMERCE_PAYUNI_NOTIFY_ENABLED must remain 0 (tripwire only; PAYUNi code removed)")
 studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
 studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_MEDIA_ENABLED", ""))
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
 profiles = {p.strip() for p in E.get("COMPOSE_PROFILES", "").split(",") if p.strip()}
 rec("P06", not buyer_mail or "app" in profiles, "LC_BUYER_MAIL_ENABLED requires the app profile (expiry-worker runs the loop)")
+rec("P06", not merchant_mail or "app" in profiles, "LC_MERCHANT_ALERT_MAIL requires the app profile (independent owner opt-in)")
 stripe_on = flag("LC_STRIPE_ENABLED", E.get("LC_STRIPE_ENABLED", ""))
 checkout_on = flag("LC_STRIPE_CHECKOUT_ENABLED", E.get("LC_STRIPE_CHECKOUT_ENABLED", ""))  # LD6: platform kill switch, "" = follow LC_STRIPE_ENABLED
 rec("P06", not checkout_on or stripe_on, "LC_STRIPE_CHECKOUT_ENABLED=1 requires LC_STRIPE_ENABLED=1 (checkout without the worker and webhook strands held stock)")
@@ -515,7 +520,7 @@ if identity:
     if password_login:
         rec("P08", E.get("LC_BREACH_CHECK", "hibp") == "hibp", "LC_BREACH_CHECK must be hibp outside loopback tests")
     rec("P08", not onboarding or bool(cur), "LC_ONBOARDING_CURRENCIES required by onboarding")
-if password_login or buyer_mail:
+if password_login or buyer_mail or merchant_mail:
     # cmd/api/identity.go loadPasswordConfig + cmd/expiry-worker/mail.go loadMailConfig grammar: DNS name host, From carries exactly the username.
     smtp_host, smtp_user, mail_from = E.get("LC_SMTP_HOST", ""), E.get("LC_SMTP_USERNAME", ""), E.get("LC_MAIL_FROM", "")
     rec("P08", re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+", smtp_host) is not None, "LC_SMTP_HOST (DNS name)")
@@ -569,7 +574,7 @@ if ecpay_on:
 if identity and (not password_login or E.get("LC_OIDC_ISSUER", "")):
     rec("P09", values.get("commerce_oidc_client_secret", "__UNSET__") != "__UNSET__",
         "commerce_oidc_client_secret (__UNSET__ = public PKCE client)", warn=True)
-if (identity and password_login) or buyer_mail:
+if (identity and password_login) or buyer_mail or merchant_mail:
     rec("P09", values.get("commerce_smtp_password", "__UNSET__") != "__UNSET__",
         "commerce_smtp_password (owner-supplied SMTP authorization code of a dedicated sending mailbox)")
 
