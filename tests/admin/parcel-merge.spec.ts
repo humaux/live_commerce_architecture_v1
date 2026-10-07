@@ -367,4 +367,98 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.getByTestId(`parcel-badge-${ps1}`)).toBeVisible();
     await expect(page.getByTestId("order-detail").getByTestId("shipment-parcel-block")).toBeVisible();
   });
+
+  // [FAULT INJECTION / CLOCK] Only the existing 20s read poll is advanced; no product state or backend is mutated.
+  // Keep ordinary 503 retry local, then change one retry read into an authoritative denial while sibling/poll completions wait.
+  async function boundedPrivacyRead<T>(work: Promise<T>, description: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout>;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Timed out waiting for ${description}`)), 10_000);
+    });
+    try { return await Promise.race([work, timeout]); }
+    finally { clearTimeout(timer!); }
+  }
+  await page.clock.install();
+  await page.clock.pauseAt(new Date());
+  for (const read of ["suggestions", "groups"] as const) {
+    for (const [status, copy] of [
+      [401, "Sign in to view orders."],
+      [403, "This account does not have permission to read orders."],
+      [404, "This order is unavailable in the selected store."],
+    ] as const) {
+      await test.step(`${read} ${status} clears orders/detail/bulk/groups before stale read completions`, async () => {
+        const suggestionsURL = new RegExp(`/api/stores/${store}/orders/merge-suggestions$`);
+        const groupsURL = new RegExp(`/api/stores/${store}/parcel-groups$`);
+        const ordersURL = new RegExp(`/api/stores/${store}/orders\\?`);
+        const targetURL = read === "suggestions" ? suggestionsURL : groupsURL;
+        const siblingURL = read === "suggestions" ? groupsURL : suggestionsURL;
+        // Keep the recoverable failure until detail/bulk readiness: expanding detail can naturally restart parcel reads.
+        await page.route(suggestionsURL, (route) => route.fulfill({ status: 503, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: '{"code":"unavailable"}' }));
+        await page.reload();
+        await expect(page.getByTestId("orders-table")).toBeVisible();
+        await expect(groupPanel(page, ps1)).toBeVisible();
+        await expand(page, ps1);
+        await expect(page.getByTestId("order-detail")).toBeVisible();
+        await page.getByTestId(`order-row-${ps1}`).getByRole("checkbox").check();
+        await expect(page.getByTestId("pick-count")).not.toHaveText("0");
+        await expect(page.getByTestId("parcel-reload-retry")).toBeVisible();
+        await page.unroute(suggestionsURL);
+        const releasePoll = Promise.withResolvers<void>(), releaseSibling = Promise.withResolvers<void>();
+        const pollArrived = Promise.withResolvers<void>(), siblingArrived = Promise.withResolvers<void>();
+        const pollDone = Promise.withResolvers<void>(), siblingDone = Promise.withResolvers<void>();
+        const unexpected: unknown[] = [];
+        await page.route(ordersURL, async (route) => {
+          pollArrived.resolve();
+          await boundedPrivacyRead(releasePoll.promise, "held order poll release");
+          try {
+            await route.fulfill({ status: 503, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: '{"code":"unavailable"}' });
+          } catch (error) { if (!route.request().failure()) unexpected.push(error); }
+          finally { pollDone.resolve(); }
+        });
+        await page.route(siblingURL, async (route) => {
+          // The actual Go response is captured, then its delivery is held until the denial has purged the page.
+          const response = await boundedPrivacyRead(route.fetch(), "actual sibling Go response");
+          expect(response.status()).toBe(200);
+          siblingArrived.resolve();
+          await boundedPrivacyRead(releaseSibling.promise, "held sibling release");
+          try { await route.fulfill({ response }); }
+          catch (error) { if (!route.request().failure()) unexpected.push(error); }
+          finally { siblingDone.resolve(); }
+        });
+        await page.route(targetURL, async (route) => {
+          await boundedPrivacyRead(siblingArrived.promise, "sibling read arrival before denial");
+          await route.fulfill({ status, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: '{"code":"MOCK_SCOPE_DENIAL"}' });
+        });
+        const expectPurged = async () => {
+          await expect(page.getByTestId("merchant-orders")).toContainText(copy);
+          await expect(page.getByTestId("orders-table")).toHaveCount(0);
+          await expect(page.getByTestId("order-detail")).toHaveCount(0);
+          await expect(page.getByTestId("pick-toolbar")).toHaveCount(0);
+          await expect(page.locator('section[data-testid^="parcel-group-"]')).toHaveCount(0);
+          await expect(page.getByTestId("parcel-suggestion")).toHaveCount(0);
+          await expect(page.getByTestId("parcel-reload-retry")).toHaveCount(0);
+        };
+        try {
+          await page.clock.fastForward(20_001);
+          await boundedPrivacyRead(pollArrived.promise, "actual in-flight order poll arrival");
+          await page.getByTestId("parcel-reload-retry").click();
+          await expectPurged(); // Both stale completions are STILL held here.
+          releasePoll.resolve();
+          releaseSibling.resolve();
+          await boundedPrivacyRead(Promise.all([pollDone.promise, siblingDone.promise]), "released stale read completions");
+          expect(unexpected).toEqual([]);
+          // Completion barrier for the released browser reads; lets their actual fetch/React continuations finish.
+          await page.waitForLoadState("networkidle");
+          await expectPurged();
+        } finally {
+          releasePoll.resolve();
+          releaseSibling.resolve();
+          await page.unroute(ordersURL);
+          await page.unroute(siblingURL);
+          await page.unroute(targetURL);
+        }
+      }, { timeout: 20_000 });
+    }
+  }
+
 });

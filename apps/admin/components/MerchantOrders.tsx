@@ -178,8 +178,13 @@ export function MerchantOrders({
       generation.current++;
       controller.current?.abort();
       cookie.current = "";
-      if (status === "signed-out" || status === "forbidden" || status === "not-found") setBulk({scope:"", rows:{}});
-      if (status === "signed-out" || status === "forbidden" || status === "not-found") setSearch({ store: "", value: "", cursor: "" });
+      if (status === "signed-out" || status === "forbidden" || status === "not-found") {
+        setBulk({scope:"", rows:{}});
+        setSearch({ store: "", value: "", cursor: "" });
+        setParcels({ scope: "", groups: [] });
+        session.current = "";
+        setActions(null);
+      }
       if (block) {
         blocked.current = true;
         seen.current = null;
@@ -197,6 +202,12 @@ export function MerchantOrders({
       );
     },
     [key],
+  );
+
+  // Parcel reads share order authority; a denial must revoke the whole page, including in-flight order polls.
+  const loseParcelScope = useCallback(
+    (code: Exclude<OrderReadCode, "unavailable">) => clear(code, true),
+    [clear],
   );
 
   // Marks rows not seen before in this store+filter scope (first page only; later pages are not "newest"). A scope change starts clean.
@@ -328,8 +339,10 @@ export function MerchantOrders({
       return;
     }
     const active = new AbortController();
-    readOrderActions(store.id, active.signal).then(setActions, () => {
-      if (!active.signal.aborted) setActions(noActions);
+    readOrderActions(store.id, active.signal).then((value) => {
+      if (!active.signal.aborted && !blocked.current) setActions(value);
+    }, () => {
+      if (!active.signal.aborted && !blocked.current) setActions(noActions);
     });
     return () => active.abort();
   }, [store, initialError, refresh]);
@@ -633,7 +646,10 @@ export function MerchantOrders({
             shipmentCopy={c}
             groups={parcelGroups}
             refreshGen={refresh + pollGen}
-            onGroups={(next) => setParcels({ scope: bulkScope, groups: next })}
+            onGroups={(next) => {
+              if (!blocked.current && !hidden.current) setParcels({ scope: bulkScope, groups: next });
+            }}
+            onScopeLost={loseParcelScope}
             onChanged={() => setRefresh((v) => v + 1)}
           />
         )}

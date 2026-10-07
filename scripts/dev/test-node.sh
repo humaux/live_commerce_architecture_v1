@@ -36,7 +36,7 @@ node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts
 # W3-U1b pure selection, wire and request boundary negatives (no browser).
 node --test --experimental-strip-types tests/admin/picklist-model.test.ts
 # W3-U4 parcel merge: DTO parsers + reconcile + copy ruling pins, BFF route grammar, and the REAL route handler against a stub upstream (no browser/PG).
-node --test --experimental-strip-types tests/admin/parcels-model.test.ts tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts
+node --test --experimental-strip-types tests/admin/parcels-model.test.ts tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts tests/admin/parcels-scope.test.ts
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs

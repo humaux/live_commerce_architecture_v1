@@ -8,7 +8,7 @@
 //   the server guards (in_parcel_group, group_not_open, CAS) stay the authority for stale edits.
 // Depends on: @/lib/parcels-client (BFF orders/merge-suggestions + parcel-groups* -> Go internal/httpapi/parcels.go),
 //   @/lib/parcels-model (parsers, reconcileGroups), @/lib/parcels-copy, ./OrderShipment (ShipmentFields + shipmentFieldsError),
-//   ./orders.css classes.
+//   @/lib/orders-client (authoritative read denials), ./orders.css classes.
 // Used by: apps/admin/components/MerchantOrders.tsx (rendered above the orders table, groups state lifted there for badges).
 // Invariants: every mutating click sends one Idempotency-Key per logical write (an uncertain retry reuses it); dissolve is
 //   CAS-guarded by the group version; COD/pay-at-pickup/CVS orders never appear (the server excludes them; create would
@@ -26,6 +26,7 @@ import {
 import { parcelOrderNumber, parcelShort, reconcileGroups, type MergeSuggestion, type ParcelGroupView } from "@/lib/parcels-model.ts";
 import type { ParcelCopy } from "@/lib/parcels-copy";
 import type { OrdersCopy } from "@/lib/orders-copy";
+import { OrderReadError, type OrderReadCode } from "@/lib/orders-client";
 import { ShipmentFields, shipmentFieldsError, type ShipmentFieldValues } from "./OrderShipment";
 
 export type { ParcelGroupView };
@@ -46,6 +47,7 @@ export function ParcelMerge({
   groups,
   refreshGen,
   onGroups,
+  onScopeLost,
   onChanged,
 }: {
   store: string;
@@ -57,6 +59,7 @@ export function ParcelMerge({
   /** The orders page's refresh generation (Refresh button, successful poll, reload after a write): a change re-reads both parcel reads. */
   refreshGen: number;
   onGroups: (next: ParcelGroupView[]) => void;
+  onScopeLost: (code: Exclude<OrderReadCode, "unavailable">) => void;
   onChanged: () => void;
 }) {
   const [suggestions, setSuggestions] = useState<MergeSuggestion[]>([]);
@@ -81,18 +84,24 @@ export function ParcelMerge({
   useEffect(() => {
     const active = new AbortController();
     const startedAt = created.current;
+    const denyScope = (cause: unknown) => {
+      if (!(cause instanceof OrderReadError) || cause.code === "unavailable") return false;
+      // Both reads share orders authority: revoke the sibling before clearing the parent's private state.
+      active.abort();
+      onScopeLost(cause.code);
+      return true;
+    };
     readMergeSuggestions(store, active.signal).then(
       (value) => {
         if (active.signal.aborted) return;
         setSuggestions(value);
         setProblem((p) => (p === c.suggestionsUnavailable ? "" : p)); // a retry that works clears only its own earlier load error
       },
-      () => {
+      (cause) => {
         // A failed read must not look like "nothing to merge": keep the stale list out, show the error and offer a retry.
-        if (!active.signal.aborted) {
-          setSuggestions([]);
-          setProblem(c.suggestionsUnavailable);
-        }
+        if (active.signal.aborted || denyScope(cause)) return;
+        setSuggestions([]);
+        setProblem(c.suggestionsUnavailable);
       },
     );
     // Calls BFF GET parcel-groups -> Go fulfillment.read_open_parcel_groups (migration 0164): the OPEN groups, so ship/dissolve
@@ -103,13 +112,15 @@ export function ParcelMerge({
         commit(reconcileGroups(groupsRef.current, open));
         setProblem((p) => (p === c.groupsUnavailable ? "" : p)); // a retry that works clears only its own earlier load error
       },
-      () => {
-        if (!active.signal.aborted) setProblem(c.groupsUnavailable); // never leave an OPEN group silently without its panel
+      (cause) => {
+        if (active.signal.aborted || denyScope(cause)) return;
+        setProblem(c.groupsUnavailable); // never leave an OPEN group silently without its panel
       },
     );
     return () => active.abort();
-    // onGroups and c are re-created every render by design: the reads are keyed by store, session boundary, tick and the page's refreshGen only.
-  }, [store, boundary, tick, refreshGen]);
+    // The parent memoizes onScopeLost by its scope key; ordinary group-state renders must not restart these reads.
+    // onGroups and c can change identity without changing read authority.
+  }, [store, boundary, tick, refreshGen, onScopeLost]);
 
   async function merge(suggestion: MergeSuggestion) {
     if (busy) return;
