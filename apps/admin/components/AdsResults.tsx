@@ -13,11 +13,10 @@ import type { Store } from "@/lib/model";
 import { readReport, AdsReadError } from "@/lib/ads-client";
 import {
   formatMinor,
-  localDate,
+  defaultReportWindow,
   maxReportDays,
   validCapi,
   validReportWindow,
-  dayMs,
   type Report,
   type Settings,
 } from "@/lib/ads-model";
@@ -73,10 +72,8 @@ export function ReportSection({
     [store.id, c],
   );
   useEffect(() => {
-    // Default window: the last 7 days ending today (browser-local dates, set after mount to keep SSR identical).
-    const now = Date.now();
-    const a = localDate(now - 6 * dayMs);
-    const b = localDate(now);
+    // Default window: the last 7 Asia/Taipei store days ending today (the report's own zone; set after mount to keep SSR identical).
+    const { from: a, to: b } = defaultReportWindow(Date.now());
     setFrom(a);
     setTo(b);
     const active = new AbortController();
