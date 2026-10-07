@@ -17,6 +17,9 @@ import {
 import { inboxCopy, inboxError } from "@/src/features/messages/copy";
 import styles from "@/src/features/messages/Inbox.module.css";
 
+// A12 Plan and Check refuse at last_inbound + 24h - 5m (0128_lc_b4_sends.sql).
+const replyWindowSafetyMs = 5 * 60 * 1000;
+
 /** Show server-authoritative generation and delivery states; retries reuse the exact original submission. */
 export function InboxThread({
   store,
@@ -87,8 +90,11 @@ export function InboxThread({
   const capabilityCode =
     rows.find((cap) => cap.state !== "ok" && cap.state !== "review_required")
       ?.state ?? "noCapability";
-  const open = !!thread && Date.parse(thread.window_open_until) > Date.now();
-  void clock;
+  const hardDeadline = thread ? Date.parse(thread.window_open_until) : NaN;
+  const sendDeadline = hardDeadline - replyWindowSafetyMs;
+  const now = Date.now();
+  const open = Number.isFinite(sendDeadline) && now < sendDeadline;
+  const closing = Number.isFinite(hardDeadline) && !open && now < hardDeadline;
   const limit = textLimit(conversation.platform, text);
   const templateRow = templates.find(
     (item) => `${item.template_id}:${item.version}` === template,
@@ -171,6 +177,15 @@ export function InboxThread({
       clearInterval(interval);
     };
   }, [load, store.id, reply]);
+  useEffect(() => {
+    if (!Number.isFinite(hardDeadline)) return;
+    const current = Date.now();
+    const next = current < sendDeadline ? sendDeadline : hardDeadline;
+    if (next <= current) return;
+    // Disable at the actual boundary instead of waiting for the 15-second clock fallback.
+    const timer = setTimeout(() => setClock((value) => value + 1), Math.min(next - current, 2147483647));
+    return () => clearTimeout(timer);
+  }, [cid, hardDeadline, sendDeadline, clock]);
   const action = async (kind: "takeover" | "release") => {
     if (
       gone.current ||
@@ -224,6 +239,7 @@ export function InboxThread({
       !reply ||
       !capable ||
       !open ||
+      Date.now() >= sendDeadline ||
       inFlight.current ||
       delivery === "unknown"
     )
@@ -303,7 +319,9 @@ export function InboxThread({
             </span>
             <span>
               {c.window}:{" "}
-              {open ? displayTime(locale, thread.window_open_until) : c.closed}
+              {open ? displayTime(locale, new Date(sendDeadline).toISOString()) : closing ? (
+                <span role="status" data-testid="inbox-window-closing">{c.windowClosing}</span>
+              ) : c.closed}
             </span>
             {thread.mode === "human" && thread.human_until && (
               <span>

@@ -128,6 +128,7 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
 
   return <div className={styles.notice} data-testid="bundle-recovery">
     <p>{c.manual}</p>
+    <p>{c.manualRecovery}</p>
     {!allowed && <p>{c.claimLinkPermission}</p>}
     {!eligible && <p>{c.linkUnavailable}</p>}
     {status && <p role="status">{inboxError(locale, status)}</p>}
