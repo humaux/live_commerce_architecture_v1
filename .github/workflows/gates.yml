@@ -7,12 +7,20 @@
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), the pinned postgres image,
 #   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version). No secrets: every gate uses MOCK/SANDBOX fixtures only.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`); pushes to r3/integration run
-#   the sharded foundation suite automatically.
+#   the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its changed paths.
+# Integration is by PR only (docs/delivery/PROCESS.md section 2 step 6). The required set is fixed by the repo, never chosen by the merging agent: foundation-shards always, plus every
+#   CI-runnable --browser-* mode when any path outside the backend-only set changed (scripts/dev/pr-modes.mjs), plus deploy-smoke when deploy/ or scripts/deploy* changed.
+#   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate or an expected
+#   deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
+#   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
 name: Gates (GitHub runners)
 
 on:
   push:
     branches: [r3/integration]
+  pull_request:
+    branches: [r3/integration]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       modes:
@@ -32,6 +40,11 @@ on:
 permissions:
   contents: read
 
+# A superseded push to a PR frees its runners. Push and dispatch keep their own per-job groups below (unique group here = never cancelled at workflow level).
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('gates-pr-{0}', github.event.pull_request.number) || format('gates-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   plan:
     runs-on: ubuntu-24.04
@@ -40,14 +53,22 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
       visual_n: ${{ steps.plan.outputs.visual_n }}
-    env:
-      # A push runs the sharded foundation suite (unit + groups, ~12 min wall); a dispatch runs what was asked for.
-      MODES: ${{ github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation-shards"]' }}
+      deploy: ${{ steps.pr.outputs.deploy || 'false' }}
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           persist-credentials: false
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }} # the PR diff needs the merge base
+      - id: pr
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/dev/pr-modes.mjs "$BASE_SHA" "$HEAD_SHA" >/dev/null
       - id: plan
+        env:
+          # PR: the set computed from the changed paths. Push: the sharded foundation suite (unit + groups, ~12 min wall). Dispatch: what was asked for.
+          MODES: ${{ github.event_name == 'pull_request' && steps.pr.outputs.modes || github.event_name == 'workflow_dispatch' && inputs.modes || '["foundation-shards"]' }}
         run: node scripts/dev/ci-plan.mjs
 
   gate:
@@ -60,7 +81,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     concurrency:
-      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ inputs.extra_env }}
+      group: gates-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
       # A push never cancels the running full suite (it would never finish under frequent merges); GitHub keeps only the newest pending run.
       cancel-in-progress: ${{ github.event_name != 'push' }}
     env:
@@ -68,7 +89,7 @@ jobs:
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
       MODE: ${{ matrix.mode }}
-      EXTRA_ENV: ${{ inputs.extra_env }}
+      EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
@@ -193,3 +214,34 @@ jobs:
           path: output/ci-aggregate/
           retention-days: 14
           if-no-files-found: ignore
+
+  # deploy-smoke.yml as a reusable workflow: when deploy/ or scripts/deploy* changed it runs inside this run, so `required` waits for it (see deploy-smoke.yml header).
+  deploy:
+    needs: plan
+    if: ${{ needs.plan.outputs.deploy == 'true' }}
+    uses: ./.github/workflows/deploy-smoke.yml
+
+  # The ONE check a branch ruleset requires: `Gates (GitHub runners) / required`. Always runs; red unless plan and every gate leg succeeded, the aggregate succeeded when it was
+  # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
+  required:
+    name: required
+    needs: [plan, gate, aggregate, deploy]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PLAN: ${{ needs.plan.result }}
+      GATE: ${{ needs.gate.result }}
+      AGG: ${{ needs.aggregate.result }}
+      AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
+      DEPLOY: ${{ needs.deploy.result }}
+      DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
+    steps:
+      - run: |
+          echo "plan=$PLAN gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED)"
+          rc=0
+          [[ "$PLAN" == success ]] || rc=1
+          [[ "$GATE" == success ]] || rc=1
+          if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi
+          if [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi
+          exit "$rc"
