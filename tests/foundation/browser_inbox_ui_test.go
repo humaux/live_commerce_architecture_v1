@@ -3,6 +3,7 @@
 // Purpose: LC-U2b real inbox browser acceptance over signed MOCK OIDC, Next, Go and isolated PG.
 // Depends on: lbSetup signed inbound/fake Graph, real inbox service, metaconnect.Health and inbox-ui.spec.ts.
 // Used by: --browser-inbox on GitHub runners; no LIVE Meta or production acceptance.
+// Invariants: failure logs expose only INU IDs, source coordinates and counts; evidence stays in the CI upload root.
 package foundation_test
 
 import (
@@ -15,6 +16,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -27,6 +29,28 @@ import (
 	"livecommerce/internal/oidclogin"
 )
 
+const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[^\r\n]*inbox-ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[^\r\n]*\b(INU[0-9]{2})\b`
+const inboxFailureCountPattern = `(?m)^[\t ]*([0-9]{1,6}) (failed|passed|skipped|timed out|interrupted)\b`
+
+// inboxPlaywrightFailureSummary discards titles, assertions and DOM text before anything enters the Go/CI log.
+func inboxPlaywrightFailureSummary(output []byte) []string {
+	lines := []string{}
+	seen := map[string]bool{}
+	add := func(line string) {
+		if !seen[line] && len(lines) < 20 {
+			seen[line] = true
+			lines = append(lines, line)
+		}
+	}
+	for _, match := range regexp.MustCompile(inboxFailureCountPattern).FindAllSubmatch(output, 20) {
+		add(fmt.Sprintf("%s %s", match[1], match[2]))
+	}
+	for _, match := range regexp.MustCompile(inboxFailureCasePattern).FindAllSubmatch(output, 20) {
+		add(fmt.Sprintf("failed %s (inbox-ui.spec.ts:%s:%s)", match[3], match[1], match[2]))
+	}
+	return lines
+}
+
 // TestBrowserInboxUIRealChain runs real UI writes, authority refusals and native hide/revalidation.
 func TestBrowserInboxUIRealChain(t *testing.T) {
 	if os.Getenv("LC_BROWSER_INBOX_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
@@ -36,6 +60,21 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	if calibration != "" && calibration != "retain-thread" {
 		t.Fatal("unsupported LC_INBOX_CALIBRATION")
 	}
+	t.Run("failure_diagnostics", func(t *testing.T) {
+		const private = "SYNTHETIC_PRIVATE_DM_NAME_PSID"
+		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + "\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
+		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)"
+		if got := strings.Join(inboxPlaywrightFailureSummary(output), "\n"); got != want {
+			t.Fatal("failure summary differs or admits private text")
+		}
+		var many strings.Builder
+		for n := 1; n <= 30; n++ {
+			fmt.Fprintf(&many, "  %d) tests/admin/inbox-ui.spec.ts:%d:1 › INU05\n", n, n)
+		}
+		if len(inboxPlaywrightFailureSummary([]byte(many.String()))) != 20 {
+			t.Fatal("failure summary must be bounded to 20 records")
+		}
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
 	defer cancel()
 	e := lbSetup(t)
@@ -82,7 +121,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	evidence := filepath.Join(root, "output/lc-u2b-inbox-page/browser", time.Now().UTC().Format("20060102T150405.000000000"))
+	evidence := filepath.Join(root, "output/playwright/inbox-ui", time.Now().UTC().Format("20060102T150405.000000000"))
 	if err := os.MkdirAll(evidence, 0700); err != nil {
 		t.Fatal(err)
 	}
@@ -191,13 +230,30 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		t.Fatalf("Next readiness failed; evidence=%s", evidence)
 	}
 	fixtureJSON, _ := json.Marshal(ids)
-	log := browserLog(t, filepath.Join(evidence, "playwright.log"))
+	playwrightLog := filepath.Join(evidence, "playwright.log")
+	log := browserLog(t, playwrightLog)
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/inbox-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
 	browser.Stdout, browser.Stderr = log, log
-	if err := browser.Run(); err != nil {
-		t.Fatalf("inbox browser failed: %v; evidence=%s", err, evidence)
+	runErr := browser.Run()
+	closeErr := log.Close()
+	if runErr != nil {
+		if output, err := os.ReadFile(playwrightLog); err == nil {
+			summary := inboxPlaywrightFailureSummary(output)
+			if len(summary) == 0 {
+				t.Log("Playwright has no case summary; inspect uploaded evidence")
+			}
+			for _, line := range summary {
+				t.Logf("Playwright %s", line)
+			}
+		} else {
+			t.Log("Playwright summary unavailable; inspect uploaded evidence")
+		}
+		t.Fatalf("inbox browser failed: %v; evidence=%s", runErr, evidence)
+	}
+	if closeErr != nil {
+		t.Fatal("Playwright evidence log could not be closed")
 	}
 	if reads.Load() < 5 || writes.Load() < 4 || stripped.Load() != 0 {
 		t.Fatalf("BFF real-chain proof reads=%d writes=%d stripped=%d", reads.Load(), writes.Load(), stripped.Load())

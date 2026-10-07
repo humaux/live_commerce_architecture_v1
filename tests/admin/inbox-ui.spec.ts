@@ -391,8 +391,12 @@ test("INU04 stale decrypted responses cannot repaint another conversation or sto
     const response = await route.fetch();
     seen();
     await held;
-    await route.fulfill({ response });
-    delivered();
+    try {
+      await route.fulfill({ response });
+    } finally {
+      // Aborted old reads may reject fulfillment; wake the waiter and retain the original failure.
+      delivered();
+    }
   });
   try {
     await page.getByTestId(`conversation-${ids.open}`).click();
@@ -424,8 +428,11 @@ test("INU04 stale decrypted responses cannot repaint another conversation or sto
       const response = await route.fetch();
       arrived();
       await switchHold;
-      await route.fulfill({ response });
-      done();
+      try {
+        await route.fulfill({ response });
+      } finally {
+        done();
+      }
     });
     await page.getByTestId(`conversation-${ids.open}`).click();
     await switchSeen;
