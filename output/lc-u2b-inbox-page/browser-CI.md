@@ -1,6 +1,6 @@
 # Historical worker evidence — superseded by parent DELIVERY
 
-These notes bind the worker commits only. Parent integration removes the Japanese SKIP: INU07 is mandatory and currently BLOCKED by shared locale support. Parent also corrects actual shell testids, adds terminal navigation revocation, and strengthens hidden DOM assertions. Final source hashes, commands and acceptance state are in DELIVERY.md/source-hashes.txt below. No browser runtime was executed.
+These notes bind the worker commits only. Integrator subsequently corrected the brief: current INU06/INU07 use zh-TW/zh-CN/en at 1440/390; all Japanese references below are superseded historical worker notes. Parent also corrects actual shell testids, adds terminal navigation revocation, and strengthens hidden DOM assertions. Final source hashes, commands and acceptance state are in DELIVERY.md/source-hashes.txt below. No browser runtime was executed.
 
 # LC-U2b browser CI harness delivery
 

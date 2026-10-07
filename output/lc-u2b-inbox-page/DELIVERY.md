@@ -1,9 +1,9 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
-- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `b272d802b4279bda6c49f86d363aed4d6a14dc07`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
+- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `13ea07a8c069d2f2fefe788b5e279a764657ef46`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
 - Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. No push/merge/deployment.
-- Evidence: **E3 / MOCK for 17 focused Node tests; E1 for TypeScript/structure. Overall acceptance BLOCKED. BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN.**
+- Evidence: **E3 / MOCK for 17 focused Node tests; E1 for TypeScript/structure. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN.**
 
 ## Summary
 
@@ -12,11 +12,11 @@
 - `components/BuyerPanel.tsx:17`: standalone store + conversation/bundle + callbacks, independent hide/session fence; orders gated by orders:read; no inferred link CAS version.
 - `src/features/messages/privacy.ts:8`, `use-privacy.ts:11`: abort epochs, controller-bound tickets, synchronous hide clearing, terminal navigation revocation; exact immutable receipt on uncertain retry. Normal Refresh retains unknown delivery.
 - `lib/inbox-bff.ts:15`, catchall route: precise A8–A14/GET templates, strict method/query/body, real Request stream/auth/CSRF tests, no-store and fixed safe errors. Bounded 1 MiB admits 50 valid Unicode messages and refuses excess.
-- `tests/foundation/browser_inbox_ui_test.go:31`, `tests/admin/inbox-ui.spec.ts:157`: registered `--browser-inbox`, signed MOCK OIDC + real Next/Go/PG, real click/PG readback, privacy/cross-store/read-only/window/capability cases and committed-send/lost-ACK same-receipt retry. Japanese INU07 is mandatory, never skipped.
+- `tests/foundation/browser_inbox_ui_test.go:31`, `tests/admin/inbox-ui.spec.ts:157`: registered `--browser-inbox`, signed MOCK OIDC + real Next/Go/PG, real click/PG readback, privacy/cross-store/read-only/window/capability cases and committed-send/lost-ACK same-receipt retry. INU06/INU07 cover zh-TW, zh-CN and en at 1440/390 with independent literal labels, real locale changes and mobile Back clearing.
 
-Contract/interface changes: **none**. Additional write scope: one shell-registry expectation update explicitly approved by the owner. No backend Go, migrations, OpenAPI, module or dependency lock changes; Go acceptance test harness is the brief's explicit exception. `playwright.config.ts` gets the necessary suite registration. zh-TW/en/ja unit copy is complete; shared ja route support is blocked below.
+Contract/interface changes: **none**. Additional write scope: one shell-registry expectation update explicitly approved by the owner. No backend Go, migrations, OpenAPI, module or dependency lock changes; Go acceptance test harness is the brief's explicit exception. `playwright.config.ts` gets the necessary suite registration. zh-TW/zh-CN/en unit copy is complete per the integrator correction; packages/i18n is unchanged.
 
-## Actual commands and exits
+## Initial author commands and exits (source b272d802; historical evidence)
 
 All commands run in the assigned worktree unless stated. Logs are retained under this directory; trailing whitespace in captured logs is normalized only.
 
@@ -38,14 +38,24 @@ All commands run in the assigned worktree unless stated. Logs are retained under
 
 Worker-only registration/static checks and historical failure commands are preserved in `browser-CI.md` and `bff-green.log`; their source hashes refer to worker commits, not this final tree. Parent independently reran the integrated focused tests/typechecks/architecture/header checks above. Required browser bug injection -> red -> restored green is **NOT_RUN**, so the new browser gate is structurally registered but not calibrated/accepted.
 
-## BLOCKED / risks
+## Deferred availability / NOT_RUN (integrator-approved merge sequence)
 
 1. **Resolved:** owner explicitly approved `tests/admin/shell-registry.test.ts` scope extension. Old owner/messages absent expectation now asserts owner visible plus orders-only staff invisible/direct route denied. Registry target 10/10, full Node and check-gates green; red logs retained.
-2. Shared `packages/i18n` locales and `app/[locale]/layout.tsx` exclude ja. Outside unit write_paths. Japanese strings alone do not satisfy route acceptance: **INU07 will fail its real shared-language/route assertion until the shared owner adds ja**. Normal browser green/calibration cannot be accepted before this fix.
-3. Frozen A13 `internal/inbox/read.go:262` still returns empty claims/orders, ordinal 0, no display name/auto-reply; A8/A9/A13 expose no link version for A14. Honest empty/unavailable states are rendered; manual customer-link controls remain disabled with a reason. No guessed version or read-via-write. Backend owner must supply the missing read model/version contract.
+2. **Resolved by integrator ruling:** the brief was wrong to request ja. Correct admin locales are zh-TW/zh-CN/en. Proper Simplified Chinese replaces Japanese; INU06 and INU07 exercise all three at both widths. No packages/i18n changes.
+3. Frozen A13 `internal/inbox/read.go:262` still returns empty claims/orders, ordinal 0, no display name/auto-reply; A8/A9/A13 expose no link version for A14. Honest empty/unavailable states are rendered; manual customer-link controls remain disabled with a reason. No guessed version or read-via-write. The integrator confirmed these real gaps and opened LC-B3b to supply them; LC-U2b merges first, then a small follow-up enables controls. No field is fabricated.
 4. A8 validates session_id but does not use it in the query; live_comment projection is absent. Bundle-only rows have no usable conversation/source-link URL: read-only bundle panel and explicit unavailable copy-link control. No fabricated deep link or reply.
 5. A9 exposes no binding id for capability matching. UI conservatively requires every matching-provider named dm_session row to be ok/review_required; missing/unknown blocks sends, review_required shows the app-role-only badge. Go is authoritative.
 6. Browser, Go compilation, PG runtime, visual QA/screenshots and normal/calibration runs are NOT_RUN under the owner RAM rule. CI harness currently targets headed Chromium; WebKit for this new mode is NOT_RUN.
+
+## Integrator-ruling follow-up (source 13ea07a8)
+
+- Corrects the brief to the actual zh-TW/zh-CN/en admin locales; no shared locale package edit. Empty/unavailable backend states and disabled missing-version link controls remain unchanged pending LC-B3b.
+- Registry now additionally asserts exact `/messages` and `inbox:read`, retaining owner admission and orders-only staff denial.
+- CN golden-label RED: `node --test --experimental-strip-types tests/admin/inbox-copy.test.ts` -> **1** (`ruling-copy-red.log`: zh-CN incorrectly returned Traditional Chinese). After corrected CN: `node --test --experimental-strip-types tests/admin/inbox-copy.test.ts tests/admin/shell-registry.test.ts` -> **0**, 11/11 (`ruling-focused-green.log`).
+- `pnpm --filter @live-commerce/admin typecheck` -> **0**, `ruling-typecheck.log`.
+- The strict Playwright-spec TypeScript command above -> **0**, `ruling-spec-typecheck.log`.
+- `bash scripts/dev/test-node.sh` -> **0**, `ruling-node.log`; `bash scripts/dev/check-gates.sh` -> **0**, `ruling-check-gates.log` (78 modes, 1218 test names). Both pinned to 13ea07a8, supervised by Python stdlib with a 300-second timeout, 5-second owned-group termination grace, no source edits during execution. Optional R04 binary suite remains NOT_RUN.
+- Read-only reviewer (same security_reviewer configuration) found no new confirmed P0/P1 in this correction; source evidence Humaux `ee1a0d10-2ab9-49cf-abf1-1aefc9609787`. Browser/runtime behavior remains NOT_RUN. Normal --browser-inbox and retain-thread calibration run on the PR, by the integrator.
 
 ## Independent work and custody
 
@@ -64,7 +74,7 @@ Humaux parent task `d378c85f-2030-4047-8dc9-e297bc45bfd4`; charter/fixes/problem
 
 ## CI gates (integrator, NOT_RUN)
 
-Fix shared ja locale and frozen backend gaps, pin the integrated SHA, register run IDs/log paths with a timeout and completion notification, then run on GitHub:
+Integrator opens the PR for this author branch; LC-U2b is allowed to merge before LC-B3b. Pin the PR SHA, register run IDs/log paths with a timeout and completion notification, then run on GitHub:
 
 ```sh
 bash scripts/dev/test-node.sh
