@@ -1,0 +1,47 @@
+✔ main/detail/sku caps use the existing frozen image contract (0.980125ms)
+✔ phone and tall dimensions fit2000 without enlarging small assets (0.139458ms)
+✔ upload query requires one exact role and sku value; reads/actions carry no query (0.582709ms)
+✔ role transport encodes current option values and refuses invalid identities (1.050959ms)
+✔ effective image axis follows current options, then falls back to first (0.108542ms)
+✔ detail and option photos cannot satisfy the main-photo recommendation (0.082375ms)
+✔ PM-U copy has matching keys in ja and all currently routed locales (0.334209ms)
+✔ real-upload mode builds both Next applications on a clean CI checkout (6.249958ms)
+✔ upload recovery journal survives a new session while remaining product/store scoped (0.120041ms)
+✔ an option upload receipt requires its captured axis, value and image id on canonical readback (0.108084ms)
+✔ failed durable recovery storage cannot authorize a media write (0.080667ms)
+✔ an active product needs a main image after canonical media is known; repair paths stay possible (0.050583ms)
+✔ empty media sections render a readable localized placeholder until photos are present (4.970875ms)
+✔ real-upload mode never exits through the storefront MOCK shortcut (7.398208ms)
+✔ a valid active zero-main product keeps an inline repair hint rather than a page error (3.6595ms)
+✖ a new product issues the image-axis stage only for a chosen axis (2.401083ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 312.703417
+
+✖ failing tests:
+
+test at tests/admin/product-media-ui-model.test.ts:374:1
+✖ a new product issues the image-axis stage only for a chosen axis (2.401083ms)
+  AssertionError [ERR_ASSERTION]: {"edit":false,"imageAxis":null}
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/fix-merchant-buyer-pmv2/tests/admin/product-media-ui-model.test.ts:391:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

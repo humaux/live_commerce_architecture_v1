@@ -1,0 +1,19 @@
+fbf7674170fd1ccdbe3893ed5fa781468efb5f37
+Wed Oct  7 09:11:39 UTC 2026
+--- MUTATION: writer DELETE grant removed, commerce_runtime given DELETE,TRUNCATE: pin must go RED
+    payment_capture_test.go:256: direct business write commerce_runtime fulfillment.payment_work_items true <nil>
+--- FAIL: TestBuyerPaymentCaptureACLAndObservationBinding (3.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.807s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+fbf7674170fd1ccdbe3893ed5fa781468efb5f37
+Wed Oct  7 09:12:26 UTC 2026
+--- MUTATION 2: DELETE grant replaced by a TRUNCATE grant for the writer (a role the legacy loop does not cover): the new pin must go RED
+    payment_capture_test.go:266: fulfillment.payment_work_items table-level DELETE grantees = "" (err <nil>), want "commerce_checkout_writer"
+    payment_capture_test.go:266: fulfillment.payment_work_items table-level TRUNCATE grantees = "commerce_checkout_writer" (err <nil>), want ""
+--- FAIL: TestBuyerPaymentCaptureACLAndObservationBinding (2.39s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.813s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

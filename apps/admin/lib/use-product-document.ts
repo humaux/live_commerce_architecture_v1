@@ -139,7 +139,9 @@ export function useProductDocument(
         }
         op.id = result.value.id;
       }
-      if (!op.edit && !op.axisSet && op.imageAxis !== undefined) {
+      // image-axis null = "the first axis" = a new product's stored NULL: a no-op that would cost one extra command receipt
+      // (tests/foundation/browser_merchant_buyer_chain_test.go budgets document, upload, order, publish), so only a chosen axis is written.
+      if (!op.edit && !op.axisSet && typeof op.imageAxis === "string") {
         op.axisCommand ??= command("POST", `products/${op.id}/image-axis`, {
           axis: op.imageAxis,
         });

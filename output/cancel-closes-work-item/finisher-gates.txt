@@ -1,0 +1,5 @@
+go vet ./... exit=0
+go vet -tags browser ./tests/foundation exit=0
+check-gates exit=0
+node --test orders-model+orders-v2 exit=0
+go test ./internal/merchantorders exit=0
