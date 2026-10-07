@@ -1,3 +1,6 @@
+// Purpose: validate frozen ADS parsers, input policies, three-locale copy and Taipei report days.
+// Depends on: node:test/assert; ads-model/copy and shared format helpers.
+// Used by: node unit gates and Meta ads browser harness.
 // Unit tests for apps/admin/lib/ads-model.ts and ads-copy.ts (pure; no browser, no network).
 // Covers: every frozen error code + draft status enum, strict parsers (unknown enum = error), money conversion vectors
 // (I05, TWD whole-unit), the draft-input rules of §5.2/U4 and the X7 "no resume" action hints. The browser gate is MA09 (ads-tests).
@@ -5,7 +8,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
-  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, emptyForm, epochToLocal,
+  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, defaultReportWindow, draftStatuses, emptyForm, epochToLocal,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
 } from "../../apps/admin/lib/ads-model.ts";
@@ -318,6 +321,31 @@ test("report: three separate blocks, orders may be null, no combined figure", ()
   assert.equal(validReportWindow("2026-01-01", "2026-04-03"), false);
   assert.equal(validDate("2026-02-29"), false);
   assert.equal(validDate("2024-02-29"), true);
+});
+
+// Root cause of the MA09a flake: the report (ads.report, 0075) and the insight days (ads.insights_days, 0074) are Asia/Taipei
+// store days, but the default window was cut from the BROWSER's local date. Between Taipei midnight and the viewer's midnight
+// (every night for a UTC browser, longer for the Americas) "today" was a day behind, so the current Taipei day's insights fell
+// outside [from, to] and the delivery block showed 2 of 3 seeded days. The window must not depend on the process/browser zone.
+test("default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary)", () => {
+  const cases: Array<[string, string, string]> = [
+    ["2026-10-06T15:59:59Z", "2026-09-30", "2026-10-06"], // 23:59:59 Taipei: still Oct 6
+    ["2026-10-06T16:00:00Z", "2026-10-01", "2026-10-07"], // 00:00:00 Taipei: Oct 7 begins
+    ["2026-10-06T20:52:00Z", "2026-10-01", "2026-10-07"], // the failing CI run: 04:52 Taipei Oct 7, 20:52 UTC Oct 6
+    ["2026-12-31T16:30:00Z", "2026-12-26", "2027-01-01"], // year boundary
+  ];
+  const zone = process.env.TZ;
+  try {
+    for (const tz of ["UTC", "America/Los_Angeles", "Asia/Taipei", "Pacific/Auckland"]) {
+      process.env.TZ = tz; // Node re-reads TZ on assignment: this is the "browser zone" of the viewer
+      for (const [iso, from, to] of cases) {
+        assert.deepEqual(defaultReportWindow(Date.parse(iso)), { from, to }, `${iso} viewed from ${tz}`);
+      }
+    }
+  } finally {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  }
 });
 
 test("capi body and validation", () => {

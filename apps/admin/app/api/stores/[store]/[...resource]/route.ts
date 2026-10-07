@@ -1,4 +1,4 @@
-// Purpose: exact authenticated admin BFF resources, including Meta health B1/B2.
+// Purpose: exact authenticated admin BFF resources, including W6-05B ledger and W6-06B ads unbind/feed.
 // Depends on: server session/store/CSRF authority, domain request validators and Go admin handlers.
 // Used by: admin clients; health responses are closed and private/no-store.
 import { callBackend, fixtureSession } from "@/lib/backend";
