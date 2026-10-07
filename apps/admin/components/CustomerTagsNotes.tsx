@@ -48,10 +48,15 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
     loading.current = true; setReading(true); setReadError(false); setAfter("");
     void readTagData(store.id, `${resource}?limit=50`, boundary, parseNotePage, controller.signal)
       .then((page) => { if (!controller.signal.aborted) { setNotes(page.items); setAfter(page.next_cursor); } })
-      .catch(() => { if (!controller.signal.aborted) setReadError(true); })
+      .catch((e) => { if (!controller.signal.aborted) { if (authLost(e)) dropPrivate(); setReadError(true); } })
       .finally(() => { if (!controller.signal.aborted) { loading.current = false; setReading(false); } });
     return () => { mounted.current = false; generation.current++; active.current?.abort(); loading.current = false; };
   }, [store.id, resource, boundary, tick, detail.notes]);
+
+  // A read refused for authorization (signed out, boundary changed, permission or customer gone) must not leave private
+  // note bodies or a draft on screen until an unrelated navigation (Codex review P2, PR #3); transient failures keep them.
+  const authLost = (e: unknown) => ["unauthorized", "forbidden", "not_found"].includes(String((e as { message?: unknown } | null)?.message));
+  const dropPrivate = () => { setNotes([]); setAfter(""); setBody(""); setEditing(null); setDeleting(null); };
 
   async function more() {
     if (!after || loading.current || write.locked) return;
@@ -66,7 +71,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
       // Paging can shift when another staff member writes; refuse overlap and request a fresh page.
       if (page.items.some((n) => ids.has(n.id))) throw new Error("unavailable");
       setNotes((old) => [...old, ...page.items]); setAfter(page.next_cursor);
-    } catch { if (mounted.current && !controller.signal.aborted && generation.current === epoch) setReadError(true); }
+    } catch (e) { if (mounted.current && !controller.signal.aborted && generation.current === epoch) { if (authLost(e)) dropPrivate(); setReadError(true); } }
     finally { if (mounted.current && !controller.signal.aborted && generation.current === epoch) { loading.current = false; setReading(false); } }
   }
   useEffect(() => () => active.current?.abort(), []);

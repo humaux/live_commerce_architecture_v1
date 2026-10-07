@@ -89,7 +89,10 @@ export function Customers({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customers-page">
         <AdminPageHeader locale={locale} description={c.subtitle} />
-        <form className="orders-controls" role="search" onSubmit={search}>
+        {/* The search <form> is display:contents inside the controls row: the tag manager dialog has its own <form>s,
+            which must not nest in (and bubble submit to) the search form (Codex review P2, PR #3). */}
+        <div className="orders-controls">
+        <form className="customers-search-form" role="search" onSubmit={search}>
           <label className="customers-search">
             {c.search}
             <input
@@ -131,11 +134,12 @@ export function Customers({
             </select>
           </label>
           {catalog.status === "unavailable" && <button type="button" onClick={catalog.reload}>{tc.retry}</button>}
+        </form>
           {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
             onChanged={() => { catalog.reload(); read.reload(); }} />}
           {store?.permissions?.includes("orders:read") && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
           <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
-        </form>
+        </div>
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.loading}</p>
         )}

@@ -92,7 +92,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => setTab(name), type: "button" as const,
   });
   const outcome = exportView?.scope === scope ? exportView.outcome : null;
-  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && valid;
+  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
   const exportCSV = async () => {
     if (!store || !canExport || !read.boundary) return;
     exporting.current = true;

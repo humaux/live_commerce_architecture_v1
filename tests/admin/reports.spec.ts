@@ -155,6 +155,9 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await page.keyboard.press("End"); await expect(page.getByTestId("reports-tab-manual-orders")).toHaveAttribute("aria-selected", "true");
       }, "keyboard");
       await fill(page, page.getByTestId("reports-from"), "2026-09-02", c.from);
+      await step(page, "Edited range not applied", "CSV stays disabled until Show applies the edited range", async () => {
+        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+      });
       await step(page, "Show report", "date change navigates and survives refresh", async () => {
         await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-09-02/);
         await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-09-02");

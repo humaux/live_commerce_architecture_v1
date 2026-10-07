@@ -73,3 +73,6 @@
   .customers-page .customers-finance-table th:nth-child(-n+3):not(:first-child), .customers-page .customers-finance-table td:nth-child(-n+3):not(:first-child) { display: none; }
   .customers-page .customers-finance-table td:nth-child(n+4) { white-space: nowrap; }
 }
+
+/* Search form sits inside .orders-controls without its own box, so the row layout is unchanged (Customers.tsx). */
+.customers-search-form { display: contents; }

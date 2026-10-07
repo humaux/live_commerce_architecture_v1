@@ -167,6 +167,9 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
     await fill(page, notes.getByRole("textbox"), "", "clear draft");
     await page.goto(`${origin}/en/customers?store=${store}`);
     const filter = page.getByTestId("customers-tag-filter");
+    // The tag manager (with its own forms) must not be nested in the search form, or its submit bubbles into search navigation.
+    await expect(page.getByTestId("customers-tag-manage")).toBeVisible();
+    await expect(page.locator('form[role="search"] [data-testid="customers-tag-manage"]')).toHaveCount(0);
     await step(page, "Filter by tag", "matching first customer only and URL persists", async () => {
       await filter.selectOption({ label: "Seed01" }); await expect(page).toHaveURL(/tag=/);
       await expect(page.getByTestId(`customer-row-${customer}`)).toBeVisible(); await expect(page.getByTestId(`customer-row-${second}`)).toHaveCount(0);
