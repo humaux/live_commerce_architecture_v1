@@ -1,6 +1,6 @@
 // Purpose: unit tests of the pull-request gate planner (scripts/dev/pr-modes.mjs): backend-only and docs-only diffs run foundation-shards only, any other path adds the full browser
-//   set, the deploy flag follows deploy/ and scripts/deploy*, and the browser set equals release-gate.sh's browser-mode universe minus the documented exclusions. Run by scripts/dev/test-node.sh.
-// Depends on: scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh (usage line), scripts/dev/release-gate.sh (the universe derivation is executed from its own source), bash.
+//   set, deploy implementation changes select smoke; actual Git CLI quoting/whitespace must not reduce legacy selections.
+// Depends on: scripts/dev/pr-modes.mjs, scripts/dev/test-local.sh, scripts/dev/release-gate.sh, bash and isolated local Git fixture repos.
 // Used by: scripts/dev/test-node.sh, CI.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -150,4 +150,43 @@ test("explicit-head CLI derives tagged runner modes from that head's real regist
   r.put("scripts/dev/test-local.sh", usage.replace("[--browser-meta-health-ui|", "[--browser-meta-health-ui|--head-tagged-process|") + '\nif [[ "$test_mode" == --head-tagged-process ]]; then\n  go test -tags browser ./tests/foundation\nfi\n');
   const head = r.commit(); r.git("checkout", "--quiet", base);
   assert.ok(r.cli([base, head]).modes.includes("--head-tagged-process"));
+});
+
+// Frozen legacy CLI classifier; feed Git's REAL display output, not raw API
+// paths. The prior API-only 6666-path oracle cannot observe this representation.
+function legacyDisplayPlan(display) {
+  const paths = display.split("\n").map((s) => s.trim()).filter(Boolean);
+  const prefixes = ["internal/", "cmd/", "migrations/", "contracts/", "docs/", "deploy/", "output/", "tests/foundation/", "tests/deploy/", "tests/ci/"];
+  const backend = (p) => p.endsWith(".md") || p === "go.mod" || p === "go.sum" ||
+    (prefixes.some((prefix) => p.startsWith(prefix)) && !p.startsWith("tests/foundation/browser_"));
+  return { modes: paths.some((p) => !backend(p)) ? [...FOUNDATION, ...full] : FOUNDATION,
+    deploy: paths.some((p) => p.startsWith("deploy/") || p.startsWith("scripts/deploy")) };
+}
+
+for (const quotePath of ["true", "false"]) {
+  for (const file of ["架构.md", "internal/示例.go", "tests/foundation/plain\tname_test.go", " deploy/scripts/synthetic-smoke.sh"]) {
+    test(`real Git CLI preserves legacy selection: quotePath=${quotePath}, ${JSON.stringify(file)}`, (t) => {
+      const r = repository(t);
+      r.git("config", "core.quotePath", quotePath);
+      r.put(file, "// synthetic untagged file\n"); const base = r.commit();
+      r.put(file, "// synthetic edit, no browser tag\n"); const head = r.commit();
+      const display = r.git("diff", "--name-only", `${base}...${head}`);
+      const old = legacyDisplayPlan(display), next = r.cli([base, head]);
+      // Pin that these cases really exercise quoted paths / trimming.
+      if (quotePath === "true" && !file.startsWith(" ")) assert.ok(display.startsWith('"'));
+      if (file.startsWith(" ")) assert.equal(old.deploy, true);
+      for (const mode of old.modes) assert.ok(next.modes.includes(mode), `${JSON.stringify(file)} lost ${mode}`);
+      if (old.deploy) assert.equal(next.deploy, true, "legacy trim must retain deploy-smoke");
+    });
+  }
+}
+
+test("stdin unions legacy trimming without trimming the source lookup path", (t) => {
+  const r = repository(t), file = " tests/foundation/plain.go";
+  r.put(file, "// synthetic untagged file\n"); r.commit();
+  const paths = `${file}\n deploy/scripts/synthetic-smoke.sh\n`;
+  const old = legacyDisplayPlan(paths), next = r.cli(["--stdin"], paths);
+  for (const mode of old.modes) assert.ok(next.modes.includes(mode));
+  assert.equal(next.deploy, true);
+  assert.ok(!next.modes.includes("--studio-backend"), "legacy spelling is only classified, never used as a missing source lookup");
 });

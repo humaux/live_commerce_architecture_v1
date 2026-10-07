@@ -3,6 +3,7 @@
 //   agent never picks modes). Always `foundation-shards`; any path outside the backend-only set adds every CI-runnable `--browser-*` mode of the test-local.sh usage line.
 //   Browser-tagged foundation inputs additionally select every real registry branch that compiles that tag (including non-browser-named modes).
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
+//   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
 // Depends on: test-local.sh usage/dispatch registry, Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
 // Used by: .github/workflows/gates.yml (plan job, pull_request only; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs.
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
@@ -91,9 +92,10 @@ export function planPr(paths, source = readFileSync(path.join(root, "scripts/dev
 
 /** CLI: `<base> [head=HEAD]` compares merge-base/head; `--stdin` reads worktree plus HEAD for uncommitted tag removals. */
 export function main(argv = process.argv.slice(2), env = process.env) {
-  let paths, readSources, source;
+  let paths, readSources, source, legacyDisplay;
   if (argv.length === 1 && argv[0] === "--stdin") {
-    paths = readFileSync(0, "utf8").split(/\r?\n/).filter(Boolean);
+    legacyDisplay = readFileSync(0, "utf8");
+    paths = legacyDisplay.split(/\r?\n/).filter(Boolean);
     readSources = (file) => [workingSource(file), revisionSource("HEAD", file)];
   } else if (argv.length >= 1 && argv.length <= 2 && !argv[0].startsWith("--")) {
     const head = git(["rev-parse", "--verify", `${argv[1] ?? "HEAD"}^{commit}`]).trim();
@@ -102,9 +104,18 @@ export function main(argv = process.argv.slice(2), env = process.env) {
     if (source === null) throw new Error("cannot read the requested head's test-local.sh registry");
     // Both sides of a rename matter; -z preserves tabs/newlines instead of Git-quoting the path.
     paths = git(["diff", "--no-renames", "--name-only", "-z", base, head]).split("\0").filter(Boolean);
+    legacyDisplay = git(["diff", "--name-only", `${base}...${head}`]);
     readSources = (file) => [revisionSource(base, file), revisionSource(head, file)];
   } else throw new Error("usage: pr-modes.mjs <base> [head] | --stdin");
   const r = planPr(paths, source, readSources);
+  // Compatibility is with the old CLI, not merely planPr(rawPaths): Git's
+  // quoted Unicode/tab names used to count as UI, and trim() could select smoke.
+  // Never feed these display spellings into source lookup. The legacy CLI used
+  // the checkout's registry even when an explicit head selected another one.
+  const legacyPaths = legacyDisplay.split("\n").map((p) => p.trim()).filter(Boolean);
+  if (legacyPaths.some((p) => !isBackendOnly(p)))
+    r.modes = [...new Set([...r.modes, ...browserModes(readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8"))])];
+  r.deploy ||= legacyPaths.some(isDeploy);
   console.error(`pr-modes: ${paths.length} changed path(s) -> ${r.modes.length} mode(s)${r.deploy ? "; deploy-smoke" : ""}`);
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `modes=${JSON.stringify(r.modes)}\ndeploy=${r.deploy}\n`);
   console.log(JSON.stringify(r));
