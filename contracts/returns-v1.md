@@ -47,14 +47,16 @@ commercial state the merchant saw; mismatch `409 state_changed`; `reason` 1..240
 | other `fulfillment_state` (e.g. `PAID_ALLOCATION_FAILED`), `AWAITING_TRANSFER` (accepted as `expected_state`), bank transfer | `422 not_cancellable` (bank transfer ends by expiry or the offline-refund path) |
 | `pay_at_pickup` / `cash_on_delivery`, `collection_state=PENDING` | delegates to `inventory.release_pay_at_pickup(cancel)` (taiwan-cvs-logistics §16.8), unchanged |
 | `DRAFT` (unpaid hold) | reservation `HELD -> RELEASED`; one `RELEASE` ledger row per line |
-| `CONFIRMED` card, unshipped | `409 has_returns` if a live RMA exists; `409 payment_review_open` if an open payment review case exists; **`409 refund_first` unless the refunds not failed/cancelled/rejected (succeeded + in flight) sum to at least the CAPTURED amount**; then order `CANCELLED/CANCELLED`, reservation `COMMITTED -> RELEASED`, one `DEALLOCATE` row per line |
+| `CONFIRMED` card, unshipped | `409 has_returns` if a live RMA exists; `409 payment_review_open` if an open payment review case exists; **`409 refund_first` unless the refunds not failed/cancelled/rejected (succeeded + in flight) sum to at least the CAPTURED amount**; then order `CANCELLED/CANCELLED`, reservation `COMMITTED -> RELEASED`, one `DEALLOCATE` row per line, and the order's `READY` `fulfillment.payment_work_items` row is DELETED in the same transaction (Amendment 0162 below; a `REVIEW_REQUIRED` work item is never touched — such an order is `422 not_cancellable` before this point anyway) |
 
 The cancel NEVER starts a refund and never writes `payments.*` (I05, I13). The existing notify trigger enqueues the buyer's `cancelled` notice for a
 `CONFIRMED -> CANCELLED` transition; no new mail template. Audit `orders.merchant_cancelled`.
 
 **Refund fails after the cancel.** A cancel counts refunds in flight. If one later FAILS the order stays CANCELLED (stock released: the goods never left) and the buyer's money is held:
 `GET /orders/cancel-refund-gaps` (`orders:read`) lists the merchant-cancelled card orders whose non-failed refunds are below the captured amount (`{order_id, captured_minor, refunded_minor, gap_minor,
-cancelled_at, reason:"cancel_refund_failed"}`); the merchant refunds again on the cancelled order (the refund route has no order-state gate) and the row disappears.
+cancelled_at, reason:"cancel_refund_failed"}`); the merchant refunds again on the cancelled order (the refund route has no order-state gate) and the row disappears. The gap list is computed from
+`payments.facts` / `payments.stripe_refunds` / `payments.refund_facts` and the `checkout.merchant_cancel` DEALLOCATE ledger row only — it does NOT read the work item, so closing the work item at
+cancel time never hides a gap (Amendment 0162).
 
 **Parcel groups (W3-07B).** Lock order is group -> order -> reservation -> balances (the same direction as `begin_parcel_group_shipment`). If the order's group membership changed between the unlocked
 read and the order lock, the cancel answers `503 retry_later` before any write (the group lock is never taken after the order lock); the retry succeeds. Cancelling a member of an OPEN group removes it
@@ -122,3 +124,24 @@ Every POST needs exactly one canonical `Idempotency-Key`, no query, strict JSON 
 `^TestReturns$` (RT01 full lifecycle + one ledger row, RT02 refusals + cross-store, RT03 permissions, RT07 refund decoupling and `refund_id` link, RT09 replay/drift, concurrent close and partial RMAs, forged ledger rows),
 `^TestMerchantCancel$` (RT04 hold, RT05 payment in flight, RT06 refund_first then cancel without auto-refund, shipped, concurrent cancels, RT08 parcel group shrink/dissolve, refused cancel keeps the group, RT10 cancel vs payment start,
 COD delegation), `TestReturnRoutesTransportRules`/`TestReturnCodesReachJSONBody` (DB-free router). Pins updated: R2 migration count 77, ACL pins of the eight definers, WAS02.
+
+## Amendment 0162 (unit cancel-closes-work-item): the cancel closes the payment work item
+
+`fulfillment.merchant_cancel_order` (W3-08B) left the captured order's `fulfillment.payment_work_items` row `READY` forever, so a merchant-cancelled paid order projected `work_state=READY`
+(`identity.read_merchant_orders` / `_v2` map a missing row to `NONE`; nothing else ever closed it) and the whole store list 503'd until the Go/TS validators were relaxed to accept the combination
+(symptom fix, kept as legacy protection). 0162 makes the data right:
+
+* The card-cancel branch DELETEs the order's `READY` work item row in the same transaction (I04), after the refund-coverage gate (`409 refund_first`) has passed. `commerce_checkout_writer` gains
+  `DELETE` on `fulfillment.payment_work_items` for this definer only; RLS (`private_writer`, tenant/store GUCs set by `returns.authorize`) still scopes the row.
+* At cancel time the money is by definition covered (held >= captured), so no human work remains on the order itself; if a counted in-flight refund later FAILS, `GET /orders/cancel-refund-gaps`
+  is the single surface that keeps the money visible as needing work (it is fact-based, §3 above). Rejected alternative: keeping the work item `READY` while a refund is in flight — the common
+  flow (refund, then cancel immediately) would then linger `READY` after the refund SUCCEEDS, i.e. the original bug, unless the frozen stripe-refund observation applier were also hooked.
+* Forward-only backfill: EVERY `READY` work item of a `CANCELLED` order is closed (integrator ruling, no open-gap exception: an outstanding cancel-refund gap is carried by
+  `GET /orders/cancel-refund-gaps`, which never reads the work item, and the new definer already gives that business state `NONE`). `REVIEW_REQUIRED` work items and every row of a
+  non-`CANCELLED` order are never touched. The migration block counts the rows before deleting and fails unless the delete closed exactly that many, and it refuses to run under a role
+  without `SUPERUSER`/`BYPASSRLS` (the table is FORCE RLS: such a role would see zero rows and the backfill would silently do nothing).
+* Projection, work-state vocabulary, ship eligibility (`manual-fulfilment-v1` MD6 requires a `READY` work item of a `CONFIRMED` order — a cancelled order can never ship) and the refund engine
+  (`stripe-refund-v1` RF07 replay) are unchanged. Gates: `^TestMerchantCancelClosesWorkItem$` (cancel closes, never-paid NONE, in-flight-then-failed gap stays listed, 0162 backfill closes
+  every legacy cancelled `READY` row including open-gap ones and spares a `REVIEW_REQUIRED` row and a `CONFIRMED` order's `READY` row, the backfill block refuses a non-bypass role and fails on a
+  suppressed delete), `TestBuyerPaymentCaptureACLAndObservationBinding` (only `commerce_checkout_writer` holds `DELETE` on the work-item table, nobody a wider table privilege), R2 migration count
+  pin +1 (87 -> 88; PAY-RM1's 0161 is 87).
