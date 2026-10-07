@@ -1,16 +1,19 @@
-// Purpose: the settlement subcommands of stripe-admin (contracts/stripe-platform-account-v1.md §6.5, W4-S2):
-//   settlement-sync   --environment --connection --expected-version --from --to    (Stripe GET balance transactions, STORED key)
-//   settlement-close  --environment --period-start [--target-store]                (SQL only)
-//   settlement-export --statement --out                                            (SQL read + a new 0600 CSV file)
-//   settlement-payout --statement --payout-ref --amount --paid-at                  (SQL only: RECORDS a payout, never pays)
-// Depends on: internal/payments/stripeadmin (SettlementSync/Close/Payout/Statement), internal/payments/settlement (CSV);
+// Purpose: the settlement subcommands of stripe-admin (contracts/stripe-platform-account-v1.md §6.5, W4-S2; §6.6, S2-OPEN-1):
+//   settlement-sync    --environment --connection --expected-version --from --to   (Stripe GET balance transactions, STORED key)
+//   settlement-close   --environment --period-start [--target-store]               (SQL only)
+//   settlement-export  --statement --out                                           (SQL read + a new 0600 CSV file)
+//   settlement-payout  --statement --payout-ref --amount --paid-at                 (SQL only: RECORDS a payout, never pays)
+//   settlement-resolve --environment --balance-txn --resolution [--target-tenant --target-store] --note
+//                      (SQL only: appends one §6.6 resolution row to an unmapped_source row so close can proceed; never moves money)
+// Depends on: internal/payments/stripeadmin (SettlementSync/Close/Payout/Statement/Resolve), internal/payments/settlement (CSV);
 //   env COMMERCE_STRIPE_REGISTRAR_DATABASE_URL, the API keyring (sync only), STRIPE_SANDBOX=1 (SANDBOX sync opt-in) and the owner's LIVE
 //   flag+reference pair (LIVE sync only).
 // Used by: cmd/stripe-admin main.go dispatch; deploy/scripts/ops-admin.sh allowlist.
 // Invariants: none takes a secret; --tenant/--store/--principal name the PLATFORM store (the target store of close is --target-store,
-//   because --store is already the scope flag); --operator and --ticket are required on every subcommand; the ticket goes into the audit
-//   row's details and is echoed in the one JSON result line. settlement-sync also names --connection, which SQL asserts is the designated
-//   platform connection, and refuses --to later than now minus 15 minutes. Close, export and payout never call Stripe and never read the LIVE pair.
+//   because --store is already the scope flag; the assigned store of resolve is --target-tenant + --target-store); --operator and --ticket
+//   are required on every subcommand; the ticket goes into the audit row's details and is echoed in the one JSON result line.
+//   settlement-sync also names --connection, which SQL asserts is the designated platform connection, and refuses --to later than now minus
+//   15 minutes. Close, export, payout and resolve never call Stripe and never read the LIVE pair.
 // Status: MOCK + REAL_PG; SANDBOX sync needs the owner's test key (NOT_RUN here).
 
 package main
@@ -35,6 +38,7 @@ var (
 func runSettlement(ctx context.Context, name string, args []string, getenv func(string) string, stdout io.Writer) error {
 	c := newCommand(name)
 	var environment, connection, fromStr, toStr, periodStart, targetStore, statement, out, payoutRef, paidAtStr, operator, ticket string
+	var balanceTxn, resolution, targetTenant, note string
 	var expected, amount int64
 	switch name {
 	case "settlement-sync":
@@ -47,6 +51,13 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		c.fs.StringVar(&environment, "environment", "", "")
 		c.fs.StringVar(&periodStart, "period-start", "", "")
 		c.fs.StringVar(&targetStore, "target-store", "", "")
+	case "settlement-resolve":
+		c.fs.StringVar(&environment, "environment", "", "")
+		c.fs.StringVar(&balanceTxn, "balance-txn", "", "")
+		c.fs.StringVar(&resolution, "resolution", "", "")
+		c.fs.StringVar(&targetTenant, "target-tenant", "", "")
+		c.fs.StringVar(&targetStore, "target-store", "", "")
+		c.fs.StringVar(&note, "note", "", "")
 	case "settlement-export":
 		c.fs.StringVar(&statement, "statement", "", "")
 		c.fs.StringVar(&out, "out", "", "")
@@ -66,7 +77,8 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 	if !operatorName.MatchString(operator) || !ticketPattern.MatchString(ticket) {
 		return errUsage
 	}
-	if (name == "settlement-sync" || name == "settlement-close") && environment != "SANDBOX" && environment != "LIVE" {
+	if (name == "settlement-sync" || name == "settlement-close" || name == "settlement-resolve") &&
+		environment != "SANDBOX" && environment != "LIVE" {
 		return errUsage
 	}
 	var from, to, paidAt time.Time
@@ -125,11 +137,20 @@ func runSettlement(ctx context.Context, name string, args []string, getenv func(
 		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "from": from.UTC().Format(time.RFC3339),
 			"to": to.UTC().Format(time.RFC3339), "report": rep})
 	case "settlement-close":
-		statements, err := reg.SettlementClose(ctx, c.scope, environment, periodStart, operator, targetStore, ticket)
+		res, err := reg.SettlementClose(ctx, c.scope, environment, periodStart, operator, targetStore, ticket)
 		if err != nil {
 			return err
 		}
-		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "period_start": periodStart, "statements": statements})
+		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "period_start": periodStart,
+			"statements": res.Statements, "operator_notes": res.OperatorNotes})
+	case "settlement-resolve":
+		res, err := reg.SettlementResolve(ctx, c.scope, environment, balanceTxn, resolution, targetTenant, targetStore, note, operator, ticket)
+		if err != nil {
+			return err
+		}
+		return emit(stdout, map[string]any{"environment": environment, "ticket": ticket, "balance_txn": res.BalanceTxnID,
+			"resolution": res.Resolution, "target_tenant": res.TargetTenantID, "target_store": res.TargetStoreID,
+			"resolved_at": res.ResolvedAt, "replayed": res.Replayed})
 	case "settlement-export":
 		st, err := reg.SettlementStatement(ctx, c.scope, statement)
 		if err != nil {

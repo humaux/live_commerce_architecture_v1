@@ -44,7 +44,7 @@ set -Eeuo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 usage() {
-  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
+  lc_die "usage: ops-admin.sh stripe-admin register|rotate|webhook|qualify|method|live-approve|live-canary|live-revoke|platform-*|settlement-sync|settlement-close|settlement-export|settlement-payout|settlement-resolve [flags] | meta-admin page-token|route|route-disable [flags] | store-admin domain-bind|domain-suspend|domain-detach|status|handle-set [flags]" 2
 }
 tool=${1:-}
 sub=${2:-}
@@ -57,8 +57,9 @@ stripe-admin:register | stripe-admin:rotate | stripe-admin:webhook | stripe-admi
 stripe-admin:live-approve | stripe-admin:live-canary | stripe-admin:live-revoke) ;;
 # stripe-platform-account-v1: platform-* take no secret input (kill switches need no LIVE pair).
 stripe-admin:platform-designate | stripe-admin:platform-open | stripe-admin:platform-close | stripe-admin:platform-allow | stripe-admin:platform-disallow | stripe-admin:platform-block | stripe-admin:platform-unblock) ;;
-# stripe-platform-account-v1 §6.5: settlement-* take no secret input (sync uses the STORED platform key; close/export/payout do not call Stripe).
-stripe-admin:settlement-sync | stripe-admin:settlement-close | stripe-admin:settlement-export | stripe-admin:settlement-payout) ;;
+# stripe-platform-account-v1 §6.5/§6.6: settlement-* take no secret input (sync uses the STORED platform key; close/export/payout/resolve
+# do not call Stripe — resolve is SQL-only and never joins the live_needed scan below).
+stripe-admin:settlement-sync | stripe-admin:settlement-close | stripe-admin:settlement-export | stripe-admin:settlement-payout | stripe-admin:settlement-resolve) ;;
 meta-admin:page-token | meta-admin:route | meta-admin:route-disable) ;;
 store-admin:domain-bind | store-admin:domain-suspend | store-admin:domain-detach | store-admin:status | store-admin:handle-set) ;;
 *) usage ;;

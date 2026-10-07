@@ -1,6 +1,7 @@
-// settlement_test.go: MOCK-tier tests of the settlement-* subcommands (contracts/stripe-platform-account-v1.md §6.5): fixed usage
+// settlement_test.go: MOCK-tier tests of the settlement-* subcommands (contracts/stripe-platform-account-v1.md §6.5/§6.6): fixed usage
 // errors that echo nothing, environment gating before any connection (SANDBOX sync needs STRIPE_SANDBOX=1, LIVE sync the owner's pair),
-// and that close/export/payout read no Stripe or LIVE variable. Non-goal: the SQL (tests/foundation/platform_settlement_test.go).
+// and that close/export/payout/resolve read no Stripe or LIVE variable. Non-goal: the SQL (tests/foundation/platform_settlement_test.go,
+// tests/foundation/settlement_resolve_test.go).
 // Depends on: main.go run, main_test.go env()/do()/ids. Callers: go test ./cmd/stripe-admin.
 package main
 
@@ -28,6 +29,10 @@ func TestSettlementUsageErrorsAreFixedAndPrintNothing(t *testing.T) {
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-1 --amount 100 --paid-at nope" + slOp,
 		"settlement-export " + ids + " --statement " + slStmt + slOp, // no --out
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/x.csv --extra=SECRETLEAK" + slOp,
+		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee",          // no operator/ticket
+		"settlement-resolve " + ids + " --environment PROD --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp,       // bad environment
+		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee --operator op@test --ticket short",
+		"settlement-resolve " + ids + " --environment SANDBOX --balance-txn txn_R1 --resolution not_store_revenue --note n --extra=SECRETLEAK" + slOp,
 	} {
 		out, err := do(t, env(), line)
 		if !errors.Is(err, errUsage) || out != "" || strings.Contains(err.Error(), "SECRETLEAK") || strings.Contains(err.Error(), "nope") {
@@ -74,6 +79,8 @@ func TestSettlementCloseExportPayoutReadNoStripeOrLiveVariable(t *testing.T) {
 		"settlement-close " + ids + " --environment LIVE --period-start 2026-09-14" + slOp,
 		"settlement-export " + ids + " --statement " + slStmt + " --out /tmp/stripe-admin-never-written.csv" + slOp,
 		"settlement-payout " + ids + " --statement " + slStmt + " --payout-ref BANK-REF-1 --amount 100 --paid-at 2026-10-01T10:00:00Z" + slOp,
+		// S2-OPEN-1: resolve is SQL-only like close; even --environment LIVE must not touch the pair or a keyring
+		"settlement-resolve " + ids + " --environment LIVE --balance-txn txn_R1 --resolution not_store_revenue --note Stripe-fee" + slOp,
 	} {
 		_, err := do(t, values, line)
 		if err == nil || errors.Is(err, errUsage) || errors.Is(err, errConfig) || strings.Contains(err.Error(), dsnSentinel1) {

@@ -159,7 +159,8 @@ func (e *pslEnv) syncErr(from, to time.Time, txns ...stripe.BalanceTransaction) 
 }
 
 func (e *pslEnv) closeWeek(start time.Time, target string) ([]stripeadmin.ClosedStatement, error) {
-	return e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target, pslTicket)
+	res, err := e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target, pslTicket)
+	return res.Statements, err // S2-OPEN-1: SettlementClose now returns CloseResult; operator notes are asserted in settlement_resolve_test.go
 }
 
 func (e *pslEnv) line(t *testing.T, txn string) (kind, store string, storeMinor, feeStore int64, mismatch *string, statement *string) {

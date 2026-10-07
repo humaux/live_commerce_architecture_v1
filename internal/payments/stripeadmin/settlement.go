@@ -1,13 +1,15 @@
-// Purpose: the operator steps of the per-store settlement ledger (contracts/stripe-platform-account-v1.md §6, W4-S2): sync the platform
-//   account's balance transactions into the ledger, close a weekly statement, record a payout (RECORD ONLY) and read a statement for the
-//   CSV export. Sync is the only step that calls Stripe (GET balance transactions with the STORED platform key); close, payout and read
-//   are SQL only. Nothing here calls a bank, a Stripe payout or a transfer API, and none takes a secret as input.
-// Depends on: SQL payments.record_settlement_lines, close_settlement, record_settlement_payout, read_settlement_statement (0150; owner
-//   registry writer, EXECUTE commerce_payment_registrar only), payments.stripe_registrar_credential via storedCredential; Stripe GET
-//   /v1/balance_transactions through stripe.Client.ListBalanceTransactions; internal/payments/settlement (types).
-// Used by: cmd/stripe-admin settlement-sync | settlement-close | settlement-export | settlement-payout.
-// Invariants: I06/I20 (idempotent by Stripe balance transaction id), I19 (SQL is the only arithmetic), a refused SQL step returns one of
-//   our own coded tokens (never a driver message). Errors stay ErrConfig/ErrDatabase/ErrRejected/ErrProvider (+ the token).
+// Purpose: the operator steps of the per-store settlement ledger (contracts/stripe-platform-account-v1.md §6, W4-S2; §6.6, S2-OPEN-1):
+//   sync the platform account's balance transactions into the ledger, close a weekly statement, record a payout (RECORD ONLY), read a
+//   statement for the CSV export, and resolve an unmapped_source row (append-only, §6.6) so close can proceed. Sync is the only step that
+//   calls Stripe (GET balance transactions with the STORED platform key); close, payout, read and resolve are SQL only. Nothing here calls
+//   a bank, a Stripe payout or a transfer API, and none takes a secret as input; resolve moves no money (a v1 assignment is a note).
+// Depends on: SQL payments.record_settlement_lines, close_settlement, record_settlement_payout, read_settlement_statement (0150) and
+//   record_settlement_resolution (0163); owner registry writer, EXECUTE commerce_payment_registrar only; payments.stripe_registrar_credential
+//   via storedCredential; Stripe GET /v1/balance_transactions through stripe.Client.ListBalanceTransactions; internal/payments/settlement (types).
+// Used by: cmd/stripe-admin settlement-sync | settlement-close | settlement-export | settlement-payout | settlement-resolve.
+// Invariants: I02/I06/I20 (idempotent by Stripe balance transaction id: an identical replay returns the stored row, a different payload is
+//   PT409), I19 (SQL is the only arithmetic), a refused SQL step returns one of our own coded tokens (never a driver message). Errors stay
+//   ErrConfig/ErrDatabase/ErrRejected/ErrProvider (+ the token).
 // Status: MOCK + REAL_PG; SANDBOX needs the owner's test key (NOT_RUN here); never LIVE.
 
 package stripeadmin
@@ -19,6 +21,7 @@ import (
 	"fmt"
 	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -37,9 +40,10 @@ const (
 )
 
 var (
-	datePattern  = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
-	payoutRefPat = regexp.MustCompile(`^[A-Za-z0-9._:/-]{4,80}$`)
-	tokenPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{2,59}$`)
+	datePattern       = regexp.MustCompile(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`)
+	payoutRefPat      = regexp.MustCompile(`^[A-Za-z0-9._:/-]{4,80}$`)
+	tokenPattern      = regexp.MustCompile(`^[a-z][a-z0-9_]{2,59}$`)
+	balanceTxnPattern = regexp.MustCompile(`^txn_[A-Za-z0-9]{1,255}$`) // the ledger's own id grammar (0150/0163 CHECK)
 )
 
 // balanceLister is the slice of *stripe.Client the sync needs. It is asserted on the provider so the other registrar operations keep
@@ -69,6 +73,43 @@ type ClosedStatement struct {
 	NetPayableMinor int64  `json:"net_payable_minor"`
 	LineCount       int    `json:"line_count"`
 	Replayed        bool   `json:"replayed"`
+}
+
+// OperatorNote is one assigned_to_store resolution (§6.6) printed by close: v1 moves NO money, so the owner pays the
+// target store out of band against this note. The unattributed row carries the amounts.
+type OperatorNote struct {
+	BalanceTxnID   string `json:"balance_txn_id"`
+	TargetTenantID string `json:"target_tenant_id"`
+	TargetStoreID  string `json:"target_store_id"`
+	Operator       string `json:"operator"`
+	Ticket         string `json:"ticket"`
+	Note           string `json:"note"`
+}
+
+// CloseResult is the close_settlement output: the closed (or replayed) statements plus the window's operator notes.
+type CloseResult struct {
+	Statements    []ClosedStatement `json:"statements"`
+	OperatorNotes []OperatorNote    `json:"operator_notes"`
+}
+
+// Resolution values of SettlementResolve (§6.6). A resolution is a recorded operator decision, never a money movement.
+const (
+	ResolveNotStoreRevenue = "not_store_revenue"
+	ResolveAssignedToStore = "assigned_to_store"
+)
+
+// ResolvedUnattributed is the stored resolution row record_settlement_resolution returns. ResolvedAt stays the SQL
+// text (house pattern: settlement.Statement.ClosedAt is a string for the same reason).
+type ResolvedUnattributed struct {
+	BalanceTxnID   string `json:"balance_txn_id"`
+	Resolution     string `json:"resolution"`
+	TargetTenantID string `json:"target_tenant_id"`
+	TargetStoreID  string `json:"target_store_id"`
+	Operator       string `json:"operator"`
+	Ticket         string `json:"ticket"`
+	Note           string `json:"note"`
+	ResolvedAt     string `json:"resolved_at"`
+	Replayed       bool   `json:"replayed"`
 }
 
 // SettlementSync reads the platform account's balance transactions created in [from, to) (at most 8 days) with the STORED credential of
@@ -188,14 +229,15 @@ func (r *Registrar) RecordSettlementLines(ctx context.Context, s Scope, connecti
 }
 
 // SettlementClose closes the weekly statement of the Monday periodStart (YYYY-MM-DD, Asia/Taipei) for one store, or for every store with
-// unassigned lines when targetStore is "". SQL applies the §6.2 rules and returns the statements. A replay returns the stored ones.
-func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, periodStart, operator, targetStore, ticket string) ([]ClosedStatement, error) {
+// unassigned lines when targetStore is "". SQL applies the §6.2 rules and returns the statements plus the window's operator notes (§6.6:
+// the assigned_to_store resolutions; v1 moves no money). A replay returns the stored ones.
+func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, periodStart, operator, targetStore, ticket string) (CloseResult, error) {
 	if r == nil || r.db == nil || ctx == nil || !validScope(s) || (environment != envSandbox && environment != envLive) ||
 		(targetStore != "" && !command.ValidID(targetStore)) {
-		return nil, ErrConfig
+		return CloseResult{}, ErrConfig
 	}
 	if !datePattern.MatchString(periodStart) || !operatorPattern.MatchString(operator) || (ticket != "" && !refPattern.MatchString(ticket)) {
-		return nil, ErrRejected
+		return CloseResult{}, ErrRejected
 	}
 	var target, ticketArg any
 	if targetStore != "" {
@@ -208,15 +250,50 @@ func (r *Registrar) SettlementClose(ctx context.Context, s Scope, environment, p
 	// payments.close_settlement: platform-scope definer; sets statement_id on the lines once, one audit row per statement.
 	if err := r.settlementScan(ctx, &out, `SELECT payments.close_settlement($1::uuid,$2::uuid,$3::uuid,$4::text,$5::date,$6::text,$7::uuid,$8::text)::text`,
 		s.TenantID, s.StoreID, s.PrincipalID, environment, periodStart, operator, target, ticketArg); err != nil {
-		return nil, err
+		return CloseResult{}, err
 	}
-	var res struct {
-		Statements []ClosedStatement `json:"statements"`
-	}
+	var res CloseResult
 	if json.Unmarshal([]byte(out), &res) != nil {
-		return nil, ErrDatabase
+		return CloseResult{}, ErrDatabase
 	}
-	return res.Statements, nil
+	if res.OperatorNotes == nil {
+		res.OperatorNotes = []OperatorNote{}
+	}
+	return res, nil
+}
+
+// SettlementResolve appends ONE resolution row (§6.6) for an unmapped_source row of settlement_unattributed so the environment's close can
+// proceed; the unattributed row itself is never touched (append-only). not_store_revenue takes no target; assigned_to_store requires
+// targetTenant+targetStore of a store that has used the platform account, and in v1 moves NO money: close prints the assignment as an
+// operator note and the owner pays out of band. ticket is REQUIRED: this is an escalation step and must stay traceable. An identical
+// replay returns the stored row (Replayed); a different payload for the same txn is PT409 resolution_conflict. SQL only: never Stripe.
+func (r *Registrar) SettlementResolve(ctx context.Context, s Scope, environment, balanceTxn, resolution, targetTenant, targetStore,
+	note, operator, ticket string) (ResolvedUnattributed, error) {
+	if r == nil || r.db == nil || ctx == nil || !validScope(s) || (environment != envSandbox && environment != envLive) ||
+		((targetTenant != "" || targetStore != "") && (!command.ValidID(targetTenant) || !command.ValidID(targetStore))) {
+		return ResolvedUnattributed{}, ErrConfig
+	}
+	if !balanceTxnPattern.MatchString(balanceTxn) || (resolution != ResolveNotStoreRevenue && resolution != ResolveAssignedToStore) ||
+		(resolution == ResolveAssignedToStore) != (targetTenant != "") || !operatorPattern.MatchString(operator) ||
+		!refPattern.MatchString(ticket) || utf8.RuneCountInString(note) < 1 || utf8.RuneCountInString(note) > 500 {
+		return ResolvedUnattributed{}, ErrRejected
+	}
+	var targetT, targetS any
+	if targetTenant != "" {
+		targetT, targetS = targetTenant, targetStore
+	}
+	var out string
+	// payments.record_settlement_resolution: platform-scope definer; one append-only row + one audit row, the same tx.
+	if err := r.settlementScan(ctx, &out, `SELECT payments.record_settlement_resolution($1::uuid,$2::uuid,$3::uuid,$4::text,$5::text,
+		$6::text,$7::text,$8::text,$9::text,$10::uuid,$11::uuid)::text`, s.TenantID, s.StoreID, s.PrincipalID, environment, balanceTxn,
+		resolution, operator, ticket, note, targetT, targetS); err != nil {
+		return ResolvedUnattributed{}, err
+	}
+	var res ResolvedUnattributed
+	if json.Unmarshal([]byte(out), &res) != nil {
+		return ResolvedUnattributed{}, ErrDatabase
+	}
+	return res, nil
 }
 
 // SettlementPayout RECORDS that the operator paid a statement off-Stripe (bank reference, amount, time). It never moves money. SQL sets
