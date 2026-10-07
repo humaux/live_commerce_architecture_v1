@@ -63,3 +63,17 @@ All commands below ran in /Volumes/data/live_commerce_architecture_v1/.worktrees
 Root integration is Codex-2 at own branch; tags ui_worker commits a285c924 and df4217cf; reports ui_worker00911df0 and f4bf6528; independent test_worker37ac2512; read-only review child (same configured gpt-6.1-sol/high, exact deployed runtime modelUNKNOWN). Child source patches applied by ownership, no release merge/push. Frozen Go/SQL/OpenAPI/dependencies unchanged. No browser/Next/PG fixtures or containers started locally. All own Node/tsc/Go processes exited. Isolated child worktrees remain as recoverable review checkpoints; no other agent state was removed.
 
 Final diff check: git diff --check exit0 (final-diff-check.log). Only source/docs/tests were committed; no push.
+
+## CI seed repair (2026-10-07)
+
+GitHub run37603477927 at dc11b5ce failed only --browser-customers-billing: legacyCB11PASS, newW6seed customers.Get unavailable before browser. Earlier normal/calibration reports runs37602961907/37602957580 at276be also failed on the same seed, so neither qualifies as intended calibration red.
+
+Root cause: report-only rpWorld.order snapshots lack destination.phone (SQLlast3 becomes non-NULL empty string, strictCustomer rejects) and the frozen merchant order shape. Removing the two invalid checkout anchors retains legitimate import-profile-only customers, the historical archive,21tags/52notes and every browser assertion;0152 declares them visible. Checkout coverage stays in the oldCB11. Next independent seed defect: its USD fact reused a TWD-only PayUni attempt; now Stripe checkout method/USD/700 matches the USDorder/fact and0061constraint. No validators, schema, thresholds or assertions changed.
+
+Local own focused realPG only, noNext/browser:
+- LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=180s bash scripts/dev/test-focused.sh '^TestW6UISeedFocused$' → exit1 (PASS0FAIL1) reproduces customerGet: ci-37603477927/red-seed.log.
+- after first fixture fix → exit1 (PASS0FAIL1) exposes attempt_method_amount_check: red-usd-seed.log.
+- after both valid-fixture corrections → exit0 (PASS1FAIL0SKIP0): green-seed-final.log. Test constructs the actual shared seed and calls productionGet; does not certify browser/permission/CAS/report totals.
+- mandatory git merge --no-edit origin/r3/integration (origin0813424a) → exit0 beforefocusedrun; check-gates → exit0; git diff --check → exit0.
+
+Readonly independent source re-review accepts both fixture changes, no gate weakening. Same-familysource-only, fullnormal browser +twoactualcalibrations MUST rerun on GitHub at newcommit. Alllocalfocusedprocesses finished, statusJSON/runids/logs inmainci-37603477927/. Noheavy localmode started. Integrator stillowns push/CIcallbacks.

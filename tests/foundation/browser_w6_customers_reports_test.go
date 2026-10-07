@@ -93,6 +93,21 @@ func TestBrowserW6Reports(t *testing.T) { w6uiRun(t, "reports") }
 // TestBrowserW6Customers drives tags/notes/filter/CAS/UNKNOWN controls, with independent SQL readback.
 func TestBrowserW6Customers(t *testing.T) { w6uiRun(t, "customers") }
 
+// TestW6UISeedFocused exercises only the real Go/PG seed used by both W6 browser gates, with no Next/browser process.
+func TestW6UISeedFocused(t *testing.T) {
+	if os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
+		t.Skip("use scripts/dev/test-focused.sh with LC_FOCUSED_TAGS=browser")
+	}
+	x := w6uiSeed(t)
+	err := x.scope(func(ctx context.Context, tx pgx.Tx, scope platform.Scope) error {
+		_, err := customers.Get(ctx, tx, scope, x.token, x.customer)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func w6uiRun(t *testing.T, mode string) {
 	if os.Getenv("LC_W6UI_"+strings.ToUpper(mode)+"_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use the registered isolated W6 browser gate in GitHub CI")
@@ -182,8 +197,8 @@ func w6uiSeed(t *testing.T) *w6uiFixture {
 	for i, owner := range []string{x.customer, x.second} {
 		mustExec(t, w.f.owner, `INSERT INTO buyer.owners(tenant_id,store_id,id) VALUES($1,$2,$3)`, w.tenant, w.store, owner)
 		mustExec(t, w.f.owner, `INSERT INTO customers.import_profiles(tenant_id,store_id,owner_id,display_name,source) VALUES($1,$2,$3,$4,'shopline_csv')`, w.tenant, w.store, owner, fmt.Sprintf("W6 synthetic customer %d", i+1))
-		o := w.order(time.Date(2026, 8, 1, 9, 0, 0, 0, rpTPE), "CONFIRMED", "storefront", "bank_transfer", rpLine{randomUUID(), randomUUID(), "CUSTOMER", "Synthetic historical-scope anchor", 1, 100})
-		w.exec(`UPDATE checkout.orders SET owner_id=$1 WHERE id=$2`, owner, o.id)
+		// 0152 exposes import-only owners directly. Report-only rpWorld snapshots are deliberately incomplete for
+		// merchant orders (no destination/phone/totals); attaching one poisons the actual customer Get/CAS projection.
 	}
 	mustExec(t, w.f.owner, `INSERT INTO customers.historical_orders(tenant_id,store_id,owner_id,external_order_id,ordered_at,status,total_minor,currency,items_summary) VALUES($1,$2,$3,'W6-ARCHIVE-ONLY',$4,'paid',999999,'TWD','W6-ARCHIVE-ONLY')`, w.tenant, w.store, x.customer, rpAt(10, 9))
 	// The 21 catalogue entries exercise the real 20-checkbox cap; writes use the frozen Go/SQL path.
@@ -221,7 +236,8 @@ func w6uiSeed(t *testing.T) *w6uiFixture {
 	o := w.order(rpAt(10, 9), "CONFIRMED", "storefront", "card", rpLine{randomUUID(), randomUUID(), "USD", "USD-only", 1, 700})
 	w.capture(o, 700, "SANDBOX", rpAt(10, 10))
 	w.exec(`UPDATE checkout.orders SET currency='USD',snapshot=jsonb_set(snapshot,'{quote,currency}','"USD"') WHERE id=$1`, o.id)
-	w.exec(`UPDATE checkout.payment_attempts SET currency='USD' WHERE id=$1`, o.attempt)
+	// 0061 attempt_method_amount_check: USD belongs to Stripe, while the shared reports helper starts with a TWD PayUni attempt.
+	w.exec(`UPDATE checkout.payment_attempts SET method_code='stripe_checkout',currency='USD',amount_minor=700 WHERE id=$1`, o.attempt)
 	w.exec(`UPDATE payments.facts SET currency='USD' WHERE attempt_id=$1`, o.attempt)
 	return x
 }
