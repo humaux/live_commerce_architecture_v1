@@ -1,0 +1,7 @@
+Read-only merge review · task_id bcce856f-ae6d-41aa-b624-c0d94cc895bb · requested model gpt-6-luna / medium (runtime identity not independently exposed)
+base_commit: 2709ceafcb6feadeca1885705314d67197f451a0 · reviewed merge: f7b75a8fd787987c47b58760bb48da1a7ac88c09 · parents verified in merge-verification.log.
+Verdict: lineage and both sides preserved; four K3P2 timezone source hashes match; upstream changed no PNG assets; 5 added doc.go files plus dependency map/package-doc checks are present.
+Gate records at reviewed SHA: test-node exit 0; check-gates exit 0; both admin/storefront tsc exit 0; check-pkgdocs exit 0; depmap --check exit 0. Commands/status JSON and hashes are alongside this review.
+Scope: static merge preservation and repository metadata only. No full runtime, PG, browser, external provider, or LIVE acceptance performed here; root owns any full runs.
+NOT_RUN: independent second execution of Node/typecheck/gates; PNG content review not applicable (no PNG changed). No unresolved merge-specific defect found in this bounded scope.
+Supplemental: `photo-preprocess.test.ts` PNG base64 literal split and all six package fixes (csvguard + five doc.go) are byte-identical to parent2; blob comparison exit 0. See `supplemental-retention.log`.
