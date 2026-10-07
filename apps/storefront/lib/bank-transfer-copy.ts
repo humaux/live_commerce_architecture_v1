@@ -1,3 +1,6 @@
+// Purpose: Buyer-facing bank-transfer checkout and proof feedback in three locales.
+// Depends on: Locale and frozen bank-transfer state/error types (storefront-v2 §C).
+// Used by: OrderFlow checkout and BankTransfer order panels; proof echo names the store timezone.
 // Buyer-facing copy (zh-CN / zh-TW / en) for the bank-transfer payment mode (contracts/storefront-v2.md §C): the payment choice and optional
 // email at checkout (components/OrderFlow.tsx) and the order page panel (components/BankTransfer.tsx).
 // Rules encoded here: the order is never "paid" until the shop confirms it (CONFIRMED text names the shop as the confirmer); a REJECTED
@@ -48,6 +51,7 @@ const en = {
   sending: "Sending…",
   sent: "Transfer details sent. The shop will confirm after checking its account.",
   yourDetails: "Your last details",
+  storeTime: "Store time (UTC+8)",
   rejectedPrefix: "The shop's note",
   rejectedHelp: "Check your transfer and send the details again before the deadline.",
   confirmed: "The shop confirmed your payment. Your order is now confirmed.",
@@ -104,6 +108,7 @@ const zhCN: typeof en = {
   sending: "送出中…",
   sent: "转账资料已送出。商家核对账户后会确认。",
   yourDetails: "你最近提交的资料",
+  storeTime: "店铺时间（UTC+8）",
   rejectedPrefix: "商家备注",
   rejectedHelp: "请核对转账情况，并在截止前重新送出资料。",
   confirmed: "商家已确认收款，订单已确认。",
@@ -160,6 +165,7 @@ const zhTW: typeof en = {
   sending: "送出中…",
   sent: "轉帳資料已送出。商家核對帳戶後會確認。",
   yourDetails: "你最近送出的資料",
+  storeTime: "店鋪時間（UTC+8）",
   rejectedPrefix: "商家備註",
   rejectedHelp: "請核對轉帳情況，並在截止前重新送出資料。",
   confirmed: "商家已確認收款，訂單已確認。",

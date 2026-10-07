@@ -227,7 +227,7 @@ export default function BankTransfer({
       {view.state === "REFUNDED_OFFLINE" && <p role="status">{copy.refunded}</p>}
       {proof && (
         <p data-testid="transfer-proof">
-          {copy.yourDetails}: ···{proof.last5} · {money(proof.amount_minor, view.currency)} · {displayTime(locale, proof.paid_at)}
+          {copy.yourDetails}: ···{proof.last5} · {money(proof.amount_minor, view.currency)} · {displayTime(locale, proof.paid_at)} · {copy.storeTime}
         </p>
       )}
       {open(view.state) && !clock.expired && (

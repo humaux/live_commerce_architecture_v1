@@ -43,6 +43,11 @@ function text(node) {
   if (typeof node !== "object") return String(node);
   return text(node.props?.children);
 }
+function find(node, predicate) {
+  if (Array.isArray(node)) return node.map((child) => find(child, predicate)).find(Boolean);
+  if (!node || typeof node !== "object") return null;
+  return predicate(node) ? node : find(node.props?.children, predicate);
+}
 const fmt = format.displayTime("en", instant);
 
 test("OrderHistory renders server order instant in Taipei", () => {
@@ -79,6 +84,23 @@ test("BankTransfer renders deadline and proof instant in Taipei", () => {
   assert.match(shown, /(?:00|24):30/);
   assert.equal(shown.split(fmt).length - 1, 2);
 });
+
+for (const [locale, label] of [["en", "Store time (UTC+8)"], ["zh-TW", "店鋪時間（UTC+8）"], ["zh-CN", "店铺时间（UTC+8）"]]) {
+  test(`BankTransfer proof echo labels store time in ${locale}`, () => {
+    const view = { state: "SUBMITTED", deadline_at: instant, currency: "TWD", amount_minor: 100, bank: null,
+      proof: { last5: "12345", amount_minor: 100, paid_at: instant } };
+    const component = load("BankTransfer", [view, false, Date.parse(instant), "", "", "", false, "", null], {
+      "../lib/buyer-client": { BuyerClientError: Error }, "../lib/purchase": {}, "../lib/bank-transfer-copy": { bankTransferCopy },
+      "../lib/browse-copy": { browseCopy }, "../lib/bank-transfer-contract": bankTransferContract,
+    }).default;
+    const tree = component({ context: "test", orderID: "order-1", locale, money: () => "NT$1", refreshToken: 0 });
+    const proof = find(tree, (node) => node.type === "p" && node.props["data-testid"] === "transfer-proof");
+    assert.ok(proof, "submitted proof paragraph is loaded");
+    assert.ok(text(proof).includes("12345"), "the submitted last-five marker is visible");
+    assert.ok(text(proof).includes(format.displayTime(locale, instant)), "paid_at echo is in that paragraph");
+    assert.ok(text(proof).includes(label), `the paid_at echo identifies ${label}`);
+  });
+}
 
 test("ShopFooter uses Taipei year across UTC year boundary", () => {
   const stub = () => null;

@@ -29,12 +29,21 @@ function compile(path, imports, suffix = "") {
     module: { type: "commonjs" },
   });
   const module = { exports: {} };
+  const map = {
+    react,
+    "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: passthrough },
+    // Lazy: the real format module is itself compiled by this loader during initialization.
+    get ["@live-commerce/format"]() { return format; },
+    "@live-commerce/ui": { Badge: passthrough, Field: passthrough, FormRow: passthrough, TableFrame: passthrough, TabStrip: passthrough },
+    "./WorkspaceFrame": { WorkspaceFrame: passthrough },
+    "./AdminPageHeader": { AdminPageHeader: passthrough },
+    "@/lib/settings-client": {},
+    "./orders.css": {},
+    ...imports,
+  };
   const importModule = (name) => {
-    if (name === "react") return imports.react ?? react;
-    if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: passthrough };
-    if (name === "@live-commerce/format") return format;
-    if (name.endsWith(".css") || name.endsWith(".module.css")) return {};
-    return imports[name] ?? new Proxy({}, { get: () => passthrough });
+    assert.ok(Object.hasOwn(map, name), `${path}: unlisted dependency ${name}`);
+    return map[name];
   };
   vm.runInNewContext("(function(require,module,exports){" + result.code + "\n})", {}, { filename: path })(
     importModule, module, module.exports);
@@ -49,8 +58,19 @@ function textOf(node) {
   return textOf(node.props.children);
 }
 
+test("TSX seam refuses an unlisted import", () => {
+  const path = "packages/format/src/index.ts";
+  for (const name of ["@/lib/unlisted-timezone-probe", "./unlisted-timezone-probe.css", "toString"]) {
+    assert.throws(() => compile(path, {}, `\nimport "${name}";\n`),
+      { code: "ERR_ASSERTION", message: `${path}: unlisted dependency ${name}` });
+  }
+});
+
 test("Ads merchant timestamp uses Taipei at the year boundary", () => {
-  const { __testWhen } = compile("apps/admin/components/Ads.tsx", {}, "\nexport { when as __testWhen };\n");
+  const { __testWhen } = compile("apps/admin/components/Ads.tsx", {
+    "next/navigation": {}, "@/lib/ads-client": {}, "@/lib/ads-model": {}, "@/lib/ads-copy": {},
+    "./Icon": {}, "./AdsConnection": {}, "./AdsDraft": {}, "./AdsResults": {}, "@/lib/attribution-copy": {}, "./ads.css": {},
+  }, "\nexport { when as __testWhen };\n");
   assert.match(__testWhen("zh-TW", instant, "empty"), expected);
   assert.equal(__testWhen("zh-TW", null, "empty"), "empty");
 });
@@ -59,6 +79,8 @@ test("Design version published_at cell uses Taipei at the year boundary", () => 
   const { __testVersions } = compile("apps/admin/components/Design.tsx", {
     "@/lib/catalog-v2-copy": { catalogPresentationCopy: { "zh-TW": { tableScroll: "scroll" } } },
     "@/lib/design-copy": { fill: () => "source" },
+    "@/lib/customers-client": {}, "@/lib/storefront-client": {}, "@/lib/design-client": {}, "@/lib/design-model": {},
+    "./DesignProfile": {}, "./DesignNav": {}, "./DesignSections": {}, "./DesignPages": {}, "./design.css": {},
   }, "\nexport { Versions as __testVersions };\n");
   const c = { versions: { help: "help", none: "none", version: "version", at: "at",
     live: "live", rollback: "rollback", kind: { publish: "published" } }, tabs: { versions: "versions" } };
@@ -71,6 +93,8 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
   let state = 0;
   const placed = { order_id: "order-123456", payment_mode: "bank_transfer", commercial_state: "AWAITING_TRANSFER",
     currency: "TWD", total_minor: 100, expires_at: instant, buyer_link: null };
+  // ManualOrder's 14th direct useState owns `placed`; preceding hook additions must update this fixture.
+  // The literal expiry assertion below fails if this injection stops reaching the loaded result view.
   const hooks = { ...react, useState(value) { return [state++ === 13 ? placed : value, () => {}]; } };
   const { ManualOrder } = compile("apps/admin/components/ManualOrder.tsx", {
     react: hooks,
@@ -79,6 +103,8 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "@/lib/merchant-tools-copy": { toolsCopy: { "zh-TW": { manual: { created: "created", expires: "expires" } } } },
     "@/lib/client": { money: () => "NT$100" },
     "./OperationalForms.module.css": { page: "page" },
+    "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},
+    "./customers.css": {}, "./merchant-tools.css": {},
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.
   const tree = ManualOrder({ locale: "zh-TW", stores: [], store: { id: "store", name: "store" },
