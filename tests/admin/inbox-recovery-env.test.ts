@@ -3,6 +3,7 @@
 // Used by: recovery assertions and optional node --import timing/date profiles; no production changes or authored test cases.
 // Status: MOCK scheduling pressure, not crypto, provider, browser or performance acceptance.
 import { nodes, textOf, type Host } from "./inbox-review-host.test.ts";
+import { inboxCopy } from "../../apps/admin/src/features/messages/copy.ts";
 const installed = Symbol.for("lc.inbox.recovery.env.installed");
 if (!(globalThis as any)[installed]) {
   (globalThis as any)[installed] = true;
@@ -44,16 +45,29 @@ export function bounded<T>(work: Promise<T>, description: string): Promise<T> {
   });
   return Promise.race([work, timeout]).finally(() => clearTimeout(timer));
 }
-/** Await the English recovery widget's actual idle control commit and refresh its parent rendering. */
+/** Await the mounted recovery locale's actual idle control commit and refresh its parent rendering. */
 export async function recoveryDone(host: Host) {
   const recovery = childHost(host, "bundle-recovery");
+  const mountedLocale = (parent: Host): string | undefined => {
+    for (const child of parent.children.values()) {
+      if (child.host === recovery) return child.props.locale;
+      const locale = mountedLocale(child.host);
+      if (locale !== undefined) return locale;
+    }
+  };
+  const locale = mountedLocale(host);
+  if (typeof locale !== "string") throw new Error("Actual recovery locale missing from mounted props");
+  const loading = inboxCopy(locale).loading;
   await recovery.waitFor(
-    () => nodes(recovery.output).some((n) => n.type === "button" && textOf(n) !== "Loading…"),
+    () => nodes(recovery.output).some((n) => n.type === "button" && textOf(n) !== loading),
     "actual recovery action status and idle control committed",
   );
   host.flush();
 }
 /** Await actual A9/A10 completion, including the DM render and cleared in-flight control. */
 export async function threadReady(host: Host) {
-  await host.waitFor(() => host.output?.props["aria-busy"] === false && textOf(host.output).includes("MOCK_DM"), "actual A9/A10 thread authority committed");
+  await host.waitFor(
+    () => host.output?.props["aria-busy"] === false && textOf(host.output).includes("MOCK_DM"),
+    "actual A9/A10 thread authority committed",
+  );
 }

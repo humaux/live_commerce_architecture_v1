@@ -19,6 +19,7 @@
     "../../tests/admin/inbox-browser-support.ts",
     "../../tests/admin/inbox-discovery.test.ts",
     "../../tests/admin/inbox-credential-artifacts.test.ts",
-    "../../tests/admin/inbox-shell-navigation.test.ts"
+    "../../tests/admin/inbox-shell-navigation.test.ts",
+    "../../tests/admin/inbox-recovery-locale.test.ts"
   ]
 }
