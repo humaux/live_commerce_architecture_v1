@@ -151,3 +151,16 @@ Two independent fixture bugs, both in the browser harness' `parcelOrder` (produc
 `parcelOrder` in `browser_merchant_orders_ui_test.go` now delegates to `pfBuyer.order` (one buyer per capability token), so the browser harness and the focused test run the same code.
 
 Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF02Schema|TestMerchantOrdersV2PickListReadAuthority|TestWAS02|TestR2IntegrationUpgrade|TestT06)'` -> exit 0, 34 PASS (33 earlier + the new test; `green-finisher3-focused.log`); `go vet -tags browser ./tests/foundation` -> 0; `go vet ./tests/foundation` -> 0; `check-gates.sh` -> 0. NOT_RUN: the browser gate (CI).
+
+---
+
+## Finisher 4 (Sonnet) — PR #2 round: MOU root cause 2, Codex P2s, trunk merge
+
+- Trunk merged (`origin/r3/integration` 1aad42d0, PR #6 + PR #4 0163): clean, R2 pin is 90 (0163 + 0164).
+- **MOU run 37623124987 root cause** (log: `pf[ship-a] begin: conflicting request or version`, the FIRST parcel order): the harness flips the shared delivery service to `cvs_familymart` (version 2) for its pickup fixture before the parcel stage, and `bcHarness.prepare` hard-codes `ServiceVersion: 1`; `checkout.go:315` refuses a stale service version (and a home destination on a CVS service). Reproduced REAL_PG in `TestParcelFixtureSameBuyerTwoOrders` (flip the service first): red `red-finisher4-service-flip.log`. Fix: `pfRestoreHome` flips the service back to home (expected version 2 -> 3) and `pfBuyer` stamps every checkout input with that live version; the harness calls it before the parcel stage. parcel-merge.spec.ts never ran in that CI (setup failed first), so there is still no browser evidence for steps A-H.
+- Codex P2 4207192912: `groupOfOrder` (parcels-model.ts) prefers the OPEN group over retained history; MerchantOrders `groupOf` uses it. Red: `red-finisher4-groupof.log` (missing export), green in `node-finisher4.log`.
+- Codex P2 4207192932: `ParcelMerge.commit()` moves `groupsRef.current` before `onGroups`; `replace`/`dismiss`/create/reconcile all start from the ref, never from the render-time `groups` closure.
+- Codex P2 4207192949: a failed suggestions read keeps a visible `suggestionsUnavailable` alert (3 locales) plus a `parcel-reload-retry` button (also for the groups-load error); a later successful read clears only its own error. Copy parity asserted in `parcels-model.test.ts`.
+- Not covered by a red test: the two ParcelGroup.tsx fixes are component state logic with no React test harness in the repo; they are type-checked and rely on the browser gate. No spec step was added for them (cannot be run locally).
+- Exit codes: `go vet -tags browser ./tests/foundation` 0; `go build ./...` 0; node (parcels-model/request/bff, orders-model, orders-v2) 37 pass 0; `tsc --noEmit` 0; `check-gates.sh` 0; `check-pkgdocs.sh` 0; `depmap.sh --check` 0 (up to date); focused PG set (`TestParcel*`, MF02, PickListReadAuthority, WAS02, `TestR2IntegrationUpgrade*`, `TestT06*`) 0, 34 PASS.
+- NOT_RUN: `--browser-merchant-orders-ui` (CI).

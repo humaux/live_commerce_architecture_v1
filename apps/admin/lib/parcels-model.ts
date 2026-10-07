@@ -1,6 +1,6 @@
 // Purpose: strict exact-key parsers for the W3-07B parcel-group DTOs (BFF parcel routes -> Go internal/httpapi/parcels.go
 //   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B) and the pure reconcile of the session's group
-//   panels with the server's OPEN-groups read (W3-U4, migration 0164). The server stays the authority for every write and for the
+//   panels with the server's OPEN-groups read (W3-U4, migration 0164), plus groupOfOrder (OPEN group before retained history). The server stays the authority for every write and for the
 //   recipient mask (suggestions and group members both arrive masked); these parsers only refuse malformed reads, so a drifting
 //   Go response fails closed.
 // Depends on: ./orders-model.ts (canonicalUUID, parseShipmentVersion, ShipmentVersion).
@@ -116,6 +116,16 @@ export function parseOpenParcelGroups(value: unknown): OpenParcelGroup[] {
     });
     return { group_id: g.group_id, version: version(g.version), created_at: g.created_at, members };
   });
+}
+
+/**
+ * The group an order belongs to for the row badge and the single-order block: the OPEN group wins over retained SHIPPED/DISSOLVED
+ * history (a dissolved panel stays until closed while its orders may already sit in a new OPEN group); among history the latest
+ * entry wins. Returns undefined for an order in no known group.
+ */
+export function groupOfOrder(groups: ParcelGroupView[], orderID: string): ParcelGroupView | undefined {
+  const mine = groups.filter((g) => g.orderIDs.includes(orderID));
+  return mine.find((g) => g.state === "OPEN") ?? mine[mine.length - 1];
 }
 
 /**

@@ -11,6 +11,7 @@ import {
   parseParcelGroupDissolved,
   parseParcelGroupShipped,
   parcelRefusalCodes,
+  groupOfOrder,
   reconcileGroups,
   type OpenParcelGroup,
   type ParcelGroupView,
@@ -191,6 +192,8 @@ test("three locales cover the same keys and every refusal code", () => {
     assert.equal(typeof parcelCopy[locale].banner(2), "string");
     assert.equal(typeof parcelCopy[locale].groupTitle("abcd1234"), "string");
     assert.ok(parcelCopy[locale].groupsUnavailable.length > 5);
+    assert.ok(parcelCopy[locale].suggestionsUnavailable.length > 5 && parcelCopy[locale].retryLoad.length > 1);
+    assert.notEqual(parcelCopy[locale].suggestionsUnavailable, parcelCopy[locale].groupsUnavailable); // the retry matches its own error
   }
 });
 
@@ -213,4 +216,18 @@ test("the in_parcel_group copy is the same sentence in parcels-copy (blocked + e
     assert.equal(parcelCopy[locale].errors.in_parcel_group, sentence, `${locale} errors.in_parcel_group`);
   }
   assert.equal(ordersCopy["zh-TW"].errors.in_parcel_group, "此訂單在合包中，請在合包填寫運單");
+});
+
+// Codex P2 (PR #2): a DISSOLVED panel stays until closed while its orders may already sit in a NEW open group; the row badge and the
+// single-order block must follow the OPEN group, never the retained history that happens to come first in the array.
+test("groupOfOrder prefers the OPEN group over retained SHIPPED/DISSOLVED history", () => {
+  const view = (id: string, state: ParcelGroupView["state"], orderIDs: string[]): ParcelGroupView => ({ id, short: id.slice(0, 8), state, version: 1, orderIDs });
+  const dissolved = view("11111111-1111-4111-8111-111111111111", "DISSOLVED", [a, b]);
+  const reopened = view("22222222-2222-4222-8222-222222222222", "OPEN", [a, b]);
+  assert.equal(groupOfOrder([dissolved, reopened], a)?.id, reopened.id, "open group appended after the dissolved panel");
+  assert.equal(groupOfOrder([reopened, dissolved], b)?.id, reopened.id, "open group before the dissolved panel");
+  const shipped = view("33333333-3333-4333-8333-333333333333", "SHIPPED", [c, d]);
+  assert.equal(groupOfOrder([shipped], c)?.id, shipped.id, "history alone still shows its badge");
+  assert.equal(groupOfOrder([dissolved, shipped, view("44444444-4444-4444-8444-444444444444", "DISSOLVED", [a, b])], a)?.id, "44444444-4444-4444-8444-444444444444", "latest history wins");
+  assert.equal(groupOfOrder([dissolved, reopened], c), undefined);
 });

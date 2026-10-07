@@ -13,7 +13,7 @@
 // Invariants: every mutating click sends one Idempotency-Key per logical write (an uncertain retry reuses it); dissolve is
 //   CAS-guarded by the group version; COD/pay-at-pickup/CVS orders never appear (the server excludes them; create would
 //   refuse with cod_not_mergeable/cvs_not_mergeable); a refusal that says the group is no longer open refetches the OPEN
-//   groups so the panel reflects the server instead of staying OPEN; a merge/load error stays visible without suggestions.
+//   groups so the panel reflects the server instead of staying OPEN; a merge/load error stays visible without suggestions, and a failed read (suggestions or groups) offers a retry button.
 
 import { useEffect, useRef, useState } from "react";
 import {
@@ -68,14 +68,28 @@ export function ParcelMerge({
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
   const created = useRef(0);
+  // Every write goes through commit: it moves groupsRef FIRST, so two panel actions that finish between renders each start from
+  // the other's result instead of a stale closure of `groups` (which would revert a finished panel's terminal state).
+  function commit(next: ParcelGroupView[]) {
+    groupsRef.current = next;
+    onGroups(next);
+  }
 
   useEffect(() => {
     const active = new AbortController();
     const startedAt = created.current;
     readMergeSuggestions(store, active.signal).then(
-      (value) => setSuggestions(value),
+      (value) => {
+        if (active.signal.aborted) return;
+        setSuggestions(value);
+        setProblem((p) => (p === c.suggestionsUnavailable ? "" : p)); // a retry that works clears only its own earlier load error
+      },
       () => {
-        if (!active.signal.aborted) setSuggestions([]); // a failed probe hides the banner; the list below stays authoritative
+        // A failed read must not look like "nothing to merge": keep the stale list out, show the error and offer a retry.
+        if (!active.signal.aborted) {
+          setSuggestions([]);
+          setProblem(c.suggestionsUnavailable);
+        }
       },
     );
     // Calls BFF GET parcel-groups -> Go fulfillment.read_open_parcel_groups (migration 0164): the OPEN groups, so ship/dissolve
@@ -83,7 +97,7 @@ export function ParcelMerge({
     readOpenParcelGroups(store, active.signal).then(
       (open) => {
         if (active.signal.aborted || created.current !== startedAt) return;
-        onGroups(reconcileGroups(groupsRef.current, open));
+        commit(reconcileGroups(groupsRef.current, open));
         setProblem((p) => (p === c.groupsUnavailable ? "" : p)); // a retry that works clears only its own earlier load error
       },
       () => {
@@ -107,7 +121,7 @@ export function ParcelMerge({
     if (result.ok) {
       pending.current = null;
       created.current += 1;
-      onGroups([
+      commit([
         ...groupsRef.current,
         { id: result.value.id, short: parcelShort(result.value.id), state: "OPEN", version: result.value.version, orderIDs: result.value.order_ids },
       ]);
@@ -124,10 +138,10 @@ export function ParcelMerge({
   }
 
   function replace(next: ParcelGroupView) {
-    onGroups(groups.map((g) => (g.id === next.id ? next : g)));
+    commit(groupsRef.current.map((g) => (g.id === next.id ? next : g)));
   }
   function dismiss(id: string) {
-    onGroups(groups.filter((g) => g.id !== id));
+    commit(groupsRef.current.filter((g) => g.id !== id));
   }
   // A panel hit a refusal that says its group moved on (group_not_open: shipped/dissolved elsewhere or by an uncertain dissolve that
   // did land; version_changed: the CAS version is stale). Refetch the OPEN groups: a group no longer OPEN is dropped, a changed
@@ -158,6 +172,13 @@ export function ParcelMerge({
           )}
           <p className="orders-hint" data-testid="parcel-merge-rule">{c.rule}</p>
           {problem && <p className="orders-bad" role="alert" data-testid="parcel-merge-problem">{problem}</p>}
+          {(problem === c.suggestionsUnavailable || problem === c.groupsUnavailable) && (
+            <p>
+              <button type="button" className="orders-compact" data-testid="parcel-reload-retry" onClick={() => setTick((v) => v + 1)}>
+                {c.retryLoad}
+              </button>
+            </p>
+          )}
           {open && suggestions.length > 0 && (
             <ul>
               {suggestions.map((s) => (

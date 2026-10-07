@@ -52,6 +52,7 @@ import { selectOrders } from "@/lib/picklist-model";
 import { picklistCopy } from "@/lib/picklist-copy";
 import { TrackingImport } from "./TrackingImport";
 import { ParcelMerge, type ParcelGroupView } from "./ParcelGroup";
+import { groupOfOrder } from "@/lib/parcels-model.ts";
 import { parcelCopy } from "@/lib/parcels-copy";
 import "./orders.css";
 import "./order-actions.css";
@@ -119,7 +120,7 @@ export function MerchantOrders({
   const parcelC = parcelCopy[locale];
   const [parcels, setParcels] = useState<{ scope: string; groups: ParcelGroupView[] }>({ scope: "", groups: [] });
   const parcelGroups = parcels.scope === bulkScope ? parcels.groups : [];
-  const groupOf = (orderID: string) => parcelGroups.find((g) => g.orderIDs.includes(orderID));
+  const groupOf = (orderID: string) => groupOfOrder(parcelGroups, orderID); // OPEN group first, then history
   function checkRows(rows:OrderSummaryV2[], checked:boolean) {
     setBulk(current => {
       const retained = current.scope === bulkScope ? current.rows : {};

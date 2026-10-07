@@ -21,15 +21,31 @@ import (
 // is single-use per capability (its cart and destination are created at version 0), so a second order must edit those rows at
 // their live versions, like hcodRehome does for the tcv fixtures.
 type pfBuyer struct {
-	q      pqFixture
-	placed int
+	q       pqFixture
+	placed  int
+	service int64 // delivery service version every checkout input must carry (prepare hard-codes 1)
 }
 
-// pfNewBuyer starts a buyer on a COPY of q bound to capability cap (q itself is never mutated).
-func pfNewBuyer(q pqFixture, cap buyer.Capability) *pfBuyer {
+// pfRestoreHome flips the shared delivery service back to q.delivery's home kind at expectedVersion (a CVS fixture earlier in the
+// MOU harness left it as a CVS service) and returns the new version, which pfNewBuyer must be given: begin refuses a stale
+// ServiceVersion (checkout.go service.Version != in.ServiceVersion) and a home destination cannot use a CVS service.
+func pfRestoreHome(t *testing.T, q pqFixture, expectedVersion int64) int64 {
+	t.Helper()
+	home := q.delivery
+	home.ExpectedVersion = expectedVersion
+	svc, err := dsSet(q.cqHarness, t04Key("pf-home-service"), home)
+	if err != nil {
+		t.Fatalf("restore the home delivery service: %v", err)
+	}
+	return svc.Version
+}
+
+// pfNewBuyer starts a buyer on a COPY of q bound to capability cap (q itself is never mutated); service is the live delivery
+// service version (1 when nothing changed it, else the value pfRestoreHome returned).
+func pfNewBuyer(q pqFixture, cap buyer.Capability, service int64) *pfBuyer {
 	clone := q
 	clone.cap = cap
-	return &pfBuyer{q: clone}
+	return &pfBuyer{q: clone, service: service}
 }
 
 // order places one order of two units of the first SKU: the first call prepares cart + destination + quote, later calls bump the
@@ -44,6 +60,7 @@ func (b *pfBuyer) order(t *testing.T, tag string, paid bool) string {
 	} else {
 		b.rehome(t, tag, items)
 	}
+	b.q.bcHarness.input.ServiceVersion = b.service
 	b.placed++
 	order, err := b.q.bcHarness.begin(t04Key("pf-begin-" + tag))
 	if err != nil {
@@ -94,7 +111,13 @@ func (b *pfBuyer) rehome(t *testing.T, tag string, items []storefront.Item) {
 // capability at the identical home destination, then proves they are one owner / one destination hash (so one merge suggestion).
 func TestParcelFixtureSameBuyerTwoOrders(t *testing.T) {
 	q := pqSetup(t)
-	b := pfNewBuyer(q, mustIssue(t, q.cqHarness.service, q.f.storeA1))
+	// The MOU harness flips the shared delivery service to a CVS kind (version 2) for its pickup fixture BEFORE the parcel stage.
+	cvs := q.delivery
+	cvs.ExpectedVersion, cvs.DeliveryKind = 1, "cvs_familymart"
+	if _, err := dsSet(q.cqHarness, t04Key("pf-cvs-service"), cvs); err != nil {
+		t.Fatalf("flip the service to CVS: %v", err)
+	}
+	b := pfNewBuyer(q, mustIssue(t, q.cqHarness.service, q.f.storeA1), pfRestoreHome(t, q, 2))
 	o1, o2 := b.order(t, "a", true), b.order(t, "b", true)
 	if o1 == o2 {
 		t.Fatalf("both orders have id %s", o1)
