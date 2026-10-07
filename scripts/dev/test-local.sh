@@ -296,7 +296,7 @@ if [[ "$test_mode" == --browser-customers-billing ]]; then
   test -f tests/admin/customer-tags.spec.ts
   test -f tests/storefront/privacy-buyer.mjs
   node --test --experimental-strip-types tests/admin/customers-bff.test.ts tests/admin/customers-model.test.ts \
-    tests/admin/customers-request.test.ts tests/admin/billing-model.test.ts tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs
+    tests/admin/customers-request.test.ts tests/admin/billing-model.test.ts tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs tests/admin/customer-tags-write.test.mjs tests/admin/w6-integration.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-card-payments ]]; then

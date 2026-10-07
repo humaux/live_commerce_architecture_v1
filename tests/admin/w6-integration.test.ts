@@ -1,5 +1,5 @@
-// Purpose: preserve selected tag scope across customer navigation and render real list rows with tags/import origin.
-// Depends on: Node test/assert/vm, typescript-api, actual Customers row/URL source and current customer copy.
+// Purpose: protect customer filter dispatch/navigation/import badges and immediate private-subtree removal after erasure.
+// Depends on: Node test/assert/vm, typescript-api, actual Customers row/URL and CustomerDetail Body source, shell registry and current copy.
 // Used by: W6-U1 focused regression and Node CI; does not replace real-click browser acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
