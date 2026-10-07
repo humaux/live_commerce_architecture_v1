@@ -450,7 +450,9 @@ func TestLiveConsoleBuyerPanelClaimsAndOrders(t *testing.T) {
 func TestLiveConsoleBuyerPanelPriceNeutralOrigin(t *testing.T) {
 	e := bpNew(t)
 	s1 := e.session("bp-session-origin")
-	a1 := e.offer(s1, "A1", 0)
+	a1 := e.offer(s1, "A1", 800)
+	// Price-neutral means NULL; zero is rejected by the live_price_minor CHECK.
+	e.exec(`UPDATE live.offers SET live_price_minor=NULL WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, e.tenant, e.store1, a1)
 	b1 := e.bundle(s1, "facebook", bpActorKey("bp-actor-origin"), nil, nil, false)
 	e.line(b1, s1, a1, 1)
 	conv := e.conversation(e.store1, "page", "1234567890")

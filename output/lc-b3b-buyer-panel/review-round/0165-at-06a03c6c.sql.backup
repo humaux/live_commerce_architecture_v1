@@ -9,7 +9,6 @@
 -- Depends on: 0008 (integration.bindings/operations + writer access), 0013 (checkout.orders + commerce_checkout_writer),
 --   0060/0064 (claims.bundles/lines, live.offers keyword grants, schema USAGE), 0105/0129 (claims.live_price_uses +
 --   unit_price_minor, inbox.order_for_buyer, claims_writer fact grants), 0107 (orders state vocabulary),
---   0113 (claims.order_origins: price-neutral checkout origins and claims_writer SELECT),
 --   0119 (social readers, inbox.conversation_state.version, inbox schema USAGE), 0128 (inbox.lcn_scope,
 --   identity.principal_holds, inbox.bundle_peers, integration_writer grants on claims.bundles/social.conversations).
 -- Used by: internal/inbox/read.go (A8/A9/A13 DTO fill), internal/httpapi/inbox.go (orders:read gating),
@@ -41,9 +40,6 @@ BEGIN
     END IF;
     IF to_regclass('inbox.bundle_peers') IS NULL THEN
         RAISE EXCEPTION '0165 requires 0128 (inbox.bundle_peers)';
-    END IF;
-    IF to_regclass('claims.order_origins') IS NULL THEN
-        RAISE EXCEPTION '0165 requires 0113 (claims.order_origins)';
     END IF;
     IF to_regclass('inbox.order_for_buyer') IS NULL THEN
         RAISE EXCEPTION '0165 requires 0129 (inbox.order_for_buyer)';

@@ -1,0 +1,15 @@
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/conversation
+    live_console_buyer_panel_review_origins_test.go:72: orders=1 want latest 20; body={"platform":"messenger","purchase_ordinal":1,"claims":[{"session_id":"88dc31d4-3bbc-41da-90dc-40ef91a7c7d7","offer_id":"78524c35-1c74-4e39-b90c-3cf665e8df3a","keyword":"SIBLING","quantity":1},{"session_id":"e41936db-73a3-47ca-90f4-0ec7eaaf9efe","offer_id":"487fbace-17ef-4b3e-847b-4a258c1ae330","keyword":"ORIGIN","quantity":1}],"claim_total_minor":100,"orders":[{"order_id":"ff9cec3b-7dae-48a4-98a9-8df4ac0f49d2","number":"LC-FF9CEC3B7DAE48A498A98DF4AC0F49D2","state":"CONFIRMED","total_minor":100,"created_at":"2026-10-07T14:49:02.260836Z"}],"window_open_until":"2026-10-09T01:49:02.258055+08:00","link_pending_manual":false}
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/bundle
+    live_console_buyer_panel_review_origins_test.go:72: orders=1 want latest 20; body={"platform":"facebook","purchase_ordinal":1,"claims":[{"session_id":"e41936db-73a3-47ca-90f4-0ec7eaaf9efe","offer_id":"487fbace-17ef-4b3e-847b-4a258c1ae330","keyword":"ORIGIN","quantity":1}],"claim_total_minor":100,"orders":[{"order_id":"ff9cec3b-7dae-48a4-98a9-8df4ac0f49d2","number":"LC-FF9CEC3B7DAE48A498A98DF4AC0F49D2","state":"CONFIRMED","total_minor":100,"created_at":"2026-10-07T14:49:02.260836Z"}],"link_pending_manual":false}
+--- FAIL: TestLiveConsoleBuyerPanelReviewOriginProjections (2.10s)
+    --- FAIL: TestLiveConsoleBuyerPanelReviewOriginProjections/conversation (0.02s)
+    --- FAIL: TestLiveConsoleBuyerPanelReviewOriginProjections/bundle (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelPriceNeutralOrigin
+    live_console_buyer_panel_test.go:472: orders=[map[created_at:2026-10-07T16:49:02.349123Z number:LC-23E15141D92F4558916394E1EEC22B77 order_id:23e15141-d92f-4558-9163-94e1eec22b77 state:CONFIRMED total_minor:900]] want [23e15141-d92f-4558-9163-94e1eec22b77 e4b5d4b4-dfb9-453c-823c-308c794dc893] (price-neutral origin included, deduped)
+--- FAIL: TestLiveConsoleBuyerPanelPriceNeutralOrigin (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.816s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

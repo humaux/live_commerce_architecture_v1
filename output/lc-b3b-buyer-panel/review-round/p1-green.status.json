@@ -1,0 +1,19 @@
+{
+  "name": "p1-green",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "TestLiveConsoleBuyerPanel|TestLiveClaimsKC03"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b3b-buyer-panel",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-b3b-buyer-panel/review-round",
+  "timeout_seconds": 1200,
+  "head_sha": "06a03c6c4c3ecb73cabecb783c15c3b99877152e",
+  "source_sha256": "3ed23caf3744b0a6b141ff205c7366e2b330b333088f1f4e01e8da6469aba148",
+  "started_at": "2026-10-07T17:49:58Z",
+  "state": "complete",
+  "pid": 85340,
+  "exit_code": 0,
+  "elapsed_seconds": 45.638,
+  "source_unchanged": true
+}

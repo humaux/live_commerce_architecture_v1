@@ -1,0 +1,8 @@
+[
+  {
+    "file": "p1-red.log",
+    "raw_sha256": "c6128a939e452dc72ff5bb64afd7bc7225a0981345b12c4967d32645cfb88d03",
+    "archive": "p1-red.log.raw.gz",
+    "readable_change": "expand log indentation tabs only"
+  }
+]

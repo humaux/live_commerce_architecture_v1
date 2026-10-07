@@ -1111,7 +1111,7 @@ All changes are additive response fields or filters; no permission, route or err
   - `claim_total_minor` = Σ quantity × the unit price the claim RECORDED (`claims.live_price_uses.unit_price_minor` of the newest use of that bundle/offer; 0 for a line
     never ordered at a live price), over the full set (not only the 50 shown). Never recomputed from the current catalogue.
   - `orders` is present only when the principal holds `orders:read` (decided inside the definer; the key is omitted entirely otherwise): orders created from those bundles
-    (claim checkout `claims.live_price_uses` ∪ A16 `inbox.order_for_buyer`), newest first, at most 20, `number` = `LC-` + the upper-case hex of the order id.
+    (claim checkout `claims.order_origins` ∪ `claims.live_price_uses` ∪ A16 `inbox.order_for_buyer`, deduplicated by order_id), newest first, at most 20, `number` = `LC-` + the upper-case hex of the order id. Price-neutral checkouts are included through `order_origins`.
   - `purchase_ordinal` = count (full set, not gated by `orders:read`) of those orders in `CONFIRMED` or `AWAITING_COLLECTION`; CANCELLED and unpaid states never count. The UI shows 第 N 次購買.
   - `display_name` only from the conversation's own newest inbound envelope (as A8); never from a bundle or an order. `auto_reply: {send_state}` is the §4.4 state of the
     newest automated (`origin_kind=auto`) private-reply operation of those bundles (a manual send never counts); omitted when none.
