@@ -542,56 +542,77 @@ test("INU05 native hide clears private thread; visible return reauthorizes befor
   }
 });
 
-for (const locale of ["zh-TW", "en"])
-  test(`INU06 ${locale} desktop1440/mobile390 real controls and no overflow`, async ({ page }) => {
+const localeCases = [
+  { locale: "zh-TW", title: "訊息", send: "送出回覆", buyer: "買家資料", back: "返回對話列表" },
+  { locale: "zh-CN", title: "消息", send: "发送回复", buyer: "买家资料", back: "返回对话列表" },
+  { locale: "en", title: "Messages", send: "Send reply", buyer: "Buyer details", back: "Back to conversations" },
+] as const;
+
+async function switchLocale(page: Page, locale: (typeof localeCases)[number]["locale"]) {
+  const selector = page.getByTestId("locale-switch");
+  // Every switch changes the value: same-value navigation can otherwise leave the old privacy scope suspended.
+  if ((await selector.inputValue()) === locale) {
+    const other = locale === "en" ? localeCases[0] : localeCases[2];
+    await selector.selectOption(other.locale);
+    await expect(page).toHaveURL(new RegExp(`/${other.locale}/messages`));
+    await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(other.title);
+    await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+  }
+  await selector.selectOption(locale);
+  const copy = localeCases.find((item) => item.locale === locale)!;
+  await expect(page).toHaveURL(new RegExp(`/${locale}/messages`));
+  await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
+  await expect(page.getByTestId(`conversation-${ids.open}`)).toBeVisible();
+}
+
+for (const copy of localeCases) {
+  test(`INU06 ${copy.locale} desktop1440/mobile390 real controls and no overflow`, async ({ page }) => {
     await login(page);
-    await page.getByTestId("locale-switch").selectOption(locale);
-    await expect(page).toHaveURL(new RegExp(`/${locale}/messages`));
+    await switchLocale(page, copy.locale);
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       if (width === 390) {
-        await page.getByRole("button", { name: /Back to conversations|返回對話/ }).click();
+        await page.getByRole("button", { name: copy.back, exact: true }).click();
         await expect(page.getByTestId("inbox-list")).toBeVisible();
-        record(`mobile back ${locale}`, "click back", "conversation list is restored before another row is opened");
+        await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
+        await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+        record(`mobile back ${copy.locale}`, "click back", "private detail removed before reopening the list");
       }
       await page.getByTestId("inbox-filter").selectOption("messenger");
       await open(page, ids.open);
       await expect(page.getByTestId("inbox-thread")).toContainText(dm);
       await expect(page.getByTestId("buyer-panel")).toBeVisible();
-      // G-UI8 audit [READ/MEASURE]: reads geometry after real filter/row clicks.
+      // G-UI8 audit [READ/MEASURE]: geometry after real locale/filter/row clicks.
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      await page.screenshot({
-        path: resolve(evidence, `inbox-${locale}-${width}.png`),
-        fullPage: true,
-      });
+      await page.screenshot({ path: resolve(evidence, `inbox-${copy.locale}-${width}.png`), fullPage: true });
       await privateBoundary(page);
       record(
-        `viewport ${locale}/${width}`,
+        `viewport ${copy.locale}/${width}`,
         "select Messenger/open conversation",
-        "actual thread and BuyerPanel visible without horizontal overflow",
+        "thread and BuyerPanel visible without horizontal overflow",
       );
     }
   });
 
-test("INU07 Japanese route admission and desktop/mobile UI", async ({ page }) => {
-  await login(page);
-  // Required contract coverage stays red until the shared locale owner admits ja; never skip it for green.
-  await expect(
-    page.getByTestId("locale-switch").locator('option[value="ja"]'),
-    "INU07 shared Japanese locale is BLOCKED",
-  ).toHaveCount(1);
-  await page.getByTestId("locale-switch").selectOption("ja");
-  await expect(page).toHaveURL(/\/ja\/messages/);
-  for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 900 });
-    if (width === 390) await page.getByRole("button", { name: "会話一覧に戻る" }).click();
-    await page.getByTestId("inbox-filter").selectOption("messenger");
-    await open(page, ids.open);
-    await expect(page.getByTestId("inbox-thread")).toContainText(dm);
-    await expect(page.getByTestId("reply-send")).toHaveText("返信を送信");
-    await expect(page.getByTestId("buyer-panel")).toContainText("購入者情報");
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await privateBoundary(page);
-    await page.screenshot({ path: resolve(evidence, `inbox-ja-${width}.png`), fullPage: true });
-  }
-});
+  test(`INU07 ${copy.locale} localized controls at1440/mobile390`, async ({ page }) => {
+    await login(page);
+    await switchLocale(page, copy.locale);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      if (width === 390) await page.getByRole("button", { name: copy.back, exact: true }).click();
+      await page.getByTestId("inbox-filter").selectOption("messenger");
+      await open(page, ids.open);
+      await expect(page.getByTestId("inbox-thread")).toContainText(dm);
+      // Independent literal expectations catch zh-CN falling back to Traditional Chinese.
+      await expect(page.getByTestId("reply-send")).toHaveText(copy.send);
+      await expect(page.getByTestId("buyer-panel").getByRole("heading", { level: 2 })).toHaveText(copy.buyer);
+      await expect(page.getByTestId("inbox-page").getByRole("heading", { level: 1 })).toHaveText(copy.title);
+      await privateBoundary(page);
+      record(
+        `locale ${copy.locale}/${width}`,
+        "switch locale and open conversation",
+        "exact localized heading/composer/buyer labels verified",
+      );
+    }
+  });
+}

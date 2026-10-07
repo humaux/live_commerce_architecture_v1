@@ -1,6 +1,6 @@
 // Purpose: verify fixed inbox errors are translated without exposing upstream diagnostic text.
 // Depends on: real inbox copy/error mapper and Node test/assert.
-// Used by: LC-U2b lightweight acceptance; Japanese route availability is a separate shared-locale gap.
+// Used by: LC-U2b lightweight acceptance for the three real admin locales.
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -10,7 +10,7 @@ import {
 
 test("three unit languages cover identical fixed labels and delivery states", () => {
   const keys = Object.keys(inboxCopy("en"));
-  for (const locale of ["zh-TW", "en", "ja"]) {
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
     const copy = inboxCopy(locale);
     assert.deepEqual(Object.keys(copy).sort(), [...keys].sort());
     assert.ok(
@@ -43,5 +43,10 @@ test("three unit languages cover identical fixed labels and delivery states", ()
       ),
     );
   }
-  assert.notEqual(inboxCopy("ja").uncertain, inboxCopy("en").uncertain);
+  assert.equal(inboxCopy("zh-TW").send, "送出回覆");
+  assert.equal(inboxCopy("zh-CN").send, "发送回复");
+  assert.equal(inboxCopy("zh-CN").buyer, "买家资料");
+  assert.equal(inboxCopy("zh-CN").title, "消息");
+  assert.equal(inboxCopy("en").send, "Send reply");
+  assert.notEqual(inboxCopy("zh-CN").uncertain, inboxCopy("zh-TW").uncertain);
 });

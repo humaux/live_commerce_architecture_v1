@@ -125,7 +125,10 @@ test("G-UI2 staff without catalog:read cannot see products/inventory or open a p
     true,
   );
   assert.equal(visibleGroups(access).some((g) => g.id === "messages"), false);
-  assert.equal(canOpen(matchRoute("/messages")!, access), false);
+  const inbox = matchRoute("/messages")!;
+  assert.equal(inbox.path, "/messages");
+  assert.equal(inbox.permission, "inbox:read");
+  assert.equal(canOpen(inbox, access), false);
 });
 // --browser-manual-order sweep: /orders/new was guarded by "orders:write", a permission that exists nowhere in Go or SQL, so no store member except
 // the owner could ever open the manual-order page (every other role got the shell's 403). Go guards a manual order with inventory:reserve
