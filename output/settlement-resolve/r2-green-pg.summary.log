@@ -1,0 +1,23 @@
+--- PASS: TestRemovePayuniNotifyRM01Schema (9.17s)
+--- PASS: TestRemovePayuniNotifyRM02SeededDataBlocks (3.22s)
+--- PASS: TestPlatformOperatorOP08SchemaAndExecuteMatrix (1.58s)
+--- PASS: TestPlatformOperatorOP08LoginsRefusedAndOperatorRuns (0.43s)
+--- PASS: TestPlatformOperatorOP04bStripeRecordsForSuspendedStore (5.93s)
+--- PASS: TestPlatformOperatorOP04bMoneyDefinersDoNotReadSuspensionFlags (0.03s)
+--- PASS: TestPlatformOperatorOP09CLIProcess (2.71s)
+--- PASS: TestPlatformSettlement (14.61s)
+--- PASS: TestPlatformStripePF01Schema (3.70s)
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.40s)
+--- PASS: TestPlatformSettlementPF15Resolve (16.37s)
+--- PASS: TestStripeAuthorityIngressMatrix (21.12s)
+--- PASS: TestStripeAuthorityRegistrarMatrix (12.78s)
+--- PASS: TestStripeAuthorityLegacyPoolsRejectStripeRoles (2.00s)
+--- PASS: TestStripeAuthorityIngressPositive (0.53s)
+--- PASS: TestStripeAuthorityRegistrarPositive (0.39s)
+--- PASS: TestStripeAuthorityPlatformPolicies (0.01s)
+--- PASS: TestStripeSL02Schema (10.29s)
+--- PASS: TestStripeRF12Guards (13.79s)
+--- PASS: TestStripeRF03Schema (18.12s)
+ok  	livecommerce/tests/foundation	144.872s
+test-focused: top-level PASS=20 FAIL=0 SKIP=0 exit=0
+EXIT=0

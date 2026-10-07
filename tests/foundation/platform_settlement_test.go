@@ -6,9 +6,10 @@ package foundation_test
 // methods cmd/stripe-admin calls), merchant reads only through the real HTTP handler. SANDBOX (a real balance-transaction read with the owner's
 // test key) is NOT_RUN.
 //
-// Disclosed owner-pool fixtures (named at their call site): the PF09 negative inserts/updates that prove CHECKs and set-once triggers, one
-// unattributed row of reason unmapped_source (the only way to prove the environment-wide close block without a Stripe read that cannot be
-// resolved later), and cleanup of those rows. Everything else goes through the product paths.
+// Disclosed owner-pool fixtures (named at their call site): the PF09 negative inserts/updates that prove CHECKs and set-once triggers, and one
+// unattributed row of reason unmapped_source (the only way to prove the environment-wide close block without a Stripe read). S2-OPEN-1: that row
+// is now cleared through the 0163 resolve step, exactly the way an operator clears it; the former owner-pool DELETE fixture is gone.
+// Everything else goes through the product paths.
 
 import (
 	"context"
@@ -159,7 +160,8 @@ func (e *pslEnv) syncErr(from, to time.Time, txns ...stripe.BalanceTransaction) 
 }
 
 func (e *pslEnv) closeWeek(start time.Time, target string) ([]stripeadmin.ClosedStatement, error) {
-	return e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target, pslTicket)
+	res, err := e.reg.SettlementClose(context.Background(), e.op, "SANDBOX", start.Format("2006-01-02"), "op@test", target, pslTicket)
+	return res.Statements, err // S2-OPEN-1: SettlementClose now returns CloseResult; operator notes are asserted in settlement_resolve_test.go
 }
 
 func (e *pslEnv) line(t *testing.T, txn string) (kind, store string, storeMinor, feeStore int64, mismatch *string, statement *string) {
@@ -247,7 +249,8 @@ func TestPlatformSettlement(t *testing.T) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	t.Run("PF09_schema", func(t *testing.T) {
 		o := e.f.owner
-		tables := []string{"settlement_lines", "settlement_statements", "settlement_unattributed", "settlement_sync_runs"}
+		tables := []string{"settlement_lines", "settlement_statements", "settlement_unattributed", "settlement_sync_runs",
+			"settlement_unattributed_resolutions"} // 0163 (S2-OPEN-1): the append-only resolution table joins every privilege pin
 		for _, tbl := range tables {
 			var rls, force bool
 			if err := o.QueryRow(ctx, `SELECT relrowsecurity,relforcerowsecurity FROM pg_class WHERE oid=('payments.'||$1)::regclass`, tbl).Scan(&rls, &force); err != nil || !rls || !force {
@@ -272,6 +275,7 @@ func TestPlatformSettlement(t *testing.T) {
 			"payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)":      {"commerce_payment_registrar", "commerce_payment_registry_writer"},
 			"payments.read_settlement_statement(uuid,uuid,uuid,uuid)":                                       {"commerce_payment_registrar", "commerce_payment_registry_writer"},
 			"payments.read_store_settlements(bytea,uuid,integer,date,uuid)":                                 {"commerce_runtime", "commerce_payment_registry_writer"},
+			"payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)": {"commerce_payment_registrar", "commerce_payment_registry_writer"}, // 0163 (S2-OPEN-1)
 			"payments.settlement_kind(text,text,text,bigint)":                                               {"commerce_payment_registry_writer"},
 			"payments.settlement_fee_store(bigint,bigint,bigint)":                                           {"commerce_payment_registry_writer"},
 			"payments.settlement_statement_json(uuid,uuid,uuid,boolean)":                                    {"commerce_payment_registry_writer"},
@@ -305,7 +309,9 @@ func TestPlatformSettlement(t *testing.T) {
 		// the merchant runtime can execute the reader only
 		if n := countRows(t, o, `SELECT count(*) FROM unnest(ARRAY['payments.record_settlement_lines(uuid,uuid,uuid,text,jsonb,timestamptz,timestamptz,uuid,text)',
 			'payments.close_settlement(uuid,uuid,uuid,text,date,text,uuid,text)','payments.record_settlement_payout(uuid,uuid,uuid,uuid,text,bigint,timestamptz,text,text)',
-			'payments.read_settlement_statement(uuid,uuid,uuid,uuid)']) f WHERE has_function_privilege('commerce_runtime',f::regprocedure,'EXECUTE')`); n != 0 {
+			'payments.read_settlement_statement(uuid,uuid,uuid,uuid)',
+			'payments.record_settlement_resolution(uuid,uuid,uuid,text,text,text,text,text,text,uuid,uuid)']) f
+			WHERE has_function_privilege('commerce_runtime',f::regprocedure,'EXECUTE')`); n != 0 {
 			t.Fatalf("commerce_runtime can execute %d operator definers", n)
 		}
 
@@ -634,8 +640,12 @@ func TestPlatformSettlement(t *testing.T) {
 		// an unmapped source (here the dispute-shaped adjustment Stripe did not classify as a known pair) blocks every store's close
 		_, err = e.closeWeek(w1, e.storeA)
 		pslWantRefused(t, "unmapped source blocks", err, "settlement_unattributed")
-		// Resolution tooling is out of scope (S2-OPEN-1: escalate, before LIVE); the fixture removes the row the way an operator-approved fix would.
-		mustExec(t, e.f.owner, `DELETE FROM payments.settlement_unattributed WHERE balance_txn_id='txn_DisputeOdd'`)
+		// S2-OPEN-1 (0163 §6.6): the sanctioned clearing path is the append-only resolve step — the exact call stripe-admin
+		// settlement-resolve makes. The former owner-pool DELETE of this row is gone; the row itself stays as sync wrote it.
+		if _, err := e.reg.SettlementResolve(ctx, e.op, "SANDBOX", "txn_DisputeOdd", stripeadmin.ResolveNotStoreRevenue, "", "",
+			"Dispute-shaped adjustment with an unclassified category; not a store sale.", "op@test", pslTicket); err != nil {
+			t.Fatalf("resolve txn_DisputeOdd: %v", err)
+		}
 		// week 1 for A while week 0 is still open
 		_, err = e.closeWeek(w1, e.storeA)
 		pslWantRefused(t, "previous period open", err, "previous_period_open")

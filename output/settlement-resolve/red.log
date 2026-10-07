@@ -1,0 +1,7 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+    settlement_resolve_test.go:44: record_settlement_resolution: ERROR: function payments.record_settlement_resolution(uuid, uuid, uuid, unknown, unknown, unknown, unknown, unknown, unknown, unknown, unknown) does not exist (SQLSTATE 42883) (sqlstate 42883)
+--- FAIL: TestPlatformSettlementPF15Resolve (15.68s)
+FAIL
+FAIL	livecommerce/tests/foundation	16.456s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
