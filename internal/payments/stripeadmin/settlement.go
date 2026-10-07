@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -45,6 +46,7 @@ var (
 	payoutRefPat      = regexp.MustCompile(`^[A-Za-z0-9._:/-]{4,80}$`)
 	tokenPattern      = regexp.MustCompile(`^[a-z][a-z0-9_]{2,59}$`)
 	balanceTxnPattern = regexp.MustCompile(`^txn_[A-Za-z0-9]{1,255}$`) // the ledger's own id grammar (0150/0163 CHECK)
+
 )
 
 // balanceLister is the slice of *stripe.Client the sync needs. It is asserted on the provider so the other registrar operations keep
@@ -85,6 +87,11 @@ type OperatorNote struct {
 	Operator       string `json:"operator"`
 	Ticket         string `json:"ticket"`
 	Note           string `json:"note"`
+	PeriodStart    string `json:"period_start"`    // the closed period the transaction belongs to (Monday, Asia/Taipei)
+	Type           string `json:"type"`            // the Stripe balance transaction type (charge, adjustment, ...)
+	SettleAmount   int64  `json:"settle_amount"`   // SIGNED, settlement currency minor units: negative = money left the platform account
+	SettleNet      int64  `json:"settle_net"`      // SIGNED, after Stripe's fee
+	SettleCurrency string `json:"settle_currency"` // the settlement currency (HKD), not the store's TWD: the owner converts or settles in kind
 }
 
 // CloseResult is the close_settlement output: the closed (or replayed) statements plus the window's operator notes.
@@ -276,7 +283,8 @@ func (r *Registrar) SettlementResolve(ctx context.Context, s Scope, environment,
 	}
 	if !balanceTxnPattern.MatchString(balanceTxn) || (resolution != ResolveNotStoreRevenue && resolution != ResolveAssignedToStore) ||
 		(resolution == ResolveAssignedToStore) != (targetTenant != "") || !operatorPattern.MatchString(operator) ||
-		!refPattern.MatchString(ticket) || strings.TrimSpace(note) == "" || utf8.RuneCountInString(note) > 500 {
+		!refPattern.MatchString(ticket) || strings.TrimSpace(note) == "" || utf8.RuneCountInString(note) > 500 ||
+		strings.ContainsFunc(note, unicode.IsControl) { // one printable line (P2-2): the note is printed in CLI output and close notes
 		return ResolvedUnattributed{}, ErrRejected
 	}
 	var targetT, targetS any
@@ -351,7 +359,27 @@ func (r *Registrar) settlementScan(ctx context.Context, dest any, sql string, ar
 	collapsed := sqlError(err)
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) && pg.Code == "PT409" && tokenPattern.MatchString(pg.Message) {
+		// P2-1: the settlement_unattributed refusal carries up to 20 blocking Stripe balance transaction ids in its DETAIL
+		// (close_settlement, 0163). Only a DETAIL that is exactly that id list is passed on: never a driver message.
+		if pg.Message == "settlement_unattributed" && blockingIDs(pg.Detail) {
+			return fmt.Errorf("%w: %s: %s", collapsed, pg.Message, pg.Detail)
+		}
 		return fmt.Errorf("%w: %s", collapsed, pg.Message)
 	}
 	return collapsed
+}
+
+// blockingIDs reports whether detail is exactly the close refusal's id list: 1..20 balance transaction ids, comma separated.
+// (Split, not one regexp: RE2 caps nested repeat counts.)
+func blockingIDs(detail string) bool {
+	ids := strings.Split(detail, ",")
+	if len(ids) > 20 {
+		return false
+	}
+	for _, id := range ids {
+		if !balanceTxnPattern.MatchString(id) {
+			return false
+		}
+	}
+	return true
 }

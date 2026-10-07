@@ -1,6 +1,7 @@
 // Purpose: the settlement subcommands of stripe-admin (contracts/stripe-platform-account-v1.md §6.5, W4-S2; §6.6, S2-OPEN-1):
 //   settlement-sync    --environment --connection --expected-version --from --to   (Stripe GET balance transactions, STORED key)
-//   settlement-close   --environment --period-start [--target-store]               (SQL only)
+//   settlement-close   --environment --period-start [--target-store]               (SQL only; prints the period's operator_notes; a refusal for
+//                      unresolved unmapped_source rows prints their blocking balance_txn_ids, up to 20, §6.6)
 //   settlement-export  --statement --out                                           (SQL read + a new 0600 CSV file)
 //   settlement-payout  --statement --payout-ref --amount --paid-at                 (SQL only: RECORDS a payout, never pays)
 //   settlement-resolve --environment --balance-txn --resolution [--target-tenant --target-store] --note
