@@ -1,3 +1,6 @@
+// Purpose: select isolated browser acceptance suites and engine profiles.
+// Depends on: Playwright, LC_BROWSER_SUITE/LC_BROWSER_ENGINE and each test-owned Go fixture.
+// Used by: registered browser gates; signed identities never share ledger authority.
 import { defineConfig, devices } from "@playwright/test";
 
 // These suites have deliberately different server/authority fixtures. Never
@@ -21,6 +24,7 @@ const suites: Record<string, string[]> = {
   "live-claims": ["claims-ui.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
   "store-design": ["design.spec.ts"],
+  "product-media-v2": ["product-media-v2.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");
 
