@@ -65,7 +65,7 @@ function TagManagerDialog({ locale, store, boundary, onChanged, onScopeLost, clo
   locale: Locale; store: Store; boundary: string; onChanged?: () => void; onScopeLost?: () => void; close: () => void;
 }) {
   const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary, onScopeLost);
-  const write = useTagWrite(store.id, boundary);
+  const write = useTagWrite(store.id, boundary, "catalogue");
   const dialog = useRef<HTMLDialogElement>(null);
   const [editing, setEditing] = useState<TagRecord | null>(null);
   const [deleting, setDeleting] = useState<TagRecord | null>(null);
@@ -121,7 +121,7 @@ function CustomerTagBody({ locale, store, detail, boundary, onChanged, onScopeLo
   locale: Locale; store: Store; detail: CustomerDetail; boundary: string; onChanged: () => Promise<boolean>; onScopeLost?: () => void;
 }) {
   const c = customerTagsCopy[locale]; const read = useCatalogue(store.id, boundary, onScopeLost);
-  const write = useTagWrite(store.id, boundary);
+  const write = useTagWrite(store.id, boundary, `customer:${detail.customer_id}`);
   const canWrite = store.permissions?.includes("customers:write") === true && detail.active;
   const [selected, setSelected] = useState(detail.tags.map((tag) => tag.id));
   const [newTag, setNewTag] = useState(false);

@@ -1,21 +1,38 @@
-// Purpose: one in-memory pending command per mounted customer/tag management scope.
+// Purpose: one in-memory pending command per customer/tag management scope; an UNKNOWN one survives unmount/remount (memory only).
 // Depends on: React, customer-tags-client fenced transport, session-events (global logout on unauthorized); customers-billing-v1 W6-01B idempotency.
-// Used by: CustomerTags and CustomerNotes; no storage or note-body logs.
+// Used by: CustomerTags and CustomerNotes; no storage or note-body logs (the pending command holds the note body: never persisted).
 import { useEffect, useRef, useState } from "react";
 import { sendTagCommand, type TagCommand } from "./customer-tags-client";
 import { signalLogout } from "./session-events";
 
 type Pending = { command: Readonly<TagCommand>; unknown: boolean; parse: (v: unknown) => unknown; committed: (v: unknown) => Promise<void> };
-/** Coordinate explicit writes/retries; unmount/session scope drops pending payloads and stale results. */
-export function useTagWrite(store: string, boundary: string) {
+// UNKNOWN commands outlive a component (hide/navigation remounts): a fresh remount must not unlock a new key, because the first
+// attempt may have committed (duplicate note). Keyed by store, session boundary and scope; cleared by a trusted success. A new
+// boundary never matches an old key, so a session change drops it; entries for stale boundaries are pruned on set.
+const unknownCommands = new Map<string, Pending>();
+const slot = (store: string, boundary: string, scope: string) => `${store}\n${boundary}\n${scope}`;
+const rememberUnknown = (store: string, boundary: string, scope: string, p: Pending) => {
+  for (const key of unknownCommands.keys()) if (key.startsWith(`${store}\n`) && key.endsWith(`\n${scope}`)) unknownCommands.delete(key);
+  unknownCommands.set(slot(store, boundary, scope), p);
+};
+
+/** Coordinate explicit writes/retries; session scope drops stale results, while an UNKNOWN command stays locked across remounts. */
+export function useTagWrite(store: string, boundary: string, scope = "") {
+  const [restored] = useState(() => unknownCommands.get(slot(store, boundary, scope)) ?? null);
   const [busy, setBusy] = useState(false);
-  const [uncertain, setUncertain] = useState(false);
+  const [uncertain, setUncertain] = useState(restored !== null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const pending = useRef<Pending | null>(null);
+  // Same frozen command and key; its old commit callback belonged to an unmounted view, so a trusted success asks for a refresh.
+  const pending = useRef<Pending | null>(restored && { ...restored, committed: async () => { throw new Error("refresh_required"); } });
   const inflight = useRef(false);
   const epoch = useRef(0);
-  useEffect(() => () => { epoch.current++; pending.current = null; }, [store, boundary]);
+  useEffect(() => () => {
+    epoch.current++;
+    // An in-flight command has an unknown outcome once its view is gone.
+    if (pending.current && inflight.current) { pending.current.unknown = true; rememberUnknown(store, boundary, scope, pending.current); }
+    pending.current = null;
+  }, [store, boundary, scope]);
 
   async function execute(p: Pending) {
     if (inflight.current) return;
@@ -33,9 +50,10 @@ export function useTagWrite(store: string, boundary: string) {
         // guarded customer read clears PII (Codex review P2, PR #3). Sticky UNKNOWN above is unchanged.
         if (result.code === "unauthorized") signalLogout();
         pending.current = p.unknown ? p : null;
+        if (p.unknown) rememberUnknown(store, boundary, scope, p); else unknownCommands.delete(slot(store, boundary, scope));
         return;
       }
-      pending.current = null; setUncertain(false);
+      pending.current = null; setUncertain(false); unknownCommands.delete(slot(store, boundary, scope));
       try { await p.committed(result.value); }
       catch { if (epoch.current === generation) setError("refresh_required"); }
     } finally {

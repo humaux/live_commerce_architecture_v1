@@ -388,3 +388,50 @@ test("legacy-store permission probe: forbidden/not-found/signed-out fail the rea
   probe = new Error("network");
   assert.equal((await captured(new AbortController().signal)).permissionKnown, false);
 });
+
+// Reports/Finance component loaders (SSR, stubbing only the guarded-read hook and layout shells).
+const shellOf = ({children}) => createElement("div", null, children);
+const proxyCopy = new Proxy({tabs:{}}, {get:(t,k)=>k in t?t[k]:String(k)});
+function loadReports(read, exportOutcome) {
+  return load("../../apps/admin/components/Reports.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
+    "@/lib/model":{}, "@/lib/customers-client":{ReadError:class extends Error{},useGuardedRead:()=>read},
+    "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError:class extends Error{},readOrderActions:async()=>({})},
+    "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
+    "@/lib/reports-client":{readReport:async()=>({}),downloadReport:async()=>"done",exportOutcome,exportWithLock:async()=>"done",loadUncertainScopes:()=>[]},
+    "@/lib/reports-copy":{reportsCopy:{en:proxyCopy}}, "@/lib/reports-presentation":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null},
+    "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
+    "./orders.css":{}, "./reports.css":{},
+  }).Reports;
+}
+// Codex review P2 (PR #3): another user signing in within the same tab (new session boundary) must not inherit an uncertain lock.
+test("an uncertain export lock is bound to the session boundary, so a different user does not inherit it", () => {
+  const real = downloadClient({cookie:"csrf-pair",boundary:"session"}).exportOutcome;
+  const seen = []; let locked = [];
+  const Reports = (boundary) => loadReports({status:"ready",boundary,data:{canExport:true,permissionKnown:true,view:null},reload(){},refresh:async()=>false},
+    (scope, last) => { seen.push(scope); return real(scope, last, locked); });
+  const html = (boundary) => renderToStaticMarkup(createElement(Reports(boundary), {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
+  html("user-a-boundary"); locked = [seen.at(-1)];
+  assert.match(seen.at(-1), /user-a-boundary/);
+  assert.match(html("user-a-boundary"), /csvUnknown/);
+  assert.doesNotMatch(html("user-b-boundary"), /csvUnknown/);
+});
+
+// Codex review P2 (PR #3): staff with orders:read but not customers:read reach reports from the Finance landing page.
+test("Finance landing links to reports under the same canSeeReports rule", () => {
+  const read = {status:"ready",boundary:"b",data:{rows:[],totals:[],from,to},reload(){},refresh:async()=>true};
+  const Finance = load("../../apps/admin/components/Finance.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "next/link":{__esModule:true,default:({href,children,...p})=>createElement("a",{href,...p},children)},
+    "@live-commerce/i18n":{}, "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
+    "@/lib/customers-client":{financeCSVHref:()=>"/x.csv",readFinance:async()=>({}),useGuardedRead:()=>read},
+    "@/lib/customers-model":adminRequire("./lib/customers-model.ts"), "@/lib/orders-client":{readOrderActions:async()=>({orders_export:false})},
+    "@/lib/customers-copy":adminRequire("./lib/customers-copy.ts"), "@/lib/reports-copy":{reportsCopy:{en:{title:"Sales reports"}}},
+    "@/lib/presentation-copy":adminRequire("./lib/presentation-copy.ts"),
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{},
+  }).Finance;
+  const html = (permissions) => renderToStaticMarkup(createElement(Finance, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD",permissions},from,to,today:to,initialError:null,renderKey:"r"}));
+  assert.match(html(["orders:read"]), new RegExp(`data-testid="finance-reports"`)); assert.match(html(["orders:read"]), new RegExp(`/en/finance/reports\\?store=${id}`));
+  assert.match(html(undefined), /finance-reports/);
+  assert.doesNotMatch(html(["customers:read"]), /finance-reports/);
+});

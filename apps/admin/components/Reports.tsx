@@ -54,7 +54,6 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   useEffect(() => { if (storeId) setUncertainScopes((u) => [...new Set([...u, ...loadUncertainScopes(storeId)])]); }, [storeId]);
   const exporting = useRef(false), exportController = useRef<AbortController | null>(null);
   const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`; // read lifecycle: new per server render
-  const lockScope = `${store?.id ?? ""}|${from}|${to}|${tab}`; // export lock: stable across renders
   const valid = validReportsQuery("products", `/?from=${draftFrom}&to=${draftTo}`);
   const validQuery = validReportsQuery("products", `/?from=${from}&to=${to}`);
   const permissions = store?.permissions;
@@ -73,6 +72,9 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     }
   } : null, initialError ?? (denied ? "forbidden" : null));
 
+  // Export lock key: stable across renders but bound to the session boundary (the fence value, not the cookie), so another user
+  // signing in within this tab never inherits a previous user's uncertain lock (Codex review P2, PR #3).
+  const lockScope = `${read.status === "ready" ? read.boundary : ""}|${store?.id ?? ""}|${from}|${to}|${tab}`;
   useEffect(() => () => { exportController.current?.abort(); }, [scope]);
   useEffect(() => {
     const conceal = () => { exportController.current?.abort(); };
