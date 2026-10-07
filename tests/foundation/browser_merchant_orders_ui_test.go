@@ -7,6 +7,8 @@ package foundation_test
 //   buyer (same owner and address, must never be suggested) are created and parcel-merge.spec.ts runs against the same chain
 //   (merge -> group waybill -> members shipped; OPEN panel rebuilt after a reload -> dissolve/ship; uncertain dissolve reconciled;
 //   stale second tab -> 409), then PG group state is asserted.
+//   The API wrapper exempts only the exact /orders/merge-suggestions suffix from the detail-read count (a list-level, server-masked
+//   read) and fails the run if any of its responses carries the fixture's full recipient name or phone.
 // Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts + parcel-merge.spec.ts.
 // Used by: --browser-merchant-orders-ui; focused test-focused invocations do not certify full MOU/native acceptance.
 
@@ -267,7 +269,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(q.f.runtime, httpapi.Options{SessionStoreList: true}))
-	var orderCalls, detailCalls, stripped atomic.Int64
+	var orderCalls, detailCalls, stripped, suggestionCalls, suggestionLeaks atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/__test/order-observation" {
 			w.Header().Set("Content-Type", "application/json")
@@ -276,11 +278,34 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 		}
 		if strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/orders") {
 			orderCalls.Add(1)
-			if strings.Contains(strings.TrimPrefix(r.URL.Path, "/v1/admin/stores/"), "/orders/") {
+			// Only the exact /orders/merge-suggestions suffix is exempt from the detail count: it is a LIST-level read the orders page
+			// fires on every load (like the list itself), and since migration 0164 it is server-masked. Any other /orders/<x> path,
+			// including a longer merge-suggestions path, still counts as a detail read.
+			suggestions := strings.HasSuffix(r.URL.Path, "/orders/merge-suggestions")
+			if !suggestions && strings.Contains(strings.TrimPrefix(r.URL.Path, "/v1/admin/stores/"), "/orders/") {
 				detailCalls.Add(1)
 			}
 			if r.Header.Get("Cookie") != "" || r.Header.Get("X-Tenant-ID") != "" || r.Header.Get("X-Forwarded-Host") != "" {
 				stripped.Add(1)
+			}
+			if suggestions {
+				// Capture the response the browser would receive: the full recipient name or phone must never appear in it (P1-A).
+				rec := httptest.NewRecorder()
+				mux.ServeHTTP(rec, r)
+				suggestionCalls.Add(1)
+				body := rec.Body.String()
+				for _, leak := range []string{"Synthetic Buyer", "900000001", "recipient_name"} {
+					if strings.Contains(body, leak) {
+						suggestionLeaks.Add(1)
+						t.Errorf("merge-suggestions leaked %q to the browser: %s", leak, body) // Errorf (not Fatal): safe off the test goroutine
+					}
+				}
+				for k, v := range rec.Header() {
+					w.Header()[k] = v
+				}
+				w.WriteHeader(rec.Code)
+				_, _ = w.Write(rec.Body.Bytes())
+				return
 			}
 		}
 		mux.ServeHTTP(w, r)
@@ -469,6 +494,10 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	staleShipped := orderCount("fulfillment_state='MERCHANT_SHIPPED'", append(stalePair[:], codOrder, cvsOrder)...)
 	if shippedMembers != 4 || openStale != 2 || dissolvedGroups != 2 || shippedOrders != 4 || staleShipped != 0 || groupedExcluded != 0 {
 		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openStale=%d dissolved=%d shippedOrders=%d staleOrExcludedShipped=%d groupedExcluded=%d; evidence=%s", shippedMembers, openStale, dissolvedGroups, shippedOrders, staleShipped, groupedExcluded, evidence)
+	}
+	// P1-A: the wrapper saw the suggestions responses of every orders-page load plus the parcel merge flows, none with a full name/phone.
+	if suggestionCalls.Load() == 0 || suggestionLeaks.Load() != 0 {
+		t.Fatalf("merge-suggestions observed=%d leaked=%d (want >0 and 0); evidence=%s", suggestionCalls.Load(), suggestionLeaks.Load(), evidence)
 	}
 	t.Logf("MOU real-chain browser cases, trusted native visibility, PG read-only facts and W3-07B parcel-merge clicks checked; evidence=%s", evidence)
 }

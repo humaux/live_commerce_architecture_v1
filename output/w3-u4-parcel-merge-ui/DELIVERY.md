@@ -105,3 +105,36 @@
 - Migration `0164_open_parcel_groups.sql` (given number); re-union the R2 count (87 -> 88 here) with 0162/0163; privilege pins updated in MF02, PickListReadAuthority, WAS02 (EXECUTE commerce_runtime only).
 - Regenerate `docs/architecture/DEPENDENCIES.md`; optionally `node scripts/dev/shard-plan.mjs --write` so `TestParcelGroupOpenRead` leaves the catch-all shard.
 - Risk accepted: the open-groups read lists the 200 newest OPEN groups (ponytail comment in the migration); it fails closed (503 at the Go validator) on an OPEN group with <2 or >20 members, which W3-08B's cancel keeps from existing.
+
+---
+
+## Finisher 2 (Sonnet) — P1-A: merge-suggestions leaked the full recipient name
+
+- Role/model: Claude Sonnet 5.5, same worktree/branch, HEAD before this round `03277408`. Fixes the independent Opus review (MERGE-AFTER-FIXES) P1-A and the MOU browser-gate failure (CI run 37609774297 job 112754029498: all 10 orders-ui.spec cases fail at `expect(detailCalls).toBe(before)` 0 -> 1).
+- Evidence class: REAL_PG (backend) + node (UI model) + BROWSER NOT_RUN (CI).
+- Root cause: `fulfillment.read_merge_suggestions` (0146) returned the FULL `recipient_name`; the orders page fetches it on every load, so a detail-level field reached the browser without an expand. The previous finisher's client-side `maskRecipient` only hid it on screen (the 0146 "frozen" argument is void: 0164 is unmerged and applied to no shared DB, so CREATE OR REPLACE inside 0164 is safe). The harness also counted the suggestions path as a detail read (any `/orders/<x>`).
+
+| Change | File | Test (red -> green) |
+|---|---|---|
+| 0164 `CREATE OR REPLACE FUNCTION fulfillment.read_merge_suggestions(bytea,uuid)` emits `{recipient_masked, order_ids}`; body = 0146's, mask applied AFTER the GROUP BY on `min(c.recipient_name)` with the 0110 expression and escapes verbatim; `SECURITY DEFINER SET search_path=pg_catalog` repeated, then OWNER/REVOKE/GRANT/COMMENT re-run (COMMENT says recipient_masked) | `migrations/0164_open_parcel_groups.sql` | NEW REAL_PG `TestParcelGroupMergeSuggestionsMasked`: 3 buyers (plain, leading U+3000, blank name) -> exactly `{recipient_masked, order_ids}`, masks `王***` / `王***` / `—`, equal to the v2 orders-list mask per order, raw body free of the full name, phone, `recipient_name`. Red on the old function: `red-finisher2-suggestions-mask.log` (leaks 王小明, exit 1). Green: `green-finisher2-focused.log` |
+| P2: the open-groups function's regex used invisible literal U+200B..U+200F/U+2028/U+FEFF characters -> the 0110 escaped form (behaviour identical, `TestParcelGroupOpenRead` still green incl. U+3000/blank rows) | same | `TestParcelGroupOpenRead` |
+| `MergeSuggestion.RecipientMasked` (`json:"recipient_masked"`), each item validated with `normalizeRecipientMask` like `OpenParcelGroups` | `internal/merchantorders/parcels.go` | REAL_PG test above (through the real HTTP handler) |
+| UI: `parseMergeSuggestions` takes `{recipient_masked, order_ids}` with the same mask-shape check as `parseOpenParcelGroups` (shared `maskedRecipient`); the pre-0164 `{recipient_name}` shape and a full name in the mask slot are refused; `maskRecipient`, `leadingBlank`, `recipient()` and their test vectors DELETED | `apps/admin/lib/parcels-model.ts`, `tests/admin/parcels-model.test.ts` | red against the old model `red-finisher2-model.log` (1 fail), green 9/9 |
+| Contract: suggestions DTO is `{items:[{recipient_masked, order_ids}]}` | `contracts/manual-fulfilment-v1.md` (Routes line) | - |
+| Harness: only the exact `/orders/merge-suggestions` suffix is exempt from `detailCalls` (list-level, server-masked read); the wrapper records that endpoint's response bodies and fails the run (`t.Errorf` in the handler, `t.Fatalf` after the parcel run) if one contains `Synthetic Buyer`, `900000001` or `recipient_name`, or if none was observed (non-vacuous). `orderCalls` / `stripped` unchanged | `tests/foundation/browser_merchant_orders_ui_test.go` | `go vet -tags browser ./tests/foundation` exit 0; browser NOT_RUN |
+
+### Commands (this sandbox) and exit codes
+
+- `go build ./...` -> 0; `go vet ./internal/merchantorders ./internal/httpapi` -> 0; `go vet -tags browser ./tests/foundation` -> 0; `gofmt -l` clean.
+- `go test ./internal/httpapi -run TestParcel -count=1` -> ok; `go test ./internal/merchantorders -count=1` -> ok.
+- `LC_FOCUSED_TIMEOUT=2700s bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF02Schema|TestMerchantOrdersV2PickListReadAuthority|TestWAS02|TestR2IntegrationUpgrade|TestT06)'` -> **exit 0**, 33 top-level PASS / 0 FAIL / 0 SKIP (new test, TestParcelGroupOpenRead, TestParcelGroup, TestParcelGroupACL, MF02 unchanged, PickListReadAuthority, WAS02, TestR2IntegrationUpgradeFromReleaseHead (pin stays 89), all TestT06* (function-count pin untouched)) — `green-finisher2-focused.log`.
+- `node --test --experimental-strip-types tests/admin/parcels-model.test.ts parcels-request.test.ts parcels-bff.test.ts orders-model.test.ts` -> 0, 32 pass / 0 fail (`node-finisher2.log`); `(cd apps/admin && npx tsc --noEmit -p .)` -> 0.
+- `bash scripts/dev/check-headers.sh` -> 0; `bash scripts/dev/check-gates.sh` -> 0 (`TestParcelGroupMergeSuggestionsMasked` lands in catch-all shard g06, a note).
+
+### NOT_RUN
+
+- `bash scripts/dev/test-local.sh --browser-merchant-orders-ui` (orders-ui.spec x10 + parcel-merge.spec A-H + the new response-leak guard): owner rule 2026-10-06 (AGENT-PREAMBLE §2) puts every `--browser-*` mode on GitHub, not the dev Mac. It must go green in CI; confirm `playwright-parcel.log` lists parcel spec steps A-H. The spec itself needed no change (it asserts `S***`, which the server mask produces for the fixture's `Synthetic Buyer`).
+
+### Integrator to-do
+
+- No new migration file (R2 pin stays 89; T06 function count unchanged: the suggestions function is replaced, not added). 0164 now also carries the masked `read_merge_suggestions`; if 0164 was ever applied to a shared DB, ship the replace as a new migration instead.

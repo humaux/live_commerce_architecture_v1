@@ -1,13 +1,15 @@
 // Purpose: strict exact-key parsers for the W3-07B parcel-group DTOs (BFF parcel routes -> Go internal/httpapi/parcels.go
-//   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B), the recipient mask the suggestion banner shows
-//   and the pure reconcile of the session's group panels with the server's OPEN-groups read (W3-U4, migration 0164). The server
-//   stays the authority for every write; these parsers only refuse malformed reads, so a drifting Go response fails closed.
+//   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B) and the pure reconcile of the session's group
+//   panels with the server's OPEN-groups read (W3-U4, migration 0164). The server stays the authority for every write and for the
+//   recipient mask (suggestions and group members both arrive masked); these parsers only refuse malformed reads, so a drifting
+//   Go response fails closed.
 // Depends on: ./orders-model.ts (canonicalUUID, parseShipmentVersion, ShipmentVersion).
 // Used by: apps/admin/lib/parcels-client.ts; apps/admin/components/ParcelGroup.tsx; tests/admin/parcels-model.test.ts.
 // Invariants: a group is 2..20 distinct orders (0146); create answers OPEN with members, dissolve DISSOLVED without members,
 //   ship SHIPPED with one shipment version per member; the OPEN-groups read lists OPEN groups only, each order in at most one
-//   group, members with masked recipients (never a full name). The UI never keeps a full recipient name: suggestions are masked
-//   at parse time with the orders-list rule. Merging parcels never touches money (I05).
+//   group, members with masked recipients (never a full name). The browser never receives a full recipient name from either
+//   read: both carry recipient_masked (orders-list rule, SQL side) and a value of any other shape is refused. Merging parcels
+//   never touches money (I05).
 import { canonicalUUID, parseShipmentVersion, type ShipmentVersion } from "./orders-model.ts";
 
 export const parcelGroupStates = ["OPEN", "SHIPPED", "DISSOLVED"] as const;
@@ -67,33 +69,21 @@ function version(value: unknown): number {
   return value as number;
 }
 
-function recipient(value: unknown): string {
-  if (
-    typeof value !== "string" || value.length === 0 || Array.from(value).length > 120 ||
-    /[\p{C}\p{Zl}\p{Zp}]/u.test(value) ||
-    /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(value)
-  )
+// recipient_masked as the server sends it (orders-list rule, migrations 0110/0164): "—" or exactly one character + "***". The UI
+// only validates the shape; any other value (a full name from a drifting server) fails closed instead of being shown.
+function maskedRecipient(value: unknown): string {
+  if (typeof value !== "string" || (value !== "—" && (Array.from(value).length !== 4 || !value.endsWith("***"))))
     throw new Error("unavailable");
   return value;
 }
 
-// The orders-list mask (migration 0110 recipient_masked): first non-whitespace character + "***", "—" for a blank name. The
-// leading-blank class is the SQL one verbatim (Unicode spaces and zero-width marks are skipped, not shown as the initial).
-const leadingBlank = /^[\s\u0085\u00a0\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f\u2060\u3000\ufeff]+/u;
-
-/** Mask a recipient name exactly like the orders list row: "王小明" -> "王***", blank or unprintable initial -> "—". */
-export function maskRecipient(name: string): string {
-  const first = Array.from(name.replace(leadingBlank, ""))[0];
-  return first && !/[\p{C}\p{Z}]/u.test(first) ? `${first}***` : "—";
-}
-
-/** GET orders/merge-suggestions: {items:[{recipient_name, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps). The full name is masked here and never kept. */
+/** GET orders/merge-suggestions: {items:[{recipient_masked, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps, mask 0164). */
 export function parseMergeSuggestions(value: unknown): MergeSuggestion[] {
   const v = exact(value, ["items"]);
   if (!Array.isArray(v.items) || v.items.length > 100) throw new Error("unavailable");
   return v.items.map((raw) => {
-    const s = exact(raw, ["recipient_name", "order_ids"]);
-    return { recipient_masked: maskRecipient(recipient(s.recipient_name)), order_ids: orderIDs(s.order_ids) };
+    const s = exact(raw, ["recipient_masked", "order_ids"]);
+    return { recipient_masked: maskedRecipient(s.recipient_masked), order_ids: orderIDs(s.order_ids) };
   });
 }
 
@@ -119,11 +109,10 @@ export function parseOpenParcelGroups(value: unknown): OpenParcelGroup[] {
     const members = g.members.map((m): OpenParcelMember => {
       const o = exact(m, ["order_id", "order_number", "recipient_masked"]);
       if (typeof o.order_id !== "string" || !canonicalUUID.test(o.order_id) || ordersSeen.has(o.order_id) ||
-        o.order_number !== `LC-${o.order_id.replaceAll("-", "").toUpperCase()}` || typeof o.recipient_masked !== "string" ||
-        (o.recipient_masked !== "—" && (Array.from(o.recipient_masked).length !== 4 || !o.recipient_masked.endsWith("***"))))
+        o.order_number !== `LC-${o.order_id.replaceAll("-", "").toUpperCase()}`)
         throw new Error("unavailable");
       ordersSeen.add(o.order_id);
-      return { order_id: o.order_id, order_number: o.order_number, recipient_masked: o.recipient_masked };
+      return { order_id: o.order_id, order_number: o.order_number, recipient_masked: maskedRecipient(o.recipient_masked) };
     });
     return { group_id: g.group_id, version: version(g.version), created_at: g.created_at, members };
   });
