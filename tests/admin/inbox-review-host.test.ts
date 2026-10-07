@@ -27,6 +27,9 @@ class Host {
   effects: (() => void)[] = [];
   output: any;
   render: () => any;
+  private observers = new Set<() => void>();
+  private commitQueued = false;
+  private disposed = false;
   constructor(render: () => any) {
     this.render = render;
   }
@@ -77,12 +80,43 @@ class Host {
     }
     this.flush();
   }
+  // Batch the same JS turn: send.finally briefly clears busy before starting its authority reload.
+  changed() {
+    if (!this.observers.size || this.commitQueued) return;
+    this.commitQueued = true;
+    queueMicrotask(() => {
+      this.commitQueued = false;
+      for (const observer of [...this.observers]) observer();
+    });
+  }
+  /** Wait for this root host's actual state commits, with a bounded failure; no guessed event-loop turns. */
+  waitFor(ready: () => boolean, description: string, timeoutMs = 5000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const finish = (error?: unknown) => {
+        clearTimeout(timer);
+        this.observers.delete(inspect);
+        if (error) reject(error); else resolve();
+      };
+      const inspect = () => {
+        try {
+          if (this.disposed) throw new Error(`Host disposed before ${description}`);
+          this.flush();
+          if (ready()) finish();
+        } catch (error) { finish(error); }
+      };
+      const timer = setTimeout(() => finish(new Error(`Timed out waiting for ${description}`)), timeoutMs);
+      this.observers.add(inspect);
+      inspect();
+    });
+  }
   ref<T>(klass: new (...args: any[]) => T): T {
     const found = this.slots.find((slot) => slot.value?.current instanceof klass);
     assert.ok(found, "real production ref exists");
     return found.value.current;
   }
   dispose() {
+    this.disposed = true;
+    for (const observer of [...this.observers]) observer();
     for (const child of this.children.values()) child.host.dispose();
     for (const slot of this.slots) slot.cleanup?.();
   }
@@ -100,6 +134,7 @@ const react = {
         if (!Object.is(value, slot.value)) {
           slot.value = value;
           host.dirty = true;
+          host.changed();
         }
       },
     ];

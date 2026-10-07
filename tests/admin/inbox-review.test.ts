@@ -163,31 +163,59 @@ test("P1-2 actual send-finally A9 404 removes DM, draft and uncertain immutable 
   assert.equal(node(host, (n) => n.props["data-testid"] === "reply-text").props.value, "", "404 clears retry draft");
   assert.equal(host.ref(ReplyReceipt).pending(), null, "real receipt is retired after authority is gone");
 });
-test("actual uncertain send still retains exact receipt when A9 authority remains", async (t) => {
-  const env = environment(t);
-  const calls = transport(
-    () => response(thread),
-    () => {
-      throw new Error("MOCK_LOST_ACK");
-    },
-  );
-  const host = mountThread(env);
-  await host.settle();
-  change(host, "reply-text", "MOCK_RETRY");
-  submit(host);
-  await host.settle();
-  const pending = host.ref(ReplyReceipt).pending();
-  assert.ok(pending);
-  assert.equal(pending.body.text, "MOCK_RETRY");
-  submit(host);
-  await host.settle();
-  const sends = calls.filter((c) => c.method === "POST" && c.path.endsWith("/messages"));
-  assert.equal(sends.length, 2);
-  assert.equal(sends[0].body, sends[1].body);
-  assert.equal(sends[0].key, pending.key);
-  assert.equal(sends[1].key, pending.key);
-  assert.equal(host.ref(ReplyReceipt).pending(), pending);
-});
+for (const authorityDelay of [0, 50]) {
+  test(`actual uncertain send still retains exact receipt when A9 authority remains (${authorityDelay}ms post-send A9)`, async (t) => {
+    const env = environment(t);
+    let reads = 0;
+    const held = new Map<ReturnType<typeof setTimeout>, () => void>();
+    t.after(() => {
+      for (const [timer, finish] of held) {
+        clearTimeout(timer);
+        finish();
+      }
+    });
+    const calls = transport(
+      () => {
+        if (++reads === 1 || !authorityDelay) return response(thread);
+        // Controlled MOCK I/O latency, not a test waiter: the real send-finally A9 remains in flight.
+        return new Promise<Response>((done) => {
+          const finish = () => {
+            held.delete(timer);
+            done(response(thread));
+          };
+          const timer = setTimeout(finish, authorityDelay);
+          held.set(timer, finish);
+        });
+      },
+      () => {
+        throw new Error("MOCK_LOST_ACK");
+      },
+    );
+    const host = mountThread(env);
+    const idle = () => {
+      const rendered = nodes(host.output);
+      return rendered.some((n) => n.props["data-testid"] === "inbox-thread" && n.props["aria-busy"] === false);
+    };
+    const readyToReply = () => idle() && nodes(host.output).some((n) =>
+      n.props["data-testid"] === "reply-send" && n.props.disabled === false);
+    await host.waitFor(() => reads >= 1 && idle() && textOf(host.output).includes("MOCK_DM"), "initial A9/A10 completion");
+    change(host, "reply-text", "MOCK_RETRY");
+    submit(host);
+    // Retry becomes safe only after send.finally's A9 and A10 have cleared the real in-flight guard.
+    await host.waitFor(() => reads >= 2 && readyToReply(), "first send authority revalidation");
+    const pending = host.ref(ReplyReceipt).pending();
+    assert.ok(pending);
+    assert.equal(pending.body.text, "MOCK_RETRY");
+    submit(host);
+    await host.waitFor(() => reads >= 3 && readyToReply(), "retry authority revalidation");
+    const sends = calls.filter((c) => c.method === "POST" && c.path.endsWith("/messages"));
+    assert.equal(sends.length, 2);
+    assert.equal(sends[0].body, sends[1].body);
+    assert.equal(sends[0].key, pending.key);
+    assert.equal(sends[1].key, pending.key);
+    assert.equal(host.ref(ReplyReceipt).pending(), pending);
+  });
+}
 test("actual A9 stale held completion cannot paint after component cleanup", async (t) => {
   const env = environment(t);
   let complete!: (value: Response) => void;
