@@ -34,8 +34,8 @@ test("Integrator P2: legal CN comment ordering and a distinct three-image recomm
     assert.notEqual(copy.recommendedImages, copy.images);
   }
   const form = readFileSync("apps/admin/components/ProductDocumentForm.tsx", "utf8");
-  assert.match(form, /label: c\.recommendedImages, ok: photos\.length >= 3/);
-  assert.match(form, /label: c\.images, ok: photos\.length > 0/);
+  assert.match(form, /label: c\.recommendedImages, ok: mainPhotoCount\(photos\) >= 3/);
+  assert.match(form, /label: c\.images, ok: mainPhotoCount\(photos\) > 0/);
 });
 test("ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent", () => {
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
@@ -157,4 +157,21 @@ test("G-UI1 dynamic and public routes match, details never appear as navigation"
   assert.equal(matchRoute("/customers/id/foreign"), undefined);
   for (const r of routes.filter((r) => r.path.includes("[") || r.public))
     assert.equal(r.nav, false);
+});
+// W3-U5 CI regression (run 37509052114): a second `nav: true` route in the orders group (the returns page) made the group non-singleton, so
+// WorkspaceFrame stopped rendering the `nav-orders` group button (it renders `nav-group-orders` + collapsed sub-links) and every browser mode
+// failed right after login. Further orders pages must be reachable from the orders pages themselves (`nav: false`), not from the rail.
+test("Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false", () => {
+  const frame = readFileSync("apps/admin/components/WorkspaceFrame.tsx", "utf8");
+  assert.match(frame, /singleton && group\.routes\[0\]\.id === "orders"\s*\? "nav-orders"/);
+  for (const access of [
+    { role: "owner", permissions: [] },
+    { role: "staff", permissions: ["orders:read"] },
+  ]) {
+    const orders = visibleGroups(access).find((g) => g.id === "orders");
+    assert.deepEqual(orders?.routes.map((r) => r.id), ["orders"], `${access.role}: orders rail group`);
+  }
+  const returns = matchRoute("/returns")!;
+  assert.equal(returns.group, "orders");
+  assert.equal(returns.nav, false);
 });

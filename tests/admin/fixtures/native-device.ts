@@ -1,25 +1,32 @@
-// Purpose: launch a test-owned Chromium (real window, default context) and attach over loopback CDP so MOU03 can observe native
-//   visibility/focus/bfcache, which Playwright's own launch cannot.
-// Depends on: @playwright/test chromium executable; a display (xvfb-run on Linux CI, .github/workflows/gates.yml).
-// Used by: tests/admin/orders-ui.spec.ts (MOU03).
+// Purpose: own a headed Chromium default context for trusted tab visibility/focus checks.
+// Depends on: Playwright CDP, child_process and per-run filesystem evidence; requires an X display on Linux.
+// Used by: orders-ui.spec.ts and studio-ui.spec.ts; keeps startup diagnostics outside the temporary profile.
+
 import { chromium, expect, type Browser } from "@playwright/test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, open, readFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 
 // The default context and noDefaults are essential: Playwright's normal CDP
 // attachment captures focus and cannot observe a real tab becoming hidden.
+/** Start one native context, retain child diagnostics and remove only its temporary profile on close. */
 export async function nativePage(evidence: string, profilePrefix: string) {
   const profile = await mkdtemp(`${evidence}/${profilePrefix}`);
-  const child = spawn(chromium.executablePath(), [
-    `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
-    "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
-    // Ubuntu 24.04 runners block unprivileged user namespaces (AppArmor), so Chromium's sandbox aborts startup before CDP opens
-    // (CI run 37457009669). Playwright's own launches pass the same flag; the test page is our local admin, not untrusted content.
-    ...(process.platform === "linux" ? ["--no-sandbox"] : []),
-    "about:blank",
-  ], { stdio: ["ignore", "ignore", "pipe"] });
-  let stderr = ""; // last 2 KiB of Chromium's stderr, attached to a startup failure so a CI red names its cause
-  child.stderr?.on("data", (chunk: Buffer) => { stderr = (stderr + chunk.toString()).slice(-2048); });
+  let diagnostics: Awaited<ReturnType<typeof open>> | undefined;
+  let child: ReturnType<typeof spawn>;
+  try {
+    diagnostics = await open(`${profile}.log`, "w");
+    child = spawn(chromium.executablePath(), [
+      `--user-data-dir=${profile}`, "--remote-debugging-address=127.0.0.1",
+      "--remote-debugging-port=0", "--no-first-run", "--no-default-browser-check",
+      // Linux CI blocks unprivileged user namespaces; retain the trunk native-device fix.
+      ...(process.platform === "linux" ? ["--no-sandbox"] : []), "about:blank",
+    ], { stdio: ["ignore", diagnostics.fd, diagnostics.fd] });
+  } catch (error) {
+    await diagnostics?.close().catch(() => {});
+    await rm(profile, { recursive: true, force: true });
+    throw error;
+  }
+
   let browser: Browser | undefined;
   let launchError: Error | undefined;
   child.once("error", (error) => { launchError = error; });
@@ -43,6 +50,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     await rm(profile, { recursive: true, force: true });
   };
   try {
+    await diagnostics.close();
     let port = 0;
     const deadline = performance.now() + 10_000;
     while (performance.now() < deadline && !exited()) {
@@ -51,7 +59,10 @@ export async function nativePage(evidence: string, profilePrefix: string) {
       if (Number.isInteger(port) && port > 0 && port < 65_536) break;
       await delay(100);
     }
-    if (!port) throw new Error(`owned Chromium did not expose loopback CDP (exit ${child.exitCode ?? child.signalCode ?? "running"}); stderr tail:\n${stderr}`);
+    if (!port) {
+      const stderr = await readFile(`${profile}.log`, "utf8").catch(() => "diagnostics unavailable");
+      throw new Error(`owned Chromium did not expose loopback CDP (exit ${child.exitCode ?? child.signalCode ?? "running"}); stderr tail:\n${stderr.slice(-2048)}`);
+    }
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { noDefaults: true });
     if (browser.contexts().length !== 1) throw new Error("native device needs the existing default context");
     const context = browser.contexts()[0];
@@ -64,6 +75,7 @@ export async function nativePage(evidence: string, profilePrefix: string) {
     await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
     return { page, close };
   } catch (error) {
+    await diagnostics.close().catch(() => {});
     await close();
     throw error;
   }

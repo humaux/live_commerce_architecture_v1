@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -99,18 +98,6 @@ func TestBuyerPaymentHostedSQLAuthorityAndScope(t *testing.T) {
 	}
 	form, _, _, _ := h.page(t, result.AttemptID)
 	digest := hpDigest(t, h.config.ReturnURL, h.config.NotifyURL)
-	// W4-01B ACL pin: the hosted page's NotifyURL is the real PAYUNi notify receiver route carrying a
-	// 43-char base64url endpoint token, never a legacy merchant callback path.
-	const notifyRoutePrefix = "https://checkout.example.test/v1/hooks/payuni/notify/"
-	notifyToken, ok := strings.CutPrefix(h.config.NotifyURL, notifyRoutePrefix)
-	if !ok || len(notifyToken) != 43 {
-		t.Fatalf("hosted NotifyURL drifted off the notify receiver route: %s", h.config.NotifyURL)
-	}
-	for _, r := range notifyToken {
-		if (r < 'A' || r > 'Z') && (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' && r != '_' {
-			t.Fatalf("hosted NotifyURL token is not base64url: %s", h.config.NotifyURL)
-		}
-	}
 	if _, err := h.psHarness.pool.Exec(ctx, `SELECT checkout.save_hosted_page($1::bytea,$2::uuid,$3::uuid,$4,$5,$6::bytea,$7::jsonb)`, tokenHash(h.cap.Token), h.f.storeA1, h.hold.OrderID, "PROVIDER_MOCK", "zh-TW", digest, form); !hpSQLState(err, "42501") {
 		t.Fatal("HP04 generic checkout could save copied hosted form")
 	}

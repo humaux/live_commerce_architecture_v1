@@ -1,0 +1,60 @@
+# green: node suites (unit W4-U1) 747e588a+worktree
+✔ collector projection: admitted for derived connections, absent/null for primary (0.621875ms)
+✔ collector rejects identifiers, extra keys and malformed text (0.114333ms)
+✔ disclosure renders the contract §5 line with all three slots substituted (0.086791ms)
+✔ the disclosure line exists exactly when the hosted view returns a collector (0.073792ms)
+✔ a shop or collector name with a replacement pattern is shown literally (0.048042ms)
+✔ OrderPayment renders the disclosure with the view, above every pay button, through the helper only (0.736292ms)
+✔ card-payments copy: identical key sets in all three locales (1.868041ms)
+✔ merchant terms are quoted verbatim (contract §5) in the enable dialog (0.288542ms)
+✔ ruling-fixed strings: platform not OPEN and BLOCKED note (0.111042ms)
+✔ error map covers every frozen refusal code from migrations/0137 (0.141958ms)
+✔ no Stripe account id, key or approval id shape appears in any copy string (0.362166ms)
+✔ storefront collector disclosure matches contract §5 templates in three languages (0.078583ms)
+✔ card summary accepts the frozen shape incl. all-null platform NONE (0.829791ms)
+✔ card summary rejects unknown keys, bad enums, bad money, bad version (0.281875ms)
+✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.095667ms)
+✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.109334ms)
+✔ suffix budget derives from descriptor_preview as the base (L + 2 + suffix <= 22, charset caps at 10) (0.073292ms)
+✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.053ms)
+✔ settlement list accepts statements without payout/lines keys (omitempty) (0.386959ms)
+✔ settlement detail carries lines whose count and sums match the totals (0.325083ms)
+✔ settlement parsers reject malformed reads (0.597792ms)
+✔ fees, refunds and disputes are signed exactly as the ledger stores them (0.337ms)
+✔ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.431541ms)
+✔ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.685417ms)
+✔ a payout reference shaped like a Stripe key or account id is never displayed (0.150083ms)
+✔ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state (0.401625ms)
+✔ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED; not allowlisted hides the enable control (0.0735ms)
+✔ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.043875ms)
+✔ without billing:manage nothing can be changed, but the state is still readable (0.044458ms)
+✔ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.069125ms)
+✔ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.039166ms)
+✔ a retained suffix is recovered from the final preview so a re-enable can keep it (0.034791ms)
+✔ the period label shows the last day inside the (exclusive-end) week (3.930834ms)
+✔ payout state: paid, pending only when money is due, none when the week nets to zero or less (0.056959ms)
+✔ card-payments and settlements are nav:false routes, so no group loses or gains a nav button (0.145833ms)
+✔ settlements need billing:manage, the card page integration:read; the owner opens both (0.124375ms)
+✔ route table: exactly the four resources, nothing generic (0.487875ms)
+✔ query grammar: card and settlement-detail are exact; settlements takes before/limit only (0.221084ms)
+✔ request fence: keyless PUT (CAS), bodyless GETs, no transfer-encoding (12.328333ms)
+✔ PUT body is the exact frozen shape {enabled, terms_version, descriptor_suffix, expected_version} (0.611334ms)
+✔ the BFF route wires the card grammar: keyless CAS PUT, exact body, no-store, auth required (0.770625ms)
+✔ the real card summary parses and drives the display state machine (3.304958ms)
+✔ the real statement list parses: newest first, no lines, three payout states (0.8255ms)
+✔ every real detail parses with its lines and the lines add up to the statement (1.001041ms)
+✔ an empty ledger parses to no statements (0.4765ms)
+✔ no account id, key or approval shape is in any real body (0.436375ms)
+ℹ tests 46
+ℹ pass 46
+ℹ fail 0
+node_exit=
+--- PASS: TestW4U1StateSequence (12.66s)
+PASS
+ok  	livecommerce/tests/foundation	14.457s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+admin_tsc_exit=0
+storefront_tsc_exit=0
+--- PASS: TestW4U1WireShapes (12.72s)
+--- PASS: TestW4U1StateSequence (11.48s)
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

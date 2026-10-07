@@ -1,11 +1,15 @@
-// Purpose: Renders order detail and composes the supplied action sections.
-// Depends on: @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, ./OrderRefunds, ./OrderShipment, ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection
+// Purpose: Renders order detail and composes the supplied action sections (refund, returns, cancel, shipment, COD…).
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy,
+//   @/lib/cod-copy, @/lib/returns-model, @/lib/returns-client, @/lib/returns-copy, ./OrderRefunds, ./OrderReturns, ./OrderShipment,
+//   ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection
 // Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
-// Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / transfer / CVS / COD / shipment
-// sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). A plain render function with no state of its own: MerchantOrders
-// owns the list, polling and selection and passes the loaded detail in; the BFF routes are listed in the section components.
+// Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / returns / cancel /
+// transfer / CVS / COD / shipment sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). detailPanel is a plain
+// render function: MerchantOrders owns the list, polling and selection and passes the loaded detail in; the cancel button is
+// the one stateful child defined here (returns-v1 §3), the rest live in their section components.
+import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
@@ -13,7 +17,11 @@ import { money } from "@/lib/client";
 import type { OrderActions, OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
+import { cancellableStates, cancelOrderBody, cancelReasonText, type CancellableState } from "@/lib/returns-model";
+import { postCancelOrder } from "@/lib/returns-client";
+import { returnsCopy, returnsError, type ReturnsCopy } from "@/lib/returns-copy";
 import { OrderRefunds } from "./OrderRefunds";
+import { OrderReturns } from "./OrderReturns";
 import { OrderShipment } from "./OrderShipment";
 import { OrderCvsShipment } from "./OrderCvsShipment";
 import { OrderBankTransfer } from "./OrderBankTransfer";
@@ -45,6 +53,144 @@ export type Sections = {
   boundary: string;
   onChanged: () => Promise<boolean>;
 };
+
+/**
+ * Merchant order cancel (returns-v1 §3): a dialog asking the reason, warning that reserved stock is released.
+ * The CAS is the commercial state the merchant sees; refusal codes (payment_in_flight, refund_first, already_shipped,
+ * not_cancellable…) render next to the form. The cancel NEVER starts a refund (I13); refund_first points at the refund section.
+ */
+function CancelOrderSection({
+  store,
+  detail,
+  c,
+  boundary,
+  onChanged,
+}: {
+  store: string;
+  detail: OrderDetail;
+  c: ReturnsCopy;
+  boundary: string;
+  onChanged: () => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [problem, setProblem] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const reasonInput = useRef<HTMLInputElement>(null);
+  const pending = useRef<{ key: string; body: string } | null>(null);
+
+  useEffect(() => {
+    const element = dialog.current;
+    if (!element) return;
+    if (open && !element.open) element.showModal();
+    if (!open && element.open) element.close();
+  }, [open]);
+  useEffect(() => {
+    if (open) reasonInput.current?.focus();
+  }, [open]);
+
+  function begin() {
+    pending.current = null;
+    setReason("");
+    setProblem("");
+    setUncertain(false);
+    setNotice("");
+    setOpen(true);
+  }
+  function finish() {
+    setOpen(false);
+    if (uncertain) void onChanged(); // unknown outcome: re-read the order state
+    setUncertain(false);
+  }
+  async function submit() {
+    if (busy) return;
+    const text = cancelReasonText(reason);
+    const body = text && cancelOrderBody(detail.commercial_state, text);
+    if (!body) {
+      setProblem(c.cancelInvalid);
+      return;
+    }
+    if (pending.current?.body !== body) pending.current = { key: `order-cancel-${crypto.randomUUID()}`, body };
+    setBusy(true);
+    setProblem("");
+    const result = await postCancelOrder(store, detail.order_id, pending.current.key, body, boundary);
+    setBusy(false);
+    if (result.ok) {
+      pending.current = null;
+      setOpen(false);
+      setUncertain(false);
+      setNotice(c.cancelDone);
+      void onChanged();
+      return;
+    }
+    if (result.uncertain) {
+      setUncertain(true);
+      setProblem(c.uncertain);
+      return;
+    }
+    pending.current = null;
+    setProblem(returnsError(c, result.code));
+    if (result.code === "state_changed" || result.code === "already_cancelled") void onChanged(); // stale view: re-read
+  }
+
+  return (
+    <section className="orders-section" data-testid="order-cancel" aria-label={c.cancelOrder}>
+      <h2>{c.cancelOrder}</h2>
+      <p className="orders-empty">{c.cancelIntro}</p>
+      <button type="button" className="orders-section-action" data-testid="order-cancel-open" onClick={begin}>
+        {c.cancelOrder}
+      </button>
+      {notice && <p className="orders-notice" role="status" data-testid="order-cancel-notice">{notice}</p>}
+      <dialog
+        ref={dialog}
+        className="orders-dialog"
+        aria-labelledby={`cancel-title-${detail.order_id}`}
+        data-testid="order-cancel-dialog"
+        onClose={() => {
+          if (open) finish();
+        }}
+      >
+        {open && (
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submit();
+            }}
+          >
+            <h2 id={`cancel-title-${detail.order_id}`}>{c.cancelTitle}</h2>
+            <p>{c.cancelIntro}</p>
+            <label>
+              {c.cancelReason}
+              <input
+                ref={reasonInput}
+                data-testid="order-cancel-reason"
+                value={reason}
+                maxLength={60}
+                placeholder={c.cancelReasonPlaceholder}
+                autoComplete="off"
+                aria-invalid={reason !== "" && cancelReasonText(reason) === null}
+                onChange={(event) => setReason(event.target.value)}
+              />
+            </label>
+            {problem && <p className="orders-bad" role="alert" data-testid="order-cancel-problem">{problem}</p>}
+            <div className="orders-dialog-actions">
+              <button type="button" disabled={busy} onClick={finish}>
+                {uncertain ? c.close2 : c.cancel}
+              </button>
+              <button type="submit" className="primary" data-testid="order-cancel-submit" disabled={busy || !cancelReasonText(reason)}>
+                {busy ? c.sending : uncertain ? c.retrySame : c.cancelSubmit}
+              </button>
+            </div>
+          </form>
+        )}
+      </dialog>
+    </section>
+  );
+}
+
 /** Composes loaded order detail with the supplied action sections. */
 export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, sections: Sections) {
   const m = (value: number) => amount(locale, detail.currency, value);
@@ -224,12 +370,37 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
             />
           )}
           {capturedPayment.includes(detail.payment_state) && (
-            <OrderRefunds
+            // #order-refunds: the returns panel's refund hint deep-links here (Integrator 裁决: returns never refunds).
+            <div id="order-refunds">
+              <OrderRefunds
+                store={sections.store}
+                detail={detail}
+                locale={locale}
+                c={c}
+                canRefund={sections.actions.refund}
+                boundary={sections.boundary}
+                onChanged={sections.onChanged}
+              />
+            </div>
+          )}
+          {/* returns-v1 §3: merchant cancel is offered only while the commercial state is in the §6 cancellable set;
+              later states get the refusal copy from the server (already_shipped, has_returns…) or use returns. */}
+          {sections.actions.fulfillment_write && cancellableStates.includes(detail.commercial_state as CancellableState) && (
+            <CancelOrderSection
+              store={sections.store}
+              detail={detail}
+              c={returnsCopy[locale]}
+              boundary={sections.boundary}
+              onChanged={sections.onChanged}
+            />
+          )}
+          {/* returns-v1 §2: returns exist only once the order has shipped (merchant parcel or provider label). */}
+          {(detail.fulfillment_state === "MERCHANT_SHIPPED" || detail.fulfillment_state === "PROVIDER_LABEL_CREATED") && (
+            <OrderReturns
               store={sections.store}
               detail={detail}
               locale={locale}
-              c={c}
-              canRefund={sections.actions.refund}
+              canWrite={sections.actions.fulfillment_write}
               boundary={sections.boundary}
               onChanged={sections.onChanged}
             />

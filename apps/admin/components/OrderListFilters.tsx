@@ -1,5 +1,6 @@
-// Purpose: Owns the editable order filter controls and validated apply callback.
-// Depends on: react, @live-commerce/i18n, @/lib/orders-v2, @/lib/orders-v2-copy, @live-commerce/ui, @/lib/presentation-copy
+// Purpose: Owns the editable order filter controls and validated apply callback, plus the link to the returns page
+//   (the server has no "has returns" order filter — returns-v1 §6; the RMA list lives at /{locale}/returns).
+// Depends on: react, @live-commerce/i18n, @/lib/orders-v2, @/lib/orders-v2-copy, @live-commerce/ui, @/lib/presentation-copy, @/lib/returns-copy
 // Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
@@ -8,6 +9,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { deliveries, emptyFilters, modes, validOrderFilters, type OrderFilters, type OrderSession } from "@/lib/orders-v2";
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
+import { returnsCopy } from "@/lib/returns-copy";
 import { DateControl } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 
@@ -42,7 +44,7 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
     <label>{c.from}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-from" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.from} onChange={e => change("from", e.target.value)} /><small>{c.dateHint}</small></label>
     <label>{c.to}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-to" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.to} onChange={e => change("to", e.target.value)} /><small>{c.dateHint}</small></label>
     </div>
-    <div className="orders-v2-filter-actions"><button type="submit" data-testid="orders-apply" disabled={disabled}>{c.apply}</button><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button></div>
+    <div className="orders-v2-filter-actions"><button type="submit" data-testid="orders-apply" disabled={disabled}>{c.apply}</button><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button><a className="orders-v2-returns-link" data-testid="orders-returns-link" href={`/${locale}/returns`}>{returnsCopy[locale].listLink}</a></div>
     {invalid && <p role="alert">{c.invalid}</p>}
   </form>;
 }

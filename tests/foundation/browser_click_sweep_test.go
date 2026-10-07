@@ -19,6 +19,7 @@ package foundation_test
 // The runner tests/ui/click-sweep.mjs then drives real Chromium (real Playwright clicks only) over every admin registry route and every storefront
 // route at 1586x992 / 390x844 in zh-TW (+ en at desktop), plus four end-to-end journeys, and writes output/ui-click-sweep/ledger.{json,md}. This test
 // reads PG afterwards (journey facts, destructive actions changed nothing). Evidence labels: BROWSER, MOCK (no PSP, no carrier, no Meta, no IdP).
+// CI (gates.yml) runs this test once per LC_SWEEP_SHARD=i/N slice, each with its own PG and seeded store; tests/ui/sweep-aggregate.mjs proves the slices cover everything.
 // Depends-on: tcvEnv/tcvBuyer (taiwan_cvs_env_test.go), mabStartAdmin (browser_meta_ads_test.go), mcn* (meta_connect_test.go), brf* helpers.
 
 import (
@@ -190,7 +191,8 @@ func TestBrowserClickSweep(t *testing.T) {
 		t.Fatalf("billing service: enabled=%v err=%v", billSvc != nil && billSvc.Enabled(), err)
 	}
 	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, ClaimLabels: &labels, RefundJobs: e.jobs,
-		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example"}
+		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example",
+		PaymentProfile: "PROVIDER_MOCK"} // W4-U1: mounts payments/card so /settings/payments/card renders its real (platform NONE) state instead of "not available"
 	api := httpapi.NewHandler(f.runtime, options)
 	call := func(method, path, key string, body any, want int, out any) {
 		t.Helper()
@@ -406,7 +408,8 @@ func TestBrowserClickSweep(t *testing.T) {
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_SWEEP_ADMIN_ORIGIN": stack.origin, "LC_SWEEP_STORE": e.store(), "LC_SWEEP_EVIDENCE": evidence, "LC_SWEEP_OUT": outDir, "LC_SWEEP_FACTS": factsPath,
 		"LC_SWEEP_CONTROL": control.URL, "LC_SWEEP_CONTROL_KEY": controlKey, "LC_SWEEP_ONLY": os.Getenv("LC_SWEEP_ONLY"), "LC_SWEEP_PAGES": os.Getenv("LC_SWEEP_PAGES"),
-		"LC_SWEEP_WORKERS": os.Getenv("LC_SWEEP_WORKERS")}
+		"LC_SWEEP_WORKERS": os.Getenv("LC_SWEEP_WORKERS"), "LC_SWEEP_SHARD": os.Getenv("LC_SWEEP_SHARD"),
+		"LC_SWEEP_INJECT_FAULT": os.Getenv("LC_SWEEP_INJECT_FAULT")} // SHARD=i/N: CI runs one slice per job (tests/ui/sweep-shard-lib.mjs); INJECT_FAULT: gate calibration only
 	// Developer affordance (never set by the gate): LC_SWEEP_HOLD=<seconds> keeps the seeded stack up after writing runner.env, so the runner can be
 	// re-run by hand (`env $(cat runner.env) node tests/ui/click-sweep.mjs`) without re-seeding. The file holds only this ephemeral stack's random keys.
 	if hold := os.Getenv("LC_SWEEP_HOLD"); hold != "" {

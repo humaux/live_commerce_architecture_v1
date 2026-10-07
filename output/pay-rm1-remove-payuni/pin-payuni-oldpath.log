@@ -1,0 +1,15 @@
+=== RUN   TestBuyerPaymentCaptureQueryJobBindingAndRollback
+=== RUN   TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_hash
+=== RUN   TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_attempt
+=== RUN   TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_version
+=== RUN   TestBuyerPaymentCaptureQueryJobBindingAndRollback/terminal_job
+--- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback (1.62s)
+    --- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_hash (0.00s)
+    --- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_attempt (0.00s)
+    --- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback/wrong_version (0.00s)
+    --- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback/terminal_job (0.00s)
+=== RUN   TestBuyerPaymentQueryHistoricalCredentialAndACL
+--- PASS: TestBuyerPaymentQueryHistoricalCredentialAndACL (0.30s)
+PASS
+ok  	livecommerce/tests/foundation	4.272s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

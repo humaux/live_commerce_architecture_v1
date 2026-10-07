@@ -1,0 +1,153 @@
+// Purpose: admin card-payments model — strict parsers for the frozen platform-Stripe DTOs, the display state machine
+//   (cardView) and the exact PUT body (buildCardInput) so the page holds no rule of its own.
+// Depends on: customers-model.ts (object/count helpers), Go internal/payments/platformstripe.
+// Used by: card-payments-client.ts, CardPayments.tsx, tests/admin/card-payments-model.test.ts.
+// BFF `/api/stores/{store}/payments/card` -> Go `internal/httpapi/payment_card.go`
+// (contract stripe-platform-account-v1 §3/§5). Unknown key, wrong type or broken invariant = invalid read
+// (thrown "unavailable"); the server stays the authority for state, limits and the descriptor rule.
+// The summary carries NO account id, key or approval data (integrator ruling) — parsers never admit one.
+import { count, object } from "./customers-model.ts";
+
+export const platformStates = ["NONE", "DESIGNATED", "OPEN", "CLOSED", "REVOKED"] as const;
+export type PlatformState = (typeof platformStates)[number];
+export const storeCardStates = ["NONE", "ENABLED", "DISABLED", "BLOCKED"] as const;
+export type StoreCardState = (typeof storeCardStates)[number];
+
+export type CardSummary = {
+  platform_state: PlatformState;
+  store_state: StoreCardState;
+  allowed: boolean;
+  terms_version: string | null;
+  accepted_terms_version: string | null;
+  display_name: string | null;
+  descriptor_preview: string | null;
+  currency: string | null;
+  min_minor: number | null;
+  max_minor: number | null;
+  version: number;
+};
+export type CardResult = {
+  state: StoreCardState;
+  version: number;
+  max_minor: number | null;
+  currency: string | null;
+  descriptor_preview: string | null;
+};
+// The keyless PUT body (CAS via expected_version; Go refuses Idempotency-Key on this route).
+export type CardInput = {
+  enabled: boolean;
+  terms_version: string;
+  descriptor_suffix: string | null;
+  expected_version: number;
+};
+
+function short(value: unknown, max: number): value is string {
+  return typeof value === "string" && value !== "" && Array.from(value).length <= max && !/[\p{C}\p{Zl}\p{Zp}]/u.test(value);
+}
+function nullableShort(value: unknown, max: number): value is string | null {
+  return value === null || short(value, max);
+}
+function nullableMoney(value: unknown): value is number | null {
+  return value === null || count(value);
+}
+function version(value: unknown): value is number {
+  return Number.isSafeInteger(value) && (value as number) >= 0;
+}
+
+export function parseCardSummary(value: unknown): CardSummary {
+  const v = object(value, [
+    "platform_state", "store_state", "allowed", "terms_version", "accepted_terms_version",
+    "display_name", "descriptor_preview", "currency", "min_minor", "max_minor", "version",
+  ]);
+  if (
+    !(platformStates as readonly unknown[]).includes(v.platform_state) ||
+    !(storeCardStates as readonly unknown[]).includes(v.store_state) ||
+    typeof v.allowed !== "boolean" ||
+    !nullableShort(v.terms_version, 64) ||
+    !nullableShort(v.accepted_terms_version, 64) ||
+    !nullableShort(v.display_name, 80) ||
+    !nullableShort(v.descriptor_preview, 64) ||
+    !(v.currency === null || (typeof v.currency === "string" && /^[A-Z]{3}$/.test(v.currency))) ||
+    !nullableMoney(v.min_minor) ||
+    !nullableMoney(v.max_minor) ||
+    (v.min_minor !== null && v.max_minor !== null && (v.min_minor as number) > (v.max_minor as number)) ||
+    !version(v.version)
+  )
+    throw new Error("unavailable");
+  return v as unknown as CardSummary;
+}
+
+export function parseCardResult(value: unknown): CardResult {
+  const v = object(value, ["state", "version", "max_minor", "currency", "descriptor_preview"]);
+  if (
+    !(storeCardStates as readonly unknown[]).includes(v.state) ||
+    !version(v.version) ||
+    !nullableMoney(v.max_minor) ||
+    !(v.currency === null || (typeof v.currency === "string" && /^[A-Z]{3}$/.test(v.currency))) ||
+    !nullableShort(v.descriptor_preview, 64)
+  )
+    throw new Error("unavailable");
+  return v as unknown as CardResult;
+}
+
+// Contract §3.1: 2..10 chars, first alphanumeric, then alphanumerics/spaces/dots/dashes, at least one letter.
+export const descriptorSuffixPattern = /^[A-Za-z0-9][A-Za-z0-9 .-]{1,9}$/;
+export function validDescriptorSuffix(value: string): boolean {
+  return descriptorSuffixPattern.test(value) && /[A-Za-z]/.test(value);
+}
+
+// The page checks only what the contract §3.1 charset rule already caps at 10. The 22-character total (SANDBOX L = 10, LIVE the approval's
+// PrefixLength) stays the server's: it answers descriptor_suffix_too_long (PT422) and the page shows that refusal.
+// The contract projection the card statement shows: descriptor_display + ('* ' + suffix when set).
+export function descriptorPreview(base: string, suffix: string | null): string {
+  return suffix === null ? base : `${base}* ${suffix}`;
+}
+// The platform base inside a preview: neither descriptor_display (Stripe forbids '*') nor the suffix
+// (charset [A-Za-z0-9 .-]) can contain "* ", so the first "* " is unambiguous — also when a DISABLED
+// store still carries its retained suffix in the preview.
+export function descriptorBase(preview: string): string {
+  const at = preview.indexOf("* ");
+  return at < 0 ? preview : preview.slice(0, at);
+}
+
+// The suffix a DISABLED (or enabled) store retains is only visible as the tail of the final preview ("base* suffix");
+// recover it so a re-enable can keep it. Anything that is not a valid suffix is never pre-filled.
+export function descriptorSuffixOf(preview: string | null): string | null {
+  if (preview === null) return null;
+  const at = preview.indexOf("* ");
+  if (at < 0) return null;
+  const suffix = preview.slice(at + 2);
+  return validDescriptorSuffix(suffix) ? suffix : null;
+}
+
+// What the page offers, per platform state x store state x permission. The server re-decides every one of these
+// (allowlist, OPEN, block, terms); this only decides what to SHOW. Integrator ruling: platform not OPEN -> "not open yet" and
+// no enable control; BLOCKED -> suspended note and disable only. Contract 3.3: disable is never gated, so an ENABLED store keeps
+// a disable control even while the platform is CLOSED (the enable toggle is what the ruling hides).
+// A store that is not allowlisted (AD-PF2: every third-party store) reads exactly like not open: the same message, no "platform
+// open" badge (it would contradict the message), no enable. It is never sent to support for an allowlist it cannot join.
+export type CardView = { notOpen: boolean; showPlatform: boolean; blocked: boolean; canEnable: boolean; canDisable: boolean };
+export function cardView(summary: CardSummary, canManage: boolean): CardView {
+  const open = summary.platform_state === "OPEN";
+  const state = summary.store_state;
+  const idle = state === "NONE" || state === "DISABLED";
+  const denied = open && !summary.allowed && idle;
+  return {
+    notOpen: !open || denied,
+    showPlatform: !denied,
+    blocked: state === "BLOCKED",
+    canEnable: canManage && open && summary.allowed && summary.terms_version !== null && idle,
+    canDisable: canManage && (state === "ENABLED" || state === "BLOCKED"),
+  };
+}
+
+// The keyless CAS body. Enable accepts the platform's CURRENT terms (a drift answers terms_version_stale). Disable quotes the
+// terms this store accepted (the SQL ignores them on disable, but the transport requires a well-formed value) and never a suffix.
+export function buildCardInput(summary: CardSummary, enabled: boolean, suffix: string | null): CardInput {
+  return {
+    enabled,
+    terms_version: enabled ? (summary.terms_version as string) : (summary.accepted_terms_version ?? summary.terms_version ?? "none"),
+    descriptor_suffix: enabled ? suffix : null,
+    expected_version: summary.version,
+  };
+}

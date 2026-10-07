@@ -1,0 +1,15 @@
+{
+  "branch": "unit/product-media-v2-ui",
+  "base": "5d0b24482c2c2693465a0b680c00bd7eda3a6aa0",
+  "integration_base": "0617bc40f4a50e84bd57d6eed00e87167582ca9a",
+  "ci_baseline": "ce13e6fa9ae79fef90fbc88db8844fd62006ec81",
+  "source_binding_sha256": "421c22bd0a070c832b83e6d7d0a0547d626f95f40eac0286087ce9d1c43a354e",
+  "files": {
+    "apps/admin/components/ProductDocumentForm.tsx": "2afe85ab3ba6c2a1f60de34e61e376dfd50c9651efc737da97c866c38c43d3b6",
+    "tests/admin/product-media-ui-model.test.ts": "34c7582db2dbed35e471e27ec9a38be80806ab2b3c17aca80eac404d22a92576",
+    "tests/admin/product-media-v2.spec.ts": "56df5194c987b9655757dced4022656c92e594a5cd3103624420e13b98d0a34a",
+    "tests/ui/click-sweep.mjs": "d8265c87e37450326b459dc80e4f782b1f25d6496dfde1e7aabc10560b828440",
+    "tests/ui/click-sweep-lib.test.mjs": "603f954fa7004d7c067ce8a8fbd147669578d3053baaae37fc64c3314eeca431",
+    "tests/ui/product-media-journey.mjs": "40f7470c598b5b1aae51af7ab5c5d03bd59e6161ca9ff0e1092072b3d2ba9dc9"
+  }
+}

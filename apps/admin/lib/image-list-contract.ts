@@ -18,6 +18,7 @@ export const MAX_PHOTOS = MAX_MAIN_PHOTOS;
 const ROLE_CAP = { main: MAX_MAIN_PHOTOS, detail: MAX_DETAIL_PHOTOS, sku: MAX_OPTION_PHOTOS } as const;
 const ROLE_RANK = { main: 0, detail: 1, sku: 2 } as const;
 const integerOrNull = (v: unknown) => v === null || (typeof v === "number" && Number.isInteger(v) && v >= 1);
+/** Validate one closed image DTO without accepting unknown keys or out-of-role positions. */
 export function validImage(v: unknown): v is ProductImage {
   if (!v || typeof v !== "object") return false;
   const r = v as Record<string, unknown>;
@@ -33,24 +34,26 @@ export function validImage(v: unknown): v is ProductImage {
     typeof r.version === "number" && Number.isInteger(r.version) && r.version >= 1
   );
 }
+const textCount = (s: string) => [...s].length; // Go utf8.RuneCountInString, not UTF-16 storage units.
 const validOptionImage = (v: unknown) => {
   const r = v as Record<string, unknown>;
   return (
     !!r && typeof r === "object" &&
     Object.keys(r).sort().join(",") === "image_id,option_name,option_value" &&
     typeof r.image_id === "string" && UUID.test(r.image_id) &&
-    typeof r.option_name === "string" && r.option_name.length >= 1 && r.option_name.length <= 30 &&
-    typeof r.option_value === "string" && r.option_value.length >= 1 && r.option_value.length <= 40
+    typeof r.option_name === "string" && textCount(r.option_name) >= 1 && textCount(r.option_name) <= 30 &&
+    typeof r.option_value === "string" && textCount(r.option_value) >= 1 && textCount(r.option_value) <= 40
   );
 };
 // The exact ImageList wire shape: items ordered main, detail, sku with contiguous positions inside each role and each role under its cap.
+/** Validate the closed role-aware image list and Unicode limits shared with Go. */
 export function validImageList(v: unknown): v is ProductImageList {
   if (!v || typeof v !== "object") return false;
   const r = v as Record<string, unknown>;
   if (
     Object.keys(r).sort().join(",") !== "image_axis,items,option_images" ||
     !Array.isArray(r.items) || !r.items.every(validImage) ||
-    !(r.image_axis === null || (typeof r.image_axis === "string" && r.image_axis.length >= 1 && r.image_axis.length <= 30)) ||
+    !(r.image_axis === null || (typeof r.image_axis === "string" && textCount(r.image_axis) >= 1 && textCount(r.image_axis) <= 30)) ||
     !Array.isArray(r.option_images) || r.option_images.length > MAX_OPTION_PHOTOS || !r.option_images.every(validOptionImage)
   )
     return false;

@@ -253,7 +253,6 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	var mediaWorker, mediaWorkerUsage, mediaWorkerSet, mediaExecutor, mediaExecutorUsage, mediaExecutorSet bool
 	var mediaRecovery, mediaRecoveryUsage, mediaRecoverySet bool
 	var stripeIngress, stripeIngressUsage, stripeIngressSet, stripeRegistrar, stripeRegistrarUsage, stripeRegistrarSet, stripeRegistryWriter, integrationWriter bool
-	var payuniIngress, payuniIngressUsage, payuniIngressSet bool
 	err := pool.QueryRow(ctx, `
 		SELECT coalesce(pg_has_role(session_user, to_regrole('commerce_stripe_ingress'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_stripe_ingress'), 'USAGE'),false),
@@ -263,9 +262,6 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_payment_registrar'), 'SET'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_payment_registry_writer'), 'MEMBER'),false),
 		       coalesce(pg_has_role(session_user, to_regrole('commerce_integration_writer'), 'MEMBER'),false),
-			       coalesce(pg_has_role(session_user, to_regrole('commerce_payuni_ingress'), 'MEMBER'),false),
-			       coalesce(pg_has_role(session_user, to_regrole('commerce_payuni_ingress'), 'USAGE'),false),
-			       coalesce(pg_has_role(session_user, to_regrole('commerce_payuni_ingress'), 'SET'),false),
 		       session_user=current_user, session_user=$1, r.rolsuper, r.rolbypassrls, r.rolcreaterole, r.rolcreatedb, r.rolreplication,
 		       (EXISTS (
 			   SELECT 1 FROM pg_namespace n
@@ -339,7 +335,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 			   SELECT 1 FROM pg_auth_members am WHERE am.member=r.oid AND am.admin_option
 		       )
 		FROM pg_roles r WHERE r.rolname = session_user`, pool.Config().ConnConfig.User).
-		Scan(&stripeIngress, &stripeIngressUsage, &stripeIngressSet, &stripeRegistrar, &stripeRegistrarUsage, &stripeRegistrarSet, &stripeRegistryWriter, &integrationWriter, &payuniIngress, &payuniIngressUsage, &payuniIngressSet, &sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &mediaWorker, &mediaWorkerUsage, &mediaWorkerSet, &mediaExecutor, &mediaExecutorUsage, &mediaExecutorSet, &mediaRecovery, &mediaRecoveryUsage, &mediaRecoverySet, &systemAuthority, &canReachPrivileged)
+		Scan(&stripeIngress, &stripeIngressUsage, &stripeIngressSet, &stripeRegistrar, &stripeRegistrarUsage, &stripeRegistrarSet, &stripeRegistryWriter, &integrationWriter, &sameLogin, &dsnUserMatch, &superuser, &bypassRLS, &roleAdmin, &databaseCreator, &replication, &objectOwner, &runtimeMember, &authMember, &identityMember, &buyerRuntimeMember, &buyerIssuerMember, &workerMember, &checkoutMember, &hostedMember, &hostedUsage, &hostedSet, &checkoutWriterMember, &metaIngress, &metaRegistrar, &metaCurator, &metaConsumer, &metaWriter, &metaUsage, &metaSet, &consumerUsage, &consumerSet, &metaWorker, &metaWorkerUsage, &metaWorkerSet, &mediaRegistrar, &mediaRegistrarUsage, &mediaRegistrarSet, &mediaWriter, &mediaWriterUsage, &mediaWriterSet, &mediaWorker, &mediaWorkerUsage, &mediaWorkerSet, &mediaExecutor, &mediaExecutorUsage, &mediaExecutorSet, &mediaRecovery, &mediaRecoveryUsage, &mediaRecoverySet, &systemAuthority, &canReachPrivileged)
 	if err != nil {
 		return fmt.Errorf("validate runtime role: %w", err)
 	}
@@ -410,7 +406,7 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 		"meta_registrar": metaRegistrar, "meta_curator": metaCurator, "meta_consumer": metaConsumer,
 		"meta_worker": metaWorker, "media_registrar": mediaRegistrar,
 		"media_worker": mediaWorker, "media_executor": mediaExecutor, "media_recovery": mediaRecovery,
-		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "payuni_ingress": payuniIngress, "claims_intake": claimsIntake,
+		"stripe_ingress": stripeIngress, "stripe_registrar": stripeRegistrar, "claims_intake": claimsIntake,
 		"retention_job": retentionJob, "retention_operator": retentionOperator,
 		"storefront_registrar": storefrontRegistrar, "storefront_verifier": storefrontVerifier}
 	roleCount := 0
@@ -464,9 +460,6 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	if authority == "stripe_registrar" {
 		roleValid = roleValid && stripeRegistrarUsage && !stripeRegistrarSet && !systemAuthority && !stripeRegistryWriter && !integrationWriter
 	}
-	if authority == "payuni_ingress" {
-		roleValid = roleValid && payuniIngressUsage && !payuniIngressSet && !systemAuthority && !stripeRegistryWriter && !integrationWriter
-	}
 	// A privileged login cannot launder its authority with startup SET ROLE:
 	// RESET ROLE would recover the session_user's capabilities after admission.
 	// Inherited owner authority also permits DDL without SET ROLE; SET FALSE is
@@ -476,11 +469,6 @@ func validatePoolAuthority(ctx context.Context, pool *pgxpool.Pool, authority st
 	}
 	if err := validateStripeAuthority(ctx, pool, authority); err != nil {
 		return err
-	}
-	if authority == "payuni_ingress" {
-		if err := validatePayuniAuthority(ctx, pool, authority); err != nil {
-			return err
-		}
 	}
 	// The registrar owns no objects; inspect effective direct, PUBLIC and
 	// reachable-role EXECUTE on its two fixed definer functions as well.

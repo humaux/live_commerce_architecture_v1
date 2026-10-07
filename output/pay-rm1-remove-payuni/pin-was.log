@@ -1,0 +1,29 @@
+=== RUN   TestWAS01LoginsMapToTheirOwnAuthority
+--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.01s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (1.43s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.00s)
+=== RUN   TestWAS03CrossAuthorityClaimRefused
+=== RUN   TestWAS03CrossAuthorityClaimRefused/payment
+=== RUN   TestWAS03CrossAuthorityClaimRefused/ads
+=== RUN   TestWAS03CrossAuthorityClaimRefused/claims
+--- PASS: TestWAS03CrossAuthorityClaimRefused (0.22s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/payment (0.07s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/ads (0.06s)
+    --- PASS: TestWAS03CrossAuthorityClaimRefused/claims (0.06s)
+=== RUN   TestWAS04OperationReadsAreLaneScoped
+--- PASS: TestWAS04OperationReadsAreLaneScoped (0.06s)
+=== RUN   TestWAS05ProfileFenceDerivedFromAuthority
+--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.09s)
+=== RUN   TestWAS06PrivilegeInventory
+--- PASS: TestWAS06PrivilegeInventory (0.01s)
+PASS
+ok  	livecommerce/tests/foundation	3.547s
+test-focused: top-level PASS=6 FAIL=0 SKIP=0 exit=0

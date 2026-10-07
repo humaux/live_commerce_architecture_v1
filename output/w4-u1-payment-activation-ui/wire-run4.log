@@ -1,0 +1,8 @@
+=== RUN   TestW4U1WireShapes
+--- PASS: TestW4U1WireShapes (15.36s)
+=== RUN   TestW4U1StateSequence
+--- PASS: TestW4U1StateSequence (12.17s)
+PASS
+ok  	livecommerce/tests/foundation	29.963s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+exit=0
