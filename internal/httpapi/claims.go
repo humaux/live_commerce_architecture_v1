@@ -126,6 +126,8 @@ func registerClaimRoutes(mux *http.ServeMux, pool *pgxpool.Pool, labels *claims.
 	registerClaimSourceRoutes(mux, pool)
 	// Restricted buyers (W3-05B, blocklist.go): list, add, remove, per-bundle check.
 	registerBlocklistRoutes(mux, pool, base)
+	// Keyword tools (W3-06B, keyword_tools.go): match simulator, keyword conflict check, auto-numbering, batch offers.
+	registerKeywordToolRoutes(mux, pool, base)
 	// Methodless fallbacks keep 405 inside the same private response boundary.
 	for _, path := range []string{base, base + "/window", base + "/offers", base + "/offers/{offer_id}", base + "/offer-import", base + "/library", base + "/library/{sku_id}", base + "/manual", base + "/bundles"} {
 		mux.HandleFunc(path, studioRoute("", false, nil))
@@ -184,10 +186,35 @@ func claimLinkRoute(pool *pgxpool.Pool) http.HandlerFunc {
 // reads (even when empty) and required exactly once in the receipt grammar on writes, and
 // every path id is a canonical UUID (422 before any transaction).
 func claimsRoute(method string, query bool, next http.HandlerFunc) http.HandlerFunc {
+	rule := keyRequired
+	if method == http.MethodGet {
+		rule = keyForbidden
+	}
+	return claimsRouteKey(method, query, rule, next)
+}
+
+// claimsReadPostRoute is claimsRoute for a POST that only reads (W3-06B simulate and keyword check: the input is a body, not a
+// query string). The Idempotency-Key is optional and ignored; when sent it must still be one well-formed key.
+func claimsReadPostRoute(next http.HandlerFunc) http.HandlerFunc {
+	return claimsRouteKey(http.MethodPost, false, keyOptional, next)
+}
+
+// keyRule is how a claims route treats the Idempotency-Key header.
+type keyRule int
+
+const (
+	keyForbidden keyRule = iota // reads: no header at all
+	keyRequired                 // writes: exactly one well-formed key
+	keyOptional                 // read POSTs: none, or exactly one well-formed key (ignored)
+)
+
+// claimsRouteKey is claimsRoute with the key rule explicit.
+func claimsRouteKey(method string, query bool, rule keyRule, next http.HandlerFunc) http.HandlerFunc {
 	return studioRoute(method, query, func(w http.ResponseWriter, r *http.Request) {
 		keys := r.Header.Values("Idempotency-Key")
-		if (method == http.MethodGet && len(keys) != 0) ||
-			(method != http.MethodGet && (len(keys) != 1 || !claimsKey.MatchString(keys[0]))) {
+		wellFormed := len(keys) == 1 && claimsKey.MatchString(keys[0])
+		if (rule == keyForbidden && len(keys) != 0) || (rule == keyRequired && !wellFormed) ||
+			(rule == keyOptional && len(keys) != 0 && !wellFormed) {
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}

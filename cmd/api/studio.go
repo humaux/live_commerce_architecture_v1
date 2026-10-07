@@ -1,6 +1,6 @@
-// Purpose: Studio config split (R1 ruling G2: planning vs LiveKit media) and its API-side builders — the river_media-backed media planner and the insert-only main-schema river client for the A5 live-session flow reads. The API never starts a worker or queue; media-worker and claims-worker own those lifecycles.
+// Purpose: Studio config split (R1 ruling G2: planning vs LiveKit media) and its API-side builders — the river_media-backed media planner the insert-only main-schema river client for the A5 live-session flow reads, and the one for the W6-05B operations-ledger query/retry routes. The API never starts a worker or queue; media-worker and claims-worker own those lifecycles.
 // Depends on: live.NewMediaPlanner, river (river_media / river schemas), COMMERCE_STUDIO_ENABLED / COMMERCE_STUDIO_MEDIA_ENABLED, live.media_plan_ready (migrations).
-// Used by: cmd/api main.go (studioPlanner + liveFlowJobs → httpapi.Options), cmd/api/studio_test.go.
+// Used by: cmd/api main.go (studioPlanner + liveFlowJobs + operationJobs → httpapi.Options), cmd/api/studio_test.go.
 package main
 
 import (
@@ -78,6 +78,20 @@ func buildLiveFlowJobs(pool *pgxpool.Pool, enabled bool) (*river.Client[pgx.Tx],
 	if !enabled {
 		return nil, nil
 	}
+	if pool == nil {
+		return nil, errStudioDatabase
+	}
+	jobs, err := river.NewClient[pgx.Tx](riverpgxv5.New(pool), &river.Config{Schema: "river"})
+	if err != nil {
+		return nil, errStudioDatabase
+	}
+	return jobs, nil
+}
+
+// buildOperationJobs returns the insert-only main-schema River client the operations-ledger query/retry routes (W6-05B, internal/httpapi/operations.go)
+// use to enqueue the follow-up external_operation_v1 job (default or ads queue). The claims-worker / ads-worker own the dispatch lifecycle; the API never
+// starts a worker or queue on this client. Always built: the ledger is a merchant surface of every deployment, independent of Studio.
+func buildOperationJobs(pool *pgxpool.Pool) (*river.Client[pgx.Tx], error) {
 	if pool == nil {
 		return nil, errStudioDatabase
 	}

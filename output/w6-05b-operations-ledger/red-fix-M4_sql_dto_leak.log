@@ -1,0 +1,38 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.54s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.25s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.24s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.12s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.14s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.10s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.12s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.19s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.24s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.16s)
+=== RUN   TestOperationsQueueProtectiveOperationsCannotBeCancelled
+--- PASS: TestOperationsQueueProtectiveOperationsCannotBeCancelled (0.29s)
+=== RUN   TestOperationsQueueQueryHardCap
+--- PASS: TestOperationsQueueQueryHardCap (0.07s)
+=== RUN   TestOperationsQueueSQLDTOHasExactKeys
+    operations_queue_test.go:520: list item keys = [action actions attempts created_at object operation_id provider purpose reason_code semantic_key state updated_at], want exactly [action actions attempts created_at object operation_id provider purpose reason_code state updated_at]
+    operations_queue_test.go:520: detail item keys = [action actions attempts created_at object operation_id provider purpose reason_code semantic_key state updated_at], want exactly [action actions attempts created_at object operation_id provider purpose reason_code state updated_at]
+--- FAIL: TestOperationsQueueSQLDTOHasExactKeys (0.05s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.33s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.07s)
+FAIL
+FAIL	livecommerce/tests/foundation	11.707s
+FAIL
+test-focused: top-level PASS=15 FAIL=1 SKIP=0 exit=1

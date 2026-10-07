@@ -1,0 +1,84 @@
+# green-fix.log: bash scripts/dev/test-local.sh --operations-queue on the COMMITTED tree 378020db3f7b3b1137ad64b711c805617d674193 (git status clean for tracked files at start; output/ is evidence only)
+# date: 2026-10-06T18:29:31Z
+
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack
+--- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (6.71s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (2.50s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.39s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.42s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.39s)
+=== RUN   TestT06DispatcherBudgetPersistsManualRequirement
+--- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.38s)
+=== RUN   TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob
+--- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.40s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.49s)
+=== RUN   TestT06PolicyOutcomeCannotErasePossibleRemoteEffect
+--- PASS: TestT06PolicyOutcomeCannotErasePossibleRemoteEffect (0.02s)
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (4.42s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.31s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+--- PASS: TestOperationsQueueConcurrentActionsYieldOneEffect (0.24s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+--- PASS: TestOperationsQueueCancelRacesDispatchClaim (0.11s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.14s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.09s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.05s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.12s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.20s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.14s)
+=== RUN   TestOperationsQueueProtectiveOperationsCannotBeCancelled
+--- PASS: TestOperationsQueueProtectiveOperationsCannotBeCancelled (0.31s)
+=== RUN   TestOperationsQueueQueryHardCap
+--- PASS: TestOperationsQueueQueryHardCap (0.07s)
+=== RUN   TestOperationsQueueSQLDTOHasExactKeys
+--- PASS: TestOperationsQueueSQLDTOHasExactKeys (0.05s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.32s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.07s)
+PASS
+ok  	livecommerce/tests/foundation	22.649s
+=== RUN   TestA10InsertOperationJobOnValidation
+--- PASS: TestA10InsertOperationJobOnValidation (0.00s)
+=== RUN   TestLedgerRefusalCodesSurviveHTTPError
+--- PASS: TestLedgerRefusalCodesSurviveHTTPError (0.00s)
+=== RUN   TestLedgerRefusalCodesMatchMigration
+--- PASS: TestLedgerRefusalCodesMatchMigration (0.02s)
+=== RUN   TestNormalizeLedgerState
+--- PASS: TestNormalizeLedgerState (0.00s)
+=== RUN   TestInsertOperationJobRejectsBadInput
+--- PASS: TestInsertOperationJobRejectsBadInput (0.00s)
+PASS
+ok  	livecommerce/internal/integrations/core	1.423s
+=== RUN   TestOperationRoutesTransportRules
+--- PASS: TestOperationRoutesTransportRules (0.01s)
+=== RUN   TestOperationRoutesQueryRetryNeedJobClient
+--- PASS: TestOperationRoutesQueryRetryNeedJobClient (0.00s)
+=== RUN   TestOperationsClassify
+--- PASS: TestOperationsClassify (0.00s)
+PASS
+ok  	livecommerce/internal/httpapi	1.755s
+=== RUN   TestOperationsCursorIsBoundToItsStateFilter
+--- PASS: TestOperationsCursorIsBoundToItsStateFilter (0.00s)
+PASS
+ok  	livecommerce/internal/pagination	1.402s
+testing: warning: no tests to run
+PASS
+ok  	livecommerce/internal/httperror	1.639s [no tests to run]
+PASS: isolated operations-ledger subset only (REAL_PG, MOCK provider): store isolation, exact DTO, cancel/query/retry rules, UNKNOWN-needs-proof with call-counting provider, concurrency, ACL pins; real Meta/ECPay/ads providers, the admin UI (W6-U2) and LIVE traffic are NOT_RUN.
+exit 0

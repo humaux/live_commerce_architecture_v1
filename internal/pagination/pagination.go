@@ -132,13 +132,15 @@ func validBinding(b Binding) bool {
 		return b.ParentID == "" && len(b.Filter) == 64
 	case "live-sessions", "claim-blocklist": // claim-blocklist: store-level list (internal/claims.ListBlockedActors, W3-05B)
 		return b.ParentID == "" && b.Filter == ""
+	case "operations": // internal/integrations/core.ListLedger (W6-05B): Filter is the ledger state filter
+		return b.ParentID == "" && ledgerFilters[b.Filter]
 	case "collections": // internal/catalog.ListCollectionsPage (catalog-core, migration 0086)
 		return b.ParentID == "" && b.Filter == ""
 	case "catalog-products": // internal/catalog.ListProductSummaries: Filter is the sha256 hex of status + search text
 		return b.ParentID == "" && len(b.Filter) == 64
 	case "customers": // internal/customers.List: Filter is empty or the sha256 hex of the search text
 		return b.ParentID == "" && (b.Filter == "" || len(b.Filter) == 64)
-	case "customer-notes": // internal/customers.ListNotes (W6-01B): ParentID is the customer id
+	case "customer-notes", "customer-historical-orders": // internal/customers.ListNotes (W6-01B) / ListHistoricalOrders (W5-03B): ParentID is the customer id
 		return command.ValidID(b.ParentID) && b.Filter == ""
 	case "delivery-services":
 		return command.ValidID(b.ParentID) && len(b.Filter) == 2 &&
@@ -151,6 +153,9 @@ func validBinding(b Binding) bool {
 		return false
 	}
 }
+
+// ledgerFilters are the closed state filters of the operations ledger list; a cursor is bound to exactly one of them.
+var ledgerFilters = map[string]bool{"attention": true, "FAILED_FINAL": true, "UNKNOWN": true, "ACKNOWLEDGED": true, "BLOCKED_POLICY": true, "STALE_BINDING": true, "READY": true}
 
 func validPositionKey(collection string, position int, key string) bool {
 	if timeKeyed(collection) {
@@ -180,7 +185,7 @@ func validKeyCount(collection string, count int) bool {
 // timestamp then a UUID, and only byte-canonical cursors are accepted.
 func timeKeyed(collection string) bool {
 	return collection == "merchant-orders" || collection == "merchant-orders-v2" || collection == "live-sessions" || collection == "claim-bundles" || collection == "claim-blocklist" || collection == "customers" ||
-		collection == "customer-notes" || collection == "collections" || collection == "catalog-products"
+		collection == "customer-notes" || collection == "customer-historical-orders" || collection == "collections" || collection == "catalog-products" || collection == "operations"
 }
 
 func invalid(what string) error { return fmt.Errorf("%w: invalid %s", command.ErrInvalid, what) }

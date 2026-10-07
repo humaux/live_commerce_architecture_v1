@@ -275,6 +275,15 @@ func TestProjectionInvariantsRefundAndShipment(t *testing.T) {
 		"refunded late payment": func(v map[string]any) {
 			v["payment_state"], v["refunded_minor"] = "REVIEW_REQUIRED", 110
 		},
+		// W3-08B: nothing closes the payment work item, so a merchant-cancelled paid order keeps work READY. One such row used to
+		// fail the whole store list with 503 (W3-U5 CI run 37512707012: cancelled order whose refund FAILED = cancel-refund gap).
+		"merchant-cancelled order after a full refund keeps READY work": func(v map[string]any) {
+			v["commercial_state"], v["fulfillment_state"] = "CANCELLED", "CANCELLED"
+			v["payment_state"], v["refunded_minor"] = "REFUNDED", 110
+		},
+		"cancelled order whose refund failed (cancel-refund gap) keeps READY work": func(v map[string]any) {
+			v["commercial_state"], v["fulfillment_state"] = "CANCELLED", "CANCELLED"
+		},
 	}
 	for name, mutate := range ok {
 		t.Run("accept "+name, func(t *testing.T) {
@@ -321,7 +330,11 @@ func TestProjectionInvariantsRefundAndShipment(t *testing.T) {
 			v["payment_state"], v["work_state"], v["commercial_state"] = "PENDING", "NONE", "AWAITING_PAYMENT"
 			v["refund_pending_minor"] = 10
 		},
-		"READY on cancelled fulfilment":   func(v map[string]any) { v["fulfillment_state"] = "CANCELLED" },
+		"READY on cancelled fulfilment":                   func(v map[string]any) { v["fulfillment_state"] = "CANCELLED" },
+		"READY on a cancelled order with live fulfilment": func(v map[string]any) { v["commercial_state"] = "CANCELLED" },
+		"READY on a cancelled order that never captured": func(v map[string]any) {
+			v["commercial_state"], v["fulfillment_state"], v["payment_state"] = "CANCELLED", "CANCELLED", "PENDING"
+		},
 		"confirmed without capture state": func(v map[string]any) { v["payment_state"] = "AUTHORIZED" },
 	}
 	for name, mutate := range bad {

@@ -34,6 +34,15 @@ func TestCustomerImportRoutesTransportRules(t *testing.T) {
 		{"preview with mapping", "POST", base + "/customers/preview?mapping=%7B%22name%22%3A%22Name%22%7D", csvBody, asCSV, 401, "unauthorized"},
 		{"commit", "POST", base + "/customers/commit?expected_apply_rows=1", csvBody, asCSV, 401, "unauthorized"},
 		{"results", "GET", base + "/" + custID + "/results.csv", "", nil, 401, "unauthorized"},
+		// W5-03B: the order-history rows follow the same transport rules.
+		{"orders preview", "POST", base + "/orders/preview", csvBody, asCSV, 401, "unauthorized"},
+		{"orders commit", "POST", base + "/orders/commit?expected_apply_rows=1", csvBody, asCSV, 401, "unauthorized"},
+		{"orders preview with key", "POST", base + "/orders/preview", csvBody, withKey, 422, "invalid_request"},
+		{"orders preview json body", "POST", base + "/orders/preview", csvBody, func(r *http.Request) { r.Header.Set("Content-Type", "application/json") }, 415, "invalid_request"},
+		{"orders preview unknown query", "POST", base + "/orders/preview?x=1", csvBody, asCSV, 422, "invalid_request"},
+		{"orders commit no count", "POST", base + "/orders/commit", csvBody, asCSV, 422, "invalid_request"},
+		{"orders commit count above cap", "POST", base + "/orders/commit?expected_apply_rows=5001", csvBody, asCSV, 422, "invalid_request"},
+		{"orders preview get", "GET", base + "/orders/preview", "", nil, 405, ""},
 		{"results only failed", "GET", base + "/" + custID + "/results.csv?only=failed", "", nil, 401, "unauthorized"},
 		// Bearer, Content-Type, Idempotency-Key (the file hash is the idempotency key: a header is refused).
 		{"preview no bearer", "POST", base + "/customers/preview", csvBody, noBearer, 401, "unauthorized"},
@@ -113,6 +122,31 @@ func TestCustomerImportErrorCodesAreInTheTable(t *testing.T) {
 		var envelope httperror.Envelope
 		if err := json.Unmarshal(rec.Body.Bytes(), &envelope); err != nil || envelope.Code != tc.code || envelope.Message == "" {
 			t.Fatalf("%s is not in the httperror table: %+v", tc.code, envelope)
+		}
+	}
+}
+
+// W5-03B: the archive read of one customer. Same router, customers:read, ids and query validated before any database work.
+func TestHistoricalOrdersRouteTransportRules(t *testing.T) {
+	h := NewHandler(nil)
+	path := "/v1/admin/stores/" + custStore + "/customers/" + custID + "/historical-orders"
+	for _, tc := range []struct {
+		name, method, path string
+		status             int
+	}{
+		{"read", "GET", path, 401},
+		{"read with paging", "GET", path + "?limit=10", 401},
+		{"bad customer id", "GET", "/v1/admin/stores/" + custStore + "/customers/NOT-A-UUID/historical-orders", 422},
+		{"search filter refused", "GET", path + "?q=a", 422},
+		{"tag filter refused", "GET", path + "?tag=" + custID, 422},
+		{"post", "POST", path, 405},
+	} {
+		r := httptest.NewRequest(tc.method, tc.path, nil)
+		r.Header.Set("Authorization", custBearer)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != tc.status {
+			t.Errorf("%s: status=%d want=%d body=%s", tc.name, w.Code, tc.status, w.Body.String())
 		}
 	}
 }

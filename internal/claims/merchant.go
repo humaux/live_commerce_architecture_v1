@@ -453,7 +453,8 @@ func CreateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, ke
 // NO KEY UPDATE, so deactivation waits for in-flight ingests holding it FOR SHARE.
 // Reactivation moves activated_at (earlier comments stay OFFER_INACTIVE) and fails with
 // ErrConflict while another active offer holds the SKU. Lowering max never rewrites
-// accepted lines. Called by M4.
+// accepted lines. Deactivation refuses only NEW claims: buyers who already hold a claim line keep
+// their granted live price until their link expires (amendment "Live price kept on pause"). Called by M4.
 func UpdateOffer(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, sessionID, offerID string, in OfferUpdate) (Offer, error) {
 	livePrice, priceOK := normalizeLivePrice(in.LivePriceMinor)
 	if !priceOK || !command.ValidID(sessionID) || !command.ValidID(offerID) || in.ExpectedVersion < 1 || in.ExpectedVersion == math.MaxInt64 ||

@@ -1,0 +1,12 @@
+tested tree: 32d2742a9a86c583ba70b466287d4300c3c45cee + one injected fault, restored afterwards
+fault: mode gate removed from the simulator (internal/claims/simulate.go)
+command: bash scripts/dev/test-focused.sh '^TestSimulateParityWithIngest$'  (expected: FAIL)
+
+=== RUN   TestSimulateParityWithIngest
+    keyword_tools_test.go:160: SIM-PARITY EXACT "#A01": ingest {Outcome:REJECTED Reason:NO_MATCH OfferID: Keyword: Quantity:0 PreviousQuantity:0 BundleID: BundleVersion:0 LineVersion:0}, simulator {Outcome:ACCEPTED Reason: MatchMode:EXACT GrammarVersion:kwc-v2 Kind:MATCH ParsedKeyword:A01 ParsedQuantity:1 Explicit:false Offer:0xc000c49380 TargetQuantity:1 WindowState:OPEN WindowMatchMode:EXACT WindowClosed:false NotSimulated:[bundle_limit rate_limit]}
+--- FAIL: TestSimulateParityWithIngest (1.51s)
+FAIL
+FAIL	livecommerce/tests/foundation	2.928s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1

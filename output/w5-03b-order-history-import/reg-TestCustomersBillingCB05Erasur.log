@@ -1,0 +1,61 @@
+=== RUN   TestCustomersBillingCB04Consent
+=== RUN   TestCustomersBillingCB04Consent/buyer_grant,_replay,_withdraw,_re-grant;_source_and_policy_are_server-set
+=== RUN   TestCustomersBillingCB04Consent/K/K2_stale_retry:_an_unchanged-state_write_still_records_its_key_and_a_retry_can_never_re-grant
+=== RUN   TestCustomersBillingCB04Consent/PT409:_same_key_with_a_different_purpose,_granted,_source_or_policy
+=== RUN   TestCustomersBillingCB04Consent/an_EXPORT_key_reused_for_ERASURE_(and_the_reverse)_is_PT409
+=== RUN   TestCustomersBillingCB04Consent/merchant_withdraw:_recorded,_audited,_permission-gated,_store-scoped
+=== RUN   TestCustomersBillingCB04Consent/a_merchant_can_never_grant
+=== RUN   TestCustomersBillingCB04Consent/consent_allows_exactly_per_the_frozen_comment
+=== RUN   TestCustomersBillingCB04Consent/erasure_withdraws_every_pair;_nothing_is_granted_afterwards
+=== RUN   TestCustomersBillingCB04Consent/owner_lock:_a_held_owner_row_blocks_the_three_writers_(pg_blocking_pids_witness)
+=== RUN   TestCustomersBillingCB04Consent/concurrency:_one_key_makes_one_row;_alternating_writers_never_fail
+=== RUN   TestCustomersBillingCB04Consent/request_body_policy_version_/_source_are_rejected_as_unknown_fields_(D12)
+--- PASS: TestCustomersBillingCB04Consent (2.47s)
+    --- PASS: TestCustomersBillingCB04Consent/buyer_grant,_replay,_withdraw,_re-grant;_source_and_policy_are_server-set (0.02s)
+    --- PASS: TestCustomersBillingCB04Consent/K/K2_stale_retry:_an_unchanged-state_write_still_records_its_key_and_a_retry_can_never_re-grant (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/PT409:_same_key_with_a_different_purpose,_granted,_source_or_policy (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/an_EXPORT_key_reused_for_ERASURE_(and_the_reverse)_is_PT409 (0.20s)
+    --- PASS: TestCustomersBillingCB04Consent/merchant_withdraw:_recorded,_audited,_permission-gated,_store-scoped (0.02s)
+    --- PASS: TestCustomersBillingCB04Consent/a_merchant_can_never_grant (0.02s)
+    --- PASS: TestCustomersBillingCB04Consent/consent_allows_exactly_per_the_frozen_comment (0.03s)
+    --- PASS: TestCustomersBillingCB04Consent/erasure_withdraws_every_pair;_nothing_is_granted_afterwards (0.01s)
+    --- PASS: TestCustomersBillingCB04Consent/owner_lock:_a_held_owner_row_blocks_the_three_writers_(pg_blocking_pids_witness) (0.08s)
+    --- PASS: TestCustomersBillingCB04Consent/concurrency:_one_key_makes_one_row;_alternating_writers_never_fail (0.07s)
+    --- PASS: TestCustomersBillingCB04Consent/request_body_policy_version_/_source_are_rejected_as_unknown_fields_(D12) (0.02s)
+=== RUN   TestCustomersBillingCB05Erasure
+=== RUN   TestCustomersBillingCB05Erasure/refused:_an_unexpired_DRAFT/AWAITING_PAYMENT_order_(merchant_and_buyer)
+=== RUN   TestCustomersBillingCB05Erasure/refused:_any_payments.stripe_sessions_row_with_expires_at_>_now,_even_for_a_paid_order
+=== RUN   TestCustomersBillingCB05Erasure/refused:_a_Stripe_refund_without_a_terminal_fact
+=== RUN   TestCustomersBillingCB05Erasure/success:_sessions_revoked,_owner_inactive,_consents_withdrawn,_summary_counts_(D10)
+=== RUN   TestCustomersBillingCB05Erasure/redacts_only_unreferenced_snapshots;_referenced_ones_stay_byte-identical
+=== RUN   TestCustomersBillingCB05Erasure/relabels_manual_bound_bundles_to_erased-+32_hex,_also_next_to_a_colliding_merchant_label
+=== RUN   TestCustomersBillingCB05Erasure/actor-level_data_and_other_owners_are_untouched_(CD7)
+=== RUN   TestCustomersBillingCB05Erasure/replay_is_idempotent;_the_tombstone_is_the_ERASURE_row
+=== RUN   TestCustomersBillingCB05Erasure/buyer_erasure_(via_buyer)_and_the_retry_after_it_is_410_erased
+=== RUN   TestCustomersBillingCB05Erasure/RESTORE_MODEL_(MODEL_ONLY_until_T20):_replay_erasures_without_ids_stays_red,_with_the_external_ids_goes_green
+--- PASS: TestCustomersBillingCB05Erasure (16.48s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_an_unexpired_DRAFT/AWAITING_PAYMENT_order_(merchant_and_buyer) (0.16s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_any_payments.stripe_sessions_row_with_expires_at_>_now,_even_for_a_paid_order (0.09s)
+    --- PASS: TestCustomersBillingCB05Erasure/refused:_a_Stripe_refund_without_a_terminal_fact (0.57s)
+    --- PASS: TestCustomersBillingCB05Erasure/success:_sessions_revoked,_owner_inactive,_consents_withdrawn,_summary_counts_(D10) (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/redacts_only_unreferenced_snapshots;_referenced_ones_stay_byte-identical (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/relabels_manual_bound_bundles_to_erased-+32_hex,_also_next_to_a_colliding_merchant_label (0.00s)
+    --- PASS: TestCustomersBillingCB05Erasure/actor-level_data_and_other_owners_are_untouched_(CD7) (0.02s)
+    --- PASS: TestCustomersBillingCB05Erasure/replay_is_idempotent;_the_tombstone_is_the_ERASURE_row (0.04s)
+    --- PASS: TestCustomersBillingCB05Erasure/buyer_erasure_(via_buyer)_and_the_retry_after_it_is_410_erased (0.02s)
+    --- PASS: TestCustomersBillingCB05Erasure/RESTORE_MODEL_(MODEL_ONLY_until_T20):_replay_erasures_without_ids_stays_red,_with_the_external_ids_goes_green (1.80s)
+=== RUN   TestCustomersBillingCB13GrantScript
+--- PASS: TestCustomersBillingCB13GrantScript (0.60s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.17s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.00s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	21.485s
+test-focused: top-level PASS=4 FAIL=0 SKIP=0 exit=0
