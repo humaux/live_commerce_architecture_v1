@@ -71,7 +71,7 @@ integrator's call. The `node --test` UI architecture gate needs a `pnpm install`
 2. A late `unmapped_source` row inside an already-closed week cannot be resolved (brief-mandated `period_already_closed`), and 0150's close check has no lower
    bound on `txn_created_at`, so it blocks every later close of the environment until an owner red-line SQL fix. Contract §9 states it. Should a closed-week row be
    resolvable as `not_store_revenue` (it cannot change a frozen statement)?
-3. `operator_notes` lists every `assigned_to_store` resolution up to the period end, so older notes are reprinted on later closes (deliberate, noisy).
+3. ~~`operator_notes` reprints older notes on later closes~~ fixed in round 2 (P1-2): a close prints only its own period's notes.
 4. A negative-amount unmapped row (dispute-shaped) can be resolved `not_store_revenue`, i.e. the platform absorbs it: confirm that is the intended meaning.
 5. `note` is free text (<= 500 chars) shown in CLI JSON and close notes; nothing stops an operator pasting PII. `environment` on the resolution row is
    checked against the unattributed row by the definer, not by a composite FK.
@@ -84,3 +84,42 @@ SANDBOX and LIVE: `settlement-resolve` against a real SANDBOX ledger after a rea
 ## Integrator to-do
 Migration number 0163 was given. W3-U4's 0164 lands later: the R2 pin becomes 90 then (comment lines keep migration order). `slsApplyWithout` holds 0163
 back by name with 0150 (not "the newest"). No shared schema, OpenAPI or lockfile touched.
+
+---
+
+# Round 2 (independent Opus money review: MERGE-AFTER-FIXES, two P1s confirmed by a real-PG probe)
+- Round-2 commits on top of `003eabbf`: the migration/Go fix, the tests, the contract/README, and `fix(settlement-resolve): 0163 COMMENT literal had an
+  unescaped apostrophe` (my own slip, caught by the full focused run; the broken intermediate is `r2-pg-broken-comment.log`). Code under test: the SHA in
+  `r2-green-pg.sha`. Roles/models unchanged (Claude Sonnet 5.5 authored the fixes; the reviewer's evidence files were not touched).
+
+| Finding | Change | Red evidence (before the fix) |
+| --- | --- | --- |
+| P1-1 resolving a row that already has a line pays twice | `record_settlement_resolution` raises PT409 `already_attributed` right after the reason check if any `settlement_lines` row has the txn (either resolution) | `r2-red.log`, test line 436: `assigned_to_store on a row that has a line: want ... "already_attributed", got <nil>` |
+| P1-2 notes reprinted on every later close | notes only for `txn_created_at >= v_start AND < v_end`, plus `period_start`, `type`, signed `settle_amount`/`settle_net`/`settle_currency` (`OperatorNote` carries them) | `r2-red-p1-2.log` (P1-1/P2 already fixed, only P1-2 red): week-1 note fields empty; the week-2 CLI close printed 1 note, the week-3 close printed 2 (Odd reprinted + Fin) |
+| P2-1 operators cannot find blocking ids | 4th anchored in-place patch: the `settlement_unattributed` refusal carries up to 20 ids (oldest first) as DETAIL; `settlementScan` passes on only a DETAIL that is exactly 1..20 `txn_` ids (never a driver message); the CLI prints them: `stripeadmin: rejected: settlement_unattributed: txn_a,txn_b` | `r2-red.log`, test line 129 (refusal had no ids); Go unit test `TestSettlementUnattributedRefusalCarriesOnlyTheBlockingIDs` (exact-match, 0/1/2/20/21 ids, free text, driver tail, other token) |
+| P2-2 note charset | table CHECK and definer refuse `[[:cntrl:]]`; Go refuses `unicode.IsControl` (the review note said Go already caught tab/newline; it did not, so both layers now do) | `r2-red.log`, test line 197 (Go accepted a newline note); mutation without the two SQL clauses: `r2-mutation-nocntrl.log` (`SQL accepted ...'two'\|\|chr(10)\|\|'lines'`, exit 1) |
+| P2-3 / rulings | contract §6.1 CHECK, §6.2, close/resolve rows, §6.6 (signed amount, negative row = platform absorbs unless `assigned_to_store`, `already_attributed`, resolved rows skipped), §8 runbook (resolve every row the refusal names that has no line; no buyer PII in the note), §9 (erasing a note is red-line; follow-up amendment for closed-week rows); `deploy/README.md` mirrors §8 | n/a (docs) |
+
+Rulings applied as given: (a) sync guard kept; (b) closed-week refusal kept, follow-up amendment listed in §9; (c) negative-row sentence added.
+
+## Round 2 commands (zsh; exit codes printed with `$?`)
+| Command | Exit |
+| --- | --- |
+| `go build ./...` / `go vet ./...` / `go vet -tags browser ./tests/foundation` / `go vet ./internal/... ./cmd/...` | 0 / 0 / 0 / 0 |
+| `go test ./internal/payments/stripeadmin/... ./cmd/stripe-admin/... -count=1` (unfiltered) | 0 |
+| `go test ./internal/platform/... -count=1` | 0 |
+| `node --test tests/deploy/deploy-prep-r3.test.mjs tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs` | 0, 46/46 |
+| `bash scripts/dev/check-headers.sh` | 0 |
+| `check-gates.sh` minus its two UI node lines (still unrunnable here: no `node_modules`) | 0 (shard-plan, registry, headers, gofmt, vet incl. `-tags browser`) |
+| `bash scripts/dev/test-focused.sh '^(TestPlatformSettlement\|TestR2IntegrationUpgradeFromReleaseHead\|TestStripeSL02Schema\|TestRemovePayuniNotify\|TestStripeAuthority\|TestStripeRF03Schema\|TestStripeRF12Guards\|TestPlatformStripePF01Schema\|TestPlatformOperatorOP04b\|TestPlatformOperatorOP08\|TestPlatformOperatorOP09)'` at the SHA in `r2-green-pg.sha` | 0, 20 top-level PASS, 0 FAIL (`r2-green-pg.summary.log`) |
+
+## Round 2 risks and open items
+1. Residual note gap (needs the reviewer's call): `period_already_closed` only looks at the row's own week. A LATE row dated in an earlier week that has no
+   statement of its own, synced after a later week closed, is resolvable, but its `assigned_to_store` note is printed by no later close (a close prints only its
+   own period). The resolve command's own JSON line and the audit row still record it. Tightening the refusal to "any statement with `period_start >=` the
+   row's Monday" closes the gap but makes such rows owner-SQL only (the same trade-off as ruling (b)).
+2. A close that refuses lists at most 20 ids; the operator resolves them and reruns the close for more.
+3. DETAIL is built by the same predicate as the check (duplicated inside the patch); a future edit of one must edit the other (the anchor assertions fail loudly on any shape change).
+
+## Round 2 NOT_RUN
+SANDBOX/LIVE (unchanged); the full foundation suite and the browser gates (CI `foundation-shards`, `deploy-smoke`); the two UI node lines of `check-gates.sh`.
