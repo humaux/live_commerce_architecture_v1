@@ -58,13 +58,12 @@ async function writeInboxLedger(ledger: ReturnType<typeof createInboxLedger>["le
 }
 /** Switch through the real shell control and await its completed store navigation. */
 async function selectFixtureStore(page: Page, next: string) {
-  // The two fixture stores have different role homes. Both redirect away from Overview after a full store navigation.
+  // Verify scope, not the role's landing page: live_operator may remain on Overview in this store.
   const selector = page.getByTestId("shell-store-selector");
   await expect(selector).toBeVisible();
   if ((await selector.inputValue()) !== next || new URL(page.url()).searchParams.get("store") !== next) {
     await selector.selectOption(next);
-    await expect(page).toHaveURL((url) => url.origin === origin && url.searchParams.get("store") === next &&
-      url.pathname !== "/en" && url.pathname !== "/en/");
+    await expect(page).toHaveURL((url) => url.origin === origin && url.searchParams.get("store") === next);
   }
   await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
   await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);

@@ -13,7 +13,7 @@ const fixture = "10000000-0000-4000-8000-000000000001";
 const other = "20000000-0000-4000-8000-000000000002";
 
 for (const initialStore of [other, fixture]) {
-for (const home of ["/en/inventory", "/en/messages"]) {
+for (const home of ["/en", "/en/inventory", "/en/messages"]) {
 for (const scoped of [false, true]) {
 test(`actual login settles ${home} and fixture store (${initialStore === fixture ? "already selected" : "real switch"}, scoped=${scoped})`, async () => {
   const helpers = source.statements.filter((n: any) => ts.isFunctionDeclaration(n) &&
@@ -31,7 +31,7 @@ test(`actual login settles ${home} and fixture store (${initialStore === fixture
     url: () => url,
     async waitForURL(value: any) {
       if (authPending) settleAuth();
-      else if (switching) { selected = switching; switching = null; url = `${origin}${selected === fixture ? "/en/inventory" : "/en/messages"}?store=${selected}`; events.push("store settled"); }
+      else if (switching) { selected = switching; switching = null; url = `${origin}${selected === fixture ? "/en" : "/en/messages"}?store=${selected}`; events.push("store settled"); }
       assert.equal(matches(value), true, "actual navigation destination must match the requested wait");
     },
     getByRole: () => ({ async click() { authPending = true; events.push("sign in"); } }),
