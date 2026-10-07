@@ -2,7 +2,8 @@
 //   same buyer never suggested) -> merge -> group waybill -> every member 已出貨 (persisted across reload); an OPEN group's panel
 //   REAPPEARS after a reload and can be dissolved or shipped (W3-U4 GET parcel-groups); an uncertain dissolve that landed is
 //   reconciled; single-order shipment blocked; a stale second tab gets the server 409 in_parcel_group copy. Every assertion is a
-//   user-visible result of a real click/fill/selectOption; page.evaluate is used once for a [READ/MEASURE] layout read only.
+//   user-visible result of a real click/fill/selectOption; page.evaluate is used once for a [READ/MEASURE] layout read only and
+//   page.route once as [FAULT INJECTION] (the click's own request is failed after it reached the server).
 //   Fixture orders come from the Go harness (LC_BROWSER_PARCEL_ORDERS).
 // Depends on: @playwright/test; harness env LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_ORDER_STORE, LC_BROWSER_PARCEL_ORDERS.
 // Used by: scripts/dev/test-local.sh (--browser-merchant-orders-ui), tests/foundation/browser_merchant_orders_ui_test.go.
@@ -157,7 +158,8 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await suggestionCard(page, pd1).locator('button[data-testid^="parcel-merge-"]').click();
     const panel = groupPanel(page, pd1);
     await expect(panel).toBeVisible();
-    // First dissolve reaches the server (the group really dissolves) but the browser sees a network failure: outcome UNKNOWN.
+    // [FAULT INJECTION, not a substitute for a click] The real confirm click below sends its own DELETE; page.route only lets that
+    // request reach the server (the group really dissolves) and then fails it in the browser: outcome UNKNOWN. No state is set here.
     let first = true;
     const dissolveRequest = /\/parcel-groups\/[0-9a-f-]{36}\?expected_version=\d+$/;
     await page.route(dissolveRequest, async (route) => {
