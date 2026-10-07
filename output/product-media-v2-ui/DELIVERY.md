@@ -1,59 +1,57 @@
-<!-- Purpose: PM-U current CI repair, evidence binding and integrator rerun instructions.
-Depends on: backend3ba093bc, merged trunkf8f01b74, source-manifest.json and focused runtime artifacts.
-Used by: integrator review/GitHub acceptance; no production or provider acceptance. -->
-# PM-U product-media-v2 UI — CI repair
+<!-- Purpose: current PM-U click-sweep repair and evidence boundaries.
+Depends on: CIce13e6fa, current integration0617bc40, repair source-manifest and main evidence logs.
+Used by: integrator review/GitHub rerun; current browser acceptance remains pending. -->
+# PM-U product-media-v2 UI — remaining click-sweep repair
 
-- Branch: `unit/product-media-v2-ui`; trunk `f8f01b74ad80fc26223751ce3bfdc2cb849df6c6` merged as `62590106`. Backend base remains `3ba093bc`. Final SHA is the commit containing this file; actual value is in the main `commit-receipt.json` and handoff.
-- Supersedes author `0ab80575` / int `6bf684d9` for CI37501885015/37501891939. Prior delivery/logs/manifests retained in main output/history.
-- Source binding: `1b7432986d65b8429bcfb65e8d148cd2226c40fc2e2b58c5dfdaf17433f2390f` (33 source files, `source-manifest.json`). Main evidence root: `/Volumes/data/live_commerce_architecture_v1/output/product-media-v2-ui`.
-- Parent Codex GPT-6 owns app/media integration and final review; independent read-only reviewer `codex-product-media-v2-ui-sub-photo-repair-review`. Actual configured reasoning/model ID is not exposed; no fabricated value. Existing storefront/test author ownership remains in prior delivery.
+- Branch `unit/product-media-v2-ui`. CI baseline `ce13e6fa9ae79fef90fbc88db8844fd62006ec81` fast-forwarded, then current trunk `0617bc40f4a50e84bd57d6eed00e87167582ca9a` merged as `5d0b24482c2c2693465a0b680c00bd7eda3a6aa0` before checks. Final SHA is the commit containing this file; main `commit-receipt.json` records it.
+- Repair source binding `421c22bd0a070c832b83e6d7d0a0547d626f95f40eac0286087ce9d1c43a354e` covers six changed source/test files in `ci-37569737876/source-manifest.json`. Prior1778805b delivery/manifest/runtime evidence retained.
+- Main evidence root `/Volumes/data/live_commerce_architecture_v1/output/product-media-v2-ui/ci-37569737876/`.
+- Author Codex GPT-6; actual configured model/effort not exposed. Two separate read-only reviews: `codex-product-media-v2-ui-sub-zero-main-review` (migration/backend and final hint), `codex-product-media-v2-ui-sub-j1-readonly` (PNG/driver and final protocol). No recursive delegation or child source edits.
 
-## Changes
+## Changes and root causes
 
-`photo-preprocess.ts` preserves the same File and bytes for <=2 MiB and an oriented longest side <=2000px. Only oversized sources use canvas: JPEG quality0.85; PNG/WebP become alpha-preserving PNG, with bounded reductions until <=2 MiB. PNG logos retain transparency. Existing role/cap/UNKNOWN recovery behavior remains.
+ACTIVE products with zero main images are a legal persisted state. Migration0149 moves existing image rows without creating missing images or changing product status. The actual catalog writer, image move/delete and buyer projection allow this state; the sweep's primary ACTIVE/no-photo product is valid coverage. The fixture is preserved.
 
-Main/detail empty sections now show plain localized copy (zh-TW/zh-CN/en; ja copy ready for the unified locale unit). Original visibility, count and refusal assertions remain. The real-upload fixture contains fitting640px and oversized3000px transparent PNGs, the750x4000 detail and >2 MiB EXIF6 phone photo. Go independently verifies stored source hashes/formats for fitting originals, decoded dimensions, transparent corners and half-transparent centers for both PNGs.
+`ProductDocumentForm.tsx` renders the existing complete repair text as a plain inline hint with polite announcement and an ID linked from the status field. It does not label a successful page load as an alert/error. Active save/publish restrictions and enabled upload/unpublish repair remain unchanged. The real-upload spec now also requires the hint visible and without an error/status role.
 
-The prior PM runner registration mistakenly selected the storefront MOCK shortcut and exited before the real-upload gate. PM now selects the normal production build path for both applications and reaches `TestBrowserProductMediaV2RealUpload`. Existing explicit storefront MOCK behavior remains. Bash-condition tests cover both values of LC_SHOP_MOCK; the build predicate test now requires the production blocks that do not exit early.
+J1's old input/row IDs still exist; the failure is not a selector rename. Its valid70-byte PNG has correct CRCs and a complete pixel stream. The old direct setInputFiles ran after navigation without waiting for canonical media readiness. Manager legitimately mounts a disabled input and ignores upload events while loading. CI had no upload network trace, so the exact event-time state remains UNKNOWN; the source-permitted race and missing driver guarantee are established.
 
-Prior three-section editor, gallery/variant/cart images,40-emoji rune parity and blocking active-zero-main repair remain. No backend contract/runtime/schema/lockfile change; no push or release merge.
+The new small `product-media-journey.mjs` driver waits for the input enabled, clicks the actual input/label and answers a real file chooser. It observes the matching POST for the current store/product with role=main, requires the frozen200 acknowledgement and valid image UUID, then checks the canonical main tile. Main1/option0/detail0 assertions replace a global gallery count. J1 retains activation/save/reload and now binds the same image ID after reload and on the buyer page, including read-only decode verification. The driver makes no direct API write or DOM mutation. The original PNG, fixture, sweep matrix, classifier, thresholds and known-defect registry are unchanged.
 
-## Commands and exits
+## Local commands / exits
 
-Evidence filenames below are prefixed `ci-37501885015-` in the main root.
-
-| Check | Exit | Evidence |
+| Command | Exit | Evidence |
 |---|---:|---|
-| Actual preprocessor Node regression before/after |1→0| `preprocess-red.log`1PASS/3FAIL → `preprocess-green.log`4/4 |
-| Actual empty-tile React SSR regression |1→0| `empty-state-red.log`12PASS/1FAIL → `empty-state-green.log`13/13 |
-| Runner branch regression |1→0| `runner-red.log`13PASS/1FAIL → `runner-final-green.log`14/14 |
-| `node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts tests/admin/product-media-ui-model.test.ts tests/admin/product-media-model.test.ts tests/admin/image-list-contract.test.ts` |0| `node-final.log`23PASS/0FAIL |
-| `pnpm run typecheck:admin` |0| `typecheck-admin.log` |
-| Strict owned test types: `pnpm exec tsc --noEmit --target ES2022 --module esnext --moduleResolution bundler --strict --skipLibCheck --esModuleInterop --allowImportingTsExtensions --types node --typeRoots apps/admin/node_modules/@types tests/admin/photo-preprocess.test.ts tests/admin/product-media-ui-model.test.ts tests/admin/product-media-v2.spec.ts` |0| `types-corrected-final.log` |
-| `GOTOOLCHAIN=go1.27.1 go test -tags browser -run '^$' ./tests/foundation` |0| `go-compile.log` compile-only, no tests/PG |
-| `pnpm run build:admin`; `pnpm run build:storefront` (synthetic platform/admin hosts/contact, identity/fixture/buyer-web disabled) |0 each| `build-admin-empty.log`, `build-storefront.log` |
-| `LC_BROWSER_PRODUCT_MEDIA_V2_ACCEPTANCE=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1000s bash scripts/dev/test-focused.sh '^TestBrowserProductMediaV2RealUpload$'` |0| `browser-normal.log`; Playwright6/6 plus independent Go/PG1/1 |
-| Same focused command with `LC_PM_UI_INJECT_FAULT=missing-detail` |1 expected| `browser-calibration.log`, `runtime-calibration/playwright.log`: exact `PM_CALIBRATION_DETAIL_COUNT: five real uploads; six required`; Go calibration RED |
-| Same focused command with injection removed |0| `browser-final-green.log`; Playwright6/6 and Go/PG1/1 |
-| `bash scripts/dev/check-gates.sh`; `git diff --check` |0 each| `gates-final.log`:73 modes, headers/vet/format |
+| `node --test --experimental-strip-types tests/admin/product-media-ui-model.test.ts tests/ui/click-sweep-lib.test.mjs` before/after |1→0| `red.log`20PASS/4FAIL → `green-final.log`24PASS/0FAIL; actual form hint JSX and driver readiness/role/failure negatives |
+| `bash scripts/dev/test-node.sh` |0| `node-final.log`516PASS/0FAIL/0SKIP; optional pinned R04 binary explicitly NOT_RUN |
+| `pnpm run typecheck:admin` |0| `tsc-admin-final.log` |
+| `pnpm exec tsc --noEmit --target ES2022 --module esnext --moduleResolution bundler --strict --skipLibCheck --esModuleInterop --allowImportingTsExtensions --types node --typeRoots apps/admin/node_modules/@types tests/admin/product-media-ui-model.test.ts tests/admin/product-media-v2.spec.ts` |0| `tsc-tests.log` |
+| `pnpm exec tsc --noEmit --allowJs --checkJs --strict --target ES2023 --module ESNext --moduleResolution bundler --skipLibCheck --types node --typeRoots apps/admin/node_modules/@types tests/ui/product-media-journey.mjs` |0| `tsc-journey.log` |
+| `node --check tests/ui/product-media-journey.mjs`; same for click-sweep.mjs / click-sweep-lib.test.mjs |0 each| syntax checks; no browser start |
+| `bash scripts/dev/check-gates.sh`; `git diff --check` |0 each| `check-gates.log`:76 modes, header ratchet/architecture/vet/format |
+| Source hash verification |0| six files match the frozen manifest |
 
-The first focused normal attempt exposed the empty-grid problem before uploads (exit1, `browser-empty-red.log`/`runtime-empty-red`); fixed without changing its visibility assertion. One own queued process30638 was stopped before source changes (exit143, NOT_RUN). Initial Node import/standalone compiler configuration failures and the intermediate runner regex/type diagnostics are preserved; they are not semantic red/PASS evidence. Corrected commands above pass.
+The initial protocol red log was archived before correcting its test-fixture response status to the frozen200; `red.log` above is the valid unchanged-driver red. No failing suite, guard or fixture was removed. Local E3 applies only to MODEL_ONLY Node regressions; tsc/static checks are E1. Actual-JSX tests render the hint fragment, not the full browser form. Page/check doubles exercise driver sequencing and rejection, not browser decoding/uploads.
 
-E3 is limited to current focused actual browser/REAL_PG with MOCK signed IdP/TLS fixture, plus Node regressions. Normal runtime ledgers prove12 real uploads, publish, active-zero-main repair, zh-TW/en×1440/390 buyer4thumbnails/Blueoption/sixdetail/cartoptionimage/delivery+payment step, and post-migration4main+5detail rendering. No order/payment/provider action. Full runtime directories are copied to main `runtime-normal`, `runtime-calibration`, `runtime-final-green` with this prefix. Independent source review: `review.md` with this prefix; no concrete P0/P1 or assertion weakening.
+Independent source review reports no concrete P0/P1 blocker or weakening. Review artifacts `zero-main-source-review.md` and `j1-source-review.md` contain anchors, hashes and scope limits. Source indexing was submitted and the ProductDocumentForm reason link succeeded in Humaux. The new MJS helper entity was still absent after a targeted re-index, so its code-memory link is NOT_DONE; source hashes, the fix memory and review preserve its rationale.
+
+## Prior GitHub evidence (ce13e6fa only)
+
+Run37569737876: product-media-v2 normal, product-editor, catalog-core, catalog-media, storefront and visual-lint GREEN. Click-sweep RED has exactly4 new failures: three zero-main page loads (`r00248`, `r00354`, `r00430`) and J1 cover step (`r01144`). Full gate5 artifact and its ledger/log/screenshots are retained under `artifacts/gate-5/`.
+
+Fault run37569741446: expected RED for `PM_CALIBRATION_DETAIL_COUNT: five real uploads; six required`. GitHub failed log records the Go `calibration RED: omitted detail image caught by six-image assertion`; that branch requires the exact marker before declaring calibration RED. This is a valid historical new-gate calibration record. It does not prove the new repair SHA green.
 
 ## CI gates — integrator runs on GitHub
 
-- `bash scripts/dev/test-local.sh --browser-product-media-v2`
-- `LC_PM_UI_INJECT_FAULT=missing-detail bash scripts/dev/test-local.sh --browser-product-media-v2` (expected1 with the exact phase marker), followed by normal mode (expected0)
-- `bash scripts/dev/test-local.sh --browser-product-editor`
-- `bash scripts/dev/test-local.sh --browser-catalog-core`
-- `bash scripts/dev/test-local.sh --browser-catalog-media`
-- `bash scripts/dev/test-local.sh --browser-storefront`
-- `bash scripts/dev/test-local.sh --browser-click-sweep`
-- `bash scripts/dev/test-local.sh --browser-visual-lint`
+- `bash scripts/dev/test-local.sh --browser-click-sweep` — required full sweep/J1 verification on this SHA.
+- `bash scripts/dev/test-local.sh --browser-product-media-v2` — full4main/2option/6detail and zero-main repair scenario with the retained new hint assertions.
+- `bash scripts/dev/test-local.sh --browser-product-editor` — editor regression.
+- `bash scripts/dev/test-local.sh --browser-visual-lint` — inline-hint layout regression.
 
-## NOT_RUN / limits
+Catalog-core/media/storefront were green atce13 and their media runtime was not changed in this repair. Integrator may include those modes in the final release run. The existing fault injection remains available; its valid ce13 calibration record is retained.
 
-Full test-local modes, foundation, broad browser regressions and Linux/Xvfb execution are NOT_RUN locally; current GitHub rerun is required before full acceptance. Old calibration CI37501891939 failed in the wrong phase and is not credited. No shared smoke test or threshold weakened. W4-U1 remains queued until PM-U is green.
+## NOT_RUN / limits / queue
 
-No real WebP upload fixture in this gate. Fitting EXIF originals intentionally remain unchanged; raw Go codec dimensions may differ from oriented browser dimensions. Normalized >2 MiB EXIF geometry is proven. Legacy unknown-dimension WebP limits and the frozen upload API's non-atomic axis/version race remain documented in the prior delivery. Nine-image fixture proves post-migration rendering; migration upgrade proof belongs to backend TestPMv2MigrationNineImages. Synthetic servers/PG containers are cleaned by their owned harnesses; no production state changed.
+Current-SHA browser/click-sweep/visual/real-upload, production builds, PostgreSQL/full foundation, Linux/Xvfb and live services are NOT_RUN locally this turn, as instructed. R04 media binary absent. No task-owned browser/server/container was started. No push or release merge; only authorized unit synchronization with integration.
+
+J1 checks one main cover and absence of option/detail uploads; it does not replace the full media gate. The Node driver test does not exercise its hidden-input label branch or real chooser/canvas. Current GitHub acceptance is required before PM-U is fully green and W6-U1 may start. W4-U1 belongs to Kimi. The queued pipeline remains W6-U1 → W3-U4 (after owner-confirmed W3-U1b merge) → W5-U1.

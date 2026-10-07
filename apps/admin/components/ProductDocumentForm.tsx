@@ -329,7 +329,8 @@ export function ProductDocumentForm({
         </section>
       </aside>
       <div className="pe-fields" ref={fields} data-testid="product-fields">
-        {mainMissing && <p role="alert" data-testid="product-main-required">
+        {/* Legacy ACTIVE products can have no main images; this is repair guidance, not a failed page load. */}
+        {mainMissing && <p className="pe-hint" id="product-main-required" aria-live="polite" data-testid="product-main-required">
           {productMediaCopy[locale].activeMainMissing}
         </p>}
         {detail ? (
@@ -367,7 +368,7 @@ export function ProductDocumentForm({
                 {c.visibility}
                 <select
                   data-testid="product-status"
-                  aria-describedby="product-status-help"
+                  aria-describedby={mainMissing ? "product-status-help product-main-required" : "product-status-help"}
                   value={targetStatus}
                   onChange={(e) =>
                     setTargetStatus(e.target.value as "draft" | "active")

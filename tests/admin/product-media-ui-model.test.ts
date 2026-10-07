@@ -311,3 +311,60 @@ test("real-upload mode never exits through the storefront MOCK shortcut", () => 
     );
   }
 });
+
+test("a valid active zero-main product keeps an inline repair hint rather than a page error", () => {
+  const form = readFileSync(
+    new URL(
+      "../../apps/admin/components/ProductDocumentForm.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const inline = form.match(/\{mainMissing && (<p\b[\s\S]*?<\/p>)\}/)?.[1];
+  assert.ok(inline, "render the form's actual zero-main hint");
+  const hint = { exports: {} as { Hint: unknown } };
+  runInNewContext(
+    ts.transpileModule(
+      `export function Hint({ mainMissing, locale }) { return mainMissing && (${inline}); }`,
+      {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          jsx: ts.JsxEmit.ReactJSX,
+        },
+      },
+    ).outputText,
+    {
+      module: hint,
+      exports: hint.exports,
+      require: mediaRequire,
+      productMediaCopy,
+    },
+  );
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const html = mediaRenderer.renderToStaticMarkup(
+      mediaReact.createElement(hint.exports.Hint, {
+        mainMissing: true,
+        locale,
+      }),
+    );
+    assert.ok(
+      html.includes(productMediaCopy[locale].activeMainMissing),
+      "retain the complete repair explanation",
+    );
+    assert.match(html, /data-testid="product-main-required"/);
+    assert.doesNotMatch(
+      html,
+      /role="(?:alert|status)"/,
+      "legacy content readiness must not label the loaded page degraded",
+    );
+    assert.equal(
+      mediaRenderer.renderToStaticMarkup(
+        mediaReact.createElement(hint.exports.Hint, {
+          mainMissing: false,
+          locale,
+        }),
+      ),
+      "",
+    );
+  }
+});

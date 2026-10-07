@@ -431,8 +431,13 @@ test.describe("PM-U product media v2", () => {
     for (const id of mainIDs) await moveImage(id, "main", mediaCopy.toDetail);
     await expect(
       page.getByTestId("product-main-required"),
-      "active zero-main blocking hint",
+      "active zero-main inline repair hint",
     ).toHaveText(mediaCopy.activeMainMissing);
+    await expect(page.getByTestId("product-main-required")).toBeVisible();
+    await expect(page.getByTestId("product-main-required")).not.toHaveAttribute(
+      "role",
+      /^(alert|status)$/,
+    );
     await expect(
       page.getByTestId("product-save"),
       "saving as active is blocked",
