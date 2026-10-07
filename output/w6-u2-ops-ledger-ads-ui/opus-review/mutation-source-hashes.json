@@ -1,0 +1,16 @@
+{
+  "base_sha": "55a500e1206d7981add59df7fb34410a385e1205",
+  "mutation": "only loaded order drawer renders fixture canary; temporary and must be restored",
+  "clean_ops_sha256": "4a3c3609adabe745dec4cd657c1ea17bac059b6821fed0929783f23b67ae0f6f",
+  "mutant_ops_sha256": "60d59d5988098d3b4f9783e97e191677b1e819ec7056eb09d6ee35d8076123b3",
+  "files": {
+    "apps/admin/components/OperationsLedger.tsx": "60d59d5988098d3b4f9783e97e191677b1e819ec7056eb09d6ee35d8076123b3",
+    "apps/admin/components/OperationFacts.tsx": "62eb46caa023a3fe4767152033d1e440fa47e9833307f50db017e9c2bf525974",
+    "apps/admin/components/AdsConnection.tsx": "1b88af52e736148a205a8788d079ec9bc971c663bd253558bf9226aabbdf4027",
+    "apps/admin/components/SettingsWizard.tsx": "aab1ad09890298c32a13ed2f903b31919cb3cc18191e0ffa726939519086ab0f",
+    "apps/admin/lib/operations-copy.ts": "51b5bbe68fbcf960e8b781294b0dafe36d8629bea86ccddb927c2bbc9947f856",
+    "apps/admin/lib/operations-model.ts": "4982ff7dde4c6771d1b608892f86004296c6bddf89333390b31dcead9ae95fd1",
+    "tests/admin/operations-ads.spec.ts": "b9f600b9cce56a14d55912a396fd94cb885954cabfbd08611350b367c74c348d",
+    "tests/admin/operations-model.test.ts": "57c33347733823f50e60db4d6f969511323855d26b4c3961ff38d68baf61f29d"
+  }
+}

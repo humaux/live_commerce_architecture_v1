@@ -1,0 +1,37 @@
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (1.499333ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.555791ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (38.996292ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.25975ms)
+✔ read-only store capability never exposes a command even if the state allows one (0.102042ms)
+✖ duplicate escaped keys cannot bypass the exact command grammar (0.71125ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 171.82825
+
+✖ failing tests:
+
+test at tests/admin/operations-model.test.ts:52:1
+✖ duplicate escaped keys cannot bypass the exact command grammar (0.71125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ops-ledger-ads-ui/tests/admin/operations-model.test.ts:52:83)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

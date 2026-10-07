@@ -487,3 +487,34 @@
   overflow-wrap: anywhere;
   max-width: 60ch;
 }
+
+/* W6-06B: native dialog protects focus; safe IDs and public URLs wrap on 390px displays. */
+.ads-unbind-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  box-sizing: border-box;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px;
+  color: var(--ink);
+  background: var(--panel, #fff);
+}
+.ads-unbind-dialog::backdrop { background: rgb(15 25 40 / 45%); }
+.ads-unbind-dialog p, .ads-unbind-dialog li, .ads-connections { overflow-wrap: anywhere; }
+.ads-unbind-dialog .ads-actions { flex-wrap: wrap; }
+.ads-unbind-dialog .ads-list li { display: grid; gap: 4px; }
+.ads-feed { margin-block: 24px; min-width: 0; }
+.ads-feed-url { display: grid; gap: 6px; margin-block: 12px; }
+.ads-feed-url textarea {
+  width: 100%; min-width: 0; box-sizing: border-box;
+  resize: vertical; overflow-wrap: anywhere;
+  border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+  font: inherit; color: var(--ink); background: var(--panel, #fff);
+}
+.ads-feed button { min-height: var(--ui-target); }
+@media (max-width: 480px) {
+  .ads-unbind-dialog { padding: 16px; }
+  .ads-unbind-dialog button { white-space: normal; min-height: var(--ui-target); }
+  [data-testid="ads-connections"] li { min-width: 0; overflow-wrap: anywhere; }
+}

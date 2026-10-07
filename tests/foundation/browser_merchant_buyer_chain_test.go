@@ -204,8 +204,10 @@ func TestBrowserMerchantBuyerRealChain(t *testing.T) {
 	}
 	// Product-editor c6/A: one atomic document (including the SKU), one image,
 	// one order, then publish. Verify every stage exactly once, not only the total.
-	if after["ops.command_results"]-before["ops.command_results"] != len(expectedOperations) {
-		t.Fatal("expected exactly four merchant command receipts (document, image, image order, publication)")
+	// PM-v2 (contracts/catalog-inventory-v1.md image axis): a product without a chosen image axis writes no catalog.image.axis
+	// receipt (null = the stored default), so the sequence is unchanged by the three image roles.
+	if delta := after["ops.command_results"] - before["ops.command_results"]; delta != len(expectedOperations) {
+		t.Fatalf("expected exactly four merchant command receipts (document, image, image order, publication), got %d", delta)
 	}
 	for _, operation := range expectedOperations {
 		if n := countRows(t, h.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation=$3`, h.f.tenantA, h.f.storeA1, operation) - beforeOperations[operation]; n != 1 {

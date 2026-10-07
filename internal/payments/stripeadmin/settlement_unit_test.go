@@ -165,6 +165,18 @@ func TestSettlementBadArgumentsNeverReachStripeOrSQL(t *testing.T) {
 			_, e := r.SettlementClose(ctx, scope, "SANDBOX", "2026-09-14", "op@test", "nope", "")
 			return e
 		},
+		"resolve: bad environment": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "PROD", "txn_R1", ResolveNotStoreRevenue, "", "", "note", "op@test", tick)
+			return e
+		},
+		"resolve: malformed target uuid": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveAssignedToStore, "nope", store, "note", "op@test", tick)
+			return e
+		},
+		"resolve: half a target pair": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveAssignedToStore, store, "", "note", "op@test", tick)
+			return e
+		},
 		"payout: bad statement": func() error {
 			_, e := r.SettlementPayout(ctx, scope, "nope", "BANK-REF-1", 100, winFrom, "op@test", "")
 			return e
@@ -218,6 +230,46 @@ func TestSettlementBadArgumentsNeverReachStripeOrSQL(t *testing.T) {
 			_, e := r.SettlementPayout(ctx, scope, conn, "BANK-REF-1", 100, time.Time{}, "op@test", "")
 			return e
 		},
+		"resolve: bad txn id": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "bal_R1", ResolveNotStoreRevenue, "", "", "note", "op@test", tick)
+			return e
+		},
+		"resolve: unknown resolution value": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", "write_off", "", "", "note", "op@test", tick)
+			return e
+		},
+		"resolve: assigned_to_store without target": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveAssignedToStore, "", "", "note", "op@test", tick)
+			return e
+		},
+		"resolve: not_store_revenue with target": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, store, store, "note", "op@test", tick)
+			return e
+		},
+		"resolve: missing ticket": func() error { // the escalation step must stay traceable: the ticket is required
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "note", "op@test", "")
+			return e
+		},
+		"resolve: bad operator": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "note", "o", tick)
+			return e
+		},
+		"resolve: empty note": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "", "op@test", tick)
+			return e
+		},
+		"resolve: note with a newline": func() error { // P2-2: one printable line, the note is printed in CLI output
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "two\nlines", "op@test", tick)
+			return e
+		},
+		"resolve: note with a tab or a C1 control": func() error {
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "tab\there\u0085", "op@test", tick)
+			return e
+		},
+		"resolve: note over 500 runes": func() error { // runes, not bytes (§6.6)
+			_, e := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", strings.Repeat("漢", 501), "op@test", tick)
+			return e
+		},
 	} {
 		if err := f(); !errors.Is(err, ErrRejected) {
 			t.Errorf("%s: %v, want ErrRejected", name, err)
@@ -252,15 +304,70 @@ func TestSettlementRefusalKeepsOnlyOurCodedToken(t *testing.T) {
 	}
 }
 
+// P2-1: the settlement_unattributed refusal passes on its blocking balance transaction ids (Stripe ids, no PII) and NOTHING else of the
+// DETAIL: an id list that is not exactly 1..20 well-formed ids, or the same list under another token, is dropped.
+func TestSettlementUnattributedRefusalCarriesOnlyTheBlockingIDs(t *testing.T) {
+	db := &liveDB{}
+	r := settlementRegistrar(t, db, &balanceFake{})
+	ctx := context.Background()
+	ids := func(n int) string {
+		out := make([]string, n)
+		for i := range out {
+			out[i] = "txn_B" + strings.Repeat("x", i)
+		}
+		return strings.Join(out, ",")
+	}
+	pg := func(msg, detail string) error { return &pgconn.PgError{Code: "PT409", Message: msg, Detail: detail} }
+	for name, tc := range map[string]struct {
+		err  error
+		want string // the exact error suffix; "" = the token only
+	}{
+		"one id":                  {pg("settlement_unattributed", "txn_A1"), "settlement_unattributed: txn_A1"},
+		"two ids":                 {pg("settlement_unattributed", "txn_A1,txn_B2"), "settlement_unattributed: txn_A1,txn_B2"},
+		"twenty ids":              {pg("settlement_unattributed", ids(20)), "settlement_unattributed: " + ids(20)},
+		"twenty-one ids":          {pg("settlement_unattributed", ids(21)), ""},
+		"free text":               {pg("settlement_unattributed", "row (secret=abc)"), ""},
+		"an id and a driver tail": {pg("settlement_unattributed", "txn_A1,password=hunter2"), ""},
+		"empty detail":            {pg("settlement_unattributed", ""), ""},
+		"ids under another token": {pg("settlement_mismatch", "txn_A1"), ""},
+	} {
+		db.replies = []any{tc.err}
+		_, err := r.SettlementClose(ctx, scope, "SANDBOX", "2026-09-14", "op@test", "", "")
+		token := tc.err.(*pgconn.PgError).Message
+		want := ErrRejected.Error() + ": " + token
+		if tc.want != "" {
+			want = ErrRejected.Error() + ": " + tc.want
+		}
+		if !errors.Is(err, ErrRejected) || err.Error() != want {
+			t.Errorf("%s: %q, want %q", name, err, want)
+		}
+	}
+}
+
 func TestSettlementCloseAndPayoutPassOnlyTheContractArguments(t *testing.T) {
 	db := &liveDB{}
 	r := settlementRegistrar(t, db, &balanceFake{})
 	ctx := context.Background()
 	paid := time.Date(2026, 10, 1, 10, 0, 0, 0, time.UTC)
-	db.replies = []any{`{"statements":[{"statement_id":"` + conn + `","store_id":"` + store + `","net_payable_minor":1200,"line_count":3,"replayed":false}]}`, paid}
+	db.replies = []any{`{"statements":[{"statement_id":"` + conn + `","store_id":"` + store +
+		`","net_payable_minor":1200,"line_count":3,"replayed":false}],"operator_notes":[{"balance_txn_id":"txn_N1","target_tenant_id":"` +
+		tenant + `","target_store_id":"` + store + `","operator":"op@test","ticket":"` + tick + `","note":"assigned","period_start":"2026-09-14",` +
+		`"type":"adjustment","settle_amount":-641,"settle_net":-667,"settle_currency":"HKD"}]}`, paid,
+		`{"balance_txn_id":"txn_R1","resolution":"not_store_revenue","target_tenant_id":null,"target_store_id":null,"operator":"op@test","ticket":"` +
+			tick + `","note":"Stripe dispute fee","resolved_at":"2026-10-01 10:00:00+00","replayed":false}`,
+		`{"balance_txn_id":"txn_R2","resolution":"assigned_to_store","target_tenant_id":"` + tenant + `","target_store_id":"` + store +
+			`","operator":"op@test","ticket":"` + tick + `","note":"store sale","resolved_at":"2026-10-01 10:00:00+00","replayed":true}`}
 	got, err := r.SettlementClose(ctx, scope, "SANDBOX", "2026-09-14", "op@test", store, tick)
-	if err != nil || len(got) != 1 || got[0].NetPayableMinor != 1200 || got[0].LineCount != 3 {
+	if err != nil || len(got.Statements) != 1 || got.Statements[0].NetPayableMinor != 1200 || got.Statements[0].LineCount != 3 {
 		t.Fatalf("close: %+v %v", got, err)
+	}
+	// §6.6: close now carries the window's assigned_to_store resolutions as operator notes (v1 moves no money)
+	if len(got.OperatorNotes) != 1 || got.OperatorNotes[0].BalanceTxnID != "txn_N1" || got.OperatorNotes[0].TargetStoreID != store {
+		t.Fatalf("operator notes: %+v", got.OperatorNotes)
+	}
+	// P1-2: the note carries the period and the SIGNED settlement-currency amounts (a negative row must stay negative)
+	if n := got.OperatorNotes[0]; n.PeriodStart != "2026-09-14" || n.Type != "adjustment" || n.SettleAmount != -641 || n.SettleNet != -667 || n.SettleCurrency != "HKD" {
+		t.Fatalf("operator note amounts: %+v", n)
 	}
 	a := db.calls[0].args
 	if a[3] != "SANDBOX" || a[4] != "2026-09-14" || a[5] != "op@test" || a[6] != store || a[7] != tick || len(a) != 8 {
@@ -272,5 +379,22 @@ func TestSettlementCloseAndPayoutPassOnlyTheContractArguments(t *testing.T) {
 	}
 	if b := db.calls[1].args; b[3] != conn || b[4] != "BANK-REF-1" || b[5] != int64(1200) || b[7] != "op@test" || b[8] != tick || len(b) != 9 || strings.Contains(db.calls[1].sql, "transfer") {
 		t.Fatalf("payout args: %v", b)
+	}
+	res, err := r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R1", ResolveNotStoreRevenue, "", "", "Stripe dispute fee", "op@test", tick)
+	if err != nil || res.Replayed || res.BalanceTxnID != "txn_R1" || res.Resolution != ResolveNotStoreRevenue || res.ResolvedAt == "" {
+		t.Fatalf("resolve: %+v %v", res, err)
+	}
+	c := db.calls[2].args
+	if c[3] != "SANDBOX" || c[4] != "txn_R1" || c[5] != ResolveNotStoreRevenue || c[6] != "op@test" || c[7] != tick ||
+		c[8] != "Stripe dispute fee" || c[9] != nil || c[10] != nil || len(c) != 11 ||
+		!strings.Contains(db.calls[2].sql, "record_settlement_resolution") || strings.Contains(db.calls[2].sql, "settlement_lines") {
+		t.Fatalf("resolve args: %v", c)
+	}
+	res, err = r.SettlementResolve(ctx, scope, "SANDBOX", "txn_R2", ResolveAssignedToStore, tenant, store, "store sale", "op@test", tick)
+	if err != nil || !res.Replayed || res.TargetTenantID != tenant || res.TargetStoreID != store {
+		t.Fatalf("resolve assigned: %+v %v", res, err)
+	}
+	if d := db.calls[3].args; d[5] != ResolveAssignedToStore || d[9] != tenant || d[10] != store || len(d) != 11 {
+		t.Fatalf("resolve target args: %v", d)
 	}
 }

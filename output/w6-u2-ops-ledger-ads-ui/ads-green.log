@@ -1,0 +1,55 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.247291ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.35425ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.244584ms)
+✔ copy never calls a budget a hard stop and never offers resume (1.115417ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.34125ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.176375ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.292125ms)
+✔ money: whole units to minor with integer math; TWD must be whole (25.468833ms)
+✔ draft input: exact 11-key body and every local rule (1.6435ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.152042ms)
+✔ settings parser: environment enum, connections, identities, capi (0.65725ms)
+✔ connect state parser: pick list kinds and id match (0.118292ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.241ms)
+✔ capi body and validation (0.081708ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.148209ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.149083ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.1575ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.06375ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.056459ms)
+✔ route grammar: exactly the frozen resources except meta/connect and meta/callback (1.260584ms)
+✔ query rule: only report has a query, from+to exactly once, real dates, at most 92 days (0.308292ms)
+✔ headers: If-Match is a bare revision, Idempotency-Key is the repo grammar (0.128583ms)
+✔ connect cookie: httpOnly, Secure, Lax, Path is the callback only, 10 minutes; cleared with Max-Age=0 (0.14925ms)
+✔ connect body: exactly {store: uuid} (0.623083ms)
+✔ dialog URL: only exactly https://www.facebook.com (0.111833ms)
+✔ callback parameters: bounded charset/length, duplicates rejected, Meta cancel is denied, extras ignored (2.33425ms)
+✔ callback redirect: only fixed codes and canonical uuids ever reach the URL (never code/state) (0.191333ms)
+✔ callback Go answers map to the fixed connect_error values (0.09575ms)
+✔ Go transport split: pause/end bodiless, approve keyless, nothing else (0.279875ms)
+✔ W6-06B route grammar and exact unbind body (0.189416ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 121.243625
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/apps/admin
+> tsc --noEmit
+
+components/AdsConnection.tsx(85,20): error TS2339: Property 'details' does not exist on type '{ ok: false; code: "age_invalid" | "attempt_changed" | "billing_restricted" | "binding_disabled" | "binding_in_use" | "bindings_missing" | "budget_below_minimum" | "budget_invalid" | ... 30 more ... | "unsupported_currency"; uncertain: boolean; details?: AdsInFlight | undefined; } | { ...; }'.
+  Property 'details' does not exist on type '{ ok: false; code: "invalid_request"; uncertain: boolean; }'.
+components/AdsConnection.tsx(85,63): error TS2339: Property 'details' does not exist on type '{ ok: false; code: "age_invalid" | "attempt_changed" | "billing_restricted" | "binding_disabled" | "binding_in_use" | "bindings_missing" | "budget_below_minimum" | "budget_invalid" | ... 30 more ... | "unsupported_currency"; uncertain: boolean; details?: AdsInFlight | undefined; } | { ...; }'.
+  Property 'details' does not exist on type '{ ok: false; code: "invalid_request"; uncertain: boolean; }'.
+/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/apps/admin:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ typecheck: `tsc --noEmit`
+Exit status 1
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ads-sub/apps/admin
+> tsc --noEmit
+
+
+FINAL RESULT: node tests exit=0 pass=30 fail=0; final admin tsc exit=0; check-gates exit=0; diff-check exit=0. base_commit=5d73d90b

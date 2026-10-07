@@ -1,0 +1,84 @@
+{
+  "task_id": "W6-U2-sub-browser-tests",
+  "base_commit": "5d73d90bdc053a2e99e64fd6c49d23577b6f9066",
+  "role": "test_worker",
+  "model_assignment": "gpt-6.1-sol",
+  "reasoning_assignment": "high",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-browser-sub",
+  "checks": [
+    {
+      "command": [
+        "go",
+        "vet",
+        "-tags",
+        "browser",
+        "./tests/foundation"
+      ],
+      "exit_code": 0,
+      "evidence": "output/w6-u2-ops-ledger-ads-ui/browser-notes/check-1.log"
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "scripts/dev/test-local.sh"
+      ],
+      "exit_code": 0,
+      "evidence": "output/w6-u2-ops-ledger-ads-ui/browser-notes/check-2.log"
+    },
+    {
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc",
+        "--noEmit",
+        "--strict",
+        "--skipLibCheck",
+        "--target",
+        "ES2023",
+        "--module",
+        "NodeNext",
+        "--moduleResolution",
+        "NodeNext",
+        "--types",
+        "node",
+        "--typeRoots",
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+node@24.13.6/node_modules/@types",
+        "tests/admin/operations-ads.spec.ts"
+      ],
+      "exit_code": 0,
+      "evidence": "output/w6-u2-ops-ledger-ads-ui/browser-notes/check-3.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "evidence": "output/w6-u2-ops-ledger-ads-ui/browser-notes/check-4.log"
+    },
+    {
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/playwright",
+        "test",
+        "--config",
+        "playwright.config.ts",
+        "--list"
+      ],
+      "exit_code": 0,
+      "evidence": "output/w6-u2-ops-ledger-ads-ui/browser-notes/check-5-list.log",
+      "environment": "LC_BROWSER_SUITE=operations-ads, synthetic required LC_BROWSER variables; list only"
+    }
+  ],
+  "files": {
+    "tests/admin/operations-ads.spec.ts": "488a0ed3f349949ffa1f2147e7509e04aeb2f2bf7784c592427ee52af8d6e777",
+    "tests/foundation/browser_operations_ads_test.go": "1659bba0bde0ec3f52301544ee44b91c1435d6b8098a5c723c91c4a0c12db86d",
+    "playwright.config.ts": "8c05ad4ec7af7e42dac75ad9a3ec3a4e9ce970b21283eba8212a66dd4ec6818a",
+    "scripts/dev/test-local.sh": "deb357092493dada26e046b6fe172c476c84ace17320ab1bd754c776c05e0539",
+    "docs/delivery/GATES.md": "bb291ee7489f968a457e6912b890adde3e0a00ceb14deb3d084dff3ac99a21d8"
+  },
+  "browser": "NOT_RUN",
+  "real_pg": "NOT_RUN",
+  "sandbox": "NOT_RUN",
+  "live": "NOT_RUN",
+  "independent_review": "NOT_RUN"
+}

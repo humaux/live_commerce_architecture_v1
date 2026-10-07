@@ -185,7 +185,7 @@ for sub in store-suspend store-resume tenant-suspend tenant-resume status audit 
   expected=$(printf 'platform-admin\n/app/bin/platform-admin\n%s' "$sub")
   if [[ "$invoked" != "$expected" ]]; then echo "FAIL wrong docker service/binary for $sub"; bad=1; fi
 done
-for sub in platform-designate platform-open platform-close platform-allow platform-disallow platform-block platform-unblock settlement-close settlement-payout; do
+for sub in platform-designate platform-open platform-close platform-allow platform-disallow platform-block platform-unblock settlement-close settlement-payout settlement-resolve; do
   check 0 stripe-admin "$sub"
 done
 for tool in platform-admin stripe-admin store-admin meta-admin unknown-admin; do check 2 "$tool" unknown; done

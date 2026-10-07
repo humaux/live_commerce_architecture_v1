@@ -1,0 +1,122 @@
+{
+ "commit": "dca90c2ae8",
+ "generated": "2026-10-07T09:21:56.978Z",
+ "shots": {
+  "expected": 6,
+  "captured": 6,
+  "notRun": 0
+ },
+ "blockingInstances": 0,
+ "totals": {
+  "R1": {
+   "name": "horizontal overflow",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R2": {
+   "name": "form-row misalignment",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R3": {
+   "name": "table row consistency",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R4": {
+   "name": "min text size",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R5": {
+   "name": "tap target (390)",
+   "severity": "warn",
+   "instances": 6,
+   "blocking": 0,
+   "groups": 3,
+   "units": 3
+  },
+  "R6": {
+   "name": "overlap",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R7": {
+   "name": "clipped text",
+   "severity": "block for controls, warn for labels/links",
+   "instances": 3,
+   "blocking": 0,
+   "groups": 3,
+   "units": 3
+  },
+  "R8": {
+   "name": "duplicate list label",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R9": {
+   "name": "edge padding (390)",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R10": {
+   "name": "fixed-bar occlusion",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R11": {
+   "name": "narrow control",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  }
+ },
+ "byApp": {
+  "admin": {
+   "R5": 6,
+   "R7": 3
+  }
+ },
+ "byRoute": [
+  {
+   "app": "admin",
+   "id": "settings-operations",
+   "route": "/settings/operations",
+   "state": "registry",
+   "counts": {
+    "R5": 6,
+    "R7": 3
+   },
+   "blocking": 0,
+   "warn": 9,
+   "total": 9,
+   "notRun": 0
+  }
+ ]
+}
