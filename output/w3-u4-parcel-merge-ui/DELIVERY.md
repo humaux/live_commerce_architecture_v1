@@ -182,3 +182,9 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 - `browser_merchant_orders_ui_test.go`: PG assertion that both members of each shipped group carry the typed carrier, name, tracking, link and note on their head version.
 - NEW REAL_PG `TestParcelGroupWaybillFieldsPersist` (no browser): group ship with `other` + name + link + note and with a known carrier persists on every member; a non-https link is refused (4xx) and the group stays OPEN. It passed first time (`green-finisher6-waybill.log`): the product code for these controls was not broken, so no product change was needed.
 - NOT_RUN: the browser gate (spec steps never executed here).
+
+---
+
+## Finisher 7 (Sonnet) — Codex P1 4208172280: `parcel-reload-retry` is clicked in the spec
+
+`parcel-merge.spec.ts` gains two steps, each with ONE labelled `page.route` fault injection (one 503 on a page load), then the route is removed and the real Retry click reaches Go/PG: (1) GET `orders/merge-suggestions` 503 -> error copy + `parcel-reload-retry`, no cards; Retry -> banner count 1 and the stale pair's card; (2) GET `parcel-groups` 503 (after tab B left the stale pair in an OPEN group) -> error copy + Retry, no panel; Retry -> the OPEN panel with its member number/mask, the row badge and the single-order block. Both wait for a new 200 response and a request-counter increase (not a cache hit). Browser steps: NOT_RUN locally (CI).

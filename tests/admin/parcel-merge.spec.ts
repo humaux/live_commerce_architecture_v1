@@ -3,9 +3,10 @@
 //   REAPPEARS after a reload and can be dissolved or shipped (W3-U4 GET parcel-groups); an uncertain dissolve that landed is
 //   reconciled; single-order shipment blocked; a stale second tab gets the server 409 in_parcel_group copy. Every assertion is a
 //   user-visible result of a real click/fill/selectOption; page.evaluate is used once for a [READ/MEASURE] layout read only and
-//   page.route once as [FAULT INJECTION] (the click's own request is failed after it reached the server).
+//   page.route as [FAULT INJECTION] only (the dissolve click's own request failed after it reached the server; one 503 per parcel read).
 //   Both group waybills type EVERY control (carrier select incl. `other` + name, tracking, link, note), after refusals for a missing
-//   `other` name and a non-https link; each member's persisted values are read back after a reload (record, history, correction form).
+//   `other` name and a non-https link; both parcel READ failures (suggestions, OPEN groups) show their error + Retry and recover through a
+//   real Retry click (one labelled page.route 503 each); each member's persisted values are read back after a reload (record, history, correction form).
 //   Fixture orders come from the Go harness (LC_BROWSER_PARCEL_ORDERS).
 // Depends on: @playwright/test; harness env LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_ORDER_STORE, LC_BROWSER_PARCEL_ORDERS.
 // Used by: scripts/dev/test-local.sh (--browser-merchant-orders-ui), tests/foundation/browser_merchant_orders_ui_test.go.
@@ -118,6 +119,36 @@ async function expectPersistedWaybill(page: Page, id: string, w: Waybill) {
   await expect(detail.getByTestId("ship-tracking")).toHaveValue(w.tracking);
   await expect(detail.getByTestId("ship-url")).toHaveValue(w.url);
   await expect(detail.getByTestId("ship-note")).toHaveValue(w.note);
+}
+
+// [FAULT INJECTION, not a substitute for a click] The two parcel READ-failure steps make exactly ONE real read answer 503 so the
+// error copy and the Retry control can be reached; the Retry click itself is real, the route is removed before it, and the retry
+// goes to the real Go/PG. countReads counts every GET of the URL the browser sent (served from the network, never a cache).
+function countReads(page: Page, url: RegExp) {
+  let n = 0;
+  page.on("request", (request) => {
+    if (request.method() === "GET" && url.test(request.url())) n += 1;
+  });
+  return () => n;
+}
+async function failNextRead(page: Page, url: RegExp) {
+  let first = true;
+  await page.route(url, async (route) => {
+    if (first) {
+      first = false;
+      await route.fulfill({ status: 503, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: '{"code":"unavailable"}' });
+    } else await route.continue();
+  });
+}
+// Click Retry for real and return once the browser has received a NEW successful answer for url.
+async function retryRead(page: Page, url: RegExp, reads: () => number) {
+  const before = reads();
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "GET" && url.test(r.url())),
+    page.getByTestId("parcel-reload-retry").click(),
+  ]);
+  expect(response.status()).toBe(200);
+  expect(reads()).toBeGreaterThan(before); // a fresh request, not a cached answer
 }
 
 test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409", async ({ page }) => {
@@ -266,6 +297,25 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     for (const id of [pd1, pd2]) await expectPersistedWaybill(page, id, knownWaybill);
   });
 
+  await test.step("a failed suggestions read shows its error and Retry; the real retry recovers the banner and the card", async () => {
+    const url = new RegExp(`/api/stores/${store}/orders/merge-suggestions$`);
+    const reads = countReads(page, url);
+    await failNextRead(page, url); // [FAULT INJECTION] one 503 on the load below
+    await page.reload();
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("parcel-merge-problem")).toHaveText("Merge suggestions could not be loaded. Retry, or reload the page.");
+    await expect(page.getByTestId("parcel-reload-retry")).toHaveText("Retry loading");
+    await expect(page.getByTestId("parcel-suggestion")).toHaveCount(0);
+    expect(reads()).toBeGreaterThanOrEqual(1);
+    await page.unroute(url); // the retry below reaches the real Go/PG
+    await retryRead(page, url, reads);
+    await expect(page.getByTestId("parcel-merge-problem")).toHaveCount(0);
+    await expect(page.getByTestId("parcel-reload-retry")).toHaveCount(0);
+    await expect(page.getByTestId("parcel-merge-count")).toHaveText("1 order group can ship as one parcel");
+    await page.getByTestId("parcel-suggestions-toggle").click();
+    await expect(suggestionCard(page, ps1)).toBeVisible();
+  });
+
   await test.step("a stale second tab: the single-order submit gets the server in_parcel_group copy", async () => {
     // Tab A shows the stale-pair order with the single-order form; tab B merges that pair; A (never told) then submits.
     await page.reload();
@@ -286,5 +336,28 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     // Server 409 in_parcel_group maps to the same sentence as the client hint (orders-copy errors.in_parcel_group).
     await expect(detail.getByTestId("shipment-problem")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
     await expect(detail.getByTestId("shipment-record")).toHaveCount(0);
+  });
+
+  await test.step("a failed OPEN-groups read shows its error and Retry; the real retry rebuilds the panel and the row badge", async () => {
+    // Tab B's merge above left the stale pair in one OPEN group on the server; this tab (after a reload) must learn it from the read.
+    const url = new RegExp(`/api/stores/${store}/parcel-groups$`);
+    const reads = countReads(page, url);
+    await failNextRead(page, url); // [FAULT INJECTION] one 503 on the load below
+    await page.reload();
+    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("parcel-merge-problem")).toHaveText("Open parcel groups could not be loaded. Retry, or reload the page.");
+    await expect(page.getByTestId("parcel-reload-retry")).toHaveText("Retry loading");
+    await expect(groupPanel(page, ps1)).toHaveCount(0); // never silently pretend there is no OPEN group: the error says otherwise
+    expect(reads()).toBeGreaterThanOrEqual(1);
+    await page.unroute(url);
+    await retryRead(page, url, reads);
+    await expect(page.getByTestId("parcel-merge-problem")).toHaveCount(0);
+    const panel = groupPanel(page, ps1);
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
+    await expect(panel.getByTestId(`parcel-group-member-${ps1}`)).toContainText(`LC-${ps1.replaceAll("-", "").toUpperCase()} · S***`);
+    await expand(page, ps1);
+    await expect(page.getByTestId(`parcel-badge-${ps1}`)).toBeVisible();
+    await expect(page.getByTestId("order-detail").getByTestId("shipment-parcel-block")).toBeVisible();
   });
 });
