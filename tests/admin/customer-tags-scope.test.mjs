@@ -105,3 +105,29 @@ test("a manager-reported scope loss reloads the customer list and catalogue guar
   const c = customers(); walk(c.render()).find((e) => e.type === "CustomerTagManager").props.onScopeLost();
   assert.deepEqual([...c.calls].sort(), ["catalog.reload", "list.reload"]);
 });
+
+// CustomerDetail.tsx: the catalogue/notes scope-lost signal comes from Body, which the reload remounts. The page-level guard
+// forwards only the first one, so a read that stays forbidden while the detail is allowed cannot reload forever.
+test("CustomerDetail forwards a scope-lost signal to the guarded read once per page", () => {
+  const h = hooks(); const module = { exports: {} }; let reloads = 0;
+  runInNewContext(compile("CustomerDetail.tsx"), { module, exports: module.exports,
+    require: (p) => {
+      if (p === "react") return h.react; if (p === "react/jsx-runtime") return { jsx, jsxs: jsx };
+      if (p === "next/link") return { default: "a" }; if (p === "@live-commerce/ui") return { Badge: "span", TableFrame: "div" };
+      if (p === "@/lib/customers-client") return { postErasure() {}, postExport() {}, postWithdrawal() {}, readCustomer: async () => ({}),
+        useGuardedRead: () => ({ status: "ready", boundary: "b", data: { display_name: "x", customer_id: id }, reload: () => { reloads++; }, refresh: async () => true }) };
+      if (p === "@/lib/customers-model") return { consentPairs: [], newKey: () => "k" };
+      if (p === "@/lib/presentation-copy") return { presentationCopy: {} }; if (p === "@/lib/client") return { money: () => "" };
+      if (p === "@/lib/orders-model") return { displayTime: () => "" }; if (p === "@/lib/orders-copy") return { ordersCopy: { en: {} } };
+      if (p === "@/lib/customers-copy") return { customersCopy: { en: new Proxy({}, { get: () => "x" }) } };
+      if (["./WorkspaceFrame", "./AdminPageHeader", "./CustomerTags"].includes(p)) return { WorkspaceFrame: "div", AdminPageHeader: "div", CustomerTags: "CustomerTags" };
+      if (/\.css$/.test(p) || p === "@live-commerce/i18n" || p === "@/lib/model") return {};
+      throw new Error(`Unexpected import ${p}`);
+    } });
+  h.reset();
+  const tree = module.exports.CustomerDetail({ locale: "en", stores: [], store: { id, name: "S", currency: "TWD" }, customerID: id, initialError: null, renderKey: "r" });
+  const body = walk(tree).find((e) => typeof e.type === "function" && "onScopeLost" in e.props);
+  assert.ok(body, "Body receives onScopeLost");
+  body.props.onScopeLost(); body.props.onScopeLost(); body.props.onScopeLost();
+  assert.equal(reloads, 1);
+});

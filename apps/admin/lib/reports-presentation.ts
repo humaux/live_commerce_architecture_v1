@@ -6,7 +6,17 @@ import type { ProductRow } from "./reports-model.ts";
 import { decimal } from "../../../packages/format/src/index.ts";
 
 /** Supported sortable product columns. */
-export type ProductSort = "name" | "units" | "captured_minor" | "refunded_minor" | "net_minor" | "offline_units" | "offline_minor";
+export const productSorts = ["name", "units", "captured_minor", "refunded_minor", "net_minor", "offline_units", "offline_minor"] as const;
+export type ProductSort = (typeof productSorts)[number];
+
+/** Page `sort`/`dir` query: both absent is net_minor descending; a known field alone takes its natural direction (name
+ * ascending, numbers descending); `dir` alone applies to net_minor. Anything else is null (the page answers 404). */
+export function parseProductSort(sort: string | undefined, dir: string | undefined): { sort: ProductSort; ascending: boolean } | null {
+  if (sort !== undefined && !(productSorts as readonly string[]).includes(sort)) return null;
+  if (dir !== undefined && dir !== "asc" && dir !== "desc") return null;
+  const key = (sort ?? "net_minor") as ProductSort;
+  return { sort: key, ascending: dir === undefined ? key === "name" : dir === "asc" };
+}
 
 /** Sort a copy within currency/environment groups; no totals, conversion, or data mutation. */
 export function sortedProducts(rows: ProductRow[], key: ProductSort, ascending: boolean, locale: string): ProductRow[] {

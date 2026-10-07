@@ -61,6 +61,10 @@ export function CustomerDetail({
     store ? (signal) => readCustomer(store.id, customerID, signal) : null,
     initialError,
   );
+  // Catalogue/notes report a lost scope from inside Body, which the reload remounts: guard once per page so a read that stays
+  // forbidden while the detail is still allowed cannot reload forever.
+  const scopeLost = useRef(false);
+  const onScopeLost = () => { if (scopeLost.current) return; scopeLost.current = true; read.reload(); };
   const failure =
     read.status === "signed-out" ? c.signedOut
     : read.status === "forbidden" ? c.forbidden
@@ -82,7 +86,7 @@ export function CustomerDetail({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Body detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} reload={read.reload} locale={locale} c={c} />
+          <Body detail={read.data} storeInfo={store} store={store.id} boundary={read.boundary} refresh={read.refresh} onScopeLost={onScopeLost} locale={locale} c={c} />
         )}
       </div>
     </WorkspaceFrame>
@@ -102,7 +106,7 @@ function Body({
   store,
   boundary,
   refresh,
-  reload,
+  onScopeLost,
   locale,
   c,
 }: {
@@ -111,7 +115,7 @@ function Body({
   store: string;
   boundary: string;
   refresh: () => Promise<boolean>;
-  reload: () => void;
+  onScopeLost: () => void;
   locale: Locale;
   c: CustomersCopy;
 }) {
@@ -163,7 +167,7 @@ function Body({
   return (
     <>
       {detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
-        detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={reload} />}
+        detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={onScopeLost} />}
       {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
       <section className="customers-section" aria-label={c.facts}>
         <h2>{c.facts}</h2>

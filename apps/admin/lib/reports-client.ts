@@ -56,7 +56,7 @@ export type ReportDownload = "done" | "signed-out" | "forbidden" | "not-found" |
 
 /** I06 across tabs: an export scope that ever came back uncertain stays locked (no resubmission of a keyless audited GET that
  * may have committed) even after another scope exports or the page re-renders (the set lives in tab sessionStorage; no automatic clearing). */
-export function exportOutcome(scope: string, last: { scope: string; outcome: ReportDownload | "busy" } | null, uncertain: readonly string[]): ReportDownload | "busy" | null {
+export function exportOutcome(scope: string, last: { scope: string; outcome: ReportDownload | "busy" | "lock-failed" } | null, uncertain: readonly string[]): ReportDownload | "busy" | "lock-failed" | null {
   if (uncertain.includes(scope)) return "uncertain";
   return last?.scope === scope ? last.outcome : null;
 }
@@ -64,25 +64,35 @@ export function exportOutcome(scope: string, last: { scope: string; outcome: Rep
 const lockKey = (store: string) => `lc.reports.uncertain.${store}`;
 const tabStorage = (): Pick<Storage, "getItem" | "setItem"> | null => { try { return globalThis.sessionStorage ?? null; } catch { return null; } };
 
+// Tab-lifetime in-memory mirror: a lock stays in force even if storage is cleared or later denied.
+const memoryLocks = new Map<string, Set<string>>();
+const held = (store: string) => memoryLocks.get(store) ?? memoryLocks.set(store, new Set()).get(store)!;
+
 /** Unresolved uncertain export scopes of this browser tab (sessionStorage, per store). Scopes are store|from|to|report, no PII.
  * Fails closed to the in-memory lock: unavailable or corrupt storage reads as none, never throws. */
 export function loadUncertainScopes(store: string, storage = tabStorage()): string[] {
+  let stored: string[] = [];
   try {
     const parsed: unknown = JSON.parse(storage?.getItem(lockKey(store)) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
-  } catch { return []; }
+    if (Array.isArray(parsed)) stored = parsed.filter((v): v is string => typeof v === "string");
+  } catch { /* unreadable storage: the in-memory set still applies */ }
+  return [...new Set([...stored, ...held(store)])];
 }
 
-/** Record one uncertain scope for the rest of the tab session and return the stored set (a write failure is swallowed). */
-export function rememberUncertainScope(store: string, scope: string, storage = tabStorage()): string[] {
-  const next = [...new Set([...loadUncertainScopes(store, storage), scope])];
-  try { storage?.setItem(lockKey(store), JSON.stringify(next)); } catch { /* in-memory lock still holds */ }
-  return next;
+/** Record one scope for the rest of the tab session in memory AND storage. Returns false when it could not be persisted
+ * (storage missing, denied or full): a refresh would then lose it, so callers must not dispatch. The in-memory lock holds anyway. */
+export function rememberUncertainScope(store: string, scope: string, storage = tabStorage()): boolean {
+  held(store).add(scope);
+  try {
+    storage?.setItem(lockKey(store), JSON.stringify(loadUncertainScopes(store, storage)));
+    return !!storage;
+  } catch { return false; }
 }
 
 /** Release a scope whose export outcome was definitive (see `definitiveExport`). */
 export function forgetUncertainScope(store: string, scope: string, storage = tabStorage()): void {
-  try { storage?.setItem(lockKey(store), JSON.stringify(loadUncertainScopes(store, storage).filter((s) => s !== scope))); } catch { /* lock stays */ }
+  held(store).delete(scope);
+  try { storage?.setItem(lockKey(store), JSON.stringify(loadUncertainScopes(store, storage).filter((s) => s !== scope))); } catch { /* a stale stored lock only blocks, never exports */ }
 }
 
 /** Outcomes that prove the audited GET either never reached the server or was refused before auditing, or finished and
@@ -94,8 +104,9 @@ export const definitiveExport = (result: ReportDownload) => result !== "uncertai
 
 /** Run one export under a PENDING lock written BEFORE dispatch: a refresh/close mid-request (pagehide aborts) never resolves
  * `run`, so the lock stays and counts as uncertain on the next mount. Released only by a definitive outcome. */
-export async function exportWithLock(store: string, scope: string, run: () => Promise<ReportDownload>, storage = tabStorage()): Promise<ReportDownload> {
-  rememberUncertainScope(store, scope, storage);
+export async function exportWithLock(store: string, scope: string, run: () => Promise<ReportDownload>, storage = tabStorage()): Promise<ReportDownload | "lock-failed"> {
+  // Fail closed: no persisted lock, no dispatch (nothing was sent, so the scope is released again).
+  if (!rememberUncertainScope(store, scope, storage)) { forgetUncertainScope(store, scope, storage); return "lock-failed"; }
   const result = await run();
   if (definitiveExport(result)) forgetUncertainScope(store, scope, storage);
   return result;

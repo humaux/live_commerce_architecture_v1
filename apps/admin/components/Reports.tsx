@@ -25,6 +25,7 @@ import "./reports.css";
 export type ReportsProps = {
   locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
   initialFrom?: string; initialTo?: string; initialTab?: ReportName;
+  initialSort?: ProductSort; initialAscending?: boolean;
 };
 
 /** Render reports with guarded reads and session-bound CSV download; never owns financial facts. */
@@ -33,19 +34,19 @@ export function Reports(props: ReportsProps) {
   return <ReportsWorkspace key={`${props.renderKey}|${props.store?.id ?? ""}`} {...props} />;
 }
 
-function ReportsWorkspace({ locale, stores, store, initialError, renderKey, initialFrom, initialTo, initialTab }: ReportsProps) {
+function ReportsWorkspace({ locale, stores, store, initialError, renderKey, initialFrom, initialTo, initialTab, initialSort, initialAscending }: ReportsProps) {
   const c = reportsCopy[locale], router = useRouter();
   const [defaults] = useState(() => { const now = new Date(); return { from: financeDay(now, -29), to: financeDay(now) }; });
   const from = initialFrom ?? defaults.from, to = initialTo ?? defaults.to;
   const [draftFrom, setDraftFrom] = useState(from), [draftTo, setDraftTo] = useState(to);
   const [tab, setTab] = useState<ReportName>(initialTab ?? "products");
-  // Keep the selected tab in the address so refresh restores it (Show carries it too); replaceState adds no history entry.
-  const selectTab = (name: ReportName) => {
-    setTab(name);
-    try { const u = new URL(window.location.href); u.searchParams.set("report", name); window.history.replaceState(window.history.state, "", u); } catch { /* the in-memory tab still applies */ }
+  // Keep tab and product sort in the address so refresh restores them (Show carries them too); replaceState adds no history entry.
+  const syncUrl = (params: Record<string, string>) => {
+    try { const u = new URL(window.location.href); for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v); window.history.replaceState(window.history.state, "", u); } catch { /* the in-memory state still applies */ }
   };
-  const [sort, setSort] = useState<ProductSort>("net_minor"), [ascending, setAscending] = useState(false);
-  const [exportView, setExportView] = useState<{ scope: string; outcome: ReportDownload | "busy" } | null>(null);
+  const selectTab = (name: ReportName) => { setTab(name); syncUrl({ report: name }); };
+  const [sort, setSort] = useState<ProductSort>(initialSort ?? "net_minor"), [ascending, setAscending] = useState(initialAscending ?? false);
+  const [exportView, setExportView] = useState<{ scope: string; outcome: ReportDownload | "busy" | "lock-failed" } | null>(null);
   // I06: unresolved uncertain exports persist per browser tab (sessionStorage by store), so re-renders and refresh never re-enable them.
   const [uncertainScopes, setUncertainScopes] = useState<string[]>([]);
   // A scope still stored on mount is uncertain: it either came back uncertain or its request was cut short (refresh/close mid-flight).
@@ -87,7 +88,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
 
   const navigate = (storeID: string) => {
     if (!valid || !storeID) return;
-    router.push(`/${locale}/finance/reports?store=${storeID}&from=${draftFrom}&to=${draftTo}&report=${tab}`);
+    router.push(`/${locale}/finance/reports?store=${storeID}&from=${draftFrom}&to=${draftTo}&report=${tab}&sort=${sort}&dir=${ascending ? "asc" : "desc"}`);
   };
   const submit = (event: FormEvent) => { event.preventDefault(); if (store) navigate(store.id); };
   const keyTabs = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -103,7 +104,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => selectTab(name), type: "button" as const,
   });
   const outcome = exportOutcome(lockScope, exportView, uncertainScopes);
-  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
+  const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && outcome !== "lock-failed" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
   const exportCSV = async () => {
     if (!store || !canExport || !read.boundary) return;
     exporting.current = true;
@@ -120,7 +121,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
   const csvLabel = outcome === "busy" ? c.exporting : c.csv;
   const failure = read.status === "signed-out" ? c.signedOut : read.status === "forbidden" ? c.forbidden
     : read.status === "not-found" ? (store ? c.notFound : c.noStore) : read.status === "unavailable" ? c.unavailable : "";
-  const exportMessage = outcome === "uncertain" ? c.csvUnknown : outcome === "done" ? c.csvDone : outcome === "forbidden" ? c.csvForbidden
+  const exportMessage = outcome === "lock-failed" ? c.csvLockFailed : outcome === "uncertain" ? c.csvUnknown : outcome === "done" ? c.csvDone : outcome === "forbidden" ? c.csvForbidden
     : outcome === "signed-out" ? c.signedOut : outcome === "not-found" ? c.notFound : outcome === "unavailable" ? c.csvUnavailable : "";
   const view = read.status === "ready" ? read.data?.view : null;
   const panel = (name: ReportName) => ({ id: `reports-panel-${name}`, role: "tabpanel", "aria-labelledby": `reports-tab-${name}`, hidden: tab !== name, tabIndex: 0 });
@@ -150,7 +151,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
       {!validQuery && <p role="alert">{c.rangeInvalid}</p>}
       <section {...panel("products")}>
         {view?.name === "products" && <ProductReportTable locale={locale} report={view.report} sort={sort} ascending={ascending}
-          onSort={(key) => { setAscending(sort === key ? !ascending : key === "name"); setSort(key); }} />}
+          onSort={(key) => { const asc = sort === key ? !ascending : key === "name"; setAscending(asc); setSort(key); syncUrl({ sort: key, dir: asc ? "asc" : "desc" }); }} />}
         <div className="reports-export"><button {...csvProps} data-testid="reports-csv-products">{csvLabel}</button></div>
       </section>
       <section {...panel("channels")}>

@@ -270,22 +270,27 @@ test("an uncertain export scope persists per store in tab storage and re-locks a
   const storage = memoryStorage();
   const scope = `${id}|${from}|${to}|products`, other = `${id}|2026-09-02|${to}|products`;
   assert.deepEqual(client.loadUncertainScopes(id, storage), []);
-  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
-  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
-  assert.deepEqual(client.rememberUncertainScope(id, other, storage), [scope, other]);
+  assert.equal(client.rememberUncertainScope(id, scope, storage), true);
+  assert.equal(client.rememberUncertainScope(id, scope, storage), true);
+  assert.deepEqual(client.loadUncertainScopes(id, storage), [scope]);
+  assert.equal(client.rememberUncertainScope(id, other, storage), true);
+  assert.deepEqual(client.loadUncertainScopes(id, storage), [scope, other]);
   // A new render (fresh workspace state) reads the stored set and keeps the same scope locked.
   assert.equal(client.exportOutcome(scope, null, client.loadUncertainScopes(id, storage)), "uncertain");
   assert.equal(client.exportOutcome(`${id}|${from}|${to}|channels`, null, client.loadUncertainScopes(id, storage)), null);
   assert.deepEqual(client.loadUncertainScopes("22222222-2222-4222-8222-222222222222", storage), []);
-  for (const raw of ["not json", "{}", "[1,null]"]) assert.deepEqual(client.loadUncertainScopes(id, memoryStorage({[`lc.reports.uncertain.${id}`]: raw})), []);
+  // Corrupt storage reads as none (a fresh tab has no in-memory locks either).
+  for (const raw of ["not json", "{}", "[1,null]"]) assert.deepEqual(downloadClient({cookie:"csrf-pair",boundary:"session"}).loadUncertainScopes(id, memoryStorage({[`lc.reports.uncertain.${id}`]: raw})), []);
   assert.doesNotMatch([...storage.data.values()].join(), /@|render/);
 });
 test("unavailable tab storage fails closed to the in-memory lock without throwing", () => {
   const client = downloadClient({cookie:"csrf-pair",boundary:"session"});
   const broken = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } };
   assert.deepEqual(client.loadUncertainScopes(id, broken), []);
-  assert.deepEqual(client.rememberUncertainScope(id, "s", broken), ["s"]);
-  assert.deepEqual(client.rememberUncertainScope(id, "s", null), ["s"]);
+  // Not persisted -> false (callers must not dispatch), yet the in-memory lock still holds for the tab.
+  assert.equal(client.rememberUncertainScope(id, "s", broken), false);
+  assert.equal(client.rememberUncertainScope(id, "t", null), false);
+  assert.deepEqual(client.loadUncertainScopes(id, broken), ["s", "t"]);
 });
 
 // Codex review P2 (PR #3): the lock is PENDING before the audited GET dispatches, so a refresh/close mid-request (the page never
@@ -321,4 +326,34 @@ test("releasing one scope keeps the other uncertain scopes of the store", () => 
   client.rememberUncertainScope(id, "a", storage); client.rememberUncertainScope(id, "b", storage);
   client.forgetUncertainScope(id, "a", storage); assert.deepEqual(client.loadUncertainScopes(id, storage), ["b"]);
   client.forgetUncertainScope(id, "a", { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } });
+});
+
+// Codex review P2 (PR #3): if the lock cannot be persisted BEFORE dispatch, the audited GET is not sent at all.
+test("export is refused and nothing is dispatched when the lock cannot be saved (denied, full or no storage)", async () => {
+  await browserFixture(async (clicks) => {
+    const scope = `${id}|${from}|${to}|products`;
+    const denied = { getItem: () => null, setItem() { throw new DOMException("quota", "QuotaExceededError"); } };
+    for (const storage of [denied, null]) {
+      const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); let sent = 0;
+      globalThis.fetch = async () => { sent++; return csv(); };
+      const result = await client.exportWithLock(id, scope, () => client.downloadReport(id, "products", from, to, "session", new AbortController().signal), storage);
+      assert.equal(result, "lock-failed"); assert.equal(sent, 0, "no request may be sent without a persisted lock"); assert.deepEqual(clicks, []);
+      assert.equal(client.exportOutcome(scope, {scope, outcome: result}, client.loadUncertainScopes(id, storage)), "lock-failed");
+    }
+  });
+});
+test("copy for an unsaved export lock exists in every locale", () => {
+  for (const locale of ["en", "zh-CN", "zh-TW"]) assert.match(copy[locale].csvLockFailed, /\S/);
+});
+
+// Codex review P2 (PR #3): the product sort is encoded in the page URL, validated against the sortable fields.
+test("product sort query parses strictly and defaults to net_minor descending", () => {
+  const { parseProductSort, productSorts } = adminRequire("./lib/reports-presentation.ts");
+  assert.deepEqual(parseProductSort(undefined, undefined), { sort: "net_minor", ascending: false });
+  assert.deepEqual(parseProductSort("name", undefined), { sort: "name", ascending: true });
+  assert.deepEqual(parseProductSort("units", undefined), { sort: "units", ascending: false });
+  assert.deepEqual(parseProductSort("units", "asc"), { sort: "units", ascending: true });
+  assert.deepEqual(parseProductSort(undefined, "asc"), { sort: "net_minor", ascending: true });
+  for (const key of productSorts) for (const dir of ["asc", "desc"]) assert.deepEqual(parseProductSort(key, dir), { sort: key, ascending: dir === "asc" });
+  for (const [sort, dir] of [["", undefined], ["Units", "asc"], ["sku_id", "asc"], ["__proto__", "asc"], ["units", ""], ["units", "ASC"], ["units", "up"]]) assert.equal(parseProductSort(sort, dir), null, `${sort}/${dir}`);
 });

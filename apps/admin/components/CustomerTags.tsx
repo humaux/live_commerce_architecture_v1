@@ -165,6 +165,6 @@ function CustomerTagBody({ locale, store, detail, boundary, onChanged, onScopeLo
       setNotesReloadVersion((v) => v + 1);
       void refresh().catch(() => write.setNotice(c.refreshRequired));
     }} />
-    <CustomerNotes locale={locale} store={store} detail={detail} boundary={boundary} write={write} refresh={refresh} reloadVersion={notesReloadVersion} />
+    <CustomerNotes locale={locale} store={store} detail={detail} boundary={boundary} write={write} refresh={refresh} reloadVersion={notesReloadVersion} onScopeLost={onScopeLost} />
   </div>;
 }

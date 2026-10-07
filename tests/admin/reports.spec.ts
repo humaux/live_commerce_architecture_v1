@@ -154,6 +154,19 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await page.keyboard.press("ArrowRight"); await expect(page.getByTestId("reports-tab-channels")).toBeFocused();
         await page.keyboard.press("End"); await expect(page.getByTestId("reports-tab-manual-orders")).toHaveAttribute("aria-selected", "true");
       }, "keyboard");
+      await step(page, "Product sort survives refresh", "clicking a column records the order in the address and a refresh keeps the same order", async () => {
+        await page.getByTestId("reports-tab-products").click();
+        const header = page.getByTestId("reports-products-table").locator("thead th").filter({ has: page.getByRole("button", { name: new RegExp(`^${c.units.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) }) });
+        await header.getByRole("button").click();
+        const order = await header.getAttribute("aria-sort");
+        expect(order === "ascending" || order === "descending").toBe(true);
+        await expect(page).toHaveURL(new RegExp(`sort=units&dir=${order === "ascending" ? "asc" : "desc"}`));
+        const rows = () => page.getByTestId("reports-products-table").locator("tbody tr").evaluateAll((r) => r.map((row) => row.textContent));
+        const before = await rows();
+        await page.reload();
+        await expect(header).toHaveAttribute("aria-sort", order!);
+        expect(await rows()).toEqual(before);
+      });
       await step(page, "Select Channels", "the Channels tab is selected and recorded in the address", async () => {
         await page.getByTestId("reports-tab-channels").click();
         await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
