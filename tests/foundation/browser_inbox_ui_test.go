@@ -29,7 +29,7 @@ import (
 	"livecommerce/internal/oidclogin"
 )
 
-const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[^\r\n]*inbox-ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[^\r\n]*\b(INU[0-9]{2})\b`
+const inboxFailureCasePattern = `(?m)^[\t ]*[0-9]+\)[\t ]+(?:tests/admin/)?inbox-ui\.spec\.ts:([0-9]{1,6}):([0-9]{1,6})[\t ]+›[\t ]+(INU[0-9]{2})\b`
 const inboxFailureCountPattern = `(?m)^[\t ]*([0-9]{1,6}) (failed|passed|skipped|timed out|interrupted)\b`
 
 // inboxPlaywrightFailureSummary discards titles, assertions and DOM text before anything enters the Go/CI log.
@@ -62,7 +62,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	}
 	t.Run("failure_diagnostics", func(t *testing.T) {
 		const private = "SYNTHETIC_PRIVATE_DM_NAME_PSID"
-		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + "\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
+		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + " INU99 inbox-ui.spec.ts:999:9 › INU98\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
 		want := "1 failed\n7 passed\nfailed INU05 (inbox-ui.spec.ts:450:1)"
 		if got := strings.Join(inboxPlaywrightFailureSummary(output), "\n"); got != want {
 			t.Fatal("failure summary differs or admits private text")

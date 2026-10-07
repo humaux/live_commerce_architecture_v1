@@ -33,7 +33,7 @@ test("failure diagnostics match INU cases/counts without admitting private text"
   const cases = constants("inboxFailureCasePattern");
   const counts = constants("inboxFailureCountPattern");
   const privateText = "SYNTHETIC_PRIVATE_DM_NAME_PSID";
-  const log = `  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread ${privateText}\n` +
+  const log = `  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread ${privateText} INU99 inbox-ui.spec.ts:999:9 › INU98\n` +
     `    Error: ${privateText}\n    1 failed ${privateText}\n    7 passed (2m)\n` +
     `  2) tests/admin/other.spec.ts:8:1 › INU99 ${privateText}\n`;
   assert.deepEqual([...log.matchAll(cases)].map((m) => m.slice(1)), [["450", "1", "INU05"]]);
