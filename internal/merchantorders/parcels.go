@@ -4,7 +4,7 @@
 //   of the single/bulk shipment commands. A group merges PARCELS only: it never reads or writes payments, totals or refunds (I05).
 // Depends on: fulfillment.read_merge_suggestions / create_parcel_group / dissolve_parcel_group / begin_parcel_group_shipment /
 //   mark_parcel_group_shipped / guard_parcel_group_orders / read_parcel_group_ids (migration 0146), fulfillment.read_open_parcel_groups
-//   (migration 0164, W3-U4), normalizeRecipientMask (list_v2.go), RecordShipment (shipments.go,
+//   and the masked read_merge_suggestions replacement (migration 0164, W3-U4), normalizeRecipientMask (list_v2.go), RecordShipment (shipments.go,
 //   fulfillment.record_manual_shipment 0107), platform.RequirePermission (second authority fence), command.
 // Used by: internal/httpapi/parcels.go (routes), internal/httpapi/shipments.go (single PUT guard), internal/merchanttools/
 //   tracking_import.go (bulk guard), picklist.go / carrier_export.go (group annotation + adjacency).
@@ -52,10 +52,12 @@ type ParcelGroup struct {
 	OrderIDs []string `json:"order_ids,omitempty"`
 }
 
-// MergeSuggestion is one "same buyer, same address" candidate set (2..20 orders) for the merchant to confirm.
+// MergeSuggestion is one "same buyer, same address" candidate set (2..20 orders) for the merchant to confirm. The recipient is
+// MASKED like the orders list (0164): the orders page fetches suggestions on every load, so this list-level read never carries the
+// full name.
 type MergeSuggestion struct {
-	RecipientName string   `json:"recipient_name"`
-	OrderIDs      []string `json:"order_ids"`
+	RecipientMasked string   `json:"recipient_masked"`
+	OrderIDs        []string `json:"order_ids"`
 }
 
 // OpenParcelMember is one member order of an OPEN group, display fields only: the recipient is masked like the orders list.
@@ -143,7 +145,8 @@ var parcelSQL = map[string]string{
 	"open":     `SELECT fulfillment.read_open_parcel_groups($1,$2::uuid)`,
 }
 
-// MergeSuggestions lists the mergeable same-buyer same-address order sets (orders:read). Read only.
+// MergeSuggestions lists the mergeable same-buyer same-address order sets (orders:read). Read only; the recipient is masked in SQL
+// (fulfillment.read_merge_suggestions, 0164) and re-validated here with normalizeRecipientMask, so a bad mask degrades to "—".
 func MergeSuggestions(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) ([]MergeSuggestion, error) {
 	if tx == nil || !validAuthorityInput(scope, token) {
 		return nil, command.ErrInvalid
@@ -152,10 +155,12 @@ func MergeSuggestions(ctx context.Context, tx pgx.Tx, scope platform.Scope, toke
 	if err := parcelCall(ctx, tx, scope, token, "orders:read", "suggest", &out); err != nil {
 		return nil, err
 	}
-	for _, s := range out {
+	for i := range out {
+		s := &out[i]
 		if len(s.OrderIDs) < 2 || len(s.OrderIDs) > 20 || !validIDs(s.OrderIDs) {
 			return nil, ErrUnavailable
 		}
+		s.RecipientMasked = normalizeRecipientMask(s.RecipientMasked)
 	}
 	if out == nil {
 		out = []MergeSuggestion{}

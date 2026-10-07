@@ -1,0 +1,192 @@
+=== RUN   TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode
+--- PASS: TestT06DispatcherR7aFinishCommitsWithCompletionAndSeesMode (1.83s)
+=== RUN   TestT06DispatcherR7aFinishErrorRollsBackAndReconciles
+--- PASS: TestT06DispatcherR7aFinishErrorRollsBackAndReconciles (5.66s)
+=== RUN   TestT06DispatcherR7aFinishRunsOnPolicyBlock
+--- PASS: TestT06DispatcherR7aFinishRunsOnPolicyBlock (0.14s)
+=== RUN   TestT06DispatcherCommittedFrozenIntentAndTerminalReplay
+--- PASS: TestT06DispatcherCommittedFrozenIntentAndTerminalReplay (1.39s)
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied
+=== RUN   TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed
+--- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect (0.28s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/denied (0.14s)
+    --- PASS: TestT06DispatcherPolicyAndBindingChangesBlockFirstEffect/binding_changed (0.13s)
+=== RUN   TestT06DispatcherBusyDuplicateSnoozesWithoutEffect
+--- PASS: TestT06DispatcherBusyDuplicateSnoozesWithoutEffect (1.14s)
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed
+=== RUN   TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack
+--- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating (5.55s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/error (1.38s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/panic (1.38s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/malformed (1.40s)
+    --- PASS: TestT06DispatcherAmbiguityReconcilesWithoutRepeating/ack (1.40s)
+=== RUN   TestT06DispatcherOneDeadlineAndFreshCompletion
+--- PASS: TestT06DispatcherOneDeadlineAndFreshCompletion (1.41s)
+=== RUN   TestT06DispatcherUnknownRouteFailsClosedWithoutClaim
+--- PASS: TestT06DispatcherUnknownRouteFailsClosedWithoutClaim (0.15s)
+=== RUN   TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown
+--- PASS: TestT06DispatcherPolicyDeniedAfterPossibleEffectStaysUnknown (2.38s)
+=== RUN   TestT06DispatcherBudgetPersistsManualRequirement
+--- PASS: TestT06DispatcherBudgetPersistsManualRequirement (1.14s)
+=== RUN   TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob
+--- PASS: TestT06DispatcherFailedExhaustionCommitDoesNotCancelJob (2.62s)
+=== RUN   TestT06DispatcherForcedStopPreservesClaimForReconcile
+--- PASS: TestT06DispatcherForcedStopPreservesClaimForReconcile (1.47s)
+=== RUN   TestT06DispatcherCrashChild
+--- PASS: TestT06DispatcherCrashChild (0.00s)
+=== RUN   TestT06DispatcherRealProcessCrashRescue
+=== RUN   TestT06DispatcherRealProcessCrashRescue/before
+=== RUN   TestT06DispatcherRealProcessCrashRescue/after
+--- PASS: TestT06DispatcherRealProcessCrashRescue (40.41s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/before (17.81s)
+    --- PASS: TestT06DispatcherRealProcessCrashRescue/after (22.61s)
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (0.59s)
+=== RUN   TestT06PolicyOutcomeCannotErasePossibleRemoteEffect
+--- PASS: TestT06PolicyOutcomeCannotErasePossibleRemoteEffect (0.03s)
+=== RUN   TestT06SQLLeaseOwnershipExpiryAndNoRedispatch
+--- PASS: TestT06SQLLeaseOwnershipExpiryAndNoRedispatch (0.03s)
+=== RUN   TestT06SQLConcurrentClaimAndBindingOutcomeFacts
+--- PASS: TestT06SQLConcurrentClaimAndBindingOutcomeFacts (0.03s)
+=== RUN   TestT06SQLEventFailureRollsBackClaimAndCompletion
+--- PASS: TestT06SQLEventFailureRollsBackClaimAndCompletion (0.02s)
+=== RUN   TestT06OrdinaryWorkerStartsProcessesAndStops
+--- PASS: TestT06OrdinaryWorkerStartsProcessesAndStops (0.08s)
+=== RUN   TestT06GoBindingPermissionsScopeAndCAS
+--- PASS: TestT06GoBindingPermissionsScopeAndCAS (0.06s)
+=== RUN   TestT06GoPlanAtomicReplayCanonicalAndReadback
+--- PASS: TestT06GoPlanAtomicReplayCanonicalAndReadback (0.08s)
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/trailing
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/oversize
+=== RUN   TestT06GoConcurrentReplayForeignBindingAndValidation/array
+--- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation (0.11s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/trailing (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/oversize (0.00s)
+    --- PASS: TestT06GoConcurrentReplayForeignBindingAndValidation/array (0.00s)
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/job
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/event
+=== RUN   TestT06GoAtomicFailuresAndWorkerTokenFence/audit
+--- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence (0.10s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/job (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/event (0.01s)
+    --- PASS: TestT06GoAtomicFailuresAndWorkerTokenFence/audit (0.01s)
+=== RUN   TestManualFulfilmentMF02Schema
+=== RUN   TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK
+=== RUN   TestManualFulfilmentMF02Schema/version_and_head_CHECKs
+=== RUN   TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix
+=== RUN   TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser)
+2026/10/07 19:05:32 INFO orders.export_unshipped store_id=b63ca856-0e18-443a-9498-8c55e41045b3 rows=1 truncated=false duration_ms=17
+=== RUN   TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT
+=== RUN   TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters
+=== RUN   TestManualFulfilmentMF02Schema/populated_upgrade_after_0062
+    manual_fulfilment_schema_test.go:365: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+--- PASS: TestManualFulfilmentMF02Schema (5.70s)
+    --- PASS: TestManualFulfilmentMF02Schema/migration,_permission_vocabulary_and_order_state_CHECK (0.00s)
+    --- PASS: TestManualFulfilmentMF02Schema/version_and_head_CHECKs (0.08s)
+    --- PASS: TestManualFulfilmentMF02Schema/definers,_ACLs_and_the_privilege_matrix (0.07s)
+    --- PASS: TestManualFulfilmentMF02Schema/record_wrote_its_command_result_and_audit_row_through_the_definer_(not_as_superuser) (0.03s)
+    --- PASS: TestManualFulfilmentMF02Schema/versions_are_append-only,_heads_move_by_exactly_+1,_and_the_state_agreement_is_enforced_at_COMMIT (0.08s)
+    --- PASS: TestManualFulfilmentMF02Schema/merchant_read_function_keeps_the_0027_authority_behaviour_and_knows_the_new_filters (0.05s)
+    --- SKIP: TestManualFulfilmentMF02Schema/populated_upgrade_after_0062 (0.00s)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_open_parcel_groups(bytea,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.cancel_rma(bytea,uuid,uuid,text,bytea,bigint)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.close_rma(bytea,uuid,uuid,text,bytea,bigint,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.read_order_returns(bytea,uuid,uuid)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.list_returns(bytea,uuid,text)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text)
+=== RUN   TestMerchantOrdersV2PickListReadAuthority/returns.list_cancel_refund_gaps(bytea,uuid)
+--- PASS: TestMerchantOrdersV2PickListReadAuthority (0.06s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean) (0.01s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/claims.pick_list_session_orders(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_merge_suggestions(bytea,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.create_parcel_group(bytea,uuid,text,bytea,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.dissolve_parcel_group(bytea,uuid,uuid,bigint) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.begin_parcel_group_shipment(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_parcel_group_ids(bytea,uuid,uuid[]) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.read_open_parcel_groups(bytea,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.cancel_rma(bytea,uuid,uuid,text,bytea,bigint) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.close_rma(bytea,uuid,uuid,text,bytea,bigint,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.read_order_returns(bytea,uuid,uuid) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.list_returns(bytea,uuid,text) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/fulfillment.merchant_cancel_order(bytea,uuid,uuid,text,bytea,text,text) (0.00s)
+    --- PASS: TestMerchantOrdersV2PickListReadAuthority/returns.list_cancel_refund_gaps(bytea,uuid) (0.00s)
+=== RUN   TestParcelGroupOpenRead
+=== RUN   TestParcelGroupOpenRead/one_OPEN_group_is_listed_with_its_version_and_masked_members
+=== RUN   TestParcelGroupOpenRead/newest_first;_SHIPPED_and_DISSOLVED_groups_are_absent
+=== RUN   TestParcelGroupOpenRead/recipient_masked_equals_the_orders-list_mask,_incl._leading_ideographic_space_and_a_blank_name
+=== RUN   TestParcelGroupOpenRead/authority:_no_token_401,_fulfillment:write_alone_403,_foreign-store_member_404,_other_store_sees_none
+=== RUN   TestParcelGroupOpenRead/definer_ACL:_read_only_(no_rows_written),_EXECUTE_for_commerce_runtime_only
+--- PASS: TestParcelGroupOpenRead (12.92s)
+    --- PASS: TestParcelGroupOpenRead/one_OPEN_group_is_listed_with_its_version_and_masked_members (0.01s)
+    --- PASS: TestParcelGroupOpenRead/newest_first;_SHIPPED_and_DISSOLVED_groups_are_absent (0.01s)
+    --- PASS: TestParcelGroupOpenRead/recipient_masked_equals_the_orders-list_mask,_incl._leading_ideographic_space_and_a_blank_name (0.04s)
+    --- PASS: TestParcelGroupOpenRead/authority:_no_token_401,_fulfillment:write_alone_403,_foreign-store_member_404,_other_store_sees_none (0.03s)
+    --- PASS: TestParcelGroupOpenRead/definer_ACL:_read_only_(no_rows_written),_EXECUTE_for_commerce_runtime_only (0.01s)
+=== RUN   TestParcelGroupMergeSuggestionsMasked
+--- PASS: TestParcelGroupMergeSuggestionsMasked (9.39s)
+=== RUN   TestParcelGroup
+=== RUN   TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create
+=== RUN   TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown
+=== RUN   TestParcelGroup/PG03_one_order,_at_most_one_group
+=== RUN   TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id
+=== RUN   TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched
+    parcel_groups_test.go:251: control order shipped-mail rows: 1
+=== RUN   TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back
+=== RUN   TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import
+=== RUN   TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone
+=== RUN   TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins
+=== RUN   TestParcelGroup/PG09_same_Idempotency-Key,_disjoint_order_sets,_concurrently:_one_group,_the_loser_is_a_conflict_(not_already_in_group)
+=== RUN   TestParcelGroup/PG10_mark_parcel_group_shipped_on_a_partly_shipped_group_refuses_(group_incomplete)_and_stays_OPEN
+--- PASS: TestParcelGroup (21.76s)
+    --- PASS: TestParcelGroup/PG01_suggestion_for_the_same_buyer_and_address,_then_create (0.05s)
+    --- PASS: TestParcelGroup/PG02_refusals:_address,_owner,_COD,_CVS,_size,_unknown (1.12s)
+    --- PASS: TestParcelGroup/PG03_one_order,_at_most_one_group (0.00s)
+    --- PASS: TestParcelGroup/pick_list_and_export_put_a_group_side_by_side_with_parcel_group_id (0.02s)
+    --- PASS: TestParcelGroup/PG04_group_shipment:_one_tracking_number,_per-order_audit_and_mail,_no_money_touched (0.04s)
+    --- PASS: TestParcelGroup/PG05_a_drifted_member_rolls_the_whole_group_back (0.04s)
+    --- PASS: TestParcelGroup/PG06_a_grouped_order_cannot_ship_alone_or_through_the_bulk_import (0.01s)
+    --- PASS: TestParcelGroup/PG07_dissolve_(CAS,_OPEN_only)_then_the_order_ships_alone (0.02s)
+    --- PASS: TestParcelGroup/PG08_two_creators_racing_for_the_same_orders:_exactly_one_wins (2.04s)
+    --- PASS: TestParcelGroup/PG09_same_Idempotency-Key,_disjoint_order_sets,_concurrently:_one_group,_the_loser_is_a_conflict_(not_already_in_group) (3.61s)
+    --- PASS: TestParcelGroup/PG10_mark_parcel_group_shipped_on_a_partly_shipped_group_refuses_(group_incomplete)_and_stays_OPEN (2.95s)
+=== RUN   TestParcelGroupACL
+--- PASS: TestParcelGroupACL (0.62s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (13.31s)
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker
+=== RUN   TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker
+--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (0.87s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_ads_worker (0.06s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_claims_worker (0.03s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_expiry_worker (0.03s)
+    --- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege/no_payment_privilege_worker (0.03s)
+PASS
+ok  	livecommerce/tests/foundation	133.589s
+test-focused: top-level PASS=33 FAIL=0 SKIP=0 exit=0

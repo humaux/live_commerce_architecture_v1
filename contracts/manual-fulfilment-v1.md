@@ -348,8 +348,9 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
 - **Mergeable** (`fulfillment.parcel_merge_block`, shared by suggestions and create): `manual_shipment_eligible`, home delivery with an
   address, `payment_mode` not `cash_on_delivery`/`pay_at_pickup`, no CVS destination or `cvs_shipments` row, no shipment head yet,
   not already in a group; all members of one owner and one destination hash.
-- **Routes** (admin, `store_id` from the session): `GET …/orders/merge-suggestions` (`orders:read`; `{items:[{recipient_name,
-  order_ids}]}`); `GET …/parcel-groups` (`orders:read`, no query/body/key; Amendment W3-U4, migration `0164_open_parcel_groups.sql`
+- **Routes** (admin, `store_id` from the session): `GET …/orders/merge-suggestions` (`orders:read`; `{items:[{recipient_masked,
+  order_ids}]}`; `recipient_masked` = the orders-list mask, computed in SQL after the grouping (migration 0164 replaces the 0146 read):
+  the orders page fetches this on every load, so it never carries the full recipient name or phone); `GET …/parcel-groups` (`orders:read`, no query/body/key; Amendment W3-U4, migration `0164_open_parcel_groups.sql`
   `fulfillment.read_open_parcel_groups(p_hash,p_store)`: the store's OPEN groups only, newest first, at most 200 →
   `{items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]}`; `order_number` = `LC-<order id
   without dashes, upper-case>` and `recipient_masked` = the orders-list mask (first non-whitespace character + `***`, `—` for a blank
