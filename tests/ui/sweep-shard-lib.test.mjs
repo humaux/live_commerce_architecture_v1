@@ -4,9 +4,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
-import { CLICK_VARIANTS, JOURNEY_PAGES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
+import { readdirSync } from "node:fs";
+import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
+
+// The storefront twin of G-UI1 (tests/admin/shell-registry.test.ts): the click sweep and visual lint open STOREFRONT_ROUTES, a hand list, so a
+// new buyer page.tsx would otherwise never be clicked or shot. Route groups like "(list)" do not appear in URLs.
+test("G-UI8 storefront pages and the sweep's STOREFRONT_ROUTES are the same set", () => {
+  const base = "apps/storefront/app/[locale]";
+  const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
+  const pages = walk(base).filter((p) => p.endsWith("/page.tsx"))
+    .map((p) => p.slice(base.length, -"/page.tsx".length).replace(/\/\([^)]+\)/g, "") || "/");
+  assert.deepEqual([...new Set(pages)].sort(), [...STOREFRONT_ROUTES].sort());
+});
 
 test("parseShard: i/N, empty means unsharded, anything malformed throws", () => {
   assert.equal(parseShard(""), null);
