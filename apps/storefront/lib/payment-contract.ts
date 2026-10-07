@@ -33,6 +33,9 @@ export type OrderPayment = {
   cancel_requested?: boolean;
   // stripe-refund-v1 §7.2: buyer-safe totals, Stripe orders with refund activity only; absent ≡ null.
   refund?: { refunded_minor: number; pending_minor: number } | null;
+  // stripe-platform-account-v1 §5: platform collector disclosure, derived (platform) connections only;
+  // absent ≡ null (the refund convention), so primary-connection views stay byte-identical.
+  collector?: { display_name: string; descriptor_preview: string } | null;
   methods: {
     code: PaymentMethodCode;
     version: number;
@@ -169,11 +172,16 @@ export function validOrderPayment(
     value !== null &&
     typeof value === "object" &&
     Object.hasOwn(value, "refund");
+  const hasCollector =
+    value !== null &&
+    typeof value === "object" &&
+    Object.hasOwn(value, "collector");
   if (
     !exact(value, [
       ...keys,
       ...(hasCancel ? ["cancel_requested"] : []),
       ...(hasRefund ? ["refund"] : []),
+      ...(hasCollector ? ["collector"] : []),
     ])
   )
     return false;
@@ -229,6 +237,16 @@ export function validOrderPayment(
   )
     return false;
   if (!validRefund(value, hasCancel)) return false;
+  // Platform collector disclosure (derived connections): null, or the exact §5 pair with no identifiers.
+  if (hasCollector && value.collector !== null) {
+    const collector = value.collector;
+    if (
+      !exact(collector, ["display_name", "descriptor_preview"]) ||
+      !name(collector.display_name) ||
+      !name(collector.descriptor_preview)
+    )
+      return false;
+  }
   if (hasCancel) {
     if (
       typeof value.cancel_requested !== "boolean" ||

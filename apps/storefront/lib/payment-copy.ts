@@ -45,6 +45,10 @@ const en = {
     "The secure payment page is still being prepared. Try Continue original payment again shortly.",
   cutoff:
     "This payment page can no longer be opened. Refresh this order for the result.",
+  // stripe-platform-account-v1 §5: platform-collected card disclosure, rendered above the Stripe pay button
+  // whenever the hosted view returns `collector`. Slots: display_name / store_name / descriptor_preview.
+  collector:
+    'Card payment collected by {display_name} on behalf of {store_name}. Your card statement shows "{descriptor_preview}".',
 };
 type Copy = { [K in keyof typeof en]: string };
 export const paymentCopy: Record<Locale, Copy> = {
@@ -84,6 +88,7 @@ export const paymentCopy: Record<Locale, Copy> = {
     cancelling: "已请求取消，正在等待支付服务商确认，请刷新此订单查询。",
     creating: "安全付款页仍在准备中，请稍后再点击“继续原付款请求”。",
     cutoff: "此付款页已无法再打开，请刷新此订单查询结果。",
+    collector: "本笔信用卡款项由 {display_name} 代 {store_name} 收取，信用卡账单显示「{descriptor_preview}」。",
   },
   "zh-TW": {
     title: "付款",
@@ -120,5 +125,6 @@ export const paymentCopy: Record<Locale, Copy> = {
     cancelling: "已請求取消，正在等待支付服務商確認，請重新整理此訂單查詢。",
     creating: "安全付款頁仍在準備中，請稍後再點選「繼續原付款請求」。",
     cutoff: "此付款頁已無法再開啟，請重新整理此訂單查詢結果。",
+    collector: "本筆信用卡款項由 {display_name} 代 {store_name} 收取，信用卡帳單顯示「{descriptor_preview}」。",
   },
 };
