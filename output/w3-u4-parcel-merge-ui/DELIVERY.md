@@ -138,3 +138,16 @@
 ### Integrator to-do
 
 - No new migration file (R2 pin stays 89; T06 function count unchanged: the suggestions function is replaced, not added). 0164 now also carries the masked `read_merge_suggestions`; if 0164 was ever applied to a shared DB, ship the replace as a new migration instead.
+
+---
+
+## Finisher 3 (Sonnet) — parcel fixture `conflicting request or version` (CI 37612062730 at 5bf9a747 and 44b89695)
+
+Two independent fixture bugs, both in the browser harness' `parcelOrder` (product code is correct; no assertion changed). The `t.Helper` chain hid the failing step; the new REAL_PG test `TestParcelFixtureSameBuyerTwoOrders` (`tests/foundation/parcel_fixture_test.go`, no browser) gives every step its own message.
+
+1. **One-unit orders cannot start payment.** A unit costs 1250 minor; `checkout.validPaymentResult` requires `AmountMinor%100==0` (whole TWD), so `StartPayment` on a quantity-1 order returns `command.ErrConflict`. Red: `red-finisher3-fixture.log` (`pf[a] start: conflicting request or version`, the FIRST order). The MOU `newDraft(1)` drafts never start payment, which is why the quantity-1 parcel orders were the first to hit it. Fix: parcel orders have quantity 2 (as the MOU `authorized/captured/...` orders do).
+2. **`bcHarness.prepare` is single-use per capability.** The cart and destination are created at version 0, so a second `prepare` for the same buyer conflicts; `clone := q` also dropped the cart/destination versions between calls. Red (after fixing 1): `red-finisher3-fixture-2.log` (second order). Fix: `pfBuyer` keeps one buyer's state; the 2nd+ order bumps the cart and re-selects the same `bdHome` destination at the live versions (as `hcodRehome` does), then re-quotes. The distinct-tag change of 44b89695 was not the cause (keys are random per call).
+
+`parcelOrder` in `browser_merchant_orders_ui_test.go` now delegates to `pfBuyer.order` (one buyer per capability token), so the browser harness and the focused test run the same code.
+
+Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF02Schema|TestMerchantOrdersV2PickListReadAuthority|TestWAS02|TestR2IntegrationUpgrade|TestT06)'` -> exit 0, 34 PASS (33 earlier + the new test; `green-finisher3-focused.log`); `go vet -tags browser ./tests/foundation` -> 0; `go vet ./tests/foundation` -> 0; `check-gates.sh` -> 0. NOT_RUN: the browser gate (CI).

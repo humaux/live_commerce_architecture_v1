@@ -417,32 +417,22 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	// W3-07B parcel-merge UI (Amendment W3-07B): the read-only guard above passed, so only now create real mergeable
 	// fixtures (they write checkout/payment tables) and drive parcel-merge.spec.ts against the same Next + Go + PG.
 	// One buyer capability per pair: same owner + identical bdHome destination -> exactly one suggestion per pair.
-	// parcelOrder places one order of buyerCap; paid=false stops at the hold (a DRAFT order that is never captured).
+	// parcelOrder places one order of buyerCap through pfBuyer (parcel_fixture_test.go, proven by TestParcelFixtureSameBuyerTwoOrders):
+	// the first order of a capability prepares cart + destination + quote, later ones re-select them at the live versions (prepare is
+	// single-use) and every order has two units (a one-unit total is not whole TWD and cannot start payment). paid=false stops at the
+	// hold (a DRAFT order that is never captured).
+	parcelBuyers := map[string]*pfBuyer{}
 	parcelOrder := func(buyerCap buyer.Capability, tag string, paid bool) string {
 		t.Helper()
-		clone := q
-		clone.cap = buyerCap
-		clone.bcHarness.prepare(t, buyerCap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
-		order, e := clone.bcHarness.begin(t04Key("mou-parcel-begin-" + tag))
-		if e != nil {
-			t.Fatal(e)
+		pb := parcelBuyers[buyerCap.Token]
+		if pb == nil {
+			pb = pfNewBuyer(q, buyerCap)
+			parcelBuyers[buyerCap.Token] = pb
 		}
-		if !paid {
-			return order.OrderID
-		}
-		clone.hold = order
-		clone.input.OrderID = order.OrderID
-		if clone.result, e = clone.start(t04Key("mou-parcel-start-" + tag)); e != nil {
-			t.Fatal(e)
-		}
-		if e = pcApply(clone.worker, clone.result.AttemptID, pcRecord(t, clone, pcFull(clone))); e != nil {
-			t.Fatal(e)
-		}
-		return order.OrderID
+		return pb.order(t, tag, paid)
 	}
 	parcelPair := func(buyerCap buyer.Capability, tag string) [2]string {
-		// Distinct tags per member: the tag seeds the begin/start idempotency keys, and a shared key replays
-		// the first order instead of placing a second one ("conflicting request or version").
+		// Distinct tags per member keep the keys readable in logs (they are random per call anyway).
 		return [2]string{parcelOrder(buyerCap, tag+"-a", true), parcelOrder(buyerCap, tag+"-b", true)}
 	}
 	shipCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
