@@ -102,12 +102,16 @@ test("summary keys are exact: the pre-0062 ten-key shape and extra keys are refu
 test("summary refuses every state combination the amended contract forbids", () => {
   // control: the unmodified row is valid, so every refusal below is caused by its one change (not by a shape error)
   assert.equal(parseOrderSummary(row({})).order_id, id);
+  assert.equal(parseOrderSummary(row({ fulfillment_state: "CANCELLED", commercial_state: "CANCELLED" })).work_state, "READY"); // W3-08B cancelled paid order
   const forbidden: Array<[string, Record<string, unknown>]> = [
     ["READY work with payment PENDING", { payment_state: "PENDING" }],
     ["READY work with payment AUTHORIZED", { payment_state: "AUTHORIZED" }],
     ["READY work with payment NOT_STARTED", { payment_state: "NOT_STARTED", test_mode: false }],
     ["READY work while PAID_ALLOCATION_FAILED", { fulfillment_state: "PAID_ALLOCATION_FAILED" }],
-    ["READY work while CANCELLED", { fulfillment_state: "CANCELLED", commercial_state: "CANCELLED" }],
+    // W3-08B (c080f870): READY is valid on a fully cancelled CAPTURED order (merchant cancel / cancel-refund gap), so the
+    // forbidden cases are the half-cancelled and the never-captured ones.
+    ["READY work while fulfilment CANCELLED but order not cancelled", { fulfillment_state: "CANCELLED" }],
+    ["READY work while CANCELLED and never captured", { fulfillment_state: "CANCELLED", commercial_state: "CANCELLED", payment_state: "NOT_STARTED", test_mode: false }],
     ["READY work on a non-CONFIRMED order", { commercial_state: "AWAITING_PAYMENT" }],
     ["MERCHANT_SHIPPED without READY work", { fulfillment_state: "MERCHANT_SHIPPED", work_state: "NONE" }],
     ["MERCHANT_SHIPPED with REVIEW_REQUIRED work", { fulfillment_state: "MERCHANT_SHIPPED", work_state: "REVIEW_REQUIRED", payment_state: "REVIEW_REQUIRED" }],

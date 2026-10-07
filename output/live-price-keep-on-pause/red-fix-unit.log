@@ -1,0 +1,6 @@
+base SHA: 056c7e210a7c75ea22975b335a43eae486f2b3ce (056c7e21, fix round: tests added, implementation NOT yet changed)
+--- FAIL: TestRedeemPlanningOneLinePerSKU (0.00s)
+    claims_test.go:481: two paused, the HIGHER id is applied, the lower is pending: applied "a-typo" skipped [], want applied "" and 1 skipped
+FAIL
+FAIL	livecommerce/internal/claims	0.298s
+FAIL

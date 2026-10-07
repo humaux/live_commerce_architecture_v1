@@ -87,6 +87,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"binding_disabled":         "The Meta ads connection is not enabled.",
 		"source_not_owned":         "That post does not belong to this store's connection.",
 		"product_not_published":    "The product is not published.",
+		// meta-ads-v1 Amendment W6-06B (ad-account unbind): the two 409 refusals of POST .../ads/meta/unbind.
+		"operations_in_flight": "Meta ads operations are still in progress; wait for them to finish and try again.",
+		"binding_in_use":       "Pause the running Meta ads campaigns of this ad account before disconnecting it.",
 		// meta-connect (merchant Facebook Page / Instagram connect, internal/metaconnect frozenStatus): codes not already listed above;
 		// internal/metaconnect TestFrozenCodesSurviveHTTPError guards the drift.
 		"state_used":         "That Meta connection attempt was already completed.",

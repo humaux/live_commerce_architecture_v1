@@ -269,6 +269,8 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 ('integration.meta_connect_put_credential(uuid,uuid,uuid,uuid,text,text,bigint,text,bytea,bytea,text[])'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,false,false,false),
 	 ('integration.meta_connect_status(bytea,uuid)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_disconnect(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
+	 -- W6-06B (migration 0160): ads:manage ad-account unbind; the merchant-runtime definer shape of meta_connect_disconnect.
+	 ('integration.meta_ads_unbind(bytea,uuid,text)'::regprocedure::oid,ARRAY[]::text[],'commerce_integration_writer',false,true,false,false),
 	 ('integration.meta_connect_mark_reauth(uuid)'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
 	 -- meta-connect D2 (migration 0100): the claims-worker's disconnect unsubscribe job (the only holder of the private HPKE ring);
 	 ('integration.claim_meta_unsubscribe()'::regprocedure::oid,ARRAY['commerce_claims_worker'],'commerce_integration_writer',false,false,false,false),
@@ -335,7 +337,7 @@ func TestT06WorkerAuthorityAndFunctionACL(t *testing.T) {
 	 AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))
 	 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 	 LEFT JOIN approved a ON a.oid=p.oid WHERE n.nspname='integration'`).Scan(&functions, &safe)
-	if err != nil || functions != 96 || !safe {
+	if err != nil || functions != 97 || !safe { // 96 (W6-05B ledger) + integration.meta_ads_unbind (0160)
 		t.Fatalf("fixed function ACL: count=%d safe=%v err=%v", functions, safe, err)
 	}
 }
