@@ -2,6 +2,7 @@
 // Depends on: backend/auth, server session/store/CSRF authority and the frozen per-domain request grammars.
 // Used by: admin clients; private responses stay no-store and unknown paths never forward.
 import { validMediaQuery } from "@/lib/product-media-model";
+import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode } from "@/lib/inbox-bff";
 import { callBackend, fixtureSession } from "@/lib/backend";
 import {
   orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery, validReturnsQuery,
@@ -109,6 +110,14 @@ async function route(request: Request, context: Context) {
   const error = localError;
   const { store, resource } = await context.params;
   const path = resource.join("/");
+  const inbox = inboxResource(path);
+  if (inbox && !authConfig) return error(404, "not_found");
+  if (inbox && !inboxRoute(request.method, path)) return error(405, "method_not_allowed", path.endsWith("/messages") ? "GET, POST" : inboxRoute("GET", path) ? "GET" : "POST");
+  if (inbox && !validInboxRequest(request, path)) {
+    const filters = new URL(request.url).searchParams.getAll("filter");
+    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
+    return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
+  }
   const health = metaHealthRoute(request.method, path);
   if (health && !validMetaHealthRequest(request)) return error(422, "invalid_request");
   // Refund/shipment/export/permission resources (orders-request.ts grammar) -> Go refunds.go/shipments.go.
@@ -128,7 +137,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !inbox))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -261,7 +270,7 @@ async function route(request: Request, context: Context) {
     token = sessionToken(request) ?? undefined;
     if (!token) {
       const denied = error(401, "unauthorized");
-      if (order || orderSearch || action || customers || cardPayments || logistic) clearAuthCookies(denied.headers);
+      if (order || orderSearch || action || customers || cardPayments || logistic || inbox) clearAuthCookies(denied.headers);
       return denied;
     }
     if (
@@ -339,6 +348,7 @@ async function route(request: Request, context: Context) {
       init.body = imageUpload ? new Blob([data]) : new TextDecoder().decode(data);
     }
     if (health === "recheck" && !validRecheckBody(typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
+    if (inbox && !validInboxBody(path, typeof init.body === "string" ? init.body : "")) return error(422, "invalid_request");
     // Exact bodies for the customers/billing commands (closed keys, ERASE word, consent pairs, price id).
     if (customers && !validCustomersBody(customers, typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // The payments/card PUT body is the exact frozen CAS shape (card-payments-request.ts).
@@ -360,6 +370,23 @@ async function route(request: Request, context: Context) {
     };
   }
   const response = await callBackend(path + url.search, init, token, store);
+  if (inbox) {
+    // Calls Go frozen A8-A14/template reads; body text is never logged and diagnostic payloads never escape.
+    let body: string;
+    let value: unknown;
+    // A9 permits 50 Unicode messages; a 256 KiB ceiling rejects valid 2000-rune pages.
+    try { body = await readBody(response, "application/json", 1 << 20); value = JSON.parse(body); }
+    catch { return error(503, "retry_later"); }
+    if (!response.ok) {
+      const code = inboxErrorCode(response.status, value);
+      const denied = error(code ? response.status : 503, code ?? "retry_later");
+      if (response.status === 401) clearAuthCookies(denied.headers);
+      const backoff = response.headers.get("retry-after") ?? "";
+      if (response.status === 429 && /^(?:[1-9][0-9]{0,2}|[12][0-9]{3}|3[0-5][0-9]{2}|3600)$/.test(backoff)) denied.headers.set("Retry-After", backoff);
+      return denied;
+    }
+    return new Response(body, {status: response.status, headers: {"Content-Type":"application/json", "Cache-Control":"private, no-store"}});
+  }
   if (studio) {
     let body: string;
     try {
@@ -474,7 +501,7 @@ async function route(request: Request, context: Context) {
 async function proxy(request: Request, context: Context) {
   const path = (await context.params).resource.join("/");
   const response = await route(request, context);
-  if (path.startsWith("live-sessions")) response.headers.set("Cache-Control", "private, no-store");
+  if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
@@ -491,7 +518,7 @@ const unsupported = async (_request: Request, context: Context) => {
     : path.startsWith("live-sessions") && !studioAny.test(path)
     ? localError(404, "not_found")
     : localError(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (path.startsWith("live-sessions"))
+  if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates")
     response.headers.set("Cache-Control", "private, no-store");
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;

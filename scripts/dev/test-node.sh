@@ -38,3 +38,7 @@ node --test --experimental-strip-types tests/admin/picklist-model.test.ts
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
 node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs
+
+# LC-U2b browser registration (DB-free); the real UI spec is CI-only and must select its own authority suite.
+node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/admin/inbox-copy.test.ts tests/admin/inbox-bff.test.ts
+node --input-type=module -e 'import assert from "node:assert/strict"; import {readFileSync,existsSync} from "node:fs"; assert.ok(existsSync("tests/foundation/browser_inbox_ui_test.go")); assert.ok(existsSync("tests/admin/inbox-ui.spec.ts")); assert.ok(readFileSync("playwright.config.ts","utf8").includes(`"inbox": ["inbox-ui.spec.ts"]`),"inbox authority suite missing"); assert.ok(readFileSync("scripts/dev/test-local.sh","utf8").includes("TestBrowserInboxUIRealChain"),"inbox Go gate missing"); assert.ok(readFileSync("docs/delivery/GATES.md","utf8").includes("--browser-inbox"),"inbox gate registry missing");'
