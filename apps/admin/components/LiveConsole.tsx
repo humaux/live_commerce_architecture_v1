@@ -17,13 +17,14 @@ import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-worksp
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
 
 /** Shows server-authored lifecycle and snapshots; unresolved writes remain fenced across refreshes. */
-export function LiveConsole({ locale, store, sessionID, navigationGuard }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean> }) {
+export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefreshList }: { locale: Locale; store: Store; sessionID: string; navigationGuard: RefObject<() => boolean>; onRefreshList?: () => void }) {
   const c = workspaceCopy[locale], router = useRouter(), scope = `${store.id}:${sessionID}`;
   const view = useLiveRead(scope, true, (signal) => readConsole(store.id, sessionID, signal), true);
   const detailView = useLiveRead(`${scope}:detail`, true, (signal) => readStudioDetail(store.id, sessionID, signal));
   const sourceView = useLiveRead(`${scope}:source`, true, (signal) => readClaimSource(store.id, sessionID, signal));
   const controlView = useLiveRead(`${scope}:controls`, true, (signal) => readOfferControls(store.id, sessionID, signal));
-  const refresh = () => { view.refresh(); detailView.refresh(); sourceView.refresh(); controlView.refresh(); };
+  // List reads are user/command initiated, never part of A1's periodic reader.
+  const refresh = () => { view.refresh(); detailView.refresh(); sourceView.refresh(); controlView.refresh(); onRefreshList?.(); };
   const signedOut = [view, detailView, sourceView, controlView].some((v) => v.error === "signed-out");
   const command = useLiveCommand(scope, signedOut ? "" : view.boundary, refresh, (request, value) => {
     if (!request.path.endsWith("/copy")) return;

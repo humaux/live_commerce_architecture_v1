@@ -42,7 +42,7 @@ export function LiveWorkspace({ locale, store, scene, initialError }: {
           <a data-testid="live-session-results" href={`/${locale}/studio?store=${storeID}${selected ? `&scene=${selected}` : ""}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.sessions}</a>
           {selected && <a href={`/${locale}/studio/claims?store=${storeID}&scene=${selected}`} onClick={(event) => { if (!beforeLeave.current()) event.preventDefault(); }}>{c.source}</a>}
         </div>
-        {selected && store ? <LiveConsole key={`${storeID}:${selected}`} locale={locale} store={store} sessionID={selected} navigationGuard={beforeLeave} /> : <p role="status">{view.data ? c.empty : c.loading}</p>}
+        {selected && store ? <LiveConsole key={`${storeID}:${selected}`} locale={locale} store={store} sessionID={selected} navigationGuard={beforeLeave} onRefreshList={view.refresh} /> : <p role="status">{view.data ? c.empty : c.loading}</p>}
       </>}
     </div>
   </WorkspaceFrame>;

@@ -50,6 +50,14 @@ async function fault(request: APIRequestContext, scene: string, mode: string) {
   const response = await request.post(`${api}/__test/live-console/fault`, { headers: { "X-Console-Control": control }, data: { scene, mode } });
   expect(response.status()).toBe(200);
 }
+async function refreshList(page: Page, status: number) {
+  // Match the list's exact GET path, not A1 or an implicit background poll.
+  await Promise.all([
+    page.waitForResponse((response) => new URL(response.url()).pathname === `/api/stores/${store}/live-sessions` &&
+      response.request().method() === "GET" && response.status() === status, { timeout: 15_000 }),
+    page.getByTestId("live-console-refresh").click(),
+  ]);
+}
 async function login(page: Page) {
   await page.goto(`${origin}/en/`);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -128,7 +136,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
       const link = page.getByRole("link", { name: workspaceCopy.en.openFacebook, exact: true });
       await expect(link).toHaveAttribute("href", url);
       await expect(link).toHaveAttribute("rel", "noopener noreferrer");
-      const popupReady = page.waitForEvent("popup");
+      const popupReady = page.waitForEvent("popup", { timeout: 15_000 });
       await link.click();
       const popup = await popupReady;
       await expect(popup).toHaveURL(url);
@@ -182,11 +190,14 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(unknown.effect).toBe(true);
     await page.getByTestId("live-console-refresh").click();
     await expect(page.getByTestId("live-command-retry")).toBeVisible();
-    const listFailed = page.waitForResponse((response) => response.url().includes(`/api/stores/${store}/live-sessions?`) && response.status() === 503);
     await fault(request, scene, "list_unavailable");
-    await listFailed;
+    await refreshList(page, 503);
     await expect(page.getByTestId("live-command-retry")).toBeVisible();
+    expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
     await fault(request, scene, "list_restore");
+    await refreshList(page, 200);
+    await expect(page.locator(`#live-session-picker option[value="${scene}"]`)).toHaveText((await facts(request)).scenes[scene]!.Title);
+    await expect(page.getByTestId("live-command-retry")).toBeVisible();
     const reads = (await facts(request)).scenes[scene]!.Reads?.length ?? 0;
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Reads?.length ?? 0, { timeout: 8_000 }).toBeGreaterThan(reads);
     expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
@@ -291,7 +302,7 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await expect(page.getByTestId("live-console")).toHaveCount(0);
   // Clearing the private view precedes the hard logout redirect. Do not race
   // that navigation with the next login's goto (net::ERR_ABORTED on Linux CI).
-  await page.waitForURL((url) => url.origin === new URL(origin).origin && url.pathname === "/en", { waitUntil: "domcontentloaded" });
+  await page.waitForURL((url) => url.origin === new URL(origin).origin && url.pathname === "/en", { waitUntil: "domcontentloaded", timeout: 15_000 });
   await expect(page.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
   await login(page);
   const after = (await authorityCookies(page.context())).find((c) => c.name === "__Host-commerce_csrf")?.value;
@@ -318,7 +329,7 @@ test("LC-U1 delayed copy cannot navigate back after an actual SPA scene switch",
   await page.getByTestId("live-primary-action").click();
   await page.getByTestId("live-copy-title").fill("Delayed copy scope test");
   await fault(request, lateScene, "delay_copy");
-  const response = page.waitForResponse((r) => r.url().endsWith(`/${lateScene}/copy`) && r.request().method() === "POST");
+  const response = page.waitForResponse((r) => r.url().endsWith(`/${lateScene}/copy`) && r.request().method() === "POST", { timeout: 15_000 });
   await page.getByTestId("live-copy-confirm").click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#live-session-picker").selectOption(lateDestination);
