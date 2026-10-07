@@ -3,7 +3,7 @@
 // auto_reply), and the shared databaseError mapper that passes only the fixed PT400/PT403/PT404/PT409/PT422 codes through.
 // Depends on: the SECURITY DEFINER functions social.list_conversations / social.read_thread / social.conversation_meta /
 // social.unread_conversation_count / inbox.thread_opened (migration 0119, the first two re-created by 0165),
-// inbox.buyer_panel / inbox.live_comment_bundles / inbox.conversation_binding (migration 0165, LC-B3b),
+// inbox.buyer_panel / inbox.live_comment_bundles / inbox.link_pending_bundles / inbox.conversation_binding (migration 0165, LC-B3b),
 // internal/inbox/keyring.go + classifier.go.
 // Used by: internal/httpapi/inbox.go (A8/A9/A13 handlers), internal/inbox tests.
 // Invariants: I09 (the panel's identity link is inbox.bundle_peers only, decided in SQL), LCN03 (out of scope = 404).
@@ -131,11 +131,10 @@ func (s *Service) fillDisplayNames(ctx context.Context, tx pgx.Tx, items []Conve
 	return databaseErrorOrNil(rows.Err())
 }
 
-// linkPendingItems lists the bundle-only link-pending A8 items (inbox.link_pending_bundles, migration 0128): at most 10, after the
-// optional session filter. The definer takes no session, so up to 50 newest are read and filtered here (ponytail: a store with
-// more than 50 pending bundles in other sessions can hide a pending one under a session filter; add a p_session to the definer then).
+// linkPendingItems lists at most 10 bundle-only link-pending A8 items. The 0165 overload
+// applies the optional session predicate before its SQL limit, so other sessions cannot consume the bound.
 func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, session *string) ([]ConversationItem, error) {
-	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, created_at FROM inbox.link_pending_bundles($1::integer)`, 50)
+	rows, err := tx.Query(ctx, `SELECT bundle_id::text, session_id::text, created_at FROM inbox.link_pending_bundles($1::integer, $2::uuid)`, 10, session)
 	if err != nil {
 		return nil, databaseError(err)
 	}
@@ -146,9 +145,6 @@ func (s *Service) linkPendingItems(ctx context.Context, tx pgx.Tx, session *stri
 		var at time.Time
 		if err := rows.Scan(&bundle, &sess, &at); err != nil {
 			return nil, databaseError(err)
-		}
-		if (session != nil && sess != *session) || len(out) >= 10 {
-			continue
 		}
 		b, sid := bundle, sess
 		out = append(out, ConversationItem{BundleOnly: true, BundleID: &b, SessionID: &sid, Platform: "messenger", LastAt: at, Unreplied: true, LinkPendingManual: true})

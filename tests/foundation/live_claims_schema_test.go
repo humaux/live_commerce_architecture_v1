@@ -948,6 +948,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"identity.read_report_channels(bytea,uuid,date,date,text)",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
+				"inbox.link_pending_bundles(integer,uuid)", // 0165: same bounded read with session filtering before LIMIT.
 				// 0165 (LC-B3b): A13 panel facts and A8 live-comment bundle rows (inbox:read re-checked inside; the panel reads bundles only through inbox.bundle_peers, never owner_id).
 				"inbox.buyer_panel(uuid,uuid)", "inbox.live_comment_bundles(uuid,integer)",
 				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).

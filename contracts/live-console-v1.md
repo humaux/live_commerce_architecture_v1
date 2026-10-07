@@ -1115,7 +1115,7 @@ All changes are additive response fields or filters; no permission, route or err
   - `purchase_ordinal` = count (full set, not gated by `orders:read`) of those orders in `CONFIRMED` or `AWAITING_COLLECTION`; CANCELLED and unpaid states never count. The UI shows 第 N 次購買.
   - `display_name` only from the conversation's own newest inbound envelope (as A8); never from a bundle or an order. `auto_reply: {send_state}` is the §4.4 state of the
     newest automated (`origin_kind=auto`) private-reply operation of those bundles (a manual send never counts); omitted when none.
-- **A8.** `session_id` keeps conversations whose peer is `bundle_peers`-linked to a non-purged bundle of that session (also narrows the link-pending bundle rows).
+- **A8.** `session_id` keeps conversations whose peer is `bundle_peers`-linked to a non-purged bundle of that session (also narrows the link-pending bundle rows in SQL before their bound).
   `filter=live_comment` returns the bundle-only rows (`bundle_id`, `session_id`, `conversation_id: null`, platform facebook rendered as `messenger`, real `link_pending_manual`) of
   the store's non-purged facebook/instagram bundles, newest first, at most `limit`, no cursor. Every item gains `link_version` (`inbox.conversation_state.version`; explicit `null` on bundle-only rows).
 - **A9.** The header gains `link_version` (the value A14 takes as `expected_version`) and `binding_id` (the enabled binding of the conversation's provider and asset, same rule as `plan_dm`; `null` when none).

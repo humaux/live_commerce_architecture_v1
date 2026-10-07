@@ -311,6 +311,34 @@ COMMENT ON FUNCTION social.conversation_meta(uuid) IS
 -- buyer context); access via identity.principal_holds. All bounded.
 -- ---------------------------------------------------------------------------------------
 
+-- A8 pending rows: keep the 0128 one-argument function; this additive overload filters the
+-- requested session before the bound instead of discarding unrelated sessions after LIMIT.
+CREATE FUNCTION inbox.link_pending_bundles(p_limit int, p_session uuid)
+RETURNS TABLE(bundle_id uuid, session_id uuid, created_at timestamptz)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+DECLARE v uuid[];
+BEGIN
+    v := inbox.lcn_scope();
+    IF p_limit IS NULL OR p_limit < 1 OR p_limit > 50 THEN
+        RAISE EXCEPTION 'invalid_request' USING ERRCODE = 'PT422';
+    END IF;
+    IF NOT identity.principal_holds(v[1], v[2], v[3], ARRAY['inbox:read']::text[]) THEN
+        RAISE EXCEPTION 'forbidden' USING ERRCODE = 'PT403';
+    END IF;
+    RETURN QUERY
+    SELECT b.id, b.session_id, b.created_at
+      FROM claims.bundles b
+     WHERE b.tenant_id = v[1] AND b.store_id = v[2] AND b.link_pending_manual
+       AND (p_session IS NULL OR b.session_id = p_session)
+     ORDER BY b.created_at DESC, b.id DESC
+     LIMIT p_limit;
+END $$;
+ALTER FUNCTION inbox.link_pending_bundles(int, uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.link_pending_bundles(int, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.link_pending_bundles(int, uuid) TO commerce_runtime;
+COMMENT ON FUNCTION inbox.link_pending_bundles(int, uuid) IS
+ 'internal/inbox (0165 LC-B3b; caller: linkPendingItems): pending bundle-only A8 rows, authenticated tenant/store and optional session filtered before limit 1..50. inbox:read required; no identity linkage or writes. Keeps the 0128 one-argument entry point. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
+
 -- A8 filter=live_comment: bundle-only rows of the store's live comments in scope (facebook/instagram bundles,
 -- non-purged), newest first. No conversation_id (comments have no DM conversation projection); link_version is
 -- exposed as explicit null by the Go marshaller for these rows (Amendment 1 P2-2 envelope).

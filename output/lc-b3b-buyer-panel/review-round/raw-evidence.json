@@ -4,5 +4,15 @@
     "raw_sha256": "c6128a939e452dc72ff5bb64afd7bc7225a0981345b12c4967d32645cfb88d03",
     "archive": "p1-red.log.raw.gz",
     "readable_change": "expand log indentation tabs only"
+  },
+  {
+    "file": "p2-red.log",
+    "raw_sha256": "e5851d5744df9c7604dc660e51c9ec825269829315db451b75eb5b7a1f084d34",
+    "archive": "p2-red.log.raw.gz"
+  },
+  {
+    "file": "p2-green.log",
+    "raw_sha256": "c481b72886b82cc4f278d67263f57f8a8cf9a534291ed325ef82ecf128766848",
+    "archive": "p2-green.log.raw.gz"
   }
 ]

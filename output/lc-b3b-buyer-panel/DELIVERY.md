@@ -11,8 +11,14 @@
 - REAL_PG RED: temporarily restore only parent0165 projection while retaining tests; `bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel(PriceNeutralOrigin|ReviewOriginProjections)$'` → PASS=0 FAIL=2 SKIP=0 exit=1 (orders1 instead of20; neutral order absent). `p1-red-origin.log`. First run `p1-red.log` failed fixture CHECK before product assertions and is explicitly excluded.
 - REAL_PG GREEN: restored WIP projection + valid fixture; `bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel|TestLiveClaimsKC03'` → PASS=13 FAIL=0 SKIP=0 exit=0. `p1-green.log`. E3 local REAL_PG only. Tests did not read a changing migration.
 
+## 4209955021 — pending session filtering before LIMIT
+
+- Root cause: Go filtered the store's newest50 rows after SQL bounded the result; another session could consume all50. Added `inbox.link_pending_bundles(int,uuid)` in0165, preserving the0128 one-argument function. The new definer applies authenticated tenant/store and optional session predicates before ORDER BY/LIMIT; Go requests the existing10-row UI bound directly. No new table privilege.
+- New overload retains STABLE/SECURITY DEFINER/fixed search_path/OWNER/REVOKE/GRANT/COMMENT. Exact caller ACL pinned to integration_writer+runtime and KC03's explicit reachable-function inventory extended by exactly this signature; legacy0128 pin unchanged.
+- REAL_PG RED `bash scripts/dev/test-focused.sh '^TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit$'` → PASS=0 FAIL=1 SKIP=0 exit=1: all/unreplied each returned0 instead of the desired older pending bundle behind51 newer other-session rows. Positive control proves distractors are visible. `p2-red.log`.
+- REAL_PG GREEN `bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel|TestLiveClaimsKC03|TestLiveConsoleSendMigration0128ExactACL'` → PASS=15 FAIL=0 SKIP=0 exit=0. `p2-green.log`; E3 local, source unchanged during each run.
+
 ## Remaining review steps
 
-- 4209955021: pending session filter before SQL bound, separate REAL_PG red/green + commit pending.
 - 4209955037: additive live-comment opaque keyset and LC-B3b A8 amendment, separate REAL_PG red/green + commit pending.
 - Final specified focused regex, go vet and go build pending. No G07 will run in this author round.
