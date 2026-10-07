@@ -1,0 +1,6 @@
+CI run37652592946 head4d19a45a job112899493153 setup-node: v24.21.0 npm11.19.0
+Local original node: v24.15.0
+Official archive https://nodejs.org/dist/v24.21.0/node-v24.21.0-darwin-arm64.tar.xz
+Official SHASUMS256 match: 6239d4cf92d864487ec8cd3615038f7b67e7f58b77b21cd2f09ea9fbd68065fe
+Prepared runtime v24.21.0
+Exit 0

@@ -1,0 +1,5 @@
+Immutable source c3bca7871953c5f88c055c7619030aecc4c182a4
+Node v24.21.0; CI=true TZ=UTC LANG=C.UTF-8
+Command ["pnpm", "--filter", "@live-commerce/admin", "exec", "tsc", "--noEmit"]
+
+Exit 0
