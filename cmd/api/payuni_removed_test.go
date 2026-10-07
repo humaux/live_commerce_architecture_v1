@@ -28,7 +28,6 @@ func TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute(t *testing.T) {
 	h := mountBuyer(base, nil)
 	h = mountMeta(h, stub("meta"))
 	h = mountStripe(h, stub("stripe"))
-	h = mountPayuniNotify(h, stub("payuni")) // RED(trunk): main.go still mounts the receiver; removed with it in green.
 	h = mountPlatformBilling(h, nil)
 	h = mountTLSAsk(h, nil)
 	h = mountStoreDomainNonce(h, nil)
