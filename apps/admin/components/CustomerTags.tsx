@@ -1,5 +1,5 @@
 // Purpose: W6-U1 customer badges, tag catalogue management and customer tag selection.
-// Depends on: customer-tags client/model/copy -> exact BFF leaves -> Go customer_tags.go; Store permissions.
+// Depends on: customer-tags client/model/copy -> exact BFF leaves -> Go customer_tags.go; Store permissions. lib/session-events (global logout on an unauthorized read).
 // Used by: Customers.tsx and CustomerDetail.tsx; server re-reads own every displayed saved fact.
 "use client";
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import type { Store } from "../lib/model";
 import type { CustomerDetail, Tag } from "../lib/customers-model";
 import { customerTagsCopy } from "../lib/customer-tags-copy";
 import { readTagData } from "../lib/customer-tags-client";
+import { signalLogout } from "../lib/session-events";
 import { parseDeletedTag, parseTagCatalog, parseTagRecord, parseTagSet, validTagName, type TagRecord } from "../lib/customer-tags-model";
 import { useTagWrite } from "../lib/customer-tags-write";
 import { CustomerNotes } from "./CustomerTagsNotes";
@@ -32,7 +33,9 @@ function useCatalogue(store: string, boundary: string) {
     setCatalog(null); setError(false);
     void readTagData(store, "customers/tags", boundary, parseTagCatalog, controller.signal)
       .then((v) => { if (!controller.signal.aborted) setCatalog(v.items); })
-      .catch(() => { if (!controller.signal.aborted) setError(true); });
+      // An unauthorized catalogue read ends the session for the whole page (Codex review P2, PR #3): the guarded customer
+      // read listens for the global logout and clears names, orders and consents; a local error alone would leave them shown.
+      .catch((e) => { if (controller.signal.aborted) return; if (String((e as { message?: unknown } | null)?.message) === "unauthorized") signalLogout(); setError(true); });
     return () => controller.abort();
   }, [store, boundary, tick]);
   return { catalog, error, reload: () => setTick((v) => v + 1) };

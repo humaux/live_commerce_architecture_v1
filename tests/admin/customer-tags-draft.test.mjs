@@ -16,7 +16,7 @@ const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/compone
   compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function harness(readTagData = () => new Promise(() => {})) {
+function harness(readTagData = () => new Promise(() => {}), logouts = []) {
   const slots = []; let cursor = 0; const effects = []; const writes = [];
   const react = {
     useId: () => { const index = cursor++; return slots[index] ??= `synthetic-${index}`; },
@@ -43,6 +43,7 @@ function harness(readTagData = () => new Promise(() => {})) {
       if (path === "../lib/orders-model") return { displayTime };
       // Pending read fixture deliberately never returns: only parent prop/effect/callback behavior is under test.
       if (path === "../lib/customer-tags-client") return { readTagData };
+      if (path === "../lib/session-events") return { signalLogout: () => logouts.push("logout") }; // browser-event edge only
       throw new Error(`Unexpected fixture import ${path}`);
     },
   });
@@ -106,4 +107,12 @@ test("an unauthorized note read clears private note bodies and the draft", async
 test("a transient note read failure keeps the notes already shown", async () => {
   const h = harness(() => Promise.reject(new Error("retry_later"))); await settle(); const tree = h.render();
   assert.ok(h.nodes(tree).some((n) => n.type === "p" && n.props.children === note.body));
+});
+
+// Codex review P2 (PR #3): an unauthorized read must end the session for the whole page (global logout lifecycle), not only this widget.
+test("an unauthorized note read signals the global logout once; a transient failure does not", async () => {
+  const lost = []; harness(() => Promise.reject(new Error("unauthorized")), lost); await settle();
+  assert.deepEqual(lost, ["logout"]);
+  const kept = []; harness(() => Promise.reject(new Error("retry_later")), kept); await settle();
+  assert.deepEqual(kept, []);
 });

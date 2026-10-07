@@ -1,5 +1,5 @@
 // Purpose: customer notes with explicit add/edit/delete, pagination and buyer-export privacy notice.
-// Depends on: W6-01B exact notes BFF -> Go customer_tags.go, fenced client/write coordinator, Store permissions and shared Taipei time formatter.
+// Depends on: W6-01B exact notes BFF -> Go customer_tags.go, fenced client/write coordinator, Store permissions and shared Taipei time formatter. lib/session-events (global logout on an unauthorized read).
 // Used by: CustomerTags; bodies live only in mounted component memory and are never logged or stored.
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import type { Store } from "../lib/model";
 import type { CustomerDetail, Note } from "../lib/customers-model";
 import { customerTagsCopy } from "../lib/customer-tags-copy";
 import { readTagData } from "../lib/customer-tags-client";
+import { signalLogout } from "../lib/session-events";
 import { parseDeletedNote, parseNotePage, parseNoteRecord, validNoteBody } from "../lib/customer-tags-model";
 import type { useTagWrite } from "../lib/customer-tags-write";
 import { displayTime } from "../lib/orders-model";
@@ -48,7 +49,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
     loading.current = true; setReading(true); setReadError(false); setAfter("");
     void readTagData(store.id, `${resource}?limit=50`, boundary, parseNotePage, controller.signal)
       .then((page) => { if (!controller.signal.aborted) { setNotes(page.items); setAfter(page.next_cursor); } })
-      .catch((e) => { if (!controller.signal.aborted) { if (authLost(e)) dropPrivate(); setReadError(true); } })
+      .catch((e) => { if (!controller.signal.aborted) { if (authLost(e)) dropPrivate(e); setReadError(true); } })
       .finally(() => { if (!controller.signal.aborted) { loading.current = false; setReading(false); } });
     return () => { mounted.current = false; generation.current++; active.current?.abort(); loading.current = false; };
   }, [store.id, resource, boundary, tick, detail.notes]);
@@ -56,7 +57,9 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
   // A read refused for authorization (signed out, boundary changed, permission or customer gone) must not leave private
   // note bodies or a draft on screen until an unrelated navigation (Codex review P2, PR #3); transient failures keep them.
   const authLost = (e: unknown) => ["unauthorized", "forbidden", "not_found"].includes(String((e as { message?: unknown } | null)?.message));
-  const dropPrivate = () => { setNotes([]); setAfter(""); setBody(""); setEditing(null); setDeleting(null); };
+  // "unauthorized" also ends the session for the whole page (global logout lifecycle -> the guarded customer read clears).
+  const dropPrivate = (e: unknown) => { setNotes([]); setAfter(""); setBody(""); setEditing(null); setDeleting(null);
+    if (String((e as { message?: unknown } | null)?.message) === "unauthorized") signalLogout(); };
 
   async function more() {
     if (!after || loading.current || write.locked) return;
@@ -71,7 +74,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
       // Paging can shift when another staff member writes; refuse overlap and request a fresh page.
       if (page.items.some((n) => ids.has(n.id))) throw new Error("unavailable");
       setNotes((old) => [...old, ...page.items]); setAfter(page.next_cursor);
-    } catch (e) { if (mounted.current && !controller.signal.aborted && generation.current === epoch) { if (authLost(e)) dropPrivate(); setReadError(true); } }
+    } catch (e) { if (mounted.current && !controller.signal.aborted && generation.current === epoch) { if (authLost(e)) dropPrivate(e); setReadError(true); } }
     finally { if (mounted.current && !controller.signal.aborted && generation.current === epoch) { loading.current = false; setReading(false); } }
   }
   useEffect(() => () => active.current?.abort(), []);
