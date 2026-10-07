@@ -138,6 +138,7 @@ export function Customers({
           {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
             onChanged={() => { catalog.reload(); read.reload(); }} />}
           {store?.permissions?.includes("orders:read") && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
+          {store?.permissions?.includes("customers:privacy") && <Link className="orders-export" href={`/${locale}/customers/import?store=${store.id}`} data-testid="customers-import">{c.importLink}</Link>}
           <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
         </div>
         {(read.status === "loading" || read.status === "hidden") && (

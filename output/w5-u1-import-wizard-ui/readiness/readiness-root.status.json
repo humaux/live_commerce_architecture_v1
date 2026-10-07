@@ -1,0 +1,27 @@
+{
+  "_header": {
+    "Purpose": "pin readiness source/command/exit",
+    "Depends on": "actualhelper/currentrun",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "postW6stack readiness checks",
+  "Depends on": "merge019a andvisiblewaitpatch/currentsource",
+  "Used by": "integrator W5 threeCI runs",
+  "run_id": "readiness-145",
+  "pid": 145,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/import-readiness.test.mjs",
+    "tests/admin/shell-registry.test.ts"
+  ],
+  "timeout_seconds": 120,
+  "state": "finished",
+  "at": "2026-10-07T13:30:43.844822+00:00",
+  "wake": "root activeforeground toolawait",
+  "failure_match": "nonzero ornomatchedtest",
+  "base": "019a09952272c189aacb73b3411ba2a0369154af",
+  "exit_code": 0,
+  "ended_at": "2026-10-07T13:30:46.844533+00:00"
+}

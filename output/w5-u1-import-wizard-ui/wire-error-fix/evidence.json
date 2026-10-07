@@ -1,0 +1,50 @@
+{
+  "_delivery_header": {
+    "Purpose": "bind real shared-helper red/green evidence",
+    "Depends on": "worker6d61a1d4 and original JSON SHA256=853bf4a338571a2b8c7de17d8525c31bb10be643ddac44514e7605986bbcfdb6",
+    "Used by": "root independent source/gate verification"
+  },
+  "task_id": "a83bad3d-2b4d-4b4a-b598-85f9e4a99cea",
+  "subtask": "codex-w5-u1-ui-sub-wire",
+  "base_commit": "86f638b54ba54473c3cd9353fb203a4dbcfcceca",
+  "source_commit": "6d61a1d49cad986ed89c70565330418cb8cca5b1",
+  "paths": {
+    "apps/admin/lib/import-client.ts": "82b73b1641ceecc2561800cd68eb9ebb52a359512e1ba9404b320bc3ee020050",
+    "tests/admin/import-client.test.mjs": "b033cff7e733c4ada4865a7729a6337c97b263c5dfe7f1e6745c109dcca65307",
+    "tests/admin/import-wire-real-loader.mjs": "145439face274a8271a7f5c4759f345642f5eb073cb2e863c4a864df228cfd94"
+  },
+  "commands": [
+    {
+      "command": "node --test --experimental-strip-types tests/admin/import-client.test.mjs",
+      "exit_code": 1,
+      "evidence": "red.log",
+      "phase": "pre-fix real route/auth localError cache mismatch"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/import-client.test.mjs",
+      "exit_code": 1,
+      "evidence": "red-real-envelope.log",
+      "phase": "reintroduce previous private-only coded-error gate on fixed real-seam tests; restored in finally"
+    },
+    {
+      "command": "node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tests/admin/import-wire-header.test.ts tests/admin/import-client.test.mjs",
+      "exit_code": 0,
+      "evidence": "green.log",
+      "phase": "20 focused Node tests"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --incremental false -p apps/admin/tsconfig.json",
+      "exit_code": 0,
+      "evidence": "typecheck.log"
+    },
+    {
+      "command": "LC_HEADERS_STRICT=1 bash scripts/dev/check-headers.sh 86f638b54ba54473c3cd9353fb203a4dbcfcceca",
+      "exit_code": 0,
+      "evidence": "headers.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ]
+}

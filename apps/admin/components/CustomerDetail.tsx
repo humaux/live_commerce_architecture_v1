@@ -1,5 +1,5 @@
 // Purpose: Owns customer detail and merchant privacy-action controls.
-// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/orders-copy, @/lib/customers-copy, ./CustomerTags, ./CustomerHistoricalOrders, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/customers/[customer]/page.tsx
 "use client";
 
@@ -32,6 +32,7 @@ import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { CustomerTags } from "./CustomerTags";
+import { CustomerHistoricalOrders } from "./CustomerHistoricalOrders";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
@@ -162,6 +163,11 @@ function Body({
     <>
       {detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
         detail={detail} boundary={boundary} onChanged={refresh} />}
+      {detail.active && detail.imported && <>
+        <Badge tone="neutral">{c.imported}</Badge>
+        <CustomerHistoricalOrders key={`history|${store}|${detail.customer_id}|${boundary}`} locale={locale}
+          store={store} customer={detail.customer_id} boundary={boundary} />
+      </>}
       {!detail.active && <p className="customers-erased" role="status" data-testid="customer-erased">{c.erasedState}</p>}
       <section className="customers-section" aria-label={c.facts}>
         <h2>{c.facts}</h2>

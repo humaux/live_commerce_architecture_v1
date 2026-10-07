@@ -1,0 +1,26 @@
+{
+  "purpose": "Retain setup errors separately from behavioral and tree-scope evidence",
+  "depends_on": "Tool outputs and corrected runner/source probes",
+  "used_by": "Delivery honesty audit",
+  "normalization_setup": [
+    {
+      "exit": 1,
+      "error": "StopIteration on lowercase usage: and fixed literal path assumption"
+    },
+    {
+      "exit": 1,
+      "error": "StopIteration on lowercase usage: before actual uppercase Usage source read"
+    }
+  ],
+  "first_parallel_wrapper_setup": {
+    "exit": 1,
+    "reason": "git write-tree index lock contention in three wrappers before tests started",
+    "not_started": [
+      "node",
+      "types",
+      "specs"
+    ],
+    "corrected": "One serial tree binding then fresh Node/types/specs0; gates had already0 on same319 tree"
+  },
+  "behavioral_red_credit": false
+}
