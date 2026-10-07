@@ -610,8 +610,10 @@ func slsApplyWithout(t *testing.T, owner *pgxpool.Pool, skipNumbered, skipPost s
 		for _, path := range paths {
 			// 0137 / post-River 0022 (platform Stripe) re-create 0077/0016 objects, so the pre-0077 fixture must hold them back too.
 			// 0150 (W4-S2 settlement ledger) needs 0137's platform tables, so it is held back with them.
+			// 0163 (S2-OPEN-1 settlement-resolve) patches 0150's close_settlement in place and FKs its resolutions table to
+			// 0150's settlement_unattributed, so it is held back with them too.
 			if filepath.Base(path) == skip || filepath.Base(path) == "0137_platform_stripe.sql" || filepath.Base(path) == "0022_platform_stripe.sql" ||
-				filepath.Base(path) == "0150_platform_settlement.sql" {
+				filepath.Base(path) == "0150_platform_settlement.sql" || filepath.Base(path) == "0163_settlement_resolve.sql" {
 				continue
 			}
 			body, err := os.ReadFile(path)
@@ -766,9 +768,10 @@ func slsUpgrade(t *testing.T) {
 	if err := owner.QueryRow(ctx, `SELECT count(*) FROM public.lc_schema_migrations`).Scan(&ledgerAfter); err != nil {
 		t.Fatal(err)
 	}
-	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) with them; the same Apply runs all five.
-	if ledgerAfter != ledgerBefore+5 {
-		t.Fatalf("ledger grew by %d, want exactly 5 (0077, post_river/0016, 0137, post_river/0022 and 0150, once)", ledgerAfter-ledgerBefore)
+	// 0137 and post_river/0022 (platform Stripe) are held back with 0077 / post_river/0016, and 0150 (settlement ledger) plus
+	// 0163 (settlement-resolve) with them; the same Apply runs all six.
+	if ledgerAfter != ledgerBefore+6 {
+		t.Fatalf("ledger grew by %d, want exactly 6 (0077, post_river/0016, 0137, post_river/0022, 0150 and 0163, once)", ledgerAfter-ledgerBefore)
 	}
 	if extra := append(mciDiff(post1.acl, post2.acl), mciDiff(post2.acl, post1.acl)...); len(extra) != 0 {
 		t.Fatalf("the second Apply changed privileges:\n  %s", mciHead(extra))
@@ -905,7 +908,7 @@ func slsUpgrade(t *testing.T) {
 // slsSettlementDelta recognises exactly the privileges migration 0150 (W4-S2 settlement ledger) adds, per role (Opus review P2-6: no wildcard):
 //   - commerce_payment_registry_writer: any privilege on its own settlement tables/functions/triggers, and SELECT on exactly the existing-table
 //     columns the attribution reads use (stripe_sessions six columns, stripe_refunds four, payment_attempts.order_id);
-//   - commerce_payment_registrar: EXECUTE on the four operator functions only;
+//   - commerce_payment_registrar: EXECUTE on the five operator functions only (0163 adds record_settlement_resolution);
 //   - commerce_runtime: EXECUTE on read_store_settlements only.
 //
 // Nobody else (checkout writer, workers, ingress) gains anything. The same sets are pinned from the 0150 side by TestPlatformSettlement/PF09_schema.
@@ -929,7 +932,8 @@ func slsSettlementDelta(role, kind, obj, priv string) bool {
 		}
 	case "commerce_payment_registrar":
 		return kind == "exec" && priv == "EXECUTE" && (obj == "payments.record_settlement_lines" || obj == "payments.close_settlement" ||
-			obj == "payments.record_settlement_payout" || obj == "payments.read_settlement_statement")
+			obj == "payments.record_settlement_payout" || obj == "payments.read_settlement_statement" ||
+			obj == "payments.record_settlement_resolution")
 	case "commerce_runtime":
 		return kind == "exec" && priv == "EXECUTE" && obj == "payments.read_store_settlements"
 	}

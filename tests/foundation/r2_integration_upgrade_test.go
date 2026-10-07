@@ -71,8 +71,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0159 (W6-05B operations ledger) adds one more: 84 -> 85.
 	// 0160 (W6-06B Meta ad-account unbind + catalog feed URL) adds one more: 85 -> 86.
 	// 0161 (PAY-RM1 drops the never-deployed W4-01B notify receiver; forward-only, no data) adds one: 86 -> 87.
-	if len(r2) != 87 {
-		t.Fatalf("R2 migration set = %d files %v, want 87", len(r2), r2)
+	// 0163 (S2-OPEN-1 settlement-resolve: append-only resolutions of unmapped_source rows + the in-place close patch) adds one more: 87 -> 88.
+	if len(r2) != 88 {
+		t.Fatalf("R2 migration set = %d files %v, want 88", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
