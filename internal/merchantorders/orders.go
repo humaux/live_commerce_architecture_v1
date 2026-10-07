@@ -411,8 +411,12 @@ func validSummary(v Summary) bool {
 	}
 	// stripe-refund-v1 §7.1 / manual-fulfilment-v1 §5.1 invariants.
 	// READY work belongs to a CONFIRMED order that is still being shipped, or (W3-08B, returns-v1 §3) to a merchant-cancelled paid order:
-	// nothing ever closes the payment work item, and a cancel after a full refund or after a failed in-flight refund (the cancel-refund
-	// gap) leaves it READY. Rejecting that row 503'd the WHOLE store list and the order detail.
+	// nothing ever closed the payment work item, and a cancel after a full refund or after a failed in-flight refund (the cancel-refund
+	// gap) left it READY. Rejecting that row 503'd the WHOLE store list and the order detail.
+	// 0162 (returns-v1 §3 Amendment) closes the root cause: merchant_cancel_order DELETEs the READY work item inside the cancel
+	// transaction, and the 0162 backfill closed the legacy rows EXCEPT cancelled orders with an outstanding cancel-refund gap —
+	// money that still needs a human keeps its READY row by design. The CANCELLED+READY acceptance below now protects exactly
+	// those open-gap rows (and any pre-0162 database the migration has not run on yet).
 	if v.WorkState == "READY" && !(captured(v.PaymentState) &&
 		((v.CommercialState == "CONFIRMED" && (v.FulfillmentState == "MANUAL_UNASSIGNED" || v.FulfillmentState == "MERCHANT_SHIPPED" || v.FulfillmentState == "PROVIDER_LABEL_CREATED")) ||
 			(v.CommercialState == "CANCELLED" && v.FulfillmentState == "CANCELLED"))) {
