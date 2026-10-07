@@ -154,6 +154,11 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await page.keyboard.press("ArrowRight"); await expect(page.getByTestId("reports-tab-channels")).toBeFocused();
         await page.keyboard.press("End"); await expect(page.getByTestId("reports-tab-manual-orders")).toHaveAttribute("aria-selected", "true");
       }, "keyboard");
+      await step(page, "Select Channels", "the Channels tab is selected and recorded in the address", async () => {
+        await page.getByTestId("reports-tab-channels").click();
+        await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
+        await expect(page).toHaveURL(/report=channels/);
+      });
       await fill(page, page.getByTestId("reports-from"), "2026-09-02", c.from);
       await step(page, "Edited range not applied", "CSV stays disabled until Show applies the edited range", async () => {
         await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
@@ -161,6 +166,10 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       await step(page, "Show report", "date change navigates and survives refresh", async () => {
         await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-09-02/);
         await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-09-02");
+        // Codex review P2 (PR #3): the selected report tab survives Show and refresh instead of resetting to Products.
+        await expect(page).toHaveURL(/report=channels/);
+        await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
+        await expect(page.getByTestId("reports-tab-products")).toHaveAttribute("aria-selected", "false");
       });
       await fits(page);
     } finally { await context.close(); }

@@ -12,7 +12,7 @@ import { useGuardedRead, ReadError, type ReadCode } from "@/lib/customers-client
 import { financeDay } from "@/lib/customers-model";
 import { readOrderActions, OrderReadError } from "@/lib/orders-client";
 import { reportNames, validReportsQuery, type ReportName } from "@/lib/reports-request";
-import { readReport, downloadReport, exportOutcome, type ReportDownload } from "@/lib/reports-client";
+import { readReport, downloadReport, exportOutcome, loadUncertainScopes, rememberUncertainScope, type ReportDownload } from "@/lib/reports-client";
 import { reportsCopy } from "@/lib/reports-copy";
 import type { ProductSort } from "@/lib/reports-presentation";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -24,26 +24,34 @@ import "./reports.css";
 /** Frozen report page props; initial dates are optional and otherwise use the last 30 Taipei days. */
 export type ReportsProps = {
   locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
-  initialFrom?: string; initialTo?: string;
+  initialFrom?: string; initialTo?: string; initialTab?: ReportName;
 };
 
 /** Render reports with guarded reads and session-bound CSV download; never owns financial facts. */
 export function Reports(props: ReportsProps) {
-  // A new server render resets controls, export uncertainty and aborted read scope together.
+  // A new server render resets controls and the aborted read scope; uncertain export locks persist in tab sessionStorage.
   return <ReportsWorkspace key={`${props.renderKey}|${props.store?.id ?? ""}`} {...props} />;
 }
 
-function ReportsWorkspace({ locale, stores, store, initialError, renderKey, initialFrom, initialTo }: ReportsProps) {
+function ReportsWorkspace({ locale, stores, store, initialError, renderKey, initialFrom, initialTo, initialTab }: ReportsProps) {
   const c = reportsCopy[locale], router = useRouter();
   const [defaults] = useState(() => { const now = new Date(); return { from: financeDay(now, -29), to: financeDay(now) }; });
   const from = initialFrom ?? defaults.from, to = initialTo ?? defaults.to;
   const [draftFrom, setDraftFrom] = useState(from), [draftTo, setDraftTo] = useState(to);
-  const [tab, setTab] = useState<ReportName>("products");
+  const [tab, setTab] = useState<ReportName>(initialTab ?? "products");
+  // Keep the selected tab in the address so refresh restores it (Show carries it too); replaceState adds no history entry.
+  const selectTab = (name: ReportName) => {
+    setTab(name);
+    try { const u = new URL(window.location.href); u.searchParams.set("report", name); window.history.replaceState(window.history.state, "", u); } catch { /* the in-memory tab still applies */ }
+  };
   const [sort, setSort] = useState<ProductSort>("net_minor"), [ascending, setAscending] = useState(false);
   const [exportView, setExportView] = useState<{ scope: string; outcome: ReportDownload | "busy" } | null>(null);
-  const [uncertainScopes, setUncertainScopes] = useState<string[]>([]); // reset only by a new server render (workspace key)
+  // I06: unresolved uncertain exports persist per browser tab (sessionStorage by store), so re-renders and refresh never re-enable them.
+  const [uncertainScopes, setUncertainScopes] = useState<string[]>([]);
+  useEffect(() => { if (store) setUncertainScopes((u) => [...new Set([...u, ...loadUncertainScopes(store.id)])]); }, [store]);
   const exporting = useRef(false), exportController = useRef<AbortController | null>(null);
-  const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`;
+  const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${from}|${to}|${tab}`; // read lifecycle: new per server render
+  const lockScope = `${store?.id ?? ""}|${from}|${to}|${tab}`; // export lock: stable across renders
   const valid = validReportsQuery("products", `/?from=${draftFrom}&to=${draftTo}`);
   const validQuery = validReportsQuery("products", `/?from=${from}&to=${to}`);
   const permissions = store?.permissions;
@@ -77,7 +85,7 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
 
   const navigate = (storeID: string) => {
     if (!valid || !storeID) return;
-    router.push(`/${locale}/finance/reports?store=${storeID}&from=${draftFrom}&to=${draftTo}`);
+    router.push(`/${locale}/finance/reports?store=${storeID}&from=${draftFrom}&to=${draftTo}&report=${tab}`);
   };
   const submit = (event: FormEvent) => { event.preventDefault(); if (store) navigate(store.id); };
   const keyTabs = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -85,24 +93,24 @@ function ReportsWorkspace({ locale, stores, store, initialError, renderKey, init
     const next = event.key === "ArrowRight" ? (at + 1) % 4 : event.key === "ArrowLeft" ? (at + 3) % 4
       : event.key === "Home" ? 0 : event.key === "End" ? 3 : -1;
     if (next < 0) return;
-    event.preventDefault(); setTab(reportNames[next]);
+    event.preventDefault(); selectTab(reportNames[next]);
     event.currentTarget.querySelector<HTMLButtonElement>(`[data-report="${reportNames[next]}"]`)?.focus();
   };
   const tabProps = (name: ReportName) => ({
     id: `reports-tab-${name}`, role: "tab", "aria-selected": tab === name, "aria-controls": `reports-panel-${name}`,
-    tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => setTab(name), type: "button" as const,
+    tabIndex: tab === name ? 0 : -1, "data-report": name, onClick: () => selectTab(name), type: "button" as const,
   });
-  const outcome = exportOutcome(scope, exportView, uncertainScopes);
+  const outcome = exportOutcome(lockScope, exportView, uncertainScopes);
   const canExport = read.status === "ready" && !!read.data?.canExport && !exporting.current && outcome !== "uncertain" && valid && draftFrom === from && draftTo === to; // export only the applied range: an edited-but-not-shown range must not download the old one (Codex review P2, PR #3)
   const exportCSV = async () => {
     if (!store || !canExport || !read.boundary) return;
     exporting.current = true;
     const active = new AbortController(); exportController.current = active;
-    setExportView({ scope, outcome: "busy" });
+    setExportView({ scope: lockScope, outcome: "busy" });
     const result = await downloadReport(store.id, tab, from, to, read.boundary, active.signal);
     exporting.current = false;
-    setExportView({ scope, outcome: result });
-    if (result === "uncertain") setUncertainScopes((u) => (u.includes(scope) ? u : [...u, scope]));
+    setExportView({ scope: lockScope, outcome: result });
+    if (result === "uncertain") { const kept = rememberUncertainScope(store.id, lockScope); setUncertainScopes((u) => [...new Set([...u, ...kept, lockScope])]); }
     // A signed-out result must hide stale numbers; the guarded read rechecks server session authority.
     if (result === "signed-out") read.reload();
   };

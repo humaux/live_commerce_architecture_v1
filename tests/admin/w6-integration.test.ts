@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
+import { canSeeReports } from "../../apps/admin/lib/customers-model.ts";
 import { customersCopy } from "../../apps/admin/lib/customers-copy.ts";
 import { routes, visibleGroups } from "../../apps/admin/src/routes.ts";
 import { w6RealBoundary, W6_TAG } from "./w6-real-route-loader.mjs";
@@ -50,6 +51,16 @@ test("customer list dispatch preserves legacy requests and sends every tag query
       } else { assert.equal((await response.json()).code, "invalid_request"); assert.equal(boundary.calls.length, 0); }
     }
   } finally { boundary.restore(); }
+});
+// Codex review P2 (PR #3): a legacy Store without a permission list must still reach reports (the BFF/Go authorize).
+test("customers reports link is hidden only when permissions are present and lack orders:read", () => {
+  assert.equal(canSeeReports({ permissions: undefined }), true);
+  assert.equal(canSeeReports({}), true);
+  assert.equal(canSeeReports({ permissions: ["orders:read"] }), true);
+  assert.equal(canSeeReports({ permissions: ["customers:read"] }), false);
+  assert.equal(canSeeReports({ permissions: [] }), false);
+  assert.equal(canSeeReports(null), false);
+  assert.match(source, /store && canSeeReports\(store\) && <Link[^>]*customers-reports/);
 });
 test("reports are a finance subpage and preserve the existing single finance navigation entry", () => {
   const finance = routes.filter((route) => route.group === "finance");

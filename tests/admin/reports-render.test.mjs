@@ -258,3 +258,32 @@ test("an uncertain export stays locked for its scope after another scope's expor
   assert.equal(client.exportOutcome(b, null, []), null);
   assert.equal(client.exportOutcome(a, {scope:a,outcome:"busy"}, []), "busy");
 });
+
+// Codex review P2 (PR #3): the UNKNOWN-export lock survives server renders and refresh (tab sessionStorage by store, no PII);
+// storage failure keeps the in-memory behaviour instead of throwing.
+function memoryStorage(seed = {}) {
+  const data = new Map(Object.entries(seed));
+  return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => { data.set(k, String(v)); }, data };
+}
+test("an uncertain export scope persists per store in tab storage and re-locks a fresh render", () => {
+  const client = downloadClient({cookie:"csrf-pair",boundary:"session"});
+  const storage = memoryStorage();
+  const scope = `${id}|${from}|${to}|products`, other = `${id}|2026-09-02|${to}|products`;
+  assert.deepEqual(client.loadUncertainScopes(id, storage), []);
+  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
+  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
+  assert.deepEqual(client.rememberUncertainScope(id, other, storage), [scope, other]);
+  // A new render (fresh workspace state) reads the stored set and keeps the same scope locked.
+  assert.equal(client.exportOutcome(scope, null, client.loadUncertainScopes(id, storage)), "uncertain");
+  assert.equal(client.exportOutcome(`${id}|${from}|${to}|channels`, null, client.loadUncertainScopes(id, storage)), null);
+  assert.deepEqual(client.loadUncertainScopes("22222222-2222-4222-8222-222222222222", storage), []);
+  for (const raw of ["not json", "{}", "[1,null]"]) assert.deepEqual(client.loadUncertainScopes(id, memoryStorage({[`lc.reports.uncertain.${id}`]: raw})), []);
+  assert.doesNotMatch([...storage.data.values()].join(), /@|render/);
+});
+test("unavailable tab storage fails closed to the in-memory lock without throwing", () => {
+  const client = downloadClient({cookie:"csrf-pair",boundary:"session"});
+  const broken = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } };
+  assert.deepEqual(client.loadUncertainScopes(id, broken), []);
+  assert.deepEqual(client.rememberUncertainScope(id, "s", broken), ["s"]);
+  assert.deepEqual(client.rememberUncertainScope(id, "s", null), ["s"]);
+});

@@ -55,10 +55,29 @@ export async function readReport(store: Store, name: ReportName, from: string, t
 export type ReportDownload = "done" | "signed-out" | "forbidden" | "not-found" | "unavailable" | "uncertain";
 
 /** I06 across tabs: an export scope that ever came back uncertain stays locked (no resubmission of a keyless audited GET that
- * may have committed) even after another scope exports; only a new server render (a fresh workspace) clears it. */
+ * may have committed) even after another scope exports or the page re-renders (the set lives in tab sessionStorage; no automatic clearing). */
 export function exportOutcome(scope: string, last: { scope: string; outcome: ReportDownload | "busy" } | null, uncertain: readonly string[]): ReportDownload | "busy" | null {
   if (uncertain.includes(scope)) return "uncertain";
   return last?.scope === scope ? last.outcome : null;
+}
+
+const lockKey = (store: string) => `lc.reports.uncertain.${store}`;
+const tabStorage = (): Pick<Storage, "getItem" | "setItem"> | null => { try { return globalThis.sessionStorage ?? null; } catch { return null; } };
+
+/** Unresolved uncertain export scopes of this browser tab (sessionStorage, per store). Scopes are store|from|to|report, no PII.
+ * Fails closed to the in-memory lock: unavailable or corrupt storage reads as none, never throws. */
+export function loadUncertainScopes(store: string, storage = tabStorage()): string[] {
+  try {
+    const parsed: unknown = JSON.parse(storage?.getItem(lockKey(store)) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch { return []; }
+}
+
+/** Record one uncertain scope for the rest of the tab session and return the stored set (a write failure is swallowed). */
+export function rememberUncertainScope(store: string, scope: string, storage = tabStorage()): string[] {
+  const next = [...new Set([...loadUncertainScopes(store, storage), scope])];
+  try { storage?.setItem(lockKey(store), JSON.stringify(next)); } catch { /* in-memory lock still holds */ }
+  return next;
 }
 
 /** Perform one CSV GET after a session/CSRF check; a changed session conceals bytes, never retries. */
