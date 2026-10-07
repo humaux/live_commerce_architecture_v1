@@ -1,12 +1,15 @@
 // Purpose: keep operation states, refusals and actions readable in all three locales.
 // Depends on: @live-commerce/i18n locale type; W6-05B machine codes.
-// Used by: OperationsLedger and locale parity gates.
+// Used by: OperationsLedger, OperationFacts, SettingsWizard and Node locale gates.
+// Invariants: I11; unrecognised codes never become merchant-facing copy.
 import type { Locale } from "@live-commerce/i18n";
 const en = {
   title: "Operations ledger",
   subtitle:
     "Review failed or uncertain external operations. Actions depend on the server's current decision.",
   settings: "Store settings",
+  switchStore: "Ledger store",
+  reasonFallback: "Additional details are not available.",
   ads: "Ad settings",
   filter: "State",
   refresh: "Refresh",
@@ -57,6 +60,14 @@ const en = {
     CANCELLED: "Cancelled",
   },
   reasons: {
+    query_requested: "Status query requested",
+    retry_authorized: "Retry authorized",
+    requeue_authorized: "Operation queued again",
+    cancelled_by_merchant: "Cancelled by merchant",
+    provider_failed: "Provider reported a failure",
+    provider_unknown: "Provider result unknown",
+    reconcile_budget_exhausted: "Query budget exhausted",
+
     protective_operation:
       "This is a protective operation (such as pausing an ad) and cannot be cancelled.",
     reconcile_first: "The result is unknown. Query first.",
@@ -90,6 +101,8 @@ const tw: Copy = {
   title: "失敗台賬",
   subtitle: "核對失敗或結果未知的外部操作；可執行動作以伺服器當前判定為準。",
   settings: "商店設定",
+  switchStore: "台賬商店",
+  reasonFallback: "沒有其他詳細資訊。",
   ads: "廣告設定",
   filter: "狀態",
   refresh: "重新整理",
@@ -139,6 +152,14 @@ const tw: Copy = {
     CANCELLED: "已取消",
   },
   reasons: {
+    query_requested: "已請求查詢狀態",
+    retry_authorized: "已授權重試",
+    requeue_authorized: "操作已重新排入佇列",
+    cancelled_by_merchant: "商家已取消",
+    provider_failed: "服務平台回報失敗",
+    provider_unknown: "服務平台結果未知",
+    reconcile_budget_exhausted: "查詢額度已用盡",
+
     protective_operation: "此操作是保護性操作（例如暫停廣告），不可取消。",
     reconcile_first: "結果未知，請先查詢。",
     query_limit: "已達每日查詢上限。",
@@ -165,6 +186,8 @@ const cn: Copy = {
   title: "失败台账",
   subtitle: "核对失败或结果未知的外部操作；可执行动作以服务器当前判定为准。",
   settings: "店铺设置",
+  switchStore: "台账店铺",
+  reasonFallback: "没有其他详细信息。",
   ads: "广告设置",
   filter: "状态",
   refresh: "刷新",
@@ -214,6 +237,14 @@ const cn: Copy = {
     CANCELLED: "已取消",
   },
   reasons: {
+    query_requested: "已请求查询状态",
+    retry_authorized: "已授权重试",
+    requeue_authorized: "操作已重新排入队列",
+    cancelled_by_merchant: "商家已取消",
+    provider_failed: "服务平台报告失败",
+    provider_unknown: "服务平台结果未知",
+    reconcile_budget_exhausted: "查询额度已用尽",
+
     protective_operation: "此操作是保护性操作（例如暂停广告），不可取消。",
     reconcile_first: "结果未知，请先查询。",
     query_limit: "已达每日查询上限。",
@@ -241,3 +272,12 @@ export const operationsCopy: Record<Locale, Copy> = {
   "zh-TW": tw,
   "zh-CN": cn,
 };
+
+/** Translate only registered reasons; unknown codes disclose no internal provider details. */
+export function operationReasonText(locale: Locale, code: string): string {
+  const c = operationsCopy[locale];
+  if (!code) return "—";
+  return Object.hasOwn(c.reasons, code)
+    ? c.reasons[code as keyof typeof c.reasons]
+    : c.reasonFallback;
+}

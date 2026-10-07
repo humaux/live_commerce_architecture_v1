@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import type { OperationDetail } from "@/lib/operations-model";
-import { operationsCopy } from "@/lib/operations-copy";
+import { operationReasonText, operationsCopy } from "@/lib/operations-copy";
 /** Render only the server's closed public metadata and an already-validated object link. */
 export function OperationFacts({
   detail,
@@ -36,7 +36,7 @@ export function OperationFacts({
         <dt>{c.updated}</dt>
         <dd>{displayTime(locale, detail.updated_at)}</dd>
         <dt>{c.reason}</dt>
-        <dd>{detail.reason_code || "—"}</dd>
+        <dd>{operationReasonText(locale, detail.reason_code)}</dd>
         <dt>{c.object}</dt>
         <dd>{object}</dd>
       </dl>
@@ -63,7 +63,7 @@ export function OperationEvents({
             <span>
               {stateText(e.state)} · {c.attempts}: {e.generation}
             </span>
-            <p>{e.reason_code || "—"}</p>
+            <p>{operationReasonText(locale, e.reason_code)}</p>
             <time dateTime={e.created_at}>
               {displayTime(locale, e.created_at)}
             </time>

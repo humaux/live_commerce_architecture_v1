@@ -383,7 +383,7 @@ function InFlightDetails({c,value}:{c:AdsCopy;value:AdsInFlight}) {
   return <div className="ads-bad" role="alert" data-testid="ads-unbind-in-flight">
     <p>{c.errors.operations_in_flight}</p><p data-testid="ads-unbind-total">{c.inFlightTotal(value.operations_total,value.operations.length)}</p>
     <ul className="ads-list">{value.operations.map((op)=> <li key={op.operation_id}>
-      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{op.state}</span>
+      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{c.opStates[op.state]}</span>
     </li>)}</ul>
   </div>;
 }

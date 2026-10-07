@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant setup sequence and composes integration settings cards.
-// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
+// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/operations-copy, @/lib/operations-model, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
 // Used by: apps/admin/app/[locale]/settings/page.tsx
 "use client";
 
@@ -24,6 +24,7 @@ import {
 } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { operationsCopy } from "@/lib/operations-copy";
+import { canReadOperations } from "@/lib/operations-model";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { LogisticsSettings } from "./LogisticsSettings";
@@ -1647,7 +1648,7 @@ export function SettingsWizard({
     >
       <div className="settings-page" data-testid="settings-wizard">
         <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
-        {store && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
+        {store && canReadOperations(store) && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
         <ol className="settings-steps" aria-label={c.title}>
           {c.steps.map((label, index) => {
             const number = (index + 1) as 1 | 2 | 3 | 4;

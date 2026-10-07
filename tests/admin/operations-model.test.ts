@@ -1,5 +1,5 @@
 // Purpose: exercise W6-U2 closed DTO, capability, request and locale boundaries.
-// Depends on: node:test/assert; operations-model/request/copy and shell route registry.
+// Depends on: node:test/assert; operations-model/request/copy and ads-copy.
 // Used by: test-node.sh; no provider or buyer data.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -18,6 +18,9 @@ import {
   operationQueryWaitSeconds,
 } from "../../apps/admin/lib/operations-request.ts";
 import { operationsCopy } from "../../apps/admin/lib/operations-copy.ts";
+import * as operationCopyModule from "../../apps/admin/lib/operations-copy.ts";
+import * as operationModelModule from "../../apps/admin/lib/operations-model.ts";
+import { adsCopy } from "../../apps/admin/lib/ads-copy.ts";
 const id = "a1000000-0000-4000-8000-000000000001";
 const cap = (available: boolean, reason = "") => ({ available, reason });
 const row = {
@@ -209,4 +212,110 @@ test("query backoff affects only its operation and expires without another actio
   assert.equal(operationQueryWaitSeconds(id, wait, 9001), 1);
   assert.equal(operationQueryWaitSeconds("other", wait, 9001), 0);
   assert.equal(operationQueryWaitSeconds(id, wait, 10000), 0);
+});
+
+test("merchant reason text translates ledger events and conceals unknown or prototype codes", () => {
+  assert.equal(typeof operationCopyModule.operationReasonText, "function");
+  const reason = operationCopyModule.operationReasonText;
+  const expected = {
+    en: [
+      "Status query requested",
+      "Retry authorized",
+      "Operation queued again",
+      "Cancelled by merchant",
+      "Provider reported a failure",
+      "Provider result unknown",
+      "Query budget exhausted",
+    ],
+    "zh-TW": [
+      "已請求查詢狀態",
+      "已授權重試",
+      "操作已重新排入佇列",
+      "商家已取消",
+      "服務平台回報失敗",
+      "服務平台結果未知",
+      "查詢額度已用盡",
+    ],
+    "zh-CN": [
+      "已请求查询状态",
+      "已授权重试",
+      "操作已重新排入队列",
+      "商家已取消",
+      "服务平台报告失败",
+      "服务平台结果未知",
+      "查询额度已用尽",
+    ],
+  };
+  const codes = [
+    "query_requested",
+    "retry_authorized",
+    "requeue_authorized",
+    "cancelled_by_merchant",
+    "provider_failed",
+    "provider_unknown",
+    "reconcile_budget_exhausted",
+  ];
+  const fallback = {
+    en: "Additional details are not available.",
+    "zh-TW": "沒有其他詳細資訊。",
+    "zh-CN": "没有其他详细信息。",
+  };
+  const labels = {
+    en: "Ledger store",
+    "zh-TW": "台賬商店",
+    "zh-CN": "台账店铺",
+  };
+  for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+    for (const [index, code] of codes.entries())
+      assert.equal(reason(locale, code), expected[locale][index]);
+    assert.equal(reason(locale, ""), "—");
+    assert.equal(operationsCopy[locale].switchStore, labels[locale]);
+    assert.equal(operationsCopy[locale].reasonFallback, fallback[locale]);
+    assert.equal(
+      Object.hasOwn(operationsCopy[locale].reasons, "synthetic_unknown"),
+      false,
+    );
+    for (const code of [
+      "synthetic_unknown",
+      "new_provider_reason",
+      "constructor",
+      "toString",
+      "__proto__",
+    ])
+      assert.equal(
+        reason(locale, code),
+        fallback[locale],
+        `${locale}: ${code}`,
+      );
+    assert.equal(
+      reason(locale, "protective_operation"),
+      operationsCopy[locale].reasons.protective_operation,
+    );
+    assert.equal(
+      reason(locale, "reconcile_first"),
+      operationsCopy[locale].reasons.reconcile_first,
+    );
+    assert.equal(
+      adsCopy[locale].opStates.UNKNOWN,
+      { en: "Result unknown", "zh-TW": "結果未知", "zh-CN": "结果未知" }[
+        locale
+      ],
+    );
+  }
+});
+
+test("ledger read navigation requires effective integration:read permission regardless of role", () => {
+  assert.equal(typeof operationModelModule.canReadOperations, "function");
+  const canRead = operationModelModule.canReadOperations;
+  for (const store of [
+    null,
+    {},
+    { role: "owner" },
+    { role: "owner", permissions: [] },
+    { role: "staff", permissions: ["integration:execute"] },
+    { role: "owner", permissions: ["ads:read"] },
+  ])
+    assert.equal(canRead(store), false);
+  for (const role of ["owner", "staff", "custom", undefined])
+    assert.equal(canRead({ role, permissions: ["integration:read"] }), true);
 });

@@ -1,0 +1,41 @@
+{
+  "runs": [
+    {
+      "name": "final registry/header",
+      "session_id": 34457,
+      "log": "check-gates.log",
+      "timeout_seconds": 600,
+      "status": "ended",
+      "exit": 0
+    },
+    {
+      "name": "browser-tag vet",
+      "session_id": 90286,
+      "log": "vet.log",
+      "timeout_seconds": 600,
+      "status": "ended",
+      "exit": 0
+    },
+    {
+      "name": "Node gates",
+      "session_id": 60119,
+      "log": "node.log",
+      "timeout_seconds": 900,
+      "status": "ended",
+      "exit": 0
+    },
+    {
+      "name": "admin tsc",
+      "session_id": 36710,
+      "log": "tsc.log",
+      "timeout_seconds": 600,
+      "status": "ended",
+      "exit": 0
+    }
+  ],
+  "success": "each actual exit0; no false PASS after failure",
+  "failure": "nonzero/FAIL/type/header/registry errors; root diagnoses",
+  "wake": "root active session collects each completion; final forbidden while run remains active",
+  "status": "all-ended",
+  "unattended_runs": 0
+}

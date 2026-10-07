@@ -1,6 +1,6 @@
 // Purpose: parse the closed W6-05B operation ledger projection and safe business links.
 // Depends on: native JavaScript; contracts/external-operation-v1 Amendment W6-05B.
-// Used by: OperationsLedger, operations-client, authenticated admin BFF and Node gates.
+// Used by: OperationsLedger, SettingsWizard, operations-client, admin BFF and Node gates.
 // Invariants: I01/I06/I11; no provider body, payload or buyer data enters this model.
 export const operationID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -205,4 +205,11 @@ export function canOperate(
     (store.role === "owner" ||
       store.permissions?.includes("integration:execute") === true)
   );
+}
+
+/** Show read navigation only after the authenticated store supplies its effective permission. */
+export function canReadOperations(
+  store: { role?: string | null; permissions?: string[] } | null,
+): boolean {
+  return store?.permissions?.includes("integration:read") === true;
 }

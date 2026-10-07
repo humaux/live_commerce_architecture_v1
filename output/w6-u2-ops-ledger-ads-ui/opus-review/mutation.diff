@@ -1,0 +1,10 @@
+--- clean/OperationsLedger.tsx
++++ mutant/OperationsLedger.tsx
+@@ -507,6 +507,7 @@
+               locale={locale}
+               object={object(detail)}
+             />
++            {detail.object?.kind === "order" && <p data-testid="ops-leak-mutation">SYNTHETIC-DO-NOT-EXPOSE</p>}
+             {detail.state === "UNKNOWN" && <p>{c.unknown}</p>}
+             <div className="operations-actions">
+               {(["query", "cancel", "retry"] as const).map((a) =>

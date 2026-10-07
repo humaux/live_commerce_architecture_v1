@@ -35,19 +35,28 @@ async function login(page: Page, target = origin) {
   await page.context().clearCookies();
   await page.goto(`${target}/en/`);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
+  await expect(page.getByRole("combobox", { name: "Switch store", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in with identity service" })).toHaveCount(0);
 }
 async function ledger(page: Page, locale = "en", operation?: string) {
   await page.goto(`${origin}/${locale}/settings/operations?store=${store}${operation ? `&operation=${operation}` : ""}`);
   await expect(page.getByTestId("operations-ledger")).toBeVisible();
-  if (operation) {
-    await expect(page.getByTestId("operation-drawer")).toBeVisible();
-    await expect(page.getByTestId("operation-drawer")).toContainText(operation);
-  }
+  if (operation) await detailLoaded(page, operation);
+  else await expect(page.getByTestId(`operation-row-${ops.query}`)).toBeVisible();
+}
+async function detailLoaded(page: Page, id: string) {
+  await expect(page.getByTestId("operation-drawer")).toBeVisible();
+  await expect(page.getByTestId("operation-drawer")).toContainText(id);
+}
+async function foreignViewLoaded(page: Page) {
+  // Positive row proves the other store's list has finished; the error proves its scoped detail request finished.
+  await expect(page.getByTestId(`operation-row-${ops.foreign}`)).toBeVisible();
+  await expect(page.getByTestId("operation-drawer")).toBeVisible();
+  await expect(page.getByTestId("operation-drawer")).toContainText("Operations could not be loaded. Refresh to try again.");
 }
 async function open(page: Page, name: string) {
   await clicked(page, `operation-open-${ops[name]}`, "drawer exposes selected operation", async () => {
-    await expect(page.getByTestId("operation-drawer")).toContainText(ops[name]);
+    await detailLoaded(page, ops[name]);
   });
 }
 async function action(page: Page, name: "query" | "cancel" | "retry", expected: string, verify: () => Promise<void>) {
@@ -86,10 +95,12 @@ async function shot(page: Page, name: string, locale: string, viewport: string) 
 
 test("ledger filters, details, capabilities, object links, next page and store isolation", async ({ page }) => {
   await login(page); await ledger(page);
+  await expect(page.getByTestId(`operation-row-${ops.query}`)).toBeVisible();
   await expect(page.getByTestId(`operation-row-${ops.foreign}`)).toHaveCount(0);
   await open(page, "query");
-  await expect(page.getByTestId("operation-drawer")).toContainText("synthetic_unknown");
-  await clicked(page, "operation-detail-refresh", "drawer events refresh", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("synthetic_unknown"); });
+  await expect(page.getByTestId("operation-drawer")).toContainText("Additional details are not available.");
+  const detailRefresh = page.waitForResponse(r => r.url().endsWith(`/operations/${ops.query}`) && r.request().method() === "GET");
+  await clicked(page, "operation-detail-refresh", "drawer events refresh", async () => { expect((await detailRefresh).status()).toBe(200); await detailLoaded(page, ops.query); await expect(page.getByTestId("operation-drawer")).toContainText("Additional details are not available."); });
   await expect(page.getByTestId("operation-drawer")).toContainText("The result is unknown. Query");
   await expect(page.getByTestId("operation-retry")).toHaveCount(0);
   await close(page);
@@ -109,29 +120,40 @@ test("ledger filters, details, capabilities, object links, next page and store i
   await ledger(page); await open(page, "order");
   const orderLink = page.getByTestId("operation-drawer").getByRole("link").filter({ hasText: ops.order_object });
   await expect(orderLink).toHaveAttribute("href", `/en/orders?store=${store}&order=${ops.order_object}`);
+  await expect(orderLink).toBeVisible();
+  // The order projection containing the request canary is loaded before checking the public UI boundary.
+  await detailLoaded(page, ops.order);
+  await expect(page.locator("body")).not.toContainText("SYNTHETIC-DO-NOT-EXPOSE");
   await orderLink.click(); await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${store}&order=${ops.order_object}`));
-  await ledger(page); await expect(page.locator("body")).not.toContainText("SYNTHETIC-DO-NOT-EXPOSE");
+  await ledger(page);
   await clicked(page, "operations-next", "second page loads", async () => { await expect(page.locator('[data-testid^="operation-row-"]')).toHaveCount(19); await expect(page.getByTestId(`operation-row-${ops.query}`)).toHaveCount(0); });
-  await clicked(page, "operations-refresh", "current page refreshed", async () => { await expect(page.locator('[data-testid^="operation-row-"]')).toHaveCount(19); await expect(page.getByTestId(`operation-row-${ops.query}`)).toHaveCount(0); });
+  const listRefresh = page.waitForResponse(r => r.url().includes(`/stores/${store}/operations?`) && r.request().method() === "GET");
+  await clicked(page, "operations-refresh", "current page refreshed", async () => { expect((await listRefresh).status()).toBe(200); await expect(page.locator('[data-testid^="operation-row-"]')).toHaveCount(19); await expect(page.getByTestId(`operation-row-${ops.query}`)).toHaveCount(0); });
   await page.reload(); await expect(page.getByTestId(`operation-row-${ops.query}`)).toBeVisible();
+  await page.getByTestId("operations-store").selectOption(otherStore);
+  await expect(page).toHaveURL(new RegExp(`store=${otherStore}`));
+  await expect(page.getByTestId(`operation-row-${ops.foreign}`)).toBeVisible();
   await page.goto(`${origin}/en/settings/operations?store=${otherStore}&operation=${ops.cancel}`);
+  await foreignViewLoaded(page);
   await expect(page.getByTestId("operation-drawer")).not.toContainText(ops.cancel);
   await expect(page.getByTestId(`operation-row-${ops.cancel}`)).toHaveCount(0);
-  await page.reload(); await expect(page.getByTestId(`operation-row-${ops.cancel}`)).toHaveCount(0);
+  await page.reload(); await foreignViewLoaded(page);
+  await expect(page.getByTestId("operation-drawer")).not.toContainText(ops.cancel);
+  await expect(page.getByTestId(`operation-row-${ops.cancel}`)).toHaveCount(0);
 });
 
 test("cancel, registered read retry and query persist after refresh", async ({ page }) => {
   await login(page); await ledger(page, "en", ops.cancel);
   await clicked(page, "operation-cancel", "confirmation opens", async () => { await expect(page.getByTestId("operation-confirm")).toBeVisible(); });
-  await clicked(page, "operation-confirm-dismiss", "dismiss does not cancel", async () => { await expect(page.getByTestId("operation-confirm")).not.toBeVisible(); });
-  await action(page, "cancel", "cancel persisted", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("cancelled_by_merchant"); });
-  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("cancelled_by_merchant");
+  await clicked(page, "operation-confirm-dismiss", "dismiss does not cancel", async () => { await expect(page.getByTestId("operation-cancel")).toBeVisible(); await expect(page.getByTestId("operation-confirm")).not.toBeVisible(); });
+  await action(page, "cancel", "cancel persisted", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("Cancelled by merchant"); });
+  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("Cancelled by merchant");
   await ledger(page, "en", ops.retry);
-  await action(page, "retry", "read-only retry queued", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("retry_authorized"); });
-  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("retry_authorized");
+  await action(page, "retry", "read-only retry queued", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("Retry authorized"); });
+  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("Retry authorized");
   await ledger(page, "en", ops.query);
-  await action(page, "query", "query persisted without changing UNKNOWN", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("query_requested"); });
-  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("query_requested");
+  await action(page, "query", "query persisted without changing UNKNOWN", async () => { await expect(page.getByTestId("operation-drawer")).toContainText("Status query requested"); });
+  await page.reload(); await expect(page.getByTestId("operation-drawer")).toContainText("Status query requested");
   await expect(page.getByTestId("operation-drawer")).toContainText("The result is unknown");
   await expect(page.getByTestId("operation-retry")).toHaveCount(0);
 });
@@ -141,14 +163,14 @@ test("fresh server CAS and daily query cap refuse stale confirmations", async ({
   await clicked(page, "operation-cancel", "CAS confirmation opens", async () => { await expect(page.getByTestId("operation-confirm")).toBeVisible(); });
   await control("cas");
   await clicked(page, "operation-confirm-submit", "operation_changed explains refresh", async () => { await expect(page.getByTestId("operation-feedback")).toContainText("operation changed"); });
-  await page.reload(); await expect(page.getByTestId("operation-drawer")).not.toContainText("cancelled_by_merchant");
+  await page.reload(); await detailLoaded(page, ops.cas); await expect(page.getByTestId("operation-drawer")).not.toContainText("Cancelled by merchant");
   await ledger(page, "en", ops.limit);
   await clicked(page, "operation-query", "quota confirmation opens", async () => { await expect(page.getByTestId("operation-confirm")).toBeVisible(); });
   await control("limit");
   const rejected = page.waitForResponse(r => r.url().endsWith(`/operations/${ops.limit}/query`) && r.request().method() === "POST");
   await clicked(page, "operation-confirm-submit", "query_limit shows Retry-After seconds", async () => { await expect(page.getByTestId("operation-feedback")).toContainText("daily query limit"); await expect(page.getByTestId("operation-drawer")).toContainText(/Retry after \(seconds\): [1-9][0-9]*/); });
   const response = await rejected; expect(response.status()).toBe(429); expect(Number(response.headers()["retry-after"])).toBeGreaterThan(0);
-  await page.reload(); await expect(page.getByTestId("operation-query")).toHaveCount(0);
+  await page.reload(); await detailLoaded(page, ops.limit); await expect(page.getByTestId("operation-query-reason")).toContainText("daily query limit"); await expect(page.getByTestId("operation-query")).toHaveCount(0);
 });
 
 async function ads(page: Page, locale = "en") {
@@ -171,11 +193,11 @@ test("read-only permissions hide mutation controls after reload", async ({ page 
     await expect(page.getByTestId("operation-cancel")).toHaveCount(0);
     await expect(page.getByTestId("operation-query")).toHaveCount(0);
     await expect(page.getByTestId("operation-retry")).toHaveCount(0);
-    await page.reload(); await expect(page.getByTestId("operation-cancel")).toHaveCount(0);
+    await page.reload(); await detailLoaded(page, ops.cas); await expect(page.getByTestId("operation-cancel-reason")).toContainText("permission"); await expect(page.getByTestId("operation-cancel")).toHaveCount(0);
     await ledger(page, "en", ops.reader); await expect(page.getByTestId("operation-query")).toHaveCount(0);
     await login(page, adsOrigin); await ads(page);
-    await expect(page.getByTestId("ads-unbind")).toHaveCount(0);
     await expect(page.getByTestId("ads-feed-url")).toHaveValue(feedURL);
+    await expect(page.getByTestId("ads-unbind")).toHaveCount(0);
   } finally { await control("restore"); }
 });
 
@@ -195,17 +217,30 @@ test("ad unbind refuses counting/in-flight operations, then preserves history af
   await unbind(page, "operations_in_flight lists the concrete operation", async () => {
     await expect(page.getByTestId("ads-unbind-in-flight")).toContainText(adOperation);
     await expect(page.getByTestId("ads-unbind-in-flight")).toContainText("meta.ads.activate");
-    await expect(page.getByTestId("ads-unbind-in-flight")).toContainText("UNKNOWN");
+    await expect(page.getByTestId("ads-unbind-in-flight")).toContainText("Result unknown");
   });
   await clicked(page, "ads-unbind-cancel", "in-flight dialog closes", async () => { await expect(page.getByTestId("ads-unbind-confirm")).not.toBeVisible(); });
+  // The same persisted in-flight operation must use merchant wording in every supported locale.
+  for (const [locale, stateLabel] of [["zh-TW", "結果未知"], ["zh-CN", "结果未知"]] as const) {
+    await ads(page, locale);
+    await clicked(page, "ads-unbind", "localized confirmation opens", async () => { await expect(page.getByTestId("ads-unbind-confirm")).toBeVisible(); });
+    await clicked(page, "ads-unbind-yes", "localized in-flight state", async () => {
+      await expect(page.getByTestId("ads-unbind-in-flight")).toContainText(adOperation);
+      await expect(page.getByTestId("ads-unbind-in-flight")).toContainText(stateLabel);
+      await expect(page.getByTestId("ads-unbind-in-flight")).not.toContainText("UNKNOWN");
+    });
+    await clicked(page, "ads-unbind-cancel", "localized confirmation closes", async () => { await expect(page.getByTestId("ads-unbind")).toBeVisible(); await expect(page.getByTestId("ads-unbind-confirm")).not.toBeVisible(); });
+  }
+  await ads(page);
   await control("ads/clear");
-  await unbind(page, "local account detached", async () => { await expect(page.getByTestId("ads-unbind")).toHaveCount(0); });
-  await page.reload(); await expect(page.getByTestId("ads-unbind")).toHaveCount(0);
-  await expect(page.getByTestId("ads-connections")).toContainText(account);
+  await unbind(page, "local account detached", async () => { await expect(page.getByTestId("ads-connections")).toContainText("Disabled"); await expect(page.getByTestId("ads-unbind")).toHaveCount(0); });
+  await page.reload(); await expect(page.getByTestId("ads-connections")).toContainText(account);
+  await expect(page.getByTestId("ads-connections")).toContainText("Disabled");
+  await expect(page.getByTestId("ads-unbind")).toHaveCount(0);
   await expect(page.getByTestId(`ads-draft-${draft}`)).toBeVisible();
   await control("ads/unpublish"); await page.reload();
-  await expect(page.getByTestId("ads-feed-copy")).toHaveCount(0);
   await expect(page.getByTestId("ads-feed-empty")).toContainText(/publish/i);
+  await expect(page.getByTestId("ads-feed-copy")).toHaveCount(0);
   await control("ads/publish"); await page.reload(); await expect(page.getByTestId("ads-feed-url")).toHaveValue(feedURL);
 });
 
@@ -213,9 +248,11 @@ test("ad unbind refuses counting/in-flight operations, then preserves history af
 for (const locale of ["zh-TW", "en", "zh-CN"]) for (const width of [1586, 390]) {
   test(`labels and no overflow ${locale} ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 992 }); await login(page); await ledger(page, locale);
+    await expect(page.getByTestId("operations-store")).toHaveAccessibleName(locale === "en" ? "Ledger store" : locale === "zh-TW" ? "台賬商店" : "台账店铺");
     await expect(page.getByTestId("operations-filter")).toHaveAccessibleName(/.+/);
     await expect(page.getByTestId("operations-refresh")).toHaveAccessibleName(/.+/);
-    await clicked(page, "operations-refresh", "ledger refresh completes", async () => { await expect(page.getByTestId(`operation-row-${ops.cas}`)).toBeVisible(); });
+    const refreshed = page.waitForResponse(r => r.url().includes(`/stores/${store}/operations?`) && r.request().method() === "GET");
+    await clicked(page, "operations-refresh", "ledger refresh completes", async () => { const response = await refreshed; expect(response.status()).toBe(200); await response.finished(); await expect(page.getByTestId(`operation-row-${ops.cas}`)).toBeVisible(); });
     await toolbarAligned(page);
     await open(page, "protective"); await expect(page.getByTestId("operation-drawer")).toHaveRole("dialog");
     await shot(page, "ledger", locale, width === 390 ? "mobile" : "desktop"); await close(page);

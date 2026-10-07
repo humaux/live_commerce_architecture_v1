@@ -1,0 +1,8 @@
+task_id=W6-U2-opus-ui-sub; base_commit=55a500e1206d7981add59df7fb34410a385e1205; model=gpt6.1sol medium; no commit/push/merge.
+paths=apps/admin/components/{AdsConnection,OperationFacts,SettingsWizard}.tsx; apps/admin/lib/{operations-copy,operations-model}.ts; tests/admin/operations-model.test.ts.
+exports=operations-copy.operationReasonText(locale,code); operations-model.canReadOperations(store); operationsCopy.{switchStore,reasonFallback}; Object.hasOwn guard; no synthetic_unknown label.
+selectors=settings-operations-link requires effective integration:read; ads-unbind-total unchanged; in-flight UNKNOWN=Result unknown; current/events use reason helper.
+copy=Ledger store/台賬商店/台账店铺; Additional details are not available./沒有其他詳細資訊。/没有其他详细信息。; 7 event/reason labels translated.
+commands=node --test --experimental-strip-types tests/admin/operations-model.test.ts red exit1 then green9/9 exit0; pnpm exec tsc --noEmit --incremental false -p apps/admin exit0; git diff --check exit0.
+evidence=opus-review/child-red/green.log; child-green/{green.log,tsc.log,source-hashes.txt}; source hash manifest binds six changed files.
+NOT_RUN=browser/full/heavy/SANDBOX/LIVE; independent parent integration/review required; no running child process, deps symlinks reused only.
