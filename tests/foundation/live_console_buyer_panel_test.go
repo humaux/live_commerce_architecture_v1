@@ -447,7 +447,7 @@ func TestLiveConsoleBuyerPanelUnlinkedAndI09(t *testing.T) {
 	e := bpNew(t)
 	s1 := e.session("bp-session-i09")
 	a1 := e.offer(s1, "A1", 700)
-	b1 := e.bundle(s1, "facebook", bpActorKey("bp-actor-linked"), nil, nil, false)
+	b1 := e.bundle(s1, "facebook", bpActorKey("bp-actor-linked"), &e.owner1, nil, false) // owner1 on the LINKED bundle too: an owner_id hop (b1 -> owner1 -> b2) must not leak b2
 	e.line(b1, s1, a1, 1)
 	// b2 belongs to the SAME buyer owner — but no bundle_peers row links it to the conversation.
 	b2 := e.bundle(s1, "facebook", bpActorKey("bp-actor-owned"), &e.owner1, nil, false)
