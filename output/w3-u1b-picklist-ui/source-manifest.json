@@ -1,0 +1,29 @@
+{
+  "base": "f8f01b74ad80fc26223751ce3bfdc2cb849df6c6",
+  "branch": "unit/w3-u1b-picklist-ui",
+  "source_binding_sha256": "41683bbb443dd78908f72b98870ee1f96575db9afdb0bc46c3d31cf8a7a8616a",
+  "files": {
+    "apps/admin/app/api/stores/[store]/orders/export/route.ts": "e40bffd36d98f0d53df4021e54ab5bfc8a7a9ef2800b13927e491ecbb83b69da",
+    "apps/admin/app/api/stores/[store]/orders/pick-list/route.ts": "e7c4fe82f96a18b7dc50e41f7faf5aa1df3b0e5f14ab1707dbdbe754a978cff5",
+    "apps/admin/app/api/stores/[store]/shipments/cvs-batch/route.ts": "c4b94ea3763fecaf6fd914000424dba6057f263a7e3e462126cb19b34e1e193c",
+    "apps/admin/components/CarrierExport.tsx": "309162b6dde8d0e2c520e7d091f3523149e4fe8d173516e205dfdeb895a0008a",
+    "apps/admin/components/CvsBatch.tsx": "8675b1c380bd735cf1cf146474b867ab45aa3e9d88c9e3adb0aacd588b5ad2f7",
+    "apps/admin/components/MerchantOrders.tsx": "fdf48eb37d014f9e4122df579ef8033581f87f74af584157fdb9af16cef4b4fe",
+    "apps/admin/components/PickList.tsx": "cf032beafb7fbba7ffcebff6997cd39a6d656c105efcaa1d135c8d6d7dc1bc5b",
+    "apps/admin/components/picklist.css": "69bcc8d8d442bbe1f8bce3c7461acbd8bc385a4f96038b1712594c2e2d5efc78",
+    "apps/admin/lib/picklist-client.ts": "827ed8e7958cd7c4b44ee5cb6e011676d86fe65035255330bc91685958a86102",
+    "apps/admin/lib/picklist-copy.ts": "82f02f48e2214477833fd08fb201b63eba5ec626b4c8c4e4f8b557e8cad73356",
+    "apps/admin/lib/picklist-model.ts": "43a0e0daadb0543f9a1a87a7645f127e6638871d9f575e509451921726b24f45",
+    "apps/admin/lib/picklist-proxy.ts": "a4f91072f5fabe7ccb4c76b2ff4a055bdeddc83a22828d81c9027064a563af74",
+    "apps/admin/lib/settings-client.ts": "cce0263d90a0cfea3f96c4845b9c95c378d5353d541b19d58b4eb4c62d0af21a",
+    "docs/delivery/GATES.md": "c70a43ff8d5eb87cdd7a7ed62cc6cff60458ed4221ab44e1447eef24feed6de0",
+    "scripts/dev/test-local.sh": "150902c6d6cc0ea6fd1f04c57203b88dcf6881a73bb91ffce3b7e9a49e4e2122",
+    "scripts/dev/test-node.sh": "ab83bf0601b27c235d189d4e4742090e1ef042d46540ddcb5b3bdf4b00c71359",
+    "tests/admin/fixtures/native-device.ts": "52d51618bfbc17131fa2069b58c981db5c47782cf9170bb42c54cab5066cbda6",
+    "tests/admin/orders-ui.spec.ts": "b3af238da8235f82a421f9b53596b9194f34c0436c70881bb90a410d418543a0",
+    "tests/admin/picklist-fixture.mjs": "8c4ca03e385dab897f695d66a48ce8dd5ca69b79fc246c55e8b97a35f34e15bf",
+    "tests/admin/picklist-model.test.ts": "7b767033a57397f72070c8809ee459ebf8bf779536276a41b511a50878a31f77",
+    "tests/admin/picklist.spec.ts": "019a279666bbc611da90a0ad43dab3019caf4b909d88e9d084a65f58a57ef568",
+    "tests/foundation/browser_merchant_orders_ui_test.go": "c598e4ce4ab42986c1aefbac2eec00d8fdcce5712ff3dfae704da9a9f1dc74c0"
+  }
+}

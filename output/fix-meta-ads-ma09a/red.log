@@ -1,0 +1,42 @@
+# RED (simulated Taipei midnight: draft starts 1 min after the next Taipei midnight, old test body, base 86e404a4)
+# Go PG: bash scripts/dev/test-focused.sh 'TestAdsCoreRealPG(ConnectAndBind|DraftLifecycle)$' ./internal/ads
+--- PASS: TestAdsCoreRealPGConnectAndBind (1.21s)
+=== RUN   TestAdsCoreRealPGDraftLifecycle
+    pg_flow_test.go:522: query: no rows in result set
+--- FAIL: TestAdsCoreRealPGDraftLifecycle (0.15s)
+FAIL
+FAIL	livecommerce/internal/ads	2.211s
+FAIL
+test-focused: top-level PASS=1 FAIL=1 SKIP=0 exit=1
+exit=1
+
+# TS: node --test --experimental-strip-types tests/admin/ads-model.test.ts  (defaultReportWindow still browser-local, TZ cycled)
+12-✔ connect state parser: pick list kinds and id match (0.108542ms)
+13-✔ report: three separate blocks, orders may be null, no combined figure (0.244041ms)
+14:✖ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (1.711334ms)
+15-✔ capi body and validation (0.092375ms)
+16-ℹ tests 15
+17-ℹ suites 0
+18-ℹ pass 14
+19-ℹ fail 1
+20-ℹ cancelled 0
+21-ℹ skipped 0
+22-ℹ todo 0
+23-ℹ duration_ms 146.12925
+24-
+25-✖ failing tests:
+26-
+27-test at tests/admin/ads-model.test.ts:326:1
+28:✖ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (1.711334ms)
+29-  AssertionError [ERR_ASSERTION]: 2026-10-06T16:00:00Z viewed from UTC
+30-  + actual - expected
+31-  
+32-    {
+33-  +   from: '2026-09-30',
+34-  +   to: '2026-10-06'
+35-  -   from: '2026-10-01',
+36-  -   to: '2026-10-07'
+37-    }
+38-  
+39-      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/fix-meta-ads-ma09a/tests/admin/ads-model.test.ts:338:16)
+40-      at Test.runInAsyncScope (node:async_hooks:227:14)

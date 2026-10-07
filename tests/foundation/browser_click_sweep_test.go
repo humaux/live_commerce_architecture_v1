@@ -190,7 +190,8 @@ func TestBrowserClickSweep(t *testing.T) {
 		t.Fatalf("billing service: enabled=%v err=%v", billSvc != nil && billSvc.Enabled(), err)
 	}
 	options := httpapi.Options{SessionStoreList: true, CVS: e.cvs, Accounts: accountService, Studio: true, ClaimLabels: &labels, RefundJobs: e.jobs,
-		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example"}
+		MetaConnect: metaSvc, Ads: adsSvc, Billing: billSvc, ManualOrders: mtManualOrders(t, e), StoreBaseDomain: "lctest.example",
+		PaymentProfile: "PROVIDER_MOCK"} // W4-U1: mounts payments/card so /settings/payments/card renders its real (platform NONE) state instead of "not available"
 	api := httpapi.NewHandler(f.runtime, options)
 	call := func(method, path, key string, body any, want int, out any) {
 		t.Helper()

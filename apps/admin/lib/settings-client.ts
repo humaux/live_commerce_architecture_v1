@@ -1,3 +1,6 @@
+// Purpose: browser settings transport, CSRF parsing and session fences safe to read during SSR.
+// Depends on: private settings BFF, browser cookies/fetch and Web Crypto; no server authority inferred.
+// Used by: admin settings and order flows; writes remain explicit and keyed.
 import type { APIError } from "./model";
 
 export type Pending = {
@@ -16,7 +19,9 @@ export type Pending = {
 };
 
 const cookieName = "__Host-commerce_csrf=";
+/** Return the sole valid browser CSRF cookie; SSR has no cookie authority and returns empty. */
 export function csrfCookie() {
+  if (typeof document === "undefined") return "";
   const found = document.cookie
     .split(";")
     .map((item) => item.trim())

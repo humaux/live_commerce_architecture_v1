@@ -126,15 +126,6 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 			}
 		})
 	}
-	// The PAYUNi notify ingress definers belong to the webhook ingress only: no worker authority may
-	// execute them (the role/pool gate itself is the payuni_notify_authority_test.go matrix).
-	for _, role := range []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy} {
-		var resolve, record bool
-		if err := f.owner.QueryRow(ctx, `SELECT coalesce(has_function_privilege($1,'payments.payuni_resolve_endpoint(bytea)','EXECUTE'),false),
-			coalesce(has_function_privilege($1,'payments.payuni_record_notify(bytea,bytea,text,text,bigint,text,text)','EXECUTE'),false)`, role).Scan(&resolve, &record); err != nil || resolve || record {
-			t.Errorf("%s holds PAYUNi notify ingress EXECUTE (resolve=%v record=%v err=%v)", role, resolve, record, err)
-		}
-	}
 	// The same non-payment logins are refused at the SQL level (42501 on the table, 42501 on the function), not just by catalog flags.
 	for _, role := range []string{waAds, waClaims, waExpiry} {
 		p := wasLogin(t, role)

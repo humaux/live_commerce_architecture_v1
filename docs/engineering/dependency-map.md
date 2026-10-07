@@ -25,7 +25,7 @@ Command ads-worker owns the Meta ads River host (meta-ads-v1 §6, ads-graph): th
 
 Purpose: live-console-v1 §2.3/§2.4 (unit LC-B2) — the API-side comment read-through assembly: the bridge client (shared 32-byte bearer against the claims-worker's internal bridge listener) plus the optional Meta payload keyring for the Instagram webhook fallback (social.read_comment_events → the API decrypts, §2.4).
 
-- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/merchanttools`, `internal/metaconnect`, `internal/msgtemplates`, `internal/oidclogin`, `internal/payments`, `internal/payments/payuninotify`, `internal/payments/stripewebhook`, `internal/platform`, `internal/tlsask`
+- Depends on (internal): `internal/ads`, `internal/attribution`, `internal/billing`, `internal/buyer`, `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/fulfillment`, `internal/httpapi`, `internal/httperror`, `internal/identity`, `internal/identityhttp`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/oauth`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta_ads`, `internal/integrations/metabridge`, `internal/integrations/psp/stripe`, `internal/integrations/shipping/ecpay`, `internal/live`, `internal/mail`, `internal/merchanttools`, `internal/metaconnect`, `internal/msgtemplates`, `internal/oidclogin`, `internal/payments`, `internal/payments/stripewebhook`, `internal/platform`, `internal/tlsask`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: — (entry point or unused)
 
@@ -315,7 +315,7 @@ Package accounts owns the custody of merchant-owned provider credentials: sealed
 
 - Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/psp/payuni`, `internal/integrations/psp/stripe`, `internal/pagination`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `cmd/api`, `cmd/payment-worker`, `cmd/stripe-admin`, `internal/checkout`, `internal/httpapi`, `internal/payments`, `internal/payments/payuninotify`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
+- Used by: `cmd/api`, `cmd/payment-worker`, `cmd/stripe-admin`, `internal/checkout`, `internal/httpapi`, `internal/payments`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`
 
 ## `internal/integrations/core`
 
@@ -403,7 +403,7 @@ Package payuni owns the narrow PAYUNi UPP v2.0 wire profile: hosted-form signing
 
 - Depends on (internal): —
 - Depends on (third-party): —
-- Used by: `internal/checkout`, `internal/integrations/accounts`, `internal/payments`, `internal/payments/payuninotify`
+- Used by: `internal/checkout`, `internal/integrations/accounts`, `internal/payments`
 
 ## `internal/integrations/psp/stripe`
 
@@ -557,14 +557,6 @@ Package payments owns merchant payment-method configuration (methods.go) and the
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
 - Used by: `cmd/api`, `cmd/payment-worker`, `internal/httpapi`
 
-## `internal/payments/payuninotify`
-
-Package payuninotify owns admission of signed PAYUNi NotifyURL callbacks for one registered endpoint token.
-
-- Depends on (internal): `internal/integrations/accounts`, `internal/integrations/psp/payuni`, `internal/platform`
-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/api`
-
 ## `internal/payments/platformstripe`
 
 Package platformstripe owns the merchant-facing side of platform Stripe card payments (contracts/stripe-platform-account-v1.md §3.3): read the store's state and enable or disable card payments through the designated platform Stripe account.
@@ -603,7 +595,7 @@ Package platform owns the narrow HTTP and database foundation shared by the API 
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
-- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/payuninotify`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Used by: `cmd/admin-fixture`, `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `cmd/expiry-worker`, `cmd/media-worker`, `cmd/meta-worker`, `cmd/payment-worker`, `cmd/retention-admin`, `cmd/store-admin`, `cmd/stripe-admin`, `internal/ads`, `internal/attribution/capiroute`, `internal/billing`, `internal/buyerhttp`, `internal/catalog`, `internal/checkout`, `internal/claims`, `internal/claimsintake`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httpapi`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/payments/stripeadmin`, `internal/payments/stripewebhook`, `internal/pricing`, `internal/promotions`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
 
 ## `internal/pricing`
 

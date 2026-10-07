@@ -112,9 +112,6 @@ var stripeRegistrarFunctions = []string{
 	"payments.approve_stripe_live(uuid,uuid,uuid,uuid,uuid,text,text,timestamp with time zone,bigint,bigint,text[],jsonb)",
 	"payments.record_stripe_live_canary(uuid,uuid,uuid,uuid,uuid,uuid)",
 	"payments.revoke_stripe_live(uuid,uuid,uuid,uuid,text)",
-	// w4-01b-payuni-notify (migration 0136): the operator registrar creates/rotates the SANDBOX
-	// notify endpoint token for one payuni connection. Same registrar authority, no LIVE ingress.
-	"payments.set_payuni_notify_endpoint(uuid,uuid,uuid,uuid,uuid,text,boolean,bytea)",
 	// w4-s1-platform-stripe (migration 0137, owner amendment AD-PF2): the platform operator steps. Same registrar authority;
 	// none takes a secret. The merchant functions (set/read_platform_stripe) belong to commerce_runtime, not to this list.
 	"payments.designate_stripe_platform(uuid,uuid,uuid,uuid,text,text,text,bigint)",

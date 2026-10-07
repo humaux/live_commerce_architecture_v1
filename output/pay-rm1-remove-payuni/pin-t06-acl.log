@@ -1,0 +1,5 @@
+=== RUN   TestT06WorkerAuthorityAndFunctionACL
+--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.94s)
+PASS
+ok  	livecommerce/tests/foundation	3.656s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
