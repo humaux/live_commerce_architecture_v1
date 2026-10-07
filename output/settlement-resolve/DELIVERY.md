@@ -123,3 +123,13 @@ Rulings applied as given: (a) sync guard kept; (b) closed-week refusal kept, fol
 
 ## Round 2 NOT_RUN
 SANDBOX/LIVE (unchanged); the full foundation suite and the browser gates (CI `foundation-shards`, `deploy-smoke`); the two UI node lines of `check-gates.sh`.
+
+---
+
+# Round 3 (Opus delta re-review: every round-2 fix verified; open item P1 ruled)
+- Finding: a late `assigned_to_store` row dated before any closed statement was resolvable but no close prints its note (a close prints only its own period), so the payout instruction was lost.
+- Fix (`migrations/0163`, `period_already_closed`): `AND (s.period_start=v_monday OR (p_resolution='assigned_to_store' AND s.period_start>v_monday))`. `not_store_revenue` (no payout) stays resolvable so close never stalls; the assigned case escalates to the owner. Contract §6.6/§9 and the closed-week follow-up note updated.
+- P3 runbook line added to contract §8 and `deploy/README.md`: replayed or per-store closes reprint a period's notes by design; settle each `balance_txn_id` exactly once.
+- Red first: `r3-red.log` (PF15_closed_period, test line 481: assigning the late week-0 row `txn_PF15Early` after weeks 1-3 closed returned nil instead of `period_already_closed`). Green: same test now also proves `not_store_revenue` on that row succeeds and the refused attempt wrote no row.
+- Commands (zsh, `$?`): `go build ./...` 0; `go vet ./...` 0; `go vet -tags browser ./tests/foundation` 0; `go vet ./internal/... ./cmd/...` 0; unfiltered `stripeadmin` + `stripe-admin` + `internal/platform` unit tests 0; deploy node tests 0 (46/46); `check-headers.sh` 0; focused 20-test PG set 0, 20 PASS / 0 FAIL (`r3-green-pg.summary.log`, SHA in `r3-green-pg.sha`).
+- Residual closed: the round-2 open item 1 above is now fail-closed. NOT_RUN unchanged (SANDBOX/LIVE, full foundation suite and browser gates in CI, the two UI node lines of `check-gates.sh`).

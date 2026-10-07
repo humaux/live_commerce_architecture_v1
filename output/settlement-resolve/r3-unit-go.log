@@ -1,0 +1,3 @@
+ok  	livecommerce/internal/payments/stripeadmin	1.743s
+ok  	livecommerce/cmd/stripe-admin	1.413s
+ok  	livecommerce/internal/platform	1.315s
