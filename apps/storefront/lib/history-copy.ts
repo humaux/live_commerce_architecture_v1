@@ -1,3 +1,6 @@
+// Purpose: buyer order-history copy in three locales (title, scope note incl. the Taipei time-zone statement, list/empty/retry labels).
+// Depends on: @live-commerce/i18n Locale only.
+// Used by: apps/storefront/components/OrderHistory.tsx, CheckoutFlow.tsx; apps/storefront/tests/timezone.test.mjs.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
