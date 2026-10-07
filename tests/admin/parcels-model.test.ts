@@ -5,6 +5,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  parcelGenAfterPoll,
+  parcelGenAfterShipmentRefusal,
   parcelOrderNumber,
   parseMergeSuggestions,
   parseOpenParcelGroups,
@@ -239,4 +241,17 @@ test("parcelOrderNumber is the canonical LC-<32 uppercase hex> order number and 
   assert.equal(parcelOrderNumber(a), "LC-AAAAAAAAAAAA4AAA8AAAAAAAAAAAAAAA");
   assert.match(parcelOrderNumber(b), /^LC-[0-9A-F]{32}$/);
   assert.equal(parseOpenParcelGroups({ items: [openGroup(group, [a, b])] })[0].members[0].order_number, parcelOrderNumber(a));
+});
+
+// Codex P2s (PR #2): the parcel reads follow one refresh generation. (1) EVERY successful poll bumps it, also on a later cursor page
+// (the list keeps its pagination rule, only the generation is unconditional); (2) the authoritative in_parcel_group refusal of a
+// single-order shipment bumps it so the group panel appears and the single-order form is replaced.
+test("parcel refresh generation: bumped by every successful poll, whatever the cursor", () => {
+  assert.equal(parcelGenAfterPoll(0), 1);
+  assert.equal(parcelGenAfterPoll(41), 42);
+});
+
+test("parcel refresh generation: an in_parcel_group refusal bumps it, other refusals do not", () => {
+  assert.equal(parcelGenAfterShipmentRefusal(3, "in_parcel_group"), 4);
+  for (const code of ["version_changed", "not_shippable", "conflict", "unavailable"]) assert.equal(parcelGenAfterShipmentRefusal(3, code), 3, code);
 });

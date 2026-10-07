@@ -52,7 +52,7 @@ import { selectOrders } from "@/lib/picklist-model";
 import { picklistCopy } from "@/lib/picklist-copy";
 import { TrackingImport } from "./TrackingImport";
 import { ParcelMerge, type ParcelGroupView } from "./ParcelGroup";
-import { groupOfOrder } from "@/lib/parcels-model.ts";
+import { groupOfOrder, parcelGenAfterPoll, parcelGenAfterShipmentRefusal } from "@/lib/parcels-model.ts";
 import { parcelCopy } from "@/lib/parcels-copy";
 import "./orders.css";
 import "./order-actions.css";
@@ -388,9 +388,9 @@ export function MerchantOrders({
       )
         return;
       // Later pages still probe authority, but never replace their rows with page one.
+      setPollGen(parcelGenAfterPoll); // every successful poll, on any page: the parcel suggestions and OPEN groups are re-read
       if (cursor) return;
       noteSeen(page);
-      setPollGen((v) => v + 1); // the parcel suggestions and OPEN groups are re-read with the list
       // Only the rows change: filters, scroll position, the open detail and the cursor stack stay as the merchant left them.
       setView((old) => (old.key === key && old.status === "ready" && old.page ? { ...old, page } : old));
     } catch (error) {
@@ -695,6 +695,8 @@ export function MerchantOrders({
                               boundary: session.current,
                               onChanged: reload,
                               // W3-07B: OPEN group members get the group hint instead of the single-order shipment form.
+                              // The server's in_parcel_group refusal (another tab merged the order) re-reads the parcel state.
+                              onShipmentRefused: (code: string) => setPollGen((v) => parcelGenAfterShipmentRefusal(v, code)),
                               parcelBlockText: (orderID) =>
                                 groupOf(orderID)?.state === "OPEN" ? parcelC.blocked : undefined,
                             }

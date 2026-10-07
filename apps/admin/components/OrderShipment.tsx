@@ -113,6 +113,7 @@ export function OrderShipment({
   boundary,
   onChanged,
   parcelBlock,
+  onRefused,
 }: {
   store: string;
   detail: OrderDetail;
@@ -124,6 +125,8 @@ export function OrderShipment({
   // W3-07B: set when the order sits in an OPEN parcel group (client-side knowledge from this session's groups; the
   // server guard `in_parcel_group` stays the authority). The record form is then replaced by this hint.
   parcelBlock?: string;
+  // Called with the refusal code of a failed submit so the page can re-read the parcel state on in_parcel_group.
+  onRefused?: (code: string) => void;
 }) {
   const orderID = detail.order_id;
   const head: Shipment | null = detail.shipment;
@@ -237,6 +240,7 @@ export function OrderShipment({
     }
     pending.current = null;
     setProblem(errorText(c, result.code));
+    onRefused?.(result.code);
     if (result.code === "version_changed") {
       setTick((value) => value + 1);
       void onChanged();

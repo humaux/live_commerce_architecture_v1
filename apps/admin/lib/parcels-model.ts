@@ -190,3 +190,13 @@ export function parcelShort(id: string): string {
 export function parcelOrderNumber(id: string): string {
   return `LC-${id.replaceAll("-", "").toUpperCase()}`;
 }
+
+/** The orders page's parcel refresh generation after a successful poll: always +1, on any cursor page (the list's own pagination rule is unchanged). */
+export function parcelGenAfterPoll(gen: number): number {
+  return gen + 1;
+}
+
+/** The generation after a refused single-order shipment: the authoritative in_parcel_group refusal (another tab merged the order) bumps it, so both parcel reads re-run. */
+export function parcelGenAfterShipmentRefusal(gen: number, code: string): number {
+  return code === "in_parcel_group" ? gen + 1 : gen;
+}

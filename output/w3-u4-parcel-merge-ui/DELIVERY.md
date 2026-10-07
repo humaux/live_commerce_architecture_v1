@@ -188,3 +188,9 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 ## Finisher 7 (Sonnet) — Codex P1 4208172280: `parcel-reload-retry` is clicked in the spec
 
 `parcel-merge.spec.ts` gains two steps, each with ONE labelled `page.route` fault injection (one 503 on a page load), then the route is removed and the real Retry click reaches Go/PG: (1) GET `orders/merge-suggestions` 503 -> error copy + `parcel-reload-retry`, no cards; Retry -> banner count 1 and the stale pair's card; (2) GET `parcel-groups` 503 (after tab B left the stale pair in an OPEN group) -> error copy + Retry, no panel; Retry -> the OPEN panel with its member number/mask, the row badge and the single-order block. Both wait for a new 200 response and a request-counter increase (not a cache hit). Browser steps: NOT_RUN locally (CI).
+
+---
+
+## Finisher 8 (Sonnet) — Codex P2s 4208254249 and 4208254260
+
+Pure helpers in `parcels-model.ts` (`parcelGenAfterPoll`, `parcelGenAfterShipmentRefusal`) with node tests (red `red-finisher8-gen.log`: missing exports). `MerchantOrders` bumps the parcel generation on every successful poll before the `if (cursor) return` (list pagination unchanged); `OrderShipment` reports the refusal code via `onRefused` -> `sections.onShipmentRefused`, and an `in_parcel_group` refusal bumps the same generation so the OPEN panel appears and the single-order form is replaced by the group hint. No browser step added (NOT_RUN).
