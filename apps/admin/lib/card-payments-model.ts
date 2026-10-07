@@ -107,3 +107,10 @@ export function suffixBudget(preview: string | null): number | null {
 export function descriptorPreview(base: string, suffix: string | null): string {
   return suffix === null ? base : `${base}* ${suffix}`;
 }
+// The platform base inside a preview: neither descriptor_display (Stripe forbids '*') nor the suffix
+// (charset [A-Za-z0-9 .-]) can contain "* ", so the first "* " is unambiguous — also when a DISABLED
+// store still carries its retained suffix in the preview.
+export function descriptorBase(preview: string): string {
+  const at = preview.indexOf("* ");
+  return at < 0 ? preview : preview.slice(0, at);
+}

@@ -6,6 +6,7 @@ import {
   orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
 } from "@/lib/orders-request";
 import { customersRoute, validCustomersBody, validCustomersRequest } from "@/lib/customers-request";
+import { cardPaymentsRoute, validCardPaymentsBody, validCardPaymentsRequest } from "@/lib/card-payments-request";
 import { logisticsRoute } from "@/lib/logistics-request";
 import { promotionsRoute } from "@/lib/promotions-request";
 import { validStudioInputToken, validStudioQuery } from "@/lib/studio-request";
@@ -54,6 +55,8 @@ const collectionsRoot = "collections";
 const collectionItem = `collections/${uuid}`;
 const collectionImage = `${collectionItem}/image`;
 const catalogV2Writes = `${collectionsRoot}|${collectionItem}/delete|${collectionImage}|${collectionImage}/delete`;
+// W4-U1 platform card payments + settlements (card-payments-request.ts): GET/PUT payments/card (keyless CAS PUT),
+// GET settlements, GET settlements/{id} -> Go internal/httpapi/payment_card.go + settlement reads.
 // Product-core: exact document/bulk/copy commands, with the same authenticated, keyed JSON policy.
 const productCommands = `products/document|products/bulk-status|products/${uuid}/copy`;
 const orders = `orders(?:/${uuid})?`;
@@ -73,14 +76,14 @@ const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start
 const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET}|payments/card|settlements|settlements/${uuid})$`,
   ),
   POST: new RegExp(
     `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(products/${uuid}/document|${setting}|${policy}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT})$`),
+  PUT: new RegExp(`^(products/${uuid}/document|${setting}|${policy}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT}|payments/card)$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
@@ -111,6 +114,8 @@ async function route(request: Request, context: Context) {
   const action = orderActionRoute(request.method, path);
   // customers-billing-ui: customers/finance/billing resources (lib/customers-request.ts grammar) -> Go customers.go/finance.go/billing.go.
   const customers = customersRoute(request.method, path);
+  // W4-U1: platform card payments + settlements (lib/card-payments-request.ts grammar; PUT is keyless CAS).
+  const cardPayments = cardPaymentsRoute(request.method, path);
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
   // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
   const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
@@ -122,7 +127,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !logistic && !health))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -135,10 +140,12 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((health || studio || order || orderSearch || action || customers || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
+  // Card payments/settlements grammar: exact query rules, keyless CAS PUT, bodyless GETs.
+  if (cardPayments && !validCardPaymentsRequest(cardPayments, request)) return error(422, "invalid_request");
   // Exact resources: no query at all, including a bare trailing '?'.
   if ((action || logistic) && request.url.includes("?")) return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
@@ -249,7 +256,7 @@ async function route(request: Request, context: Context) {
     token = sessionToken(request) ?? undefined;
     if (!token) {
       const denied = error(401, "unauthorized");
-      if (order || orderSearch || action || customers || logistic) clearAuthCookies(denied.headers);
+      if (order || orderSearch || action || customers || cardPayments || logistic) clearAuthCookies(denied.headers);
       return denied;
     }
     if (
@@ -287,8 +294,9 @@ async function route(request: Request, context: Context) {
     )
       return error(415, "json_required");
     const key = request.headers.get("idempotency-key") ?? "";
-    // Billing POSTs are keyless by contract (§6), print-form is a keyless command; every other command needs its key.
-    const keyless = health === "recheck" || orderSearch || customers === "checkout" || customers === "portal" || action === "keyless-command";
+    // Billing POSTs are keyless by contract (§6), print-form is a keyless command, and the payments/card PUT
+    // is CAS-guarded by expected_version (Go's cvsRoute keyed=false refuses a key); every other command needs its key.
+    const keyless = health === "recheck" || orderSearch || customers === "checkout" || customers === "portal" || action === "keyless-command" || cardPayments === "card-write";
     if (!inspection && !keyless && !/^[A-Za-z0-9_.:-]{8,128}$/.test(key))
       return error(422, "invalid_request");
     const customersBodyless = customers === "export" || customers === "portal";
@@ -328,6 +336,8 @@ async function route(request: Request, context: Context) {
     if (health === "recheck" && !validRecheckBody(typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // Exact bodies for the customers/billing commands (closed keys, ERASE word, consent pairs, price id).
     if (customers && !validCustomersBody(customers, typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
+    // The payments/card PUT body is the exact frozen CAS shape (card-payments-request.ts).
+    if (cardPayments === "card-write" && !validCardPaymentsBody(typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // PUT ads/drafts/{id} is revision-guarded: forward exactly one bare-decimal If-Match, never anything else.
     const ifMatch = request.headers.get("if-match");
     const draftPut = request.method === "PUT" && /^ads\/drafts\//.test(path);
@@ -451,7 +461,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || orderSearch || action || customers || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
+      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });

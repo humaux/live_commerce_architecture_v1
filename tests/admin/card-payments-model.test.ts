@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  descriptorBase,
   descriptorPreview,
   parseCardResult,
   parseCardSummary,
@@ -114,6 +115,9 @@ test("suffix budget derives from descriptor_preview as the base (L + 2 + suffix 
 test("descriptor preview mirrors the contract projection (base + '* ' + suffix)", () => {
   assert.equal(descriptorPreview("LCPLATFORM", null), "LCPLATFORM");
   assert.equal(descriptorPreview("LCPLATFORM", "SHOP"), "LCPLATFORM* SHOP");
+  // descriptorBase recovers the platform base even from a DISABLED store's retained-suffix preview.
+  assert.equal(descriptorBase("LCPLATFORM"), "LCPLATFORM");
+  assert.equal(descriptorBase("LCPLATFORM* SHOP"), "LCPLATFORM");
 });
 
 const line = () => ({

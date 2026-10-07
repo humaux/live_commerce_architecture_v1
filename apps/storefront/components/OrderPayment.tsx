@@ -22,6 +22,7 @@ import {
 } from "../lib/order-payment";
 import { paymentCopy } from "../lib/payment-copy";
 import { orderCopy } from "../lib/order-copy";
+import { useShopName } from "./ShopName";
 
 type Message =
   "failed" | "blocked" | "uncertain" | "submitted" | "creating" | "opFailed";
@@ -108,6 +109,7 @@ export default function OrderPayment({
   paymentSignalRef: MutableRefObject<(() => Promise<void>) | null>;
 }) {
   const copy = paymentCopy[locale];
+  const shopName = useShopName();
   const [view, setView] = useState<PaymentView | null>(null);
   const [marker, setMarker] =
     useState<ReturnType<typeof pendingOrderPayment>>(null);
@@ -470,6 +472,16 @@ export default function OrderPayment({
         <p>{copy.loading}</p>
       ) : plan ? (
         <>
+          {/* stripe-platform-account-v1 §5: platform collector disclosure above the Stripe pay button,
+              whenever the hosted view returns `collector` (derived connections only). */}
+          {view?.collector && (
+            <p className="order-note" data-testid="collector-disclosure">
+              {copy.collector
+                .replace("{display_name}", view.collector.display_name)
+                .replace("{store_name}", shopName)
+                .replace("{descriptor_preview}", view.collector.descriptor_preview)}
+            </p>
+          )}
           {plan.pay && view && (
             <p>
               {
