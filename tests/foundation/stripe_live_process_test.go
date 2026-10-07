@@ -1,3 +1,6 @@
+// Purpose: Stripe LIVE process/pair refusals and sanctioned operator shell acceptance, including R3 commands.
+// Depends on: pinned Linux Bash, cmd/api/payment-worker/stripe-admin, PG fixtures, deploy scripts and R3 Node controls.
+// Used by: full foundation G07 and focused TestStripeSL06LiveProcess CI; MOCK/REAL_PG, never a real provider.
 package foundation_test
 
 // SL06 (contracts/stripe-live-enable-v1.md §11 SL06, §5.2, §7, §9 pair rules, ops brief O1-O3): process + PG + shell.
@@ -150,6 +153,21 @@ func TestStripeSL06LiveProcess(t *testing.T) {
 	t.Run("checkout_switch_removes_stripe_from_hosted_while_an_in_flight_mock_attempt_closes", slxCheckoutSwitch)
 	t.Run("compose_wiring", slxCompose)
 	t.Run("shell_ops_admin", slxOpsAdmin)
+	t.Run("shell_ops_admin_r3", func(t *testing.T) {
+		// Reuse the same DB-free controls as smoke S48: new platform/settlement commands must be
+		// covered by this existing shell allowlist gate as well as the Node registry.
+		ctx, cancel := context.WithTimeout(context.Background(), 75*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, "node", "--test", "tests/deploy/deploy-prep-r3.test.mjs")
+		cmd.Dir = slxRepo(t)
+		out, err := cmd.CombinedOutput()
+		if ctx.Err() != nil {
+			t.Fatal("R3 operator controls timed out")
+		}
+		if err != nil {
+			t.Fatalf("R3 operator controls failed: %v\n%s", err, out)
+		}
+	})
 	t.Run("shell_preflight_P06", slxPreflight)
 }
 

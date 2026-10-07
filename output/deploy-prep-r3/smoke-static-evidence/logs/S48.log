@@ -1,0 +1,12 @@
+✔ sanctioned operator allowlist and fail-closed gates (fake docker, no network) (1379.353167ms)
+✔ platform operator custody, export mount and binary are wired (82.557917ms)
+✔ R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory (916.484625ms)
+✔ R3 smoke exercises exact denied probes, accepts 404 only for disabled mounts (126.680833ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2583.291167
