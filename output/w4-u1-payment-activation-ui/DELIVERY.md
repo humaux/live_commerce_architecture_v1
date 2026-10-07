@@ -73,3 +73,6 @@ Verified code commit `5eae72b0` (evidence `green-fix.log`, red `red-fix.log`: 7 
 - **P2-12** the 收款 step still offers PAYUNi with HashKey/HashIV inputs (belongs to the `pay-remove-payuni` follow-up).
 - Paging of the statements list beyond 52 (grammar supports `before=`); wait until a year of statements exists.
 - CI: the browser gate is still unrun; `--browser-card-payments` gains CPU6b/CPU7b and the sign assertions, so its first CI run is the acceptance of this round too.
+
+## CI run 1 (37574000660 on 5a8a9855) and its fix
+`--browser-card-payments` failed CPU1 and STL1 (`expect(status).toBe(200)`, received 401): the specs read the server's own answer with `page.request.get`, whose APIRequestContext cookie jar does not send the Secure `__Host-commerce_session` cookie over http, so the BFF answered 401. Both specs now read it with an in-page `fetch` (same-origin, like `customers-billing.spec.ts` and `orders-ui.spec.ts`), keeping the 200 expectation. Everything CPU1 did before that read (wizard entry link, navigation, heading, the rendered page) had passed. Note: the files run serially, so CPU2-CPU8 and STL2-STL5 (11 tests) did not run in that CI run and have still never executed; expect any next failure to come from them.

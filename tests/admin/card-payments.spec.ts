@@ -56,11 +56,16 @@ async function ctl(resource: string) {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-Gate-Key": controlKey } });
   expect(response.status, `control ${resource}`).toBe(204);
 }
-// The server's own answer, read through the same BFF the page uses (a GET: no state change).
+// The server's own answer, read through the same BFF the page uses. An in-page fetch: the Secure __Host- session cookie is sent by the browser,
+// not by the APIRequestContext jar (page.request) over http, which answers 401 (as customers-billing.spec.ts / orders-ui.spec.ts do).
 async function summaryOf(page: Page): Promise<Summary> {
-  const response = await page.request.get(`/api/stores/${store}/payments/card`);
-  expect(response.status()).toBe(200);
-  return (await response.json()) as Summary;
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change)
+  const response = await page.evaluate(async (target) => {
+    const r = await fetch(target, { credentials: "same-origin", cache: "no-store" });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  }, `/api/stores/${store}/payments/card`);
+  expect(response.status).toBe(200);
+  return response.body as Summary;
 }
 const cardUrl = (locale: string) => `/${locale}/settings/payments/card?store=${store}`;
 

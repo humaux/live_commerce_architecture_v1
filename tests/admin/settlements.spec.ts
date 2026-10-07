@@ -52,16 +52,22 @@ async function signedLogin(page: Page) {
   if (drawer) await page.keyboard.press("Escape");
 }
 const url = (locale: string) => `/${locale}/settings/settlements?store=${store}`;
-// The server's own answer through the BFF the page uses (a GET: no state change).
+// The server's own answer through the BFF the page uses. An in-page fetch: the Secure __Host- session cookie is sent by the browser, not by the
+// APIRequestContext jar (page.request) over http, which answers 401 (as customers-billing.spec.ts / orders-ui.spec.ts do).
+async function readBff(page: Page, resource: string): Promise<unknown> {
+  // G-UI8 audit [READ/MEASURE]: same-origin GET read of server state through the BFF (no state change)
+  const response = await page.evaluate(async (target) => {
+    const r = await fetch(target, { credentials: "same-origin", cache: "no-store" });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  }, `/api/stores/${store}/${resource}`);
+  expect(response.status, resource).toBe(200);
+  return response.body;
+}
 async function listOf(page: Page): Promise<Statement[]> {
-  const response = await page.request.get(`/api/stores/${store}/settlements`);
-  expect(response.status()).toBe(200);
-  return ((await response.json()) as { statements: Statement[] }).statements;
+  return ((await readBff(page, "settlements")) as { statements: Statement[] }).statements;
 }
 async function detailOf(page: Page, id: string): Promise<Statement> {
-  const response = await page.request.get(`/api/stores/${store}/settlements/${id}`);
-  expect(response.status()).toBe(200);
-  return ((await response.json()) as { statement: Statement }).statement;
+  return ((await readBff(page, `settlements/${id}`)) as { statement: Statement }).statement;
 }
 // What the store receives (review P1-1), restated from the 0150 identity (net = captured - refunded - dispute + stripe_fee - platform_fee + carried_in)
 // and independent of the page's helper: + is added to the payout, - is deducted.
