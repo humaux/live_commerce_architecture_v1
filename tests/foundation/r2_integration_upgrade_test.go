@@ -69,8 +69,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0156 (W5-03B historical order import) adds one more: 82 -> 83.
 	// 0158 (live-price-keep-on-pause: claim lines of a paused offer keep the live price, functions only) adds one more: 83 -> 84.
 	// 0159 (W6-05B operations ledger) adds one more: 84 -> 85.
-	if len(r2) != 85 {
-		t.Fatalf("R2 migration set = %d files %v, want 85", len(r2), r2)
+	// 0160 (W6-06B Meta ad-account unbind + catalog feed URL) adds one more: 85 -> 86.
+	if len(r2) != 86 {
+		t.Fatalf("R2 migration set = %d files %v, want 86", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

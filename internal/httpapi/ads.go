@@ -1,7 +1,8 @@
 // ads.go owns the merchant ads HTTP adapter of meta-ads-v1 §7 under /v1/admin/stores/{store_id}/ads (brief default D1: the repo
 // convention, not /v1/merchant/ads; the admin BFF forwards these unchanged and issues the browser redirect itself, D6).
-// Routes: POST meta/connect, GET meta/callback, GET meta/states/{state_id}, POST meta/bindings, GET settings, GET/POST
-// drafts, GET/PUT drafts/{id}, POST drafts/{id}/approve|publish|pause|end, GET report, PUT capi.
+// Routes: POST meta/connect, GET meta/callback, GET meta/states/{state_id}, POST meta/bindings, POST meta/unbind
+// (Amendment W6-06B), GET settings, GET/POST drafts, GET/PUT drafts/{id}, POST drafts/{id}/approve|publish|pause|end,
+// GET report, PUT capi, GET catalog-feed (Amendment W6-06B).
 //
 // It decides no rule (internal/ads and the ads.* SQL definers do, including every permission after lock waits), never calls
 // Meta itself (ads.ConnectFunc is injected in ads.Service), and never returns a driver message, a token, an OAuth code or a
@@ -33,6 +34,7 @@ import (
 var (
 	adsDraftFields   = []string{"ad_binding_id", "identity_binding_id", "template", "source_ref", "currency", "lifetime_budget_minor", "starts_at", "ends_at", "countries", "age_min", "age_max"}
 	adsBindFields    = []string{"state_id", "ad_account_id"}
+	adsUnbindFields  = []string{"ad_account_id"} // Amendment W6-06B §A: exact body, no "force"
 	adsApproveFields = []string{"revision"}
 	adsPublishFields = []string{"publish_attempt"}
 	adsCapiFields    = []string{"enabled"}
@@ -48,9 +50,10 @@ func registerAdsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *ads.Service)
 		return
 	}
 	const base = "/v1/admin/stores/{store_id}/ads"
-	fallbacks := []string{"/meta/connect", "/meta/callback", "/meta/states/{state_id}", "/meta/bindings", "/settings", "/drafts",
-		"/drafts/{draft_id}", "/drafts/{draft_id}/approve", "/drafts/{draft_id}/publish", "/drafts/{draft_id}/pause",
-		"/drafts/{draft_id}/end", "/report", "/attribution", "/sessions/{session_id}/audience-read", "/capi"}
+	fallbacks := []string{"/meta/connect", "/meta/callback", "/meta/states/{state_id}", "/meta/bindings", "/meta/unbind",
+		"/settings", "/drafts", "/drafts/{draft_id}", "/drafts/{draft_id}/approve", "/drafts/{draft_id}/publish",
+		"/drafts/{draft_id}/pause", "/drafts/{draft_id}/end", "/report", "/attribution",
+		"/sessions/{session_id}/audience-read", "/capi", "/catalog-feed"}
 
 	mux.HandleFunc("POST "+base+"/meta/connect", adsRoute(http.MethodPost, true, false, func(w http.ResponseWriter, r *http.Request) {
 		if !adsNoBody(w, r) {
@@ -75,6 +78,17 @@ func registerAdsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *ads.Service)
 		}
 		adsScope(w, r, pool, "ads:manage", http.StatusCreated, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
 			return svc.Bind(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
+		})
+	}))
+	// Amendment W6-06B §A: unbind detaches the ad-account binding (never deletes history); the 409s
+	// (operations_in_flight with its op list, binding_in_use) ride respondErrorDetails via adsScope.
+	mux.HandleFunc("POST "+base+"/meta/unbind", adsRoute(http.MethodPost, true, false, func(w http.ResponseWriter, r *http.Request) {
+		in, ok := claimsBody[ads.UnbindInput](w, r, adsUnbindFields, nil)
+		if !ok {
+			return
+		}
+		adsScope(w, r, pool, "ads:manage", http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return svc.Unbind(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
 		})
 	}))
 	mux.HandleFunc("GET "+base+"/settings", adsRoute(http.MethodGet, false, false, func(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +203,12 @@ func registerAdsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *ads.Service)
 			return svc.SetCapi(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), in)
 		})
 	}))
+	// Amendment W6-06B §B: the public catalog feed URL entry (ads:read; the feed itself is public and unsigned).
+	mux.HandleFunc("GET "+base+"/catalog-feed", adsRoute(http.MethodGet, false, false, func(w http.ResponseWriter, r *http.Request) {
+		adsScope(w, r, pool, "ads:read", http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
+			return svc.CatalogFeed(ctx, tx, s, bearerToken(r))
+		})
+	}))
 	// Methodless fallbacks keep 405 inside the same private response boundary.
 	for _, suffix := range fallbacks {
 		mux.HandleFunc(base+suffix, studioRoute("", false, nil))
@@ -263,7 +283,9 @@ func adsScope(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, permis
 	})
 	if err != nil {
 		code, name := adsClassify(err)
-		respondError(w, code, name)
+		// Details (Amendment W6-06B: the operations_in_flight list) when the refusal declares one; every other
+		// route's errors declare none, so their envelope is unchanged (respondErrorDetails falls back to respondError).
+		respondErrorDetails(w, err, code, name)
 		return
 	}
 	respond(w, status, result)
