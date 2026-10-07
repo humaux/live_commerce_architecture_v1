@@ -15,7 +15,7 @@ import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readCustomers, useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import type { Customer } from "@/lib/customers-model";
+import { canSeeReports, type Customer } from "@/lib/customers-model";
 import { readTagCatalog } from "@/lib/customer-tags-client";
 import { customerTagsCopy } from "@/lib/customer-tags-copy";
 import { CustomerTagManager, TagBadges } from "./CustomerTags";
@@ -137,7 +137,7 @@ export function Customers({
         </form>
           {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
             onChanged={() => { catalog.reload(); read.reload(); }} />}
-          {store?.permissions?.includes("orders:read") && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
+          {store && canSeeReports(store) && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
           {store?.permissions?.includes("customers:privacy") && <Link className="orders-export" href={`/${locale}/customers/import?store=${store.id}`} data-testid="customers-import">{c.importLink}</Link>}
           <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
         </div>

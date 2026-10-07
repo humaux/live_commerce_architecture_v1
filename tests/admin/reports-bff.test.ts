@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { reportsRoute, validReportsRequest, type ReportsRouteKind } from "../../apps/admin/lib/reports-request.ts";
+import { reportFromQuery, reportsRoute, validReportsRequest, type ReportsRouteKind } from "../../apps/admin/lib/reports-request.ts";
 import {
   parseChannelReport,
   parseFunnelReport,
@@ -240,4 +240,11 @@ test("display sorts only inside currency/environment groups, never sums money or
  assert.equal(JSON.stringify(rows),before);
  assert.equal(conversion("en",0,0,"No starting count"),"No starting count");
  assert.equal(conversion("en",1,4,"No starting count"),"25%");
+});
+
+// Codex review P2 (PR #3): the selected report tab lives in the page URL (`report`), strictly validated; absent means products.
+test("page report query accepts exactly the four report names and defaults to products", () => {
+  assert.equal(reportFromQuery(undefined), "products");
+  for (const name of ["products", "channels", "funnel", "manual-orders"]) assert.equal(reportFromQuery(name), name);
+  for (const bad of ["", "Channels", "channels ", "manual_orders", "products.csv", "__proto__", "constructor", "../x"]) assert.equal(reportFromQuery(bad), null, bad);
 });

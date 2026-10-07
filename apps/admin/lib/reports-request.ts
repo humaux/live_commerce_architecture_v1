@@ -34,6 +34,12 @@ function dayNumber(value: string): number | null {
     : null;
 }
 
+/** Page `report` query: absent selects products; any value outside the four names is null (the page answers 404). */
+export function reportFromQuery(value: string | undefined): ReportName | null {
+  if (value === undefined) return "products";
+  return (reportNames as readonly string[]).includes(value) ? (value as ReportName) : null;
+}
+
 /** Accept bounded canonical date/session parameters; Go remains the authority. */
 export function validReportsQuery(kind: ReportsRouteKind, rawURL: string): boolean {
   const at = rawURL.indexOf("?");

@@ -265,6 +265,10 @@ export function parseFinanceSummary(value: unknown): FinanceSummary {
 
 // Test-mode flag for the finance page: anything not LIVE is sandbox money (contract BD8, stripe-psp-v1 SANDBOX).
 export const isSandbox = (row: FinanceRow) => row.environment !== "LIVE";
+/** Reports entry hint: hidden only when the permission list is present and lacks orders:read; an absent list (legacy Store
+ * shape) shows it and leaves authorization to the BFF/Go, like the reports page itself. */
+export const canSeeReports = (store: { permissions?: string[] } | null) =>
+  !!store && (!store.permissions || store.permissions.includes("orders:read"));
 // Today's UTC+8 finance day (Q11) as YYYY-MM-DD, used only for the date inputs' defaults and max.
 export function financeDay(now: Date, offsetDays = 0): string {
   const shifted = new Date(now.getTime() + 8 * 3_600_000 + offsetDays * 86_400_000);
