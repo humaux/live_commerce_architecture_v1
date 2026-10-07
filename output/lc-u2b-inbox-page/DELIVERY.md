@@ -1,9 +1,10 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
-- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `c3bca7871953c5f88c055c7619030aecc4c182a4`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
+- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `845989e6f331dbcf64c10378ba71c14dea95edc5`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
 - Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. Only the requested local trunk merge; no push/deployment.
-- Evidence: **E3 / MOCK for actual-source Node component/hook and delayed-route counterexamples; E1 for TypeScript and harness/parser registration. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. Current source BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN locally. Prior browser CI failures at 08614fb6 and d313d97c remain failures; the recovered d313 evidence and current fixes are recorded below, without a current browser acceptance claim.**
+- Evidence: **E3 / MOCK on local macOS: 758 Node tests, 11 focused Go/real-PG top-level tests, normal browser 13/13 and two correctly failing calibrations, all bound to source `845989e6` and 53 hashes in `source-hashes.txt`. Current Linux required CI, independent integrator acceptance, SANDBOX and LIVE remain NOT_RUN. No push or deployment.**
+- The current handoff is the K3 batch below. Later historical sections retain their original SHA-specific outcomes; their old NOT_RUN labels do not describe this current local evidence.
 
 ## Summary
 
@@ -14,9 +15,59 @@
 - `lib/inbox-bff.ts:15`, catchall route: precise A8–A14/GET templates, strict method/query/body, real Request stream/auth/CSRF tests, no-store and fixed safe errors. Bounded 1 MiB admits 50 valid Unicode messages and refuses excess.
 - `tests/foundation/browser_inbox_ui_test.go:31`, `tests/admin/inbox-ui.spec.ts:157`: registered `--browser-inbox`, signed MOCK OIDC + real Next/Go/PG, real click/PG readback, privacy/cross-store/read-only/window/capability cases and committed-send/lost-ACK same-receipt retry. INU06/INU07 cover zh-TW, zh-CN and en at 1440/390 with independent literal labels, real locale changes and mobile Back clearing.
 
-Contract/interface changes: **none**. Additional write scope: the owner-approved shell-registry expectation and owner-required C root fix in `tests/foundation/browser_click_sweep_test.go` (acceptance fixture only). No production backend Go, migrations, OpenAPI, module or dependency lock changes; existing Go services are mounted only in the acceptance harness. `playwright.config.ts` gets the necessary suite registration. zh-TW/zh-CN/en unit copy is complete per the integrator correction; packages/i18n is unchanged.
+Contract/interface change authorized by the K3 packet: additive nullable A9 `has_unknown_outbound`; the strict-false send guard and conservative cap are documented in §11. No migration, grant, OpenAPI or lockfile change. Additional write scope: the owner-approved shell-registry expectation and owner-required C root fix in `tests/foundation/browser_click_sweep_test.go` (acceptance fixture only). The K3 follow-up changes only the Go A9 read projection in `internal/inbox/{read,send_read,service}.go`; the existing scoped definer and permissions stay in use. Runtime navigation also required capturing the chosen shell store/locale before synchronous privacy teardown; the M7 Next header override preserves the existing BFF policy. `playwright.config.ts` gets the necessary suite registration. zh-TW/zh-CN/en unit copy is complete per the integrator correction; packages/i18n is unchanged.
 
-## Current PR #8 CI recovery / persisted UNKNOWN / real bundle-copy proof (source c3bca787)
+## Current K3 batch — source 845989e6
+
+All three items in `output/integrator/triage/k3-prereview-pr8-33f5d30f.md` are addressed in this batch:
+
+1. **INU09 really executes.** The Go runner now uses both configured spec files, and the Node discovery gate executes the installed Playwright collector using the actual Go CLI selectors. It requires all 13 normal cases and exactly one INU09 credential-calibration case. Normal Playwright lists INU09 **PASS**, and `k3-final-browser-ledger.json` contains **Copy claim link PASS**: real BFF/M6/M7/native clipboard, one persisted link and token-free command receipt, two copies without a second issuance or DM, and the manual flag clears.
+2. **UNKNOWN beyond the visible page fails closed.** `adad419d` adds nullable A9 authority, computed from the unfiltered fixed 50-row outbound scan on every page, before the inbound time floor and decryption. UNKNOWN => true; fewer than 50 fully known states => false; truncated/missing/unrecognized state => null. The UI requires explicit false at render and action time, keeps its known-UNKNOWN latch, and explains unavailable history in all three locales. Real PG covers 51 newer outgoing rows hiding an older UNKNOWN, 51 newer incoming rows, exact cap, missing operation, small page limits, old pages and cross-tenant/store 404. Node adds fresh-mount and captured-callback counterexamples. No extra DB authority or schema migration.
+3. **Locale-aware readiness.** `a6492e02` derives loading text from `inboxCopy` for the mounted recovery child's actual locale. Held real M7 completion tests fail before the fix in zh-TW/zh-CN and pass in all three locales afterwards; no guessed readiness ticks or weakened receipt/assertion criteria.
+
+Runtime validation additionally fixed four real issues exposed by running the previously unexecuted suite:
+
+- `21953110` captures the chosen shell store/locale before `flushSync(privacy.suspend)` can restore the controlled input's previous value. Actual-handler tests red→green; sensitive data still clears before navigation.
+- `c87adefb` checks actual store scope and enters Messages through real controls, without assuming the default role home. Independent adjudication established that A1 live_operator legitimately permits Overview. Twelve Node navigation variants and real browser authority checks pass.
+- `551f3d14` isolates private diagnostic capture: worker flag suppresses fallback snapshots; test-auto teardown removes only matcher `errorContext`. Installed serializer/builder regressions keep ordinary diagnostics, failure status, messages, stacks and error identity. The real credential calibration is a locator assertion failure with the copied link deliberately in DOM; the credential scan still passes and there is no snapshot, screenshot or trace for that private case.
+- `e12c370b` preserves M7 `no-referrer` through Next's global header layer; real Request route tests plus installed Next matching fail before the override and pass after it. `a1061729` keeps INU02 permission probes in the authenticated browser using same-origin GET: installed Playwright APIRequestContext omits Secure cookies on HTTP 127.0.0.1. Exact 404/403, no DM and zero reader writes remain required. `845989e6` fixes calibration selection; its earlier no-tests-found exit1 is retained and explicitly **not** counted as a valid calibration.
+
+### Current exact commands and exits
+
+All five local gates use `CI=true TZ=UTC LANG=C.UTF-8`, recorded with argv, SHA, elapsed time and exit in `k3-final-gates.json`:
+
+| Command | Exit / result | Evidence |
+| --- | --- | --- |
+| `bash scripts/dev/test-node.sh` | **0; 758/758** | `k3-final-node.log` |
+| `bash scripts/dev/check-gates.sh` | **0; 79 modes, 1220 foundation tests partitioned; headers and normal/browser Go vet** | `k3-final-check-gates.log` |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | **0** | `k3-final-admin-typecheck.log` |
+| `pnpm exec tsc --noEmit -p output/lc-u2b-inbox-page/pr8-test-tsconfig.json` | **0**, includes changed BFF and browser test sources | `k3-final-test-typecheck.log` |
+| Focused Go command below | **0; 11 top-level PASS, 0 FAIL, 0 SKIP** | `k3-final-focused-go.log` |
+
+```sh
+bash scripts/dev/test-focused.sh '^(TestInboxUnknownAuthority|TestLiveConsoleSendLCN11Unknown|TestLiveConsoleSendLCN13DisplayCopyAndThread|TestLiveConsoleSendLCN06DM|TestLiveConsoleInboxLCN03PermissionSplit|TestLiveConsoleInboxCrossStoreIsolation|TestLiveClaimsCoreSmoke|TestLiveClaimsKC12Isolation|TestLiveClaimsP2gLinkTTLInDatabase|TestLiveLifecycleMultiWindow|TestLiveConsoleSendMigration0128ExactACL)$'
+```
+
+Browser commands run serially, with immutable source `845989e6`, separate disposable fixtures and bounded supervisors. `k3-final-browser-matrix.json` records the exact commands, environment, SHA and exits:
+
+| Command | Exit / expected evidence |
+| --- | --- |
+| `LC_INBOX_BUNDLE_CALIBRATION=retain-credential bash scripts/dev/test-local.sh --browser-inbox` | **1 expected; only INU09 failed at the deliberate locator mismatch**, credential evidence verified; 0 private snapshots/screenshots/traces |
+| `LC_INBOX_CALIBRATION=retain-thread bash scripts/dev/test-local.sh --browser-inbox` | **1 expected; only INU05 failed, 12 passed**, credential evidence verified |
+| `bash scripts/dev/test-local.sh --browser-inbox` | **0; 13 passed**, 31 PASS ledger rows, 0 FAIL; real Go/PG and fake Graph checks pass |
+
+Current evidence roots:
+
+- Normal: `output/playwright/inbox-ui/20261007T194025.454189000/`; committed listing `k3-final-playwright.log` and ledger `k3-final-browser-ledger.json`.
+- Credential calibration: `output/playwright/inbox-ui/20261007T193905.010832000/`.
+- Visibility calibration: `output/playwright/inbox-ui/20261007T193931.610436000/`.
+- Consolidated counts, artifact paths and privacy checks: `k3-final-evidence.json`.
+
+**Limitations / NOT_RUN:** with 50 or more outgoing rows and no UNKNOWN inside that bounded scan, null deliberately keeps sending unavailable. A future full-history metadata fact can restore clear-history eligibility. A13/A14 backend gaps remain owned by LC-B3b; no fabricated facts or link version. The capped storefront-origin scan P2 and integrator FOLLOWUPS file are untouched. The optional R04 binary suite is explicitly NOT_RUN; it is not one of the 758 passing Node tests. Broader selected browser modes, full Linux required CI, integrator K3 acceptance of the final combined diff, SANDBOX and LIVE are NOT_RUN at this final source. Per the latest packet, stop after this local gate; the integrator merges trunk #11 if needed, pushes once and reruns required CI plus same-SHA INU05 calibration.
+
+**Custody:** parent task `c975698a-2c85-46b3-a0ca-1d5826472bac`. Go worker (`commerce_worker`, configured gpt-6.1-sol/high; base e376e52c, own `.worktrees/lc-u2b-unknown-authority`) delivered 147106b7 for only three Go read files and the new PG test. Test worker (gpt-6.1-sol/high; own `.worktrees/lc-u2b-pr8-tests`) delivered isolated locale/private-diagnostic/session-probe patches. Root reviewed/imported each and independently reran the final gates. Read-only platform/security reviewers found no remaining scoped P0/P1; their source review is E1, separate from the E3 runs above. Exact backend model revision is not exposed. No recursion or overlapping writer worktrees. Own test processes and PG fixtures were cleaned; retained failed evidence and shared dependencies are preserved. No push, production host, real buyer message or live key used.
+
+## Historical PR #8 CI recovery / persisted UNKNOWN / real bundle-copy proof (source c3bca787)
 
 `git fetch origin && git merge origin/unit/lc-u2b-inbox-page` exited0, already up to date at4d19a45a. Each green implementation step was committed:
 
@@ -230,7 +281,7 @@ Production code has **no delta from 30ddeedc**: bundle-link P1 + UNKNOWN/expiry 
 
 ## Independent work and custody
 
-Base for all worktrees: f7340515. No recursive delegation; interfaces frozen before UI/BFF wiring. Workers committed locally; parent applied their patches in its own branch.
+Initial unit worktrees used base f7340515; later K3/review worktree bases are recorded above. No recursive delegation; interfaces frozen before UI/BFF wiring. Workers committed locally; parent applied their patches in its own branch.
 
 | Role / configured model+effort | Worktree / ownership |
 | --- | --- |
@@ -259,4 +310,4 @@ bash scripts/dev/test-local.sh --browser-click-sweep
 bash scripts/dev/test-local.sh --browser-visual-lint
 ```
 
-Normal gates run automatically on the integrator's PR push; dispatch calibration separately with `extra_env='LC_INBOX_CALIBRATION=retain-thread'`. Calibration must fail **INU05 hidden thread retains private DM** after a trusted native hide, not startup/compile/locale failure. Dedicated loopback acceptance + loopback-test flag gate the intentional defect; generic fixture bypass stays off. Preserve normal-green/calibration-red at identical SHA and require restored normal green. Expected artifacts: next/browser logs, click ledger, native visibility record, 1440/390 screenshots and Playwright traces. Current-source artifacts must be retained under `output/playwright/inbox-ui/<timestamp>`; prior 08614fb6 Playwright artifacts were lost. Neither prior failure qualifies as normal-green or INU05 calibration-red acceptance.
+Normal gates run automatically on the integrator's PR push; dispatch calibration separately with `extra_env='LC_INBOX_CALIBRATION=retain-thread'`. Calibration must fail **INU05 hidden thread retains private DM** after a trusted native hide, not startup/compile/locale failure. Dedicated loopback acceptance + loopback-test flag gate the intentional defect; generic fixture bypass stays off. Preserve normal-green/calibration-red at identical SHA and require restored normal green. Expected artifacts: next/browser logs, click ledger, native visibility record, 1440/390 screenshots and Playwright traces. Current-source artifacts must be retained under `output/playwright/inbox-ui/<timestamp>`; prior 08614fb6 Playwright artifacts were lost. Neither prior failure qualifies as normal-green or INU05 calibration-red acceptance. The current local macOS normal-green and two calibration-red results are recorded at the top; Linux CI on the integrator-pushed SHA is still required.
