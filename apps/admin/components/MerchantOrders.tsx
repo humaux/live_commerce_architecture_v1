@@ -1,10 +1,10 @@
-// Purpose: Owns order list loading, filtering and selected-order detail.
+// Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
 // Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/cod-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css
 // Used by: apps/admin/app/[locale]/orders/page.tsx
 "use client";
 
 // Purpose: scoped merchant order list, existing inline details and fulfillment action entry points.
-// Depends on: orders BFF/read models, WorkspaceFrame and TrackingImport's independent CSV workflow.
+// Depends on: orders BFF/read models, WorkspaceFrame, PickList/picklist-model/copy and TrackingImport's independent CSV workflow.
 // Used by: /[locale]/orders; existing controls keep their placement and permission semantics.
 // Merchant orders page (approved C inline row). BFF: GET /api/stores/{store}/orders[/{id}] and order-actions
 // -> Go internal/httpapi/orders.go + shipments.go. The refund and shipment sections live in OrderRefunds /
@@ -38,7 +38,7 @@ import {
 } from "@/lib/orders-model";
 import { ordersCopy, type OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
-import { appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
+import { emptyFilters, appendOrderFilters, buckets, type OrderFilters, type OrderListV2, type OrderSummaryV2 } from "@/lib/orders-v2";
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { OrderListFilters } from "./OrderListFilters";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -47,6 +47,9 @@ import { TabStrip } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import { amount, badge, detailPanel, type Sections } from "./OrderDetailPanel";
 import { Icon } from "./Icon";
+import { PickList } from "./PickList";
+import { selectOrders } from "@/lib/picklist-model";
+import { picklistCopy } from "@/lib/picklist-copy";
 import { TrackingImport } from "./TrackingImport";
 import "./orders.css";
 import "./order-actions.css";
@@ -102,6 +105,22 @@ export function MerchantOrders({
   renderKey: string;
 }) {
   const c = ordersCopy[locale];
+  const pc = picklistCopy[locale];
+  const bulkScope = `${store?.id ?? ""}:${csrfCookie()}`;
+  // Keep only identifiers and delivery eligibility, never recipient data, across page navigation.
+  const [bulk, setBulk] = useState<{scope:string; rows:Record<string,boolean>}>({scope:"",rows:{}});
+  const bulkRows = bulk.scope === bulkScope ? bulk.rows : {};
+  const selectedIDs = Object.keys(bulkRows);
+  function checkRows(rows:OrderSummaryV2[], checked:boolean) {
+    setBulk(current => {
+      const retained = current.scope === bulkScope ? current.rows : {};
+      try {
+        const ids = selectOrders(Object.keys(retained), rows.map(r=>r.order_id), checked);
+        const types = new Map(rows.map(r=>[r.order_id,r.delivery_kind.startsWith("cvs_")]));
+        return {scope:bulkScope,rows:Object.fromEntries(ids.map(id=>[id,types.get(id) ?? retained[id] ?? false]))};
+      } catch { return current; }
+    });
+  }
   const v2 = ordersV2Copy[locale];
   // Search text may identify a buyer. Memory only: never URL/history/storage.
   const [search, setSearch] = useState({ store: store?.id ?? "", value: "", cursor: "" });
@@ -147,6 +166,7 @@ export function MerchantOrders({
       generation.current++;
       controller.current?.abort();
       cookie.current = "";
+      if (status === "signed-out" || status === "forbidden" || status === "not-found") setBulk({scope:"", rows:{}});
       if (status === "signed-out" || status === "forbidden" || status === "not-found") setSearch({ store: "", value: "", cursor: "" });
       if (block) {
         blocked.current = true;
@@ -584,6 +604,11 @@ export function MerchantOrders({
               )}
             </div>
           )}
+        {store && session.current && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <PickList key={`${store.id}:${session.current}`} locale={locale} store={store.id} boundary={session.current}
+          ids={selectedIDs} cvsIDs={selectedIDs.filter(id=>bulkRows[id])} sessionID={filters.session_id}
+          canExport={!!actions?.orders_export} canShip={!!actions?.fulfillment_write} disabled={current.status !== "ready"}
+          onClear={()=>setBulk({scope:bulkScope,rows:{}})}
+          onViewOrder={id=>{previous.current=[];navigate(store.id,"all","",id,{...emptyFilters,q:`LC-${id.replaceAll("-","").toUpperCase()}`});}} />}
         {current.status === "ready" && current.page && (
           <>
             <TabStrip label={v2.counts} previousLabel={presentationCopy[locale].previous} nextLabel={presentationCopy[locale].next} data-testid="orders-tabs">
@@ -592,7 +617,11 @@ export function MerchantOrders({
                 {v2.tabs[bucket]} <span data-testid={`orders-count-${bucket}`}>{current.page!.counts[bucket]}</span>
               </button>)}
             </TabStrip>
-            <p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p>
+            <div className="orders-list-tools"><p className="orders-v2-total" data-testid="orders-total">{v2.total}: {current.page.total}</p><label className="pick-row-check orders-page-selection"><input type="checkbox" aria-label={pc.page}
+                      checked={current.page.items.length>0 && current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id))}
+                      ref={node=>{if(node)node.indeterminate=current.page!.items.some(row=>Object.hasOwn(bulkRows,row.order_id))&&!current.page!.items.every(row=>Object.hasOwn(bulkRows,row.order_id));}}
+                      disabled={!current.page.items.length || (new Set([...selectedIDs,...current.page.items.map(r=>r.order_id)]).size>500 && !current.page.items.every(row=>Object.hasOwn(bulkRows,row.order_id)))}
+                      onChange={e=>checkRows(current.page!.items,e.target.checked)}/><span>{pc.page}</span></label></div>
             {filters.bucket === "completed" && <p className="orders-v2-note">{v2.completedNote}</p>}
             <div className="orders-table-scroll">
               <table className="orders-table" data-testid="orders-table">
@@ -612,6 +641,9 @@ export function MerchantOrders({
                     <OrderRow
                       key={row.order_id}
                       row={row}
+                      checked={Object.hasOwn(bulkRows,row.order_id)}
+                      checkDisabled={selectedIDs.length>=500 && !Object.hasOwn(bulkRows,row.order_id)}
+                      onCheck={checked=>checkRows([row],checked)}
                       c={c}
                       locale={locale}
                       selected={order === row.order_id}
@@ -674,7 +706,7 @@ export function MerchantOrders({
 }
 
 function OrderRow({
-  row,
+  row, checked, checkDisabled, onCheck,
   c,
   locale,
   selected,
@@ -685,6 +717,7 @@ function OrderRow({
   sections,
 }: {
   row: OrderSummaryV2;
+  checked:boolean; checkDisabled:boolean; onCheck:(checked:boolean)=>void;
   c: OrdersCopy;
   locale: Locale;
   selected: boolean;
@@ -702,6 +735,7 @@ function OrderRow({
         data-testid={`order-row-${row.order_id}`}
       >
         <td data-label={c.order}>
+          <label className="pick-row-check"><input type="checkbox" aria-label={`${picklistCopy[locale].select}: ${row.order_number}`} checked={checked} disabled={checkDisabled} onChange={e=>onCheck(e.target.checked)}/></label>
           <button
             type="button"
             data-testid={`order-expand-${row.order_id}`}
