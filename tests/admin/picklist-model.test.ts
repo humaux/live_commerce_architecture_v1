@@ -1,8 +1,12 @@
 // Purpose: adversarial contracts for pick selection, wire projection and exact BFF grammar.
-// Depends on: node:test and the picklist pure model; no database or browser.
+// Depends on: node:test/http/crypto/fs, picklist pure model/fixture and Playwright APIRequestContext; no database or browser.
 // Used by: test-node.sh and W3-U1b red-to-green acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
+import { randomBytes } from "node:crypto";
+import { access } from "node:fs/promises";
+import { request } from "@playwright/test";
 import {
   cvsRecoveryResolved,
   validSelection,
@@ -15,6 +19,51 @@ import {
 } from "../../apps/admin/lib/picklist-model.ts";
 const id = (n: number) =>
   `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`;
+test("HTTPS picklist fixture carries Secure session cookies automatically while preserving CSRF refusals", { timeout: 30000 }, async () => {
+  // In-process transport unit only: a synthetic auth boundary, no Next/browser/PG and no Cookie-header override.
+  const authority = randomBytes(32).toString("base64url");
+  let publicOrigin = "";
+  const reads: { host: string | undefined; proto: string | string[] | undefined; session: boolean; csrf: boolean }[] = [];
+  const server = createServer((req, res) => {
+    const cookies = new Map((req.headers.cookie ?? "").split(";").map(value => {
+      const [name, ...rest] = value.trim().split("="); return [name, rest.join("=")];
+    }));
+    const session = cookies.get("__Host-commerce_session") === authority;
+    const csrf = cookies.get("__Host-commerce_csrf") === authority;
+    reads.push({ host: req.headers.host, proto: req.headers["x-forwarded-proto"], session, csrf });
+    res.statusCode = !session ? 401 : req.headers.origin !== publicOrigin || !csrf || req.headers["x-csrf-token"] !== authority ? 403 : 204;
+    res.end();
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const upstream = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  let edge: { origin: string; certificateDirectory?: string; close: () => Promise<void> } | undefined;
+  let authenticated: Awaited<ReturnType<typeof request.newContext>> | undefined;
+  let anonymous: Awaited<ReturnType<typeof request.newContext>> | undefined;
+  try {
+    const fixture = await import("./picklist-fixture.mjs");
+    // Before this repair the gate has only the HTTP origin. That baseline must reproduce 401 rather than pass403.
+    edge = fixture.picklistTLS ? await fixture.picklistTLS(upstream) : { origin: upstream, close: async () => {} };
+    publicOrigin = edge.origin;
+    authenticated = await request.newContext({ ignoreHTTPSErrors: true, storageState: { origins: [], cookies: ["session", "csrf"].map(kind => ({
+      name: `__Host-commerce_${kind}`, value: authority, domain: "127.0.0.1", path: "/", expires: -1,
+      secure: true, httpOnly: kind === "session", sameSite: "Lax" as const,
+    })) } });
+    const missingCSRF = await authenticated.post(`${publicOrigin}/probe`, { headers: { Origin: publicOrigin } });
+    assert.equal(missingCSRF.status(), 403, "a missing CSRF header must be refused after valid authentication");
+    assert.ok(reads.at(-1)?.session && reads.at(-1)?.csrf, "Secure cookies arrived without header injection");
+    assert.equal(reads.at(-1)?.host, new URL(publicOrigin).host, "facade preserves public authority");
+    assert.equal(reads.at(-1)?.proto, "https", "Next sees the TLS edge protocol");
+    anonymous = await request.newContext({ ignoreHTTPSErrors: true });
+    assert.equal((await anonymous.post(`${publicOrigin}/probe`, { headers: { Origin: publicOrigin } })).status(), 401);
+    assert.equal((await authenticated.post(`${publicOrigin}/probe`, { headers: { Origin: publicOrigin, "X-CSRF-Token": authority } })).status(), 204);
+    assert.equal((await authenticated.post(`${upstream}/probe`, { headers: { Origin: publicOrigin, "X-CSRF-Token": authority } })).status(), 401, "same Secure cookie is still refused on plain HTTP");
+  } finally {
+    await authenticated?.dispose(); await anonymous?.dispose();
+    await edge?.close();
+    server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
+  }
+  if (edge?.certificateDirectory) await assert.rejects(access(edge.certificateDirectory), "owned ephemeral TLS material is removed");
+});
 test("batch controls stay compact until an order selection or live-session scope exists", () => {
   assert.equal(shouldOpenPickTools(0, ""), false);
   assert.equal(shouldOpenPickTools(1, ""), true);

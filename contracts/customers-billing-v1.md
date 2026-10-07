@@ -574,3 +574,5 @@ is replaced in place (same signature, owner and ACL); (2) `apply_erasure` also d
 `migrationimport.external_ids` row and scrubs the external id from retained batch results; (3) imported consent is always unknown: the
 import never writes `consent_events`; (4) `privacy_audit_insert` admits `customers.imported`; (5) `commerce_privacy_writer` may INSERT
 `buyer.owners(tenant_id, store_id)` under the GUC-scoped policy `imp_owner_insert` (imported owners have no capability session).
+
+**Amendment W5-03B (migration `0156`, contracts/migration-import-v1.md section 7):** erasure (`apply_erasure` -> `erase_import_profile`, also `replay_erasures`) also deletes the customer's `customers.historical_orders` rows in the same transaction (the four-key erasure summary is unchanged); the merchant export adds `import_profile.historical_orders`; `privacy_audit_insert` admits `customers.orders_imported`; `commerce_privacy_writer` gains SELECT/INSERT/DELETE and UPDATE(ordered_at, status, total_minor, items_summary, city, updated_at) on `customers.historical_orders` (GUC-scoped policies); no login role holds a grant on it.

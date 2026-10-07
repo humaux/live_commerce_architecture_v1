@@ -268,7 +268,7 @@
     "control": "mobile secondary filters zh-TW",
     "action": "mobile secondary filters zh-TW",
     "expected": "Assertions and persisted readback described by the named scenario pass",
-    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=752.4921875 < 844",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=751.96875 < 844",
     "status": "PASS"
   },
   {
@@ -292,7 +292,7 @@
     "control": "mobile secondary filters zh-CN",
     "action": "mobile secondary filters zh-CN",
     "expected": "Assertions and persisted readback described by the named scenario pass",
-    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=752.4921875 < 844",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=751.96875 < 844",
     "status": "PASS"
   },
   {
@@ -316,7 +316,7 @@
     "control": "mobile secondary filters en",
     "action": "mobile secondary filters en",
     "expected": "Assertions and persisted readback described by the named scenario pass",
-    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=749.4921875 < 844",
+    "actual": "native toggle, select, apply, reopen persisted value, reset; first order y=748.96875 < 844",
     "status": "PASS"
   }
 ]

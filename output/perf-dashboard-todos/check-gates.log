@@ -1,0 +1,48 @@
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'typescript-api'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/perf-dashboard-todos/scripts/dev/ui-architecture-gate.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/perf-dashboard-todos/scripts/dev/ui-architecture-gate.mjs:8:42
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/perf-dashboard-todos/scripts/dev/ui-architecture-gate.mjs'
+  ]
+}
+
+Node.js v24.15.0
+✖ tests/admin/shell-architecture.test.mjs (38.753125ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.487167ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.14425ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.246333ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.295959ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.390875ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.071208ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.117333ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (156.009042ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.221083ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.523291
+
+✖ failing tests:
+
+test at tests/admin/shell-architecture.test.mjs:1:1
+✖ tests/admin/shell-architecture.test.mjs (38.753125ms)
+  'test failed'

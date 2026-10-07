@@ -1,5 +1,5 @@
 // Purpose: count-confirmed CVS batches with durable unknown-outcome blocking and no retry loop.
-// Depends on: picklist-client/model/copy, logistics-client recovery reads, ID-only sessionStorage and scoped onViewOrder.
+// Depends on: picklist-client/model/copy, logistics-client recovery reads, ID-only sessionStorage, scoped onViewOrder and parent feedback visibility.
 // Used by: PickList for fulfillment_write actors; never purchases real labels in fixtures.
 // BFF: POST /api/stores/{store}/shipments/cvs-batch; recovery GET /api/stores/{store}/orders/{id}/cvs-shipment.
 // Go: /v1/admin/stores/{store}/shipments/cvs-batch (W3-02B); no automatic write retry.
@@ -23,6 +23,7 @@ export function CvsBatch({
   ids,
   disabled,
   onViewOrder,
+  onFeedbackChange,
 }: {
   locale: Locale;
   store: string;
@@ -30,6 +31,7 @@ export function CvsBatch({
   ids: string[];
   disabled: boolean;
   onViewOrder: (id: string) => void;
+  onFeedbackChange?: (active: boolean) => void;
 }) {
   const c = picklistCopy[locale],
     journal = `picklist-cvs:${store}:${boundary}`;
@@ -66,6 +68,17 @@ export function CvsBatch({
       alive.current = false;
     };
   }, [journal, c.storage]);
+  // Restored uncertainty and command results must remain visible when the selected rows disappear.
+  const hasFeedback =
+    busy ||
+    confirm ||
+    result !== null ||
+    unknown !== null ||
+    !!error ||
+    storageBlocked;
+  useEffect(() => {
+    onFeedbackChange?.(hasFeedback);
+  }, [hasFeedback, onFeedbackChange]);
   async function checkStatus() {
     if (!unknown || flight.current) return;
     flight.current = true;

@@ -1,7 +1,12 @@
 // Purpose: isolated W3-U1b MOCK backend with observable selection/export/batch effects.
-// Depends on: node HTTP/crypto; contract DTOs from merged W3-02B, no PG/provider.
+// Depends on: node HTTP/HTTPS/crypto/fs/os/path/child_process and OpenSSL for ephemeral test TLS; W3-02B DTOs, no PG/provider.
 // Used by: picklist.spec.ts real-click CI gate; synthetic IDs and identities only.
-import { createServer } from "node:http";
+import { createServer, request as forwardRequest } from "node:http";
+import { createServer as createTLSServer } from "node:https";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 export const storeID = "11111111-1111-4111-8111-111111111111";
 export const sessionID = "22222222-2222-4222-8222-222222222222";
@@ -27,6 +32,49 @@ const columns = {
   generic:
     "order_id,order_number,created_at_utc,destination_kind,recipient_name,phone,region,city,line1,line2,pickup_code,items,total_minor,collect_minor",
 };
+
+/** Start a disposable TLS front for one loopback Next server; close removes only this listener and its private cert directory. */
+export async function picklistTLS(upstreamOrigin) {
+  const upstream = new URL(upstreamOrigin);
+  if (upstream.protocol !== "http:" || upstream.hostname !== "127.0.0.1" || upstream.pathname !== "/" || upstream.search || upstream.hash || upstream.username || upstream.password)
+    throw new Error("picklist TLS target must be the owned loopback server");
+  // Same test-only TLS pattern as browserFront/catalog-media: public origin and Secure cookies stay production-like.
+  const certificateDirectory = await mkdtemp(join(tmpdir(), "lc-picklist-tls-"));
+  let server;
+  const close = async () => {
+    if (server?.listening) {
+      server.closeAllConnections();
+      await new Promise(resolve => server.close(resolve));
+    }
+    await rm(certificateDirectory, { recursive: true, force: true });
+  };
+  try {
+    execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", join(certificateDirectory, "key.pem"),
+      "-out", join(certificateDirectory, "cert.pem"), "-days", "1", "-subj", "/CN=localhost", "-addext", "subjectAltName=IP:127.0.0.1"],
+    { stdio: "ignore", timeout: 20000 });
+    server = createTLSServer({ key: await readFile(join(certificateDirectory, "key.pem")), cert: await readFile(join(certificateDirectory, "cert.pem")) }, (req, res) => {
+      const pending = forwardRequest({ hostname: "127.0.0.1", port: upstream.port, path: req.url, method: req.method, agent: false,
+        // Preserve Host, Origin and the automatically supplied cookies; never manufacture an auth header.
+        headers: { ...req.headers, "x-forwarded-proto": "https" } }, response => {
+        res.writeHead(response.statusCode ?? 502, response.headers); response.pipe(res);
+      });
+      pending.setTimeout(30000, () => pending.destroy(new Error("owned Next proxy deadline")));
+      pending.on("error", () => { if (res.destroyed) return; if (!res.headersSent) res.writeHead(502); res.end(); });
+      req.on("aborted", () => pending.destroy());
+      res.on("close", () => pending.destroy());
+      req.pipe(pending);
+    });
+    await new Promise((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => { server.removeListener("error", reject); resolve(); });
+    });
+    return { origin: `https://127.0.0.1:${server.address().port}`, certificateDirectory, close };
+  } catch (error) {
+    await close();
+    throw error;
+  }
+}
+
 /** Start one synthetic server with test-owned faults; no production authority accepted. */
 export async function pickFixture() {
   const token = randomBytes(32).toString("base64url"),

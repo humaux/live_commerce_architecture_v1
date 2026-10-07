@@ -37,6 +37,7 @@ const customerBase = "/v1/admin/stores/{store_id}/customers"
 // calls it unconditionally (integrator).
 func registerCustomerRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	registerCustomerTagRoutes(mux, pool)
+	registerCustomerHistoricalRoutes(mux, pool) // unit w5-03b-order-history-import: customer_historical.go
 	mux.HandleFunc("GET "+customerBase, customerRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {
 		in, err := parseCustomersQuery(r.URL)
 		if err != nil {

@@ -1,0 +1,12 @@
+=== RUN   TestMerchantToolsDashboardScale
+    merchant_tools_order_smoke_test.go:607: MTO03 block dashboard_orders        3ms err=<nil>
+    merchant_tools_order_smoke_test.go:607: MTO03 block dashboard_todos         5ms err=<nil>
+    merchant_tools_order_smoke_test.go:607: MTO03 block finance 7 days          6ms err=<nil>
+    merchant_tools_order_smoke_test.go:607: MTO03 block latest 10 orders        6ms err=<nil>
+    merchant_tools_order_smoke_test.go:627: MTO03 dashboard on 10002 orders (store total): worst of 5 = 48.11425ms
+--- PASS: TestMerchantToolsDashboardScale (3.41s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (5.90s)
+PASS
+ok  	livecommerce/tests/foundation	11.900s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

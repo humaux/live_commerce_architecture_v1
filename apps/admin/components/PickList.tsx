@@ -49,6 +49,7 @@ export function PickList({
   const [toolsOpen, setToolsOpen] = useState(() =>
     shouldOpenPickTools(ids.length, sessionID),
   );
+  const [hasBatchFeedback, setHasBatchFeedback] = useState(false);
   const [scope, setScope] = useState("chosen"),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -74,8 +75,10 @@ export function PickList({
     if (document) dialog.current?.showModal();
   }, [document]);
   useEffect(() => {
-    setToolsOpen(shouldOpenPickTools(ids.length, sessionID));
-  }, [ids.length, sessionID]);
+    setToolsOpen(
+      shouldOpenPickTools(ids.length, sessionID) || hasBatchFeedback,
+    );
+  }, [ids.length, sessionID, hasBatchFeedback]);
   async function preview() {
     if (!selection || flight.current) return;
     flight.current = true;
@@ -150,6 +153,7 @@ export function PickList({
           store={store}
           boundary={boundary}
           ids={cvsIDs}
+          onFeedbackChange={setHasBatchFeedback}
           onViewOrder={onViewOrder}
           disabled={disabled}
         />
