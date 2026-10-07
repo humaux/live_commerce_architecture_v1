@@ -1,0 +1,19 @@
+{
+  "name": "p2-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit$"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-b3b-buyer-panel",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-b3b-buyer-panel/review-round",
+  "timeout_seconds": 1200,
+  "head_sha": "e32399b192cb3702fc93026e3915be94832ebd83",
+  "source_sha256": "7b7d047729782c13e7d2d89055bddee3ffbf1a7c3d6bba252c4345194aa72962",
+  "started_at": "2026-10-07T17:52:50Z",
+  "state": "complete",
+  "pid": 88336,
+  "exit_code": 1,
+  "elapsed_seconds": 26.563,
+  "source_unchanged": true
+}

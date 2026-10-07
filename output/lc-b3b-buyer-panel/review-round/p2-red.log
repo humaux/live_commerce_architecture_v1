@@ -1,0 +1,12 @@
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/all
+    live_console_buyer_panel_review_pending_test.go:46: wanted session items=0 want 1 despite 51 newer other-session rows; body={"items":[],"next_cursor":"","unread_total":0}
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/unreplied
+    live_console_buyer_panel_review_pending_test.go:46: wanted session items=0 want 1 despite 51 newer other-session rows; body={"items":[],"next_cursor":"","unread_total":0}
+--- FAIL: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit (1.82s)
+    --- FAIL: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/all (0.00s)
+    --- FAIL: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/unreplied (0.00s)
+FAIL
+FAIL    livecommerce/tests/foundation   3.248s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

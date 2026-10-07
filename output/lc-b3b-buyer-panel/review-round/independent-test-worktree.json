@@ -1,0 +1,11 @@
+{
+  "base_sha": "06a03c6c4c3ecb73cabecb783c15c3b99877152e",
+  "branch": "unit/lc-b3b-review-tests",
+  "files": {
+    "tests/foundation/live_console_buyer_panel_review_origins_test.go": "4e4873cb5cdafc718fd4ea053d88d3786978bc10da002a03e14d67b64de049cb",
+    "tests/foundation/live_console_buyer_panel_review_pending_test.go": "d4044d43ce8116b309ba81e91a863e23fa397186eeffc33d9fe9bca10fec3ea5",
+    "tests/foundation/live_console_buyer_panel_review_pagination_test.go": "aaadf1d682113f330d1daa1940b80e9160e6ba8b7a77400e1344d04010dd1789"
+  },
+  "archive": "independent-test-worktree.tar.gz",
+  "all_match_integrated_source": true
+}
