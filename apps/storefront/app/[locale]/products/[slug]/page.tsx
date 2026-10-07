@@ -1,3 +1,6 @@
+// Purpose: render the canonical product page, including role-separated media and server-owned SEO/content.
+// Depends on: scoped catalog-v2 getProduct/storeCurrency, ProductMedia, assurance, related products, Next metadata/router.
+// Used by: /{locale}/products/{slug}; media bytes use /media/p/{product}/{image} -> Go buyer media route.
 // GET /{locale}/products/{slug}: the product page, server-rendered from catalog-v2 (title, photos, options, variants with
 // price/compare-at/stock hint, description, collections) so it is crawlable; the buy box is a client island (ProductBuy).
 // Go: GET /v1/buyer/catalog/v2/products/{slug_or_id} (lib/shop-upstream.ts getProduct) + the list route for the store currency.
@@ -10,12 +13,11 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import PageHead from "../../../../components/PageHead";
-import ProductBuy from "../../../../components/ProductBuy";
-import ProductGallery from "../../../../components/ProductGallery";
+import ProductMedia from "../../../../components/ProductMedia";
 import RelatedProducts from "../../../../components/RelatedProducts";
 import ProductAssurance from "../../../../components/ProductAssurance";
 import { withPreview } from "../../../../lib/design";
-import { collectionPath, productImage, productPath } from "../../../../lib/routes";
+import { collectionPath, productImage, productImageSet, productPath } from "../../../../lib/routes";
 import { productJsonLd } from "../../../../lib/seo";
 import { shopCopy } from "../../../../lib/shop-copy";
 import { alternates, gate, must } from "../../../../lib/shop-page";
@@ -24,6 +26,7 @@ import { getProduct, shopOrigin, storeCurrency } from "../../../../lib/shop-upst
 type Params = Promise<{ locale: string; slug: string }>;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 
+/** Read public product metadata to build canonical/alternate/Open Graph tags; no writes. */
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isLocale(locale)) return {};
@@ -41,6 +44,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
+/** Render the scoped catalog product and linked buyer controls; redirect legacy ID links to the canonical slug. */
 export default async function Page({ params }: { params: Params }) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
@@ -68,12 +72,9 @@ export default async function Page({ params }: { params: Params }) {
         />
       </div>
       <div className="sf-product__grid">
-        <ProductGallery locale={locale} productID={product.id} name={product.title} images={product.images} />
-        <div className="sf-product__side">
-          <h1 className="sf-product__title">{product.title}</h1>
-          <ProductBuy locale={locale} product={product} currency={currency} />
+        <ProductMedia key={product.id} locale={locale} product={product} currency={currency} assurance={
           <ProductAssurance locale={locale} policies={shop.draft ? [] : shop.design.pages.filter(p => ["shipping", "returns", "refunds"].includes(p.slug)).map(({ slug, title }) => ({ slug, title }))} />
-        </div>
+        } />
         <div className="sf-product__info">
           {product.description && (
             <section aria-labelledby="sf-desc">
@@ -81,6 +82,13 @@ export default async function Page({ params }: { params: Params }) {
               <p className="sf-desc">{product.description}</p>
             </section>
           )}
+          {product.detail_images.length > 0 && <div className="sf-product__detail-images" data-testid="product-detail-images">
+            {product.detail_images.map(image => <img key={image.id} data-testid="product-detail-image" data-image-id={image.id}
+              src={productImage(product.id, image.id)} srcSet={productImageSet(product.id, image.id, image.sizes)}
+              sizes="(min-width: 1280px) 1184px, calc(100vw - 32px)"
+              width={image.width ?? undefined} height={image.height ?? undefined}
+              alt="" loading="lazy" decoding="async" />)}
+          </div>}
           {product.collections.length > 0 && (
             <section aria-labelledby="sf-cols">
               <h2 id="sf-cols">{copy.inCollections}</h2>

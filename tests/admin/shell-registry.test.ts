@@ -34,8 +34,8 @@ test("Integrator P2: legal CN comment ordering and a distinct three-image recomm
     assert.notEqual(copy.recommendedImages, copy.images);
   }
   const form = readFileSync("apps/admin/components/ProductDocumentForm.tsx", "utf8");
-  assert.match(form, /label: c\.recommendedImages, ok: photos\.length >= 3/);
-  assert.match(form, /label: c\.images, ok: photos\.length > 0/);
+  assert.match(form, /label: c\.recommendedImages, ok: mainPhotoCount\(photos\) >= 3/);
+  assert.match(form, /label: c\.images, ok: mainPhotoCount\(photos\) > 0/);
 });
 test("ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent", () => {
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {

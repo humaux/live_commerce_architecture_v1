@@ -1,0 +1,28 @@
+## 3b6c6317 base; staged tree at 2026-10-07T07:27:45Z
+## node tests (tests/ui libs, shard lib + aggregate, tests/ci)
+ℹ tests 23
+ℹ pass 23
+ℹ fail 0
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+ℹ tests 12
+ℹ pass 12
+ℹ fail 0
+## node tests exit via test-node.sh new lines
+sweep-shard-lib exit=0
+## yaml parse
+gates.yml ok; jobs ['plan', 'gate', 'aggregate']
+ruby yaml ok
+## go vet -tags browser ./tests/foundation
+exit=0
+## shard-plan --check
+shard-plan: ok (1217 top-level tests, each in exactly one of 10 groups)
+## ci-plan full dispatch
+ci-plan: 25 job(s); click-sweep x10 (aggregate); visual-lint x4 (aggregate)
+## check-gates
+exit=0
+PASS G-UI3/G-UI5
+shard-plan: ok (1217 top-level tests, each in exactly one of 10 groups)
+check-gates: ok (76 modes, all documented; every tracked test file is run)
+check-headers: OK (base 5d124dfa5cfb9114b046b4c937af87fbabeeef97)

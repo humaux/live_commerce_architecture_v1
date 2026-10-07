@@ -27,15 +27,12 @@ import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
+import { VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, parseShard, routeId, shardReport } from "./sweep-shard-lib.mjs";
 import { BLOCKING, BLOCKING_KINDS, RULES, SCROLL_POSITIONS, T, collect, countByRule, describe, evaluate, r10Occlusion, scrollToFraction, selectRecords } from "./visual-lint-lib.mjs";
 
-export const LOCALES = ["zh-TW", "zh-CN", "en"];
-export const VIEWPORTS = [
-  { name: "desktop", size: { width: 1586, height: 992 }, mobile: false },
-  { name: "mobile", size: { width: 390, height: 844 }, mobile: true },
-];
+export { VISUAL_LOCALES as LOCALES, VISUAL_VIEWPORTS as VIEWPORTS, routeId }; // the matrix lives in sweep-shard-lib.mjs: sweep-aggregate.mjs counts the same one
+const LOCALES = VISUAL_LOCALES, VIEWPORTS = VISUAL_VIEWPORTS;
 const sizeOf = (v) => `${v.size.width}x${v.size.height}`;
-export const routeId = (p) => (p === "/" ? "home" : p.replace(/^\//, "").replace(/\[([^\]]+)\]/g, "$1").replace(/\//g, "-").toLowerCase());
 const ctxOptions = (v, locale, extra = {}) => ({ viewport: v.size, screen: v.size, isMobile: v.mobile, hasTouch: v.mobile, locale, deviceScaleFactor: 1, ignoreHTTPSErrors: true, ...extra });
 
 // storefront routes of docs/engineering/ui-architecture.md section 4 (the same list the click sweep walks); cart/checkout/order need the cart the buyer fills.
@@ -68,7 +65,8 @@ export async function main() {
   const facts = JSON.parse(await readFile(env("LC_SWEEP_FACTS"), "utf8"));
   const pageFilter = (process.env.LC_SWEEP_PAGES || "").split(",").filter(Boolean); // dev affordance: route substrings ("=/" = exactly "/")
   const wanted = (route) => pageFilter.length === 0 || pageFilter.some((f) => (f.startsWith("=") ? route === f.slice(1) : route.includes(f)));
-  const WORKERS = Number(process.env.LC_SWEEP_WORKERS || 3);
+  const WORKERS = Number(process.env.LC_SWEEP_WORKERS || 3); // the audit only reads: parallel contexts are safe, so sharding keeps the default
+  const shard = parseShard(process.env.LC_SWEEP_SHARD); // i/N: this job shoots only its slice of the tasks (sweep-shard-lib.mjs); sweep-aggregate.mjs proves the slices cover everything
   const origin = facts.store_origin, HOST = new URL(origin).host;
   const root = process.cwd();
   const commit = (() => { try { return execFileSync("git", ["rev-parse", "--short=10", "HEAD"], { encoding: "utf8" }).trim(); } catch { return "unknown"; } })();
@@ -162,13 +160,20 @@ export async function main() {
   if (wanted("=/")) adminUnits.push({ id: "signed-out-home", route: "/", state: "signed-out", url: (l) => `${adminOrigin}/${l}`, auth: false });
   const platformUnits = PLATFORM_PAGES.filter((n) => pageFilter.length === 0 || pageFilter.includes("platform") || wanted(`/${n}`)).map((name) => ({ id: name, route: name === "home" ? "/" : `/${name}`, state: "public", name }));
   const storefrontUnits = [...STOREFRONT(facts), ...STOREFRONT_CART].filter((r) => wanted(r.route)).map((r) => ({ id: routeId(r.route), ...r }));
-  const expected = [];
+  const universe = [];
   for (const l of LOCALES) for (const v of VIEWPORTS) {
-    for (const u of adminUnits) expected.push({ app: "admin", id: u.id, locale: l, v });
-    for (const u of storefrontUnits) expected.push({ app: "storefront", id: u.id, locale: l, v });
-    for (const u of platformUnits) expected.push({ app: "platform", id: u.id, locale: l, v });
+    for (const u of adminUnits) universe.push({ app: "admin", id: u.id, locale: l, v });
+    for (const u of storefrontUnits) universe.push({ app: "storefront", id: u.id, locale: l, v });
+    for (const u of platformUnits) universe.push({ app: "platform", id: u.id, locale: l, v });
   }
   const key = (e) => `${e.app}|${e.id}|${e.locale}|${sizeOf(e.v)}`;
+  // Sharding unit = one capture task: one admin or platform shot, or one storefront walk (a cart-bearing context per locale x viewport, never split).
+  const taskKey = (e) => (e.app === "storefront" ? `storefront|${e.locale}|${e.v.name}` : key(e));
+  const taskWeights = new Map();
+  for (const e of universe) { const k = taskKey(e); taskWeights.set(k, e.app === "storefront" ? (taskWeights.get(k) ?? 8) + 1 : 1); } // a storefront walk also fills the cart and places the COD order (~8 shots of work)
+  const owner = assignShards([...taskWeights].map(([k, weight]) => ({ key: k, weight })), shard?.of ?? 1);
+  const mine = (k) => !shard || owner.get(k) === shard.index; // unsharded: everything is mine
+  const expected = universe.filter((e) => mine(taskKey(e)));
 
   // ---- capture one page: settle, measure, shoot, crop ------------------------------------------------------------------------------------------------------
   const results = [];
@@ -372,9 +377,9 @@ export async function main() {
     const state = await loginState();
     const tasks = [];
     for (const l of LOCALES) for (const v of VIEWPORTS) {
-      tasks.push(storefrontTask(l, v));
-      for (const u of platformUnits) tasks.push(platformTask(u, l, v));
-      for (const u of adminUnits) tasks.push(adminTask(state, u, l, v));
+      if (mine(`storefront|${l}|${v.name}`)) tasks.push(storefrontTask(l, v));
+      for (const u of platformUnits) if (mine(`platform|${u.id}|${l}|${sizeOf(v)}`)) tasks.push(platformTask(u, l, v));
+      for (const u of adminUnits) if (mine(`admin|${u.id}|${l}|${sizeOf(v)}`)) tasks.push(adminTask(state, u, l, v));
     }
     await pool(tasks, WORKERS);
 
@@ -385,7 +390,7 @@ export async function main() {
     const missing = expected.filter((e) => !have.has(key(e)) && !notRunKeys.has(key(e))).map(key);
     const loadFailures = results.filter((r) => r.file && !r.ok).map((r) => `${r.app}|${r.id}|${r.locale}|${r.size} HTTP ${r.status}`);
     const stateFailures = results.filter((r) => r.stateFailed).map((r) => `${r.app}|${r.id}|${r.locale}|${r.size}`);
-    assert.equal(new Set(expected.map(key)).size, expected.length, "route ids must be unique per app");
+    assert.equal(new Set(universe.map(key)).size, universe.length, "route ids must be unique per app");
     results.sort((a, b) => `${a.app}|${a.id}|${a.locale}|${a.size}`.localeCompare(`${b.app}|${b.id}|${b.locale}|${b.size}`));
     const blockingInstances = results.reduce((n, r) => n + (r.blocking ?? 0), 0);
     const totals = {};
@@ -413,6 +418,7 @@ export async function main() {
       generated: new Date().toISOString(), commit, out: path.relative(root, out), thresholds: T, rules: RULES, blocking: BLOCKING, blockingKinds: BLOCKING_KINDS,
       matrix: { locales: LOCALES, viewports: VIEWPORTS.map((v) => ({ name: v.name, size: sizeOf(v) })), apps: { admin: adminUnits.length, storefront: storefrontUnits.length, platform: platformUnits.length } },
       shots: { expected: expected.length, captured: have.size, notRun, missing, loadFailures, stateFailures }, totals, blockingInstances, verdict: { exit: exitCode, reasons },
+      shard: shard ? shardReport(shard, universe.map(key), expected.map(key), { complete: pageFilter.length === 0 }) : null,
       units: results.map(({ file, sha256, bytes, ms, ...r }) => ({ ...r, shot: file })),
     };
     await writeFile(path.join(out, "index.json"), JSON.stringify({
