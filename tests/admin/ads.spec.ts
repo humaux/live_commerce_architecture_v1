@@ -14,7 +14,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { adsCopy } from "../../apps/admin/lib/ads-copy";
-import { instantToTaipei } from "../../packages/format/src/index.ts";
+import { displayTime, instantToTaipei, taipeiToInstant } from "../../packages/format/src/index.ts";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -36,7 +36,7 @@ const graphVersion = required("LC_BROWSER_GRAPH_VERSION");
 const secrets: string[] = JSON.parse(required("LC_BROWSER_SECRETS"));
 const refusalPhase = process.env.LC_BROWSER_PHASE === "original-refusal";
 
-test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
+test.use({ baseURL: origin, timezoneId: "America/Los_Angeles", trace: "retain-on-failure", screenshot: "only-on-failure" });
 
 const en = adsCopy.en;
 const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -288,6 +288,7 @@ test("MA09a state_mismatch, state_expired, meta_connect_failed and Start again: 
 
 test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed request each, the campaign is only ever switched by activate and pause, X7 no resume", async ({ page }) => {
   await signedLogin(page);
+  expect(await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("America/Los_Angeles");
   await openAds(page);
   const requests: { method: string; url: string; key: string | null; ifMatch: string | null; body: string | null; status: number }[] = [];
   page.on("response", (r) => {
@@ -305,9 +306,21 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   await expect(page.getByTestId("ads-f-account")).toHaveValue(/[0-9a-f-]{36}/); // the only connected account is preselected
   await page.getByTestId("ads-f-source").fill(`${pageAsset}_1234567890`);
   await page.getByTestId("ads-f-budget").fill("3000");
-  await page.getByTestId("ads-f-starts").fill(localInput(3 * 3600_000));
-  await page.getByTestId("ads-f-ends").fill(localInput(27 * 3600_000));
+  await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
+  const startsWall = localInput(3 * 3600_000);
+  const endsWall = localInput(27 * 3600_000);
+  await page.getByTestId("ads-f-starts").fill(startsWall);
+  await page.getByTestId("ads-f-ends").fill(endsWall);
+  const savedDraft = page.waitForResponse((r) => r.request().method() === "POST" && /\/ads\/drafts$/.test(new URL(r.url()).pathname));
   await page.getByTestId("ads-f-save").click();
+  const savedResponse = await savedDraft;
+  expect(savedResponse.status()).toBe(201);
+  const persisted = await savedResponse.json() as { starts_at: string; ends_at: string };
+  for (const [wall, instant] of [[startsWall, persisted.starts_at], [endsWall, persisted.ends_at]]) {
+    expect(instantToTaipei(instant)).toBe(wall);
+    expect(Date.parse(instant)).toBe(Date.parse(`${wall}:00+08:00`));
+    expect(Date.parse(instant)).toBe(Date.parse(taipeiToInstant(wall)!));
+  }
   await expect(page.getByTestId("ads-banner")).toHaveText(en.saved);
   await expect(page.getByTestId("ads-detail")).toHaveAttribute("data-status", "DRAFT");
   const created = requests.find((r) => r.method === "POST" && /\/ads\/drafts$/.test(r.url));
@@ -317,9 +330,49 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   expect(input.lifetime_budget_minor).toBe(300000); // NT$3000 in minor units, integer math only
   expect(input.currency).toBe("TWD");
   expect(Object.keys(input).sort()).toEqual(["ad_binding_id", "age_max", "age_min", "countries", "currency", "ends_at", "identity_binding_id", "lifetime_budget_minor", "source_ref", "starts_at", "template"]);
+  expect(Date.parse(input.starts_at)).toBe(Date.parse(`${startsWall}:00+08:00`));
+  expect(Date.parse(input.ends_at)).toBe(Date.parse(`${endsWall}:00+08:00`));
   firstDraft = (await page.getByTestId(/^ads-draft-/).first().getAttribute("data-testid"))!.replace("ads-draft-", "");
   expect(firstDraft).toMatch(uuidRe);
   await expect(page.getByTestId("ads-detail")).toContainText("3,000");
+  await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
+  await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.ends_at));
+  // Read the same persisted draft with the same signed session in a UTC context.
+  const utcContext = await page.context().browser()!.newContext({ storageState: await page.context().storageState(), timezoneId: "UTC", ignoreHTTPSErrors: true });
+  try {
+    const utcPage = await utcContext.newPage();
+    expect(await utcPage.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)).toBe("UTC");
+    await utcPage.goto(`${origin}/en/ads?store=${store}&draft=${firstDraft}`);
+    await expect(utcPage.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
+    await expect(utcPage.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.ends_at));
+    await utcPage.reload();
+    await expect(utcPage.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
+    await expect(utcPage.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.ends_at));
+  } finally {
+    await utcContext.close();
+  }
+  await page.getByTestId("ads-edit").click();
+  await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
+  await expect(page.getByTestId("ads-f-starts")).toHaveValue(startsWall);
+  await expect(page.getByTestId("ads-f-ends")).toHaveValue(endsWall);
+  await page.getByTestId("ads-f-cancel").click();
+  // Creation selects in memory; the existing row control persists the selection in the URL.
+  await page.getByTestId(`ads-open-${firstDraft}`).click();
+  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "false");
+  await page.getByTestId(`ads-open-${firstDraft}`).click();
+  await expect(page).toHaveURL(new RegExp(`[?&]draft=${firstDraft}(?:&|$)`));
+  await page.reload();
+  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "true");
+  await page.getByTestId(`ads-open-${firstDraft}`).click();
+  await expect(page.getByTestId(`ads-open-${firstDraft}`)).toHaveAttribute("aria-expanded", "false");
+  await page.getByTestId(`ads-open-${firstDraft}`).click();
+  await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.starts_at));
+  await expect(page.getByTestId("ads-detail")).toContainText(displayTime("en", persisted.ends_at));
+  await page.getByTestId("ads-edit").click();
+  await expect(page.getByText(en.fDatesHint, { exact: true })).toBeVisible();
+  await expect(page.getByTestId("ads-f-starts")).toHaveValue(startsWall);
+  await expect(page.getByTestId("ads-f-ends")).toHaveValue(endsWall);
+  await page.getByTestId("ads-f-cancel").click();
 
   // approve
   await page.getByTestId("ads-approve").click();

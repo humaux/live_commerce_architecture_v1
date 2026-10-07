@@ -1,0 +1,9 @@
+{
+  "base_sha": "5176e490f79a820fb28d36f6ac5095141eaa28c5",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof",
+  "changed_files": [
+    "tests/admin/design.spec.ts"
+  ],
+  "raw_patch_sha256": "0b91bc21417e567a5de0c0dc0780d127d1a60437f845ededa5c7dbbf685e58f4",
+  "archived_patch": "output/tz-audit/browser-timezone/worktree-archives/tz-browser-proof.patch.gz"
+}

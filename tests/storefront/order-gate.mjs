@@ -1,5 +1,6 @@
-// Actual buyer form -> production Next -> Go -> isolated PostgreSQL.
-// Only synthetic TLS/domain routing and causal network/storage faults live here.
+// Purpose: real-click buyer checkout, order recovery and owned history browser gate.
+// Depends on: production Next/Go/isolated PostgreSQL, Playwright and buyer order BFF.
+// Used by: TestBrowserBuyerOrderUI (--browser-order); synthetic TLS and causal faults only.
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -13,6 +14,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { displayTime } from "../../packages/format/src/index.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
@@ -57,8 +59,8 @@ async function startNext() {
 function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};
 }
-async function newContext(mobile=false) {
-  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}}));contexts.push(c);
+async function newContext(mobile=false,timezoneId="America/Los_Angeles") {
+  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900},timezoneId}));contexts.push(c);
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -80,6 +82,19 @@ async function newContext(mobile=false) {
   });return c;
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
+const historyRead=(p)=>p.waitForResponse(r=>r.status()===200&&r.request().method()==="GET"&&new URL(r.url()).pathname==="/api/buyer/orders"&&new URL(r.url()).searchParams.get("limit")==="20");
+const historyTimeZone={en:"Times are Taipei time (UTC+8).","zh-CN":"时间均为台北时间（UTC+8）。","zh-TW":"時間皆為台北時間（UTC+8）。"};
+async function assertHistoryTimes(p,locale,response) {
+  const body=await response.json();
+  assert.equal(body.items.length,2,"actual UI-triggered history GET returns both orders");
+  await expect(p.getByTestId("order-history").locator("p.order-note")).toContainText(historyTimeZone[locale]);
+  for(const item of body.items) {
+    const row=p.locator(".history-list li").filter({has:p.locator(`button[data-order-id="${item.order_id}"]`)});
+    await expect(row).toHaveCount(1);
+    await expect(row.locator("time[datetime]")).toHaveAttribute("datetime",item.created_at);
+    await expect(row.locator("time[datetime]")).toHaveText(displayTime(locale,item.created_at));
+  }
+}
 async function quotePage(c,clock=false,p) {
   if(!p){p=await c.newPage();if(clock)await p.clock.install();}
   await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
@@ -385,9 +400,11 @@ try {
   const summaryKeys=["order_id","created_at","cart_id","cart_version","commercial_state","fulfillment_state","currency","total_minor"].sort();
   for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
-  const historyLoading=arm("orders?limit=20",{method:"GET",after:true});await a.getByTestId("toggle-order-history").click();
+  assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);await a.getByTestId("toggle-order-history").click();
   assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
   await expect(a.locator(".history-list li")).toHaveCount(2);
+  await assertHistoryTimes(a,"en",await firstHistoryUI);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
   await capture(a,"desktop-history.png",true,historyReview);
   await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
@@ -397,22 +414,35 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
-    await expect(a.locator(".history-list li")).toHaveCount(2);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
+    await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-id")).toHaveText(orderB);
-  pass("BH04 owned keyset pages and history loading/detail/locales/back preserve current B locator and cart");
+  pass("BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time");
 
   // Lose only the convenience locator, retaining the same HttpOnly credential.
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);
+  const reloadedHistory=historyRead(a);await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  pass("BH05 authoritative history survives noncredential locator loss without repinning an old order");
+  pass("BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order");
+
+  // Same owned session, read-only history in UTC: no extra order or fixture row.
+  const utcContext=await newContext(false,"UTC");await utcContext.addCookies(await c1.cookies(origin));
+  const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
+  assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
+  await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
+  await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcReloadHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
+  await utcContext.close();
+  pass("BH05 same owned history renders Taipei times in UTC browser context");
 
   // Preserve an already advanced cart, including another tab's selected items.
   const previousCart=(await api(tab1,"GET","cart")).body;
