@@ -14,6 +14,7 @@ package foundation_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -1141,5 +1142,188 @@ func TestMerchantCancelGroupRace(t *testing.T) {
 	rtExpect(t, "retry", st, out, 200, "")
 	if pg, _ := out["parcel_group"].(map[string]any); pg["id"] != group || pg["state"] != "DISSOLVED" {
 		t.Fatalf("parcel_group %v", out["parcel_group"])
+	}
+}
+
+// TestMerchantCancelClosesWorkItem is the 0162 root-cause gate (unit cancel-closes-work-item, returns-v1 §3 Amendment 0162): a merchant
+// cancel CLOSES the order's READY payment work item in the same transaction, so the merchant projection shows work_state=NONE for every
+// cancelled order — including the fully refunded one that kept work_state=READY on trunk (the W3-08B symptom the relaxed Go/TS validators
+// only papered over). Money that still needs a human after a cancel is the gap list's job (fact-based, never reads the work item): an
+// in-flight refund counted at cancel time that later FAILS keeps the order in GET /orders/cancel-refund-gaps. The last subtest re-runs the
+// 0162 file (the 0117 runBackfill pattern) over fabricated legacy rows: cancelled + no outstanding gap -> closed, open gap -> kept READY.
+func TestMerchantCancelClosesWorkItem(t *testing.T) {
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write", "inventory:write")
+
+	// workRows counts the durable data under the projection; projWorkState is what the merchant actually sees (GET detail).
+	workRows := func(order string) int {
+		return e.count(`SELECT count(*) FROM fulfillment.payment_work_items WHERE order_id=$1`, order)
+	}
+	projWorkState := func(order string) string {
+		t.Helper()
+		st, out, raw := e.mcall(e.token(), "GET", e.rtPath("/orders/"+order), "", "")
+		if st != 200 {
+			t.Fatalf("order detail answered %d: %s", st, raw)
+		}
+		ws, _ := out["work_state"].(string)
+		return ws
+	}
+	cancelConfirmed := func(order, key string) (int, map[string]any) {
+		st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+order+"/cancel"), key, `{"expected_state":"CONFIRMED","reason":"customer asked"}`)
+		return st, out
+	}
+	// failRefund walks an existing refund to a FAILED fact through the real webhook path (the TestMerchantCancelRefundGap recipe).
+	failRefund := func(rf rfxOrder, refund, tag string) {
+		t.Helper()
+		e.r.awaitRefundFact(t, refund, rf.attempt, "SUCCEEDED")
+		fakeID := e.r.fake.RefundByRef(refund)
+		e.r.fake.SetRefundStatus(fakeID, "failed", "declined")
+		body := e.r.fake.RefundEventBody("evt_cw_"+tag+"_"+t04Tag(), "refund.failed", fakeID, false)
+		if status := e.r.deliverRaw(t, rf.endpoint, rf.secret, body); status != 200 {
+			t.Fatalf("refund.failed webhook answered %d", status)
+		}
+		e.r.awaitRefundFact(t, refund, rf.attempt, "FAILED")
+	}
+	gapOf := func(order string) map[string]any {
+		t.Helper()
+		st, out, raw := e.mcall(e.token(), "GET", e.rtPath("/orders/cancel-refund-gaps"), "", "")
+		if st != 200 {
+			t.Fatalf("gap list answered %d: %s", st, raw)
+		}
+		items, _ := out["items"].([]any)
+		for _, it := range items {
+			if m, _ := it.(map[string]any); m != nil && m["order_id"] == order {
+				return m
+			}
+		}
+		return nil
+	}
+
+	t.Run("a never-paid hold cancels to work_state NONE", func(t *testing.T) {
+		b := e.newBuyer()
+		res, err := e.svc.Begin(context.Background(), b.cap.Token, e.store(), t04Key("cw-begin-np"), b.h.input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+res.OrderID+"/cancel"), "cw-can-np01", `{"expected_state":"DRAFT","reason":"customer asked"}`)
+		rtExpect(t, "cancel the unpaid hold", st, out, 200, "")
+		if n := workRows(res.OrderID); n != 0 {
+			t.Fatalf("an unpaid hold must never own a work item, found %d", n)
+		}
+		if ws := projWorkState(res.OrderID); ws != "NONE" {
+			t.Fatalf("never-paid cancel projects work_state=%s, want NONE", ws)
+		}
+	})
+
+	t.Run("cancelling a fully refunded paid order closes the work item: work_state NONE (0162)", func(t *testing.T) {
+		order, rf := e.rtPaid()
+		if n := workRows(order); n != 1 {
+			t.Fatalf("capture must leave exactly one work item, found %d", n)
+		}
+		if ws := projWorkState(order); ws != "READY" {
+			t.Fatalf("paid unshipped order projects work_state=%s, want READY", ws)
+		}
+		refund := e.r.mustRefund(t, rf, rf.captured, "requested_by_customer")
+		e.r.awaitRefundFact(t, refund, rf.attempt, "SUCCEEDED")
+		st, out := cancelConfirmed(order, "cw-can-full01")
+		rtExpect(t, "cancel the fully refunded order", st, out, 200, "")
+		if n := workRows(order); n != 0 {
+			t.Fatalf("0162: the cancel left %d work item rows — the projection would keep work_state=READY on a CANCELLED order", n)
+		}
+		st, det, raw := e.mcall(e.token(), "GET", e.rtPath("/orders/"+order), "", "")
+		if st != 200 || det["commercial_state"] != "CANCELLED" || det["work_state"] != "NONE" || det["payment_state"] != "REFUNDED" {
+			t.Fatalf("cancelled+refunded detail %d: %s", st, raw)
+		}
+		if g := gapOf(order); g != nil {
+			t.Fatalf("a fully refunded cancel is not a gap: %v", g)
+		}
+	})
+
+	t.Run("a refund in flight at cancel time closes the work item; its later failure stays visible in the gap list", func(t *testing.T) {
+		order, rf := e.rtPaid()
+		refund := e.r.mustRefund(t, rf, rf.captured, "requested_by_customer")
+		st, out := cancelConfirmed(order, "cw-can-infl01") // held includes the in-flight refund (returns-v1 §3)
+		rtExpect(t, "cancel with the refund in flight", st, out, 200, "")
+		if n := workRows(order); n != 0 {
+			t.Fatalf("0162: the cancel left %d work item rows while the refund was in flight", n)
+		}
+		failRefund(rf, refund, "inflight")
+		// The gap list — not the work item — is the surface where this money needs a human (Amendment 0162 ruling).
+		g := gapOf(order)
+		if g == nil {
+			t.Fatal("the failed refund's order is missing from the gap list")
+		}
+		if g["reason"] != "cancel_refund_failed" || g["gap_minor"] != float64(rf.captured) || g["refunded_minor"] != float64(0) {
+			t.Fatalf("gap row %v", g)
+		}
+		if ws := projWorkState(order); ws != "NONE" {
+			t.Fatalf("gap order projects work_state=%s; the work item stays closed and the gap list carries the work", ws)
+		}
+		e.r.mustRefund(t, rf, rf.captured, "requested_by_customer") // the merchant refunds again on the cancelled order
+		if g := gapOf(order); g != nil {
+			t.Fatalf("the re-refund must clear the gap list row: %v", g)
+		}
+	})
+
+	t.Run("the 0162 backfill closes legacy cancelled rows and keeps open-gap rows READY", func(t *testing.T) {
+		// Fabricate the two legacy shapes (pre-0162 cancels left the READY row behind): flip the orders directly, like the
+		// old definer did, without touching the work item.
+		orderA, rfA := e.rtPaid() // A: refund SUCCEEDED, no gap -> must be closed
+		refundA := e.r.mustRefund(t, rfA, rfA.captured, "requested_by_customer")
+		e.r.awaitRefundFact(t, refundA, rfA.attempt, "SUCCEEDED")
+		orderB, rfB := e.rtPaid() // B: refund later FAILED, gap outstanding -> must stay READY
+		refundB := e.r.mustRefund(t, rfB, rfB.captured, "requested_by_customer")
+		failRefund(rfB, refundB, "legacy")
+		for _, o := range []string{orderA, orderB} {
+			mustExec(t, e.p.f.owner, `UPDATE checkout.orders SET commercial_state='CANCELLED',fulfillment_state='CANCELLED',updated_at=clock_timestamp() WHERE id=$1`, o)
+			if n := workRows(o); n != 1 {
+				t.Fatalf("legacy fixture %s: want the READY row the old definer left, found %d", o, n)
+			}
+		}
+		runCancelClosesWorkItemMigration(t, e)
+		if n := workRows(orderA); n != 0 {
+			t.Fatalf("backfill left %d rows on the refunded legacy cancel", n)
+		}
+		if ws := projWorkState(orderA); ws != "NONE" {
+			t.Fatalf("legacy refunded cancel projects work_state=%s after the backfill, want NONE", ws)
+		}
+		if n := workRows(orderB); n != 1 {
+			t.Fatalf("backfill closed the open-gap legacy row (%d rows): the money still needs a human", n)
+		}
+		if ws := projWorkState(orderB); ws != "READY" {
+			t.Fatalf("open-gap legacy cancel projects work_state=%s after the backfill, want READY", ws)
+		}
+		if g := gapOf(orderB); g == nil || g["reason"] != "cancel_refund_failed" {
+			t.Fatalf("the legacy gap row must stay listed: %v", g)
+		}
+		if g := gapOf(orderA); g != nil {
+			t.Fatalf("the refunded legacy cancel is not a gap: %v", g)
+		}
+		runCancelClosesWorkItemMigration(t, e) // re-run: idempotent, and its count assertion must hold at zero
+		if workRows(orderA) != 0 || workRows(orderB) != 1 {
+			t.Fatal("the backfill re-run changed the outcome")
+		}
+	})
+}
+
+// runCancelClosesWorkItemMigration re-executes the whole 0162 file as the migration owner (the 0117 runBackfill pattern): GRANT and
+// CREATE OR REPLACE are idempotent, and the backfill DO block's count assertion must also hold on an already-closed data set.
+func runCancelClosesWorkItemMigration(t *testing.T, e *tcvEnv) {
+	t.Helper()
+	body, err := os.ReadFile("../../migrations/0162_cancel_closes_work_item.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := e.p.f.owner.Begin(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(context.Background())
+	if _, err := tx.Exec(context.Background(), string(body)); err != nil {
+		t.Fatalf("apply 0162 again: %v", err)
+	}
+	if err := tx.Commit(context.Background()); err != nil {
+		t.Fatal(err)
 	}
 }
