@@ -1,0 +1,194 @@
+✔ card-payments copy: identical key sets in all three locales (1.109542ms)
+✔ merchant terms are quoted verbatim (contract §5) in the enable dialog (0.1165ms)
+✔ ruling-fixed strings: platform not OPEN and BLOCKED note (0.047792ms)
+✔ error map covers every frozen refusal code from migrations/0137 (0.068834ms)
+✔ no Stripe account id, key or approval id shape appears in any copy string (0.242709ms)
+✔ storefront collector disclosure matches contract §5 templates in three languages (0.062708ms)
+✔ the merchant terms in the dialog are the contract §5 sentence, extracted from the contract (0.300584ms)
+✔ the storefront templates are the contract §5 lines, extracted from the contract (0.128ms)
+✖ settlement copy: deduction columns are labelled as deductions in every language, with a legend and the net formula (1.220542ms)
+✖ there is no separate 'not on the allowlist' message: it reads as not open (review P1-2) (1.30075ms)
+✔ card summary accepts the frozen shape incl. all-null platform NONE (0.854042ms)
+✔ card summary rejects unknown keys, bad enums, bad money, bad version (1.49425ms)
+✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.556917ms)
+✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.344417ms)
+✔ the suffix length rule is the charset rule's 10; the 22-character descriptor total stays the server's (SANDBOX L=10, LIVE PrefixLength) (0.078125ms)
+✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.069417ms)
+✔ settlement list accepts statements without payout/lines keys (omitempty) (0.405333ms)
+✔ settlement detail carries lines whose count and sums match the totals (0.343208ms)
+✔ settlement parsers reject malformed reads (1.082875ms)
+✔ fees, refunds and disputes are signed exactly as the ledger stores them (0.1945ms)
+✔ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.775209ms)
+✔ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.1625ms)
+✔ a payout reference shaped like a Stripe key or account id is never displayed (0.323458ms)
+✖ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state; the platform badge still tells why (1.356583ms)
+✖ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED (0.930084ms)
+✖ not allowlisted on an OPEN platform reads exactly like not open: the same message, no 'platform open' badge, no enable (review P1-2) (0.24275ms)
+✔ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.0665ms)
+✔ without billing:manage nothing can be changed, but the state is still readable (0.048875ms)
+✔ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.091833ms)
+✔ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.03775ms)
+✔ a retained suffix is recovered from the final preview so a re-enable can keep it (0.040583ms)
+✔ the period label shows the last day inside the (exclusive-end) week (3.9175ms)
+✔ payout state: paid, pending only when money is due, none when the week nets to zero or less (0.097875ms)
+✔ card-payments and settlements are nav:false routes, so no group loses or gains a nav button (0.190833ms)
+✔ settlements need billing:manage, the card page integration:read; the owner opens both (0.141ms)
+✖ statement cells: a dispute reversal and a returned fee read as credits (+) and every deduction as -, and the columns add up to the server's net (0.163125ms)
+✖ the detail parser requires the lines of a statement that has lines; a quiet week (line_count 0) may omit them (0.173542ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 30
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 197.998042
+
+✖ failing tests:
+
+test at tests/admin/card-payments-copy.test.ts:131:1
+✖ settlement copy: deduction columns are labelled as deductions in every language, with a legend and the net formula (1.220542ms)
+  AssertionError [ERR_ASSERTION]: en.refunded
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/card-payments-copy.test.ts:135:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'Refunded',
+    expected: /扣除|deducted/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/card-payments-copy.test.ts:150:1
+✖ there is no separate 'not on the allowlist' message: it reads as not open (review P1-2) (1.30075ms)
+  AssertionError [ERR_ASSERTION]: en
+  
+  true !== false
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/card-payments-copy.test.ts:152:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/red-tmp-fix.test.ts:330:1
+✖ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state; the platform badge still tells why (1.356583ms)
+  AssertionError [ERR_ASSERTION]: NONE/NONE
+  + actual - expected
+  
+  + undefined
+  - true
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-fix.test.ts:337:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/red-tmp-fix.test.ts:344:1
+✖ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED (0.930084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      false,
+  +   undefined
+  -   true
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-fix.test.ts:351:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ false, undefined ],
+    expected: [ false, true ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/red-tmp-fix.test.ts:356:1
+✖ not allowlisted on an OPEN platform reads exactly like not open: the same message, no 'platform open' badge, no enable (review P1-2) (0.24275ms)
+  AssertionError [ERR_ASSERTION]: NONE
+  + actual - expected
+  
+    {
+      blocked: false,
+      canDisable: false,
+      canEnable: false,
+  +   notAllowed: true,
+  +   notOpen: false
+  -   notOpen: true,
+  -   showPlatform: false
+    }
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-fix.test.ts:360:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { notOpen: false, notAllowed: true, blocked: false, canEnable: false, canDisable: false },
+    expected: { notOpen: true, blocked: false, showPlatform: false, canEnable: false, canDisable: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/red-tmp-fix.test.ts:464:1
+✖ statement cells: a dispute reversal and a returned fee read as credits (+) and every deduction as -, and the columns add up to the server's net (0.163125ms)
+  ReferenceError: statementCells is not defined
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-fix.test.ts:480:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-fix.test.ts:493:1
+✖ the detail parser requires the lines of a statement that has lines; a quiet week (line_count 0) may omit them (0.173542ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception: line_count 1 but no lines key
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-fix.test.ts:496:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: undefined,
+    operator: 'throws',
+    diff: 'simple'
+  }

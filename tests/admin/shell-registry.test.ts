@@ -158,8 +158,25 @@ test("G-UI1 dynamic and public routes match, details never appear as navigation"
   for (const r of routes.filter((r) => r.path.includes("[") || r.public))
     assert.equal(r.nav, false);
 });
-
 test("W6-U2 ledger is a settings in-page route, preserving existing navigation",()=>{
  const ledger=matchRoute("/settings/operations")!;assert.equal(ledger.nav,false);assert.equal(ledger.permission,"integration:read");assert.equal(ledger.spec,"tests/admin/operations-ads.spec.ts");
  assert.deepEqual(routes.filter(r=>r.group==="settings"&&r.nav).map(r=>r.id),["settings","team","billing"]);
+});
+
+// W3-U5 CI regression (run 37509052114): a second `nav: true` route in the orders group (the returns page) made the group non-singleton, so
+// WorkspaceFrame stopped rendering the `nav-orders` group button (it renders `nav-group-orders` + collapsed sub-links) and every browser mode
+// failed right after login. Further orders pages must be reachable from the orders pages themselves (`nav: false`), not from the rail.
+test("Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false", () => {
+  const frame = readFileSync("apps/admin/components/WorkspaceFrame.tsx", "utf8");
+  assert.match(frame, /singleton && group\.routes\[0\]\.id === "orders"\s*\? "nav-orders"/);
+  for (const access of [
+    { role: "owner", permissions: [] },
+    { role: "staff", permissions: ["orders:read"] },
+  ]) {
+    const orders = visibleGroups(access).find((g) => g.id === "orders");
+    assert.deepEqual(orders?.routes.map((r) => r.id), ["orders"], `${access.role}: orders rail group`);
+  }
+  const returns = matchRoute("/returns")!;
+  assert.equal(returns.group, "orders");
+  assert.equal(returns.nav, false);
 });

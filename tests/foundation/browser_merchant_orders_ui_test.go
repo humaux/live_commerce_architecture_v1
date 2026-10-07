@@ -2,6 +2,10 @@
 
 package foundation_test
 
+// Purpose: real merchant order browser fixtures and read-only authority proof; focused MOU07 is a separate local subset.
+// Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts.
+// Used by: --browser-merchant-orders-ui; focused test-focused invocations do not certify full MOU/native acceptance.
+
 import (
 	"context"
 	"encoding/json"
@@ -32,7 +36,12 @@ import (
 
 // MOU01-06: only the OIDC issuer is mocked in the happy path. Order, payment,
 // expiry and projection reads are all real business APIs over an owned PG18.
-func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
+func TestBrowserMerchantOrdersUIRealChain(t *testing.T) { merchantOrdersUIBrowser(t, false) }
+
+// TestBrowserMerchantOrdersUIFocused runs only MOU07 for a local geometry/control regression; full native proof remains in the full gate.
+func TestBrowserMerchantOrdersUIFocused(t *testing.T) { merchantOrdersUIBrowser(t, true) }
+
+func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if os.Getenv("LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-merchant-orders-ui")
 	}
@@ -327,7 +336,11 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	}
 	fixtures, _ := json.Marshal(ids)
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/orders-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	args := []string{"exec", "playwright", "test", "tests/admin/orders-ui.spec.ts", "--reporter=list", "--output=" + filepath.Join(evidence, "results")}
+	if focused {
+		args = append(args, "--grep", "MOU07")
+	}
+	browser := exec.CommandContext(ctx, "pnpm", args...)
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "merchant-orders-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_ORDER_IDS": string(fixtures), "LC_BROWSER_FROZEN_SKU_CODE": q.stock.skus[0].Code, "LC_BROWSER_FOREIGN_STORE": foreignStore, "LC_BROWSER_FOREIGN_ORDER_ID": foreignOrder, "LC_BROWSER_UNLISTED_STORE": q.f.storeB, "LC_BROWSER_SECOND_TOKEN": secondToken, "LC_BROWSER_NO_ORDERS_TOKEN": noOrdersToken, "LC_BROWSER_EXPIRED_TOKEN": expiredToken, "LC_BROWSER_REVOKED_TOKEN": revokedToken, "LC_BROWSER_EVIDENCE": evidence})
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
@@ -345,6 +358,10 @@ func TestBrowserMerchantOrdersUIRealChain(t *testing.T) {
 	var afterHash string
 	if err = q.f.owner.QueryRow(ctx, `SELECT md5(o::text) FROM checkout.orders o WHERE id=$1`, q.hold.OrderID).Scan(&afterHash); err != nil || afterHash != originalHash {
 		t.Fatalf("order changed after reads: match=%t err=%v", afterHash == originalHash, err)
+	}
+	if focused {
+		t.Logf("FOCUSED MOU07 geometry/controls and PG read-only facts passed; other MOU cases/native proof NOT_RUN; evidence=%s", evidence)
+		return
 	}
 	var native struct {
 		Events []struct {

@@ -39,4 +39,28 @@ export const settingsRoutes = [
     nav: true,
     spec: "tests/admin/customers-billing.spec.ts",
   },
+  // W4-U1: platform card payments activation + settlement ledger. nav:false (never a second nav:true in a
+  // group, W3-U5); entry is the in-page link from Settings step 收款 and the shell route guard still applies.
+  {
+    id: "card-payments",
+    path: "/settings/payments/card",
+    group: "settings",
+    labelKey: "cardPayments",
+    icon: "orders",
+    permission: "integration:read",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/card-payments.spec.ts",
+  },
+  {
+    id: "settlements",
+    path: "/settings/settlements",
+    group: "settings",
+    labelKey: "settlements",
+    icon: "wallet",
+    permission: "billing:manage",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/settlements.spec.ts",
+  },
 ] satisfies RouteEntry[];

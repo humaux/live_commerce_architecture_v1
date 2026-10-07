@@ -33,6 +33,7 @@ import { NotifySettings } from "./NotifySettings";
 import { StorefrontSettings } from "./StorefrontSettings";
 import { MetaConnect } from "./MetaConnect";
 import { availabilityReason, settingsCopy } from "@/lib/settings-copy";
+import { cardPaymentsCopy } from "@/lib/card-payments-copy.ts";
 import { fromMinor, toMinor } from "@/lib/catalog-v2-model";
 import { currencySign } from "@/lib/client";
 import { wholeOnly } from "@/lib/orders-model";
@@ -1757,6 +1758,15 @@ export function SettingsWizard({
                     <span>{c.manualHint}</span>
                   </label>
                 </fieldset>
+                {/* W4-U1: platform card payments live on their own page (nav:false route); entry only. */}
+                <p className="settings-note">
+                  <a
+                    href={`/${locale}/settings/payments/card?store=${store.id}`}
+                    data-testid="settings-card-payments-link"
+                  >
+                    {cardPaymentsCopy[locale].entry}
+                  </a>
+                </p>
                 <div className="settings-actions">
                   <button
                     className="primary"

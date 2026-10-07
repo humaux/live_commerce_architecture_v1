@@ -1,0 +1,15 @@
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON
+=== RUN   TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs
+--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (2.65s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/existing_data_untouched (0.02s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/privilege_delta_equals_section_4.3 (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/RLS_policies (0.00s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/definer_hygiene_and_COMMENT_ON (0.01s)
+    --- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta/interval_backfill_and_widened_CHECKs (0.00s)
+PASS
+ok  	livecommerce/tests/foundation	4.889s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
