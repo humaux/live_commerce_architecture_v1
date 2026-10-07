@@ -1,0 +1,9 @@
+
+Running 1 test using 1 worker
+
+(node:53948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Settings rendered contrast: {"color":"rgb(95, 112, 131)","background":"rgb(245, 246, 248)","fontSize":"14px","contrast":4.699983002725201}
+  ✓  1 tests/admin/settings-real.spec.ts:28:1 › REAL_PG A wizard creates unseeded configuration and preserves safe uncertainty (5.3s)
+
+  1 passed (5.8s)
