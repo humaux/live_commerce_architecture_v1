@@ -67,6 +67,10 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	if calibration != "" && calibration != "retain-thread" {
 		t.Fatal("unsupported LC_INBOX_CALIBRATION")
 	}
+	bundleCalibration := os.Getenv("LC_INBOX_BUNDLE_CALIBRATION")
+	if bundleCalibration != "" && (bundleCalibration != "retain-credential" || calibration != "") {
+		t.Fatal("unsupported or combined inbox credential calibration")
+	}
 	t.Run("failure_diagnostics", func(t *testing.T) {
 		const private = "SYNTHETIC_PRIVATE_DM_NAME_PSID"
 		output := []byte("  1) tests/admin/inbox-ui.spec.ts:450:1 › INU05 hidden thread " + private + " INU99 inbox-ui.spec.ts:999:9 › INU98\n    Error: " + private + "\n    1 failed " + private + "\n    7 passed (2m)\n  2) tests/admin/other.spec.ts:8:1 › INU99 " + private + "\n")
@@ -314,9 +318,12 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	fixtureJSON, _ := json.Marshal(ids)
 	playwrightLog := filepath.Join(evidence, "playwright.log")
 	log := browserLog(t, playwrightLog)
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/inbox-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	if bundleCalibration != "" {
+		browser.Args = append(browser.Args, "--grep", "^INU09 ")
+	}
 	browser.Dir = root
-	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
+	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "LC_INBOX_BUNDLE_CALIBRATION": bundleCalibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})
 	browser.Stdout, browser.Stderr = log, log
 	runErr := browser.Run()
 	closeErr := log.Close()
@@ -332,44 +339,52 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 		} else {
 			t.Log("Playwright summary unavailable; inspect uploaded evidence")
 		}
-		t.Fatalf("inbox browser failed: %v; evidence=%s", runErr, evidence)
 	}
 	if closeErr != nil {
 		t.Fatal("Playwright evidence log could not be closed")
 	}
-	if reads.Load() < 5 || writes.Load() < 4 || stripped.Load() != 0 {
-		t.Fatalf("BFF real-chain proof reads=%d writes=%d stripped=%d", reads.Load(), writes.Load(), stripped.Load())
-	}
 	// The copied credential must never appear in logs, DOM screenshots or retained traces.
 	var persistedHash []byte
-	if err := f.owner.QueryRow(ctx, `SELECT token_hash FROM claims.links WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3`, f.tenantA, f.storeA1, ids["bundle"]).Scan(&persistedHash); err != nil {
+	if err := f.owner.QueryRow(ctx, `SELECT coalesce((SELECT token_hash FROM claims.links WHERE tenant_id=$1 AND store_id=$2 AND bundle_id=$3),decode('','hex'))`, f.tenantA, f.storeA1, ids["bundle"]).Scan(&persistedHash); err != nil {
+		t.Fatal("bundle credential evidence lookup failed")
+	}
+	if len(persistedHash) != 0 {
+		// No raw hash is logged: compare candidate credential digests inside the process only.
+		credentialPattern := regexp.MustCompile(`[A-Za-z0-9_-]{43}`)
+		if err := filepath.WalkDir(evidence, func(path string, entry os.DirEntry, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if entry.IsDir() {
+				return nil
+			}
+			data, readErr := os.ReadFile(path)
+			if readErr != nil {
+				return readErr
+			}
+			if strings.Contains(string(data), hex.EncodeToString(persistedHash)) {
+				return fmt.Errorf("credential digest retained")
+			}
+			for _, candidate := range credentialPattern.FindAll(data, -1) {
+				digest := sha256.Sum256(candidate)
+				if hex.EncodeToString(digest[:]) == hex.EncodeToString(persistedHash) {
+					return fmt.Errorf("credential retained")
+				}
+			}
+			return nil
+		}); err != nil {
+			t.Fatal("I11 bundle evidence boundary failed")
+		}
+		t.Log("I11 bundle credential evidence verified")
+	}
+	if runErr != nil {
+		t.Fatalf("inbox browser failed: %v; evidence=%s", runErr, evidence)
+	}
+	if len(persistedHash) != 32 {
 		t.Fatal("bundle UI did not persist a link")
 	}
-	// No raw hash is logged: compare candidate credential digests inside the process only.
-	credentialPattern := regexp.MustCompile(`[A-Za-z0-9_-]{43}`)
-	if err := filepath.WalkDir(evidence, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
-		}
-		data, readErr := os.ReadFile(path)
-		if readErr != nil {
-			return readErr
-		}
-		if strings.Contains(string(data), hex.EncodeToString(persistedHash)) {
-			return fmt.Errorf("credential digest retained")
-		}
-		for _, candidate := range credentialPattern.FindAll(data, -1) {
-			digest := sha256.Sum256(candidate)
-			if hex.EncodeToString(digest[:]) == hex.EncodeToString(persistedHash) {
-				return fmt.Errorf("credential retained")
-			}
-		}
-		return nil
-	}); err != nil {
-		t.Fatal("I11 bundle evidence boundary failed")
+	if reads.Load() < 5 || writes.Load() < 4 || stripped.Load() != 0 {
+		t.Fatalf("BFF real-chain proof reads=%d writes=%d stripped=%d", reads.Load(), writes.Load(), stripped.Load())
 	}
 	// Each clicked submit flow (including committed-but-lost acknowledgment) creates exactly one operation.
 	for _, key := range []string{"open", "retry"} {

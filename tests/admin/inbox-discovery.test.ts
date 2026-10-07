@@ -5,6 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -46,7 +47,7 @@ test("real Playwright --list collects each original INU case and isolated INU09 
     delete env[key];
   const result = spawnSync(
     process.execPath,
-    [cli, "test", "--list", "--config", resolve(root, "playwright.config.ts"), "--reporter=json"],
+    [cli, "test", ...runnerSelectors(), "--list", "--config", resolve(root, "playwright.config.ts"), "--reporter=json"],
     {
       cwd: root,
       env,
@@ -107,3 +108,12 @@ test("real Playwright --list collects each original INU case and isolated INU09 
     "no duplicate collection from shared helpers or config registration",
   );
 });
+
+function runnerSelectors(): string[] {
+  // Execute the real Go runner's literal selectors too: config alone cannot detect an accidentally filtered-out spec.
+  const harness = readFileSync(resolve(root, "tests/foundation/browser_inbox_ui_test.go"), "utf8");
+  const call = harness.match(/browser := exec\.CommandContext\(ctx, "pnpm", "exec", "playwright", "test", (.*?)"--reporter=list"/);
+  assert.ok(call, "actual browser runner arguments are observable");
+  assert.equal(call[1].replace(/"[^"\n]*"|[\s,]/g, ""), "", "only literal runner selectors before reporter");
+  return [...call[1].matchAll(/"([^"\n]*)"/g)].map((match) => match[1]);
+}

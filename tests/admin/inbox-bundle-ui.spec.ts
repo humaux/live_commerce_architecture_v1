@@ -1,7 +1,8 @@
 // Purpose: INU09 real claim-link issuance, native clipboard and persisted receipt without credential-bearing traces.
 // Depends on: real Go/PG/M6/M7 fixture and shared inbox navigation; credential remains in browser memory/clipboard.
 // Used by: --browser-inbox; worker-scoped artifact settings are isolated from ordinary inbox diagnostics.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { test } from "./inbox-private-evidence";
 import { mkdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { origin, api, evidence, store, ids, buyerOrigin, sentinels,
@@ -102,6 +103,14 @@ test("INU09 flagged bundle copies actual M7 link through native clipboard and pe
   expect(response.request().postDataJSON()).toEqual({ expected_generation: 0, release_binding: false });
   // Never read, attach or log the credential-bearing M7 response body.
   await expect(page.getByTestId("bundle-recovery").getByRole("status")).toHaveText("Link copied");
+  if (process.env.LC_INBOX_BUNDLE_CALIBRATION === "retain-credential") {
+    // MOCK-only injected DOM retention: the privacy assertion must fail without retaining the credential in evidence.
+    await page.evaluate(async () => {
+      const leaked = document.createElement("p");
+      leaked.textContent = await navigator.clipboard.readText();
+      document.body.append(leaked);
+    });
+  }
   const copied = await bundleClipboardProof(page, buyerOrigin);
   expect(copied.origin_valid).toBe(true);
   expect(copied.path_valid).toBe(true);

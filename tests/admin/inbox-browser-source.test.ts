@@ -12,11 +12,12 @@ const origin = "https://mock-admin.invalid";
 const fixture = "10000000-0000-4000-8000-000000000001";
 const other = "20000000-0000-4000-8000-000000000002";
 
-test("actual login settles authentication and the real fixture-store navigation before Messages", async () => {
+for (const initialStore of [other, fixture]) {
+test(`actual login settles the role home and fixture store (${initialStore === fixture ? "already selected" : "real switch"})`, async () => {
   const helpers = source.statements.filter((n: any) => ts.isFunctionDeclaration(n) &&
     ["login", "selectFixtureStore"].includes(n.name?.text)).map((n: any) => n.getText(source)).join("\n");
   assert.ok(helpers.includes("async function login"), "exercise the real login declaration");
-  let url = `${origin}/en/`, selected = other, authPending = false, switching: string | null = null;
+  let url = `${origin}/en/`, selected = initialStore, authPending = false, switching: string | null = null;
   const events: string[] = [];
   const matches = (value: string | RegExp | ((url: URL) => boolean)) =>
     typeof value === "string" ? url === value : value instanceof RegExp ? value.test(url) : value(new URL(url));
@@ -24,8 +25,8 @@ test("actual login settles authentication and the real fixture-store navigation 
     async goto(value: string) { url = value; events.push("goto"); },
     url: () => url,
     async waitForURL(value: any) {
-      if (authPending) { authPending = false; url = `${origin}/en?store=${other}`; selected = other; events.push("auth settled"); }
-      else if (switching) { selected = switching; switching = null; url = `${origin}/en?store=${selected}`; events.push("store settled"); }
+      if (authPending) { authPending = false; url = `${origin}/en/messages`; selected = initialStore; events.push("auth settled"); }
+      else if (switching) { selected = switching; switching = null; url = `${origin}/en/messages?store=${selected}`; events.push("store settled"); }
       assert.equal(matches(value), true, "actual navigation destination must match the requested wait");
     },
     getByRole: () => ({ async click() { authPending = true; events.push("sign in"); } }),
@@ -62,8 +63,12 @@ test("actual login settles authentication and the real fixture-store navigation 
     origin, fixture, { open: "30000000-0000-4000-8000-000000000003" }, ["MOCK_DM", "MOCK_NAME"], expect,
   );
   await login(page);
-  assert.equal(events.filter((event) => event === "real selectOption").length, 1);
-  assert.ok(events.indexOf("auth settled") < events.indexOf("real selectOption"));
-  assert.ok(events.indexOf("store settled") < events.indexOf("Messages"));
+  assert.equal(events.filter((event) => event === "real selectOption").length, initialStore === fixture ? 0 : 1);
+  assert.ok(events.indexOf("auth settled") < events.indexOf("Messages"));
+  if (initialStore !== fixture) {
+    assert.ok(events.indexOf("auth settled") < events.indexOf("real selectOption"));
+    assert.ok(events.indexOf("store settled") < events.indexOf("Messages"));
+  }
   assert.equal(url, `${origin}/en/messages?store=${fixture}`);
 });
+}

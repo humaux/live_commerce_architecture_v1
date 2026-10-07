@@ -39,6 +39,8 @@ test("persisted link and token-free command receipt are compared without disclos
   assert.match(spec, /recopied\.dm_operations\)\.toBe\(before\.dm_operations\)/);
   assert.match(spec, /linkPosts\)\.toBe\(1\)/);
   assert.match(spec, /record\("Copy claim link"/);
+  assert.ok(go.indexOf("filepath.WalkDir(evidence") < go.indexOf('t.Fatalf("inbox browser failed'),
+    "credential evidence is inspected before returning a browser failure");
 });
 
 

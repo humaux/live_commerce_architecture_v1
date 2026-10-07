@@ -58,13 +58,15 @@ async function writeInboxLedger(ledger: ReturnType<typeof createInboxLedger>["le
 }
 /** Switch through the real shell control and await its completed store navigation. */
 async function selectFixtureStore(page: Page, next: string) {
-  // The shell performs a full overview navigation; selector state alone can be a pre-navigation snapshot.
-  const overview = new URL(`/en?store=${next}`, origin).href;
+  // The shell goes through overview, then redirects live_operator to its allowed Messages home.
+  const destination = new URL(`/en/messages?store=${next}`, origin).href;
   const selector = page.getByTestId("shell-store-selector");
   await expect(selector).toBeVisible();
-  if ((await selector.inputValue()) !== next) await selector.selectOption(next);
-  await expect(page).toHaveURL(overview);
-  await expect(page.getByTestId("inbox-page")).toHaveCount(0);
+  if ((await selector.inputValue()) !== next) {
+    await selector.selectOption(next);
+    await expect(page).toHaveURL(destination);
+  }
+  await expect(page.getByTestId("inbox-thread")).toHaveCount(0);
   await expect(page.getByTestId("shell-store-selector")).toHaveValue(next);
   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
 }
@@ -73,9 +75,8 @@ async function selectFixtureStore(page: Page, next: string) {
 async function login(page: Page) {
   await page.goto(new URL("/en/", origin).href);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
-  // Wait for the signed landing's default-store navigation before driving another real store change.
-  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en" &&
-    /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(url.searchParams.get("store") ?? ""));
+  // This role cannot view dashboard: wait for its actual signed-in home before selecting a store.
+  await expect(page).toHaveURL((url) => url.origin === origin && url.pathname === "/en/messages");
   await expect(page.getByTestId("nav-group-messages")).toBeVisible();
   await selectFixtureStore(page, store);
   await page.getByTestId("nav-group-messages").click();

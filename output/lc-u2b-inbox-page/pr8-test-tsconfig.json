@@ -17,6 +17,7 @@
     "../../tests/admin/inbox-recovery-env.test.ts",
     "../../tests/admin/inbox-bundle-ui.spec.ts",
     "../../tests/admin/inbox-browser-support.ts",
-    "../../tests/admin/inbox-discovery.test.ts"
+    "../../tests/admin/inbox-discovery.test.ts",
+    "../../tests/admin/inbox-credential-artifacts.test.ts"
   ]
 }

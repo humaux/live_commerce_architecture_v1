@@ -1,0 +1,15 @@
+Role-home+bothstoreinitialstates; discoveryusesactualGoargs
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-browser-source.test.ts", "tests/admin/inbox-discovery.test.ts"]
+✔ actual login settles the role home and fixture store (real switch) (57.892708ms)
+✔ actual login settles the role home and fixture store (already selected) (20.404083ms)
+✔ real Playwright --list collects each original INU case and isolated INU09 exactly once (418.755ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 495.771875
+
+Exit 0
