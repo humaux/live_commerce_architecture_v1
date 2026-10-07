@@ -11,7 +11,7 @@ const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/lib/cus
   compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-function harness(outcomes) {
+function harness(outcomes, logouts = []) {
   const slots = []; const effects = []; const cleanups = []; const calls = []; const commits = [];
   let cursor = 0; let keys = 0;
   const react = {
@@ -38,6 +38,7 @@ function harness(outcomes) {
         const result = typeof outcome === "function" ? await outcome() : outcome;
         return result.ok ? { ok: true, value: parse(result.value) } : result;
       } };
+      if (path === "./session-events") return { signalLogout: () => logouts.push("logout") }; // event-dispatch edge only
       throw new Error(`Unexpected fixture import ${path}`);
     },
   });
@@ -84,4 +85,13 @@ test("UNKNOWN and in-flight retries prevent duplicate dispatch; unmount discards
   assert.equal(h.calls.length, 2); assert.equal(h.keyCount(), 1);
   h.unmount(); resolve({ ok: true, value: "stale old-scope receipt" }); await h.settle();
   assert.equal(h.commits.length, 0); assert.equal(h.calls.length, 2);
+});
+
+// Codex review P2 (PR #3): a write refused as unauthorized ends the session for the whole page (global logout lifecycle),
+// so the guarded customer read clears PII; a forbidden refusal stays local. Sticky UNKNOWN handling is unchanged.
+test("an unauthorized write signals the global logout; forbidden does not", async () => {
+  const lost = []; const h = harness([{ ok: false, code: "unauthorized", uncertain: false }], lost);
+  h.start(h.render()); await h.settle(); assert.deepEqual(lost, ["logout"]);
+  const kept = []; const f = harness([{ ok: false, code: "forbidden", uncertain: false }], kept);
+  f.start(f.render()); await f.settle(); assert.deepEqual(kept, []);
 });

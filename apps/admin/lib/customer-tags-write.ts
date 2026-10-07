@@ -1,8 +1,9 @@
 // Purpose: one in-memory pending command per mounted customer/tag management scope.
-// Depends on: React, customer-tags-client fenced transport; customers-billing-v1 W6-01B idempotency.
+// Depends on: React, customer-tags-client fenced transport, session-events (global logout on unauthorized); customers-billing-v1 W6-01B idempotency.
 // Used by: CustomerTags and CustomerNotes; no storage or note-body logs.
 import { useEffect, useRef, useState } from "react";
 import { sendTagCommand, type TagCommand } from "./customer-tags-client";
+import { signalLogout } from "./session-events";
 
 type Pending = { command: Readonly<TagCommand>; unknown: boolean; parse: (v: unknown) => unknown; committed: (v: unknown) => Promise<void> };
 /** Coordinate explicit writes/retries; unmount/session scope drops pending payloads and stale results. */
@@ -28,6 +29,9 @@ export function useTagWrite(store: string, boundary: string) {
         // UNKNOWN is sticky until a trusted success; never unlock a fresh key from a later no-dispatch/refusal.
         p.unknown = p.unknown || result.uncertain;
         setError(result.code); setUncertain(p.unknown);
+        // A write refused as unauthorized means the session is gone for the whole page: signal the global logout so the
+        // guarded customer read clears PII (Codex review P2, PR #3). Sticky UNKNOWN above is unchanged.
+        if (result.code === "unauthorized") signalLogout();
         pending.current = p.unknown ? p : null;
         return;
       }
