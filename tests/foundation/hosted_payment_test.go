@@ -96,9 +96,7 @@ func hpSetup(t *testing.T) hpHarness {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	// The NotifyURL is the real PAYUNi notify receiver route (w4-01b-payuni-notify), never a legacy
-	// merchant callback path; the token is a fresh random secret whose only stored form is sha256.
-	config := checkout.HostedConfig{ReturnURL: "https://checkout.example.test/payment/return", NotifyURL: "https://checkout.example.test/v1/hooks/payuni/notify/" + randomToken()}
+	config := checkout.HostedConfig{ReturnURL: "https://checkout.example.test/payment/return", NotifyURL: "https://checkout.example.test/payment/notify"}
 	api := hpStarter(t, pool, "PROVIDER_MOCK", keys, config)
 	return hpHarness{psHarness: p, pool: pool, api: api, key: key, config: config,
 		input:     checkout.HostedInput{OrderID: p.hold.OrderID, MethodCode: "payuni_credit", MethodVersion: 1, Locale: "zh-TW"},

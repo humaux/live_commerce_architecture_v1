@@ -1,0 +1,25 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/storefront/tests/red-tmp.test.mjs:9
+import { collectorDisclosure, paymentCopy } from "../lib/payment-copy.head.ts";
+         ^^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../lib/payment-copy.head.ts' does not provide an export named 'collectorDisclosure'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ apps/storefront/tests/red-tmp.test.mjs (59.59825ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 63.047208
+
+✖ failing tests:
+
+test at apps/storefront/tests/red-tmp.test.mjs:1:1
+✖ apps/storefront/tests/red-tmp.test.mjs (59.59825ms)
+  'test failed'

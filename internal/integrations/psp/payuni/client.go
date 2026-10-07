@@ -73,7 +73,6 @@ type Client struct {
 	config     Config
 	httpClient *http.Client
 	queryOnly  bool
-	notifyOnly bool
 }
 
 func (Client) String() string               { return "payuni.Client{redacted}" }
@@ -106,18 +105,6 @@ type ExpectedTrade struct {
 	Installments []int
 }
 
-// NotificationAuth is the authenticated — but not yet projected — content of a PAYUNi
-// notification. A notification is only a trigger to query: it never carries a money fact,
-// so this deliberately omits the payment-method checks that require the attempt.
-type NotificationAuth struct {
-	MerTradeNo  string
-	TradeNo     string
-	AmountTWD   int64
-	PaymentType string
-	Status      string
-	TradeStatus string
-}
-
 // Observation is an authenticated provider report, not a paid or settled flag.
 type Observation struct {
 	MerTradeNo          string
@@ -139,14 +126,7 @@ type Observation struct {
 }
 
 func New(config Config) (*Client, error) {
-	return newClient(config, false, false, nil)
-}
-
-// NewNotify constructs a client that can only authenticate a callback. It cannot
-// build hosted forms or query a trade, and it needs no callback URLs because a
-// notification is verified, never fetched.
-func NewNotify(config Config) (*Client, error) {
-	return newClient(config, false, true, nil)
+	return newClient(config, false, nil)
 }
 
 // NewQuery constructs a client that can only authenticate and query a trade.
@@ -157,18 +137,18 @@ func NewQuery(config Config, transport ...http.RoundTripper) (*Client, error) {
 		return nil, ErrInvalid
 	}
 	if len(transport) == 1 {
-		return newClient(config, true, false, transport[0])
+		return newClient(config, true, transport[0])
 	}
-	return newClient(config, true, false, nil)
+	return newClient(config, true, nil)
 }
 
-func newClient(config Config, queryOnly, notifyOnly bool, transport http.RoundTripper) (*Client, error) {
+func newClient(config Config, queryOnly bool, transport http.RoundTripper) (*Client, error) {
 	if (config.Environment != "SANDBOX" && config.Environment != "LIVE") ||
 		!merchantPattern.MatchString(config.MerchantID) ||
 		!printableASCII(config.HashKey, 32) || strings.TrimSpace(config.HashKey) != config.HashKey ||
 		!printableASCII(config.HashIV, 16) || strings.TrimSpace(config.HashIV) != config.HashIV ||
-		((queryOnly || notifyOnly) && (config.ReturnURL != "" || config.NotifyURL != "")) ||
-		(!queryOnly && !notifyOnly && (!validCallback(config.ReturnURL) || !validCallback(config.NotifyURL))) {
+		(queryOnly && (config.ReturnURL != "" || config.NotifyURL != "")) ||
+		(!queryOnly && (!validCallback(config.ReturnURL) || !validCallback(config.NotifyURL))) {
 		return nil, ErrInvalid
 	}
 	if transport == nil {
@@ -176,7 +156,7 @@ func newClient(config Config, queryOnly, notifyOnly bool, transport http.RoundTr
 		transport = &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12},
 			DisableKeepAlives: queryOnly}
 	}
-	return &Client{config: config, queryOnly: queryOnly, notifyOnly: notifyOnly, httpClient: &http.Client{
+	return &Client{config: config, queryOnly: queryOnly, httpClient: &http.Client{
 		Timeout:       10 * time.Second,
 		Transport:     transport,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
@@ -309,7 +289,7 @@ func (c *Client) endpoint(path string) string {
 }
 
 func (c *Client) BuildHosted(in HostedRequest) (HostedForm, error) {
-	if c == nil || c.queryOnly || c.notifyOnly {
+	if c == nil || c.queryOnly {
 		return HostedForm{}, ErrInvalid
 	}
 	if !tradePattern.MatchString(in.MerTradeNo) || !validTimestamp(in.Timestamp) ||
@@ -526,54 +506,13 @@ func (c *Client) VerifyNotification(body []byte, expected ExpectedTrade) (Observ
 	if c == nil || c.queryOnly || !validExpected(expected) {
 		return Observation{}, ErrInvalid
 	}
-	inner, err := c.authenticateNotification(body)
+	outer, err := parseForm(body)
 	if err != nil {
 		return Observation{}, err
 	}
-	return project(inner, expected, false)
-}
-
-// AuthenticateNotification verifies a callback's outer and inner signatures and returns its
-// authenticated identity fields. It does not project a trade against an attempt: the caller
-// maps MerTradeNo to the connection's attempt and reconciles against the real query path.
-func (c *Client) AuthenticateNotification(body []byte) (NotificationAuth, error) {
-	if c == nil || c.queryOnly {
-		return NotificationAuth{}, ErrInvalid
-	}
-	inner, err := c.authenticateNotification(body)
-	if err != nil {
-		return NotificationAuth{}, err
-	}
-	amount, err := strconv.ParseInt(inner["TradeAmt"], 10, 64)
-	if err != nil || amount <= 0 {
-		return NotificationAuth{}, ErrUncertain
-	}
-	out := NotificationAuth{
-		MerTradeNo:  inner["MerTradeNo"],
-		TradeNo:     inner["TradeNo"],
-		AmountTWD:   amount,
-		PaymentType: inner["PaymentType"],
-		Status:      inner["Status"],
-		TradeStatus: inner["TradeStatus"],
-	}
-	if !tradePattern.MatchString(out.MerTradeNo) ||
-		(out.TradeNo != "" && !providerTrade.MatchString(out.TradeNo)) {
-		return NotificationAuth{}, ErrUncertain
-	}
-	return out, nil
-}
-
-func (c *Client) authenticateNotification(body []byte) (map[string]string, error) {
-	if c == nil || c.queryOnly {
-		return nil, ErrInvalid
-	}
-	outer, err := parseForm(body)
-	if err != nil {
-		return nil, err
-	}
 	inner, err := c.authenticate(outer, false)
 	if err != nil {
-		return nil, err
+		return Observation{}, err
 	}
 	statusPair := outer["Status"] == inner["Status"]
 	if inner["Status"] == "UNAPPROVED" {
@@ -581,14 +520,14 @@ func (c *Client) authenticateNotification(body []byte) (map[string]string, error
 	}
 	if !statusPair ||
 		(inner["Status"] != "SUCCESS" && inner["Status"] != "UNKNOWN" && inner["Status"] != "UNAPPROVED") {
-		return nil, ErrUncertain
+		return Observation{}, ErrUncertain
 	}
 	for key := range inner {
 		if strings.ContainsAny(key, "[]") {
-			return nil, ErrProtocol
+			return Observation{}, ErrProtocol
 		}
 	}
-	return inner, nil
+	return project(inner, expected, false)
 }
 
 func queryRow(inner map[string]string) (map[string]string, error) {
@@ -612,7 +551,7 @@ func queryRow(inner map[string]string) (map[string]string, error) {
 }
 
 func (c *Client) Query(ctx context.Context, expected ExpectedTrade, timestamp int64) (Observation, error) {
-	if c == nil || c.notifyOnly || !validExpected(expected) || !validTimestamp(timestamp) || ctx == nil {
+	if c == nil || !validExpected(expected) || !validTimestamp(timestamp) || ctx == nil {
 		return Observation{}, ErrInvalid
 	}
 	inner := url.Values{"MerID": {c.config.MerchantID}, "Timestamp": {strconv.FormatInt(timestamp, 10)}}

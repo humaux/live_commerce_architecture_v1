@@ -1,0 +1,39 @@
+verified code commit: 5eae72b07e7b866138b1ed0d1a64f5547945a451 (review fix round on top of 5a8a9855; the next commit only adds this log and the DELIVERY.md addendum)
+date: 2026-10-07T05:18:30Z
+--- admin tsc (apps/admin: pnpm exec tsc --noEmit -p .) -> exit 0
+--- storefront tsc -> exit 0
+--- node suites (card-payments x4 + storefront collector) -> exit 0
+ℹ fail 0
+ℹ pass 54
+ℹ tests 54
+--- bash scripts/dev/test-node.sh -> exit 0
+ℹ fail 0
+ℹ pass 1
+ℹ pass 17
+ℹ pass 19
+ℹ pass 37
+ℹ pass 397
+ℹ pass 4
+ℹ pass 48
+ℹ tests 1
+ℹ tests 17
+ℹ tests 19
+ℹ tests 37
+ℹ tests 397
+ℹ tests 4
+ℹ tests 48
+--- bash scripts/dev/check-gates.sh -> exit 0
+PASS G-UI3/G-UI5
+check-gates: ok (74 modes, all documented; every tracked test file is run)
+check-headers: OK (base 3807a3f82169697f837e60c0ebe2fc2fed84a17e)
+ℹ fail 0
+ℹ pass 11
+ℹ tests 11
+--- go vet ./tests/foundation -> exit 0
+--- go vet -tags browser ./tests/foundation -> exit 0
+--- tsc --strict on both Playwright specs -> exit 0
+--- pnpm run build:admin (env as test-local.sh) -> exit 0
+--- PG (focused, same tree): bash scripts/dev/test-focused.sh '^TestW4U1' -> see wire-run4.log
+--- PASS: TestW4U1WireShapes (15.36s)
+--- PASS: TestW4U1StateSequence (12.17s)
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0

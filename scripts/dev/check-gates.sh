@@ -11,6 +11,7 @@
 #     suite whose name a tests/foundation/*.go file selects (LC_BROWSER_SUITE);
 #  3. CI (.github/workflows/foundation.yml) actually invokes scripts/dev/test-node.sh, so a Node suite is
 #     never "covered" by a script no workflow runs.
+#  4. every top-level tests/foundation test belongs to exactly one CI shard group (scripts/dev/shard-plan.mjs --check).
 # Usage: bash scripts/dev/check-gates.sh   (exit 1 on any finding)
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -31,6 +32,9 @@ fi
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
 node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
 node scripts/dev/ui-architecture-gate.mjs
+# CI foundation shards (gates.yml `foundation-shards`): every top-level tests/foundation test runs in exactly one balanced group, so a new test can never fall outside
+# every shard (a test in no list lands in the catch-all group; a duplicate, or a plan without a catch-all, fails here). Regenerate: node scripts/dev/shard-plan.mjs --write.
+node scripts/dev/shard-plan.mjs --check
 # Syntax first: a merge can leave a gate script that no longer parses (R4: a lost `fi` broke every mode).
 for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }

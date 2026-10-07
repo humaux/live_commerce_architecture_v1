@@ -1,5 +1,8 @@
 "use client";
 
+// Purpose: product option/quantity controls and cart actions; selected options also drive ProductMedia's gallery.
+// Depends on: catalog-v2 ProductDetail, CartProvider (/api/buyer/session/cart -> Go buyer routes), shop copy and Next router.
+// Used by: ProductMedia on the product detail page; Go remains the stock and amount authority.
 // Buy box of the product page: option selectors that resolve to one variant (SKU), price + compare-at, stock hint, quantity,
 // Add to cart and Buy now. BFF routes (via CartProvider): /api/buyer/session, /api/buyer/cart -> Go /v1/buyer/session, /cart.
 // The variant list comes from the server-rendered catalog-v2 detail (Go decides price and stock hint; this only picks which
@@ -11,18 +14,21 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { formatMoney } from "../lib/money";
 import { checkoutPath } from "../lib/routes";
-import { initialChoice, resolveVariant, valueAvailable } from "../lib/shop-contract";
+import { resolveVariant, valueAvailable } from "../lib/shop-contract";
 import type { ProductDetail } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { useCart } from "./CartProvider";
 import { CartNotice } from "./CartLines";
 import { CheckIcon, MinusIcon, PlusIcon } from "./icons";
 
-export default function ProductBuy({ locale, product, currency }: { locale: Locale; product: ProductDetail; currency: string }) {
+/** Render controlled variant choices and initiate the existing journalled cart add/checkout actions. */
+export default function ProductBuy({ locale, product, currency, chosen, onChoose }: {
+  locale: Locale; product: ProductDetail; currency: string;
+  chosen: (string | null)[]; onChoose: (values: string[]) => void;
+}) {
   const copy = shopCopy[locale];
   const router = useRouter();
   const cart = useCart();
-  const [chosen, setChosen] = useState<(string | null)[]>(() => initialChoice(product.variants));
   const [quantity, setQuantity] = useState("1");
   const [added, setAdded] = useState(false);
   const [sticky, setSticky] = useState(false);
@@ -56,7 +62,7 @@ export default function ProductBuy({ locale, product, currency }: { locale: Loca
     if (candidates.length === 0) return;
     const score = (v: (typeof candidates)[number]) => v.option_values.filter((x, i) => i !== axis && x === chosen[i]).length;
     const best = candidates.reduce((a, b) => (score(b) > score(a) ? b : a));
-    setChosen(best.option_values);
+    onChoose(best.option_values);
     setAdded(false);
   }
 

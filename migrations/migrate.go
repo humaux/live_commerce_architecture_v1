@@ -201,12 +201,13 @@ func apply(ctx context.Context, pool *pgxpool.Pool, baseDomain string) error {
 	if _, err = postTx.Exec(ctx, `GRANT UPDATE(kind) ON river_payment.river_job TO commerce_stripe_ingress`); err != nil {
 		return err
 	}
-	// PAYUNi notify never inserts a payment job: integration.payment_job_queue pins each
-	// attempt to its single query job (a.job_id=j.id), so the notify definer wakes that
-	// job by rescheduling scheduled_at (see migrations/0136). The guard function forbids
-	// id/kind/args/unique_key/queue changes, so column-level UPDATE(scheduled_at) is the
-	// only privilege the definer owner needs. Re-asserted on every Apply, same as above.
-	if _, err = postTx.Exec(ctx, `GRANT UPDATE(scheduled_at) ON river_payment.river_job TO commerce_integration_writer`); err != nil {
+	// PAY-RM1: the W4-01B PAYUNi notify receiver (0136) is removed by 0161 without ever
+	// having been deployed. Its wake rescheduled the existing query job, so earlier builds
+	// granted UPDATE(scheduled_at) here; that grant is now REVOKEd on every Apply so an
+	// upgraded database converges to the same ACL a fresh one gets. Post-River placement
+	// is unchanged: on a fresh database river_payment.river_job only exists after the
+	// upstream River migrations. REVOKE of a never-issued grant is a no-op.
+	if _, err = postTx.Exec(ctx, `REVOKE UPDATE(scheduled_at) ON river_payment.river_job FROM commerce_integration_writer`); err != nil {
 		return err
 	}
 	// Reapply only lifecycle grants after future upstream additions, and only in
