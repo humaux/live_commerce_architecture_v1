@@ -1,0 +1,9 @@
+2026-10-07T04:23:11Z smoke.sh CASE: S01 PASS bash -n on all deploy scripts
+2026-10-07T04:23:11Z smoke.sh CASE: S01 NOT_RUN shellcheck not installed
+2026-10-07T04:23:11Z smoke.sh CASE: S02 PASS digest pins
+2026-10-07T04:23:13Z smoke.sh CASE: S03 PASS compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv
+2026-10-07T04:23:14Z smoke.sh CASE: S04 PASS coverage=96.7%
+2026-10-07T04:23:16Z smoke.sh CASE: S05 PASS caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image caddy:2.11.4-alpine)
+2026-10-07T04:23:16Z smoke.sh CASE: S06 PASS ignore patterns
+2026-10-07T04:23:19Z smoke.sh CASE: S48 PASS R3 operator/env/probe controls (MOCK, no database or provider calls)
+2026-10-07T04:23:19Z smoke.sh INFO: evidence: /Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/deploy/.evidence/20261007T042311Z-7bee/result.json  overall=PASS

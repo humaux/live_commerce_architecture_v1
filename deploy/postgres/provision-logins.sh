@@ -110,7 +110,7 @@ authorities(name) AS (VALUES
   ('commerce_meta_curator'),('commerce_meta_consumer'),('commerce_meta_worker'),('commerce_media_registrar'),
   ('commerce_media_worker'),('commerce_media_executor'),('commerce_media_recovery'),
   ('commerce_stripe_ingress'),('commerce_payment_registrar'),('commerce_claims_intake'),('commerce_storefront_registrar'),
-  ('commerce_storefront_verifier'),
+  ('commerce_storefront_verifier'),('commerce_platform_operator'),
   -- claims-retention-purge-v1 §4: the job authority (lc_retention_job) and the operator authority, which no
   -- provisioned login may reach (lc_retention_operator is created only by docs/runbooks/claims-data-deletion.md).
   ('commerce_retention_job'),('commerce_retention_operator'),
@@ -198,7 +198,7 @@ SQL
 [[ "$river" == ok ]] || die "DRIFT login=lc_api_runtime problem=$river (fix manually, docs/runbooks/incident.md §DB 角色)"
 log "login=lc_api_runtime river_privileges=ok (ruling 19)"
 
-# The three registrar logins must be able to run their definers (the CLIs report only a fixed code).
+# Registrar and platform-operator logins must run their definers (the CLIs report only a fixed code).
 regs="$(su_psql <<'SQL'
 SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE ((n.nspname = 'integration' AND p.proname IN ('register_meta_page_token','register_meta_binding'))
@@ -211,11 +211,16 @@ WHERE ((n.nspname = 'integration' AND p.proname IN ('register_stripe_account','r
 SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'control' AND p.proname IN ('operator_bind_domain','operator_suspend_domain','operator_detach_domain','operator_storefront_status','operator_set_store_handle')
   AND has_function_privilege('lc_store_registrar', p.oid, 'EXECUTE');
+-- OPS-01B/OPS-02B: four control + five identity definers, including principal enrollment.
+SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE ((n.nspname = 'control' AND p.proname IN ('set_store_active','set_tenant_active','platform_status','read_operator_audit'))
+    OR (n.nspname = 'identity' AND p.proname IN ('grant_support','revoke_support','list_support_grants','add_support_principal','revoke_support_principal')))
+  AND has_function_privilege('lc_platform_operator', p.oid, 'EXECUTE');
 SQL
 )" || die "registrar privilege query failed"
-{ read -r meta_reg; read -r stripe_reg; read -r store_reg; } <<<"$regs"
-[[ "$meta_reg" == 4 && "$stripe_reg" == 5 && "$store_reg" == 5 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg store=$store_reg (want 4, 5 and 5)"
-log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg store=$store_reg"
+{ read -r meta_reg; read -r stripe_reg; read -r store_reg; read -r platform_reg; } <<<"$regs"
+[[ "$meta_reg" == 4 && "$stripe_reg" == 5 && "$store_reg" == 5 && "$platform_reg" == 9 ]] || die "DRIFT registrar EXECUTE meta=$meta_reg stripe=$stripe_reg store=$store_reg platform=$platform_reg (want 4, 5, 5 and 9)"
+log "registrars execute=ok meta=$meta_reg stripe=$stripe_reg store=$store_reg platform=$platform_reg"
 
 # claims-retention-purge-v1 §4/§10(5): the retention-job login runs exactly run_retention + retention_status
 # (the hourly purge and the smoke status check), never erase/policy/replay (operator authority).

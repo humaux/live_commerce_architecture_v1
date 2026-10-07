@@ -106,6 +106,12 @@ rec("P19", len(base_zone) <= 253 and not base_zone.endswith(".localhost") and re
 
 # ---- P02 secrets dir/file modes ----------------------------------------------------------------
 sdir = E.get("LC_SECRETS_DIR", "")
+export_dir = os.path.join(E.get("LC_STATE_DIR", ""), "settlements")
+export_ok = False
+if os.path.isdir(export_dir) and not os.path.islink(export_dir):
+    export_stat = os.stat(export_dir)
+    export_ok = export_stat.st_uid == 65532 and export_stat.st_gid == 65532 and stat.S_IMODE(export_stat.st_mode) == 0o700
+rec("P02", export_ok, "LC_STATE_DIR/settlements is a real directory owned by 65532:65532 mode 0700 (stripe-admin export bind)")
 gid = int(E.get("LC_SECRETS_GID", "-1")) if E.get("LC_SECRETS_GID", "").isdigit() else -1
 manifest = []
 with open(os.path.join(deploy, "secrets.manifest.tsv"), encoding="utf-8") as fh:
@@ -306,11 +312,13 @@ allow = {
                 "COMMERCE_STUDIO_ENABLED", "COMMERCE_STUDIO_MEDIA_ENABLED", "COMMERCE_CLAIMS_ENABLED", "COMMERCE_OIDC_CLIENT_ID", "COMMERCE_IDENTITY_PROVIDER_KEY",
                 "COMMERCE_SESSION_TTL", "COMMERCE_PAYMENT_PROFILE", "COMMERCE_META_ADS_APP_ID", "COMMERCE_META_ADS_CONFIG_ID",
                 "COMMERCE_META_ADS_REDIRECT_URI", "COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_LOGIN_CONFIG_ID",
-                "COMMERCE_META_LOGIN_REDIRECT_URI", "COMMERCE_META_LOGIN_GRAPH_VERSION", "TZ"},
+                "COMMERCE_META_LOGIN_REDIRECT_URI", "COMMERCE_META_LOGIN_GRAPH_VERSION", "COMMERCE_PAYUNI_NOTIFY_ENABLED",
+                "COMMERCE_META_ADVANCED_ACCESS", "COMMERCE_META_DM_RECEIVER_CONFIRMED", "TZ"},
     "admin.env": {"NODE_OPTIONS", "TZ"},
     "storefront.env": {"NODE_OPTIONS", "TZ"},
     "payment-worker.env": {"COMMERCE_PAYMENT_WORKER_CONCURRENCY", "TZ"},
-    "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "TZ"},
+    "claims-worker.env": {"COMMERCE_META_GRAPH_VERSION", "COMMERCE_META_GRAPH_AUTH_HEADER", "COMMERCE_META_PAGE_APP_ID",
+                          "COMMERCE_META_ADVANCED_ACCESS", "COMMERCE_META_DM_RECEIVER_CONFIRMED", "TZ"},
     "ads-worker.env": {"COMMERCE_META_ADS_GRAPH_VERSION", "COMMERCE_META_ADS_PARTNER_AGENT", "TZ"},
     "expiry-worker.env": {"COMMERCE_EXPIRY_WORKER_CONCURRENCY", "TZ"},
     "meta-worker.env": {"COMMERCE_META_WORKER_CONCURRENCY", "TZ"},
@@ -357,6 +365,7 @@ buyer_on = flag("LC_BUYER_ENABLED", E.get("LC_BUYER_ENABLED", ""))
 accounts = flag("COMMERCE_ACCOUNTS_ENABLED", api.get("COMMERCE_ACCOUNTS_ENABLED", ""))
 payment = flag("COMMERCE_BUYER_PAYMENT_ENABLED", api.get("COMMERCE_BUYER_PAYMENT_ENABLED", ""))
 meta = flag("COMMERCE_META_WEBHOOK_ENABLED", api.get("COMMERCE_META_WEBHOOK_ENABLED", ""))
+rec("P06", api.get("COMMERCE_PAYUNI_NOTIFY_ENABLED", "0") == "0", "COMMERCE_PAYUNI_NOTIFY_ENABLED must remain 0 (owner cancelled PAYUNi)")
 studio = flag("COMMERCE_STUDIO_ENABLED", api.get("COMMERCE_STUDIO_ENABLED", ""))
 studio_media = flag("COMMERCE_STUDIO_MEDIA_ENABLED", api.get("COMMERCE_STUDIO_MEDIA_ENABLED", ""))
 claims_on = flag("COMMERCE_CLAIMS_ENABLED", api.get("COMMERCE_CLAIMS_ENABLED", ""))
@@ -443,6 +452,19 @@ if "claims" in profiles:
     rec("P08", cw.get("COMMERCE_META_GRAPH_AUTH_HEADER", "") in ("", "0", "1"), "COMMERCE_META_GRAPH_AUTH_HEADER")
 aw = knobs.get("ads-worker.env", {})
 graph_version = re.compile(r"v[0-9]{1,3}\.[0-9]{1,2}")
+page_app = cw.get("COMMERCE_META_PAGE_APP_ID", "")
+rec("P08", not page_app or re.fullmatch(r"[0-9]{1,40}", page_app) is not None,
+    "COMMERCE_META_PAGE_APP_ID (optional numeric app id; empty disables health probe)")
+for fname in ("api.env", "claims-worker.env"):
+    health = knobs.get(fname, {})
+    advanced = health.get("COMMERCE_META_ADVANCED_ACCESS", "")
+    rec("P08", not advanced or re.fullmatch(r"[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*", advanced) is not None,
+        "COMMERCE_META_ADVANCED_ACCESS (" + fname + ": comma-separated verified permissions)")
+    rec("P08", health.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0") in ("0", "1"),
+        "COMMERCE_META_DM_RECEIVER_CONFIRMED (" + fname + ": 0 or 1)")
+rec("P08", api.get("COMMERCE_META_ADVANCED_ACCESS", "") == cw.get("COMMERCE_META_ADVANCED_ACCESS", "") and
+    api.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0") == cw.get("COMMERCE_META_DM_RECEIVER_CONFIRMED", "0"),
+    "Meta health capability flags match in api.env and claims-worker.env")
 if ads_app:
     rec("P08", re.fullmatch(r"[0-9]{1,40}", ads_app) is not None, "COMMERCE_META_ADS_APP_ID (numeric Meta app id)")
     rec("P08", re.fullmatch(r"[0-9]{1,40}", api.get("COMMERCE_META_ADS_CONFIG_ID", "")) is not None, "COMMERCE_META_ADS_CONFIG_ID")

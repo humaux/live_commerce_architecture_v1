@@ -1,0 +1,12 @@
+actual docker compose create --pull never --no-build, create_host_path=False: exit=1; source_exists=False
+ Container independent-cir1-600115653e-probe-1 Creating 
+ service:probe:1 Error response from daemon: invalid mount config for type "bind": bind source path does not exist: /host_mnt/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/output/deploy-prep-r3/ci-r1/independent-bind-2z8m4yyt/state/settlements 
+Error response from daemon: invalid mount config for type "bind": bind source path does not exist: /host_mnt/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3/output/deploy-prep-r3/ci-r1/independent-bind-2z8m4yyt/state/settlements
+
+cleanup exact synthetic project: exit=0
+actual docker compose create --pull never --no-build, create_host_path=True: exit=0; source_exists=False
+ Container independent-cir1-22abeaea49-probe-1 Creating 
+ Container independent-cir1-22abeaea49-probe-1 Created 
+
+cleanup exact synthetic project: exit=0
+source cd60aabb36d5d393ae5f565cc44396dd7699dfbb4e014ff7f594cb5efa8bb127 deploy/compose.yml
