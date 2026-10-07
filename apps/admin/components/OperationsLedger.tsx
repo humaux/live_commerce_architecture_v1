@@ -75,6 +75,11 @@ export function OperationsLedger({
   } | null>(null);
   const drawer = useRef<HTMLDialogElement>(null);
   const confirmDialog = useRef<HTMLDialogElement>(null);
+  // WorkspaceFrame mounts children after authentication. Open a deep-linked drawer when its node actually mounts.
+  const mountDrawer = useCallback((node: HTMLDialogElement | null) => {
+    drawer.current = node;
+    if (node && selected && !node.open) node.showModal();
+  }, [selected]);
   const boundary = useRef("");
   const blocked = useRef(false);
   const sending = useRef(false);
@@ -463,7 +468,7 @@ export function OperationsLedger({
         )}
       </div>
       <dialog
-        ref={drawer}
+        ref={mountDrawer}
         className="operations-drawer"
         aria-labelledby="operation-title"
         data-testid="operation-drawer"

@@ -40,7 +40,10 @@ async function login(page: Page, target = origin) {
 async function ledger(page: Page, locale = "en", operation?: string) {
   await page.goto(`${origin}/${locale}/settings/operations?store=${store}${operation ? `&operation=${operation}` : ""}`);
   await expect(page.getByTestId("operations-ledger")).toBeVisible();
-  if (operation) await expect(page.getByTestId("operation-drawer")).toContainText(operation);
+  if (operation) {
+    await expect(page.getByTestId("operation-drawer")).toBeVisible();
+    await expect(page.getByTestId("operation-drawer")).toContainText(operation);
+  }
 }
 async function open(page: Page, name: string) {
   await clicked(page, `operation-open-${ops[name]}`, "drawer exposes selected operation", async () => {
@@ -60,6 +63,14 @@ async function filter(page: Page, value: string) {
   const response = await pending; expect(response.status()).toBe(200);
   await expect(page.getByTestId("operations-filter")).toHaveValue(value);
   rows.push({ page: page.url(), control: "operations-filter", action: `selectOption(${value})`, expected: `persisted ${value} rows`, actual: `HTTP 200 and selected ${value}`, result: "PASS" });
+}
+async function toolbarAligned(page: Page) {
+  // READ/MEASURE only. G-UI9 R2 locks adjacent action/control alignment to 4px; thresholds are untouched.
+  const field = await page.getByTestId("operations-filter").boundingBox();
+  const action = await page.getByTestId("operations-refresh").boundingBox();
+  if (!field || !action) throw new Error("toolbar controls must have visible geometry");
+  expect(Math.abs(action.y - field.y), "refresh and filter share the control row").toBeLessThanOrEqual(4);
+  expect(Math.abs(action.height - field.height), "single-line control heights match").toBeLessThanOrEqual(4);
 }
 async function shot(page: Page, name: string, locale: string, viewport: string) {
   // READ/MEASURE only: reads layout dimensions; does not manipulate DOM or state.
@@ -201,10 +212,11 @@ test("ad unbind refuses counting/in-flight operations, then preserves history af
 
 for (const locale of ["zh-TW", "en", "zh-CN"]) for (const width of [1586, 390]) {
   test(`labels and no overflow ${locale} ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 992 }); await login(page); await ledger(page, locale);
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 992 }); await login(page); await ledger(page, locale);
     await expect(page.getByTestId("operations-filter")).toHaveAccessibleName(/.+/);
     await expect(page.getByTestId("operations-refresh")).toHaveAccessibleName(/.+/);
     await clicked(page, "operations-refresh", "ledger refresh completes", async () => { await expect(page.getByTestId(`operation-row-${ops.cas}`)).toBeVisible(); });
+    await toolbarAligned(page);
     await open(page, "protective"); await expect(page.getByTestId("operation-drawer")).toHaveRole("dialog");
     await shot(page, "ledger", locale, width === 390 ? "mobile" : "desktop"); await close(page);
     await login(page, adsOrigin); await ads(page, locale);

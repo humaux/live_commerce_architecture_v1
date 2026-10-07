@@ -1,0 +1,129 @@
+{
+ "generated": "2026-10-07T09:21:56.978Z",
+ "commit": "dca90c2ae8",
+ "out": "output/ui-visual-audit/20261007T092047Z",
+ "matrix": {
+  "locales": [
+   "zh-TW",
+   "zh-CN",
+   "en"
+  ],
+  "viewports": [
+   {
+    "name": "desktop",
+    "size": "1586x992"
+   },
+   {
+    "name": "mobile",
+    "size": "390x844"
+   }
+  ],
+  "apps": {
+   "admin": 1,
+   "storefront": 0,
+   "platform": 0
+  }
+ },
+ "expected": 6,
+ "captured": 6,
+ "notRun": [],
+ "missing": [],
+ "shots": [
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/en/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "en",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "file": "shots/admin/settings-operations/en-1586x992.png",
+   "sha256": "8e1dd5966f258910485896fd615399b229eaec9141c61e8c89bf2d3f406967ac",
+   "bytes": 74277,
+   "status": 200,
+   "pageHeight": 992,
+   "issues": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/en/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-operations/en-390x844.png",
+   "sha256": "ba6f0d1bcba605f96dbb4a164dcde65602b3cf46f12e8bbf5cfbd2fa1a18c782",
+   "bytes": 37563,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/zh-CN/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "zh-CN",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "file": "shots/admin/settings-operations/zh-CN-1586x992.png",
+   "sha256": "e0903d2eabff3244fa970ce70a22901050d3730d00a39e737fa3e58c704ced12",
+   "bytes": 68936,
+   "status": 200,
+   "pageHeight": 992,
+   "issues": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/zh-CN/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-operations/zh-CN-390x844.png",
+   "sha256": "10bb53838474adcbebdc32fc9e8c1781975d03393810c14226a88a53787e8c22",
+   "bytes": 37378,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/zh-TW/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "zh-TW",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "file": "shots/admin/settings-operations/zh-TW-1586x992.png",
+   "sha256": "169406e41f5b45279c4acb0ad8201fe03684c02681b4664f908ff53e39df2650",
+   "bytes": 73812,
+   "status": 200,
+   "pageHeight": 992,
+   "issues": []
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "url": "/zh-TW/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "file": "shots/admin/settings-operations/zh-TW-390x844.png",
+   "sha256": "83e5efc50596454b0ac33c590ea72e389bd111551d0a1dccb9b39bf2079f3524",
+   "bytes": 39669,
+   "status": 200,
+   "pageHeight": 844,
+   "issues": []
+  }
+ ]
+}

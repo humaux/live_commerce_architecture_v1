@@ -61,7 +61,14 @@ func TestBrowserOperationsAds(t *testing.T) {
 	order := e.op(t, "ecpay_logistics", "ecpay.cvs_create", "transactional", `{"order_id":"`+orderObject+`","private_canary":"SYNTHETIC-DO-NOT-EXPOSE"}`)
 	ops["order"] = order.ID
 	foreignBinding := e.register(t, e.otherStore, uniqueAction("w6-ui-foreign"))
-	foreign := e.plan(t, uniqueAction("w6-ui-foreign-op"), foreignBinding, `{"v":1}`)
+	// plan binds to its fixture's store. Keep the foreign operation in the foreign scope;
+	// changing the binding's store would make the UI isolation assertion vacuous.
+	foreignFixture := *e.t06GoFixture
+	foreignFixture.store = e.otherStore
+	foreign := foreignFixture.plan(t, uniqueAction("w6-ui-foreign-op"), foreignBinding, `{"v":1}`)
+	if e.count(t, `SELECT count(*) FROM integration.operations WHERE id=$1 AND store_id=$2`, foreign.OperationID, e.otherStore) != 1 {
+		t.Fatal("foreign operation fixture was not planned in the other store")
+	}
 	ops["foreign"] = foreign.OperationID
 	// Enough READY rows to require a second page at the UI's 20-row limit. Named rows stay newest.
 	for i := 0; i < 30; i++ {

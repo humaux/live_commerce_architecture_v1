@@ -1,0 +1,69 @@
+
+Running 11 tests using 1 worker
+
+(node:7917) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/operations-ads.spec.ts:84:1 › ledger filters, details, capabilities, object links, next page and store isolation (2.4s)
+  ✘   2 tests/admin/operations-ads.spec.ts:120:1 › cancel, registered read retry and query persist after refresh (3.0m)
+  -   3 tests/admin/operations-ads.spec.ts:136:1 › fresh server CAS and daily query cap refuse stale confirmations
+  -   4 tests/admin/operations-ads.spec.ts:164:1 › read-only permissions hide mutation controls after reload
+  -   5 tests/admin/operations-ads.spec.ts:179:1 › ad unbind refuses counting/in-flight operations, then preserves history after refresh; feed copies
+  -   6 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow zh-TW 1586
+  -   7 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow zh-TW 390
+  -   8 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow en 1586
+  -   9 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow en 390
+  -  10 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow zh-CN 1586
+  -  11 tests/admin/operations-ads.spec.ts:211:3 › labels and no overflow zh-CN 390
+
+
+  1) tests/admin/operations-ads.spec.ts:120:1 › cancel, registered read retry and query persist after refresh 
+
+    Test timeout of 180000ms exceeded.
+
+    Error: locator.click: Test timeout of 180000ms exceeded.
+    Call log:
+      - waiting for getByTestId('operation-cancel')
+        - locator resolved to <button data-testid="operation-cancel">Cancel operation</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is not visible
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is not visible
+        - retrying click action
+          - waiting 100ms
+        348 × waiting for element to be visible, enabled and stable
+            - element is not visible
+          - retrying click action
+            - waiting 500ms
+
+
+      27 |   const row = { page: page.url(), control: id, action: "click", expected, actual: "", result: "FAIL" };
+      28 |   rows.push(row);
+    > 29 |   try { await page.getByTestId(id).click(); await verify(); row.actual = expected; row.result = "PASS"; }
+         |                                    ^
+      30 |   catch (error) { row.actual = error instanceof Error ? error.message : String(error); throw error; }
+      31 | }
+      32 | test.afterEach(async () => { await writeFile(path.join(evidence, "click-ledger.json"), JSON.stringify(rows, null, 2)); });
+        at clicked (/Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ops-ledger-ads-ui/tests/admin/operations-ads.spec.ts:29:36)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ops-ledger-ads-ui/tests/admin/operations-ads.spec.ts:122:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/operations-ads/20261007T090548.812462000/results/operations-ads-cancel-regi-30a86-query-persist-after-refresh/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/operations-ads/20261007T090548.812462000/results/operations-ads-cancel-regi-30a86-query-persist-after-refresh/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/operations-ads/20261007T090548.812462000/results/operations-ads-cancel-regi-30a86-query-persist-after-refresh/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/operations-ads/20261007T090548.812462000/results/operations-ads-cancel-regi-30a86-query-persist-after-refresh/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/operations-ads.spec.ts:120:1 › cancel, registered read retry and query persist after refresh 
+  9 did not run
+  1 passed (3.1m)
