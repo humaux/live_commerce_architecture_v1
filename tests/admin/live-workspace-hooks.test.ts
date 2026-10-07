@@ -27,9 +27,10 @@ function fixture() {
     file = resolve(file);
     if (cache.has(file)) return cache.get(file);
     const exports: any = {}; cache.set(file, exports);
-    runInNewContext(ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, {
+    runInNewContext(ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
       exports, require: (name: string) => {
         if (name === "react") return react;
+        if (name === "next/navigation") return { useRouter: () => ({ push: () => {} }) };
         if (name.endsWith("settings-client")) return settings;
         if (name.endsWith("console-client")) return { executeLiveRequest: async (r: any, k: string, b: string) => { calls.push({ ...r, key: k, boundary: b }); return execute(r, k, b); } };
         const candidate = name.startsWith("@/") ? resolve("apps/admin", name.slice(2)) : name.startsWith(".") ? resolve(dirname(file), name) : "";
@@ -62,7 +63,7 @@ function fixture() {
     mounted = { get view() { return view; }, render, stop: () => { alive = false; for (const e of effects) e?.cleanup?.(); } };
     return mounted;
   }
-  return { hooks, studio, document, window, saved, calls, mount, stop: () => mounted?.stop(), setExecute: (fn: typeof execute) => { execute = fn; } };
+  return { hooks, studio, load, document, window, saved, calls, mount, stop: () => mounted?.stop(), setExecute: (fn: typeof execute) => { execute = fn; } };
 }
 
 test("A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds", async (t) => {
@@ -160,4 +161,46 @@ test("restored copy success dispatches completion only in the still-current scen
     assert.equal(results.length, departed ? 0 : 1); if (!departed) assert.equal(results[0].path, copy.path);
     assert.equal(f.saved.size, 0); f.stop();
   }
+});
+
+function element(tree: any, predicate: (node: any) => boolean): any {
+  if (!tree || typeof tree !== "object") return null;
+  if (Array.isArray(tree)) { for (const child of tree) { const found = element(child, predicate); if (found) return found; } return null; }
+  return predicate(tree) ? tree : element(tree.props?.children, predicate);
+}
+
+test("SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft", async (t) => {
+  const f = fixture(), { SessionCopy } = f.load("apps/admin/src/features/live/SessionCopy.tsx");
+  let draft = { session_id: scene, title: "Original session", version: 1 };
+  const h = f.mount(() => SessionCopy({ locale: "en", store, draft, boundary: "session-one", disabled: false, refresh: () => {}, navigationGuard: { current: () => true } }));
+  t.after(f.stop); await flush();
+  draft = { ...draft, title: "Renamed in Studio", version: 2 }; h.render(); await flush();
+  element(h.view, (n) => n.props?.["data-testid"] === "live-copy-session").props.onClick(); await flush();
+  assert.equal(element(h.view, (n) => n.type === "input").props.value, "Renamed in Studio");
+  element(h.view, (n) => n.type === "input").props.onChange({ target: { value: "My edited copy" } }); await flush();
+  draft = { ...draft, title: "Refreshed while open", version: 3 }; h.render(); await flush();
+  assert.equal(element(h.view, (n) => n.type === "input").props.value, "My edited copy");
+  element(h.view, (n) => n.type === "button" && n.props.children === "Cancel").props.onClick(); await flush();
+  element(h.view, (n) => n.props?.["data-testid"] === "live-copy-session").props.onClick(); await flush();
+  assert.equal(element(h.view, (n) => n.type === "input").props.value, "Refreshed while open");
+  assert.equal(f.calls.length, 0);
+});
+
+test("SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes", async (t) => {
+  const f = fixture(), { SessionCopy } = f.load("apps/admin/src/features/live/SessionCopy.tsx");
+  f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
+  let draft = { session_id: scene, title: "Source", version: 1 };
+  const h = f.mount(() => SessionCopy({ locale: "en", store, draft, boundary: "session-one", disabled: false, refresh: () => {}, navigationGuard: { current: () => true } }));
+  t.after(f.stop); await flush();
+  element(h.view, (n) => n.props?.["data-testid"] === "live-copy-session").props.onClick(); await flush();
+  element(h.view, (n) => n.type === "input").props.onChange({ target: { value: "  Copy edited by merchant  " } }); await flush();
+  draft = { ...draft, title: "Newer source", version: 2 }; h.render(); await flush();
+  element(h.view, (n) => n.type === "form").props.onSubmit({ preventDefault: () => {} }); await flush();
+  assert.equal(f.calls.length, 1); assert.equal(JSON.parse(f.calls[0].body).title, "Copy edited by merchant"); assert.equal(JSON.parse(f.calls[0].body).expected_version, 2);
+  const saved = f.saved.get(`live-workspace-command:${scope}`), key = f.calls[0].key;
+  draft = { ...draft, title: "Refreshed after UNKNOWN", version: 3 }; h.render(); await flush();
+  element(h.view, (n) => n.type === "input").props.onChange({ target: { value: "Another input" } }); await flush();
+  assert.equal(f.saved.get(`live-workspace-command:${scope}`), saved);
+  element(h.view, (n) => n.type === "button" && n.props.children === "Retry the same request").props.onClick(); await flush();
+  assert.equal(f.calls.length, 2); assert.equal(f.calls[1].key, key); assert.equal(f.calls[1].body, f.calls[0].body);
 });

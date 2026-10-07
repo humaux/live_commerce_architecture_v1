@@ -19,6 +19,8 @@ export function SessionCopy({ locale, store, draft, boundary, disabled, refresh,
   const copied = (result: CopyResult) => router.push(`/${locale}/studio/${result.conflicts.length ? "claims" : "console"}?store=${store}&scene=${result.session.session_id}`);
   const command = useLiveCommand(`${store}:${draft.session_id}`, boundary, refresh, (request, value) => { if (request.path.endsWith("/copy")) copied(value as CopyResult); });
   const [open, setOpen] = useState(false), [title, setTitle] = useState(draft.title);
+  // Follow refreshed source names only while closed; never erase an open edit or remount an UNKNOWN owner.
+  useEffect(() => { if (!open) setTitle(draft.title); }, [draft.title, open]);
   useEffect(() => {
     navigationGuard.current = () => {
       if ((command.busy || command.canRetry) && !window.confirm(c.leavePending)) return false;
