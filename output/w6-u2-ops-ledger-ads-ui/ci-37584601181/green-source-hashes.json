@@ -1,0 +1,9 @@
+{
+  "base_sha": "dca90c2ae80e3ca5e98ce2b44836a48601a2c57d",
+  "files": {
+    "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
+    "tests/admin/operations-ads.spec.ts": "3b8ecf849ed0be48846822eeadfdb630b13cdf848db81a3c0de50b53dd720a03",
+    "apps/admin/components/operations.css": "4ec06134c5344d79254116e494bc8e2f694bae75ea73d18b0e5ef07f03f16376",
+    "apps/admin/components/OperationsLedger.tsx": "dac4afdc333e3f5abad4854838d8278753fece89b5a4331132a9feb084bc2c77"
+  }
+}

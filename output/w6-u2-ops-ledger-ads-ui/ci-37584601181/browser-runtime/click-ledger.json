@@ -1,0 +1,418 @@
+[
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-ac552a5d-c43c-4df6-bcd1-708060cae903",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-detail-refresh",
+    "action": "click",
+    "expected": "drawer events refresh",
+    "actual": "drawer events refresh",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-filter",
+    "action": "selectOption(FAILED)",
+    "expected": "persisted FAILED rows",
+    "actual": "HTTP 200 and selected FAILED",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-2f71a6f4-888e-4665-ad7b-cd5a7c2bacec",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-filter",
+    "action": "selectOption(UNKNOWN)",
+    "expected": "persisted UNKNOWN rows",
+    "actual": "HTTP 200 and selected UNKNOWN",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-filter",
+    "action": "selectOption(READY)",
+    "expected": "persisted READY rows",
+    "actual": "HTTP 200 and selected READY",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-b96c18de-f4d4-4ff9-a3e3-b13dd3f80e6f",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-next",
+    "action": "click",
+    "expected": "second page loads",
+    "actual": "second page loads",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "current page refreshed",
+    "actual": "current page refreshed",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=109c9ab3-a12d-4825-9e57-42171394d595",
+    "control": "operation-cancel",
+    "action": "click",
+    "expected": "confirmation opens",
+    "actual": "confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=109c9ab3-a12d-4825-9e57-42171394d595",
+    "control": "operation-confirm-dismiss",
+    "action": "click",
+    "expected": "dismiss does not cancel",
+    "actual": "dismiss does not cancel",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=109c9ab3-a12d-4825-9e57-42171394d595",
+    "control": "operation-cancel",
+    "action": "click",
+    "expected": "confirmation dialog opens",
+    "actual": "confirmation dialog opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=109c9ab3-a12d-4825-9e57-42171394d595",
+    "control": "operation-confirm-submit",
+    "action": "click",
+    "expected": "cancel persisted",
+    "actual": "cancel persisted",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=d6f44e41-cac4-4f5a-8e83-c1bb80245b6a",
+    "control": "operation-retry",
+    "action": "click",
+    "expected": "confirmation dialog opens",
+    "actual": "confirmation dialog opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=d6f44e41-cac4-4f5a-8e83-c1bb80245b6a",
+    "control": "operation-confirm-submit",
+    "action": "click",
+    "expected": "read-only retry queued",
+    "actual": "read-only retry queued",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=ac552a5d-c43c-4df6-bcd1-708060cae903",
+    "control": "operation-query",
+    "action": "click",
+    "expected": "confirmation dialog opens",
+    "actual": "confirmation dialog opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=ac552a5d-c43c-4df6-bcd1-708060cae903",
+    "control": "operation-confirm-submit",
+    "action": "click",
+    "expected": "query persisted without changing UNKNOWN",
+    "actual": "query persisted without changing UNKNOWN",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=3e7f79d3-4cbb-4d7c-8beb-b9e51487da3b",
+    "control": "operation-cancel",
+    "action": "click",
+    "expected": "CAS confirmation opens",
+    "actual": "CAS confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=3e7f79d3-4cbb-4d7c-8beb-b9e51487da3b",
+    "control": "operation-confirm-submit",
+    "action": "click",
+    "expected": "operation_changed explains refresh",
+    "actual": "operation_changed explains refresh",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=9724ae5f-603b-4845-ba8f-26e7407e0849",
+    "control": "operation-query",
+    "action": "click",
+    "expected": "quota confirmation opens",
+    "actual": "quota confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225&operation=9724ae5f-603b-4845-ba8f-26e7407e0849",
+    "control": "operation-confirm-submit",
+    "action": "click",
+    "expected": "query_limit shows Retry-After seconds",
+    "actual": "query_limit shows Retry-After seconds",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind",
+    "action": "click",
+    "expected": "confirmation opens",
+    "actual": "confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind-cancel",
+    "action": "click",
+    "expected": "confirmation dismissed without unbinding",
+    "actual": "confirmation dismissed without unbinding",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-feed-copy",
+    "action": "click",
+    "expected": "public feed copied",
+    "actual": "public feed copied",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind",
+    "action": "click",
+    "expected": "pause-first/history confirmation opens",
+    "actual": "pause-first/history confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind-yes",
+    "action": "click",
+    "expected": "binding_in_use explains pause first",
+    "actual": "binding_in_use explains pause first",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind",
+    "action": "click",
+    "expected": "pause-first/history confirmation opens",
+    "actual": "pause-first/history confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind-yes",
+    "action": "click",
+    "expected": "operations_in_flight lists the concrete operation",
+    "actual": "operations_in_flight lists the concrete operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind-cancel",
+    "action": "click",
+    "expected": "in-flight dialog closes",
+    "actual": "in-flight dialog closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind",
+    "action": "click",
+    "expected": "pause-first/history confirmation opens",
+    "actual": "pause-first/history confirmation opens",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53991/en/ads?store=1cb5d5f0-32ac-474b-8acf-330b216df76f",
+    "control": "ads-unbind-yes",
+    "action": "click",
+    "expected": "local account detached",
+    "actual": "local account detached",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-TW/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/en/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operations-refresh",
+    "action": "click",
+    "expected": "ledger refresh completes",
+    "actual": "ledger refresh completes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-open-07efd684-16f3-492d-9a90-d0415a132e4e",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:53980/zh-CN/settings/operations?store=3feed826-f517-4c01-90ab-fd4a3e3a3225",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  }
+]

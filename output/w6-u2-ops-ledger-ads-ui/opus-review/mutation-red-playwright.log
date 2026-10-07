@@ -1,0 +1,60 @@
+
+Running 11 tests using 1 worker
+
+(node:13568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 tests/admin/operations-ads.spec.ts:96:1 › ledger filters, details, capabilities, object links, next page and store isolation (11.7s)
+  -   2 tests/admin/operations-ads.spec.ts:145:1 › cancel, registered read retry and query persist after refresh
+  -   3 tests/admin/operations-ads.spec.ts:161:1 › fresh server CAS and daily query cap refuse stale confirmations
+  -   4 tests/admin/operations-ads.spec.ts:189:1 › read-only permissions hide mutation controls after reload
+  -   5 tests/admin/operations-ads.spec.ts:204:1 › ad unbind refuses counting/in-flight operations, then preserves history after refresh; feed copies
+  -   6 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow zh-TW 1586
+  -   7 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow zh-TW 390
+  -   8 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow en 1586
+  -   9 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow en 390
+  -  10 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow zh-CN 1586
+  -  11 tests/admin/operations-ads.spec.ts:249:3 › labels and no overflow zh-CN 390
+
+
+  1) tests/admin/operations-ads.spec.ts:96:1 › ledger filters, details, capabilities, object links, next page and store isolation 
+
+    Error: expect(locator).not.toContainText(expected) failed
+
+    Locator: locator('body')
+    Expected substring: not "SYNTHETIC-DO-NOT-EXPOSE"
+    Received string: "Skip to contentDaWan LiveOnline storeSettingsSwitch storeTt06-go-store⌄t06-go-storet06-go-other-storeLanguage简体中文繁體中文EnglishHelpChoose a workspace section. Access is limited by your store role. For payment and shipping connections, open Store settings.AccountSign outOverview/Settings/Operations ledgerOperations ledgerReview failed or uncertain external operations. Actions depend on the server's current decision.Store settingsAd settingsLedger storet06-go-storet06-go-other-storeStateNeeds attentionFailedUnknownAcknowledgedBlocked by policyBinding changedReadyRefreshecpay.cvs_createReadyProvider: ecpay_logistics · Attempts: 010/07/2026, 18:46order · 1f9d5672-b26a-4559-9087-a094bc24012dView detailsmeta.ads.pauseReadyProvider: meta_ads · Attempts: 010/07/2026, 18:46ad_draft · eb0d7376-79fa-49dc-9a4f-0d469c57c6b4View detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · ab5363d0-374f-4da6-bcec-4ea747985405View detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · 65ba5c03-70d4-4a7e-b7ce-6e715d2a1d0cView detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · 9f2d4cf8-d0dc-4f56-9f48-bad0bf511224View detailspayment.authorizeFailedProvider: mock_provider · Attempts: 110/07/2026, 18:46—View detailsmeta.live_videosFailedProvider: facebook · Attempts: 210/07/2026, 18:46binding · 8f2cd404-d7cc-4153-9b5a-db509bc9d726View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailsNext pageOperation detailsClose 7625be0c-62e0-40bc-9808-924dd5fd6b25StateReadyActionecpay.cvs_createProviderecpay_logisticsAttempts0Created10/07/2026, 18:46Updated10/07/2026, 18:46Reason—Business objectorder · 1f9d5672-b26a-4559-9087-a094bc24012dSYNTHETIC-DO-NOT-EXPOSEQuery: This operation does not need reconciliation.Cancel operationAuthorize retry: The operation is already queued.Refresh Recent eventsReady · Attempts: 0Additional details are not available.10/07/2026, 18:46Confirm actionThe server will check the current operation and permissions again. Cancellation only cancels a READY local operation; it does not reverse an external action.7625be0c-62e0-40bc-9808-924dd5fd6b25BackConfirm actionDaWan Live is operated by Hong Kong Da Wan Trading Limited"
+    Timeout: 10000ms
+
+    Call log:
+      - Expect "not toContainText" locator('body') with timeout 10000ms
+      - waiting for locator('body')
+        23 × locator resolved to <body>…</body>
+           - unexpected value "Skip to contentDaWan LiveOnline storeSettingsSwitch storeTt06-go-store⌄t06-go-storet06-go-other-storeLanguage简体中文繁體中文EnglishHelpChoose a workspace section. Access is limited by your store role. For payment and shipping connections, open Store settings.AccountSign outOverview/Settings/Operations ledgerOperations ledgerReview failed or uncertain external operations. Actions depend on the server's current decision.Store settingsAd settingsLedger storet06-go-storet06-go-other-storeStateNeeds attentionFailedUnknownAcknowledgedBlocked by policyBinding changedReadyRefreshecpay.cvs_createReadyProvider: ecpay_logistics · Attempts: 010/07/2026, 18:46order · 1f9d5672-b26a-4559-9087-a094bc24012dView detailsmeta.ads.pauseReadyProvider: meta_ads · Attempts: 010/07/2026, 18:46ad_draft · eb0d7376-79fa-49dc-9a4f-0d469c57c6b4View detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · ab5363d0-374f-4da6-bcec-4ea747985405View detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · 65ba5c03-70d4-4a7e-b7ce-6e715d2a1d0cView detailsmeta.live_videosUnknownProvider: facebook · Attempts: 310/07/2026, 18:46binding · 9f2d4cf8-d0dc-4f56-9f48-bad0bf511224View detailspayment.authorizeFailedProvider: mock_provider · Attempts: 110/07/2026, 18:46—View detailsmeta.live_videosFailedProvider: facebook · Attempts: 210/07/2026, 18:46binding · 8f2cd404-d7cc-4153-9b5a-db509bc9d726View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailspayment.authorizeReadyProvider: mock_provider · Attempts: 010/07/2026, 18:46—View detailsNext pageOperation detailsClose 7625be0c-62e0-40bc-9808-924dd5fd6b25StateReadyActionecpay.cvs_createProviderecpay_logisticsAttempts0Created10/07/2026, 18:46Updated10/07/2026, 18:46Reason—Business objectorder · 1f9d5672-b26a-4559-9087-a094bc24012dSYNTHETIC-DO-NOT-EXPOSEQuery: This operation does not need reconciliation.Cancel operationAuthorize retry: The operation is already queued.Refresh Recent eventsReady · Attempts: 0Additional details are not available.10/07/2026, 18:46Confirm actionThe server will check the current operation and permissions again. Cancellation only cancels a READY local operation; it does not reverse an external action.7625be0c-62e0-40bc-9808-924dd5fd6b25BackConfirm actionDaWan Live is operated by Hong Kong Da Wan Trading Limited"
+
+
+      124 |   // The order projection containing the request canary is loaded before checking the public UI boundary.
+      125 |   await detailLoaded(page, ops.order);
+    > 126 |   await expect(page.locator("body")).not.toContainText("SYNTHETIC-DO-NOT-EXPOSE");
+          |                                          ^
+      127 |   await orderLink.click(); await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${store}&order=${ops.order_object}`));
+      128 |   await ledger(page);
+      129 |   await clicked(page, "operations-next", "second page loads", async () => { await expect(page.locator('[data-testid^="operation-row-"]')).toHaveCount(19); await expect(page.getByTestId(`operation-row-${ops.query}`)).toHaveCount(0); });
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-ops-ledger-ads-ui/tests/admin/operations-ads.spec.ts:126:42
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/operations-ads/20261007T104612.085316000/results/operations-ads-ledger-filt-df02a-xt-page-and-store-isolation/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/operations-ads/20261007T104612.085316000/results/operations-ads-ledger-filt-df02a-xt-page-and-store-isolation/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/operations-ads/20261007T104612.085316000/results/operations-ads-ledger-filt-df02a-xt-page-and-store-isolation/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/operations-ads/20261007T104612.085316000/results/operations-ads-ledger-filt-df02a-xt-page-and-store-isolation/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/operations-ads.spec.ts:96:1 › ledger filters, details, capabilities, object links, next page and store isolation 
+  10 did not run

@@ -1,0 +1,462 @@
+{
+ "generated": "2026-10-07T09:21:56.978Z",
+ "commit": "dca90c2ae8",
+ "out": "output/ui-visual-audit/20261007T092047Z",
+ "thresholds": {
+  "OVERFLOW_TOLERANCE_PX": 1,
+  "ROW_SAME_BAND_PX": 8,
+  "ROW_MAX_GAP_PX": 96,
+  "ROW_LABEL_TOP_DELTA_PX": 4,
+  "ROW_CONTROL_TOP_DELTA_PX": 4,
+  "ROW_CONTROL_HEIGHT_DELTA_PX": 4,
+  "ROW_ACTION_DELTA_PX": 4,
+  "TABLE_ROW_RATIO": 1.6,
+  "TABLE_MIN_BODY_ROWS": 3,
+  "CELL_OVERFLOW_PX": 1,
+  "MIN_FONT_PX": 12,
+  "TAP_TARGET_MIN_PX": 40,
+  "OVERLAP_MIN_PX": 2,
+  "CLIP_TOLERANCE_PX": 1,
+  "CLIP_MIN_BOX_PX": 8,
+  "SELECT_ARROW_PX": 20,
+  "EDGE_MIN_PX": 8,
+  "FULL_BLEED_SLACK_PX": 2,
+  "OCCLUSION_COVER": 0.5,
+  "EDGE_ATTACH_PX": 2,
+  "CONTROL_MIN_WIDTH_DESKTOP_PX": 96,
+  "CONTROL_MIN_WIDTH_MOBILE_PX": 64,
+  "MAX_RECORDS_PER_RULE": 5
+ },
+ "rules": {
+  "R1": "horizontal overflow",
+  "R2": "form-row misalignment",
+  "R3": "table row consistency",
+  "R4": "min text size",
+  "R5": "tap target (390)",
+  "R6": "overlap",
+  "R7": "clipped text",
+  "R8": "duplicate list label",
+  "R9": "edge padding (390)",
+  "R10": "fixed-bar occlusion",
+  "R11": "narrow control"
+ },
+ "blocking": [
+  "R1",
+  "R2",
+  "R3",
+  "R6",
+  "R9"
+ ],
+ "blockingKinds": [
+  "R7:clipped-control",
+  "R7:text-overflows-control",
+  "R7:select-value-clipped"
+ ],
+ "matrix": {
+  "locales": [
+   "zh-TW",
+   "zh-CN",
+   "en"
+  ],
+  "viewports": [
+   {
+    "name": "desktop",
+    "size": "1586x992"
+   },
+   {
+    "name": "mobile",
+    "size": "390x844"
+   }
+  ],
+  "apps": {
+   "admin": 1,
+   "storefront": 0,
+   "platform": 0
+  }
+ },
+ "shots": {
+  "expected": 6,
+  "captured": 6,
+  "notRun": [],
+  "missing": [],
+  "loadFailures": [],
+  "stateFailures": []
+ },
+ "totals": {
+  "R1": {
+   "name": "horizontal overflow",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R2": {
+   "name": "form-row misalignment",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R3": {
+   "name": "table row consistency",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R4": {
+   "name": "min text size",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R5": {
+   "name": "tap target (390)",
+   "severity": "warn",
+   "instances": 6,
+   "blocking": 0,
+   "groups": 3,
+   "units": 3
+  },
+  "R6": {
+   "name": "overlap",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R7": {
+   "name": "clipped text",
+   "severity": "block for controls, warn for labels/links",
+   "instances": 3,
+   "blocking": 0,
+   "groups": 3,
+   "units": 3
+  },
+  "R8": {
+   "name": "duplicate list label",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R9": {
+   "name": "edge padding (390)",
+   "severity": "block",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R10": {
+   "name": "fixed-bar occlusion",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  },
+  "R11": {
+   "name": "narrow control",
+   "severity": "warn",
+   "instances": 0,
+   "blocking": 0,
+   "groups": 0,
+   "units": 0
+  }
+ },
+ "blockingInstances": 0,
+ "verdict": {
+  "exit": 0,
+  "reasons": []
+ },
+ "shard": null,
+ "units": [
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "en",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "url": "/en/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 992,
+   "counts": {},
+   "groups": {},
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [],
+   "shot": "shots/admin/settings-operations/en-1586x992.png"
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "en",
+   "viewport": "mobile",
+   "size": "390x844",
+   "url": "/en/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 844,
+   "counts": {
+    "R5": 2,
+    "R7": 1
+   },
+   "groups": {
+    "R5": 1,
+    "R7": 1
+   },
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [
+    {
+     "rule": "R5",
+     "kind": "tap-target",
+     "severity": "warn",
+     "path": "div[data-testid=\"operations-ledger\"] > nav.operations-links > a:nth-of-type(1)",
+     "tag": "a",
+     "testid": "",
+     "text": "Store settings",
+     "rect": {
+      "x": 32,
+      "y": 263.2,
+      "w": 85.6,
+      "h": 16
+     },
+     "measured": {
+      "width": 85.6,
+      "height": 16,
+      "tag": "a",
+      "text": "Store settings"
+     },
+     "group": "R5|tap-target|div[data-testid=\"operations-ledger\"] > nav.operations-links > a",
+     "crop": "crops/admin/settings-operations/en-390x844-R5-1.png"
+    },
+    {
+     "rule": "R7",
+     "kind": "clipped-text",
+     "severity": "warn",
+     "path": "span[data-testid=\"shell-store-name\"]",
+     "tag": "span",
+     "testid": "shell-store-name",
+     "text": "payment mock store",
+     "rect": {
+      "x": 73,
+      "y": 25.5,
+      "w": 136.2,
+      "h": 16
+     },
+     "measured": {
+      "hiddenPx": 76.2,
+      "boxWidth": 60,
+      "textWidth": 136.2,
+      "text": "payment mock store"
+     },
+     "group": "R7|clipped-text|span[data-testid=\"shell-store-name\"]",
+     "crop": "crops/admin/settings-operations/en-390x844-R7-2.png"
+    }
+   ],
+   "shot": "shots/admin/settings-operations/en-390x844.png"
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "zh-CN",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "url": "/zh-CN/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 992,
+   "counts": {},
+   "groups": {},
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [],
+   "shot": "shots/admin/settings-operations/zh-CN-1586x992.png"
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "zh-CN",
+   "viewport": "mobile",
+   "size": "390x844",
+   "url": "/zh-CN/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 844,
+   "counts": {
+    "R5": 2,
+    "R7": 1
+   },
+   "groups": {
+    "R5": 1,
+    "R7": 1
+   },
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [
+    {
+     "rule": "R5",
+     "kind": "tap-target",
+     "severity": "warn",
+     "path": "div[data-testid=\"operations-ledger\"] > nav.operations-links > a:nth-of-type(1)",
+     "tag": "a",
+     "testid": "",
+     "text": "店铺设置",
+     "rect": {
+      "x": 32,
+      "y": 263.2,
+      "w": 56,
+      "h": 20
+     },
+     "measured": {
+      "width": 56,
+      "height": 20,
+      "tag": "a",
+      "text": "店铺设置"
+     },
+     "group": "R5|tap-target|div[data-testid=\"operations-ledger\"] > nav.operations-links > a",
+     "crop": "crops/admin/settings-operations/zh-CN-390x844-R5-1.png"
+    },
+    {
+     "rule": "R7",
+     "kind": "clipped-text",
+     "severity": "warn",
+     "path": "span[data-testid=\"shell-store-name\"]",
+     "tag": "span",
+     "testid": "shell-store-name",
+     "text": "payment mock store",
+     "rect": {
+      "x": 73,
+      "y": 25.5,
+      "w": 136.2,
+      "h": 16
+     },
+     "measured": {
+      "hiddenPx": 58.2,
+      "boxWidth": 78,
+      "textWidth": 136.2,
+      "text": "payment mock store"
+     },
+     "group": "R7|clipped-text|span[data-testid=\"shell-store-name\"]",
+     "crop": "crops/admin/settings-operations/zh-CN-390x844-R7-2.png"
+    }
+   ],
+   "shot": "shots/admin/settings-operations/zh-CN-390x844.png"
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "zh-TW",
+   "viewport": "desktop",
+   "size": "1586x992",
+   "url": "/zh-TW/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 992,
+   "counts": {},
+   "groups": {},
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [],
+   "shot": "shots/admin/settings-operations/zh-TW-1586x992.png"
+  },
+  {
+   "app": "admin",
+   "route": "/settings/operations",
+   "id": "settings-operations",
+   "state": "registry",
+   "locale": "zh-TW",
+   "viewport": "mobile",
+   "size": "390x844",
+   "url": "/zh-TW/settings/operations?store=7e976cc2-0d76-4c84-9209-d7e312b54c08",
+   "status": 200,
+   "ok": true,
+   "issues": [],
+   "pageHeight": 844,
+   "counts": {
+    "R5": 2,
+    "R7": 1
+   },
+   "groups": {
+    "R5": 1,
+    "R7": 1
+   },
+   "blocking": 0,
+   "blockingCounts": {},
+   "violations": [
+    {
+     "rule": "R5",
+     "kind": "tap-target",
+     "severity": "warn",
+     "path": "div[data-testid=\"operations-ledger\"] > nav.operations-links > a:nth-of-type(1)",
+     "tag": "a",
+     "testid": "",
+     "text": "商店設定",
+     "rect": {
+      "x": 32,
+      "y": 263.2,
+      "w": 56,
+      "h": 20
+     },
+     "measured": {
+      "width": 56,
+      "height": 20,
+      "tag": "a",
+      "text": "商店設定"
+     },
+     "group": "R5|tap-target|div[data-testid=\"operations-ledger\"] > nav.operations-links > a",
+     "crop": "crops/admin/settings-operations/zh-TW-390x844-R5-1.png"
+    },
+    {
+     "rule": "R7",
+     "kind": "clipped-text",
+     "severity": "warn",
+     "path": "span[data-testid=\"shell-store-name\"]",
+     "tag": "span",
+     "testid": "shell-store-name",
+     "text": "payment mock store",
+     "rect": {
+      "x": 73,
+      "y": 25.5,
+      "w": 136.2,
+      "h": 16
+     },
+     "measured": {
+      "hiddenPx": 58.2,
+      "boxWidth": 78,
+      "textWidth": 136.2,
+      "text": "payment mock store"
+     },
+     "group": "R7|clipped-text|span[data-testid=\"shell-store-name\"]",
+     "crop": "crops/admin/settings-operations/zh-TW-390x844-R7-2.png"
+    }
+   ],
+   "shot": "shots/admin/settings-operations/zh-TW-390x844.png"
+  }
+ ]
+}

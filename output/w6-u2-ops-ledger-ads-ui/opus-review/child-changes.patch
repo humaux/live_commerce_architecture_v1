@@ -1,0 +1,323 @@
+diff --git a/apps/admin/components/AdsConnection.tsx b/apps/admin/components/AdsConnection.tsx
+index 928c98e4..3d0e31d4 100644
+--- a/apps/admin/components/AdsConnection.tsx
++++ b/apps/admin/components/AdsConnection.tsx
+@@ -383,7 +383,7 @@ function InFlightDetails({c,value}:{c:AdsCopy;value:AdsInFlight}) {
+   return <div className="ads-bad" role="alert" data-testid="ads-unbind-in-flight">
+     <p>{c.errors.operations_in_flight}</p><p data-testid="ads-unbind-total">{c.inFlightTotal(value.operations_total,value.operations.length)}</p>
+     <ul className="ads-list">{value.operations.map((op)=> <li key={op.operation_id}>
+-      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{op.state}</span>
++      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{c.opStates[op.state]}</span>
+     </li>)}</ul>
+   </div>;
+ }
+diff --git a/apps/admin/components/OperationFacts.tsx b/apps/admin/components/OperationFacts.tsx
+index ed4def4d..361a97f7 100644
+--- a/apps/admin/components/OperationFacts.tsx
++++ b/apps/admin/components/OperationFacts.tsx
+@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
+ import type { Locale } from "@live-commerce/i18n";
+ import { displayTime } from "@live-commerce/format";
+ import type { OperationDetail } from "@/lib/operations-model";
+-import { operationsCopy } from "@/lib/operations-copy";
++import { operationReasonText, operationsCopy } from "@/lib/operations-copy";
+ /** Render only the server's closed public metadata and an already-validated object link. */
+ export function OperationFacts({
+   detail,
+@@ -36,7 +36,7 @@ export function OperationFacts({
+         <dt>{c.updated}</dt>
+         <dd>{displayTime(locale, detail.updated_at)}</dd>
+         <dt>{c.reason}</dt>
+-        <dd>{detail.reason_code || "—"}</dd>
++        <dd>{operationReasonText(locale, detail.reason_code)}</dd>
+         <dt>{c.object}</dt>
+         <dd>{object}</dd>
+       </dl>
+@@ -63,7 +63,7 @@ export function OperationEvents({
+             <span>
+               {stateText(e.state)} · {c.attempts}: {e.generation}
+             </span>
+-            <p>{e.reason_code || "—"}</p>
++            <p>{operationReasonText(locale, e.reason_code)}</p>
+             <time dateTime={e.created_at}>
+               {displayTime(locale, e.created_at)}
+             </time>
+diff --git a/apps/admin/components/SettingsWizard.tsx b/apps/admin/components/SettingsWizard.tsx
+index c8e6f23b..15ea94a9 100644
+--- a/apps/admin/components/SettingsWizard.tsx
++++ b/apps/admin/components/SettingsWizard.tsx
+@@ -1,5 +1,5 @@
+ // Purpose: Owns the merchant setup sequence and composes integration settings cards.
+-// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
++// Depends on: react, @live-commerce/i18n, ./AdminPageHeader, ./WorkspaceFrame, ./LogisticsSettings, ./BankTransferSettings, ./CodSettings, ./NotifySettings, ./StorefrontSettings, ./MetaConnect, @/lib/operations-copy, @/lib/operations-model, @/lib/settings-copy, @/lib/catalog-v2-model, @/lib/client, @/lib/orders-model, @/lib/settings-client, @/lib/settings-model, @/lib/logistics-client, @/lib/logistics-model, @/lib/logistics-copy, @/lib/model, @/lib/settings-draft, ./settings.css
+ // Used by: apps/admin/app/[locale]/settings/page.tsx
+ "use client";
+ 
+@@ -24,6 +24,7 @@ import {
+ } from "react";
+ import type { Locale } from "@live-commerce/i18n";
+ import { operationsCopy } from "@/lib/operations-copy";
++import { canReadOperations } from "@/lib/operations-model";
+ import { AdminPageHeader } from "./AdminPageHeader";
+ import { WorkspaceFrame } from "./WorkspaceFrame";
+ import { LogisticsSettings } from "./LogisticsSettings";
+@@ -1647,7 +1648,7 @@ export function SettingsWizard({
+     >
+       <div className="settings-page" data-testid="settings-wizard">
+         <AdminPageHeader className="settings-heading" locale={locale} description={c.subtitle} />
+-        {store && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
++        {store && canReadOperations(store) && <p><a data-testid="settings-operations-link" href={`/${locale}/settings/operations?store=${store.id}`}>{operationsCopy[locale].title}</a></p>}
+         <ol className="settings-steps" aria-label={c.title}>
+           {c.steps.map((label, index) => {
+             const number = (index + 1) as 1 | 2 | 3 | 4;
+diff --git a/apps/admin/lib/operations-copy.ts b/apps/admin/lib/operations-copy.ts
+index ec04f64a..622cd9d7 100644
+--- a/apps/admin/lib/operations-copy.ts
++++ b/apps/admin/lib/operations-copy.ts
+@@ -1,12 +1,15 @@
+ // Purpose: keep operation states, refusals and actions readable in all three locales.
+ // Depends on: @live-commerce/i18n locale type; W6-05B machine codes.
+-// Used by: OperationsLedger and locale parity gates.
++// Used by: OperationsLedger, OperationFacts, SettingsWizard and Node locale gates.
++// Invariants: I11; unrecognised codes never become merchant-facing copy.
+ import type { Locale } from "@live-commerce/i18n";
+ const en = {
+   title: "Operations ledger",
+   subtitle:
+     "Review failed or uncertain external operations. Actions depend on the server's current decision.",
+   settings: "Store settings",
++  switchStore: "Ledger store",
++  reasonFallback: "Additional details are not available.",
+   ads: "Ad settings",
+   filter: "State",
+   refresh: "Refresh",
+@@ -57,6 +60,14 @@ const en = {
+     CANCELLED: "Cancelled",
+   },
+   reasons: {
++    query_requested: "Status query requested",
++    retry_authorized: "Retry authorized",
++    requeue_authorized: "Operation queued again",
++    cancelled_by_merchant: "Cancelled by merchant",
++    provider_failed: "Provider reported a failure",
++    provider_unknown: "Provider result unknown",
++    reconcile_budget_exhausted: "Query budget exhausted",
++
+     protective_operation:
+       "This is a protective operation (such as pausing an ad) and cannot be cancelled.",
+     reconcile_first: "The result is unknown. Query first.",
+@@ -90,6 +101,8 @@ const tw: Copy = {
+   title: "失敗台賬",
+   subtitle: "核對失敗或結果未知的外部操作；可執行動作以伺服器當前判定為準。",
+   settings: "商店設定",
++  switchStore: "台賬商店",
++  reasonFallback: "沒有其他詳細資訊。",
+   ads: "廣告設定",
+   filter: "狀態",
+   refresh: "重新整理",
+@@ -139,6 +152,14 @@ const tw: Copy = {
+     CANCELLED: "已取消",
+   },
+   reasons: {
++    query_requested: "已請求查詢狀態",
++    retry_authorized: "已授權重試",
++    requeue_authorized: "操作已重新排入佇列",
++    cancelled_by_merchant: "商家已取消",
++    provider_failed: "服務平台回報失敗",
++    provider_unknown: "服務平台結果未知",
++    reconcile_budget_exhausted: "查詢額度已用盡",
++
+     protective_operation: "此操作是保護性操作（例如暫停廣告），不可取消。",
+     reconcile_first: "結果未知，請先查詢。",
+     query_limit: "已達每日查詢上限。",
+@@ -165,6 +186,8 @@ const cn: Copy = {
+   title: "失败台账",
+   subtitle: "核对失败或结果未知的外部操作；可执行动作以服务器当前判定为准。",
+   settings: "店铺设置",
++  switchStore: "台账店铺",
++  reasonFallback: "没有其他详细信息。",
+   ads: "广告设置",
+   filter: "状态",
+   refresh: "刷新",
+@@ -214,6 +237,14 @@ const cn: Copy = {
+     CANCELLED: "已取消",
+   },
+   reasons: {
++    query_requested: "已请求查询状态",
++    retry_authorized: "已授权重试",
++    requeue_authorized: "操作已重新排入队列",
++    cancelled_by_merchant: "商家已取消",
++    provider_failed: "服务平台报告失败",
++    provider_unknown: "服务平台结果未知",
++    reconcile_budget_exhausted: "查询额度已用尽",
++
+     protective_operation: "此操作是保护性操作（例如暂停广告），不可取消。",
+     reconcile_first: "结果未知，请先查询。",
+     query_limit: "已达每日查询上限。",
+@@ -241,3 +272,12 @@ export const operationsCopy: Record<Locale, Copy> = {
+   "zh-TW": tw,
+   "zh-CN": cn,
+ };
++
++/** Translate only registered reasons; unknown codes disclose no internal provider details. */
++export function operationReasonText(locale: Locale, code: string): string {
++  const c = operationsCopy[locale];
++  if (!code) return "—";
++  return Object.hasOwn(c.reasons, code)
++    ? c.reasons[code as keyof typeof c.reasons]
++    : c.reasonFallback;
++}
+diff --git a/apps/admin/lib/operations-model.ts b/apps/admin/lib/operations-model.ts
+index e9256287..e1d63955 100644
+--- a/apps/admin/lib/operations-model.ts
++++ b/apps/admin/lib/operations-model.ts
+@@ -1,6 +1,6 @@
+ // Purpose: parse the closed W6-05B operation ledger projection and safe business links.
+ // Depends on: native JavaScript; contracts/external-operation-v1 Amendment W6-05B.
+-// Used by: OperationsLedger, operations-client, authenticated admin BFF and Node gates.
++// Used by: OperationsLedger, SettingsWizard, operations-client, admin BFF and Node gates.
+ // Invariants: I01/I06/I11; no provider body, payload or buyer data enters this model.
+ export const operationID =
+   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+@@ -206,3 +206,10 @@ export function canOperate(
+       store.permissions?.includes("integration:execute") === true)
+   );
+ }
++
++/** Show read navigation only after the authenticated store supplies its effective permission. */
++export function canReadOperations(
++  store: { role?: string | null; permissions?: string[] } | null,
++): boolean {
++  return store?.permissions?.includes("integration:read") === true;
++}
+diff --git a/tests/admin/operations-model.test.ts b/tests/admin/operations-model.test.ts
+index bc37a010..f10b5c10 100644
+--- a/tests/admin/operations-model.test.ts
++++ b/tests/admin/operations-model.test.ts
+@@ -1,5 +1,5 @@
+ // Purpose: exercise W6-U2 closed DTO, capability, request and locale boundaries.
+-// Depends on: node:test/assert; operations-model/request/copy and shell route registry.
++// Depends on: node:test/assert; operations-model/request/copy and ads-copy.
+ // Used by: test-node.sh; no provider or buyer data.
+ import { test } from "node:test";
+ import assert from "node:assert/strict";
+@@ -18,6 +18,9 @@ import {
+   operationQueryWaitSeconds,
+ } from "../../apps/admin/lib/operations-request.ts";
+ import { operationsCopy } from "../../apps/admin/lib/operations-copy.ts";
++import * as operationCopyModule from "../../apps/admin/lib/operations-copy.ts";
++import * as operationModelModule from "../../apps/admin/lib/operations-model.ts";
++import { adsCopy } from "../../apps/admin/lib/ads-copy.ts";
+ const id = "a1000000-0000-4000-8000-000000000001";
+ const cap = (available: boolean, reason = "") => ({ available, reason });
+ const row = {
+@@ -210,3 +213,109 @@ test("query backoff affects only its operation and expires without another actio
+   assert.equal(operationQueryWaitSeconds("other", wait, 9001), 0);
+   assert.equal(operationQueryWaitSeconds(id, wait, 10000), 0);
+ });
++
++test("merchant reason text translates ledger events and conceals unknown or prototype codes", () => {
++  assert.equal(typeof operationCopyModule.operationReasonText, "function");
++  const reason = operationCopyModule.operationReasonText;
++  const expected = {
++    en: [
++      "Status query requested",
++      "Retry authorized",
++      "Operation queued again",
++      "Cancelled by merchant",
++      "Provider reported a failure",
++      "Provider result unknown",
++      "Query budget exhausted",
++    ],
++    "zh-TW": [
++      "已請求查詢狀態",
++      "已授權重試",
++      "操作已重新排入佇列",
++      "商家已取消",
++      "服務平台回報失敗",
++      "服務平台結果未知",
++      "查詢額度已用盡",
++    ],
++    "zh-CN": [
++      "已请求查询状态",
++      "已授权重试",
++      "操作已重新排入队列",
++      "商家已取消",
++      "服务平台报告失败",
++      "服务平台结果未知",
++      "查询额度已用尽",
++    ],
++  };
++  const codes = [
++    "query_requested",
++    "retry_authorized",
++    "requeue_authorized",
++    "cancelled_by_merchant",
++    "provider_failed",
++    "provider_unknown",
++    "reconcile_budget_exhausted",
++  ];
++  const fallback = {
++    en: "Additional details are not available.",
++    "zh-TW": "沒有其他詳細資訊。",
++    "zh-CN": "没有其他详细信息。",
++  };
++  const labels = {
++    en: "Ledger store",
++    "zh-TW": "台賬商店",
++    "zh-CN": "台账店铺",
++  };
++  for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
++    for (const [index, code] of codes.entries())
++      assert.equal(reason(locale, code), expected[locale][index]);
++    assert.equal(reason(locale, ""), "—");
++    assert.equal(operationsCopy[locale].switchStore, labels[locale]);
++    assert.equal(operationsCopy[locale].reasonFallback, fallback[locale]);
++    assert.equal(
++      Object.hasOwn(operationsCopy[locale].reasons, "synthetic_unknown"),
++      false,
++    );
++    for (const code of [
++      "synthetic_unknown",
++      "new_provider_reason",
++      "constructor",
++      "toString",
++      "__proto__",
++    ])
++      assert.equal(
++        reason(locale, code),
++        fallback[locale],
++        `${locale}: ${code}`,
++      );
++    assert.equal(
++      reason(locale, "protective_operation"),
++      operationsCopy[locale].reasons.protective_operation,
++    );
++    assert.equal(
++      reason(locale, "reconcile_first"),
++      operationsCopy[locale].reasons.reconcile_first,
++    );
++    assert.equal(
++      adsCopy[locale].opStates.UNKNOWN,
++      { en: "Result unknown", "zh-TW": "結果未知", "zh-CN": "结果未知" }[
++        locale
++      ],
++    );
++  }
++});
++
++test("ledger read navigation requires effective integration:read permission regardless of role", () => {
++  assert.equal(typeof operationModelModule.canReadOperations, "function");
++  const canRead = operationModelModule.canReadOperations;
++  for (const store of [
++    null,
++    {},
++    { role: "owner" },
++    { role: "owner", permissions: [] },
++    { role: "staff", permissions: ["integration:execute"] },
++    { role: "owner", permissions: ["ads:read"] },
++  ])
++    assert.equal(canRead(store), false);
++  for (const role of ["owner", "staff", "custom", undefined])
++    assert.equal(canRead({ role, permissions: ["integration:read"] }), true);
++});
