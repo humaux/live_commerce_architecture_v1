@@ -1,0 +1,29 @@
+✔ parity: admin caps equal the Go constants (0.993417ms)
+✔ image list: 4 main + 20 detail + 2 sku in role order is accepted (0.321083ms)
+✔ image list: 5 main, 21 detail, wrong role order, gaps and extra keys are refused (0.135709ms)
+✔ single image: role is required and its position is bounded by the role cap (0.41ms)
+✔ option text limits count Go runes rather than UTF-16 units (0.188875ms)
+✔ main/detail/sku caps use the existing frozen image contract (0.7145ms)
+✔ phone and tall dimensions fit2000 without enlarging small assets (0.166833ms)
+✔ upload query requires one exact role and sku value; reads/actions carry no query (0.647792ms)
+✔ role transport encodes current option values and refuses invalid identities (1.094083ms)
+✔ effective image axis follows current options, then falls back to first (0.090083ms)
+✔ detail and option photos cannot satisfy the main-photo recommendation (0.072917ms)
+✔ PM-U copy has matching keys in ja and all currently routed locales (0.156542ms)
+✔ real-upload mode builds both Next applications on a clean CI checkout (6.999042ms)
+✔ upload recovery journal survives a new session while remaining product/store scoped (0.135291ms)
+✔ an option upload receipt requires its captured axis, value and image id on canonical readback (0.100833ms)
+✔ failed durable recovery storage cannot authorize a media write (0.073875ms)
+✔ an active product needs a main image after canonical media is known; repair paths stay possible (0.0495ms)
+✔ empty media sections render a readable localized placeholder until photos are present (4.755875ms)
+✔ real-upload mode never exits through the storefront MOCK shortcut (7.062167ms)
+✔ a valid active zero-main product keeps an inline repair hint rather than a page error (4.327917ms)
+✔ a new product issues the image-axis stage only for a chosen axis (1.729458ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 286.094625

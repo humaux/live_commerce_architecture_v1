@@ -1,0 +1,6 @@
+pnpm exec tsc --noEmit --strict ... tests/admin/operations-ads.spec.ts
+exit_code=254: Command tsc not found in child worktree.
+Explicit root tsc with --types node without --typeRoots: exit_code=1 missing node type definitions.
+Explicit typeRoots without --types node: exit_code=1 missing node:* globals.
+Final explicit root tsc + --types node + --typeRoots: exit_code=0 (check-3.log).
+These are dependency resolution failures; no failed browser sample exists because browser was NOT_RUN.

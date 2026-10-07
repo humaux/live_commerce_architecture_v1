@@ -1,0 +1,6 @@
+{
+  "w6-u2-ads-sub.patch": "7014b9ae886b8595e32e1ea9d9743487716f05bc069e22c5e05703e2f391014a",
+  "w6-u2-browser-sub.patch": "491955a72e295a67938a1805ff78f51af97775cb05865b23987f79ccaf939e49",
+  "browser-untracked/tests/admin/operations-ads-playwright-source.txt": "488a0ed3f349949ffa1f2147e7509e04aeb2f2bf7784c592427ee52af8d6e777",
+  "browser-untracked/tests/foundation/browser-operations-ads-go-source.txt": "1659bba0bde0ec3f52301544ee44b91c1435d6b8098a5c723c91c4a0c12db86d"
+}

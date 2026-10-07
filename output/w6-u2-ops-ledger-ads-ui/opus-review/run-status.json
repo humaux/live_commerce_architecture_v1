@@ -1,0 +1,12 @@
+{
+  "run": "non-vacuity-canary-mutation",
+  "status": "ended",
+  "command": "LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-operations-ads",
+  "log": "mutation-red.log",
+  "timeout": "PG-lock300s; Go1500s; Playwright180s/case",
+  "success": "expected exit1 and failed private-canary absence assertion after positive loaded order drawer",
+  "failure": "unexpected exit0, setup/type/environment failure, or another assertion instead",
+  "wake": "root active exec session collects terminal completion; no unattended run after final",
+  "exit": 1,
+  "session_id": 21843
+}

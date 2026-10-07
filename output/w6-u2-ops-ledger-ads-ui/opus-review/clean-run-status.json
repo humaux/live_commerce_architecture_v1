@@ -1,0 +1,12 @@
+{
+  "run": "non-vacuity-restored-green",
+  "status": "ended",
+  "command": "LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-operations-ads",
+  "log": "browser-green.log",
+  "timeout": "PG-lock300s; Go1500s; Playwright180s/case",
+  "success": "exit0 plus11cases andGo/PGreadback",
+  "failure": "any nonzero/FAIL/setup/type/environment failure",
+  "wake": "root active tool session receives terminal completion; no job survives final",
+  "exit": 0,
+  "session_id": 58423
+}

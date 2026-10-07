@@ -1,3 +1,6 @@
+// Purpose: Allowlisted ADS BFF routes and exact command validators.
+// Depends on: No runtime packages; frozen Meta ADS route contracts.
+// Used by: Admin generic BFF route and ADS clients/tests.
 // BFF request grammar for the merchant ads page: generic route `/api/stores/{store}/ads/*`
 // -> Go `/v1/admin/stores/{store_id}/ads/*` (internal/httpapi/ads.go), plus the pure helpers of the two dedicated
 // Meta-connect routes `/api/ads/meta/connect` (POST -> Go POST ads/meta/connect) and `/api/ads/meta/callback`
@@ -11,8 +14,8 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 // meta/callback (those two are the dedicated routes). Fragments, spliced into the `[...resource]` method table
 // like `claimsRoutes`; the BFF forwards each path unchanged.
 export const adsRoutes = {
-  GET: `ads/(?:settings|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
-  POST: `ads/(?:meta/bindings|drafts|drafts/${uuid}/(?:approve|publish|pause|end)|sessions/${uuid}/audience-read)`,
+  GET: `ads/(?:settings|catalog-feed|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
+  POST: `ads/(?:meta/(?:bindings|unbind)|drafts|drafts/${uuid}/(?:approve|publish|pause|end)|sessions/${uuid}/audience-read)`,
   PUT: `ads/(?:drafts/${uuid}|capi)`,
 } as const;
 export const adsAny = new RegExp(`^(?:${adsRoutes.GET}|${adsRoutes.POST}|${adsRoutes.PUT})$`);
@@ -146,4 +149,16 @@ export function connectErrorFor(status: number, body: unknown): string | null {
   if (status === 502) return "meta_connect_failed";
   if (status === 400 || status === 422) return "invalid_request";
   return "unavailable";
+}
+
+
+/** Validates the exact W6-06B unbind command body. Go still owns scope and asset authority. */
+export function validAdsUnbindBody(raw: string): boolean {
+  if (raw.length > 128 || !/^\s*\{\s*"ad_account_id"\s*:\s*"[0-9]{1,40}"\s*\}\s*$/.test(raw)) return false;
+  try {
+    const o: unknown = JSON.parse(raw);
+    return !!o && typeof o === "object" && !Array.isArray(o) && Object.keys(o).length === 1 &&
+      Object.hasOwn(o,"ad_account_id") && typeof (o as Record<string,unknown>).ad_account_id === "string" &&
+      /^[0-9]{1,40}$/.test((o as Record<string,string>).ad_account_id);
+  } catch {return false;}
 }

@@ -1,0 +1,583 @@
+diff --git a/apps/admin/components/AdsConnection.tsx b/apps/admin/components/AdsConnection.tsx
+index 8adc082c..4a1ff4a9 100644
+--- a/apps/admin/components/AdsConnection.tsx
++++ b/apps/admin/components/AdsConnection.tsx
+@@ -3,16 +3,21 @@
+ // Used by: apps/admin/components/Ads.tsx
+ "use client";
+ // Extracted ads panel: existing BFF ads-client calls -> Go /v1/admin/stores/{store}/ads; no command or DTO changes.
+-import { useEffect, useState, type FormEvent } from "react";
++import { useEffect, useRef, useState, type FormEvent } from "react";
+ import type { Locale } from "@live-commerce/i18n";
+ import type { Store } from "@/lib/model";
+ import {
++  postUnbind,
++  readCatalogFeed,
+   postBindings,
+   readConnectState,
+   AdsReadError,
+   type WriteResult,
+ } from "@/lib/ads-client";
+ import {
++  type AdsCode,
++  type AdsInFlight,
++  type CatalogFeed,
+   accountReady,
+   type ConnectError,
+   type ConnectState,
+@@ -59,6 +64,30 @@ export function ConnectionSection({
+     after?: (value: T) => void,
+   ) => Promise<void>;
+ }) {
++  const [unbindAccount, setUnbindAccount] = useState<string | null>(null);
++  const [inFlight, setInFlight] = useState<{account:string;value:AdsInFlight} | null>(null);
++  const [unbindError, setUnbindError] = useState<AdsCode | null>(null);
++  const dialog = useRef<HTMLDialogElement>(null);
++  useEffect(() => {
++    if (unbindAccount) dialog.current?.showModal();
++    else dialog.current?.close();
++  }, [unbindAccount]);
++  // Store/session changes dismiss the old account and safe operation details.
++  useEffect(() => {setUnbindAccount(null);setInFlight(null);setUnbindError(null);}, [store.id, boundary.current]);
++  function unbind() {
++    if (!unbindAccount || busy || uncertain) return;
++    const account = unbindAccount;
++    const body = JSON.stringify({ad_account_id:account});
++    setInFlight(null);setUnbindError(null);
++    void run(`unbind:${account}`,body,async (key) => {
++      const result = await postUnbind(store.id,key,body,boundary.current);
++      if (!result.ok) {
++        if (result.details) setInFlight({account,value:result.details});
++        if (!result.uncertain) setUnbindError(result.code);
++      }
++      return result;
++    },c.unbound,() => setUnbindAccount(null));
++  }
+   const accounts = settings.connections.filter(
+     (x) => x.provider === "meta_ads",
+   );
+@@ -138,10 +167,31 @@ export function ConnectionSection({
+               <span className={x.enabled ? "ads-tone-ok" : "ads-tone-warn"}>
+                 {x.enabled ? c.connEnabled : c.connDisabled}
+               </span>
++              {x.provider === "meta_ads" && x.enabled && (
++                <button type="button" className="ads-inline ads-danger" data-testid="ads-unbind"
++                  aria-label={`${c.unbindButton}: ${x.asset_id}`} disabled={busy !== "" || !!uncertain || !!connect}
++                  onClick={() => {setInFlight(null);setUnbindError(null);setUnbindAccount(x.asset_id);}}>{c.unbindButton}</button>
++              )}
+             </li>
+           ))}
+         </ul>
+       )}
++      <dialog ref={dialog} className="ads-unbind-dialog" aria-labelledby="ads-unbind-h" aria-describedby="ads-unbind-copy"
++        data-testid="ads-unbind-confirm" onCancel={(event) => {if (busy) event.preventDefault();else setUnbindAccount(null);}}
++        onClose={() => setUnbindAccount(null)}>
++        <h3 id="ads-unbind-h">{c.unbindTitle}</h3>
++        <p className="ads-mono">{unbindAccount}</p>
++        <div id="ads-unbind-copy"><p>{c.unbindHistory}</p><p>{c.unbindPause}</p><p>{c.unbindLocal}</p><p>{c.unbindCapi}</p></div>
++        <div className="ads-actions">
++          <button type="button" className="ads-danger" data-testid="ads-unbind-yes" disabled={busy !== "" || !!uncertain} onClick={unbind}>
++            {busy.startsWith("unbind:") ? c.sending : c.unbindConfirm}</button>
++          <button type="button" data-testid="ads-unbind-cancel" autoFocus disabled={busy !== ""} onClick={() => setUnbindAccount(null)}>{c.cancel}</button>
++        </div>
++        {unbindError && unbindError !== "operations_in_flight" && <p role="alert" data-testid="ads-unbind-error">{c.errors[unbindError]}</p>}
++        {uncertain.startsWith("unbind:") && <p role="alert">{c.uncertain}</p>}
++        {inFlight && inFlight.account === unbindAccount && <InFlightDetails c={c} value={inFlight.value} />}
++      </dialog>
++      <CatalogFeedCard c={c} store={store} />
+       <h3>{c.identitiesTitle}</h3>
+       {settings.identities.length === 0 ? (
+         <p className="ads-empty">{c.identitiesEmpty}</p>
+@@ -326,3 +376,53 @@ function PickStep({
+     </form>
+   );
+ }
++
++
++function InFlightDetails({c,value}:{c:AdsCopy;value:AdsInFlight}) {
++  return <div className="ads-bad" role="alert" data-testid="ads-unbind-in-flight">
++    <p>{c.errors.operations_in_flight}</p><p data-testid="ads-unbind-total">{c.inFlightTotal(value.operations_total,value.operations.length)}</p>
++    <ul className="ads-list">{value.operations.map((op)=> <li key={op.operation_id}>
++      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{op.state}</span>
++    </li>)}</ul>
++  </div>;
++}
++
++function CatalogFeedCard({c,store}:{c:AdsCopy;store:Store}) {
++  const [feed,setFeed] = useState<CatalogFeed | null>(null);
++  const [status,setStatus] = useState<"loading"|"ready"|"signed-out"|"forbidden"|"error">("loading");
++  const [tick,setTick] = useState(0);
++  const [copy,setCopy] = useState<""|"ok"|"error">("");
++  const current = useRef("");
++  current.current = store.id;
++  useEffect(()=> {
++    const active = new AbortController();
++    setFeed(null);setStatus("loading");setCopy("");
++    readCatalogFeed(store.id,active.signal).then((value)=> {
++      if (!active.signal.aborted) {setFeed(value);setStatus("ready");}
++    },(error:unknown)=> {
++      if (!active.signal.aborted) setStatus(error instanceof AdsReadError && (error.code === "signed-out" || error.code === "forbidden") ? error.code : "error");
++    });
++    return ()=>active.abort();
++  },[store.id,tick]);
++  async function copyURL() {
++    if (!feed?.feed_url) return;
++    const id = store.id;
++    try {await navigator.clipboard.writeText(feed.feed_url);if (current.current === id) setCopy("ok");}
++    catch {if (current.current === id) setCopy("error");}
++  }
++  return <div className="ads-feed" data-testid="ads-catalog-feed" aria-labelledby="ads-feed-h">
++    <h3 id="ads-feed-h">{c.feedTitle}</h3>
++    {status === "loading" && <p role="status">{c.loading}</p>}
++    {status !== "loading" && status !== "ready" && <div role="alert">
++      <p>{status === "signed-out" ? c.signedOut : status === "forbidden" ? c.forbidden : c.unavailable}</p>
++      {status === "error" && <button type="button" data-testid="ads-feed-retry" onClick={()=>setTick(n=>n+1)}>{c.retry}</button>}
++    </div>}
++    {status === "ready" && feed && (feed.feed_url ? <>
++      <p className="ads-note">{c.feedHowTo}</p>
++      <label className="ads-feed-url" htmlFor="ads-feed-url">{c.feedTitle}
++        <textarea id="ads-feed-url" data-testid="ads-feed-url" readOnly value={feed.feed_url} rows={2} /></label>
++      <button type="button" data-testid="ads-feed-copy" onClick={()=>void copyURL()}>{c.feedCopy}</button>
++      {copy && <p role={copy === "ok" ? "status" : "alert"} data-testid="ads-feed-copy-result">{copy === "ok" ? c.feedCopied : c.feedCopyFailed}</p>}
++    </> : <p className="ads-empty" data-testid="ads-feed-empty">{c.feedEmpty}</p>)}
++  </div>;
++}
+diff --git a/apps/admin/components/ads.css b/apps/admin/components/ads.css
+index 2937d64e..79af3b02 100644
+--- a/apps/admin/components/ads.css
++++ b/apps/admin/components/ads.css
+@@ -487,3 +487,34 @@
+   overflow-wrap: anywhere;
+   max-width: 60ch;
+ }
++
++/* W6-06B: native dialog protects focus; safe IDs and public URLs wrap on 390px displays. */
++.ads-unbind-dialog {
++  width: min(560px, calc(100vw - 32px));
++  max-height: calc(100dvh - 48px);
++  box-sizing: border-box;
++  overflow: auto;
++  border: 1px solid var(--line);
++  border-radius: 12px;
++  padding: 24px;
++  color: var(--ink);
++  background: var(--panel, #fff);
++}
++.ads-unbind-dialog::backdrop { background: rgb(15 25 40 / 45%); }
++.ads-unbind-dialog p, .ads-unbind-dialog li, .ads-connections { overflow-wrap: anywhere; }
++.ads-unbind-dialog .ads-actions { flex-wrap: wrap; }
++.ads-unbind-dialog .ads-list li { display: grid; gap: 4px; }
++.ads-feed { margin-block: 24px; min-width: 0; }
++.ads-feed-url { display: grid; gap: 6px; margin-block: 12px; }
++.ads-feed-url textarea {
++  width: 100%; min-width: 0; box-sizing: border-box;
++  resize: vertical; overflow-wrap: anywhere;
++  border: 1px solid var(--line); border-radius: 6px; padding: 10px;
++  font: inherit; color: var(--ink); background: var(--panel, #fff);
++}
++.ads-feed button { min-height: var(--ui-target); }
++@media (max-width: 480px) {
++  .ads-unbind-dialog { padding: 16px; }
++  .ads-unbind-dialog button { white-space: normal; min-height: var(--ui-target); }
++  [data-testid="ads-connections"] li { min-width: 0; overflow-wrap: anywhere; }
++}
+diff --git a/apps/admin/lib/ads-client.ts b/apps/admin/lib/ads-client.ts
+index f466aa82..5ac8cece 100644
+--- a/apps/admin/lib/ads-client.ts
++++ b/apps/admin/lib/ads-client.ts
+@@ -1,3 +1,6 @@
++// Purpose: ADS browser requests with CSRF, session fences and strict unbind outcomes.
++// Depends on: settings-client.ts, ads-model.ts, ads-request.ts; authenticated admin BFF.
++// Used by: Admin ADS components.
+ // Admin ads client: browser -> BFF `/api/stores/{store}/ads/*` -> Go `/v1/admin/stores/{store_id}/ads/*`
+ // (internal/httpapi/ads.go), and browser -> BFF POST `/api/ads/meta/connect` -> Go POST ads/meta/connect.
+ // Reads parse the frozen DTOs (ads-model.ts); writes carry cookie CSRF + session fence + Idempotency-Key (+ If-Match
+@@ -5,10 +8,10 @@
+ // Non-goals: no token ever reaches this file (the Meta token stays in Go/PG, HPKE-sealed); no retry policy.
+ import { csrfCookie, sessionBoundary } from "./settings-client";
+ import {
+-  adsErrorCode, parseConnectState, parseDraft, parseDraftList, parseReport, parseSettings,
+-  type AdsCode, type Draft,
++  parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, adsErrorCode, parseConnectState, parseDraft, parseDraftList, parseReport, parseSettings,
++  type AdsUnbind, type AdsInFlight, type AdsCode, type Draft,
+ } from "./ads-model";
+-import { safeDialogURL } from "./ads-request";
++import { validAdsUnbindBody, safeDialogURL } from "./ads-request";
+ 
+ export type AdsReadCode = "signed-out" | "forbidden" | "not-found" | "unavailable" | AdsCode;
+ export class AdsReadError extends Error {
+@@ -61,11 +64,11 @@ export const readConnectState = (store: string, stateID: string, signal: AbortSi
+ export const readReport = (store: string, from: string, to: string, signal: AbortSignal) =>
+   read(`${base(store)}/report?from=${from}&to=${to}`, parseReport, signal);
+ 
+-export type WriteResult<T = null> = { ok: true; value: T } | { ok: false; code: AdsCode; uncertain: boolean };
++export type WriteResult<T = null> = { ok: true; value: T } | { ok: false; code: AdsCode; uncertain: boolean; details?: AdsInFlight };
+ 
+ async function write<T>(
+   method: "POST" | "PUT", url: string, key: string, body: string, boundary: string,
+-  parse: (value: unknown) => T, ifMatch?: number,
++  parse: (value: unknown) => T, ifMatch?: number, strict = false,
+ ): Promise<WriteResult<T>> {
+   const csrf = csrfCookie();
+   try {
+@@ -91,12 +94,21 @@ async function write<T>(
+   }
+   const value: unknown = await response.json().catch(() => null);
+   if (response.status >= 500) return { ok: false, code: adsErrorCode(value), uncertain: true };
+-  if (!response.ok) return { ok: false, code: adsErrorCode(value), uncertain: false };
++  if (!response.ok) {
++    const code = adsErrorCode(value);
++    if (code === "operations_in_flight") {
++      try {
++        const details = parseAdsInFlight(value && typeof value === "object" ? (value as Record<string,unknown>).details : null);
++        return {ok:false,code,uncertain:false,details};
++      } catch {return {ok:false,code:"retry_later",uncertain:false};}
++    }
++    return {ok:false,code,uncertain:false};
++  }
+   try {
+     return { ok: true, value: parse(value) };
+   } catch {
+     // Accepted by the server but the body is not the shape we know: state is re-read anyway.
+-    return { ok: true, value: null as T };
++    return strict ? { ok: false, code: "retry_later", uncertain: true } : {ok:true,value:null as T};
+   }
+ }
+ const none = () => null;
+@@ -135,3 +147,17 @@ export function postConnect(store: string, key: string, boundary: string): Promi
+ }
+ 
+ export const newKey = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
++
++
++/** Reads the W6-06B public feed entry (ads:read), without a query, body or key. */
++export const readCatalogFeed = (store: string, signal: AbortSignal) => read(`${base(store)}/catalog-feed`,parseCatalogFeed,signal);
++/** Calls Go POST ads/meta/unbind (W6-06B §A) through BFF; local detach only, with receipt idempotency. */
++export const postUnbind = (store: string, key: string, body: string, boundary: string): Promise<WriteResult<AdsUnbind>> => {
++  if (!validAdsUnbindBody(body)) return Promise.resolve({ok:false as const,code:"invalid_request" as const,uncertain:false});
++  const account = (JSON.parse(body) as {ad_account_id:string}).ad_account_id;
++  return write("POST",`${base(store)}/meta/unbind`,key,body,boundary,(value)=> {
++    const receipt = parseAdsUnbind(value);
++    if (receipt.ad_account_id !== account) throw new Error("ad_account_id");
++    return receipt;
++  },undefined,true);
++};
+diff --git a/apps/admin/lib/ads-copy.ts b/apps/admin/lib/ads-copy.ts
+index 60215a49..e997a61e 100644
+--- a/apps/admin/lib/ads-copy.ts
++++ b/apps/admin/lib/ads-copy.ts
+@@ -1,3 +1,6 @@
++// Purpose: Three-locale ADS UI copy, including frozen refusal recovery.
++// Depends on: i18n Locale and ads-model.ts types.
++// Used by: Admin ADS components and locale parity tests.
+ // Copy for the admin ads page (components/Ads.tsx; BFF `/api/stores/{store}/ads/*` and `/api/ads/meta/*` -> Go internal/httpapi/ads.go).
+ // zh-TW is the primary locale (U8), zh-CN and en follow. Every frozen error code has a line in `errors` (the type
+ // forces all three locales to carry the same keys). Wording rules: ruling O4 (allowance off), O6 (consent lives in
+@@ -24,6 +27,21 @@ const en = {
+   allowanceLine: (amount: string) => `Approved lifetime budgets across this store's ads are capped at ${amount}.`,
+   budgetNote: "A Meta budget is not a real-time hard stop: delivery can slightly overshoot and figures refresh with a delay. Pause an ad to stop it.",
+   // connection
++  unbindButton: "Disconnect ad account",
++  unbindTitle: "Disconnect this ad account?",
++  unbindHistory: "Ad drafts, approvals, insights and audit history are kept.",
++  unbindPause: "Pause all ads that may still be running before disconnecting.",
++  unbindLocal: "Only local sealed ad credentials are removed. This does not revoke your Meta grant; revoke it in Facebook settings if needed.",
++  unbindCapi: "CAPI and its dataset connection stay connected. Purchase events are controlled separately below.",
++  unbindConfirm: "Disconnect account",
++  unbound: "Ad account disconnected. History is kept.",
++  feedTitle: "Catalog feed URL",
++  feedHowTo: "In Meta Commerce Manager, open your catalog → Data sources → Add items → Data feed. Choose a scheduled feed and paste this public URL. It contains published catalog data only.",
++  feedEmpty: "Publish your storefront and activate a storefront domain first to get a catalog feed URL.",
++  feedCopy: "Copy feed URL",
++  feedCopied: "Feed URL copied.",
++  feedCopyFailed: "Could not copy. Select the URL and copy it manually.",
++  inFlightTotal: (total: number, shown: number) => `Showing ${shown} of ${total} operations still in progress.`,
+   connTitle: "Meta connection",
+   connEmpty: "No Meta ad account is connected yet.",
+   connectButton: "Connect a Meta ad account",
+@@ -194,6 +212,8 @@ const en = {
+   capiNoneConnected: "Connect a dataset with an ad account to turn this on.",
+   // errors: every frozen code + session/BFF codes + local rule codes
+   errors: {
++    operations_in_flight: "Meta ads operations are still in progress. Wait for confirmed results before disconnecting.",
++    binding_in_use: "Ads may still be running. Pause them first, wait for confirmation, then disconnect.",
+     state_mismatch: "This connection attempt does not belong to this session or store. Start again.",
+     state_expired: "The connection attempt expired. Start again.",
+     meta_connect_failed: "Meta could not complete the connection. Try again in a moment.",
+@@ -253,6 +273,21 @@ const zhTW: AdsCopy = {
+   allowanceOff: "平台啟用前，此商店的廣告功能為關閉狀態。",
+   allowanceLine: (amount) => `此商店已核准廣告的總預算上限為 ${amount}。`,
+   budgetNote: "Meta 預算不是即時的硬性上限：實際花費可能略為超出，數據也會延遲更新。要停止廣告請按「暫停」。",
++  unbindButton: "解除綁定廣告帳號",
++  unbindTitle: "解除綁定此廣告帳號？",
++  unbindHistory: "廣告草稿、核准、成效及稽核歷史都會保留。",
++  unbindPause: "請先暫停所有仍可能投放中的廣告，再解除綁定。",
++  unbindLocal: "僅移除本地加密廣告憑據，不會撤銷 Meta 端授權；如有需要，請到 Facebook 設定撤銷。",
++  unbindCapi: "CAPI 及其資料集連結不受影響，購買事件另由下方設定控制。",
++  unbindConfirm: "確認解除綁定",
++  unbound: "廣告帳號已解除綁定，歷史已保留。",
++  feedTitle: "商品目錄 feed 網址",
++  feedHowTo: "在 Meta Commerce Manager 開啟商品目錄 → 資料來源 → 新增商品 → 資料 feed，選擇排程 feed 並貼上此公開網址。內容僅包含已發布的商品目錄資料。",
++  feedEmpty: "請先發布獨立站並啟用獨立站網域，才能取得商品目錄 feed 網址。",
++  feedCopy: "複製 feed 網址",
++  feedCopied: "已複製 feed 網址。",
++  feedCopyFailed: "無法複製，請選取網址後手動複製。",
++  inFlightTotal: (total: number, shown: number) => `顯示仍在進行的 ${total} 筆操作中的 ${shown} 筆。`,
+   connTitle: "Meta 連結",
+   connEmpty: "尚未連結 Meta 廣告帳號。",
+   connectButton: "連結 Meta 廣告帳號",
+@@ -415,6 +450,8 @@ const zhTW: AdsCopy = {
+   capiInvalid: "開啟時請選擇資料集；測試代碼只能包含字母、數字、- 與 _。",
+   capiNoneConnected: "請先連結廣告帳號與資料集才能開啟。",
+   errors: {
++    operations_in_flight: "Meta 廣告操作仍在進行中，請等待結果確認後再解除綁定。",
++    binding_in_use: "仍有可能投放中的廣告，請先暫停並等待確認，再解除綁定。",
+     state_mismatch: "此次連結不屬於目前的登入或商店，請重新開始。",
+     state_expired: "此次連結已過期，請重新開始。",
+     meta_connect_failed: "Meta 無法完成連結，請稍後再試。",
+@@ -473,6 +510,21 @@ const zhCN: AdsCopy = {
+   allowanceOff: "平台启用前，此店铺的广告功能处于关闭状态。",
+   allowanceLine: (amount) => `此店铺已审批广告的总预算上限为 ${amount}。`,
+   budgetNote: "Meta 预算不是实时的硬性上限：实际花费可能略有超出，数据也会延迟更新。要停止广告请点“暂停”。",
++  unbindButton: "解除绑定广告账号",
++  unbindTitle: "解除绑定此广告账号？",
++  unbindHistory: "广告草稿、批准、成效及审计历史都会保留。",
++  unbindPause: "请先暂停所有仍可能投放中的广告，再解除绑定。",
++  unbindLocal: "仅移除本地加密广告凭据，不会撤销 Meta 端授权；如有需要，请到 Facebook 设置撤销。",
++  unbindCapi: "CAPI 及其数据集连接不受影响，购买事件另由下方设置控制。",
++  unbindConfirm: "确认解除绑定",
++  unbound: "广告账号已解除绑定，历史已保留。",
++  feedTitle: "商品目录 feed 网址",
++  feedHowTo: "在 Meta Commerce Manager 打开商品目录 → 数据来源 → 添加商品 → 数据 feed，选择定时 feed 并粘贴此公开网址。内容仅包含已发布的商品目录数据。",
++  feedEmpty: "请先发布独立站并启用独立站域名，才能取得商品目录 feed 网址。",
++  feedCopy: "复制 feed 网址",
++  feedCopied: "已复制 feed 网址。",
++  feedCopyFailed: "无法复制，请选中网址后手动复制。",
++  inFlightTotal: (total: number, shown: number) => `显示仍在进行的 ${total} 项操作中的 ${shown} 项。`,
+   connTitle: "Meta 连接",
+   connEmpty: "尚未连接 Meta 广告账号。",
+   connectButton: "连接 Meta 广告账号",
+@@ -635,6 +687,8 @@ const zhCN: AdsCopy = {
+   capiInvalid: "开启时请选择数据集；测试代码只能包含字母、数字、- 与 _。",
+   capiNoneConnected: "请先连接广告账号与数据集才能开启。",
+   errors: {
++    operations_in_flight: "Meta 广告操作仍在进行中，请等待结果确认后再解除绑定。",
++    binding_in_use: "仍有可能投放中的广告，请先暂停并等待确认，再解除绑定。",
+     state_mismatch: "此次连接不属于当前的登录或店铺，请重新开始。",
+     state_expired: "此次连接已过期，请重新开始。",
+     meta_connect_failed: "Meta 无法完成连接，请稍后再试。",
+diff --git a/apps/admin/lib/ads-model.ts b/apps/admin/lib/ads-model.ts
+index 29e3a554..ecc57cbb 100644
+--- a/apps/admin/lib/ads-model.ts
++++ b/apps/admin/lib/ads-model.ts
+@@ -1,3 +1,6 @@
++// Purpose: Strict frozen ADS DTO parsing and display-only input hints.
++// Depends on: No runtime packages; contracts/meta-ads-v1.md.
++// Used by: ads-client.ts, ADS components and pure node tests.
+ // Admin ads model: strict parsers for the frozen ads DTOs plus the pure money/date/draft-input rules.
+ // Read by components/Ads.tsx and lib/ads-client.ts; BFF `/api/stores/{store}/ads/*`
+ // -> Go `internal/httpapi/ads.go` (contracts/meta-ads-v1.md §5.1, §5.2, §7; docs/delivery/units/ads-core.md "Frozen HTTP").
+@@ -32,6 +35,7 @@ export const adsServerCodes = [
+   "revision_changed", "over_allowance", "billing_restricted", "attempt_changed", "prior_attempt_not_paused",
+   "draft_approved", "budget_below_minimum", "not_whole_unit", "currency_mismatch", "starts_too_soon",
+   "binding_disabled", "source_not_owned", "product_not_published", "forbidden", "not_found", "invalid_request",
++  "operations_in_flight", "binding_in_use",
+ ] as const;
+ export const adsSessionCodes = [
+   "unauthorized", "retry_later", "rate_limited", "invalid_json", "json_required", "method_not_allowed", "conflict",
+@@ -509,3 +513,53 @@ export function validCapi(enabled: boolean, datasetBindingID: string, testCode:
+ 
+ // Meta account_status (Marketing API AdAccount): only 1 lets an ad account run ads.
+ export const accountReady = (status: number) => status === 1;
++
++
++// W6-06B: these DTOs are exact allowlists; token material and operation payloads never reach the view.
++function exact(value: unknown, keys: readonly string[], name: string): Rec {
++  const o = rec(value, name);
++  if (Object.keys(o).length !== keys.length || keys.some((key) => !Object.hasOwn(o,key))) throw new AdsParseError(name);
++  return o;
++}
++export type AdsUnbind = {unbound:boolean; ad_account_id:string; binding_ids:string[]; already_unbound:boolean};
++/** Reads the frozen unbind receipt, with no side effects. */
++export function parseAdsUnbind(value: unknown): AdsUnbind {
++  const o = exact(value,["unbound","ad_account_id","binding_ids","already_unbound"],"unbind");
++  const ad_account_id = str(o,"ad_account_id",40);
++  if (!/^[0-9]{1,40}$/.test(ad_account_id)) throw new AdsParseError("ad_account_id");
++  const binding_ids = list(o.binding_ids,"binding_ids",100,(value)=>uuid({value},"value"));
++  const unbound = bool(o,"unbound"), already_unbound = bool(o,"already_unbound");
++  if (unbound === already_unbound || unbound !== (binding_ids.length > 0) || new Set(binding_ids).size !== binding_ids.length) throw new AdsParseError("unbind_outcome");
++  return {unbound,ad_account_id,binding_ids,already_unbound};
++}
++export type AdsInFlight = {operations:{operation_id:string;action:string;state:"DISPATCHING"|"UNKNOWN"|"ACKNOWLEDGED"}[];operations_total:number};
++/** Reads only the frozen safe details of an operations_in_flight refusal. */
++export function parseAdsInFlight(value: unknown): AdsInFlight {
++  const o = exact(value,["operations","operations_total"],"in_flight");
++  const operations = list(o.operations,"operations",50,(value)=> {
++    const r = exact(value,["operation_id","action","state"],"operation");
++    const action = str(r,"action",64);
++    if (!/^[a-z][a-z0-9_.]{0,63}$/.test(action)) throw new AdsParseError("action");
++    return {operation_id:uuid(r,"operation_id"),action,state:oneOf(r,"state",["DISPATCHING","UNKNOWN","ACKNOWLEDGED"] as const)};
++  });
++  const operations_total = int(o,"operations_total",1,Number.MAX_SAFE_INTEGER);
++  if (!operations.length || operations_total < operations.length) throw new AdsParseError("operations_total");
++  return {operations,operations_total};
++}
++export type CatalogFeed = {feed_url:string|null;domains:{origin:string;feed_url:string}[];path:"/feeds/meta.csv"};
++/** Reads public scheduled-feed URLs; never accepts credentials, query strings or mismatched domains. */
++export function parseCatalogFeed(value: unknown): CatalogFeed {
++  const o = exact(value,["feed_url","domains","path"],"catalog_feed");
++  if (o.path !== "/feeds/meta.csv") throw new AdsParseError("path");
++  const domains = list(o.domains,"domains",100,(value)=> {
++    const r = exact(value,["origin","feed_url"],"domain");
++    const origin = str(r,"origin",2048), feed_url = str(r,"feed_url",2080);
++    let url: URL;
++    try { url = new URL(origin); } catch {throw new AdsParseError("origin");}
++    if (url.protocol !== "https:" || url.origin !== origin || url.username || url.password || feed_url !== origin+o.path) throw new AdsParseError("feed_url");
++    return {origin,feed_url};
++  });
++  const feed_url = o.feed_url === null ? null : str(o,"feed_url",2080);
++  if ((domains.length === 0) !== (feed_url === null) || (domains.length > 0 && feed_url !== domains.map(d=>d.origin).sort()[0]+o.path) || new Set(domains.map(d=>d.origin)).size !== domains.length) throw new AdsParseError("feed_url");
++  return {feed_url,domains,path:"/feeds/meta.csv"};
++}
+diff --git a/apps/admin/lib/ads-request.ts b/apps/admin/lib/ads-request.ts
+index 5f660044..91b6617d 100644
+--- a/apps/admin/lib/ads-request.ts
++++ b/apps/admin/lib/ads-request.ts
+@@ -1,3 +1,6 @@
++// Purpose: Allowlisted ADS BFF routes and exact command validators.
++// Depends on: No runtime packages; frozen Meta ADS route contracts.
++// Used by: Admin generic BFF route and ADS clients/tests.
+ // BFF request grammar for the merchant ads page: generic route `/api/stores/{store}/ads/*`
+ // -> Go `/v1/admin/stores/{store_id}/ads/*` (internal/httpapi/ads.go), plus the pure helpers of the two dedicated
+ // Meta-connect routes `/api/ads/meta/connect` (POST -> Go POST ads/meta/connect) and `/api/ads/meta/callback`
+@@ -11,8 +14,8 @@ const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+ // meta/callback (those two are the dedicated routes). Fragments, spliced into the `[...resource]` method table
+ // like `claimsRoutes`; the BFF forwards each path unchanged.
+ export const adsRoutes = {
+-  GET: `ads/(?:settings|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
+-  POST: `ads/(?:meta/bindings|drafts|drafts/${uuid}/(?:approve|publish|pause|end)|sessions/${uuid}/audience-read)`,
++  GET: `ads/(?:settings|catalog-feed|report|attribution|drafts(?:/${uuid})?|meta/states/${uuid})`,
++  POST: `ads/(?:meta/(?:bindings|unbind)|drafts|drafts/${uuid}/(?:approve|publish|pause|end)|sessions/${uuid}/audience-read)`,
+   PUT: `ads/(?:drafts/${uuid}|capi)`,
+ } as const;
+ export const adsAny = new RegExp(`^(?:${adsRoutes.GET}|${adsRoutes.POST}|${adsRoutes.PUT})$`);
+@@ -147,3 +150,14 @@ export function connectErrorFor(status: number, body: unknown): string | null {
+   if (status === 400 || status === 422) return "invalid_request";
+   return "unavailable";
+ }
++
++
++/** Validates the exact W6-06B unbind command body. Go still owns scope and asset authority. */
++export function validAdsUnbindBody(raw: string): boolean {
++  try {
++    const o: unknown = JSON.parse(raw);
++    return !!o && typeof o === "object" && !Array.isArray(o) && Object.keys(o).length === 1 &&
++      Object.hasOwn(o,"ad_account_id") && typeof (o as Record<string,unknown>).ad_account_id === "string" &&
++      /^[0-9]{1,40}$/.test((o as Record<string,string>).ad_account_id);
++  } catch {return false;}
++}
+diff --git a/tests/admin/ads-model.test.ts b/tests/admin/ads-model.test.ts
+index ddebc50d..574a046d 100644
+--- a/tests/admin/ads-model.test.ts
++++ b/tests/admin/ads-model.test.ts
+@@ -4,7 +4,7 @@
+ import assert from "node:assert/strict";
+ import { test } from "node:test";
+ import {
+-  accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
++  parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
+   canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, draftStatuses, emptyForm, epochToLocal,
+   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
+   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
+@@ -20,6 +20,7 @@ const frozenCodes = [
+   "revision_changed", "over_allowance", "billing_restricted", "attempt_changed", "prior_attempt_not_paused",
+   "draft_approved", "budget_below_minimum", "not_whole_unit", "currency_mismatch", "starts_too_soon",
+   "binding_disabled", "source_not_owned", "product_not_published", "forbidden", "not_found", "invalid_request",
++  "operations_in_flight", "binding_in_use",
+ ];
+ const frozenStatuses = ["DRAFT", "APPROVED", "SUBMITTING", "REMOTE_PAUSED", "ACTIVE", "PAUSED", "UNKNOWN", "FAILED", "ENDED", "REJECTED"];
+ 
+@@ -328,3 +329,51 @@ test("capi body and validation", () => {
+   assert.equal(validCapi(true, uuid(4), "bad code"), false);
+   assert.equal(validCapi(false, "junk", ""), false);
+ });
++
++
++test("W6-06B unbind response: exact keys, account, UUIDs and outcome semantics", () => {
++  const value = {unbound:true,ad_account_id:"9002",binding_ids:[uuid(1)],already_unbound:false};
++  assert.deepEqual(parseAdsUnbind(value),value);
++  assert.deepEqual(parseAdsUnbind({...value,unbound:false,binding_ids:[],already_unbound:true}).binding_ids,[]);
++  for (const bad of [{...value,token:"never"},{...value,ad_account_id:"act_9002"},{...value,binding_ids:["bad"]},
++    {...value,already_unbound:true},{...value,unbound:false},{...value,binding_ids:[]}, {...value,binding_ids:[uuid(1),uuid(1)]}])
++    assert.throws(()=>parseAdsUnbind(bad),AdsParseError);
++});
++
++test("W6-06B in-flight details preserve bounded items and total, reject unknown shapes", () => {
++  const row = {operation_id:uuid(1),action:"meta.ads.pause",state:"UNKNOWN"};
++  const value = {operations:[row],operations_total:51};
++  assert.deepEqual(parseAdsInFlight(value),value);
++  for (const state of ["DISPATCHING","UNKNOWN","ACKNOWLEDGED"])
++    assert.equal(parseAdsInFlight({...value,operations:[{...row,state}]}).operations[0].state,state);
++  for (const bad of [{...value,request:{}},{...value,operations:[]},{...value,operations_total:0},
++    {...value,operations_total:1.5},{...value,operations:[{...row,payload:{}}]},
++    {...value,operations:[{...row,state:"READY"}]},{...value,operations:[{...row,operation_id:"bad"}]},
++    {...value,operations:Array.from({length:51},()=>row)}]) assert.throws(()=>parseAdsInFlight(bad),AdsParseError);
++});
++
++test("W6-06B catalog feed has exact public URL/domain pairs or published-store empty", () => {
++  const domain = {origin:"https://shop.example",feed_url:"https://shop.example/feeds/meta.csv"};
++  const value = {feed_url:domain.feed_url,domains:[domain],path:"/feeds/meta.csv"};
++  assert.deepEqual(parseCatalogFeed(value),value);
++  assert.deepEqual(parseCatalogFeed({feed_url:null,domains:[],path:"/feeds/meta.csv"}).domains,[]);
++  for (const bad of [{...value,token:"never"},{...value,path:"/other"},{...value,feed_url:null},
++    {...value,domains:[]},{...value,domains:[{...domain,token:"never"}]},
++    {...value,feed_url:"javascript:alert(1)"},{...value,domains:[{...domain,origin:"https://user:pw@shop.example"}]},
++    {...value,domains:[{...domain,feed_url:domain.feed_url+"?token=secret"}]}]) assert.throws(()=>parseCatalogFeed(bad),AdsParseError);
++});
++
++test("W6-06B copy preserves unbind boundaries and feed recovery in three locales", () => {
++  for (const c of Object.values(adsCopy)) {
++    for (const key of ["unbindButton","unbindTitle","unbindHistory","unbindPause","unbindLocal","unbindCapi","unbindConfirm","unbound",
++      "feedTitle","feedHowTo","feedEmpty","feedCopy","feedCopied","feedCopyFailed"]) assert.ok(c[key as keyof typeof c],key);
++    assert.equal(typeof c.inFlightTotal(51,50),"string");
++  }
++});
++
++
++test("W6-06B feed selection follows origin order, not full feed URL order", () => {
++  const domains = ["https://a.example","https://a.example.xyz"].map(origin=>({origin,feed_url:origin+"/feeds/meta.csv"}));
++  assert.equal(parseCatalogFeed({feed_url:domains[0].feed_url,domains,path:"/feeds/meta.csv"}).feed_url,domains[0].feed_url);
++  assert.throws(()=>parseCatalogFeed({feed_url:domains[1].feed_url,domains,path:"/feeds/meta.csv"}),AdsParseError);
++});
+diff --git a/tests/admin/ads-request.test.ts b/tests/admin/ads-request.test.ts
+index 64317434..6909c0ea 100644
+--- a/tests/admin/ads-request.test.ts
++++ b/tests/admin/ads-request.test.ts
+@@ -4,7 +4,7 @@
+ import assert from "node:assert/strict";
+ import { test } from "node:test";
+ import {
+-  adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
++  validAdsUnbindBody, adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
+   parseConnectBody, safeDialogURL, storeFromCookie, validAdsQuery, validIdempotencyKey, validIfMatch,
+ } from "../../apps/admin/lib/ads-request.ts";
+ 
+@@ -134,3 +134,18 @@ test("Go transport split: pause/end bodiless, approve keyless, nothing else", ()
+   for (const bad of [`ads/drafts/${uuid}/publish`, `ads/drafts/${uuid}/pause`, "ads/drafts", `ads/drafts/${uuid}/approve/x`])
+     assert.ok(!adsKeyless.test(bad), bad);
+ });
++
++
++test("W6-06B route grammar and exact unbind body", () => {
++  assert.ok(method("GET").test("ads/catalog-feed"));
++  assert.ok(method("POST").test("ads/meta/unbind"));
++  assert.ok(!method("POST").test("ads/catalog-feed"));
++  assert.ok(!method("GET").test("ads/meta/unbind"));
++  assert.ok(!adsKeyless.test("ads/meta/unbind"));
++  assert.ok(!adsBodyless.test("ads/meta/unbind"));
++  assert.ok(validAdsQuery("https://admin.example/ads/catalog-feed","ads/catalog-feed"));
++  assert.ok(!validAdsQuery("https://admin.example/ads/catalog-feed?","ads/catalog-feed"));
++  for (const ad_account_id of ["0","9002","9".repeat(40)]) assert.ok(validAdsUnbindBody(JSON.stringify({ad_account_id})));
++  for (const raw of ["", "{}", "[]", "null", "{", JSON.stringify({ad_account_id:"act_9002"}), JSON.stringify({ad_account_id:9}),
++    JSON.stringify({ad_account_id:"9".repeat(41)}), JSON.stringify({ad_account_id:"9002",tenant_id:uuid})]) assert.ok(!validAdsUnbindBody(raw),raw);
++});

@@ -1,0 +1,12 @@
+{
+  "ci_run": 37584601181,
+  "sha": "64e0a7ea16127b55fbbf3d920ca8ab4e139f473f",
+  "artifact_id": 11467356193,
+  "artifact_name": "gate-5",
+  "zip_sha256": "bf1c02a7af057d6bf85a1c4a4a67148a054121c1024922fe7b09dffef8d43677",
+  "retained": [
+    "ci-red-lint.json",
+    "ci-red-lint.md"
+  ],
+  "source_path": "output/ui-visual-audit/20261007T071002Z"
+}

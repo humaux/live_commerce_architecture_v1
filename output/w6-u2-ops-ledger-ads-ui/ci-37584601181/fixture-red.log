@@ -1,0 +1,7 @@
+=== RUN   TestBrowserOperationsAds
+    browser_operations_ads_test.go:64: plan operation: resource not found
+--- FAIL: TestBrowserOperationsAds (1.84s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.921s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
