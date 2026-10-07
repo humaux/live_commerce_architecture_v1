@@ -27,13 +27,16 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
   const c = inboxCopy(locale);
   const { bundle_id: bundle, session_id: session } = conversation;
   const pending = useRef<Pending | null>(null);
-  const issued = useRef<{ url: string; boundary: string } | null>(null);
+  const issued = useRef<{ url: string; boundary: string; expiresAt: string } | null>(null);
+  // A captured click handler must also stop after a terminal replay/expiry, before React commits disabled state.
+  const stopped = useRef(false);
   const inFlight = useRef(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const clear = useCallback(() => {
     pending.current = null;
     issued.current = null;
+    stopped.current = false;
     inFlight.current = false;
     setBusy(false);
     setStatus(null);
@@ -49,8 +52,8 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
   }, [store.id, bundle, session, locale, privacy.fence]);
 
   async function copy() {
-    if (!eligible || !allowed || inFlight.current || !privacy.visible || privacy.blocked.current ||
-      document.visibilityState !== "visible" || status === "claimLinkReplayed") return;
+    if (!eligible || !allowed || inFlight.current || stopped.current || !privacy.visible || privacy.blocked.current ||
+      document.visibilityState !== "visible") return;
     const ticket = privacy.fence.begin();
     if (!privacy.fence.current(ticket)) return;
     inFlight.current = true;
@@ -92,12 +95,19 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
         const result = await issueClaimLink(store.id, session!, bundle!, request.body, request.key, request.boundary);
         if (!privacy.fence.current(ticket)) return;
         pending.current = null;
-        if (!result.token) { setStatus("claimLinkReplayed"); return; }
+        if (!result.token) { stopped.current = true; setStatus("claimLinkReplayed"); return; }
         const buyerLocale = ["zh-TW", "zh-CN", "en"].includes(locale) ? locale : "en";
         // Same buyer URL format as StudioClaims; the secret URL is never rendered or navigated to.
-        issued.current = { url: `${request.origin}/${buyerLocale}/claim#t=${result.token}`, boundary: request.boundary };
+        issued.current = { url: `${request.origin}/${buyerLocale}/claim#t=${result.token}`,
+          boundary: request.boundary, expiresAt: result.expires_at };
       }
       if (!privacy.fence.current(ticket) || document.visibilityState !== "visible") return;
+      if (Date.parse(issued.current.expiresAt) <= Date.now()) {
+        issued.current = null;
+        stopped.current = true;
+        setStatus("claimLinkExpired");
+        return;
+      }
       try {
         await navigator.clipboard.writeText(issued.current.url);
         if (privacy.fence.current(ticket)) setStatus("copied");
@@ -123,7 +133,7 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
     {status && <p role="status">{inboxError(locale, status)}</p>}
     <button type="button" className={styles.button}
       data-testid={pending.current ? "bundle-link-retry" : "bundle-copy-link"}
-      disabled={busy || !allowed || !eligible || !privacy.visible || privacy.blocked.current || status === "claimLinkReplayed"}
+      disabled={busy || stopped.current || !allowed || !eligible || !privacy.visible || privacy.blocked.current}
       onClick={() => void copy()}>
       {busy ? c.loading : pending.current ? c.claimLinkRetry : c.copyLink}
     </button>

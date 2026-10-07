@@ -334,6 +334,9 @@ test("review2 P1 lost M7 ACK retries exact receipt and null replay token never m
   );
   await host.settle();
   assert.equal(posts(calls).length, 2);
+  retry.props.onClick();
+  await host.settle();
+  assert.equal(posts(calls).length, 2, "a captured retry handler cannot mint a fresh key after null replay");
 });
 
 test("review2 P1 missing CSRF before cached recopy cannot copy or issue again", async (t) => {
@@ -551,4 +554,22 @@ test("review2 P2 missing health and single binding without named DM remain disab
   host.dirty = true;
   host.flush();
   assert.equal(node(host, (n) => n.props["data-testid"] === "reply-send").props.disabled, true);
+});
+
+test("review2 P2 expired cached issued link cannot be recopied or silently reissued", async (t) => {
+  const env = environment(t), sinks = privateSinks(t, true);
+  const expiresAt = "2030-01-01T00:01:00Z", deadline = Date.parse(expiresAt);
+  const realNow = Date.now; let now = deadline - 1000;
+  Date.now = () => now; t.after(() => { Date.now = realNow; });
+  const calls = bundleTransport(() => privateResponse({ ...issued(), expires_at: expiresAt }));
+  const host = await openBundle(env); copyAction(host); await host.settle();
+  assert.equal(posts(calls).length, 1, "actual M7 issued exactly once before clipboard refusal");
+  assert.equal(sinks.clipboard.length, 0, "first clipboard denial cached the issued credential only in memory");
+  now = deadline + 1; // Clock-only fixture: no hide/logout/selection or production-state mutation.
+  copyAction(host); await host.settle();
+  assert.equal(sinks.clipboard.length, 0, "expired M7 credential must not reach clipboard on explicit recopy");
+  assert.equal(posts(calls).length, 1, "expiry cannot mint a fresh key or reissue implicitly");
+  assert.ok(nodes(host.output).some((n) => ["status", "alert"].includes(n.props.role) && /expired/i.test(textOf(n))), "fixed expiry message visible");
+  const control = node(host, (n) => n.props["data-testid"] === "bundle-copy-link");
+  assert.equal(control.props.disabled, true, "expired credential stops copy in this scope");
 });
