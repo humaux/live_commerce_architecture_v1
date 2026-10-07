@@ -1,3 +1,11 @@
+// Purpose: the merchant orders v2 list read (GET /orders?view=v2 and POST /orders/search): filter normalization, cursor binding and the
+//   strict decode of each row (order_number, masked recipient, delivery kind, live sessions); normalizeRecipientMask is the single
+//   recipient-mask rule, shared with the open parcel-group read.
+// Depends on: identity.read_merchant_orders_v2 (migration 0110, READ COMMITTED scope transaction), pagination, command, platform.
+// Used by: internal/httpapi/orders.go (list + search routes), internal/merchantorders/parcels.go (normalizeRecipientMask).
+// Invariants: read only; a malformed recipient mask degrades that one row to the placeholder (hides, never reveals) and never
+//   fails the whole list.
+
 package merchantorders
 
 import (
