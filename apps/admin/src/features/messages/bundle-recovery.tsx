@@ -135,7 +135,7 @@ export function BundleRecovery({ store, conversation, locale, onUnauthorized }: 
     <button type="button" className={styles.button}
       data-testid={pending.current ? "bundle-link-retry" : "bundle-copy-link"}
       disabled={busy || stopped.current || !allowed || !eligible || !privacy.visible || privacy.blocked.current}
-      onClick={() => void copy()}>
+      onClick={copy}>
       {busy ? c.loading : pending.current ? c.claimLinkRetry : c.copyLink}
     </button>
   </div>;
