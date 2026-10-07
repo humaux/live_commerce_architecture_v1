@@ -1,0 +1,25 @@
+# tz-audit delivery
+
+- Branch: `unit/tz-audit`; base `35abffcadaa1240888d291391712e1411cb820a3`. Worktree `.worktrees/tz-audit`. Final commit SHA is reported with the handoff; tested source is bound by `source-hashes.json` and unchanged during all gates.
+- Author: Codex-3 (GPT-6; exact runtime model ID not exposed). Explorer: gpt-6-luna / medium / read-only on main worktree. Storefront writer: ui_worker gpt-6-sol / medium, `unit/tz-audit-storefront`, owns four storefront components plus timezone/claim tests. Independent admin test author: test_worker gpt-6-sol / medium, `unit/tz-audit-admin-tests`, owns `tests/admin/timezone-ui.test.mjs`. Independent source/test reviewer: security_reviewer gpt-6.1-sol / high, read-only on main worktree. All start from35abffca; child worktree patches/test source and logs are archived in this output before removal.
+- Summary: Taipei campaign wall-input conversion and saved schedule projection; explicit three-locale timezone hint; six business timestamp producers and store calendar year use existing shared format helpers. Browser ADS fixture follows Taipei semantics. Detailed classifications: `AUDIT.md`.
+- Contract/interface changes: none. No new dependency, lockfile, route, API, backend or shared formatter changes. Intentional buyer-local payment input retained; UTC parsers/instant timers remain correct.
+- Red: `TZ=UTC` and `TZ=America/Los_Angeles` + `node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/customers-model.test.ts tests/admin/timezone-ui.test.mjs apps/storefront/tests/timezone.test.mjs` on baseline35abffca → exit1 each,9 genuine regression failures (`red-all-*.log`).
+- Green: identical focused commands on frozen fixed source → exit0 each,37/37 (`green-all-*.log`). Independent reviewer reran each → exit0,37/37 (`review/utc.log`, `review/la.log`, reviewed source hashes).
+- Gates run: `cd apps/admin && pnpm exec tsc --noEmit -p .` →0; storefront equivalent →0; `bash scripts/dev/test-node.sh` →0 (689 tests across batches, no failures); `bash scripts/dev/check-gates.sh` →0; `git diff --check` →0. Commands, timeouts and exits in `*.status.json`; logs in this directory. New regression files are registered in test-node.sh with both foreign zones. No source input changed between manifest capture and gate completion.
+- Evidence archives: original whitespace-bearing logs/patches are preserved as gzip with raw SHA256 in `raw-evidence.json`; readable log copies only remove trailing whitespace. Tests and their assertions are unchanged.
+- Evidence: E3 / MODEL + component-level MOCK (real source seams). Independent source/test review found no P0/P1. No browser, provider, deployment or production acceptance claim.
+- Risks: shared displayTime standardizes these timestamps to the existing numeric date/minute style; affected visual/click gates are pending. Intentional buyer-entered local payment wall clock is documented rather than redefined. Calendar/instant values remain server projections.
+- NOT_RUN: all browser modes / full G07 / provider SANDBOX and LIVE; R04 pinned live-input runner (COMMERCE_R04_LIVEKIT_BINARY unset, test-node explicitly reports NOT_RUN). No unresolved source blocker.
+- Integrator to-do: push/CI/review/merge only through the integrator; this author commits and does not push. Existing e41a496c worktree remains preserved at `/Volumes/data/tz-audit` on `unit/tz-audit-prior-e41a496c`; this expanded audit replaces its delivery scope. No migration/schema/privilege action needed.
+- Humaux: task `d496f8d0-c199-44bd-9715-06b7f93775f2`; fix record `1cd2c798-1b5c-4a6e-b909-9b639b6104ad`, linked to localToEpoch/epochToLocal. code_index submitted16 files, done (13 parsed/266 entities; no rejected payload); reviewer lacked Humaux tools, so root stored its evidence on its behalf.
+
+## CI gates
+
+All are NOT_RUN locally per AGENT-PREAMBLE RAM limits. Run on the final commit and record independent integration results.
+
+- Direct admin modes: `--browser-meta-ads`, `--browser-design`, `--browser-storefront-publish`, `--browser-manual-order`, `--browser-merchant-buyer`.
+- Direct buyer/claim/payment/history modes: `--browser-checkout-offline`, `--browser-buyer-comms`, `--browser-claim-checkout`, `--browser-live-claims`, `--browser-storefront`.
+- Shared UI/layout regressions: `--browser-admin-shell`, `--browser-click-sweep`, `--browser-visual-lint`; shared ShopChrome footer also appears in buyer modes (`--browser-order`, `--browser-payment`, `--browser-card-payments`, `--browser-refund-fulfilment`, `--browser-cvs`, `--browser-home-cod`, `--stripe-browser`). Include these in the integrator's storefront batch.
+- Full G07: `bash scripts/dev/release-gate.sh --strict --only G07` before merge and again after merge, mandatory for storefront runtime edits (PROCESS §2.4). No local full-foundation run.
+- Run each browser mode as `bash scripts/dev/test-local.sh <mode>` on GitHub. Browser/model assertions should also run with UTC and America/Los_Angeles contexts when CI can configure them; the deterministic foreign-zone node gate is already wired in test-node.sh.

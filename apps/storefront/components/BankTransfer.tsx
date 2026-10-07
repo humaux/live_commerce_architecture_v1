@@ -1,17 +1,20 @@
 "use client";
 
-// Order-page panel of the bank_transfer payment mode (contracts/storefront-v2.md §C): the shop's bank details (shown only on the buyer's own
+// Purpose: Order-page panel of the bank_transfer payment mode (contracts/storefront-v2.md §C): the shop's bank details (shown only on the buyer's own
 // order), the amount due, a countdown to the deadline, and the "I have transferred" form (last 5 digits, amount, date/time).
 // BFF routes: GET /api/buyer/orders/{id}/bank-transfer and PUT /api/buyer/orders/{id}/bank-transfer/proof (keyed) -> Go
 // internal/buyerhttp/transfer.go (checkout.read_bank_transfer_buyer / checkout.submit_transfer_proof).
 // The panel never confirms anything: the order becomes CONFIRMED only when the shop confirms the transfer (a merchant act), and the amount to
 // transfer is the server order total from the view, never a value the buyer or this component computed.
+// Depends on: buyer transfer view, bank transfer contract/copy, and shared Taipei time formatting for server instants.
+// Used by: buyer order detail; buyer-entered datetime-local remains in the buyer's own zone.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError, buyerRequest } from "../lib/buyer-client";
 import { assertPurchaseContext, readPurchase } from "../lib/purchase";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { browseCopy } from "../lib/browse-copy";
+import { displayTime } from "../../../packages/format/src/index";
 import {
   isTransferErrorCode,
   minorFromText,
@@ -46,6 +49,7 @@ const localInput = (date: Date) => {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
+/** Show the buyer-owned bank transfer view and submit a reported payment instant. */
 export default function BankTransfer({
   context,
   orderID,
@@ -170,7 +174,6 @@ export default function BankTransfer({
 
   const clock = transferCountdown(view.deadline_at, now);
   const proof = view.proof;
-  const dateText = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
   return (
     <section data-testid="bank-transfer" data-state={view.state} aria-labelledby="bank-transfer-title">
       <h2 id="bank-transfer-title">{copy.title}</h2>
@@ -209,7 +212,7 @@ export default function BankTransfer({
       )}
       {open(view.state) && (
         <p data-testid="transfer-deadline">
-          {copy.deadline} {dateText(view.deadline_at)} ·{" "}
+          {copy.deadline} {displayTime(locale, view.deadline_at)} ·{" "}
           {clock.expired ? copy.windowEnded : copy.timeLeft(clock.hours, clock.minutes)}
         </p>
       )}
@@ -224,7 +227,7 @@ export default function BankTransfer({
       {view.state === "REFUNDED_OFFLINE" && <p role="status">{copy.refunded}</p>}
       {proof && (
         <p data-testid="transfer-proof">
-          {copy.yourDetails}: ···{proof.last5} · {money(proof.amount_minor, view.currency)} · {dateText(proof.paid_at)}
+          {copy.yourDetails}: ···{proof.last5} · {money(proof.amount_minor, view.currency)} · {displayTime(locale, proof.paid_at)}
         </p>
       )}
       {open(view.state) && !clock.expired && (

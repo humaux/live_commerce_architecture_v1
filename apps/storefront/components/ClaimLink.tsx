@@ -1,7 +1,7 @@
 "use client";
 
 // Purpose: explicit claim preview -> cart merge -> direct checkout with order recovery first.
-// Depends on: buyer BFF B1/B2, purchase Web Lock/recovery, claim copy/contract and checkout routes.
+// Depends on: buyer BFF B1/B2, purchase Web Lock/recovery, claim copy/contract and checkout routes; shared Taipei time formatting.
 // Used by: /{locale}/claim; the token remains only in this mounted component.
 
 // Owns the buyer claim page UI (/{locale}/claim, live-keyword-claims-v1 §11.1): read the
@@ -37,6 +37,7 @@ import {
 } from "../lib/claim-contract";
 import { claimCopy } from "../lib/claim-copy";
 import { formatMoney } from "../lib/money";
+import { displayTime } from "../../../packages/format/src/index";
 
 type View = "loading" | "ready" | "not-found" | "conflict" | "failed" | "session";
 
@@ -53,6 +54,7 @@ async function json<T>(response: Response, valid: (value: unknown) => value is T
 }
 
 /** Renders B1; only the explicit checkout button may redeem B2 and navigate. */
+/** Read a claim link and coordinate its explicit cart/checkout actions. */
 export default function ClaimLink({
   locale: initialLocale,
   demonstration = false,
@@ -337,7 +339,7 @@ export default function ClaimLink({
             <p className="claim-note">{copy.price}</p>
             <p className="claim-note">{copy.stock}</p>
             <p className="claim-note">
-              {copy.expires(new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(preview.expires_at)))}
+              {copy.expires(displayTime(locale, preview.expires_at))}
             </p>
             {notice === "added" && <p role="status" className="claim-success" data-testid="claim-added">{copy.added}</p>}
             {notice === "recovery" && <p role="status">{copy.recovery}</p>}

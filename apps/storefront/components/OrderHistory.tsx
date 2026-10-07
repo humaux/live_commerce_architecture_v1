@@ -1,5 +1,10 @@
 "use client";
 
+// Purpose: show buyer-owned order history and read-only order details.
+// Depends on: buyer purchase reads, frozen order copy, and shared Taipei time formatting.
+// Used by: ProductPurchase order recovery and history view.
+// Invariants: list totals and states are server projections; viewing another order never changes checkout recovery.
+
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { historyCopy } from "../lib/history-copy";
@@ -8,9 +13,11 @@ import { purchasePage, readOrder, validOrderSummary } from "../lib/purchase";
 import type { Order, OrderSummary } from "../lib/purchase";
 import { OrderDetails } from "./OrderFlow";
 import { BuyerClientError } from "../lib/buyer-client";
+import { displayTime } from "../../../packages/format/src/index";
 
 // Read-only navigation. Never writes the active checkout locator: inspecting A
 // while B is pending must not redirect B's receipt/recovery to the older order.
+/** Show buyer-owned orders without changing the active checkout locator. */
 export default function OrderHistory({
   context,
   locale,
@@ -157,10 +164,7 @@ export default function OrderHistory({
               <li key={order.order_id}>
                 <div>
                   <time dateTime={order.created_at}>
-                    {new Intl.DateTimeFormat(locale, {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(new Date(order.created_at))}
+                    {displayTime(locale, order.created_at)}
                   </time>
                   <span>{orderCopy[locale][order.commercial_state]}</span>
                 </div>

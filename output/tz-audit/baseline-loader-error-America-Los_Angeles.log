@@ -1,0 +1,143 @@
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'next/dist/build/swc'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs:19:13
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/storefront/tests/timezone.test.mjs'
+  ]
+}
+
+Node.js v24.15.0
+✖ apps/storefront/tests/timezone.test.mjs (194.217333ms)
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (4.523167ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.850041ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.86675ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.652334ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (3.420375ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.720166ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.940708ms)
+✔ money: whole units to minor with integer math; TWD must be whole (12.774125ms)
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (2.480584ms)
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.537625ms)
+✔ draft input: exact 11-key body and every local rule (0.821583ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.134ms)
+✔ settings parser: environment enum, connections, identities, capi (0.758959ms)
+✔ connect state parser: pick list kinds and id match (0.230291ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.334708ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (8.529833ms)
+✔ capi body and validation (0.434333ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.433708ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.241625ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.225375ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.262541ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.08625ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (4.121333ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.424792ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (3.240292ms)
+✔ erasure summary is four counts only (0.100208ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.334708ms)
+✔ financeDay is the UTC+8 day (0.066292ms)
+✔ finance defaults keep Taipei dates across midnight, leap day and year end (0.091375ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.560042ms)
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'next/dist/build/swc'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/admin/package.json
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1073:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at Module._load (node:internal/modules/cjs/loader:1262:25)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1576:12)
+    at require (node:internal/modules/helpers:153:16)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/timezone-ui.test.mjs:14:27
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/apps/admin/package.json'
+  ]
+}
+
+Node.js v24.15.0
+✖ tests/admin/timezone-ui.test.mjs (113.418583ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 28
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 289.613708
+
+✖ failing tests:
+
+test at apps/storefront/tests/timezone.test.mjs:1:1
+✖ apps/storefront/tests/timezone.test.mjs (194.217333ms)
+  'test failed'
+
+test at tests/admin/ads-model.test.ts:208:1
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (2.480584ms)
+  AssertionError [ERR_ASSERTION]: 2026-10-07T00:00 under America/Los_Angeles
+  + actual - expected
+
+  + 1791356400000
+  - 1791302400000
+         ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/ads-model.test.ts:216:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1791356400000,
+    expected: 1791302400000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/ads-model.test.ts:230:1
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.537625ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Asia\/Taipei.*UTC\+8/. Input:
+
+  'Local time. Start at least 10 minutes from now; run at most 30 days.'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-admin-tests/tests/admin/ads-model.test.ts:235:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Local time. Start at least 10 minutes from now; run at most 30 days.',
+    expected: /Asia\/Taipei.*UTC\+8/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at tests/admin/timezone-ui.test.mjs:1:1
+✖ tests/admin/timezone-ui.test.mjs (113.418583ms)
+  'test failed'

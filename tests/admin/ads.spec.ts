@@ -1,3 +1,6 @@
+// Purpose: Exercise real admin ads workflows and their frozen failure paths.
+// Depends on: Playwright, the Go browser harness, ads-copy and shared Taipei input helpers.
+// Used by: TestBrowserMetaAds and the --browser-meta-ads CI gate.
 // MA09a admin half (contracts/meta-ads-v1.md §9 MA09, §2 flow, §5.1 statuses, §5.3 X7, §7, §12; ads-ui U1-U8; rulings O4, AD9).
 // BFF routes exercised through the UI: POST /api/ads/meta/connect, GET /api/ads/meta/callback (the FLfB redirect URI),
 // GET|POST /api/stores/{store}/ads/{settings,meta/states/*,meta/bindings,drafts,drafts/*,report,capi} -> Go
@@ -11,6 +14,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { adsCopy } from "../../apps/admin/lib/ads-copy";
+import { instantToTaipei } from "../../packages/format/src/index.ts";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -91,9 +95,7 @@ async function noSecrets(page: Page) {
   }
 }
 const localInput = (offsetMs: number) => {
-  const d = new Date(Date.now() + offsetMs);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  return instantToTaipei(new Date(Date.now() + offsetMs).toISOString());
 };
 async function openAds(page: Page, locale = "en") {
   await page.goto(`/${locale}/ads?store=${store}`);
