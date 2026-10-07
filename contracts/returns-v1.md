@@ -136,8 +136,12 @@ COD delegation), `TestReturnRoutesTransportRules`/`TestReturnCodesReachJSONBody`
 * At cancel time the money is by definition covered (held >= captured), so no human work remains on the order itself; if a counted in-flight refund later FAILS, `GET /orders/cancel-refund-gaps`
   is the single surface that keeps the money visible as needing work (it is fact-based, §3 above). Rejected alternative: keeping the work item `READY` while a refund is in flight — the common
   flow (refund, then cancel immediately) would then linger `READY` after the refund SUCCEEDS, i.e. the original bug, unless the frozen stripe-refund observation applier were also hooked.
-* Forward-only backfill: existing `CANCELLED` orders' `READY` work items are closed, EXCEPT rows with an outstanding gap (non-failed refunds below the CAPTURED amount — money still needs a
-  human, so those keep `READY`), with an exactly-N count assertion. `REVIEW_REQUIRED` work items are never touched.
+* Forward-only backfill: EVERY `READY` work item of a `CANCELLED` order is closed (integrator ruling, no open-gap exception: an outstanding cancel-refund gap is carried by
+  `GET /orders/cancel-refund-gaps`, which never reads the work item, and the new definer already gives that business state `NONE`). `REVIEW_REQUIRED` work items and every row of a
+  non-`CANCELLED` order are never touched. The migration block counts the rows before deleting and fails unless the delete closed exactly that many, and it refuses to run under a role
+  without `SUPERUSER`/`BYPASSRLS` (the table is FORCE RLS: such a role would see zero rows and the backfill would silently do nothing).
 * Projection, work-state vocabulary, ship eligibility (`manual-fulfilment-v1` MD6 requires a `READY` work item of a `CONFIRMED` order — a cancelled order can never ship) and the refund engine
   (`stripe-refund-v1` RF07 replay) are unchanged. Gates: `^TestMerchantCancelClosesWorkItem$` (cancel closes, never-paid NONE, in-flight-then-failed gap stays listed, 0162 backfill closes
-  non-gap legacy rows and keeps gap rows), R2 migration count pin +1 (86 -> 87 on this branch; PAY-RM1's 0161 also +1 in parallel — the integrator unions to 88).
+  every legacy cancelled `READY` row including open-gap ones and spares a `REVIEW_REQUIRED` row and a `CONFIRMED` order's `READY` row, the backfill block refuses a non-bypass role and fails on a
+  suppressed delete), `TestBuyerPaymentCaptureACLAndObservationBinding` (only `commerce_checkout_writer` holds `DELETE` on the work-item table, nobody a wider table privilege), R2 migration count
+  pin +1 (87 -> 88; PAY-RM1's 0161 is 87).

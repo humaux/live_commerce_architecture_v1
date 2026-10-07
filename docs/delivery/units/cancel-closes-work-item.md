@@ -28,6 +28,8 @@ not read work items, so it stays the single surface for "money needs a human" wh
 refund counted at cancel time later FAILS. Conditional keeping (READY while a refund is in flight)
 was rejected: the common flow refunds and cancels while the refund is still in flight, so it would
 leave the READY row lingering after the refund succeeds — the very bug being fixed — unless the
-frozen stripe-refund observation applier were hooked. The 0162 backfill closes existing CANCELLED
-rows with no outstanding gap and keeps READY exactly for rows whose refund is below the capture
-(open gaps), per the brief.
+frozen stripe-refund observation applier were hooked. The 0162 backfill originally kept READY for
+legacy rows with an outstanding gap; the integrator's review ruling (P1-b) dropped that exception:
+the backfill closes EVERY READY row of a CANCELLED order, because the gap is carried by
+`returns.list_cancel_refund_gaps` (never reads the work item) and the new definer already gives the
+same business state NONE.
