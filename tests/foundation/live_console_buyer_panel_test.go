@@ -259,6 +259,13 @@ func (e *bpEnv) use(bundle, offer, order string, qty int, unit int64) {
 		VALUES($1,$2,$3,$4,$5,$6,$7)`, e.tenant, e.store1, bundle, offer, order, qty, unit)
 }
 
+// origin seeds a claims.order_origins row: the price-neutral claim-checkout ledger (no live_price_uses row).
+func (e *bpEnv) origin(bundle, offer, order, session string) {
+	e.t.Helper()
+	e.exec(`INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
+		VALUES($1,$2,$3,$4,$5,1,$6,clock_timestamp())`, e.tenant, e.store1, order, bundle, offer, session)
+}
+
 // forBuyer seeds an A16 order_for_buyer row. state is 'placed' for a live order and 'released' for one whose order
 // was cancelled (the order_for_buyer_live unique index admits one pending/placed row per bundle, as production does).
 func (e *bpEnv) forBuyer(bundle, order, state string) {
@@ -436,6 +443,34 @@ func TestLiveConsoleBuyerPanelClaimsAndOrders(t *testing.T) {
 	}
 	if _, has := out["window_open_until"]; has {
 		t.Errorf("A13 by bundle must not invent a conversation window: %s", raw)
+	}
+}
+
+// A price-neutral claim checkout (order_origins only, no live_price_uses) is an order of the bundle and counts in purchase_ordinal.
+func TestLiveConsoleBuyerPanelPriceNeutralOrigin(t *testing.T) {
+	e := bpNew(t)
+	s1 := e.session("bp-session-origin")
+	a1 := e.offer(s1, "A1", 0)
+	b1 := e.bundle(s1, "facebook", bpActorKey("bp-actor-origin"), nil, nil, false)
+	e.line(b1, s1, a1, 1)
+	conv := e.conversation(e.store1, "page", "1234567890")
+	e.linkPeer(b1, conv, "page", "1234567890")
+	oNeutral := e.order("CONFIRMED", "MANUAL_UNASSIGNED", 800, 3*time.Hour)
+	e.origin(b1, a1, oNeutral, s1)
+	oBoth := e.order("CONFIRMED", "MANUAL_UNASSIGNED", 900, 1*time.Hour)
+	e.origin(b1, a1, oBoth, s1)
+	e.use(b1, a1, oBoth, 1, 900) // in both ledgers: must be listed once
+
+	code, out, raw, _ := e.get(e.token, "/inbox/buyer-panel?conversation_id="+conv)
+	if code != 200 {
+		t.Fatalf("A13 status=%d body=%s", code, raw)
+	}
+	orders := bpArr(out, "orders")
+	if len(orders) != 2 || bpStr(bpMap(orders[0]), "order_id") != oBoth || bpStr(bpMap(orders[1]), "order_id") != oNeutral {
+		t.Fatalf("orders=%v want [%s %s] (price-neutral origin included, deduped)", orders, oBoth, oNeutral)
+	}
+	if got := bpNum(out, "purchase_ordinal"); got != 2 {
+		t.Errorf("purchase_ordinal=%v want 2", got)
 	}
 }
 

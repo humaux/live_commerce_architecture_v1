@@ -125,7 +125,7 @@ GRANT EXECUTE ON FUNCTION claims.buyer_panel_claims(uuid, uuid, uuid[]) TO comme
 COMMENT ON FUNCTION claims.buyer_panel_claims(uuid, uuid, uuid[]) IS
  'internal/claims (0165 LC-B3b; caller: the inbox.buyer_panel definer, owner commerce_integration_writer): A13 claims projection of the given bundles. {"claims":[{session_id,offer_id,keyword,quantity}]} newest session first, at most 50; "claim_total_minor" = sum(quantity x newest recorded live_price_uses.unit_price_minor, 0 when none) over the FULL line set. I09: bundle ids come only from inbox.bundle_peers/A14 links resolved by the caller; owner_id never feeds this projection. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to integration_writer only.';
 
--- A13 orders of the given bundles: the claim-checkout ledger (live_price_uses) unioned with the A16
+-- A13 orders of the given bundles: the claim-checkout ledgers (order_origins: every claim checkout incl. price-neutral; live_price_uses) unioned with the A16
 -- for-buyer ledger (inbox.order_for_buyer), any order state (the panel filters/ordinals downstream).
 CREATE FUNCTION claims.orders_of_bundles(p_tenant uuid, p_store uuid, p_bundles uuid[])
 RETURNS TABLE(order_id uuid)
@@ -139,6 +139,10 @@ BEGIN
       FROM claims.live_price_uses u
      WHERE u.tenant_id = p_tenant AND u.store_id = p_store AND u.bundle_id = ANY(p_bundles)
     UNION
+    SELECT oo.order_id
+      FROM claims.order_origins oo
+     WHERE oo.tenant_id = p_tenant AND oo.store_id = p_store AND oo.bundle_id = ANY(p_bundles)
+    UNION
     SELECT f.order_id
       FROM inbox.order_for_buyer f
      WHERE f.tenant_id = p_tenant AND f.store_id = p_store
@@ -148,7 +152,7 @@ ALTER FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) OWNER TO commerce_cl
 REVOKE ALL ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) TO commerce_integration_writer;
 COMMENT ON FUNCTION claims.orders_of_bundles(uuid, uuid, uuid[]) IS
- 'internal/claims (0165 LC-B3b; caller: the inbox.buyer_panel definer, owner commerce_integration_writer): DISTINCT order ids created from the given bundles, via claims.live_price_uses (claim checkout) or inbox.order_for_buyer (A16). Any state; facts come from checkout.order_panel_facts. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to integration_writer only.';
+ 'internal/claims (0165 LC-B3b; caller: the inbox.buyer_panel definer, owner commerce_integration_writer): DISTINCT order ids created from the given bundles, via claims.order_origins / claims.live_price_uses (claim checkout, price-neutral included) or inbox.order_for_buyer (A16). Any state; facts come from checkout.order_panel_facts. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to integration_writer only.';
 
 -- A8 session filter support: does this session have at least one non-purged bundle whose bundle_peers row
 -- matches the conversation's peer (same app/object/asset/peer_key)? Called by the social.list_conversations
