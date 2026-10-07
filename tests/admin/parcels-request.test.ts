@@ -8,13 +8,15 @@ import { parcelRoute, validParcelDeleteQuery } from "../../apps/admin/lib/parcel
 const g = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const base = "http://127.0.0.1:3100/api/stores/11111111-1111-4111-8111-111111111111";
 
-test("exactly the four W3-07B resources route", () => {
+test("exactly the five W3-07B resources route", () => {
   assert.equal(parcelRoute("GET", "orders/merge-suggestions"), "get");
+  assert.equal(parcelRoute("GET", "parcel-groups"), "get"); // W3-U4 open-groups read
   assert.equal(parcelRoute("POST", "parcel-groups"), "command");
   assert.equal(parcelRoute("DELETE", `parcel-groups/${g}`), "delete");
   assert.equal(parcelRoute("PUT", `parcel-groups/${g}/shipment`), "command");
   for (const [method, path] of [
-    ["GET", "parcel-groups"],
+    ["GET", "parcel-groups/"],
+    ["GET", "parcel-groups/open"],
     ["GET", `parcel-groups/${g}`],
     ["GET", `parcel-groups/${g}/shipment`],
     ["POST", "orders/merge-suggestions"],

@@ -121,8 +121,8 @@ async function route(request: Request, context: Context) {
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
   // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
   const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
-  // W3-07B parcel groups (lib/parcels-request.ts grammar): GET orders/merge-suggestions, POST parcel-groups,
-  // DELETE parcel-groups/{id}?expected_version=N (keyless/bodyless), PUT parcel-groups/{id}/shipment -> Go parcels.go.
+  // W3-07B parcel groups (lib/parcels-request.ts grammar): GET orders/merge-suggestions, GET parcel-groups (open groups, W3-U4),
+  // POST parcel-groups, DELETE parcel-groups/{id}?expected_version=N (keyless/bodyless), PUT parcel-groups/{id}/shipment -> Go parcels.go.
   const parcel = parcelRoute(request.method, path);
   const studio = path.startsWith("live-sessions");
   if (studio && !authConfig) return error(404, "not_found");
@@ -156,17 +156,19 @@ async function route(request: Request, context: Context) {
   if ((action || logistic) && request.url.includes("?") &&
     !(request.method === "GET" && path === "returns" && validReturnsQuery(request.url)))
     return error(422, "invalid_request");
-  // W3-07B: exact resources; only the dissolve DELETE may carry a query — exactly one CAS expected_version
-  // (validParcelDeleteQuery inspects the raw URL before Next.js drops a bare '?').
-  if (parcel && request.url.includes("?") && !(parcel === "delete" && validParcelDeleteQuery(request.url)))
+  // W3-07B: exact resources; the dissolve DELETE MUST carry exactly one CAS expected_version and every other parcel route no query
+  // at all (validParcelDeleteQuery inspects the raw URL before Next.js drops a bare '?').
+  if (parcel === "delete" ? !validParcelDeleteQuery(request.url) : parcel && request.url.includes("?"))
     return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
   // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
   if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))
     return error(422, "invalid_request");
-  // W3-07B: the suggestions read and the dissolve DELETE are keyless and bodyless (Go refuses a key on DELETE).
+  // W3-07B: the parcel reads and the dissolve DELETE are keyless and bodyless (Go refuses a key on DELETE). Only a GET can be
+  // judged by `request.body === null`: Next 16 gives EVERY non-GET request a (usually empty) body stream, so the DELETE is fenced
+  // by its framing headers alone and its body is never forwarded (init below carries none).
   if ((parcel === "get" || parcel === "delete") &&
-    (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+    ((parcel === "get" && request.body !== null) || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
       (request.headers.has("content-length") && request.headers.get("content-length") !== "0")))
     return error(422, "invalid_request");
   if (action === "keyless-command" && !validKeylessCommandRequest(request)) return error(422, "invalid_request");

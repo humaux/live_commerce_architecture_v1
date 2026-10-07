@@ -195,7 +195,7 @@ if [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
   # W3-07B: parcel DTO parsers + three-locale copy parity (incl. the owner ruling sentence and refusal codes).
   node --test --experimental-strip-types tests/admin/parcels-model.test.ts
   # W3-07B: BFF parcel route grammar + dissolve query validator (shared with the --browser-merchant-orders-bff gate).
-  node --test --experimental-strip-types tests/admin/parcels-request.test.ts
+  node --test --experimental-strip-types tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
@@ -206,6 +206,9 @@ if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
   node --test --experimental-strip-types tests/admin/orders-request.test.ts
   # W3-07B: parcel route grammar (DELETE dissolve + merge-suggestions read + keyed commands).
   node --test --experimental-strip-types tests/admin/parcels-request.test.ts
+  # W3-U4: the REAL route handler with a stub Go upstream: bodyless dissolve DELETE (Next 16 empty body stream), CAS query on every
+  # DELETE, GET parcel-groups grammar (node:module registerHooks, no browser/PG).
+  node --test --experimental-strip-types tests/admin/parcels-bff.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-studio-ui ]]; then

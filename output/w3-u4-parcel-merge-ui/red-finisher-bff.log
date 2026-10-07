@@ -1,0 +1,69 @@
+✖ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (4.131709ms)
+✔ every parcel DELETE must carry exactly one expected_version >= 1 (never forwarded without it) (1.706709ms)
+✔ a DELETE that declares a body or chunked framing is refused (0.318542ms)
+✖ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (0.204042ms)
+✖ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (0.657916ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 2
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 140.455083
+
+✖ failing tests:
+
+test at tests/admin/parcels-bff.test.ts:78:1
+✖ bodyless dissolve DELETE (empty body stream, no content-length) reaches Go with the CAS query, no body, no key (4.131709ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  422 !== 200
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/parcels-bff.test.ts:80:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-bff.test.ts:107:1
+✖ DELETE needs the session, origin and CSRF like every command; other DELETEs stay unsupported (0.204042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  422 !== 403
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/parcels-bff.test.ts:108:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-bff.test.ts:116:1
+✖ GET parcel-groups (open groups read) and merge-suggestions pass with no query; a query or key is refused (0.657916ms)
+  AssertionError [ERR_ASSERTION]: parcel-groups
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/parcels-bff.test.ts:119:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

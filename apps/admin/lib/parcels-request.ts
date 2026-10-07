@@ -1,16 +1,19 @@
 // Purpose: BFF request grammar for the W3-07B parcel-group routes (manual-fulfilment-v1 Amendment W3-07B):
-//   GET orders/merge-suggestions, POST parcel-groups, DELETE parcel-groups/{id}?expected_version=N,
-//   PUT parcel-groups/{id}/shipment -> Go internal/httpapi/parcels.go. No generic proxying: every resource is listed.
+//   GET orders/merge-suggestions, GET parcel-groups (open groups, W3-U4), POST parcel-groups, DELETE
+//   parcel-groups/{id}?expected_version=N, PUT parcel-groups/{id}/shipment -> Go internal/httpapi/parcels.go.
+//   No generic proxying: every resource is listed.
 // Depends on: nothing (pure grammar).
 // Used by: apps/admin/app/api/stores/[store]/[...resource]/route.ts; tests/admin/parcels-request.test.ts.
 // Invariants: GET/DELETE carry no Idempotency-Key and no body (Go refuses both on DELETE); the dissolve query is exactly
-//   one expected_version (Go's DELETE gate rejects anything else); POST/PUT are keyed JSON commands like order actions.
+//   one expected_version (Go's DELETE gate rejects anything else) and is REQUIRED on every DELETE; GETs take no query;
+//   POST/PUT are keyed JSON commands like order actions.
 
 export type ParcelRouteKind = "get" | "command" | "delete";
 
 const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const parcelRoutes: [string, RegExp, ParcelRouteKind][] = [
   ["GET", /^orders\/merge-suggestions$/, "get"],
+  ["GET", /^parcel-groups$/, "get"],
   ["POST", /^parcel-groups$/, "command"],
   ["DELETE", new RegExp(`^parcel-groups/${uuid}$`), "delete"],
   ["PUT", new RegExp(`^parcel-groups/${uuid}/shipment$`), "command"],
