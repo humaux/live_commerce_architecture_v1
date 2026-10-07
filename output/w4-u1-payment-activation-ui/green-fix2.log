@@ -1,0 +1,26 @@
+base: edc632f9ee45e8efc6443b945bd7823a1e5fd1f8 + in-page fetch fix (working tree)
+--- admin tsc -> exit 0
+--- storefront tsc -> exit 0
+--- tsc --strict on both Playwright specs -> exit 0
+--- bash scripts/dev/test-node.sh -> exit 0
+ℹ fail 0
+ℹ pass 1
+ℹ pass 17
+ℹ pass 19
+ℹ pass 37
+ℹ pass 397
+ℹ pass 4
+ℹ pass 48
+ℹ tests 1
+ℹ tests 17
+ℹ tests 19
+ℹ tests 37
+ℹ tests 397
+ℹ tests 4
+ℹ tests 48
+--- bash scripts/dev/check-gates.sh -> exit 0
+check-gates: ok (74 modes, all documented; every tracked test file is run)
+check-headers: OK (base 3807a3f82169697f837e60c0ebe2fc2fed84a17e)
+ℹ fail 0
+ℹ pass 11
+ℹ tests 11
