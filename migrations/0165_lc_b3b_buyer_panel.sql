@@ -19,7 +19,7 @@
 --   owns its projection; a foreign reader definer receives EXECUTE, never new table privileges beyond the two column
 --   reads granted below), LCN03 (out of scope = 404), §4.4 send-state mapping stays in Go.
 -- Tests: bash scripts/dev/test-focused.sh 'TestLiveConsoleBuyerPanel'; TestLiveConsoleInboxMigration0122ExactACL;
---   TestR2IntegrationUpgradeFromReleaseHead (88 -> 89).
+--   TestR2IntegrationUpgradeFromReleaseHead (89 -> 90).
 
 -- ---------------------------------------------------------------------------------------
 -- Preconditions: every predecessor object this file extends must exist (fail loudly, never half-apply).
@@ -60,14 +60,17 @@ END $$;
 
 -- ---------------------------------------------------------------------------------------
 -- IR-16 additive grants (0110 ruling: the domain owns its projection; a cross-domain reader definer gets
--- EXECUTE, and the only new table privileges are column reads its own domain's definer genuinely needs):
+-- EXECUTE, and the only new table privileges are column reads its own definer genuinely needs):
 --   1. claims.buyer_panel_claims orders claims by session age -> claims_writer reads live.sessions.created_at
 --      (0129 already grants id/tenant_id/store_id/lifecycle and created the session_claims_read policy).
---   2. inbox.buyer_panel/live_comment_bundles exclude retention-purged bundles -> integration_writer reads
---      claims.bundles.purged_at (0128 already grants the other panel columns and created bundle_send_read).
+--   2. inbox.buyer_panel/live_comment_bundles read the bundle platform and exclude retention-purged bundles ->
+--      integration_writer reads claims.bundles.platform/purged_at (0128 granted the other columns + bundle_send_read).
+--   3. schema USAGE so the definer chain can resolve the helper functions (USAGE alone exposes no table).
 -- ---------------------------------------------------------------------------------------
 GRANT SELECT(created_at) ON live.sessions TO commerce_claims_writer;
-GRANT SELECT(purged_at) ON claims.bundles TO commerce_integration_writer;
+GRANT SELECT(platform, purged_at) ON claims.bundles TO commerce_integration_writer;
+GRANT USAGE ON SCHEMA claims, checkout TO commerce_integration_writer;
+GRANT USAGE ON SCHEMA claims TO commerce_meta_writer;
 
 -- ---------------------------------------------------------------------------------------
 -- Claims-domain projections for the A13 buyer panel. Owner commerce_claims_writer (NOLOGIN definer),
@@ -75,11 +78,11 @@ GRANT SELECT(purged_at) ON claims.bundles TO commerce_integration_writer;
 -- already-validated scope; no GUC reads here because the caller (inbox.buyer_panel) enforces lcn_scope.
 -- ---------------------------------------------------------------------------------------
 
--- A13 claims: the accepted claim lines of the given bundles, newest session first (bundle created_at DESC,
+-- A13 claims: the accepted claim lines of the given bundles, newest session first (session created_at DESC,
 -- keyword ASC, offer_id ASC as deterministic tiebreaks), capped at 50 rows. claim_total_minor sums
 -- quantity x the unit price the claim RECORDED (claims.live_price_uses.unit_price_minor of the newest use
--- of that (bundle, offer); 0 when never recorded) over the FULL set, including lines beyond the 50-row cap
--- (ruling LC-B3b: never recomputed from the current catalogue).
+-- of that (bundle, offer), newest by its order's created_at; 0 when never recorded) over the FULL set, including
+-- lines beyond the 50-row cap (ruling LC-B3b: never recomputed from the current catalogue).
 CREATE FUNCTION claims.buyer_panel_claims(p_tenant uuid, p_store uuid, p_bundles uuid[])
 RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
@@ -89,27 +92,26 @@ BEGIN
         RETURN jsonb_build_object('claims', '[]'::jsonb, 'claim_total_minor', 0);
     END IF;
     WITH ranked AS (
-        SELECT l.session_id, l.offer_id, o.keyword, l.quantity,
-               s.created_at AS session_created, b.created_at AS bundle_created,
+        SELECT b.session_id, l.offer_id, o.keyword, l.quantity, s.created_at AS session_created,
                (SELECT u.unit_price_minor
                   FROM claims.live_price_uses u
+                  JOIN checkout.orders co ON co.tenant_id = u.tenant_id AND co.store_id = u.store_id AND co.id = u.order_id
                  WHERE u.tenant_id = l.tenant_id AND u.store_id = l.store_id
                    AND u.bundle_id = l.bundle_id AND u.offer_id = l.offer_id
                    AND u.unit_price_minor IS NOT NULL
-                 ORDER BY u.created_at DESC, u.order_id DESC
+                 ORDER BY co.created_at DESC, u.order_id DESC
                  LIMIT 1) AS unit_price
           FROM claims.lines l
           JOIN claims.bundles b ON b.tenant_id = l.tenant_id AND b.store_id = l.store_id AND b.id = l.bundle_id
           JOIN live.offers o ON o.tenant_id = l.tenant_id AND o.store_id = l.store_id
-               AND o.session_id = l.session_id AND o.id = l.offer_id
-          JOIN live.sessions s ON s.tenant_id = l.tenant_id AND s.store_id = l.store_id AND s.id = l.session_id
+               AND o.session_id = b.session_id AND o.id = l.offer_id
+          JOIN live.sessions s ON s.tenant_id = b.tenant_id AND s.store_id = b.store_id AND s.id = b.session_id
          WHERE l.tenant_id = p_tenant AND l.store_id = p_store AND l.bundle_id = ANY(p_bundles))
     SELECT jsonb_build_object(
                'claims', (SELECT coalesce(jsonb_agg(jsonb_build_object(
                                'session_id', x.session_id, 'offer_id', x.offer_id,
                                'keyword', x.keyword, 'quantity', x.quantity) ORDER BY x.rn), '[]'::jsonb)
-                            FROM (SELECT r.*, row_number() OVER (ORDER BY r.session_created DESC, r.bundle_created DESC,
-                                      r.keyword, r.offer_id) AS rn
+                            FROM (SELECT r.*, row_number() OVER (ORDER BY r.session_created DESC, r.keyword, r.offer_id) AS rn
                                     FROM ranked r) x
                            WHERE x.rn <= 50),
                'claim_total_minor', (SELECT coalesce(sum(r.quantity::bigint * coalesce(r.unit_price, 0)), 0)::bigint
@@ -290,6 +292,11 @@ BEGIN
     END LOOP;
 END $$;
 
+COMMENT ON FUNCTION social.list_conversations(text, uuid, timestamptz, uuid, int) IS
+ 'internal/inbox ListConversations (0119, re-created by 0165 LC-B3b): A8 conversation metadata, no ciphertext. Adds p_session (keep conversations whose peer is inbox.bundle_peers-linked to a non-purged bundle of that session, via claims.session_peer_linked; I09) and the link_version result column (inbox.conversation_state.version, the A14 expected_version). inbox:read required; tenant/store from the GUCs; limit 1..50. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
+COMMENT ON FUNCTION social.conversation_meta(uuid) IS
+ 'internal/inbox conversationMeta (0119, re-created by 0165 LC-B3b): A9 header / A13 conversation fields, no ciphertext; adds link_version (inbox.conversation_state.version, the A14 expected_version). inbox:read required; zero rows outside the caller''s tenant/store. STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
+
 -- ---------------------------------------------------------------------------------------
 -- Integration-domain definers for the console. Owner commerce_integration_writer, EXECUTE commerce_runtime.
 -- Scope comes from inbox.lcn_scope() (validates isolation + the tenant/store/principal GUCs and rejects a
@@ -367,10 +374,10 @@ COMMENT ON FUNCTION inbox.conversation_binding(uuid) IS
 -- bundle whose bundle_peers row matches the conversation's peer (I09: owner_id never contributes; a
 -- conversation without links answers empty, 200 — P2-7c); for a bundle id, that bundle only.
 -- Returns {claims, claim_total_minor, purchase_ordinal, link_pending_manual, platform} plus "orders" ONLY
--- when p_include_orders AND the principal holds orders:read (the handler decides; omission is the ruling),
+-- when the principal holds orders:read (decided HERE, not by the caller; omission is the ruling),
 -- plus "auto_reply_state" (raw integration.operations.state; §4.4 mapping stays in Go) when the bundles have
 -- an automated private-reply operation (origin_kind=auto, newest first; manual sends never count).
-CREATE FUNCTION inbox.buyer_panel(p_conversation uuid, p_bundle uuid, p_include_orders boolean)
+CREATE FUNCTION inbox.buyer_panel(p_conversation uuid, p_bundle uuid)
 RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
 DECLARE v uuid[];
@@ -424,8 +431,7 @@ BEGIN
         'link_pending_manual', EXISTS (SELECT 1 FROM claims.bundles b
                                         WHERE b.tenant_id = v[1] AND b.store_id = v[2]
                                           AND b.id = ANY(v_bundles) AND b.link_pending_manual));
-    IF coalesce(p_include_orders, false)
-       AND identity.principal_holds(v[1], v[2], v[3], ARRAY['orders:read']::text[]) THEN
+    IF identity.principal_holds(v[1], v[2], v[3], ARRAY['orders:read']::text[]) THEN
         SELECT coalesce(jsonb_agg(jsonb_build_object(
                 'order_id', f.order_id,
                 'number', 'LC-' || upper(replace(f.order_id::text, '-', '')),
@@ -450,8 +456,8 @@ BEGIN
     END IF;
     RETURN v_out;
 END $$;
-ALTER FUNCTION inbox.buyer_panel(uuid, uuid, boolean) OWNER TO commerce_integration_writer;
-REVOKE ALL ON FUNCTION inbox.buyer_panel(uuid, uuid, boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION inbox.buyer_panel(uuid, uuid, boolean) TO commerce_runtime;
-COMMENT ON FUNCTION inbox.buyer_panel(uuid, uuid, boolean) IS
- 'internal/inbox (0165 LC-B3b; caller: internal/inbox BuyerPanel/BuyerPanelByBundle): the A13 buyer panel facts of a conversation (via inbox.bundle_peers only — I09) or a single bundle. {claims <=50, claim_total_minor (recorded prices, full set), purchase_ordinal (CONFIRMED/AWAITING_COLLECTION over the full order set), link_pending_manual, platform} + "orders" (<=20, LC- numbers) only when p_include_orders AND orders:read + "auto_reply_state" of the newest automated private reply. 404 outside scope (LCN03); empty links answer empty (P2-7c). STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';
+ALTER FUNCTION inbox.buyer_panel(uuid, uuid) OWNER TO commerce_integration_writer;
+REVOKE ALL ON FUNCTION inbox.buyer_panel(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION inbox.buyer_panel(uuid, uuid) TO commerce_runtime;
+COMMENT ON FUNCTION inbox.buyer_panel(uuid, uuid) IS
+ 'internal/inbox (0165 LC-B3b; caller: internal/inbox BuyerPanel/BuyerPanelByBundle): the A13 buyer panel facts of a conversation (via inbox.bundle_peers only — I09) or a single bundle. {claims <=50, claim_total_minor (recorded prices, full set), purchase_ordinal (CONFIRMED/AWAITING_COLLECTION over the full order set), link_pending_manual, platform} + "orders" (<=20, LC- numbers) only when the principal holds orders:read + "auto_reply_state" of the newest automated private reply. 404 outside scope (LCN03); empty links answer empty (P2-7c). STABLE SECURITY DEFINER search_path=pg_catalog; EXECUTE to runtime only.';

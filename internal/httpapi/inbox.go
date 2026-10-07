@@ -50,8 +50,8 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 	const base = "/v1/admin/stores/{store_id}/inbox/conversations"
 	const panelBase = "/v1/admin/stores/{store_id}/inbox/buyer-panel"
 
-	// A8 conversation list. session_id is accepted (valid uuid) but matches nothing in 0119: comment read-through
-	// (LC-B2) has not projected any comment conversations yet, so the live_comment filter returns empty.
+	// A8 conversation list. session_id (LC-B3b) keeps the conversations whose peer is bundle_peers-linked to a bundle of that
+	// session; filter=live_comment returns the bundle-only comment rows (inbox.live_comment_bundles).
 	mux.HandleFunc("GET "+base, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		req, err := parseInboxListRequest(r.URL)
 		if err != nil {
@@ -137,7 +137,8 @@ func registerInboxRoutes(mux *http.ServeMux, pool *pgxpool.Pool, svc *inbox.Serv
 		})(w, r)
 	}))
 
-	// A13 buyer panel: conversation-scoped fields, or the bundle-scoped panel (platform + link_pending_manual, LC-B4).
+	// A13 buyer panel (LC-B3b): by conversation (bundles = its bundle_peers links) or by bundle. The `orders` key is decided inside
+	// inbox.buyer_panel (orders:read held by the principal) and omitted from the JSON otherwise; this route needs only inbox:read.
 	mux.HandleFunc("GET "+panelBase, inboxRoute(http.MethodGet, false, true, func(w http.ResponseWriter, r *http.Request) {
 		conversationID, bundleID, err := parseInboxBuyerPanel(r.URL)
 		if err != nil {
@@ -231,7 +232,8 @@ func parseInboxListRequest(u *url.URL) (inbox.ListRequest, error) {
 			if !command.ValidID(list[0]) {
 				return req, command.ErrInvalid
 			}
-			// LC-B2 boundary: no comment conversations exist in 0119, so a session scope matches nothing.
+			id := list[0]
+			req.SessionID = &id // LC-B3b: filters by the bundle_peers link of the session's bundles (inbox.ListConversations)
 		case "cursor":
 			if len(list[0]) > 1024 {
 				return req, command.ErrInvalid

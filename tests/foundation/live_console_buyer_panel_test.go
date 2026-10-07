@@ -928,7 +928,7 @@ func TestLiveConsoleBuyerPanelExactACL(t *testing.T) {
 		{"checkout.order_panel_facts(uuid,uuid,uuid[])", "commerce_checkout_writer",
 			"TABLE(order_id uuid, commercial_state text, total_minor bigint, created_at timestamp with time zone)", true,
 			[]string{"commerce_checkout_writer", "commerce_integration_writer"}},
-		{"inbox.buyer_panel(uuid,uuid,boolean)", "commerce_integration_writer", "jsonb", true,
+		{"inbox.buyer_panel(uuid,uuid)", "commerce_integration_writer", "jsonb", true,
 			[]string{"commerce_integration_writer", "commerce_runtime"}},
 		{"inbox.live_comment_bundles(uuid,int)", "commerce_integration_writer",
 			"TABLE(bundle_id uuid, session_id uuid, platform text, created_at timestamp with time zone, link_pending_manual boolean)", true,

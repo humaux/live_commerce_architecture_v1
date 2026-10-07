@@ -256,7 +256,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		add(wr, "inbox.order_for_buyer", "SELECT", cols("inbox.order_for_buyer")...)
 		add(wr, "inbox.order_for_buyer", "INSERT", cols("inbox.order_for_buyer")...)
 		add(wr, "inbox.order_for_buyer", "UPDATE", "order_id", "state", "updated_at")
-		add(wr, "live.sessions", "SELECT", "tenant_id", "store_id", "id", "lifecycle")
+		add(wr, "live.sessions", "SELECT", "tenant_id", "store_id", "id", "lifecycle", "created_at") // created_at: 0165 LC-B3b orders the A13 claims newest session first
 		add(wr, "social.conversations", "SELECT", "id", "tenant_id", "store_id", "app_id", "object", "asset_id", "peer_key")
 		add(wr, "inbox.bundle_peers", "SELECT", "tenant_id", "store_id", "bundle_id", "peer_key", "app_id", "object", "asset_id")
 		add(wr, "claims.lines", "SELECT", "tenant_id", "store_id", "bundle_id", "offer_id", "sku_id", "quantity", "version", "applied_version")
@@ -524,6 +524,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			"actor_restricted_for_bundle": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			// 0154: predicate of inbox.checkout_reminder_candidates (reminders skip a restricted buyer); EXECUTE for its owner commerce_integration_writer only.
 			"bundle_actor_restricted": {args: "p_bundle uuid", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
+			// 0165 (LC-B3b): read-only projections for the A13 buyer panel / A8 session filter. Bundle ids come only from inbox.bundle_peers (I09); no owner_id, actor_key or label is read or returned.
+			"buyer_panel_claims":  {args: "p_tenant uuid, p_store uuid, p_bundles uuid[]", result: "jsonb", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
+			"orders_of_bundles":   {args: "p_tenant uuid, p_store uuid, p_bundles uuid[]", result: "TABLE(order_id uuid)", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_integration_writer:EXECUTE", caller: "commerce_integration_writer"},
+			"session_peer_linked": {args: "p_tenant uuid, p_store uuid, p_session uuid, p_app_id text, p_object text, p_asset_id text, p_peer_key text", result: "boolean", volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_meta_writer:EXECUTE", caller: "commerce_meta_writer"},
 		}
 		rows, err := f.owner.Query(ctx, `SELECT p.proname::text,pg_get_function_identity_arguments(p.oid),pg_get_function_result(p.oid),p.prosecdef,pg_get_userbyid(p.proowner)::text,
 			coalesce(array_to_string(p.proconfig,','),''),p.provolatile::text,coalesce(obj_description(p.oid,'pg_proc'),''),
@@ -584,9 +588,10 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0123 (LC-B2) adds exactly four: comment_poll_sources, console_source, console_marks, comment_print.
 		// 0130 (W3-02B) adds exactly pick_list_session_orders.
 		// 0148 (LC-B7) adds exactly one: console_session_facts.
+		// 0165 (LC-B3b) adds exactly three: buyer_panel_claims, orders_of_bundles, session_peer_linked.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 43 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-three (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates)", n)
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 46 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its forty-six (incl. two 0147 report seams) functions (previous twenty-one + two 0118 attribution seams + four 0123 comment read-through definers + one 0130 pick-list seam + seven 0129 for-buyer definers + one 0148 console facts helper + five 0154 blocklist definers/predicates + three 0165 buyer-panel projections)", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -942,6 +947,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"identity.read_report_channels(bytea,uuid,date,date,text)",
 				// LC-B4 (0128): merchant read definers of the flagged bundles (A8 bundle-only items, A13); inbox:read re-checked inside.
 				"inbox.link_pending_bundles(integer)", "inbox.link_pending_for(uuid,uuid)",
+				// 0165 (LC-B3b): A13 panel facts and A8 live-comment bundle rows (inbox:read re-checked inside; the panel reads bundles only through inbox.bundle_peers, never owner_id).
+				"inbox.buyer_panel(uuid,uuid)", "inbox.live_comment_bundles(uuid,integer)",
 				// W3-03B (0144): the merchant-transaction reminder scan / planner / report (inbox:reply or inbox:read re-checked inside).
 				"inbox.checkout_reminder_candidates(uuid,text,integer,uuid)",
 				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",
