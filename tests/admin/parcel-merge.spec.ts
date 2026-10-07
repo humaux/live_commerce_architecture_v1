@@ -332,10 +332,38 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await tabB.close();
     await detail.getByTestId("ship-carrier").selectOption("black_cat");
     await detail.getByTestId("ship-tracking").fill("STALE1234567890AB");
-    await detail.getByTestId("shipment-submit").click();
-    // Server 409 in_parcel_group maps to the same sentence as the client hint (orders-copy errors.in_parcel_group).
-    await expect(detail.getByTestId("shipment-problem")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
-    await expect(detail.getByTestId("shipment-record")).toHaveCount(0);
+    // [FAULT INJECTION / DELIVERY DELAY] Observe the real refusal before its real refresh replaces the form.
+    // The OPEN-group hint intentionally replaces the whole form (including its error); no response is fabricated.
+    const groupsURL = new RegExp(`/api/stores/${store}/parcel-groups$`);
+    const releaseGroups = Promise.withResolvers<void>(), groupsArrived = Promise.withResolvers<void>();
+    const groupsDone = Promise.withResolvers<void>();
+    await page.route(groupsURL, async (route) => {
+      if (route.request().method() !== "GET") { await route.continue(); return; }
+      try {
+        const response = await boundedPrivacyRead(route.fetch(), "post-refusal Go groups response");
+        expect(response.status()).toBe(200);
+        groupsArrived.resolve();
+        await boundedPrivacyRead(releaseGroups.promise, "post-refusal groups release");
+        await route.fulfill({ response });
+        groupsDone.resolve();
+      } catch (error) { groupsArrived.reject(error); groupsDone.reject(error); }
+    });
+    try {
+      const refusal = page.waitForResponse((response) => response.request().method() === "PUT" &&
+        new URL(response.url()).pathname === `/api/stores/${store}/orders/${ps1}/shipment`);
+      await detail.getByTestId("shipment-submit").click();
+      const response = await refusal;
+      expect(response.status()).toBe(409);
+      expect(await response.json()).toMatchObject({ code: "in_parcel_group" });
+      await boundedPrivacyRead(groupsArrived.promise, "post-refusal groups arrival");
+      // Server 409 in_parcel_group maps to the same sentence as the client hint (orders-copy errors.in_parcel_group).
+      await expect(detail.getByTestId("shipment-problem")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
+      await expect(detail.getByTestId("shipment-record")).toHaveCount(0);
+    } finally {
+      releaseGroups.resolve();
+      await boundedPrivacyRead(groupsDone.promise, "post-refusal groups completion");
+      await page.unroute(groupsURL);
+    }
     // WITHOUT a reload: the refusal (onShipmentRefused -> parcel generation -> both parcel reads) rebuilds the group state in this tab.
     const panel = groupPanel(page, ps1);
     await expect(panel).toBeVisible();
