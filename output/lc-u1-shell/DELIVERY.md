@@ -1,7 +1,11 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source 975ed53f, trunk 0617bc40 and CI 37567262145.
+Depends on: LC-U1 independent-review/UNKNOWN-403 rulings, source 1fe069cc, trunk 0813424a and prior CI 37597312124.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — CI5 sweep lease/status-heading repair; GitHub rerun pending
+# LC-U1 — independent-review repairs; revised candidate awaits GitHub
+
+Current source **`1fe069ccc5c90670fb1f617897af2576ee87a1a4`**, trunk **0813424a** merged as **ae9493bc**. [REVIEW-FIXES-DELIVERY.md](REVIEW-FIXES-DELIVERY.md) lists each fix and shared-path rationale: A1-only exponential/Retry-After polling, independent auxiliary reads, exact durable replay and owner-approved UNKNOWN→403 retention, frozen three-locale host text/no external recommendation, platform notice and real A1 JSON parity. Node **649/649**, admin types, check-gates **78**, real-A1 focused PG **1/1** pass with red calibration. Prior integration **70b9f4e0** CI **37597312124** is verified **34/34 green**, but predates these repairs. **New-source full CI remains NOT_RUN; integrator owns push/rerun.** W2-U2 not started.
+
+All checkpoints below are historical, including the removed Japanese prompt extension; none supersedes this review ruling.
 
 Latest source **`975ed53f28b15b2bd78ba767c56092236004fc40`**, trunk `0617bc40` merged. [CI5-DELIVERY.md](CI5-DELIVERY.md) records the 96-failure diagnosis and repair: one-hour signed test session/synthetic domain versus an 85-minute gate that ran 64 minutes; safe status headings; actual shared-component SSR title/singleton-nav/privacy guards. Node **527/527**, SSR **3/3**, finite-budget regression, typecheck and check-gates **76** pass. No production auth/expiry bypass or assertion/threshold reduction. **Full new-source sweep remains NOT_RUN locally and requires GitHub.** W2/W3 queued UI work remains gated on full LC-U1 acceptance.
 

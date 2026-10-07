@@ -1,0 +1,20 @@
+=== RUN   TestLiveConsoleLCN27TypeScriptActualA1
+    live_console_ts_parity_test.go:35: actual A1 parser: exit status 1: file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/src/features/live/console-model.ts:58
+        function fail()        { throw new Error("invalid_console_response"); }
+                                       ^
+        
+        Error: invalid_console_response
+            at fail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/src/features/live/console-model.ts:58:32)
+            at parseConsole (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/src/features/live/console-model.ts:138:58)
+            at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/[eval1]:1:237
+            at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+            at async node:internal/modules/esm/loader:246:26
+            at async ModuleLoader.executeModuleJob (node:internal/modules/esm/loader:243:20)
+            at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+        
+        Node.js v24.15.0
+--- FAIL: TestLiveConsoleLCN27TypeScriptActualA1 (2.42s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.169s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

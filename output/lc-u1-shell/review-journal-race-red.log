@@ -1,0 +1,34 @@
+✔ A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds (292.251875ms)
+✔ Retry-After is a minimum; hidden tabs cancel polling; forbidden locks and conceals (225.22075ms)
+✔ secondary reads are mount/refresh only, independent from A1 and non-fatal (247.899583ms)
+✔ UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload (103.363458ms)
+✔ first definite 403 clears journal but locks commands; late success after navigation clears only its own key (109.17125ms)
+✔ private reads preserve Retry-After seconds and dates, without changing existing error codes (96.046ms)
+✖ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (34.567791ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 6
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1542.292
+
+✖ failing tests:
+
+test at tests/admin/live-workspace-hooks.test.ts:133:1
+✖ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (34.567791ms)
+  AssertionError [ERR_ASSERTION]: in-flight
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-workspace-hooks.test.ts:144:52)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
