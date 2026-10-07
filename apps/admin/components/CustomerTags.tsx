@@ -16,7 +16,9 @@ import "./customer-tags.css";
 
 /** Render the frozen customer tag projection, using names plus colour rather than colour alone. */
 export function TagBadges({ tags, locale = "en" }: { tags: Tag[]; locale?: Locale }) {
-  return <span className="ct-badges" aria-label={customerTagsCopy[locale].tags}>
+  // No aria-label: it is prohibited on a generic span and, inside the editor's <label>, it replaced every checkbox's
+  // accessible name with "Tags" (CI 37616676597). Context comes from the visible "Tags" heading / column.
+  return <span className="ct-badges">
     {tags.map((tag) => <span className={`ct-badge ct-${tag.color}`} key={tag.id}>{tag.name}</span>)}
   </span>;
 }
