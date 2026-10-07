@@ -1,0 +1,12 @@
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections
+    live_console_buyer_panel_review_origins_test.go:17: seed row: ERROR: new row for relation "offers" violates check constraint "offers_live_price_minor_check" (SQLSTATE 23514) (INSERT INTO live.offers(tenant_id,store_id,session_id,keyword,sku_id,max_quantity_per_claim,principal_id,live_price_minor)
+                        VALUES($1,$2,$3,$4,$5,5,$6,$7) RETURNING id::text)
+--- FAIL: TestLiveConsoleBuyerPanelReviewOriginProjections (2.46s)
+=== RUN   TestLiveConsoleBuyerPanelPriceNeutralOrigin
+    live_console_buyer_panel_test.go:453: seed row: ERROR: new row for relation "offers" violates check constraint "offers_live_price_minor_check" (SQLSTATE 23514) (INSERT INTO live.offers(tenant_id,store_id,session_id,keyword,sku_id,max_quantity_per_claim,principal_id,live_price_minor)
+                        VALUES($1,$2,$3,$4,$5,5,$6,$7) RETURNING id::text)
+--- FAIL: TestLiveConsoleBuyerPanelPriceNeutralOrigin (0.02s)
+FAIL
+FAIL    livecommerce/tests/foundation   3.226s
+FAIL
+test-focused: top-level PASS=0 FAIL=2 SKIP=0 exit=1

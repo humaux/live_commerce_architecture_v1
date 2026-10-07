@@ -1,0 +1,8 @@
+{
+  "run": "p1-red-origin",
+  "classification": "REAL_PG regression RED",
+  "result": "PASS=0 FAIL=2 SKIP=0 exit=1",
+  "failure": "orders=1 instead of latest20; ordinary origin-only order absent; purchase ordinal1 instead of full scoped set",
+  "original_wip_projection_retained": true,
+  "new_grants": []
+}
