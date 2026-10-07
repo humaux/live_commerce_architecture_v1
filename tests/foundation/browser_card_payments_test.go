@@ -23,16 +23,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/httpapi"
-	"livecommerce/internal/payments/platformstripe"
-	"livecommerce/internal/platform"
 )
 
 func cpbrRequire(t *testing.T) {
@@ -40,51 +36,6 @@ func cpbrRequire(t *testing.T) {
 	if os.Getenv("LC_BROWSER_CARD_PAYMENTS_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-card-payments")
 	}
-}
-
-// cpbrControl performs the runner-only state changes through the SAME operator definers the CLI uses (never the UI under test). Its handler runs
-// on the http server goroutine, so it reports errors as 500 instead of failing the test from there.
-type cpbrControl struct {
-	e  *pslEnv
-	mu sync.Mutex
-}
-
-func (c *cpbrControl) platformOpen(ctx context.Context, open bool) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	v, err := c.e.reg.PlatformOpen(ctx, c.e.op, "SANDBOX", open, -1, c.e.version)
-	if err == nil {
-		c.e.version = v
-	}
-	return err
-}
-
-func (c *cpbrControl) block(ctx context.Context, blocked bool) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	_, err := c.e.reg.PlatformBlock(ctx, c.e.op, c.e.a.f.tenantA, c.e.a.f.storeA1, "SANDBOX", blocked, "op@test", "tk-"+t04Tag())
-	return err
-}
-
-// bump is another merchant session changing the enrollment (a real enable with a new suffix): the browser's page now holds a stale version.
-func (c *cpbrControl) bump(ctx context.Context) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	token, store := c.e.a.f.tokens["a"], c.e.a.f.storeA1
-	var current platformstripe.Summary
-	if err := platform.WithScope(ctx, c.e.f.runtime, token, store, "integration:read", func(tx pgx.Tx, s platform.Scope) error {
-		var err error
-		current, err = platformstripe.Read(ctx, tx, s, token, "PROVIDER_MOCK")
-		return err
-	}); err != nil {
-		return err
-	}
-	suffix := "BUMPED"
-	in := platformstripe.Input{Enabled: true, TermsVersion: pfTerms, DescriptorSuffix: &suffix, ExpectedVersion: current.Version}
-	return platform.WithScope(ctx, c.e.f.runtime, token, store, "billing:manage", func(tx pgx.Tx, s platform.Scope) error {
-		_, err := platformstripe.Set(ctx, tx, s, token, "PROVIDER_MOCK", in)
-		return err
-	})
 }
 
 // cpbrBuyerNode starts the real buyerhttp handler for the store of p and runs tests/storefront/collector-buyer.mjs against the production
@@ -139,7 +90,7 @@ func TestBrowserCardPayments(t *testing.T) {
 		t.Fatalf("fixture: %d statements for store A, want 3", statementsBefore)
 	}
 
-	ctl := &cpbrControl{e: e}
+	ctl := &w4uControl{e: e}
 	controlKey := randomToken()
 	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Gate-Key") != controlKey || r.Method != http.MethodPost {
@@ -217,6 +168,9 @@ func TestBrowserCardPayments(t *testing.T) {
 		t.Fatalf("buyer half: no collector facts in the card summary: %+v", summary)
 	}
 	derived := map[string]string{"LC_CD_DISPLAY_NAME": *summary.DisplayName, "LC_CD_PREVIEW": *summary.DescriptorPreview}
+	// Single-method UI (as browser_stripe_test.go, Q3): the storefront's Stripe plan needs Stripe to be the only offered method, so the fixture's PAYUNi
+	// method head of store A is removed (owner-pool fixture, disclosed; after the admin half, whose assertions it cannot touch).
+	mustExec(t, e.f.owner, `DELETE FROM payments.method_heads WHERE tenant_id=$1 AND store_id=$2 AND code='payuni_credit'`, tenant, store)
 	e.ensureStock(t, e.oa1)
 	unpaid := sstMoreHold(t, e.oa1.s.p) // a payable order: Stripe offered, no attempt yet
 	cpbrBuyerNode(t, ctx, e, unpaid, unpaid.hold.OrderID, "unpaid", "unpaid", "https://buyer-a.example", evidence, derived)
