@@ -1,5 +1,5 @@
 // Purpose: own private inbox list/filter/cursor selection with no buyer data in navigation or storage.
-// Depends on: React/react-dom, @live-commerce/format, inbox-client/types, WorkspaceFrame and the request/privacy fences.
+// Depends on: React/react-dom, @live-commerce/format, inbox-client/types, BundleRecovery, WorkspaceFrame and privacy fences.
 // Used by: /[locale]/messages; threads and BuyerPanel are cleared on hide or session changes.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import styles from "@/src/features/messages/Inbox.module.css";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { InboxThread } from "./InboxThread";
 import { BuyerPanel } from "./BuyerPanel";
+import { BundleRecovery } from "@/src/features/messages/bundle-recovery";
 
 /** Render authorized inbox data in memory only; every asynchronous completion checks its epoch. */
 export function Inbox({
@@ -306,14 +307,13 @@ export function Inbox({
                           }
                         />
                       ) : (
-                        <p className={styles.notice}>
-                          {c.manual}
-                          <br />
-                          {c.linkUnavailable}
-                          <button className={styles.button} disabled>
-                            {c.copyLink}
-                          </button>
-                        </p>
+                        <BundleRecovery
+                          key={`${store.id}:${selected.bundle_id}:${selected.session_id}:${locale}`}
+                          store={store}
+                          conversation={selected}
+                          locale={locale}
+                          onUnauthorized={privacy.expire}
+                        />
                       )}
                     </>
                   ) : (

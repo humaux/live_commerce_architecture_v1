@@ -66,7 +66,7 @@ export function InboxThread({
   const [clock, setClock] = useState(0);
   const reply = permitted(store, "inbox:reply");
   const health = useMetaHealth(reply ? store.id : null, revision);
-  const rows =
+  const providerRows =
     health.data?.pages
       .flatMap((page) => page.capabilities)
       .filter(
@@ -74,13 +74,16 @@ export function InboxThread({
           cap.provider ===
             (conversation.platform === "instagram"
               ? "instagram"
-              : "facebook") && cap.capability === "dm_session",
+              : "facebook"),
       ) ?? [];
-  // A9 has no binding id: never admit a reply from another healthy binding while a candidate is blocked.
+  const bindingCount = new Set(providerRows.map((cap) => cap.binding_id)).size;
+  const rows = providerRows.filter((cap) => cap.capability === "dm_session");
+  const advisory = bindingCount > 1;
+  // A9 has no binding id yet: several bindings are advice only; A12 and Check scope the final refusal.
   const capable =
-    rows.length > 0 &&
-    rows.every((cap) => cap.state === "ok" || cap.state === "review_required");
-  const review = rows.some((cap) => cap.state === "review_required");
+    advisory || (bindingCount === 1 && rows.length > 0 &&
+    rows.every((cap) => cap.state === "ok" || cap.state === "review_required"));
+  const review = !advisory && rows.some((cap) => cap.state === "review_required");
   const capabilityCode =
     rows.find((cap) => cap.state !== "ok" && cap.state !== "review_required")
       ?.state ?? "noCapability";
@@ -400,6 +403,11 @@ export function InboxThread({
         </p>
       )}
       {review && <p className={styles.badge}>{c.review}</p>}
+      {reply && advisory && (
+        <p className={styles.notice} data-testid="inbox-capability-advisory" role="status">
+          {c.capabilityAdvisory}
+        </p>
+      )}
       <form
         className={styles.composer}
         onSubmit={(event) => {
