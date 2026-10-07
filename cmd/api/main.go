@@ -57,10 +57,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	payuniNotifyConfig, err := loadPayuniNotifyConfig(os.Getenv, addr)
-	if err != nil {
-		return err
-	}
 	studioConfig, err := loadStudioConfig(os.Getenv, identityConfig.enabled, addr)
 	if err != nil {
 		return err
@@ -105,11 +101,6 @@ func run() error {
 		return err
 	}
 	defer closeStripe()
-	payuniNotifyHandler, closePayuniNotify, err := buildPayuniNotifyHandler(startup, pool, payuniNotifyConfig)
-	if err != nil {
-		return err
-	}
-	defer closePayuniNotify()
 	// billing-core (customers-billing-v1 T17): nil service + nil webhook while LC_BILLING_ENABLED is unset.
 	billingService, billingWebhook, closeBilling, err := buildPlatformBilling(startup, pool, os.Getenv)
 	if err != nil {
@@ -208,7 +199,6 @@ func run() error {
 	handler = mountBuyer(handler, buyerHandler)
 	handler = mountMeta(handler, metaHandler)
 	handler = mountStripe(handler, stripeHandler)
-	handler = mountPayuniNotify(handler, payuniNotifyHandler)
 	handler = mountPlatformBilling(handler, billingWebhook)
 	handler = mountTLSAsk(handler, tlsAskHandler)
 	handler = mountStoreDomainNonce(handler, storeDomainNonceHandler)

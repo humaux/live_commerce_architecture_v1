@@ -1,0 +1,193 @@
+✔ card summary accepts the frozen shape incl. all-null platform NONE (1.104291ms)
+✔ card summary rejects unknown keys, bad enums, bad money, bad version (0.7875ms)
+✔ card result is exactly {state, version, max_minor, currency, descriptor_preview} (0.098833ms)
+✔ descriptor suffix rule: charset, 2..10 chars, must contain a letter (0.114042ms)
+✔ suffix budget derives from descriptor_preview as the base (L + 2 + suffix <= 22, charset caps at 10) (0.058417ms)
+✔ descriptor preview mirrors the contract projection (base + '* ' + suffix) (0.062959ms)
+✖ settlement list accepts statements without payout/lines keys (omitempty) (0.246375ms)
+✖ settlement detail carries lines whose count matches line_count (0.100042ms)
+✔ settlement parsers reject malformed reads (0.485458ms)
+✖ fees, refunds and disputes are signed exactly as the ledger stores them (0.098583ms)
+✖ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.080208ms)
+✖ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.06ms)
+✖ a payout reference shaped like a Stripe key or account id is never displayed (0.054916ms)
+✖ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state (0.058708ms)
+✖ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED; not allowlisted hides the enable control (0.03725ms)
+✖ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.0365ms)
+✖ without billing:manage nothing can be changed, but the state is still readable (0.034958ms)
+✖ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.050125ms)
+✖ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.054083ms)
+✖ a retained suffix is recovered from the final preview so a re-enable can keep it (0.038083ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 7
+ℹ fail 13
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110.588375
+
+✖ failing tests:
+
+test at tests/admin/red-tmp-model.test.ts:150:1
+✖ settlement list accepts statements without payout/lines keys (omitempty) (0.246375ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at Array.map (<anonymous>)
+      at parseSettlementList (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:143:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:151:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:166:1
+✖ settlement detail carries lines whose count matches line_count (0.100042ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at parseSettlementDetail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:148:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:167:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:235:1
+✖ fees, refunds and disputes are signed exactly as the ledger stores them (0.098583ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at Array.map (<anonymous>)
+      at parseSettlementList (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:143:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:250:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:260:1
+✖ a returned fee is a positive line fee; the detail's lines must add up to the statement totals (0.080208ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at parseSettlementDetail (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:148:10)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:277:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:283:1
+✖ closed_at/paid_at accept the offsets PostgreSQL emits as well as Z (0.06ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at Array.map (<anonymous>)
+      at parseSettlementList (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:143:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:285:18)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:292:1
+✖ a payout reference shaped like a Stripe key or account id is never displayed (0.054916ms)
+  Error: unavailable
+      at parseSettlementStatement (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:117:11)
+      at Array.map (<anonymous>)
+      at parseSettlementList (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/apps/admin/lib/card-payments-settlements-model.ts:143:23)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:294:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:303:1
+✖ platform not OPEN: 'not open yet' and no enable control, for every non-OPEN state (0.058708ms)
+  ReferenceError: cardView is not defined
+      at view (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:301:65)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:306:17)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:316:1
+✖ allowlisted + OPEN: enable from NONE/DISABLED, disable from ENABLED; not allowlisted hides the enable control (0.03725ms)
+  ReferenceError: cardView is not defined
+      at view (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:301:65)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:318:6)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:329:1
+✖ BLOCKED: the suspended note, disable only, never enable (whatever the platform says) (0.0365ms)
+  ReferenceError: cardView is not defined
+      at view (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:301:65)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:330:13)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:337:1
+✖ without billing:manage nothing can be changed, but the state is still readable (0.034958ms)
+  ReferenceError: cardView is not defined
+      at view (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:301:65)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:339:15)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:346:1
+✖ enable carries the platform's current terms, the suffix and the version read; NONE starts at 0 (0.050125ms)
+  ReferenceError: buildCardInput is not defined
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:348:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:352:1
+✖ disable never sends a suffix and quotes the terms the store accepted (the platform's may have moved on) (0.054083ms)
+  ReferenceError: buildCardInput is not defined
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:354:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
+
+test at tests/admin/red-tmp-model.test.ts:360:1
+✖ a retained suffix is recovered from the final preview so a re-enable can keep it (0.038083ms)
+  ReferenceError: descriptorSuffixOf is not defined
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w4-u1-payment-activation-ui/tests/admin/red-tmp-model.test.ts:361:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

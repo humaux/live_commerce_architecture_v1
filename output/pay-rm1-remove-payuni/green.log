@@ -1,0 +1,49 @@
+output/pay-rm1-remove-payuni/pin-hosted.log:--- PASS: TestBuyerPaymentHostedSQLAuthorityAndScope (1.45s)
+output/pay-rm1-remove-payuni/pin-hosted.log:--- PASS: TestBuyerPaymentHostedAtomicPreparationAndIndependentWire (0.33s)
+output/pay-rm1-remove-payuni/pin-hosted.log:PASS
+output/pay-rm1-remove-payuni/pin-hosted.log:ok  	livecommerce/tests/foundation	3.492s
+output/pay-rm1-remove-payuni/pin-hosted.log:test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-payuni-oldpath.log:--- PASS: TestBuyerPaymentCaptureQueryJobBindingAndRollback (1.62s)
+output/pay-rm1-remove-payuni/pin-payuni-oldpath.log:--- PASS: TestBuyerPaymentQueryHistoricalCredentialAndACL (0.30s)
+output/pay-rm1-remove-payuni/pin-payuni-oldpath.log:PASS
+output/pay-rm1-remove-payuni/pin-payuni-oldpath.log:ok  	livecommerce/tests/foundation	4.272s
+output/pay-rm1-remove-payuni/pin-payuni-oldpath.log:test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-payment-methods.log:--- PASS: TestPaymentMethodsAuthorityAndEnvironment (1.36s)
+output/pay-rm1-remove-payuni/pin-payment-methods.log:PASS
+output/pay-rm1-remove-payuni/pin-payment-methods.log:ok  	livecommerce/tests/foundation	3.072s
+output/pay-rm1-remove-payuni/pin-payment-methods.log:test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-mci02.log:--- PASS: TestMetaClaimsMCI02UpgradeAndExactPrivilegeDelta (2.65s)
+output/pay-rm1-remove-payuni/pin-mci02.log:PASS
+output/pay-rm1-remove-payuni/pin-mci02.log:ok  	livecommerce/tests/foundation	4.889s
+output/pay-rm1-remove-payuni/pin-mci02.log:test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-t06-acl.log:--- PASS: TestT06WorkerAuthorityAndFunctionACL (1.94s)
+output/pay-rm1-remove-payuni/pin-t06-acl.log:PASS
+output/pay-rm1-remove-payuni/pin-t06-acl.log:ok  	livecommerce/tests/foundation	3.656s
+output/pay-rm1-remove-payuni/pin-t06-acl.log:test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-r2.log:--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.30s)
+output/pay-rm1-remove-payuni/pin-r2.log:PASS
+output/pay-rm1-remove-payuni/pin-r2.log:ok  	livecommerce/tests/foundation	5.987s
+output/pay-rm1-remove-payuni/pin-r2.log:test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-rm.log:--- PASS: TestRemovePayuniNotifyRM01Schema (4.46s)
+output/pay-rm1-remove-payuni/pin-rm.log:--- PASS: TestRemovePayuniNotifyRM02SeededDataBlocks (2.04s)
+output/pay-rm1-remove-payuni/pin-rm.log:PASS
+output/pay-rm1-remove-payuni/pin-rm.log:ok  	livecommerce/tests/foundation	8.251s
+output/pay-rm1-remove-payuni/pin-rm.log:test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS01LoginsMapToTheirOwnAuthority (0.01s)
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege (1.43s)
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS03CrossAuthorityClaimRefused (0.22s)
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS04OperationReadsAreLaneScoped (0.06s)
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS05ProfileFenceDerivedFromAuthority (0.09s)
+output/pay-rm1-remove-payuni/pin-was.log:--- PASS: TestWAS06PrivilegeInventory (0.01s)
+output/pay-rm1-remove-payuni/pin-was.log:PASS
+output/pay-rm1-remove-payuni/pin-was.log:ok  	livecommerce/tests/foundation	3.547s
+output/pay-rm1-remove-payuni/pin-was.log:test-focused: top-level PASS=6 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/pin-stripe.log:--- PASS: TestStripeAuthorityIngressMatrix (17.19s)
+output/pay-rm1-remove-payuni/pin-stripe.log:--- PASS: TestStripeAuthorityRegistrarMatrix (9.16s)
+output/pay-rm1-remove-payuni/pin-stripe.log:--- PASS: TestStripeSL02Schema (7.99s)
+output/pay-rm1-remove-payuni/pin-stripe.log:PASS
+output/pay-rm1-remove-payuni/pin-stripe.log:ok  	livecommerce/tests/foundation	36.068s
+output/pay-rm1-remove-payuni/pin-stripe.log:test-focused: top-level PASS=3 FAIL=0 SKIP=0 exit=0
+output/pay-rm1-remove-payuni/green-rm03.log:--- PASS: TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute (0.00s)
+output/pay-rm1-remove-payuni/green-rm03.log:PASS
+output/pay-rm1-remove-payuni/green-rm03.log:ok  	livecommerce/cmd/api	0.428s
