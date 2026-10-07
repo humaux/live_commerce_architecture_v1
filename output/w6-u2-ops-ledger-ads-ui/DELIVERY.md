@@ -21,3 +21,5 @@
 - `bash scripts/dev/test-local.sh --browser-click-sweep` and `--browser-visual-lint` — new ledger route, controls/layout at project viewport/locale matrix; sweep fixture needs operations permissions/data if absent.
 - `bash scripts/dev/test-local.sh --operations-queue` — frozen backend capability/CAS/query-cap regression.
 - `bash scripts/dev/check-gates.sh`, `bash scripts/dev/test-node.sh`, admin tsc, `go vet -tags browser ./tests/foundation`.
+
+- Cleanup: subagent-only temporary worktrees removed after preserving exact diffs/untracked browser sources in `subagent-backups/` and all evidence above; assigned W6-U2 worktree/branch and tz-audit remain. No servers/containers were started locally.
