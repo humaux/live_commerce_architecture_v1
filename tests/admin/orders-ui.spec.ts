@@ -6,6 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as http from "node:http";
 import { nativePage } from "./fixtures/native-device";
+import {picklistCopy} from '../../apps/admin/lib/picklist-copy';
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -864,6 +865,10 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
         const row = await page.locator('[data-testid^="order-expand-"]').first().boundingBox();
         expect(row).not.toBeNull();
         expect(row!.y).toBeLessThan(height); // The first order, not only a filter form, is in the initial viewport.
+        const pageSelect=page.getByRole('checkbox',{name:picklistCopy[locale as keyof typeof picklistCopy].page,exact:true});
+        await expect(pageSelect,'page selection remains visible outside the clipped mobile table header').toBeVisible();
+        await pageSelect.check(); await expect(pageSelect).toBeChecked();
+        await pageSelect.uncheck(); await expect(pageSelect).not.toBeChecked();
         clicks.push({control:`mobile secondary filters ${locale}`, result:`native toggle, select, apply, reopen persisted value, reset; first order y=${row!.y} < ${height}`});
       }
       await page.getByTestId("orders-table").scrollIntoViewIfNeeded();

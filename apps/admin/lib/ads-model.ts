@@ -3,7 +3,9 @@
 // -> Go `internal/httpapi/ads.go` (contracts/meta-ads-v1.md §5.1, §5.2, §7; docs/delivery/units/ads-core.md "Frozen HTTP").
 // Non-goals: no fetching, no auth, no domain authority. Client validation is only a hint that saves a round
 // trip; Go re-runs every rule (§5.2) and its code wins. An unknown enum is a parse error, never guessed.
-// Depends on nothing so `node --test --experimental-strip-types` can import it (tests/admin/ads-model.test.ts).
+// Depends only on packages/format (relative .ts import, like promotions-model) so `node --test --experimental-strip-types` can import it (tests/admin/ads-model.test.ts).
+
+import { instantToTaipei } from "../../../packages/format/src/index.ts";
 
 export class AdsParseError extends Error {
   constructor(what: string) {
@@ -407,9 +409,12 @@ export function validReportWindow(from: string, to: string): boolean {
   const span = daysBetween(from, to);
   return span >= 0 && span + 1 <= maxReportDays;
 }
-export function localDate(ms: number): string {
-  const d = new Date(ms);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+// The report is cut in store days: ads.report/ads.insights_days use Asia/Taipei (no store timezone column, no DST), so "today"
+// is the Taipei date, never the browser's. packages/format owns the zone (G-UI3: no formatter of our own).
+const storeDay = (ms: number) => instantToTaipei(new Date(ms).toISOString()).slice(0, 10);
+/** Default report window: the last 7 Asia/Taipei store days ending today (viewer-zone independent). Pure. */
+export function defaultReportWindow(nowMs: number): { from: string; to: string } {
+  return { from: storeDay(nowMs - 6 * dayMs), to: storeDay(nowMs) };
 }
 /** `<input type="datetime-local">` value (local wall time, minute precision) -> epoch ms, or null. */
 export function localToEpoch(value: string): number | null {

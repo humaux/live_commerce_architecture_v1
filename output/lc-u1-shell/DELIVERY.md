@@ -1,7 +1,11 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source 5012ce96, trunk f8f01b74 and owner focused-local/CI gate rules.
+Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source 975ed53f, trunk 0617bc40 and CI 37567262145.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — CI4 focused GREEN; full GitHub acceptance pending
+# LC-U1 — CI5 sweep lease/status-heading repair; GitHub rerun pending
+
+Latest source **`975ed53f28b15b2bd78ba767c56092236004fc40`**, trunk `0617bc40` merged. [CI5-DELIVERY.md](CI5-DELIVERY.md) records the 96-failure diagnosis and repair: one-hour signed test session/synthetic domain versus an 85-minute gate that ran 64 minutes; safe status headings; actual shared-component SSR title/singleton-nav/privacy guards. Node **527/527**, SSR **3/3**, finite-budget regression, typecheck and check-gates **76** pass. No production auth/expiry bypass or assertion/threshold reduction. **Full new-source sweep remains NOT_RUN locally and requires GitHub.** W2/W3 queued UI work remains gated on full LC-U1 acceptance.
+
+The CI4 and earlier paragraphs below are historical scoped proofs, not CI5 whole-unit acceptance.
 
 Author source **`5012ce963db5d88dfd0a9101c4738926c682d218`**, trunk **`f8f01b74`** merged. Latest: [CI4-DELIVERY.md](CI4-DELIVERY.md). Final-source local Console focus **3/3** and Studio main focus **1/1** both exit 0. Signed negative requests reach the unchanged 403 checks, logout/reauth fences pass, replay remains same-key/same-body/one-effect, and native calendar + save/reload + Taipei PG timestamp pass. Node **510/510**, types, check-gates (73 modes) and original privacy guard exit 0. All original assertions/thresholds remain. **E3 for these selected local MOCK/REAL_PG checks only**; full Console/Studio cases and Linux CI remain pending. W2-U2/U3 remain registered, **not started**, until full LC-U1 green and approved base.
 

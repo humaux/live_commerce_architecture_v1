@@ -8,3 +8,4 @@ ci2-failed.log
 ci3-artifacts/
 ci3-failed.log
 ci4-console-*/
+ci5-artifacts/

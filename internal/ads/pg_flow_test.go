@@ -70,6 +70,27 @@ func (f *adsFx) must(sql string, args ...any) {
 	}
 }
 
+// pinStartTaipeiDayMinus2 moves a draft's start to noon of Asia/Taipei day -2 (the same disclosed fixture as
+// tests/foundation adsStartDayMinus2), so the readable insight days are exactly [today-2, today] at any wall-clock time. Owner
+// write under session_replication_role=replica: the start is otherwise frozen once the draft is submitted.
+func (f *adsFx) pinStartTaipeiDayMinus2(draft string) {
+	f.t.Helper()
+	tx, err := f.owner.Begin(f.ctx)
+	if err != nil {
+		f.t.Fatal(err)
+	}
+	defer tx.Rollback(f.ctx)
+	if _, err = tx.Exec(f.ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+		f.t.Fatal(err)
+	}
+	if _, err = tx.Exec(f.ctx, `UPDATE ads.campaign_drafts SET starts_at=(((now() AT TIME ZONE 'Asia/Taipei')::date-2)+time '12:00') AT TIME ZONE 'Asia/Taipei' WHERE id=$1`, draft); err != nil {
+		f.t.Fatalf("pin start: %v", err)
+	}
+	if err = tx.Commit(f.ctx); err != nil {
+		f.t.Fatal(err)
+	}
+}
+
 func (f *adsFx) str(sql string, args ...any) string {
 	f.t.Helper()
 	var out string
@@ -331,8 +352,13 @@ func TestAdsCoreRealPGDraftLifecycle(t *testing.T) {
 	f.must(`INSERT INTO integration.bindings(id,tenant_id,store_id,principal_id,provider,external_asset_id) VALUES($1,$2,$3,$4,'facebook','111')`,
 		fbBinding, f.tenant, f.store, f.principal)
 	now := time.Now().UTC()
+	// The draft starts one minute after the NEXT Asia/Taipei midnight, the state the old now+11min start had on every run in
+	// the 15:49-15:59 UTC window (23:49-23:59 Taipei), when it flaked "no rows" at the insight read below. Forcing it makes the
+	// store-day boundary a deterministic part of this test at every wall-clock time.
+	tp := now.In(time.FixedZone("Asia/Taipei", 8*3600)) // no DST: the D9 store-local zone
+	nextMidnight := time.Date(tp.Year(), tp.Month(), tp.Day()+1, 0, 1, 0, 0, tp.Location())
 	in := DraftInput{AdBindingID: f.adBinding, IdentityBindingID: fbBinding, Template: "BOOST_POST", SourceRef: "111_222", Currency: "TWD",
-		LifetimeBudgetMinor: 300000, StartsAt: now.Add(11 * time.Minute), EndsAt: now.Add(49 * time.Hour), Countries: []string{"TW", "HK"}, AgeMin: 18, AgeMax: 65}
+		LifetimeBudgetMinor: 300000, StartsAt: nextMidnight, EndsAt: now.Add(49 * time.Hour), Countries: []string{"TW", "HK"}, AgeMin: 18, AgeMax: 65}
 	if err := ValidateInput(DraftInput{LifetimeBudgetMinor: 12345}, "", now); err == nil {
 		t.Fatal("empty input accepted")
 	}
@@ -512,6 +538,15 @@ func TestAdsCoreRealPGDraftLifecycle(t *testing.T) {
 	}
 	// Insights: plan, ingest exactly, auto-pause condition, report.
 	iw := &insightsWorker{pool: f.worker}
+	// ads.insights_days reads store days [max(start's Taipei date, today-3), today]: a draft that has not started on the
+	// Taipei calendar yet has no readable day (correct: Meta has nothing to report), so nothing is planned.
+	if n := f.str(`SELECT coalesce(array_length(ads.insights_days($1::uuid),1),0)::text`, draft); n != "0" {
+		t.Fatalf("a draft starting after Taipei midnight must have no readable day yet, got %s", n)
+	}
+	f.pinStartTaipeiDayMinus2(draft)
+	if n := f.str(`SELECT coalesce(array_length(ads.insights_days($1::uuid),1),0)::text`, draft); n != "3" {
+		t.Fatalf("start pinned to Taipei day-2 must make exactly [today-2, today] readable, got %s days", n)
+	}
 	if err = iw.planOne(f.ctx, f.client, draft); err != nil {
 		t.Fatalf("insights plan: %v", err)
 	}
