@@ -206,7 +206,7 @@ func TestKeywordToolsPlanBatch(t *testing.T) {
 	if plan = planBatch(numeric, batchOffers(), claimed, sellable, 10, MatchExact); len(plan.Conflicts) != 0 || len(plan.Warnings) != 0 {
 		t.Fatalf("numeric target in EXACT: %+v", plan)
 	}
-	// Deactivating an active offer that has claim lines is allowed but warned (it ends the buyers' live price at their next quote, LTG03);
+	// Deactivating an active offer that has claim lines is allowed but warned (information only: those buyers keep their granted live price, owner decision 2026-10-07);
 	// an offer without lines, and one already inactive, is silent.
 	plan = planBatch([]BatchItem{deact("o1", 3), deact("o2", 1), deact("o3", 2)}, batchOffers(), claimed, sellable, 10, MatchExact)
 	if len(plan.Conflicts) != 0 || len(plan.Warnings) != 1 || plan.Warnings[0].Kind != "deactivate_has_claims" || plan.Warnings[0].Keyword != "A1" || plan.Warnings[0].OfferID != "o1" || plan.Warnings[0].Severity != "warning" {

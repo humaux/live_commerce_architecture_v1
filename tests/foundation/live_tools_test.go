@@ -246,13 +246,14 @@ func TestLiveToolsExpiryOffersAndForgedOrigin(t *testing.T) {
 	}
 	mustExec(t, f.owner, `UPDATE storefront.cart_lines SET claim_quantity=2 WHERE claim_bundle_id=$1`, c1.BundleID)
 
-	// Offer deactivation and live-price clearing both end the live price (evaluated at Quote time).
+	// Live-price clearing ends the live price (evaluated at Quote time); a PAUSE does not: owner decision 2026-10-07 ("already-claimed buyers keep the
+	// live price, only new claims are refused") replaces the former assertion here (catalog price after the pause).
 	paused, err := h.updateOffer(h.token, f.storeA1, t04Key("lt-pause"), s1, o1.ID, claims.OfferUpdate{ExpectedVersion: o1.Version, MaxQuantityPerClaim: 5, Active: false})
 	if err != nil || paused.LivePriceMinor == nil || *paused.LivePriceMinor != live {
 		t.Fatalf("pause must leave the price untouched when the key is absent: %+v %v", paused, err)
 	}
-	if _, line := h.priced(t, buyer1); line.PriceRule != "" || line.UnitPriceMinor != catalogPrice {
-		t.Fatalf("inactive offer kept the live price: %+v", line)
+	if _, line := h.priced(t, buyer1); line.PriceRule != "live_claim" || line.UnitPriceMinor != live || line.CatalogUnitPriceMinor != catalogPrice {
+		t.Fatalf("a paused offer must keep the granted live price (owner decision 2026-10-07): %+v", line)
 	}
 	zero := int64(0)
 	cleared, err := h.updateOffer(h.token, f.storeA1, t04Key("lt-clear"), s1, o1.ID, claims.OfferUpdate{ExpectedVersion: paused.Version, MaxQuantityPerClaim: 5, Active: true, LivePriceMinor: &zero})

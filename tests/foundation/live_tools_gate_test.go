@@ -17,8 +17,9 @@ package foundation_test
 //                                                      another buyer's origin, a raised quantity or an expired link
 //   LTG02 TestLiveToolsGateRawCartForgery              raw cart_lines writes as the buyer database role: shape CHECKs, foreign
 //                                                      bundle/offer pairs, claim_quantity below AND above the claimed quantity
-//   LTG03 TestLiveToolsGateOfferLifecycleAndExpiry     inactive offer / cleared price / link expiry end the price at the next quote;
-//                                                      a quote taken at the live price cannot place an order afterwards (fail closed)
+//   LTG03 TestLiveToolsGateOfferLifecycleAndExpiry     cleared price / link expiry end the price at the next quote; a PAUSED offer does NOT (owner decision
+//                                                      2026-10-07: claimants keep it); a quote taken at the live price cannot place an order
+//                                                      once the price was cleared (fail closed)
 //   LTG04 TestLiveToolsGateSnapshotsAndOrders          price_rule in the quote and order snapshots (card DRAFT and pay_at_pickup),
 //                                                      catalog lines stay byte-compatible, later price edits never touch an order
 //   LTG05 TestLiveToolsGateLibraryImportCopy           library CRUD, import/copy conflicts as data, never overwrite, price never
@@ -562,15 +563,16 @@ func TestLiveToolsGateOfferLifecycleAndExpiry(t *testing.T) {
 		return e.mjson(e.token(), "PATCH", e.claimsPath(s1, "/offers/"+o1.ID), fmt.Sprintf(`{"expected_version":%d,%s}`, version, body))
 	}
 
-	// Pausing the offer ends the live price at the NEXT quote and leaves the stored price alone (key absent = unchanged).
+	// Pausing the offer leaves the stored price alone (key absent = unchanged). Owner decision 2026-10-07 ("already-claimed buyers keep the live price,
+	// only new claims are refused") REPLACES the former assertion here (catalog price at the next quote): amy's claim line keeps the price it was granted.
 	st, out := patch(o1.Version, `"max_quantity_per_claim":5,"active":false`)
 	if st != 200 || out["active"] != false || ltgNum(out, "live_price_minor") != ltgLive {
 		t.Fatalf("pause: %d %v", st, out)
 	}
 	v := ltgNum(out, "version")
 	_, l = e.line(b, "")
-	e.wantCatalog("inactive offer", l)
-	// Re-activating restores it: the price is evaluated at quote time, not frozen at offer time.
+	e.wantLive("paused offer: the claimed line keeps its live price (owner decision 2026-10-07)", l, ltgLive, bundle1, o1.ID)
+	// Re-activating changes nothing: the price is evaluated at quote time, not frozen at offer time.
 	st, out = patch(v, `"max_quantity_per_claim":5,"active":true`)
 	if st != 200 {
 		t.Fatalf("reactivate: %d %v", st, out)
@@ -624,22 +626,24 @@ func TestLiveToolsGateOfferLifecycleAndExpiry(t *testing.T) {
 		t.Fatalf("a stale write changed the price: %+v", o)
 	}
 
-	// A quote taken at the live price cannot place an order after the offer stopped being live: fail closed, no hold, no order.
+	// A quote taken at the live price cannot place an order after the offer stopped being live priced: fail closed, no hold, no order.
+	// Owner decision 2026-10-07: a PAUSE no longer ends a live quote (TestLivePriceKeepOnPauseExistingClaims places one while paused), so the merchant
+	// removing the live price (0 = clear, here on the paused offer) is what ends it; the assertion is otherwise identical (conflict, no facts).
 	q, l := e.line(b, "")
-	e.wantLive("quote before pause", l, ltgLive, bundle1, o1.ID)
+	e.wantLive("quote before the price is cleared", l, ltgLive, bundle1, o1.ID)
 	holds0, orders0 := e.orderFacts(b.cap.Scope.OwnerID)
-	if st, out = patch(v, `"max_quantity_per_claim":5,"active":false`); st != 200 {
-		t.Fatalf("pause 2: %d %v", st, out)
+	if st, out = patch(v, `"max_quantity_per_claim":5,"active":false,"live_price_minor":0`); st != 200 || out["live_price_minor"] != nil {
+		t.Fatalf("clear the price of the paused offer: %d %v", st, out)
 	}
 	if _, err := e.placeHome(b, q); !errors.Is(err, command.ErrConflict) {
-		t.Fatalf("a live-price quote must fail closed as a conflict once its offer was paused (an order was placed, or the refusal was an infrastructure error): %v", err)
+		t.Fatalf("a live-price quote must fail closed as a conflict once its live price was cleared (an order was placed, or the refusal was an infrastructure error): %v", err)
 	}
 	if h, o := e.orderFacts(b.cap.Scope.OwnerID); h != holds0 || o != orders0 {
 		t.Fatalf("a refused placement left facts: holds %d->%d orders %d->%d", holds0, h, orders0, o)
 	}
 	// Re-quote prices at the catalog and then places normally.
 	q2, l := e.line(b, "")
-	e.wantCatalog("re-quote after pause", l)
+	e.wantCatalog("re-quote after the live price was cleared", l)
 	res, err := e.placeHome(b, q2)
 	if err != nil {
 		t.Fatalf("catalog placement: %v", err)

@@ -1,0 +1,22 @@
+=== RUN   TestKeywordToolsBatchDeactivateIsAPause
+    keyword_tools_live_price_test.go:45: after a batch deactivate the claimed line keeps the live price: want live price 20000 (bundle 311fcce7-ac96-4b7e-9e23-a68e13613a1c offer de7ea88d-f3f5-4f8b-b6db-2ab2f79f7b1f), got {SKUID:a64a7a70-ca05-41f2-83df-4a122d14aa2b ProductID:aca701b0-9ddb-43d8-849d-a0e33aba4cfd Code:TCV-b48dfbbbe288 Name:t04-f77d142ecf58 Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:30000 Amount:{SubtotalMinor:60000 DiscountMinor:0 TaxMinor:0 TotalMinor:60000} PriceRule: CatalogUnitPriceMinor:0 ClaimBundleID: ClaimOfferID:}
+--- FAIL: TestKeywordToolsBatchDeactivateIsAPause (1.55s)
+=== RUN   TestLivePriceKeepOnPauseExistingClaims
+    live_price_keep_on_pause_test.go:79: (b) quote of a claimed line while the offer is paused: want live price 20000 (bundle 00494887-19ad-4791-823d-4a9e0e42faba offer d9a7c1a9-b3ab-49fd-a558-c788d09bf7c5), got {SKUID:97ac0160-2c93-44f3-afa8-b72aafe4eabd ProductID:7d5f7170-c527-4a6e-be5d-be1f9a4b0c8c Code:TCV-4fccf67cd5ed Name:t04-144fda67bec7 Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:30000 Amount:{SubtotalMinor:60000 DiscountMinor:0 TaxMinor:0 TotalMinor:60000} PriceRule: CatalogUnitPriceMinor:0 ClaimBundleID: ClaimOfferID:}
+--- FAIL: TestLivePriceKeepOnPauseExistingClaims (0.56s)
+=== RUN   TestLivePriceKeepOnPauseClearedPriceStillEndsIt
+    live_price_keep_on_pause_test.go:188: paused offer keeps the price: want live price 20000 (bundle 2fbd4cce-2823-4952-a420-b05d0769764f offer d4d97cf8-0f9a-4170-9b4c-7b30e18a1815), got {SKUID:01e56b7d-f28f-4645-b780-b1f93989aebd ProductID:4217f850-dd32-43c0-a5f1-3246a375644e Code:TCV-abbedef5bdc4 Name:t04-909e8fb4c70b Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:30000 Amount:{SubtotalMinor:60000 DiscountMinor:0 TaxMinor:0 TotalMinor:60000} PriceRule: CatalogUnitPriceMinor:0 ClaimBundleID: ClaimOfferID:}
+--- FAIL: TestLivePriceKeepOnPauseClearedPriceStillEndsIt (0.38s)
+=== RUN   TestLivePriceKeepOnPauseOneClaimPerSKU
+    live_price_keep_on_pause_test.go:252: redeem with two paused offers on one SKU must apply exactly one line: {BundleVersion:2 Cart:{ID: Currency:TWD Version:0 Items:[]} Applied:[] Skipped:[{SKUID:ca3013a4-561b-44ca-aea0-908c3fdb1ea9 Reason:offer_inactive} {SKUID:ca3013a4-561b-44ca-aea0-908c3fdb1ea9 Reason:offer_inactive}]} <nil>
+--- FAIL: TestLivePriceKeepOnPauseOneClaimPerSKU (0.46s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+    live_tools_gate_test.go:574: paused offer: the claimed line keeps its live price (owner decision 2026-10-07): want live price 20000 (bundle 34557d38-2672-450a-913b-0111e9504777 offer 4257a078-f60e-493e-a390-90318e03c56c), got {SKUID:15e8a9f2-f01e-48b9-bccf-10062e48d25e ProductID:d881cb4b-0de9-4d0f-8cd8-3d636d6269e9 Code:TCV-12bb4cb0e774 Name:t04-78ca8fe7f05a Description:isolated test stock SKUVersion:1 ProductVersion:1 Quantity:2 UnitPriceMinor:30000 Amount:{SubtotalMinor:60000 DiscountMinor:0 TaxMinor:0 TotalMinor:60000} PriceRule: CatalogUnitPriceMinor:0 ClaimBundleID: ClaimOfferID:}
+--- FAIL: TestLiveToolsGateOfferLifecycleAndExpiry (0.37s)
+=== RUN   TestLiveToolsLivePriceOnlyThroughClaimOrigin
+--- PASS: TestLiveToolsLivePriceOnlyThroughClaimOrigin (0.28s)
+FAIL
+FAIL	livecommerce/tests/foundation	4.309s
+FAIL
+test-focused: top-level PASS=1 FAIL=5 SKIP=0 exit=1
+exit=1

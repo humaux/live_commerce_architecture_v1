@@ -1,0 +1,6 @@
+ok  	livecommerce/internal/claims	0.431s
+ok  	livecommerce/internal/claims/grammar	0.969s
+ok  	livecommerce/internal/storefront	1.012s
+ok  	livecommerce/internal/merchanttools	1.166s
+ok  	livecommerce/internal/httpapi	0.431s
+ok  	livecommerce/tests/claims	0.321s
