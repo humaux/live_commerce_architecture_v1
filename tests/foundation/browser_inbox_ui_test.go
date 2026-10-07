@@ -320,7 +320,7 @@ func TestBrowserInboxUIRealChain(t *testing.T) {
 	log := browserLog(t, playwrightLog)
 	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if bundleCalibration != "" {
-		browser.Args = append(browser.Args, "--grep", "^INU09 ")
+		browser.Args = append(browser.Args, "--grep", "INU09 flagged bundle")
 	}
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "inbox", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_EVIDENCE": evidence, "LC_BROWSER_INBOX_STORE": f.storeA1, "LC_BROWSER_INBOX_OTHER_STORE": f.storeA2, "LC_BROWSER_INBOX_IDS": string(fixtureJSON), "LC_BROWSER_INBOX_BUYER_ORIGIN": e.origin, "LC_BROWSER_INBOX_READER_TOKEN": readerToken, "LC_BROWSER_INBOX_VIEWER_TOKEN": viewerToken, "LC_INBOX_CALIBRATION": calibration, "LC_INBOX_BUNDLE_CALIBRATION": bundleCalibration, "FORCE_COLOR": "0", "NO_COLOR": "1"})

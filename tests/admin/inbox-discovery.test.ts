@@ -107,6 +107,20 @@ test("real Playwright --list collects each original INU case and isolated INU09 
     13,
     "no duplicate collection from shared helpers or config registration",
   );
+  const harness = readFileSync(resolve(root, "tests/foundation/browser_inbox_ui_test.go"), "utf8");
+  const calibration = harness.match(/browser.Args = append\(browser.Args, "--grep", ("[^"\n]*")\)/);
+  assert.ok(calibration, "actual credential calibration selector must be observable");
+  const selected = spawnSync(process.execPath,
+    [cli, "test", ...runnerSelectors(), "--grep", JSON.parse(calibration[1]), "--list", "--config",
+      resolve(root, "playwright.config.ts"), "--reporter=json"],
+    { cwd: root, env: { ...env, LC_INBOX_BUNDLE_CALIBRATION: "retain-credential" }, encoding: "utf8",
+      timeout: 30_000, maxBuffer: 2 * 1024 * 1024 });
+  assert.equal(selected.error, undefined);
+  assert.equal(selected.status, 0, "calibration must collect its real case rather than fail with no tests");
+  const calibrated = rows(JSON.parse(selected.stdout).suites ?? []);
+  assert.equal(calibrated.length, 1, "only the credential-bearing scenario is calibrated");
+  assert.equal(calibrated[0].file, "inbox-bundle-ui.spec.ts");
+  assert.match(calibrated[0].title, /^INU09 /);
 });
 
 function runnerSelectors(): string[] {
