@@ -1,5 +1,5 @@
 // Purpose: scoped customer reads/privacy commands and session-bound page lifecycle, including tag-filtered lists.
-// Depends on: frozen customers DTOs, exact BFF routes and settings-client CSRF/session boundaries.
+// Depends on: frozen customers DTOs, exact BFF routes and settings-client CSRF/session boundaries. lib/session-events (a signed-out guarded read signals the global logout).
 // Used by: Customers, CustomerDetail, Finance, Billing and Reports; private records remain memory-only.
 // Admin customers/finance/billing client: browser -> BFF `/api/stores/{store}/{customers*,finance/*,billing*}`
 // -> Go `internal/httpapi/{customers,finance,billing}.go` (contract customers-billing-v1 §5). Reads parse the frozen
@@ -9,6 +9,7 @@
 // Bearer links (checkout/portal URLs) and export bodies are handed straight to the browser and never stored or logged.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
+import { signalLogout } from "./session-events";
 import {
   parseCustomerDetail,
   parseCustomerList,
@@ -200,7 +201,10 @@ export function useGuardedRead<T>(
       if (!live()) return;
       const code: ReadCode = error instanceof ReadError ? error.code
         : error instanceof Error && error.message === "session_changed" ? "signed-out" : "unavailable";
-      if (code === "signed-out") blocked.current = true;
+      // A read that ends signed-out means the session is gone for the whole app: signal the global logout lifecycle so every
+      // other guarded read on the page clears its PII now, not at the next focus/navigation (Codex review P2, PR #3).
+      // Loop-safe: the logout listener only clears, it never re-runs a read.
+      if (code === "signed-out") { blocked.current = true; signalLogout(); }
       boundary.current = "";
       setView({ key, status: code, data: null });
     }

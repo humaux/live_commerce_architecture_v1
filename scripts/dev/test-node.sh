@@ -38,7 +38,7 @@ node --test --experimental-strip-types tests/admin/picklist-model.test.ts
 
 # W6-U1 frozen tags/notes/report DTOs, exact authority fences, real component effects and integration (no browser/PG).
 node --test --experimental-strip-types tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts \
-  tests/admin/customer-tags-ui.test.mjs tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs tests/admin/customer-tags-write.test.mjs \
+  tests/admin/customer-tags-ui.test.mjs tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs tests/admin/guarded-read-logout.test.mjs tests/admin/customer-tags-write.test.mjs \
   tests/admin/reports-bff.test.ts tests/admin/reports-render.test.mjs tests/admin/w6-integration.test.ts tests/admin/w6-route-seam.test.mjs
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
