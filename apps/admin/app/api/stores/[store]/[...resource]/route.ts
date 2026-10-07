@@ -1,11 +1,10 @@
-// Purpose: exact authenticated admin resource proxy, including PM-v2 role-aware media commands.
-// Depends on: auth/CSRF/store scope, frozen request grammars and Go /v1/admin/stores endpoints.
-// Used by: admin settings/product/media clients; private data is never cached.
+// Purpose: exact authenticated admin BFF proxy for closed per-store resources, including PM-v2 media, Meta health and returns.
+// Depends on: backend/auth, server session/store/CSRF authority and the frozen per-domain request grammars.
+// Used by: admin clients; private responses stay no-store and unknown paths never forward.
 import { validMediaQuery } from "@/lib/product-media-model";
-
 import { callBackend, fixtureSession } from "@/lib/backend";
 import {
-  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery,
+  orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery, validReturnsQuery,
 } from "@/lib/orders-request";
 import { customersRoute, validCustomersBody, validCustomersRequest } from "@/lib/customers-request";
 import { logisticsRoute } from "@/lib/logistics-request";
@@ -141,8 +140,11 @@ async function route(request: Request, context: Context) {
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
-  // Exact resources: no query at all, including a bare trailing '?'.
-  if ((action || logistic) && request.url.includes("?")) return error(422, "invalid_request");
+  // Exact resources: no query at all, including a bare trailing '?'. The one exception is the returns-v1 §6
+  // RMA list: GET returns may carry exactly `?state=<RMA state>` (validReturnsQuery mirrors the Go grammar).
+  if ((action || logistic) && request.url.includes("?") &&
+    !(request.method === "GET" && path === "returns" && validReturnsQuery(request.url)))
+    return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
   // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
   if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))

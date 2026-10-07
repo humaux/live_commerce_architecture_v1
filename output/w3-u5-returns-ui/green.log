@@ -1,0 +1,27 @@
+✔ RMA list decodes every state with the exact rma_json keys (1.687375ms)
+✔ RMA parser refuses drifted keys, states, quantities and timestamps (3.81975ms)
+✔ refund-gap list decodes the closed cancel_refund_failed shape only (0.225916ms)
+✔ register body is exactly {reason, lines:[{sku_id, quantity}]} with a composed enum reason (0.236917ms)
+✔ receive body names every line once with 0 <= qty, at least one unit (0.159875ms)
+✔ inspect body enforces qty_restock + qty_scrap = qty_received per line before send (0.088583ms)
+✔ merchant cancel body is exactly {expected_state, reason} with the CJK-safe reason cap (0.295292ms)
+✔ rmaStates is the closed §2 machine (0.036709ms)
+✔ BFF grammar adds exactly the returns and merchant-cancel resources (0.989084ms)
+✔ GET returns accepts no query or exactly one RMA state (0.669834ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (3.082084ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.157459ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (1.546708ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.328083ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (5.387792ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.081208ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.14225ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (223.223ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.229ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 369.702417
