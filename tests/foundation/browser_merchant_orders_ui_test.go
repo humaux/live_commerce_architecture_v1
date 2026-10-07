@@ -3,7 +3,9 @@
 package foundation_test
 
 // Purpose: real merchant order browser fixtures and read-only authority proof; focused MOU07 is a separate local subset.
-// Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts.
+//   W3-07B: after the read-only guard passes, two mergeable buyer pairs are created and parcel-merge.spec.ts runs against
+//   the same chain (merge -> group waybill -> members shipped -> dissolve -> block -> 409), then PG group state is asserted.
+// Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts + parcel-merge.spec.ts.
 // Used by: --browser-merchant-orders-ui; focused test-focused invocations do not certify full MOU/native acceptance.
 
 import (
@@ -45,7 +47,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if os.Getenv("LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-merchant-orders-ui")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 270*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 540*time.Second)
 	defer cancel()
 	q := pqSetup(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
@@ -384,5 +386,60 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if len(native.Events) != 2 || native.Events[0].State != "hidden" || !native.Events[0].Trusted || native.Events[1].State != "visible" || !native.Events[1].Trusted || native.BeforeHide != native.WhileHidden || native.AfterReturn <= native.WhileHidden || !native.PiiCleared || !native.Revalidated {
 		t.Fatalf("MOU03 native visibility proof violated: events=%v before=%d hidden=%d return=%d piiCleared=%t revalidated=%t; evidence=%s", native.Events, native.BeforeHide, native.WhileHidden, native.AfterReturn, native.PiiCleared, native.Revalidated, evidence)
 	}
-	t.Logf("MOU real-chain browser cases, trusted native visibility, and PG read-only facts checked; evidence=%s", evidence)
+	// W3-07B parcel-merge UI (Amendment W3-07B): the read-only guard above passed, so only now create real mergeable
+	// fixtures (they write checkout/payment tables) and drive parcel-merge.spec.ts against the same Next + Go + PG.
+	// One buyer capability per pair: same owner + identical bdHome destination -> exactly one suggestion per pair.
+	parcelPair := func(tag string) [2]string {
+		t.Helper()
+		buyerCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
+		var pair [2]string
+		for i := 0; i < 2; i++ {
+			clone := q
+			clone.cap = buyerCap
+			clone.bcHarness.prepare(t, buyerCap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
+			order, e := clone.bcHarness.begin(t04Key("mou-parcel-begin-" + tag))
+			if e != nil {
+				t.Fatal(e)
+			}
+			clone.hold = order
+			clone.input.OrderID = order.OrderID
+			if clone.result, e = clone.start(t04Key("mou-parcel-start-" + tag)); e != nil {
+				t.Fatal(e)
+			}
+			if e = pcApply(clone.worker, clone.result.AttemptID, pcRecord(t, clone, pcFull(clone))); e != nil {
+				t.Fatal(e)
+			}
+			pair[i] = order.OrderID
+		}
+		return pair
+	}
+	shipPair, dissolvePair := parcelPair("ship"), parcelPair("dissolve")
+	parcelFixtures, _ := json.Marshal(map[string][2]string{"ship": shipPair, "dissolve": dissolvePair})
+	parcelLog := browserLog(t, filepath.Join(evidence, "playwright-parcel.log"))
+	parcelBrowser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/parcel-merge.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results-parcel"))
+	parcelBrowser.Dir = root
+	parcelBrowser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "parcel-merge-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_PARCEL_ORDERS": string(parcelFixtures), "LC_BROWSER_EVIDENCE": evidence})
+	parcelBrowser.Stdout, parcelBrowser.Stderr = parcelLog, parcelLog
+	if err = parcelBrowser.Run(); err != nil {
+		t.Fatalf("W3-07B parcel-merge browser gate failed: %v; evidence=%s", err, evidence)
+	}
+	// Server truth after the real clicks: the shipped pair sits in one SHIPPED group as MERCHANT_SHIPPED orders, the
+	// re-merged pair in one OPEN group, and the dissolved group remains as DISSOLVED history (members deleted).
+	var shippedMembers, openMembers, dissolvedGroups, shippedOrders int
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state='SHIPPED' AND m.order_id IN ($3,$4)`, q.f.tenantA, q.f.storeA1, shipPair[0], shipPair[1]).Scan(&shippedMembers); err != nil {
+		t.Fatal(err)
+	}
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state='OPEN' AND m.order_id IN ($3,$4)`, q.f.tenantA, q.f.storeA1, dissolvePair[0], dissolvePair[1]).Scan(&openMembers); err != nil {
+		t.Fatal(err)
+	}
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_groups WHERE tenant_id=$1 AND store_id=$2 AND state='DISSOLVED'`, q.f.tenantA, q.f.storeA1).Scan(&dissolvedGroups); err != nil {
+		t.Fatal(err)
+	}
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id IN ($3,$4) AND fulfillment_state='MERCHANT_SHIPPED'`, q.f.tenantA, q.f.storeA1, shipPair[0], shipPair[1]).Scan(&shippedOrders); err != nil {
+		t.Fatal(err)
+	}
+	if shippedMembers != 2 || openMembers != 2 || dissolvedGroups != 1 || shippedOrders != 2 {
+		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openMembers=%d dissolved=%d shippedOrders=%d; evidence=%s", shippedMembers, openMembers, dissolvedGroups, shippedOrders, evidence)
+	}
+	t.Logf("MOU real-chain browser cases, trusted native visibility, PG read-only facts and W3-07B parcel-merge clicks checked; evidence=%s", evidence)
 }

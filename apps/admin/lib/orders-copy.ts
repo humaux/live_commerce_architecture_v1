@@ -1,5 +1,6 @@
 // Copy for the admin orders page and its refund/shipment/export sections (BFF orders* -> Go merchantorders).
 // Carrier display names follow refund-fulfilment-ui Q3; refund state labels follow stripe-refund-v1 §7.1 (UI paragraph).
+// W3-07B: errors.in_parcel_group is the same sentence as parcels-copy `blocked` (the server code maps to the group hint).
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {

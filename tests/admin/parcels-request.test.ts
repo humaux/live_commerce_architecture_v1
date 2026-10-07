@@ -1,6 +1,6 @@
 // Purpose: node unit tests for the W3-07B parcel-group BFF request grammar (exact resources, delete query, keyless rules).
 // Depends on: apps/admin/lib/parcels-request.ts (mirror of internal/httpapi/parcels.go routes).
-// Used by: scripts/dev/test-local.sh --browser-merchant-orders-ui (pure grammar gate, no browser/PG).
+// Used by: scripts/dev/test-local.sh --browser-merchant-orders-ui and --browser-merchant-orders-bff (pure grammar gate, no browser/PG).
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parcelRoute, validParcelDeleteQuery } from "../../apps/admin/lib/parcels-request.ts";
