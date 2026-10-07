@@ -20,6 +20,11 @@ test("backend-only paths run foundation-shards only", () => {
   assert.deepEqual(r.modes, FOUNDATION);
 });
 
+test("node tests of deploy scripts and of the CI planner are backend-only (they cannot change a browser)", () => {
+  assert.deepEqual(planPr(["internal/a.go", "tests/deploy/deploy-prep-r3.test.mjs", "tests/ci/pr-modes.test.mjs"]).modes, FOUNDATION);
+  assert.deepEqual(planPr(["tests/deploy/x.test.mjs", "scripts/dev/pr-modes.mjs"]).modes.length > 1, true); // the planner itself still counts as UI
+});
+
 test("a UI path adds the whole browser set, including click-sweep and visual-lint", () => {
   for (const p of ["apps/admin/src/a.tsx", "packages/i18n/x.ts", "tests/admin/x.test.ts", "tests/e2e/x.spec.ts", "scripts/dev/test-local.sh", ".github/workflows/gates.yml", "playwright.config.ts", "package.json", "pnpm-lock.yaml"]) {
     const r = planPr(["internal/a.go", p]);

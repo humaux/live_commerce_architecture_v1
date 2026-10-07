@@ -7,7 +7,7 @@
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
 //
 // Backend-only set (changes here alone cannot alter a browser): internal/ cmd/ migrations/ contracts/ docs/ deploy/ output/ go.mod go.sum, tests/foundation/ except
-//   tests/foundation/browser_*, and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
+//   tests/foundation/browser_*, tests/deploy/ and tests/ci/ (node tests of shell scripts / this planner; scripts/ itself stays UI), and *.md anywhere. Everything else (apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ scripts/ .github/ playwright.config.ts, package files...) is a UI path.
 // Docs-only (docs/, output/, *.md) is a subset of backend-only: it runs foundation-shards (cheap, keeps the single required check) and no browser mode.
 //
 // Excluded browser modes (EXCLUDED_MODES): modes of release-gate's browser universe that cannot run on a GitHub runner. Currently only `--stripe-browser`: its SP18 step needs a Stripe
@@ -34,7 +34,7 @@ export function browserModes(testLocalSource) {
   return modes;
 }
 
-const BACKEND_PREFIXES = ["internal/", "cmd/", "migrations/", "contracts/", "docs/", "deploy/", "output/", "tests/foundation/"];
+const BACKEND_PREFIXES = ["internal/", "cmd/", "migrations/", "contracts/", "docs/", "deploy/", "output/", "tests/foundation/", "tests/deploy/", "tests/ci/"];
 const isBackendOnly = (p) =>
   p.endsWith(".md") || p === "go.mod" || p === "go.sum" ||
   (BACKEND_PREFIXES.some((x) => p.startsWith(x)) && !p.startsWith("tests/foundation/browser_"));
