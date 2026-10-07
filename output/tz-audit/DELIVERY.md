@@ -1,0 +1,15 @@
+# tz-audit delivery
+- Branch: `unit/tz-audit`; base/trunk `3807a3f82169697f837e60c0ebe2fc2fed84a17e` (contains `639c30ff`). Worktree `/Volumes/data/tz-audit`. Final SHA reported by author after commit.
+- Author: Codex-3 (GPT-6; exact runtime model ID not exposed); independent read-only explorer gpt-6-luna medium and reviewer gpt-6.1-sol high. Write paths: ADS model/copy, existing ADS model/browser tests, customers-model unit tests; output/tz-audit.
+- Summary: `ads-model.ts` campaign date range input/edit uses shared Taipei helpers with invalid-calendar roundtrip rejection; UTC payload and lead/duration rules preserved. Three locales explicitly state Asia/Taipei/UTC+8. Browser fixture enters the same Taipei wall clock. No storefront business-day bug found; report/finance/attribution defaults already use Taipei.
+- Contract/interface changes: none; function names/wire retained. Behavior: campaign date fields now use fixed store time rather than old browser-local time; this fulfills the owner's date policy.
+- Tests: `node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/customers-model.test.ts` red 2 failures → green25/25 exit0 (`red.log`, `green.log`); four TZs (UTC/Los_Angeles/Taipei/Auckland), midnight/year/leap/DST boundaries and invalid wall fields. Existing finance implementation gets a protection regression.
+- Gates run: `pnpm install --offline --frozen-lockfile` → 0; admin tsc → 0 (`tsc.log`); `bash scripts/dev/test-node.sh` → 0 (`node.log`); `bash scripts/dev/check-gates.sh` → 0 (`check-gates.log`,73 modes); strict browser-spec typecheck with explicit installed Node type root → 0 (`browser-tsc.log`); `git diff --check` → 0. Lockfile unchanged.
+- Evidence class: E3 local, bound to source-hashes.json manifest `9bfbed29b0f5d909ee79373c72d6cef6835ef36f39581c6d794a69beab66b6a4`. Initial spec typecheck configuration lacked Node type roots; fixed the command, no dependency installation or test weakening. The strict successful command: `pnpm exec tsc --noEmit --strict --skipLibCheck --types node --typeRoots apps/admin/node_modules/@types --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions tests/admin/ads.spec.ts`.
+- Risks / NOT_RUN: BROWSER timezone/layout/lifecycle execution, REAL_PG/provider SANDBOX/LIVE, media binary suite unavailable. Detailed inventory AUDIT.md + audit-candidates.json. Buyer-local instant input and ordinary instant displays intentionally retained.
+- Integrator to-do: merge after review; ADS model/copy/tests overlap W6-U2 changes, preserve both additive parsers/copy and the Taipei helpers. No migration/schema/lockfile changes. Run heavy browser gates on GitHub.
+
+## CI gates
+- `bash scripts/dev/test-local.sh --browser-meta-ads` — real campaign input/edit/lifecycle and report windows with updated Taipei fixture.
+- `bash scripts/dev/test-local.sh --browser-ads-attribution` and `--browser-customers-billing` — existing report/finance date regressions.
+- `bash scripts/dev/check-gates.sh`, `bash scripts/dev/test-node.sh`, focused Node tests above, admin tsc.

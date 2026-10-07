@@ -1,0 +1,80 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.029958ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.341209ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.23325ms)
+✔ copy never calls a budget a hard stop and never offers resume (1.362959ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.359125ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.616125ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.192375ms)
+✔ money: whole units to minor with integer math; TWD must be whole (27.341333ms)
+✔ draft input: exact 11-key body and every local rule (0.748125ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.152416ms)
+✔ settings parser: environment enum, connections, identities, capi (0.494167ms)
+✔ connect state parser: pick list kinds and id match (0.114792ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.226ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (4.745459ms)
+✔ capi body and validation (0.086917ms)
+✖ campaign datetime input and edit roundtrip stay in Asia/Taipei across viewer zones (0.770958ms)
+✖ campaign date helper explains the fixed Taipei zone in every locale (0.107791ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (2.275792ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.989667ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (2.885292ms)
+✔ erasure summary is four counts only (0.072166ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.259958ms)
+✔ financeDay is the UTC+8 day (0.052917ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.505875ms)
+✔ finance default business-day range is invariant across viewer zones at midnight and leap/year boundaries (1.892ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 23
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 147.911125
+
+✖ failing tests:
+
+test at tests/admin/ads-model.test.ts:358:1
+✖ campaign datetime input and edit roundtrip stay in Asia/Taipei across viewer zones (0.770958ms)
+  AssertionError [ERR_ASSERTION]: 2026-10-07T00:00 from UTC
+  + actual - expected
+  
+  + 1791331200000
+  - 1791302400000
+         ^
+  
+      at TestContext.<anonymous> (file:///Volumes/data/tz-audit/tests/admin/ads-model.test.ts:367:41)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1791331200000,
+    expected: 1791302400000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/ads-model.test.ts:371:1
+✖ campaign date helper explains the fixed Taipei zone in every locale (0.107791ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Asia\/Taipei|台北/. Input:
+  
+  'Local time. Start at least 10 minutes from now; run at most 30 days.'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/tz-audit/tests/admin/ads-model.test.ts:371:126)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Local time. Start at least 10 minutes from now; run at most 30 days.',
+    expected: /Asia\/Taipei|台北/,
+    operator: 'match',
+    diff: 'simple'
+  }

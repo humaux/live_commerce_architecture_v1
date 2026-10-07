@@ -1,0 +1,33 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.44775ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.35075ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.23275ms)
+✔ copy never calls a budget a hard stop and never offers resume (1.186917ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.326875ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.416416ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.190667ms)
+✔ money: whole units to minor with integer math; TWD must be whole (25.681958ms)
+✔ draft input: exact 11-key body and every local rule (6.517166ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.261166ms)
+✔ settings parser: environment enum, connections, identities, capi (0.356834ms)
+✔ connect state parser: pick list kinds and id match (0.105542ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.225875ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (1.721666ms)
+✔ capi body and validation (0.092875ms)
+✔ campaign datetime input and edit roundtrip stay in Asia/Taipei across viewer zones (1.7125ms)
+✔ campaign date helper explains the fixed Taipei zone in every locale (0.081833ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (3.537ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (0.212833ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (4.141917ms)
+✔ erasure summary is four counts only (0.081291ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.269917ms)
+✔ financeDay is the UTC+8 day (0.056416ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.659042ms)
+✔ finance default business-day range is invariant across viewer zones at midnight and leap/year boundaries (2.611708ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 153.600625

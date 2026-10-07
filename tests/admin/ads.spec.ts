@@ -1,3 +1,6 @@
+// Purpose: real-click Meta ads lifecycle acceptance with fixed Taipei campaign input values.
+// Depends on: Playwright; signed Go/PG/MOCK fixtures and packages/format date helpers.
+// Used by: --browser-meta-ads; no production provider calls.
 // MA09a admin half (contracts/meta-ads-v1.md §9 MA09, §2 flow, §5.1 statuses, §5.3 X7, §7, §12; ads-ui U1-U8; rulings O4, AD9).
 // BFF routes exercised through the UI: POST /api/ads/meta/connect, GET /api/ads/meta/callback (the FLfB redirect URI),
 // GET|POST /api/stores/{store}/ads/{settings,meta/states/*,meta/bindings,drafts,drafts/*,report,capi} -> Go
@@ -7,6 +10,7 @@
 // with a 302 to the app's own callback, the code exchange happens in the API process against the fake Graph.
 // Locators use the UI unit's data-testid vocabulary and its copy file; every assertion restates the contract or a frozen UI default.
 import { expect, test, type Page } from "@playwright/test";
+import { instantToTaipei } from "../../packages/format/src/index.ts";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -90,11 +94,8 @@ async function noSecrets(page: Page) {
     expect(stored).not.toContain(secret);
   }
 }
-const localInput = (offsetMs: number) => {
-  const d = new Date(Date.now() + offsetMs);
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
+// Fixture input, not an assertion: campaign forms interpret this value as an Asia/Taipei wall clock.
+const localInput = (offsetMs: number) => instantToTaipei(new Date(Date.now() + offsetMs).toISOString());
 async function openAds(page: Page, locale = "en") {
   await page.goto(`/${locale}/ads?store=${store}`);
   await expect(page.getByTestId("merchant-ads")).toBeVisible();

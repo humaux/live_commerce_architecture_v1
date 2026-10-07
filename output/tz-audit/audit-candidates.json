@@ -1,0 +1,181 @@
+{
+  "coverage": {
+    "apps/admin": {
+      "runtime_files": 235,
+      "candidate_files": 15,
+      "candidate_lines": 21
+    },
+    "apps/storefront": {
+      "runtime_files": 125,
+      "candidate_files": 8,
+      "candidate_lines": 12
+    }
+  },
+  "candidates": [
+    {
+      "file": "apps/admin/app/[locale]/ads/attribution/page.tsx",
+      "line": 49,
+      "source": "const today = instantToTaipei(new Date().toISOString()).slice(0, 10);"
+    },
+    {
+      "file": "apps/admin/app/[locale]/ads/attribution/page.tsx",
+      "line": 50,
+      "source": "const first = new Date(`${today}T00:00:00Z`);"
+    },
+    {
+      "file": "apps/admin/app/[locale]/ads/attribution/page.tsx",
+      "line": 55,
+      "source": "const from = suppliedFrom || first.toISOString().slice(0, 10),"
+    },
+    {
+      "file": "apps/admin/app/[locale]/finance/page.tsx",
+      "line": 20,
+      "source": "const now = new Date();"
+    },
+    {
+      "file": "apps/admin/app/api/auth/password/step1.ts",
+      "line": 131,
+      "source": "new Date(),"
+    },
+    {
+      "file": "apps/admin/components/Ads.tsx",
+      "line": 52,
+      "source": "? new Date(t).toLocaleString(locale, {"
+    },
+    {
+      "file": "apps/admin/components/Design.tsx",
+      "line": 691,
+      "source": "<td>{when.format(new Date(v.published_at))}</td>"
+    },
+    {
+      "file": "apps/admin/components/ManualOrder.tsx",
+      "line": 158,
+      "source": "{placed.payment_mode === \"bank_transfer\" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{new Date(placed.expires_at).toLocaleString(locale)}</dd></div>}"
+    },
+    {
+      "file": "apps/admin/components/Studio.tsx",
+      "line": 87,
+      "source": "const date = new Date(taipeiToInstant(form.scheduled) ?? NaN);"
+    },
+    {
+      "file": "apps/admin/lib/ads-model.ts",
+      "line": 401,
+      "source": "const t = new Date(Date.UTC(y, m - 1, d));"
+    },
+    {
+      "file": "apps/admin/lib/ads-model.ts",
+      "line": 417,
+      "source": "const storeDay = (ms: number) => instantToTaipei(new Date(ms).toISOString()).slice(0, 10);"
+    },
+    {
+      "file": "apps/admin/lib/ads-model.ts",
+      "line": 429,
+      "source": "export const isoSeconds = (ms: number) => new Date(ms).toISOString().replace(/\\.\\d{3}Z$/, \"Z\");"
+    },
+    {
+      "file": "apps/admin/lib/ads-model.ts",
+      "line": 432,
+      "source": "return instantToTaipei(new Date(ms).toISOString());"
+    },
+    {
+      "file": "apps/admin/lib/ads-request.ts",
+      "line": 43,
+      "source": "const t = new Date(Date.UTC(y, m - 1, d));"
+    },
+    {
+      "file": "apps/admin/lib/attribution-model.ts",
+      "line": 145,
+      "source": "new Date(s).toISOString().slice(0, 10) === s"
+    },
+    {
+      "file": "apps/admin/lib/customers-model.ts",
+      "line": 270,
+      "source": "const shifted = new Date(now.getTime() + 8 * 3_600_000 + offsetDays * 86_400_000);"
+    },
+    {
+      "file": "apps/admin/lib/customers-model.ts",
+      "line": 271,
+      "source": "return shifted.toISOString().slice(0, 10);"
+    },
+    {
+      "file": "apps/admin/lib/customers-request.ts",
+      "line": 51,
+      "source": "const back = new Date(parsed);"
+    },
+    {
+      "file": "apps/admin/lib/orders-model.ts",
+      "line": 184,
+      "source": "const parsed = new Date(value);"
+    },
+    {
+      "file": "apps/admin/lib/orders-v2.ts",
+      "line": 18,
+      "source": "Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;"
+    },
+    {
+      "file": "apps/admin/lib/studio-model.ts",
+      "line": 70,
+      "source": "const wall = new Date(`${match[1]}Z`);"
+    },
+    {
+      "file": "apps/storefront/components/BankTransfer.tsx",
+      "line": 46,
+      "source": "return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;"
+    },
+    {
+      "file": "apps/storefront/components/BankTransfer.tsx",
+      "line": 71,
+      "source": "const [paidAt, setPaidAt] = useState(() => localInput(new Date()));"
+    },
+    {
+      "file": "apps/storefront/components/BankTransfer.tsx",
+      "line": 122,
+      "source": "const iso = paidAt ? new Date(paidAt).toISOString() : \"\";"
+    },
+    {
+      "file": "apps/storefront/components/BankTransfer.tsx",
+      "line": 173,
+      "source": "const dateText = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: \"short\", timeStyle: \"short\" }).format(new Date(iso));"
+    },
+    {
+      "file": "apps/storefront/components/ClaimLink.tsx",
+      "line": 340,
+      "source": "{copy.expires(new Intl.DateTimeFormat(locale, { dateStyle: \"medium\", timeStyle: \"short\" }).format(new Date(preview.expires_at)))}"
+    },
+    {
+      "file": "apps/storefront/components/OrderFlow.tsx",
+      "line": 792,
+      "source": "}).format(new Date(order.hold_expires_at))} · {common.taipeiTime}"
+    },
+    {
+      "file": "apps/storefront/components/OrderHistory.tsx",
+      "line": 163,
+      "source": "}).format(new Date(order.created_at))}"
+    },
+    {
+      "file": "apps/storefront/components/ShopChrome.tsx",
+      "line": 188,
+      "source": "<p>© {new Date().getFullYear()} {profile.name}</p>"
+    },
+    {
+      "file": "apps/storefront/lib/ad-touch.ts",
+      "line": 208,
+      "source": "new Date(clicked).toISOString() !== row.clicked_at"
+    },
+    {
+      "file": "apps/storefront/lib/ad-touch.ts",
+      "line": 262,
+      "source": "? { draft_id: drafts[0], clicked_at: new Date(now).toISOString(), fbc, fbp }"
+    },
+    {
+      "file": "apps/storefront/lib/buyer-server.ts",
+      "line": 921,
+      "source": "expires === null ? null : new Date(expires * 1000).toISOString(),"
+    },
+    {
+      "file": "apps/storefront/lib/payment-contract.ts",
+      "line": 108,
+      "source": "new Date(time).toISOString().slice(0, 19) === value.slice(0, 19)"
+    }
+  ]
+}

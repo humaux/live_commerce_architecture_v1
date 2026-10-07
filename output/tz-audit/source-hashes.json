@@ -1,0 +1,12 @@
+{
+  "base_sha": "3807a3f82169697f837e60c0ebe2fc2fed84a17e",
+  "manifest_sha256": "9bfbed29b0f5d909ee79373c72d6cef6835ef36f39581c6d794a69beab66b6a4",
+  "files": {
+    "apps/admin/lib/ads-model.ts": "dbcbdfb9c3e98c7f125eb3ccb3d61ca1ccd3ca190c266399f8de53c41223993a",
+    "apps/admin/lib/ads-copy.ts": "7dd0edf4fb44501449ae7b1e2bf5ab4797caf647f680926d50b4baa40ffb748f",
+    "tests/admin/ads-model.test.ts": "bc6accbd074e743f482c42ac44be0680ea1f99ffbeca2586e72e62c4cfa4990f",
+    "tests/admin/customers-model.test.ts": "cda515523ae7e079f2ba0794d213b5dd09dd18c8eb349e27624c134b3f27eba0",
+    "tests/admin/ads.spec.ts": "b39249df2bfa2d69de8bf040671e8b85fd768eb565cf12e365cdca3d69808620",
+    "packages/format/src/index.ts": "7c268ca9940e641f88a30e1e59eb4eb3c73b372893bad456864e0ec4751f5e4b"
+  }
+}

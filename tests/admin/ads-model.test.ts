@@ -1,3 +1,6 @@
+// Purpose: validate frozen ADS parsers, input policies, three-locale copy and Taipei report days.
+// Depends on: node:test/assert; ads-model/copy and shared format helpers.
+// Used by: node unit gates and Meta ads browser harness.
 // Unit tests for apps/admin/lib/ads-model.ts and ads-copy.ts (pure; no browser, no network).
 // Covers: every frozen error code + draft status enum, strict parsers (unknown enum = error), money conversion vectors
 // (I05, TWD whole-unit), the draft-input rules of §5.2/U4 and the X7 "no resume" action hints. The browser gate is MA09 (ads-tests).
@@ -5,7 +8,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   accountReady, adsCodes, adsErrorCode, adsLocalCodes, adsManagerHref, adsServerCodes, adsSessionCodes, buildDraftInput, canApprove,
-  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, defaultReportWindow, draftStatuses, emptyForm, epochToLocal,
+  canCopy, canEdit, canEnd, canPause, canPublish, capiBody, connectErrors, copyForm, defaultReportWindow, draftStatuses, emptyForm, epochToLocal, localToEpoch,
   formatMinor, formFromDraft, minorToWhole, opStates, parseConnectState, parseCountries, parseDraft, parseDraftList, parseReport,
   parseSettings, validCapi, validDate, validReportWindow, validSource, wholeToMinor, AdsParseError, type Draft, type DraftForm,
 } from "../../apps/admin/lib/ads-model.ts";
@@ -353,3 +356,19 @@ test("capi body and validation", () => {
   assert.equal(validCapi(true, uuid(4), "bad code"), false);
   assert.equal(validCapi(false, "junk", ""), false);
 });
+
+// Business campaign intervals use the same store wall clock as report days, regardless of viewer timezone.
+test("campaign datetime input and edit roundtrip stay in Asia/Taipei across viewer zones",()=>{
+ const old=process.env.TZ;
+ const cases=[
+  ["2026-10-07T00:00","2026-10-06T16:00:00Z"],
+  ["2027-01-01T00:01","2026-12-31T16:01:00Z"],
+  ["2024-02-29T23:59","2024-02-29T15:59:00Z"],
+  ["2026-03-08T02:30","2026-03-07T18:30:00Z"], // valid Taipei time during Los Angeles's DST gap
+ ];
+ try{for(const tz of ["UTC","America/Los_Angeles","Asia/Taipei","Pacific/Auckland"]){process.env.TZ=tz;
+  for(const [wall,iso] of cases){assert.equal(localToEpoch(wall),Date.parse(iso),`${wall} from ${tz}`);assert.equal(epochToLocal(Date.parse(iso)),wall,`${iso} from ${tz}`);}
+  for(const wall of ["2026-02-30T12:00","2026-01-01T24:00","2026-01-01T12:60","garbage",""])assert.equal(localToEpoch(wall),null);
+ }}finally{if(old===undefined)delete process.env.TZ;else process.env.TZ=old;}
+});
+test("campaign date helper explains the fixed Taipei zone in every locale",()=>{for(const c of Object.values(adsCopy))assert.match(c.fDatesHint,/Asia\/Taipei|台北/);});

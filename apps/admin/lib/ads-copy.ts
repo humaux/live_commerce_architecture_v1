@@ -1,3 +1,6 @@
+// Purpose: Locale-complete ADS copy, including paused-first unbind and public catalog feed recovery.
+// Depends on: ads-model.ts machine codes; @live-commerce/i18n locale type.
+// Used by: Admin ADS components and copy parity gates.
 // Copy for the admin ads page (components/Ads.tsx; BFF `/api/stores/{store}/ads/*` and `/api/ads/meta/*` -> Go internal/httpapi/ads.go).
 // zh-TW is the primary locale (U8), zh-CN and en follow. Every frozen error code has a line in `errors` (the type
 // forces all three locales to carry the same keys). Wording rules: ruling O4 (allowance off), O6 (consent lives in
@@ -84,7 +87,7 @@ const en = {
   fBudgetHint: (currency: string): string => (currency === "TWD" ? "Whole NT$ only; for example 300." : "Up to two decimals; for example 12.50."),
   fStarts: "Starts",
   fEnds: "Ends",
-  fDatesHint: "Local time. Start at least 10 minutes from now; run at most 30 days.",
+  fDatesHint: "Asia/Taipei time (UTC+8). Start at least 10 minutes from now; run at most 30 days.",
   fCountries: "Countries",
   fCountriesHint: "Two-letter codes separated by commas; default TW.",
   fAgeMin: "Minimum age",
@@ -311,7 +314,7 @@ const zhTW: AdsCopy = {
   fBudgetHint: (currency) => (currency === "TWD" ? "僅限整數新台幣，例如 300。" : "最多兩位小數，例如 12.50。"),
   fStarts: "開始時間",
   fEnds: "結束時間",
-  fDatesHint: "以本機時間計。開始時間須在 10 分鐘之後，最長刊登 30 天。",
+  fDatesHint: "以台北時間（UTC+8）計。開始時間須在 10 分鐘之後，最長刊登 30 天。",
   fCountries: "國家／地區",
   fCountriesHint: "兩位字母代碼，以逗號分隔；預設 TW。",
   fAgeMin: "最低年齡",
@@ -531,7 +534,7 @@ const zhCN: AdsCopy = {
   fBudgetHint: (currency) => (currency === "TWD" ? "仅限整数新台币，例如 300。" : "最多两位小数，例如 12.50。"),
   fStarts: "开始时间",
   fEnds: "结束时间",
-  fDatesHint: "按本机时间。开始时间须在 10 分钟之后，最长投放 30 天。",
+  fDatesHint: "按台北时间（UTC+8）。开始时间须在 10 分钟之后，最长投放 30 天。",
   fCountries: "国家／地区",
   fCountriesHint: "两位字母代码，以逗号分隔；默认 TW。",
   fAgeMin: "最低年龄",

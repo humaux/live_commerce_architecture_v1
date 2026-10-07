@@ -1,3 +1,6 @@
+// Purpose: exercise closed customer/finance DTOs and viewer-independent business-day ranges.
+// Depends on: node:test/assert; customers-model and finance UTC+8 contract.
+// Used by: customer/finance node gates and CI.
 // customers-billing-ui: strict parsers for the frozen customers/finance DTOs (apps/admin/lib/customers-model.ts).
 // Fixtures are synthetic (no real buyer data). The real Go shapes are proved by customers-billing-tests (CB09/CB11).
 import assert from "node:assert/strict";
@@ -143,4 +146,15 @@ test("tags and notes are parsed strictly (W6-01B)", () => {
   assert.throws(() => parseCustomerDetail(noNotes, id), "a detail without notes is drift");
   const { tags_revision: _r, ...noRev } = detail();
   assert.throws(() => parseCustomerDetail(noRev, id), "a detail without tags_revision is drift");
+});
+
+test("finance default business-day range is invariant across viewer zones at midnight and leap/year boundaries",()=>{
+ const old=process.env.TZ;
+ const cases=[
+  ["2026-10-06T15:59:59Z","2026-10-06","2026-09-07"],
+  ["2026-10-06T16:00:00Z","2026-10-07","2026-09-08"],
+  ["2026-12-31T16:00:00Z","2027-01-01","2026-12-03"],
+  ["2024-02-28T16:00:00Z","2024-02-29","2024-01-31"],
+ ];
+ try{for(const tz of ["UTC","America/Los_Angeles","Asia/Taipei","Pacific/Auckland"]){process.env.TZ=tz;for(const [iso,today,first] of cases){const now=new Date(iso);assert.equal(financeDay(now),today,`${iso} ${tz}`);assert.equal(financeDay(now,-29),first,`${iso} ${tz} from`);}}}finally{if(old===undefined)delete process.env.TZ;else process.env.TZ=old;}
 });
