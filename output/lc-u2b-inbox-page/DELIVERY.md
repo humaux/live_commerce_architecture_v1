@@ -1,7 +1,7 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
-- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `e5a70499a204c2e227bfc49ed7527a7b90596860`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
+- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `66dd7b038728ad72d5def0e78deef2b48a3d03a0`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
 - Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. Only the requested local trunk merge; no push/deployment.
 - Evidence: **E3 / MOCK for actual-source Node component/hook and delayed-route counterexamples; E1 for TypeScript and harness/parser registration. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. Current source BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN locally. The two prior browser CI failures at 08614fb6 are recorded below, without a runtime acceptance claim.**
 
@@ -121,6 +121,31 @@ Final read-only delivery audit matched all five exit/source/timeout records, 36 
 Final read-only independent security_reviewer (gpt-6.1-sol high) at e5a70499 found no remaining confirmed P0/P1/P2 in this scoped recovery/capability change; Humaux `3a98fcf4-5d0a-4d0d-8c04-cd898800211c`. The review verified unchanged/strengthened assertion sequences and source hashes, and did not independently run browser/Go/PG or real clipboard acceptance.
 
 The imported `inbox-review-host.test.ts` has no standalone assertions; its actual use by both review suites is documented in the Node runner, without adding a vacuous test run. Evidence is **E3 / MOCK for Node actual-source flows**, **E1 for typecheck/registration**; browser/Go/PG/build and visual/exported screenshot checks remain **NOT_RUN locally**. Required GitHub normal gates and same-SHA retain-thread calibration remain pending; calibration must fail INU05, with preserved evidence. Backend A13/A14 availability work remains deferred to LC-B3b.
+
+## PR #8 Foundation Node timing failure (source 66dd7b03)
+
+- Observed [Foundation checks 37632486132](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/actions/runs/37632486132) at the integrator-pushed d313d97c: one uncertain-send test failed with actual 1 / expected 2 POSTs. `gh run view 37632486132 --log-failed` -> **0**, `nodeflake-ci-37632486132.log`. The test now lives at the corresponding case in the split `inbox-review.test.ts`, with the bundle P1/binding P2 handoff already retained.
+- Source chain: `Host.settle()`'s 12 setImmediate turns cannot guarantee WebCrypto/A9/A10 completion. Send finally briefly sets busy=false then immediately starts authority reload; a premature second submit meets the real inFlight guard. Independent test_worker ee4e48bb, clean `codex/lc-u2b-nodeflake-tests` worktree from 30ddeedc, parameterized only the existing uncertain-send case with immediate and 50 ms post-send MOCK A9. Before the waiter change: **exit 1, 1 PASS / 1 RED**, `nodeflake-red.log`; latest submit helper correctly catches busy earlier than the old remote 1!=2 assertion. The delay is adversarial fixture I/O, never a waiter sleep. This reproduces the readiness defect; the remote count alone does not independently prove the full CI schedule.
+- `inbox-review-host.test.ts:93` adds a bounded root-host `waitFor` driven by real state-setter commit notifications. A queued microtask coalesces send-finally's transient busy=false followed by reload=true; success/timeout/disposal clean observers/timers. The target waits for initial authorized A9+A10 completion, then full first-send revalidation and enabled reply control, then retry revalidation. It uses **no fixed ticks**. Exact 2 sends, identical bodies/keys and the same receipt object remain asserted for both immediate/delayed cases. The generic helper's unrelated settle checkpoints remain unchanged; root-only event waiting is not claimed to observe nested child commits.
+- The first candidate readiness predicate incorrectly required an enabled reply before the initial empty draft; its explicit timeout failure is retained in `nodeflake-waiter-initial-condition.log` as setup evidence. The corrected initial predicate waits for loaded DM plus idle A9/A10, then the existing input/action assertions remain. Focused immediate/delayed tests now **0, 2/2**, `nodeflake-green.log`.
+- **Repeated proof on immutable 66dd7b03:** 50 complete 14-case review-suite processes normally and 50 under `nice -n 19`, all **exit 0, 14/14 each**, totaling **1,400 passing cases** (200 uncertain-send scenarios). Logs: `nodeflake-repeat-normal.log`, `nodeflake-repeat-nice19.log`; per-run source/exit/timeout/count records and exact argv: `nodeflake-repeat-results.json`. Elapsed 62.255 seconds. Each process had a 30-second timeout and 5-second termination grace; supervised exec55893 ended.
+
+| Exact command | Exit / evidence |
+| --- | --- |
+| `node --test --experimental-strip-types tests/admin/inbox-review.test.ts` (50 runs) | **0 each, 50/50**, `nodeflake-repeat-normal.log` |
+| `nice -n 19 node --test --experimental-strip-types tests/admin/inbox-review.test.ts` (50 runs) | **0 each, 50/50**, `nodeflake-repeat-nice19.log` |
+| `node --test --experimental-strip-types tests/admin/inbox-review.test.ts tests/admin/inbox-review-recovery.test.ts` | **0, 37/37**, `nodeflake-components.log` |
+| `bash scripts/dev/test-node.sh` | **0, 679/679**, `nodeflake-node.log`; optional R04 binary NOT_RUN |
+| `bash scripts/dev/check-gates.sh` | **0**, `nodeflake-check-gates.log`; 79 modes / 1219 foundation names / headers |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | **0**, `nodeflake-admin-typecheck.log` |
+| `pnpm exec tsc --noEmit -p output/lc-u2b-inbox-page/pr8-test-tsconfig.json` | **0**, `nodeflake-test-typecheck.log` |
+| `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` | **0**, `nodeflake-pr-plan.json`; 49 modes, deploy=false |
+
+All final local gates ran on unchanged **66dd7b038728ad72d5def0e78deef2b48a3d03a0**, supervised exec45647 with 300-second timeout and 5-second grace; `nodeflake-gates.json` records exact commands/outcomes. Thirty unit source hashes are current. Independent read-only source review `9a7a7c17-33fc-4f41-a551-6f33eccfeb21` found no confirmed scoped P0/P1/P2 and no weakened count/body/key/receipt assertions; it did not independently run tests or establish a remote runtime cause.
+
+Final read-only evidence audit matched the 100-run manifests/logs, five final command records, all counts and source hashes with no factual mismatch. `git diff --check` and ancestry checks for 26e9aec2/30ddeedc each exited **0**, captured in `nodeflake-static.log`.
+
+Production code has **no delta from 30ddeedc**: bundle-link P1 + UNKNOWN/expiry guards, provider-binding P2, A14 disabled reason, trunk merge **26e9aec2**, and `output/playwright/inbox-ui` + sanitized Go failure logs are all included. Evidence is **E3 / MOCK for local Node**; current browser/Go/PG/build/real clipboard and same-SHA INU05 calibration remain **NOT_RUN locally**. Integrator pushes this combined handoff and runs the required set. No push, production or live-key action by the author.
 
 ## Independent work and custody
 
