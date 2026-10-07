@@ -1,3 +1,10 @@
+// Purpose: the River worker of external_operation_v1: claim -> policy check -> exactly one Dispatch (first claim only) or Reconcile callback -> lease-fenced completion, with a bounded
+//   reconcile budget counted as generation - generation_floor (contracts/external-dispatcher-v1.md, external-operation-v1.md "Amendment W6-05B").
+// Depends on: Service.Claim/Complete (SQL integration.claim_operation / complete_operation, migrations 0008/0096), integration.operations (read incl. generation_floor, migration 0159),
+//   DispatchRoute callbacks registered by cmd/claims-worker and cmd/ads-worker, platform.ValidateWorkerPool, River (Work/Timeout/NextRetry, JobSnooze/JobCancel).
+// Used by: cmd/claims-worker and cmd/ads-worker (NewDispatcher), tests/foundation dispatcher/authority gates.
+// Invariants: I06/I07 -- an UNKNOWN/ACKNOWLEDGED/expired-dispatch claim is reconcile-only, never dispatch; no callback runs from an uncommitted claim; only fixed machine codes escape.
+
 package core
 
 import (
@@ -249,7 +256,7 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 	if terminalOperationState(operation.State) {
 		return nil
 	}
-	if operation.Generation >= d.options.MaxGenerations && operation.ResultCode == "reconcile_budget_exhausted" && operation.LeaseUntil == nil {
+	if operation.budgetUsed() >= d.options.MaxGenerations && operation.ResultCode == "reconcile_budget_exhausted" && operation.LeaseUntil == nil {
 		return river.JobCancel(errBudgetExhausted)
 	}
 
@@ -283,7 +290,7 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 
 	// A previous max-generation attempt may have died before persisting its
 	// terminal queue disposition. This generation is cleanup-only.
-	if operation.Generation > d.options.MaxGenerations {
+	if operation.budgetUsed() > d.options.MaxGenerations {
 		return d.completeAndFinish(ctx, operation, claim, Outcome{
 			State:             "UNKNOWN",
 			Code:              "reconcile_budget_exhausted",
@@ -380,7 +387,7 @@ func (d *Dispatcher) runOperation(ctx context.Context, operationID string) error
 	if (outcome.State == "UNKNOWN" || outcome.State == "ACKNOWLEDGED") && outcome.ProviderReference == "" {
 		outcome.ProviderReference = operation.ProviderReference
 	}
-	exhausted := operation.Generation >= d.options.MaxGenerations &&
+	exhausted := operation.budgetUsed() >= d.options.MaxGenerations &&
 		(outcome.State == "UNKNOWN" || outcome.State == "ACKNOWLEDGED")
 	if exhausted {
 		outcome.Code = "reconcile_budget_exhausted"
@@ -427,7 +434,7 @@ func (d *Dispatcher) safeDatabaseError(ctx context.Context, err error) error {
 
 func (d *Dispatcher) completeAmbiguous(ctx context.Context, operation Operation, claim ClaimResult, code string) error {
 	outcome := Outcome{State: "UNKNOWN", Code: code, ProviderReference: operation.ProviderReference}
-	exhausted := operation.Generation >= d.options.MaxGenerations
+	exhausted := operation.budgetUsed() >= d.options.MaxGenerations
 	if exhausted {
 		outcome.Code = "reconcile_budget_exhausted"
 	}
@@ -538,7 +545,7 @@ func (d *Dispatcher) finalDispatchGate(ctx context.Context, operation Operation,
 
 const operationQuery = `SELECT id::text,tenant_id::text,store_id::text,principal_id::text,binding_id::text,
 	binding_version,provider,external_asset_id,purpose,action,request,state,generation,lease_mode,lease_until,
-	result_code,provider_reference FROM integration.operations WHERE id=$1 AND actor_kind='MERCHANT'`
+	result_code,provider_reference,generation_floor FROM integration.operations WHERE id=$1 AND actor_kind='MERCHANT'`
 
 type rowScanner interface {
 	Scan(...any) error
@@ -548,7 +555,7 @@ func scanOperation(row rowScanner) (operation Operation, err error) {
 	err = row.Scan(&operation.ID, &operation.TenantID, &operation.StoreID, &operation.PrincipalID, &operation.BindingID,
 		&operation.BindingVersion, &operation.Provider, &operation.ExternalAssetID, &operation.Purpose, &operation.Action,
 		&operation.Request, &operation.State, &operation.Generation, &operation.LeaseMode, &operation.LeaseUntil,
-		&operation.ResultCode, &operation.ProviderReference)
+		&operation.ResultCode, &operation.ProviderReference, &operation.GenerationFloor)
 	return operation, err
 }
 

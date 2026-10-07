@@ -747,13 +747,14 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	for _, table := range []string{"checkout.orders", "checkout.payment_attempts", "payments.provider_observations", "integration.operations", "integration.operation_events", "inventory.reservations", "inventory.ledger"} {
 		business[table] = lriRows(t, f, table, "")
 	}
-	// Apply includes forward0035, which adds one nullable media identity column.
+	// Apply includes forward0035, which adds one nullable media identity column, and 0159 (W6-05B operations ledger), which adds the
+	// defaulted dispatcher budget base generation_floor (DEFAULT 0, only ever raised by an operator query/retry).
 	// Preserve exact full-row equality: every historical operation must retain
-	// every old value and acquire precisely media_attempt_id:null, never a link.
+	// every old value and acquire precisely media_attempt_id:null and generation_floor:0, never a link.
 	var expectedOperations string
 	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
-	 value || '{"media_attempt_id":null}'::jsonb
-	 ORDER BY (value || '{"media_attempt_id":null}'::jsonb)::text),'[]'::jsonb)::text
+	 value || '{"media_attempt_id":null,"generation_floor":0}'::jsonb
+	 ORDER BY (value || '{"media_attempt_id":null,"generation_floor":0}'::jsonb)::text),'[]'::jsonb)::text
 	 FROM jsonb_array_elements($1::jsonb)`, business["integration.operations"]).Scan(&expectedOperations); err != nil {
 		t.Fatal("expected additive media identity", err)
 	}

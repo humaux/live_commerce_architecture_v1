@@ -128,6 +128,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	operationJobs, err := buildOperationJobs(pool)
+	if err != nil {
+		return err
+	}
 	refundJobs, err := newMerchantRefundJobs(pool)
 	if err != nil {
 		return err
@@ -180,6 +184,7 @@ func run() error {
 	handler := httpapi.NewHandler(pool, httpapi.Options{SessionStoreList: identityConfig.enabled, Accounts: accountService, Studio: studioConfig.enabled, Live: studioPlanner,
 		ClaimLabels: claimsConfig.labels, RefundJobs: refundJobs, Ads: adsService, MetaConnect: metaConnect, MetaHealth: metaHealth, Inbox: inboxService, MsgTemplates: msgtemplates.NewService(), Billing: billingService, CVS: cvs.Merchant, PaymentEnvironment: paymentEnvironment, PaymentProfile: os.Getenv("COMMERCE_PAYMENT_PROFILE"), ManualOrders: cvs.Manual, ForBuyer: forBuyer,
 		LiveFlowJobs:    liveFlowJobs,
+		OperationJobs:   operationJobs,
 		CommentStream:   commentStream,
 		StoreBaseDomain: strings.ToLower(strings.TrimSpace(os.Getenv("LC_STORE_BASE_DOMAIN")))})
 	tlsAskHandler, err := buildTLSAskHandler(pool)

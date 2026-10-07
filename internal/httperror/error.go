@@ -87,6 +87,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"binding_disabled":         "The Meta ads connection is not enabled.",
 		"source_not_owned":         "That post does not belong to this store's connection.",
 		"product_not_published":    "The product is not published.",
+		// meta-ads-v1 Amendment W6-06B (ad-account unbind): the two 409 refusals of POST .../ads/meta/unbind.
+		"operations_in_flight": "Meta ads operations are still in progress; wait for them to finish and try again.",
+		"binding_in_use":       "Pause the running Meta ads campaigns of this ad account before disconnecting it.",
 		// meta-connect (merchant Facebook Page / Instagram connect, internal/metaconnect frozenStatus): codes not already listed above;
 		// internal/metaconnect TestFrozenCodesSurviveHTTPError guards the drift.
 		"state_used":         "That Meta connection attempt was already completed.",
@@ -263,6 +266,23 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		// live-console-v1 §5 / §11 A16 (unit LC-B6): order made for a buyer from the inbox.
 		"bundle_already_ordered": "These claims already have an order.",
 		"bundle_buyer_mismatch":  "These claims belong to a different buyer than this conversation.",
+		// external-operation-v1 Amendment W6-05B (unit w6-05b-operations-ledger): the failed / UNKNOWN operations ledger actions. Every
+		// reason code of integration.ledger_capability must be listed or the merchant sees "internal" (internal/httpapi operations_test.go guards the drift).
+		"lane_unsupported":     "This kind of operation cannot be managed here.",
+		"not_in_doubt":         "This operation is not waiting for a provider answer.",
+		"lease_active":         "This operation is being worked on right now; try again shortly.",
+		"binding_changed":      "The connection this operation used was changed or disabled.",
+		"query_in_progress":    "A status check for this operation is already running.",
+		"query_too_soon":       "A status check was already requested in the last minute.",
+		"already_dispatched":   "This operation may already have reached the provider and cannot be cancelled.",
+		"operation_closed":     "This operation is already finished.",
+		"already_succeeded":    "This operation already succeeded.",
+		"reconcile_first":      "Check the provider's status first; an operation with an unknown result is never sent again.",
+		"retry_not_supported":  "This kind of operation cannot be retried here; start a new attempt from its own page.",
+		"already_queued":       "This operation is already queued.",
+		"operation_changed":    "This operation changed since it was loaded.",
+		"protective_operation": "This operation protects your account (for example it pauses an ad) and cannot be cancelled here.",
+		"query_limit":          "This operation has been checked too many times today; try again later.",
 	}
 	message, ok := messages[code]
 	if !ok {
