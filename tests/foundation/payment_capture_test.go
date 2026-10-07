@@ -257,6 +257,20 @@ func TestBuyerPaymentCaptureACLAndObservationBinding(t *testing.T) {
 			}
 		}
 	}
+	// 0162 (cancel-closes-work-item): the merchant-cancel definer owner (commerce_checkout_writer) alone holds DELETE on the work-item table;
+	// SELECT/INSERT + column UPDATE(state) (0018) are unchanged and nobody gained a wider table privilege.
+	for priv, want := range map[string]string{"DELETE": "commerce_checkout_writer", "UPDATE": "", "TRUNCATE": "", "REFERENCES": "", "TRIGGER": ""} {
+		var got string
+		if e := q.f.owner.QueryRow(context.Background(), `SELECT coalesce(string_agg(a.grantee::regrole::text,',' ORDER BY a.grantee::regrole::text),'')
+			FROM pg_class c, aclexplode(c.relacl) a WHERE c.oid='fulfillment.payment_work_items'::regclass AND a.grantee<>c.relowner AND a.privilege_type=$1`, priv).Scan(&got); e != nil || got != want {
+			t.Errorf("fulfillment.payment_work_items table-level %s grantees = %q (err %v), want %q", priv, got, e, want)
+		}
+	}
+	var stateUpdate, orderUpdate bool
+	if e := q.f.owner.QueryRow(context.Background(), `SELECT has_column_privilege('commerce_checkout_writer','fulfillment.payment_work_items','state','UPDATE'),
+		has_column_privilege('commerce_checkout_writer','fulfillment.payment_work_items','order_id','UPDATE')`).Scan(&stateUpdate, &orderUpdate); e != nil || !stateUpdate || orderUpdate {
+		t.Errorf("commerce_checkout_writer UPDATE on work items: state=%v order_id=%v err=%v, want state only", stateUpdate, orderUpdate, e)
+	}
 	if e := pcApply(q.f.runtime, q.result.AttemptID, hash); sqlState(e) != "42501" {
 		t.Fatalf("merchant direct apply not denied %v", e)
 	}
