@@ -1,0 +1,5 @@
+--- FAIL: TestBuyerMailConfig (0.00s)
+    main_test.go:100: buyer mail alone must not enable merchant alerts
+FAIL
+FAIL	livecommerce/cmd/expiry-worker	0.997s
+FAIL

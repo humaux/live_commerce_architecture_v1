@@ -32,13 +32,20 @@ The integrator binds CI and the review verdict to the **final release SHA**, inc
 [collected delivery notes](../output/deploy-prep-r3/CHECKLIST.md) and
 [release gate plan](../output/deploy-prep-r3/RELEASE-GATE-PLAN.md). No provider credentials belong in these documents.
 
-Release order after approval: backup DB/config/key custody, stop API/admin/storefront and workers behind the existing
-maintenance response, **migrate → provision-logins → API/workers → admin + storefront → smoke/readback**. Use one
-release image tag for every process. Product-media-v2 migration 0149 changes the media contract: neither old admin/API
-against the migrated DB nor a new storefront against the old schema is supported during the swap. Migration 0159 must
-precede API/claims-worker/ads-worker. After migrations, application rollback to a schema-incompatible image is refused:
-forward-fix, or an owner-approved tested restore of the backup. `deploy.sh upgrade` already stops the processes before
-migration; this unit never runs it.
+Before an owner-approved `deploy.sh upgrade <tag>`, save a mode-0600 tarball of `/etc/live-commerce` (including key custody)
+at `$LC_BACKUP_DIR/config-pre-upgrade-<tag>.tar.gz`, then re-run `host-setup.sh` or prepare the export directory with
+`install -d -o 65532 -g 65532 -m 0700 "$LC_STATE_DIR/settlements"`. Run `secrets-init.sh` in its default **add-missing-only**
+mode, without `--rederive`, and require preflight green against the prepared release image tag. Keep the config tarball
+restricted to the operator; never copy its contents into logs or this repo.
+
+`deploy.sh upgrade` is the executor: preflight → automatic `pg-ops.sh backup --tag pre-upgrade-<tag>` → stop all old
+API/admin/storefront and worker processes behind maintenance → migrate → provision-logins → record one release tag →
+one `up -d` for the active services → smoke/readback. It does **not** separately enforce API-before-admin startup.
+The rollback point is that automatic database dump plus the pre-upgrade `/etc/live-commerce` tarball. Product-media-v2
+migration 0149 forbids mixing old admin/API with the migrated DB or a new storefront with the old schema; stopping all
+old processes before migration and `up -d` provides the swap barrier. Migration 0159 precedes the new workers/API.
+Application rollback is permitted only when the saved migration-ledger count matches; otherwise use a forward fix or
+a separately owner-approved tested restore. This unit executes none of these host operations.
 
 Before any R3 `stripe-admin` command on an existing installation, the owner/operator prepares
 `$LC_STATE_DIR/settlements` with `install -d -o 65532 -g 65532 -m 0700 "$LC_STATE_DIR/settlements"`.
@@ -111,11 +118,13 @@ endpoint with no authorization, never a token-bearing feed URL or real unbind.
 
 ### R3 configuration defaults
 
-`api.env`: `COMMERCE_PAYUNI_NOTIFY_ENABLED=0` (owner cancelled PAYUNi); preflight refuses enabling it and provisions no
-PAYUNi ingress login. `claims-worker.env`: empty `COMMERCE_META_PAGE_APP_ID` disables the optional Page health probe;
+`api.env`: `COMMERCE_PAYUNI_NOTIFY_ENABLED=0` is only a P06 stale-config tripwire; no runtime reads it because PAYUNi code
+was removed, and no ingress login is provisioned. `claims-worker.env`: empty `COMMERCE_META_PAGE_APP_ID` disables the optional Page health probe;
 set only a verified numeric app id. API and claims-worker share empty `COMMERCE_META_ADVANCED_ACCESS` and
 `COMMERCE_META_DM_RECEIVER_CONFIRMED=0`; update them together only from the owner's review/probe evidence.
-`COMMERCE_ADMIN_ORIGIN` is derived from `LC_ADMIN_HOST` for expiry-worker health-alert links. Existing claims bridge URL,
+`LC_MERCHANT_ALERT_MAIL=0` is a separate owner opt-in: an admin origin or buyer-mail flag does not enable merchant alerts.
+At 1, it requires the app profile and the same SMTP mailbox/secret validation; buyer and merchant loops are independent.
+`COMMERCE_ADMIN_ORIGIN` is derived from `LC_ADMIN_HOST` and used only by an opted-in merchant loop. Existing claims bridge URL,
 token/cursor custody and payload rings remain in Compose/manifest; no host port or new secret literal is needed.
 
 Smoke static S48 executes MOCK operator/env/probe controls. Full S49 uses unauthenticated synthetic requests on API

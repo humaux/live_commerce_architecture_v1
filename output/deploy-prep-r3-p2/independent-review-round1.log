@@ -1,0 +1,16 @@
+task_id: deploy-prep-r3-p2-sub-independent-review
+base_commit: 0d6b4b5f214b99589e459ec6a02cd75a54bf5933
+source edits: none
+initial review only; tests NOT_RUN (patch pending)
+ops-admin.sh:92-93 process LC_* authority inherits caller precedence via lib.sh:65; read pair with lc_env_file_get instead
+Node:102-108 is existing bypass-positive; convert to file-positive and add LC caller-only/disabled/malformed partial-file refusal controls
+SL06:562-567 file authority valid; :682-683 and :793-797 COMMERCE-only spoof checks remain valid; add LC_* spoof checks
+Node:87 must assert service platform-admin + /app/bin/platform-admin + exact subcommand; :117 must require present nonempty audit log before grep
+P02 preflight:109-120 add missing/symlink/wrong uid/gid/mode cases; P08:461-467 permission grammar and API-worker mismatch negatives; full smoke add S10 ids and report inventory
+Optional export-only service needs Compose, wrapper service mapping, oneshot health exclusion, manifest custody and tests/runbook changes; defer unless owner specifically needs this scope
+e32d37427ccfe094b2cb2ec604430ee5b90f045517aefdae5b10aef4fb34b907  deploy/scripts/ops-admin.sh
+a0f5d708a142114c751c9805659354fcd3f905c08130893faebcadb0de8a98ad  deploy/scripts/lib.sh
+8a2c60bc68fa792ded48d89010994064b5ff48dadac2ad9fa9cac62dbdf52412  deploy/scripts/preflight.sh
+548c107133c82fbc62b74c7ebecd3233ac7e8a1801dbb41dfa449ef7d95fa606  deploy/scripts/smoke.sh
+23e5a494a11cc052f6afd227fb08644cb30a36cef6b75c613abb151950cfadf2  tests/deploy/deploy-prep-r3.test.mjs
+de7a5b131086279f857ec446ccca402b8f922bfca993ecf449fbc6f848244369  tests/foundation/stripe_live_process_test.go

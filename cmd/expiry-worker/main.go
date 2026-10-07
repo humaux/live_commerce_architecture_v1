@@ -1,3 +1,6 @@
+// Purpose: run expiry jobs and independently opted-in buyer/merchant SMTP loops.
+// Depends on: checkout/jobqueue/notify/platform, worker DSN, COMMERCE_BUYER_MAIL_ENABLED and COMMERCE_MERCHANT_ALERT_MAIL.
+// Used by: expiry-worker Compose process and cmd/expiry-worker configuration tests.
 package main
 
 import (
@@ -27,7 +30,8 @@ type workerConfig struct {
 	enabled     bool
 	dsn         string
 	concurrency int
-	mail        *mailConfig // nil = no buyer mail loop (COMMERCE_BUYER_MAIL_ENABLED unset or 0)
+	mail        *mailConfig // nil when neither mail loop is opted in
+	buyerMail   bool
 }
 
 func main() {
@@ -67,13 +71,24 @@ func loadConfig(getenv func(string) string) (workerConfig, error) {
 	switch getenv("COMMERCE_BUYER_MAIL_ENABLED") {
 	case "", "0":
 	case "1":
-		m, err := loadMailConfig(getenv)
+		config.buyerMail = true
+	default:
+		return workerConfig{}, errWorkerConfig
+	}
+	merchantMail := false
+	switch getenv("COMMERCE_MERCHANT_ALERT_MAIL") {
+	case "", "0":
+	case "1":
+		merchantMail = true
+	default:
+		return workerConfig{}, errWorkerConfig
+	}
+	if config.buyerMail || merchantMail {
+		m, err := loadMailConfig(getenv, merchantMail)
 		if err != nil {
 			return workerConfig{}, err
 		}
 		config.mail = m
-	default:
-		return workerConfig{}, errWorkerConfig
 	}
 	return config, nil
 }
@@ -93,17 +108,19 @@ func run(ctx context.Context, getenv func(string) string) error {
 		return err
 	}
 	// notify.Worker: the buyer / merchant mail outbox loop (mail.go), plus the meta connection-health owner mail (0125 §5.2) when
-	// COMMERCE_ADMIN_ORIGIN is set. Both stop with the River client and are waited for, so a record in flight is written before the pool closes.
+	// COMMERCE_MERCHANT_ALERT_MAIL is opted in. Both stop with River and finish before the pool closes.
 	loopCtx, stopLoop := context.WithCancel(ctx)
 	var loops sync.WaitGroup
 	if config.mail != nil {
-		nw, err := notify.NewWorker(pool, config.mail.smtp, config.mail.dailyCap)
-		if err != nil {
-			stopLoop()
-			return errWorkerConfig
+		if config.buyerMail {
+			nw, err := notify.NewWorker(pool, config.mail.smtp, config.mail.dailyCap)
+			if err != nil {
+				stopLoop()
+				return errWorkerConfig
+			}
+			loops.Add(1)
+			go func() { defer loops.Done(); nw.Run(loopCtx) }()
 		}
-		loops.Add(1)
-		go func() { defer loops.Done(); nw.Run(loopCtx) }()
 		if config.mail.adminOrigin != "" {
 			mw, err := notify.NewMerchantWorker(pool, config.mail.smtp, config.mail.dailyCap, config.mail.adminOrigin)
 			if err != nil {

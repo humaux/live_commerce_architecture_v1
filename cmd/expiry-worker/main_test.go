@@ -1,3 +1,6 @@
+// Purpose: test worker config, mail opt-ins and secret input refusals without production services.
+// Depends on: expiry-worker loadConfig, fixture environment values and temporary secret files.
+// Used by: cmd/expiry-worker unit/race gates and integrator CI.
 package main
 
 import (
@@ -90,12 +93,16 @@ func TestBuyerMailConfig(t *testing.T) {
 	if config, err = loadConfig(read(off)); err != nil || config.mail != nil {
 		t.Fatal("flag 0 must leave the loop off without reading SMTP variables")
 	}
-	// meta connection-health owner mail (0125 §10): a valid admin origin turns the merchant-alert loop on.
+	// A configured public origin must not opt the owner into merchant alerts.
 	withAdmin := map[string]string{}
 	for k, v := range base {
 		withAdmin[k] = v
 	}
 	withAdmin["COMMERCE_ADMIN_ORIGIN"] = "https://admin.example.test"
+	if config, err = loadConfig(read(withAdmin)); err != nil || config.mail.adminOrigin != "" {
+		t.Fatal("buyer mail alone must not enable merchant alerts")
+	}
+	withAdmin["COMMERCE_MERCHANT_ALERT_MAIL"] = "1"
 	if config, err = loadConfig(read(withAdmin)); err != nil || config.mail.adminOrigin != "https://admin.example.test" {
 		t.Fatalf("valid admin origin rejected: %v", err)
 	}
@@ -118,12 +125,62 @@ func TestBuyerMailConfig(t *testing.T) {
 			values[k] = v
 		}
 		values[tc.field] = tc.value
+		if tc.field == "COMMERCE_ADMIN_ORIGIN" {
+			values["COMMERCE_MERCHANT_ALERT_MAIL"] = "1"
+		}
 		_, err := loadConfig(read(values))
 		if !errors.Is(err, errWorkerConfig) {
 			t.Fatalf("%s=%q accepted", tc.field, tc.value)
 		}
 		if strings.Contains(err.Error(), smtpSecret) || strings.Contains(err.Error(), "smtp.example.test") {
 			t.Fatalf("%s leaked a value in the error", tc.field)
+		}
+	}
+}
+
+// TestMerchantAlertMailOptIn checks both independent flags without a DB or SMTP send.
+func TestMerchantAlertMailOptIn(t *testing.T) {
+	for _, tc := range []struct {
+		buyer, merchant, origin            string
+		wantBuyer, wantMerchant, wantError bool
+	}{
+		{"1", "", "https://admin.example.test", true, false, false},
+		{"1", "0", "http://ignored.invalid", true, false, false},
+		{"1", "1", "https://admin.example.test", true, true, false},
+		{"0", "1", "https://admin.example.test", false, true, false},
+		{"0", "0", "https://admin.example.test", false, false, false},
+		{"1", "yes", "https://admin.example.test", false, false, true},
+		{"0", "01", "https://admin.example.test", false, false, true},
+		{"0", "1", "", false, false, true},
+	} {
+		values := map[string]string{
+			"COMMERCE_EXPIRY_WORKER_ENABLED": "1", "COMMERCE_EXPIRY_WORKER_DATABASE_URL": "postgres://fixture@localhost/test",
+			"COMMERCE_BUYER_MAIL_ENABLED": tc.buyer, "COMMERCE_MERCHANT_ALERT_MAIL": tc.merchant,
+			"COMMERCE_ADMIN_ORIGIN": tc.origin, "COMMERCE_SMTP_HOST": "smtp.example.test",
+			"COMMERCE_SMTP_USERNAME": "mailer@example.test", "COMMERCE_SMTP_PASSWORD": "fixture-password-for-config-only",
+			"COMMERCE_MAIL_FROM": "mailer@example.test",
+		}
+		cfg, err := loadConfig(func(name string) string {
+			if name == "COMMERCE_ADMIN_ORIGIN" && tc.merchant != "1" {
+				t.Fatal("disabled alerts must not read the admin origin")
+			}
+			return values[name]
+		})
+		if tc.wantError {
+			if !errors.Is(err, errWorkerConfig) {
+				t.Fatal("invalid alert configuration accepted")
+			}
+			continue
+		}
+		if err != nil || cfg.buyerMail != tc.wantBuyer {
+			t.Fatal("wrong buyer mail opt-in")
+		}
+		if tc.wantBuyer || tc.wantMerchant {
+			if cfg.mail == nil || (cfg.mail.adminOrigin != "") != tc.wantMerchant {
+				t.Fatal("wrong merchant mail opt-in")
+			}
+		} else if cfg.mail != nil {
+			t.Fatal("SMTP config loaded when both loops are off")
 		}
 	}
 }

@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,6 +38,70 @@ function setKey(file, key, value) {
   writeFileSync(file, re.test(s) ? s.replace(re, `${key}=${value}`) : `${s}\n${key}=${value}\n`);
 }
 
+function preflightRules(dir) {
+  const r = run("bash", [`${deploy}/scripts/preflight.sh`, "--skip-images"], cleanEnv(dir, { LC_PREFLIGHT_VERBOSE: "1" }));
+  const lines = (r.stdout + r.stderr).split("\n").filter(l => /^P\d+ (PASS|FAIL|WARN) /.test(l));
+  assert.ok(lines.length > 5, "preflight must evaluate rules, not silently exit");
+  return lines;
+}
+
+test("P02 settlements directory rejects missing/link/owner/group/mode with a valid control", () => {
+  const text = readFileSync(`${deploy}/scripts/preflight.sh`, "utf8");
+  const code = text.slice(text.indexOf("export_dir ="), text.indexOf('gid = int(E.get("LC_SECRETS_GID"'));
+  assert.ok(code.includes('rec("P02"'), "P02 directory rule missing");
+  for (const label of ["valid", "missing", "link", "owner", "group", "mode"]) fixture(dir => {
+    const target = `${dir}/state/settlements`;
+    if (label !== "missing") {
+      if (label === "link") {
+        mkdirSync(`${dir}/state/real`, { mode: 0o700 });
+        symlinkSync(`${dir}/state/real`, target);
+      } else mkdirSync(target, { mode: 0o700 });
+      if (label === "mode") chmodSync(target, 0o755);
+    }
+    // Actual existence/link/mode; MOCK only uid/gid because the local test user cannot chown to 65532.
+    const script = `import os,stat,json\nfrom types import SimpleNamespace\nE={"LC_STATE_DIR":${JSON.stringify(`${dir}/state`)}}\ntarget=${JSON.stringify(target)}\noriginal_stat=os.stat\ndef scoped_stat(p,*a,**kw):\n s=original_stat(p,*a,**kw)\n if str(p)==target: return SimpleNamespace(st_mode=s.st_mode,st_uid=${label === "owner" ? 123 : 65532},st_gid=${label === "group" ? 123 : 65532})\n return s\nos.stat=scoped_stat\nrows=[]\ndef rec(rule,ok,name): rows.append([rule,ok,name])\n${code}\nprint(json.dumps(rows))\n`;
+    const r = run("python3", ["-c", script], cleanEnv(dir));
+    assert.equal(r.status, 0, r.stderr);
+    const rows = JSON.parse(r.stdout);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0][0], "P02");
+    assert.equal(rows[0][1], label === "valid", label);
+  });
+});
+
+test("preflight health permission grammars and API/worker consistency fail closed", () => fixture(dir => {
+  const api = `${dir}/env/api.env`, worker = `${dir}/env/claims-worker.env`;
+  const findings = () => preflightRules(dir).filter(l => /ADVANCED_ACCESS|capability flags match/.test(l));
+  assert.ok(findings().every(l => l.includes(" PASS ")), "empty pre-review defaults must pass");
+  for (const bad of ["Pages_read", "pages.read", "pages_read,,pages_write", "pages_read, pages_write", " pages_read"]) {
+    setKey(api, "COMMERCE_META_ADVANCED_ACCESS", bad);
+    assert.ok(findings().some(l => l.startsWith("P08 FAIL COMMERCE_META_ADVANCED_ACCESS")), "invalid grammar accepted");
+  }
+  setKey(api, "COMMERCE_META_ADVANCED_ACCESS", "pages_read,pages_write");
+  assert.ok(findings().some(l => l.startsWith("P08 FAIL Meta health capability flags match")), "permission mismatch accepted");
+  setKey(worker, "COMMERCE_META_ADVANCED_ACCESS", "pages_read,pages_write");
+  assert.ok(findings().every(l => l.includes(" PASS ")), "matching valid permissions refused");
+  setKey(api, "COMMERCE_META_DM_RECEIVER_CONFIRMED", "1");
+  assert.ok(findings().some(l => l.startsWith("P08 FAIL Meta health capability flags match")), "DM mismatch accepted");
+}));
+
+test("merchant alert flag is explicit 0|1 and independently requires SMTP", () => fixture(dir => {
+  const f = `${dir}/compose.env`;
+  for (const [k,v] of Object.entries({ LC_BUYER_MAIL_ENABLED: "0", LC_PASSWORD_LOGIN_ENABLED: "0", LC_ALERT_EMAIL: "", LC_ALERT_WEBHOOK_URL: "", LC_SMTP_HOST: "", LC_SMTP_USERNAME: "", LC_MAIL_FROM: "" })) setKey(f,k,v);
+  const rules = () => preflightRules(dir);
+  assert.ok(rules().some(l => l.startsWith("P06 PASS LC_MERCHANT_ALERT_MAIL")), "default-off control missing");
+  for (const v of ["", "yes", "01", "-1"]) {
+    setKey(f,"LC_MERCHANT_ALERT_MAIL",v);
+    assert.ok(rules().some(l => l.startsWith("P06 FAIL LC_MERCHANT_ALERT_MAIL")), "invalid opt-in flag accepted");
+  }
+  setKey(f,"LC_MERCHANT_ALERT_MAIL","1");
+  assert.ok(rules().some(l => l.startsWith("P08 FAIL LC_SMTP_HOST")), "merchant-only mail skipped SMTP validation");
+  setKey(f,"LC_SMTP_HOST","smtp.example.test"); setKey(f,"LC_SMTP_USERNAME","sender@example.test"); setKey(f,"LC_MAIL_FROM","sender@example.test");
+  assert.ok(rules().some(l => l.startsWith("P09 FAIL commerce_smtp_password")), "missing SMTP secret accepted");
+  writeFileSync(`${dir}/secrets/commerce_smtp_password`,"fixture-smtp-config-only-password\n");
+  assert.ok(rules().some(l => l.startsWith("P09 PASS commerce_smtp_password")), "valid merchant-only SMTP control refused");
+}));
+
 // Keep the original YAML for the export bind: compose-go's older JSON encoder omits false,
 // while omitting create_host_path in YAML can default to true. Never infer safety from JSON alone.
 function exportBindYAML() {
@@ -66,7 +130,7 @@ test("export bind accepts omitted JSON false but rejects unsafe source/config mu
 });
 
 test("sanctioned operator allowlist and fail-closed gates (fake docker, no network)", () => fixture((dir) => {
-  writeFileSync(`${dir}/bin/docker`, '#!/usr/bin/env bash\nprintf "%s\\n" "$@" >"$STUB_LOG"\nexit "${STUB_EXIT:-0}"\n', { mode: 0o755 });
+  writeFileSync(`${dir}/bin/docker`, '#!/usr/bin/env bash\nprintf "%s\\n" "$@" >"$STUB_LOG"\nif [[ "${CHECK_FILE_PAIR:-0}" == 1 ]]; then [[ "${COMMERCE_STRIPE_LIVE_ENABLED:-}" == 1 && "${COMMERCE_STRIPE_LIVE_APPROVAL_REF:-}" == MOCK_FILE_APPROVAL_R3 ]] || exit 9; fi\nexit "${STUB_EXIT:-0}"\n', { mode: 0o755 });
   // Extract only fixture construction; never execute full smoke. Container-local storage avoids
   // Docker Desktop's macOS UID mapping, so ownership is checked with actual Linux stat.
   const makeConfig = readFileSync(`${deploy}/scripts/smoke.sh`, "utf8").match(/^make_config\(\) \{[\s\S]*?^\}/m)?.[0];
@@ -85,6 +149,9 @@ check() {
 }
 for sub in store-suspend store-resume tenant-suspend tenant-resume status audit support-grant support-revoke support-list support-principal-add support-principal-revoke; do
   check 0 platform-admin "$sub"
+  invoked=$(tail -n 3 "$STUB_LOG")
+  expected=$(printf 'platform-admin\n/app/bin/platform-admin\n%s' "$sub")
+  if [[ "$invoked" != "$expected" ]]; then echo "FAIL wrong docker service/binary for $sub"; bad=1; fi
 done
 for sub in platform-designate platform-open platform-close platform-allow platform-disallow platform-block platform-unblock settlement-close settlement-payout; do
   check 0 stripe-admin "$sub"
@@ -98,14 +165,25 @@ for flags in '--environment LIVE' '--environment=LIVE' '-environment=live'; do
   check 1 stripe-admin settlement-sync $flags
   check 1 stripe-admin platform-open $flags
 done
-# Positive gate control uses only a synthetic approval reference and the fake docker; no key or network.
+# Caller exports never supply approval; missing, zero and malformed file pairs refuse it.
 export LC_STRIPE_LIVE_ENABLED=1 LC_STRIPE_LIVE_APPROVAL_REF=MOCK_APPROVAL_R3
+check 1 stripe-admin settlement-sync --environment LIVE
+check 1 stripe-admin platform-open --environment LIVE
+sed -i '/^LC_STRIPE_LIVE_ENABLED=/d; /^LC_STRIPE_LIVE_APPROVAL_REF=/d' "$LC_COMPOSE_ENV"
+check 1 stripe-admin settlement-sync --environment LIVE
+printf 'LC_STRIPE_LIVE_ENABLED=1\nLC_STRIPE_LIVE_APPROVAL_REF=bad\n' >>"$LC_COMPOSE_ENV"
+check 1 stripe-admin settlement-sync --environment LIVE
+sed -i 's/^LC_STRIPE_LIVE_APPROVAL_REF=.*/LC_STRIPE_LIVE_APPROVAL_REF=MOCK_FILE_APPROVAL_R3/' "$LC_COMPOSE_ENV"
+export LC_STRIPE_LIVE_ENABLED=0 LC_STRIPE_LIVE_APPROVAL_REF=MOCK_CALLER_REF
+export COMMERCE_STRIPE_LIVE_ENABLED=0 COMMERCE_STRIPE_LIVE_APPROVAL_REF=MOCK_CALLER_REF
+export CHECK_FILE_PAIR=1
 check 0 stripe-admin settlement-sync --environment LIVE
-grep -qx COMMERCE_STRIPE_LIVE_ENABLED "$STUB_LOG" || { echo 'FAIL LIVE flag not forwarded by name'; bad=1; }
-grep -qx COMMERCE_STRIPE_LIVE_APPROVAL_REF "$STUB_LOG" || { echo 'FAIL approval reference not forwarded by name'; bad=1; }
-if grep -q MOCK_APPROVAL_R3 "$STUB_LOG"; then echo 'FAIL approval value in argv'; bad=1; fi
 check 0 stripe-admin platform-open --environment LIVE
-unset LC_STRIPE_LIVE_ENABLED LC_STRIPE_LIVE_APPROVAL_REF
+unset CHECK_FILE_PAIR
+grep -qx COMMERCE_STRIPE_LIVE_APPROVAL_REF "$STUB_LOG" || { echo 'FAIL file pair not forwarded by name'; bad=1; }
+if grep -qE 'MOCK_FILE_APPROVAL_R3|MOCK_CALLER_REF' "$STUB_LOG"; then echo 'FAIL approval value in argv'; bad=1; fi
+unset LC_STRIPE_LIVE_ENABLED LC_STRIPE_LIVE_APPROVAL_REF COMMERCE_STRIPE_LIVE_ENABLED COMMERCE_STRIPE_LIVE_APPROVAL_REF
+sed -i 's/^LC_STRIPE_LIVE_ENABLED=.*/LC_STRIPE_LIVE_ENABLED=0/; s/^LC_STRIPE_LIVE_APPROVAL_REF=.*/LC_STRIPE_LIVE_APPROVAL_REF=/' "$LC_COMPOSE_ENV"
 check 1 stripe-admin settlement-export --statement 00000000-0000-4000-8000-000000000001
 for out in /tmp/report.csv /exports/../report.csv /exports/sub/report.csv; do check 1 stripe-admin settlement-export --out "$out"; done
 check 0 stripe-admin settlement-export --out /exports/report.csv
@@ -114,7 +192,13 @@ check 1 stripe-admin settlement-export --out /exports/one.csv --out=/exports/two
 export STUB_EXIT=7
 check 7 platform-admin audit
 unset STUB_EXIT
-if grep -qE -- '--out|report[.]csv|00000000' "$F/state/ops-admin.log"; then echo 'FAIL audit includes flag values'; bad=1; fi
+audit_ok() {
+  [[ -s "$1" ]] || return 1
+  grep -q 'tool=platform-admin sub=audit .*exit=7' "$1" || return 1
+  ! grep -qE -- '--out|report[.]csv|00000000' "$1"
+}
+if ! audit_ok "$F/state/ops-admin.log"; then echo 'FAIL missing/invalid/leaking audit log'; bad=1; fi
+if audit_ok "$F/state/no-log"; then echo 'FAIL missing audit log accepted'; bad=1; fi
 source "$F/make-config.sh"
 export LC_DEPLOY_DIR="$REPO/deploy"
 generated=$(mktemp -d)
@@ -131,9 +215,15 @@ exit "$bad"
 }));
 
 test("platform operator custody, export mount and binary are wired", () => fixture((dir) => {
-  const r = run("docker", ["compose", "--project-directory", deploy, "--env-file", `${dir}/compose.env`, "-f", `${deploy}/compose.yml`, "--profile", "ops", "config", "--format", "json"], cleanEnv(dir));
+  const r = run("docker", ["compose", "--project-directory", deploy, "--env-file", `${dir}/compose.env`, "-f", `${deploy}/compose.yml`, "--profile", "ops", "--profile", "app", "config", "--format", "json"], cleanEnv(dir));
   assert.equal(r.status, 0, r.stderr);
   const services = JSON.parse(r.stdout).services;
+  assert.equal(services["expiry-worker"].environment.COMMERCE_MERCHANT_ALERT_MAIL, "0");
+  setKey(`${dir}/compose.env`, "LC_MERCHANT_ALERT_MAIL", "1");
+  const on = run("docker", ["compose", "--project-directory", deploy, "--env-file", `${dir}/compose.env`, "-f", `${deploy}/compose.yml`, "--profile", "ops", "--profile", "app", "config", "--format", "json"], cleanEnv(dir));
+  assert.equal(on.status, 0, on.stderr);
+  assert.equal(JSON.parse(on.stdout).services["expiry-worker"].environment.COMMERCE_MERCHANT_ALERT_MAIL, "1");
+  setKey(`${dir}/compose.env`, "LC_MERCHANT_ALERT_MAIL", "0");
   const op = services["platform-admin"];
   assert.ok(op, "missing platform-admin service");
   assert.deepEqual(op.profiles, ["ops"]);
