@@ -139,6 +139,8 @@ export function MerchantOrders({
   const filterKey = JSON.stringify(filters);
   const router = useRouter();
   const [refresh, setRefresh] = useState(0);
+  // Bumped by every successful poll; with `refresh` (Refresh button, retry, writes) it is the generation the parcel reads follow.
+  const [pollGen, setPollGen] = useState(0);
   const key = `${renderKey}|${locale}|${store?.id ?? ""}|${state}|${filterKey}|${cursor}|${order}|${initialError ?? ""}|${refresh}`;
   const [view, setView] = useState<View>({
     key: "",
@@ -388,6 +390,7 @@ export function MerchantOrders({
       // Later pages still probe authority, but never replace their rows with page one.
       if (cursor) return;
       noteSeen(page);
+      setPollGen((v) => v + 1); // the parcel suggestions and OPEN groups are re-read with the list
       // Only the rows change: filters, scroll position, the open detail and the cursor stack stay as the merchant left them.
       setView((old) => (old.key === key && old.status === "ready" && old.page ? { ...old, page } : old));
     } catch (error) {
@@ -629,6 +632,7 @@ export function MerchantOrders({
             c={parcelC}
             shipmentCopy={c}
             groups={parcelGroups}
+            refreshGen={refresh + pollGen}
             onGroups={(next) => setParcels({ scope: bulkScope, groups: next })}
             onChanged={() => setRefresh((v) => v + 1)}
           />

@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  parcelOrderNumber,
   parseMergeSuggestions,
   parseOpenParcelGroups,
   parseParcelGroupCreated,
@@ -230,4 +231,12 @@ test("groupOfOrder prefers the OPEN group over retained SHIPPED/DISSOLVED histor
   assert.equal(groupOfOrder([shipped], c)?.id, shipped.id, "history alone still shows its badge");
   assert.equal(groupOfOrder([dissolved, shipped, view("44444444-4444-4444-8444-444444444444", "DISSOLVED", [a, b])], a)?.id, "44444444-4444-4444-8444-444444444444", "latest history wins");
   assert.equal(groupOfOrder([dissolved, reopened], c), undefined);
+});
+
+// Codex P2 (PR #2): suggestion cards must name an order exactly like the orders list and the OPEN-group projection do
+// (internal/merchantorders/parcels.go: "LC-" + id without dashes, upper-cased), not by the first 8 UUID characters.
+test("parcelOrderNumber is the canonical LC-<32 uppercase hex> order number and matches the open-group parser", () => {
+  assert.equal(parcelOrderNumber(a), "LC-AAAAAAAAAAAA4AAA8AAAAAAAAAAAAAAA");
+  assert.match(parcelOrderNumber(b), /^LC-[0-9A-F]{32}$/);
+  assert.equal(parseOpenParcelGroups({ items: [openGroup(group, [a, b])] })[0].members[0].order_number, parcelOrderNumber(a));
 });

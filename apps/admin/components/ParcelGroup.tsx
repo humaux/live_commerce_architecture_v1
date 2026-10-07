@@ -23,7 +23,7 @@ import {
   readOpenParcelGroups,
   shipParcelGroup,
 } from "@/lib/parcels-client";
-import { parcelShort, reconcileGroups, type MergeSuggestion, type ParcelGroupView } from "@/lib/parcels-model.ts";
+import { parcelOrderNumber, parcelShort, reconcileGroups, type MergeSuggestion, type ParcelGroupView } from "@/lib/parcels-model.ts";
 import type { ParcelCopy } from "@/lib/parcels-copy";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import { ShipmentFields, shipmentFieldsError, type ShipmentFieldValues } from "./OrderShipment";
@@ -44,6 +44,7 @@ export function ParcelMerge({
   c,
   shipmentCopy,
   groups,
+  refreshGen,
   onGroups,
   onChanged,
 }: {
@@ -53,6 +54,8 @@ export function ParcelMerge({
   c: ParcelCopy;
   shipmentCopy: OrdersCopy;
   groups: ParcelGroupView[];
+  /** The orders page's refresh generation (Refresh button, successful poll, reload after a write): a change re-reads both parcel reads. */
+  refreshGen: number;
   onGroups: (next: ParcelGroupView[]) => void;
   onChanged: () => void;
 }) {
@@ -105,8 +108,8 @@ export function ParcelMerge({
       },
     );
     return () => active.abort();
-    // onGroups and c are re-created every render by design: the reads are keyed by store, session boundary and tick only.
-  }, [store, boundary, tick]);
+    // onGroups and c are re-created every render by design: the reads are keyed by store, session boundary, tick and the page's refreshGen only.
+  }, [store, boundary, tick, refreshGen]);
 
   async function merge(suggestion: MergeSuggestion) {
     if (busy) return;
@@ -187,7 +190,7 @@ export function ParcelMerge({
                   <span>{c.suggestionOrders(s.order_ids.length)}</span>
                   <ul>
                     {s.order_ids.map((id) => (
-                      <li key={id} className="orders-mono" data-testid={`parcel-member-${id}`}>{parcelShort(id)}…</li>
+                      <li key={id} className="orders-mono" data-testid={`parcel-member-${id}`}>{parcelOrderNumber(id)}</li>
                     ))}
                   </ul>
                   <button

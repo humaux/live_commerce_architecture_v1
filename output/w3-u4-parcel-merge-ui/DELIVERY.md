@@ -164,3 +164,12 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 - Not covered by a red test: the two ParcelGroup.tsx fixes are component state logic with no React test harness in the repo; they are type-checked and rely on the browser gate. No spec step was added for them (cannot be run locally).
 - Exit codes: `go vet -tags browser ./tests/foundation` 0; `go build ./...` 0; node (parcels-model/request/bff, orders-model, orders-v2) 37 pass 0; `tsc --noEmit` 0; `check-gates.sh` 0; `check-pkgdocs.sh` 0; `depmap.sh --check` 0 (up to date); focused PG set (`TestParcel*`, MF02, PickListReadAuthority, WAS02, `TestR2IntegrationUpgrade*`, `TestT06*`) 0, 34 PASS.
 - NOT_RUN: `--browser-merchant-orders-ui` (CI).
+
+---
+
+## Finisher 5 (Sonnet) — PR #2 round 3: foundation red + three more Codex comments
+
+- **Foundation red (run 37633660814, "Node unit suites"):** `tests/admin/card-payments-request.test.ts` pins the BFF route source text. My parcel auth fence appended `|| parcel` right after `discoveryRoute.test(path)` and the cache-header chain put `parcel` before `storefront`, so two pinned regexes stopped matching. Reproduced locally (red), fixed by moving `parcel` to the front of the auth chain and after `storefront` in the Cache-Control chain; the test is unchanged. I had not run `test-node.sh` before; it is now in the push gate.
+- P1 4207932348: `parcel-merge.spec.ts` dissolve step now clicks Dissolve, sees the confirmation, clicks `parcel-dissolve-back`, asserts the confirmation closed, the group Open and its ship/dissolve actions enabled, then dissolves for real. Browser step: NOT_RUN locally (CI); no red run is possible without the browser.
+- P2 4207932360: `MerchantOrders` passes `refreshGen = refresh + pollGen` (Refresh button/retry/writes bump `refresh`, every successful page-one poll bumps `pollGen`) into `ParcelMerge`, which includes it in the read effect dependencies.
+- P2 4207932374: suggestion cards show `parcelOrderNumber(id)` (`LC-<32 uppercase hex>`), the same function the OPEN-group parser now uses. Red: `red-finisher5-ordernumber.log`; green `node-finisher5.log`.

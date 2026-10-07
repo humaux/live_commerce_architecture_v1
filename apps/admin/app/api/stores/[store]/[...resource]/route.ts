@@ -154,7 +154,7 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path) || parcel) && !authConfig)
+  if ((parcel || operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
@@ -515,7 +515,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || parcel || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
+      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || parcel || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });

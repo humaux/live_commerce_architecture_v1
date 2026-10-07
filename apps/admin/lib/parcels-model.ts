@@ -109,7 +109,7 @@ export function parseOpenParcelGroups(value: unknown): OpenParcelGroup[] {
     const members = g.members.map((m): OpenParcelMember => {
       const o = exact(m, ["order_id", "order_number", "recipient_masked"]);
       if (typeof o.order_id !== "string" || !canonicalUUID.test(o.order_id) || ordersSeen.has(o.order_id) ||
-        o.order_number !== `LC-${o.order_id.replaceAll("-", "").toUpperCase()}`)
+        o.order_number !== parcelOrderNumber(o.order_id))
         throw new Error("unavailable");
       ordersSeen.add(o.order_id);
       return { order_id: o.order_id, order_number: o.order_number, recipient_masked: maskedRecipient(o.recipient_masked) };
@@ -184,4 +184,9 @@ export function parseParcelGroupShipped(value: unknown): ParcelGroupShipment {
 /** The display short code of a group id (first UUID block); never authority, only a label. */
 export function parcelShort(id: string): string {
   return id.slice(0, 8);
+}
+
+/** The canonical order number the orders list and the OPEN-group projection use: "LC-" + the id without dashes, upper-cased. */
+export function parcelOrderNumber(id: string): string {
+  return `LC-${id.replaceAll("-", "").toUpperCase()}`;
 }

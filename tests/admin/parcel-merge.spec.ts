@@ -146,6 +146,16 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(panel).toBeVisible();
     await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
     await expect(panel.getByTestId(`parcel-group-member-${pd2}`)).toContainText(`LC-${pd2.replaceAll("-", "").toUpperCase()} · S***`);
+    // Back out of the confirmation first: the confirmation closes, nothing was sent, the group is still Open with its actions.
+    await panel.locator('[data-testid^="parcel-dissolve-"]').first().click();
+    await expect(panel.locator('[data-testid^="parcel-dissolve-confirm-"]')).toBeVisible();
+    await panel.locator('[data-testid^="parcel-dissolve-back-"]').click();
+    await expect(panel.locator('[data-testid^="parcel-dissolve-confirm-"]')).toHaveCount(0);
+    await expect(panel.locator('[data-testid^="parcel-dissolve-back-"]')).toHaveCount(0);
+    await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
+    await expect(panel.locator('[data-testid^="parcel-ship-open-"]')).toBeEnabled();
+    await expect(panel.locator('[data-testid^="parcel-dissolve-"]').first()).toBeEnabled();
+    // Then dissolve for real.
     await panel.locator('[data-testid^="parcel-dissolve-"]').first().click();
     await panel.locator('[data-testid^="parcel-dissolve-confirm-"]').click();
     await expect(panel.locator('[data-testid^="parcel-notice-"]')).toContainText("Group dissolved");
