@@ -1,3 +1,6 @@
+// Purpose: ADS browser requests with CSRF, session fences and strict unbind outcomes.
+// Depends on: settings-client.ts, ads-model.ts, ads-request.ts; authenticated admin BFF.
+// Used by: Admin ADS components.
 // Admin ads client: browser -> BFF `/api/stores/{store}/ads/*` -> Go `/v1/admin/stores/{store_id}/ads/*`
 // (internal/httpapi/ads.go), and browser -> BFF POST `/api/ads/meta/connect` -> Go POST ads/meta/connect.
 // Reads parse the frozen DTOs (ads-model.ts); writes carry cookie CSRF + session fence + Idempotency-Key (+ If-Match
@@ -5,10 +8,10 @@
 // Non-goals: no token ever reaches this file (the Meta token stays in Go/PG, HPKE-sealed); no retry policy.
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import {
-  adsErrorCode, parseConnectState, parseDraft, parseDraftList, parseReport, parseSettings,
-  type AdsCode, type Draft,
+  parseAdsUnbind, parseCatalogFeed, parseAdsInFlight, adsErrorCode, parseConnectState, parseDraft, parseDraftList, parseReport, parseSettings,
+  type AdsUnbind, type AdsInFlight, type AdsCode, type Draft,
 } from "./ads-model";
-import { safeDialogURL } from "./ads-request";
+import { validAdsUnbindBody, safeDialogURL } from "./ads-request";
 
 export type AdsReadCode = "signed-out" | "forbidden" | "not-found" | "unavailable" | AdsCode;
 export class AdsReadError extends Error {
@@ -61,11 +64,11 @@ export const readConnectState = (store: string, stateID: string, signal: AbortSi
 export const readReport = (store: string, from: string, to: string, signal: AbortSignal) =>
   read(`${base(store)}/report?from=${from}&to=${to}`, parseReport, signal);
 
-export type WriteResult<T = null> = { ok: true; value: T } | { ok: false; code: AdsCode; uncertain: boolean };
+export type WriteResult<T = null> = { ok: true; value: T } | { ok: false; code: AdsCode; uncertain: boolean; details?: AdsInFlight };
 
 async function write<T>(
   method: "POST" | "PUT", url: string, key: string, body: string, boundary: string,
-  parse: (value: unknown) => T, ifMatch?: number,
+  parse: (value: unknown) => T, ifMatch?: number, strict = false,
 ): Promise<WriteResult<T>> {
   const csrf = csrfCookie();
   try {
@@ -90,13 +93,23 @@ async function write<T>(
     return { ok: false, code: "retry_later", uncertain: true };
   }
   const value: unknown = await response.json().catch(() => null);
+  if (strict) { try { if (await sessionBoundary() !== boundary) throw new Error("session"); } catch { return {ok:false,code:"unauthorized",uncertain:false}; } }
   if (response.status >= 500) return { ok: false, code: adsErrorCode(value), uncertain: true };
-  if (!response.ok) return { ok: false, code: adsErrorCode(value), uncertain: false };
+  if (!response.ok) {
+    const code = adsErrorCode(value);
+    if (code === "operations_in_flight") {
+      try {
+        const details = parseAdsInFlight(value && typeof value === "object" ? (value as Record<string,unknown>).details : null);
+        return {ok:false,code,uncertain:false,details};
+      } catch {return {ok:false,code:"retry_later",uncertain:false};}
+    }
+    return {ok:false,code,uncertain:false};
+  }
   try {
     return { ok: true, value: parse(value) };
   } catch {
     // Accepted by the server but the body is not the shape we know: state is re-read anyway.
-    return { ok: true, value: null as T };
+    return strict ? { ok: false, code: "retry_later", uncertain: true } : {ok:true,value:null as T};
   }
 }
 const none = () => null;
@@ -135,3 +148,22 @@ export function postConnect(store: string, key: string, boundary: string): Promi
 }
 
 export const newKey = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+
+
+/** Reads the W6-06B public feed entry (ads:read), without a query, body or key. */
+export async function readCatalogFeed(store: string, signal: AbortSignal) {
+  const fence = await sessionBoundary();
+  const value = await read(`${base(store)}/catalog-feed`,parseCatalogFeed,signal);
+  if (signal.aborted || await sessionBoundary() !== fence) throw new AdsReadError("signed-out");
+  return value;
+}
+/** Calls Go POST ads/meta/unbind (W6-06B §A) through BFF; local detach only, with receipt idempotency. */
+export const postUnbind = (store: string, key: string, body: string, boundary: string): Promise<WriteResult<AdsUnbind>> => {
+  if (!validAdsUnbindBody(body)) return Promise.resolve({ok:false as const,code:"invalid_request" as const,uncertain:false});
+  const account = (JSON.parse(body) as {ad_account_id:string}).ad_account_id;
+  return write("POST",`${base(store)}/meta/unbind`,key,body,boundary,(value)=> {
+    const receipt = parseAdsUnbind(value);
+    if (receipt.ad_account_id !== account) throw new Error("ad_account_id");
+    return receipt;
+  },undefined,true);
+};

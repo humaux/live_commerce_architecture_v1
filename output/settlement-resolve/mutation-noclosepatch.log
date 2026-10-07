@@ -1,0 +1,26 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_schema_privileges
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolve_flow
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_close_with_notes
+    settlement_resolve_test.go:252: close after resolve: stripeadmin: rejected: settlement_unattributed
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_cli_e2e
+    settlement_resolve_test.go:348: [settlement-close --environment SANDBOX --period-start 2026-09-14 --tenant 04773ac0-c387-4c0f-9088-1a18603c2a2c --store 180611d2-869b-474d-b34f-c3b203b5ece7 --principal 0d73da36-0df4-436f-80b9-7d97c4198f90 --operator op@test --ticket TICKET-2026-1001]: exit=1 stdout="" stderr="stripeadmin: rejected: settlement_unattributed\n"
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_closed_period
+    settlement_resolve_test.go:424: close week 3: stripeadmin: rejected: settlement_unattributed
+--- FAIL: TestPlatformSettlementPF15Resolve (16.66s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_schema_privileges (0.04s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse (0.03s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_resolve_flow (0.01s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_close_with_notes (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_cli_e2e (2.88s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final (0.02s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_closed_period (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.439s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+EXIT=1

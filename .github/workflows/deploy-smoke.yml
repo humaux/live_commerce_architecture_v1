@@ -4,11 +4,15 @@ name: Deploy smoke
 # is preinstalled on ubuntu-24.04) and smoke.sh full (the whole compose stack as root with Docker) run on
 # a Linux runner instead of a developer machine. Same triggers as foundation.yml; workflow_dispatch lets
 # the integrator get a receipt for a branch before its PR run.
+# PRs into r3/integration do NOT trigger this workflow directly: gates.yml calls it (workflow_call) only when deploy/ or scripts/deploy* changed, so `Gates (GitHub runners) / required`
+# waits for it and a UI-only PR does not pay ~50 min of image builds. PRs into any other branch keep the old pull_request trigger.
 on:
   push:
     branches: [main]
   pull_request:
+    branches-ignore: [r3/integration]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

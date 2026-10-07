@@ -1,0 +1,54 @@
+{
+  "source_manifest_sha256": "ea5a117cf0762667eb7638d81385b58968daafa632e0b89b5594b0636d8c8da5",
+  "commands": [
+    {
+      "command": "LC_BROWSER_OPERATIONS_ADS_ACCEPTANCE=1 LC_FOCUSED_TAGS=browser LC_FOCUSED_TIMEOUT=1500s bash scripts/dev/test-focused.sh '^TestBrowserOperationsAds$'",
+      "exit": 1,
+      "phase": "red",
+      "evidence": "fixture-red.log"
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-operations-ads",
+      "exit": 1,
+      "phase": "after scope fixture, deep-link red",
+      "evidence": "browser-after-scope-red.log"
+    },
+    {
+      "command": "bash scripts/dev/test-local.sh --browser-operations-ads",
+      "exit": 0,
+      "phase": "green",
+      "playwright_pass": 11,
+      "go_pass": 1,
+      "evidence": "browser-green.log"
+    },
+    {
+      "command": "LC_SWEEP_PAGES=/settings/operations LC_SWEEP_WORKERS=1 bash scripts/dev/test-local.sh --browser-visual-lint",
+      "exit": 0,
+      "phase": "green scoped G-UI9",
+      "shots": 6,
+      "R2": 0,
+      "blocking": 0,
+      "evidence": "visual-green.log"
+    },
+    {
+      "command": "cd apps/admin && pnpm exec tsc --noEmit -p .",
+      "exit": 0,
+      "evidence": "tsc.log"
+    },
+    {
+      "command": "go vet -tags browser ./tests/foundation",
+      "exit": 0,
+      "evidence": "vet.log"
+    },
+    {
+      "command": "bash scripts/dev/test-node.sh",
+      "exit": 0,
+      "evidence": "node.log"
+    },
+    {
+      "command": "bash scripts/dev/check-gates.sh",
+      "exit": 0,
+      "evidence": "check-gates.log"
+    }
+  ]
+}

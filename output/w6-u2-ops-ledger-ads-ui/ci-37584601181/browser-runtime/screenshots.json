@@ -1,0 +1,74 @@
+[
+  {
+    "File": "ledger-zh-TW-desktop.png",
+    "Sha256": "a4be4fa987a8380f45df6748fb5896a28e0f1a93c68de44e099c8f3f3326043f",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-zh-TW-desktop.png",
+    "Sha256": "9da3d389e98ed69dd26b64412058d8dc1d1617cd84ba0848ba66220345703c59",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ledger-zh-TW-mobile.png",
+    "Sha256": "1c4ab132fc2f4d04be5fb0fc001014aaaa6fc57ec5b4ac999ea0ab264274c2cf",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-zh-TW-mobile.png",
+    "Sha256": "347e0b00b6539d3d9d0b3e62f02821029a626ba022167cd0b94e1fc653b86e38",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ledger-en-desktop.png",
+    "Sha256": "adca4b05c6b456f07b46bd934d627b368293e0299ef46298a505a7f618dd94ae",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-en-desktop.png",
+    "Sha256": "87e10bca5f5b1c32bee816bcf09d9ac78f9ea72d8420f565ce58877bb9201e2a",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ledger-en-mobile.png",
+    "Sha256": "4953cfccc3ddff2c65c8fb7d59ab3e979e88951b3c21d30a6b4a24f03f220ffc",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-en-mobile.png",
+    "Sha256": "b47df2c05406f1359d220ecf55e496b668918cd77e4076218e5916bfea794ab3",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ledger-zh-CN-desktop.png",
+    "Sha256": "127d84b7d09955f9671b925727b457ae3791e01c8d2eb417d19bc0b728d641b8",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ads-zh-CN-desktop.png",
+    "Sha256": "a7f5707b89b89b3443fc60859270361d0667b4f7d45b27fc47506f21d6d20b82",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "ledger-zh-CN-mobile.png",
+    "Sha256": "6a433544b5b4a2e10c166091cdf52370d4d656704fe5367d40e3653b3b7b5b28",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "ads-zh-CN-mobile.png",
+    "Sha256": "0a2e6ab0434af4777506c6083cf34006070685ce1d421a3c513b40e8ce547160",
+    "Locale": "zh-CN",
+    "Viewport": "mobile"
+  }
+]

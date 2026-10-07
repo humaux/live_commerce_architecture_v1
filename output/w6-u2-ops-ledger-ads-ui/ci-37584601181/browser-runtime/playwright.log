@@ -1,0 +1,18 @@
+
+Running 11 tests using 1 worker
+
+(node:17403) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/operations-ads.spec.ts:87:1 › ledger filters, details, capabilities, object links, next page and store isolation (2.3s)
+  ✓   2 tests/admin/operations-ads.spec.ts:123:1 › cancel, registered read retry and query persist after refresh (1.3s)
+  ✓   3 tests/admin/operations-ads.spec.ts:139:1 › fresh server CAS and daily query cap refuse stale confirmations (792ms)
+  ✓   4 tests/admin/operations-ads.spec.ts:167:1 › read-only permissions hide mutation controls after reload (1.1s)
+  ✓   5 tests/admin/operations-ads.spec.ts:182:1 › ad unbind refuses counting/in-flight operations, then preserves history after refresh; feed copies (1.4s)
+  ✓   6 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow zh-TW 1586 (916ms)
+  ✓   7 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow zh-TW 390 (800ms)
+  ✓   8 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow en 1586 (843ms)
+  ✓   9 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow en 390 (830ms)
+  ✓  10 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow zh-CN 1586 (927ms)
+  ✓  11 tests/admin/operations-ads.spec.ts:214:3 › labels and no overflow zh-CN 390 (889ms)
+
+  11 passed (13.1s)

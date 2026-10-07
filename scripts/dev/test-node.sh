@@ -14,6 +14,7 @@ if [[ "$#" -gt 1 ]] || [[ "$#" -eq 1 && "$1" != --require-r04 ]]; then
   echo "Usage: bash scripts/dev/test-node.sh [--require-r04]" >&2; exit 2
 fi
 node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages/i18n/tests/*.test.ts packages/markdown-lite/tests/*.test.ts tests/admin/design-model.test.ts tests/admin/team-model.test.ts tests/admin/design-gate.test.ts tests/admin/promotions-model.test.ts tests/admin/team-bff.test.ts tests/admin/notify-model.test.ts tests/admin/meta-health-model.test.ts tests/admin/meta-connect-model.test.ts tests/admin/merchant-tools-model.test.ts tests/admin/meta-connect-gate.test.ts tests/deploy/meta-connect-preflight.test.mjs tests/deploy/ops-alert-preflight.test.mjs tests/deploy/deploy-prep-r3.test.mjs tests/admin/invite-next.test.ts tests/admin/money-time-model.test.ts tests/admin/store-domains-ui.test.ts tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs tests/ui/click-sweep-lib.test.mjs tests/ui/visual-lint-lib.test.mjs
+node --test --experimental-strip-types tests/admin/operations-model.test.ts
 node --test --experimental-strip-types tests/admin/orders-v2.test.ts
 node --test --experimental-strip-types tests/admin/store-number.test.ts
 node --test --experimental-strip-types tests/admin/platform-site.test.ts
@@ -37,7 +38,7 @@ node --test --experimental-strip-types tests/admin/picklist-model.test.ts
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
-node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs
+node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs
 
 # LC-U2b browser registration (DB-free); the real UI spec is CI-only and must select its own authority suite.
 node --test --experimental-strip-types tests/admin/inbox-privacy.test.ts tests/admin/inbox-copy.test.ts tests/admin/inbox-bff.test.ts

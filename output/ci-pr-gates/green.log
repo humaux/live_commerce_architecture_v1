@@ -1,0 +1,14 @@
+✔ backend-only paths run foundation-shards only (3.488ms)
+✔ a UI path adds the whole browser set, including click-sweep and visual-lint (4.054833ms)
+✔ docs-only and output-only diffs keep the single required check (foundation-shards) (1.599625ms)
+✔ tests/foundation/browser_* is a browser path, other tests/foundation files are not (1.194541ms)
+✔ deploy flag: deploy/ and scripts/deploy* only (1.418834ms)
+✔ the browser set is release-gate's browser-mode universe minus the documented exclusions (24.894625ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 113.220625
