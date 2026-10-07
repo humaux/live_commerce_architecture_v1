@@ -622,7 +622,6 @@ export function MerchantOrders({
         {store && session.current && actions?.fulfillment_write && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && (
           <ParcelMerge
             key={bulkScope}
-            locale={locale}
             store={store.id}
             boundary={session.current}
             disabled={current.status !== "ready"}

@@ -13,7 +13,6 @@
 //   refuse with cod_not_mergeable/cvs_not_mergeable).
 
 import { useEffect, useRef, useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
 import {
   createParcelGroup,
   dissolveParcelGroup,
@@ -42,7 +41,6 @@ function errorText(c: ParcelCopy, code: string) {
 
 /** Banner + suggestion cards + group panels. Reads suggestions; every write re-reads orders via onChanged. */
 export function ParcelMerge({
-  locale: _locale,
   store,
   boundary,
   disabled,
@@ -52,7 +50,6 @@ export function ParcelMerge({
   onGroups,
   onChanged,
 }: {
-  locale: Locale;
   store: string;
   boundary: string;
   disabled: boolean;
