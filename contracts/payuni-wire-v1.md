@@ -151,3 +151,19 @@ freeze the exact account/environment/credential version, attempt identity/deadli
 and move stock to PAYMENT_PENDING atomically before
 exposing hosted form; query/notification facts require separate idempotent reconciliation.
 Method enabled guard stays until that integration and real supplier admission pass.
+
+## Amendment: W4-01B notify receiver removed (PAY-RM1, migration 0161)
+
+W4-01B (merge 651c5744, migration 0136) added a background NotifyURL receiver
+(`cmd/api` route `/v1/hooks/payuni/notify/{token}`, `internal/payments/payuninotify`,
+schema `payments.payuni_notify_endpoints`/`payuni_notify_receipts`, role
+`commerce_payuni_ingress`) behind `COMMERCE_PAYUNI_NOTIFY_ENABLED`. It was merged but
+never deployed and never enabled; the owner cancelled PAYUNi on 2026-10-06. PAY-RM1
+removes it forward-only in migration 0161, which RAISEs (SQLSTATE 22023) instead of
+deleting data if any notify receipt row or `review_cases.reason='NOTIFY_MISMATCH'` row
+exists. The wire package reverts to its pre-W4-01B surface: `NewNotify`,
+`NotificationAuth` and `AuthenticateNotification` are gone; `VerifyNotification`
+remains the local bounded parser, and the unresolved background-transport/ACK warning
+above stands unchanged. The older PAYUNi hosted/query/capture path (migrations
+0014–0018, `payments.apply_capture_payuni_v1`) is explicitly out of PAY-RM1 scope and
+remains until OPEN-1 decides it.
