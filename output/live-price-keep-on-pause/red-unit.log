@@ -1,0 +1,10 @@
+--- FAIL: TestRedeemPlanning (0.00s)
+    claims_test.go:412: apply=[{bundleID: offerID:o2 skuID:sku-a quantity:1 version:1 pending:true offerActive:true} {bundleID: offerID:o1 skuID:sku-b quantity:3 version:2 pending:true offerActive:true}] (the paused offer's line must be applied at its claimed quantity)
+--- FAIL: TestRedeemPlanningOneLinePerSKU (0.00s)
+    claims_test.go:474: another SKU is independent: applied "" skipped [{SKUID:s Reason:offer_inactive} {SKUID:t Reason:offer_inactive}], want applied "b-paused" and 0 skipped
+    claims_test.go:474: paused alone is applied: applied "" skipped [{SKUID:s Reason:offer_inactive}], want applied "b-paused" and 0 skipped
+    claims_test.go:474: two paused: the lowest offer id: applied "" skipped [{SKUID:s Reason:offer_inactive} {SKUID:s Reason:offer_inactive}], want applied "a-paused" and 1 skipped
+    claims_test.go:485: skuWinners: map[] <nil>
+FAIL
+FAIL	livecommerce/internal/claims	0.694s
+FAIL

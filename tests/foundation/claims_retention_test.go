@@ -3882,6 +3882,11 @@ func crUpgradeAndPreconditions(t *testing.T) {
 		t.Fatal(err)
 	}
 	blSum := fmt.Sprintf("%x", sha256.Sum256(blBody))
+	lpBody, err := os.ReadFile("../../migrations/0158_live_price_keep_on_pause.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lpSum := fmt.Sprintf("%x", sha256.Sum256(lpBody))
 	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0071_claims_retention.sql',$1)`, sum)        // hold 0071 back
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0127_lc_r1_retention.sql',$1)`, r1Sum)       // hold 0127 back (its 55000 precondition needs 0071)
@@ -3891,8 +3896,11 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0151_sold_out_reply.sql',$1)`, soSum)
 	// hold 0154 back: it patches claims.apply_actor_erasure (0127) and replaces the 0151 reply_kind CHECK, so it must run after both
 	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0154_buyer_blocklist.sql',$1)`, blSum)
+	// hold 0158 back: it replaces claims.live_prices / claims.for_buyer_lines with the 0129 bodies minus the offer-active clause (its own guard demands the 0129
+	// functions, which are held back above because they read claims.bundles.purged_at from 0071), so it must run after 0129 (migrations apply in numeric order)
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES('0158_live_price_keep_on_pause.sql',$1)`, lpSum)
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151 and 0154: %v", err)
+		t.Fatalf("apply every migration but 0071, 0127, 0129, 0144, 0151, 0154 and 0158: %v", err)
 	}
 	for _, q := range []string{`SELECT to_regclass('claims.retention_policy')::text`, `SELECT to_regclass('claims.retention_log')::text`} {
 		var got *string
@@ -3969,10 +3977,10 @@ func crUpgradeAndPreconditions(t *testing.T) {
 	// the operator renames the row (no auto-relabel of merchant data), the migration then applies (0071, then the
 	// 0127 A1.4 amendment that depends on it)
 	mustExec(t, owner, `UPDATE claims.bundles SET label='renamed-by-operator' WHERE id=$1`, reserved.id)
-	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql')`)
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version IN ('0127_lc_r1_retention.sql','0129_lc_b6_order_for_buyer.sql','0144_checkout_reminders.sql','0151_sold_out_reply.sql','0154_buyer_blocklist.sql','0158_live_price_keep_on_pause.sql')`)
 	before = snap()
 	if err := migrations.Apply(ctx, owner); err != nil {
-		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 on the populated database: %v", err)
+		t.Fatalf("0071 + 0127 + 0129 + 0144 + 0151 + 0154 + 0158 on the populated database: %v", err)
 	}
 	afterFirst := crExplicitDigest(t, owner, "public.lc_schema_migrations", "applied_at")
 	if err := migrations.Apply(ctx, owner); err != nil {

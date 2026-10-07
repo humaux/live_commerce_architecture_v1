@@ -1,0 +1,122 @@
+=== RUN   TestAdsCoreRealPGConnectAndBind
+--- PASS: TestAdsCoreRealPGConnectAndBind (1.20s)
+=== RUN   TestAdsCoreRealPGDraftLifecycle
+--- PASS: TestAdsCoreRealPGDraftLifecycle (0.18s)
+=== RUN   TestAdsCoreRealPGAdvanceBeyondFirstPage
+--- PASS: TestAdsCoreRealPGAdvanceBeyondFirstPage (0.65s)
+=== RUN   TestAdsUnbindRealPG
+=== RUN   TestAdsUnbindRealPG/feed_URL_is_store-scoped_and_needs_ads:read
+=== RUN   TestAdsUnbindRealPG/in-flight_operations_refuse_the_unbind_and_list_themselves
+=== RUN   TestAdsUnbindRealPG/a_counting_draft_refuses_the_unbind_through_the_frozen_trigger,_atomically
+=== RUN   TestAdsUnbindRealPG/unbind_detaches,_destroys_the_token_and_keeps_history
+=== RUN   TestAdsUnbindRealPG/re-unbind_is_a_200_no-op
+=== RUN   TestAdsUnbindRealPG/cross-store_unbind_is_a_no-op_that_touches_nothing
+=== RUN   TestAdsUnbindRealPG/permissions
+--- PASS: TestAdsUnbindRealPG (0.06s)
+    --- PASS: TestAdsUnbindRealPG/feed_URL_is_store-scoped_and_needs_ads:read (0.01s)
+    --- PASS: TestAdsUnbindRealPG/in-flight_operations_refuse_the_unbind_and_list_themselves (0.01s)
+    --- PASS: TestAdsUnbindRealPG/a_counting_draft_refuses_the_unbind_through_the_frozen_trigger,_atomically (0.00s)
+    --- PASS: TestAdsUnbindRealPG/unbind_detaches,_destroys_the_token_and_keeps_history (0.01s)
+    --- PASS: TestAdsUnbindRealPG/re-unbind_is_a_200_no-op (0.00s)
+    --- PASS: TestAdsUnbindRealPG/cross-store_unbind_is_a_no-op_that_touches_nothing (0.00s)
+    --- PASS: TestAdsUnbindRealPG/permissions (0.01s)
+=== RUN   TestAdsUnbindServiceRealPG
+=== RUN   TestAdsUnbindServiceRealPG/in-flight_operation_refuses_with_a_detailed_409_and_writes_nothing
+=== RUN   TestAdsUnbindServiceRealPG/unbind_writes_the_receipt_and_the_audit_row,_replays,_then_no-ops
+=== RUN   TestAdsUnbindServiceRealPG/re-bind_works_through_the_existing_connect_flow
+=== RUN   TestAdsUnbindServiceRealPG/catalog_feed_through_the_service
+--- PASS: TestAdsUnbindServiceRealPG (0.05s)
+    --- PASS: TestAdsUnbindServiceRealPG/in-flight_operation_refuses_with_a_detailed_409_and_writes_nothing (0.01s)
+    --- PASS: TestAdsUnbindServiceRealPG/unbind_writes_the_receipt_and_the_audit_row,_replays,_then_no-ops (0.01s)
+    --- PASS: TestAdsUnbindServiceRealPG/re-bind_works_through_the_existing_connect_flow (0.01s)
+    --- PASS: TestAdsUnbindServiceRealPG/catalog_feed_through_the_service (0.00s)
+PASS
+ok  	livecommerce/internal/ads	3.861s
+test-focused: top-level PASS=5 FAIL=0 SKIP=0 exit=0
+ok  	livecommerce/internal/httpapi	0.481s
+=== RUN   TestMetaAdsMA02Schema
+=== RUN   TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps)
+    meta_ads_schema_test.go:170: GAP column:catalog.products.status:SELECT -- GAP-2 (R-C): 'product exists, published' of §5.2
+    meta_ads_schema_test.go:170: GAP column:checkout.orders.quote_id:SELECT -- GAP-3: order lines live in the quote snapshot; §4.3 names destination_id/order-line columns that do not exist as such
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.origin:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.state:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.store_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_domains.tenant_id:SELECT -- GAP-2 (R-C): §5.2 PRODUCT_TRAFFIC validation needs the active storefront domain; §4.4 has no such row
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.published:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.store_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:control.storefront_publications.tenant_id:SELECT -- GAP-2 (R-C): published storefront check of §5.2
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.owner_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.snapshot:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.store_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP column:storefront.quotes.tenant_id:SELECT -- GAP-3: quote snapshot carries the order lines (contents[]); §4.3 names storefront.destination_snapshots(phone), which the implementation deliberately does NOT grant (CD5: ph omitted)
+    meta_ads_schema_test.go:170: GAP schema:river:USAGE -- GAP-1: ads.verify_job reads river.river_job (xmin) to prove the planned job, the pattern §6.3 mandates (integration.plan_claim_reply, 0064:829); §4.4 has no river row
+    meta_ads_schema_test.go:170: GAP table:river.river_job:SELECT -- GAP-1
+=== RUN   TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none
+=== RUN   TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments
+=== RUN   TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants
+=== RUN   TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse
+=== RUN   TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance
+=== RUN   TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red)
+=== RUN   TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist
+=== RUN   TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped)
+--- PASS: TestMetaAdsMA02Schema (1.55s)
+    --- PASS: TestMetaAdsMA02Schema/commerce_ads_writer_holds_exactly_the_§4.4_rows_(+_the_listed_contract_gaps) (0.01s)
+    --- PASS: TestMetaAdsMA02Schema/every_other_role_holds_exactly_its_§4.4_rows_on_ads_objects;_PUBLIC_and_login_roles_hold_none (0.04s)
+    --- PASS: TestMetaAdsMA02Schema/object_hygiene:_FORCE_RLS,_definer_+_search_path,_owners,_comments (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/widened_CHECKs_and_A-1:_no_automatic_ads_grants (0.04s)
+    --- PASS: TestMetaAdsMA02Schema/§4.1_table_CHECKs_refuse_what_the_contract_says_they_refuse (0.10s)
+    --- PASS: TestMetaAdsMA02Schema/runtime_and_worker_cannot_touch_ads_tables_or_the_operator_definer;_merchants_cannot_change_environment_or_allowance (0.11s)
+    --- PASS: TestMetaAdsMA02Schema/writer_policies_on_integration.operations_/_operation_events_exist_and_behave_(removing_one_turns_this_red) (0.09s)
+    --- PASS: TestMetaAdsMA02Schema/evidence:_source_files_of_the_schema_half_exist (0.00s)
+    --- PASS: TestMetaAdsMA02Schema/static:_every_GRANT_in_the_ads_migrations_is_a_§4.4_/_0080_statement_(comments_and_strings_stripped) (0.09s)
+=== RUN   TestR2IntegrationUpgradeFromReleaseHead
+--- PASS: TestR2IntegrationUpgradeFromReleaseHead (4.46s)
+PASS
+ok  	livecommerce/tests/foundation	7.841s
+test-focused: top-level PASS=2 FAIL=0 SKIP=0 exit=0
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (227.782583ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.373084ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.455208ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.143834ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.206041ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.273375ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.522042ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.067416ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.11675ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (123.873625ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.218125ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 351.642041
+WARN G-UI5 apps/admin/components/Ads.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AdsDraft.tsx: >500 lines
+WARN G-UI5 apps/admin/components/AttributionPanels.tsx: >500 lines
+WARN G-UI5 apps/admin/components/CollectionManager.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Design.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Entry.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Ledger.tsx: >500 lines
+WARN G-UI5 apps/admin/components/MerchantOrders.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductDocumentForm.tsx: >500 lines
+WARN G-UI5 apps/admin/components/ProductList.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StorefrontSettings.tsx: >500 lines
+WARN G-UI5 apps/admin/components/Studio.tsx: >500 lines
+WARN G-UI5 apps/admin/components/StudioClaims.tsx: >500 lines
+WARN G-UI5 apps/admin/lib/ads-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/ads-model.ts: >500 lines
+WARN G-UI5 apps/admin/lib/auth.ts: >500 lines
+WARN G-UI5 apps/admin/lib/catalog-v2-copy.ts: >500 lines
+WARN G-UI5 apps/admin/lib/product-editor-copy.ts: >500 lines
+WARN G-UI5 apps/storefront/components/CheckoutFlow.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/CvsPickup.tsx: >500 lines
+WARN G-UI5 apps/storefront/components/OrderPayment.tsx: >500 lines
+WARN G-UI5 apps/storefront/lib/order-payment.ts: >500 lines
+PASS G-UI3/G-UI5
+check-gates: ok (71 modes, all documented; every tracked test file is run)
+check-headers: OK (base 6277731ed67c102cee19fdceed206e9dcd77efb5)

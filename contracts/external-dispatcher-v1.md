@@ -163,3 +163,10 @@ and a reconcile-mode denial is `completeAmbiguous('policy_check_failed')`, `:236
   - A10-D2 `DenyPolicy(code)` returns `PolicyDenial{Code}` (`errors.Is(_, ErrPolicyDenied)`); in dispatch mode it records BLOCKED_POLICY with that code when it matches `codePattern`, else `policy_denied`. A bare `ErrPolicyDenied` keeps `policy_denied`. Reconcile-mode Check denials stay UNKNOWN `policy_check_failed` (unchanged).
   - A10-D3 `InsertOperationJobOn(ctx, jobs, tx, operationID, queue, priority)`: same args/kind as `InsertOperationJob`, explicit queue `^[a-z][a-z0-9_]{0,39}$` and priority 1..4, else `command.ErrInvalid`. `InsertOperationJob` stays on queue `default`. The `river_job` guard must admit the queue (ads-core `post_river/0015`).
   - A10-D4 reconcile with `ReconcileWithSecret`: loader `ErrPolicyDenied` → UNKNOWN `credential_unavailable`; other loader error/panic → UNKNOWN `secret_load_failed`; the secret is zeroed after the callback. Route validation: exactly one of `Reconcile`/`ReconcileWithSecret`, the latter only with the `LoadSecret`+`DispatchWithSecret` pair.
+
+## Amendment W6-05B reconcile budget floor (2026-10-07, migration 0159)
+
+The "bounded number of claimed generations" above is counted as `generation - generation_floor` (`integration.operations.generation_floor`, DEFAULT 0, so every existing operation
+behaves exactly as before). Only the merchant ledger actions `query` and `retry` raise the floor to the current generation, which restarts the bounded budget for a
+`reconcile_budget_exhausted` or re-opened operation without lowering the monotonic generation that fences every lease. Normative text and the full state/transition table:
+[external-operation-v1.md "Amendment W6-05B"](external-operation-v1.md).

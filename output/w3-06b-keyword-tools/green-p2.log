@@ -1,0 +1,23 @@
+tested tree: 32d2742a9a86c583ba70b466287d4300c3c45cee (clean worktree; includes r3/integration 93233a00)
+command: bash scripts/dev/test-focused.sh '^(TestSimulate|TestKeywordTools|TestLiveToolsGateOfferLifecycleAndExpiry)'   (the requested '^(TestSimulate|TestKeywordTools)' plus the LTG03 live price gate; TestKeywordToolsBatchDeactivateIsAPause is the new live price test)
+
+=== RUN   TestKeywordToolsBatchDeactivateIsAPause
+--- PASS: TestKeywordToolsBatchDeactivateIsAPause (1.98s)
+=== RUN   TestSimulateParityWithIngest
+--- PASS: TestSimulateParityWithIngest (8.61s)
+=== RUN   TestSimulateReadOnlyDefaultsAndScope
+--- PASS: TestSimulateReadOnlyDefaultsAndScope (0.23s)
+=== RUN   TestSimulateOmittedModeFollowsWindow
+--- PASS: TestSimulateOmittedModeFollowsWindow (0.13s)
+=== RUN   TestKeywordToolsCheckAndNext
+--- PASS: TestKeywordToolsCheckAndNext (0.21s)
+=== RUN   TestKeywordToolsBatch
+--- PASS: TestKeywordToolsBatch (0.36s)
+=== RUN   TestKeywordToolsHTTP
+--- PASS: TestKeywordToolsHTTP (0.14s)
+=== RUN   TestLiveToolsGateOfferLifecycleAndExpiry
+--- PASS: TestLiveToolsGateOfferLifecycleAndExpiry (0.50s)
+PASS
+ok  	livecommerce/tests/foundation	14.498s
+test-focused: top-level PASS=8 FAIL=0 SKIP=0 exit=0
+exit=0

@@ -1,0 +1,58 @@
+== W6-06B RED phase ==
+
+--- go test ./internal/httpapi -run TestAdsTransportRules (exit 1: 11 new-route cases 404) ---
+--- FAIL: TestAdsTransportRules (0.00s)
+    --- FAIL: TestAdsTransportRules/unbind_ok (0.00s)
+        ads_test.go:165: status=404 want 401 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_needs_key (0.00s)
+        ads_test.go:165: status=404 want 422 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_missing_account (0.00s)
+        ads_test.go:165: status=404 want 422 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_null_account (0.00s)
+        ads_test.go:165: status=404 want 400 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_unknown_field (0.00s)
+        ads_test.go:165: status=404 want 400 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_rejects_query (0.00s)
+        ads_test.go:165: status=404 want 422 body=404 page not found
+    --- FAIL: TestAdsTransportRules/unbind_wrong_method (0.00s)
+        ads_test.go:165: status=404 want 405 body=404 page not found
+    --- FAIL: TestAdsTransportRules/catalog-feed_ok (0.00s)
+        ads_test.go:165: status=404 want 401 body=404 page not found
+    --- FAIL: TestAdsTransportRules/catalog-feed_rejects_query (0.00s)
+        ads_test.go:165: status=404 want 422 body=404 page not found
+    --- FAIL: TestAdsTransportRules/catalog-feed_rejects_key (0.00s)
+        ads_test.go:165: status=404 want 422 body=404 page not found
+    --- FAIL: TestAdsTransportRules/catalog-feed_wrong_method (0.00s)
+        ads_test.go:165: status=404 want 405 body=404 page not found
+FAIL
+FAIL	livecommerce/internal/httpapi	0.364s
+FAIL
+
+--- bash scripts/dev/test-focused.sh TestAdsUnbindRealPG ./internal/ads (exit 1: definer functions do not exist, SQLSTATE 42883) ---
+=== RUN   TestAdsUnbindRealPG
+=== RUN   TestAdsUnbindRealPG/feed_URL_is_store-scoped_and_needs_ads:read
+    unbind_pg_test.go:187: catalog_feed_url: ERROR: function ads.catalog_feed_url(unknown, unknown) does not exist (SQLSTATE 42883)
+=== RUN   TestAdsUnbindRealPG/in-flight_operations_refuse_the_unbind_and_list_themselves
+    unbind_pg_test.go:238: unbind with an in-flight op: ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+=== RUN   TestAdsUnbindRealPG/a_counting_draft_refuses_the_unbind_through_the_frozen_trigger,_atomically
+    unbind_pg_test.go:307: want PT409 binding_in_use, got 42883 function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883))
+=== RUN   TestAdsUnbindRealPG/unbind_detaches,_destroys_the_token_and_keeps_history
+    unbind_pg_test.go:333: unbind: ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883) ()
+=== RUN   TestAdsUnbindRealPG/re-unbind_is_a_200_no-op
+    unbind_pg_test.go:380: no-op unbind: ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+=== RUN   TestAdsUnbindRealPG/cross-store_unbind_is_a_no-op_that_touches_nothing
+    unbind_pg_test.go:394: cross-store call: ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883)
+=== RUN   TestAdsUnbindRealPG/permissions
+    unbind_pg_test.go:419: definer without ads:manage: want AD403 forbidden, got 42883 function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (ERROR: function integration.meta_ads_unbind(unknown, unknown, unknown) does not exist (SQLSTATE 42883))
+--- FAIL: TestAdsUnbindRealPG (1.07s)
+    --- FAIL: TestAdsUnbindRealPG/feed_URL_is_store-scoped_and_needs_ads:read (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/in-flight_operations_refuse_the_unbind_and_list_themselves (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/a_counting_draft_refuses_the_unbind_through_the_frozen_trigger,_atomically (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/unbind_detaches,_destroys_the_token_and_keeps_history (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/re-unbind_is_a_200_no-op (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/cross-store_unbind_is_a_no-op_that_touches_nothing (0.00s)
+    --- FAIL: TestAdsUnbindRealPG/permissions (0.00s)
+FAIL
+FAIL	livecommerce/internal/ads	1.522s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

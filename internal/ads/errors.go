@@ -1,3 +1,12 @@
+// Purpose: errors.go maps every refusal (local validation, SQL definer, driver) to one of the frozen error codes of
+//   docs/delivery/units/ads-core.md — plus Amendment W6-06B (meta-ads-v1 §A): operations_in_flight and the frozen
+//   trigger's binding_in_use — so the HTTP layer never returns a driver message. Refusal optionally carries the
+//   bounded transport-details object (the in-flight operation list) via ErrorDetails(). It touches no table.
+// Depends on: internal/command and internal/platform sentinels, pgx/pgconn driver errors, the frozen ADnnn SQLSTATE
+//   vocabulary (migrations 0074 ads.deny) and PT409 binding_in_use (0074 bindings_ads_disable_guard).
+// Used by: every internal/ads service method (refusal/mapError), internal/httpapi/ads.go (adsClassify and
+//   respondErrorDetails through Refusal.ErrorDetails).
+
 package ads
 
 import (
@@ -13,16 +22,25 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// errors.go maps every refusal (local validation, SQL definer, driver) to one of the frozen error codes of
-// docs/delivery/units/ads-core.md so the HTTP layer never returns a driver message. It touches no table.
-
 // Refusal is one frozen domain refusal: an HTTP status and the frozen error code the body carries.
+// Details is the optional bounded transport-details object (Amendment W6-06B §A: operations_in_flight lists the
+// in-flight operations); fixed keys, ids and numbers only, never a request value or anything token-shaped.
 type Refusal struct {
-	Status int
-	Code   string
+	Status  int
+	Code    string
+	Details map[string]any
 }
 
 func (r *Refusal) Error() string { return "ads refusal: " + r.Code }
+
+// ErrorDetails implements the respondErrorDetails contract (internal/httpapi/handler.go); a nil Details returns the
+// empty object so the envelope is byte-identical to respondError.
+func (r *Refusal) ErrorDetails() map[string]any {
+	if r.Details == nil {
+		return map[string]any{}
+	}
+	return r.Details
+}
 
 // refusal builds the Refusal for a frozen code with its status. Statuses follow the ADnnn SQLSTATE the
 // migration raises (nnn = HTTP status); billing_restricted is 402 everywhere (ruling B9).
@@ -38,6 +56,8 @@ var (
 		"currency_mismatch": http.StatusUnprocessableEntity, "starts_too_soon": http.StatusUnprocessableEntity,
 		"binding_disabled": http.StatusConflict, "source_not_owned": http.StatusUnprocessableEntity,
 		"product_not_published": http.StatusUnprocessableEntity, "forbidden": http.StatusForbidden,
+		// Amendment W6-06B (meta-ads-v1 §A): the unbind refusals.
+		"operations_in_flight": http.StatusConflict, "binding_in_use": http.StatusConflict,
 		"not_found": http.StatusNotFound, "invalid_request": http.StatusUnprocessableEntity,
 		"unauthorized": http.StatusUnauthorized, "conflict": http.StatusConflict,
 	}
@@ -78,6 +98,11 @@ func mapError(err error) error {
 			}
 			return refusal(code)
 		}
+	}
+	// PT409 MESSAGE=binding_in_use is the frozen 0074 disable guard (R2-ADS-PAUSE-1 "pause first, then
+	// disconnect"); Amendment W6-06B §A3 gives it its own frozen code instead of the generic conflict.
+	if pgErr.Code == "PT409" && pgErr.Message == "binding_in_use" {
+		return refusal("binding_in_use")
 	}
 	switch pgErr.Code {
 	case "40001", "23505", "PT409":
