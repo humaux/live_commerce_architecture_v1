@@ -34,7 +34,7 @@ test("unknown permissions and erased customer never offer note mutations", () =>
 });
 test("write-only notes permit add but not edit/delete of notes the server does not mark own; privacy permission permits both", () => {
   const writer = renderToStaticMarkup(createElement(CustomerTags, { ...props, store: { ...store, permissions: ["customers:read", "customers:write"] } }));
-  assert.match(writer, /<textarea/); assert.match(writer, /earlier notes remain read-only/i);
+  assert.match(writer, /<textarea/); assert.match(writer, /edit or delete only the notes you wrote/i);
   assert.doesNotMatch(writer, />Edit<|>Delete</);
   const privacy = renderToStaticMarkup(createElement(CustomerTags, { ...props, store: { ...store, permissions: ["customers:read", "customers:write", "customers:privacy"] } }));
   assert.match(privacy, />Edit</); assert.match(privacy, />Delete</);
