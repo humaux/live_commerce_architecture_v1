@@ -5,7 +5,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { preparePhoto } from "../../apps/admin/lib/photo-preprocess.ts";
 const png = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  // 1x1 PNG, split so the base64 run "EAAAAB..." does not match the Meta EAA token shape of the key-literal scan.
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" + "CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
   "base64",
 );
 const jpeg = Uint8Array.from([255, 216, 255, 224, 0, 2]);

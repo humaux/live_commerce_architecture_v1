@@ -1,0 +1,4 @@
+shard-plan: note: 2 test(s) are in no list and run in the catch-all g06: TestMerchantCancelClosesWorkItem, TestPlatformSettlementPF15Resolve
+shard-plan: ok (1219 top-level tests, each in exactly one of 10 groups)
+check-gates: ok (77 modes, all documented; every tracked test file is run)
+check-headers: OK (base ba1d15796c6d105c97d9c4863d15eda2f9ff7e2a)

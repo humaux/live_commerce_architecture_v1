@@ -1,0 +1,26 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_schema_privileges
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolve_flow
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth
+    settlement_resolve_test.go:233: UPDATE of a resolution: want PT409 settlement_resolution_immutable, got <nil>
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_close_with_notes
+    settlement_resolve_test.go:266: operator note: {BalanceTxnID:txn_PF15Odd TargetTenantID:3c4f4702-84c5-4810-ac42-7728918e6a27 TargetStoreID:2c395502-e1df-4ecc-9a2c-fefb255f3044 Operator:op@test Ticket:TICKET-2026-1001 Note:edited after the fact}
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_cli_e2e
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final
+    settlement_resolve_test.go:406: re-sync after the lag: {Fetched:2 Inserted:2 Duplicate:0 Unattributed:0 Mismatch:0 Rechecked:0 StripeNet:map[HKD:1222] RecordedNet:map[HKD:1222] Difference:map[HKD:0]}, want exactly the unresolved control attributed (inserted 1, duplicate 1)
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_closed_period
+--- FAIL: TestPlatformSettlementPF15Resolve (16.84s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_schema_privileges (0.02s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse (0.04s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_resolve_flow (0.02s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_close_with_notes (0.01s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_cli_e2e (2.72s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final (0.02s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_closed_period (0.01s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.606s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+EXIT=1

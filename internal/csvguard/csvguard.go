@@ -1,4 +1,4 @@
-// Package csvguard holds the one spreadsheet formula guard shared by every merchant CSV export (merchantorders carrier/order export, reporting).
+// Package csvguard owns the one spreadsheet formula guard shared by every merchant CSV export (merchantorders carrier/order export, reporting).
 //
 // Purpose: prefix a text cell a spreadsheet could execute with an apostrophe (contract §5.3, A1).
 // Depends on: strings only.

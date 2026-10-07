@@ -1,0 +1,26 @@
+=== RUN   TestPlatformSettlementPF15Resolve
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_schema_privileges
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolve_flow
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_close_with_notes
+    settlement_resolve_test.go:285: operator note amounts: {BalanceTxnID:txn_PF15Odd TargetTenantID:b0ce5d12-17a2-4d16-b036-fb07acf42cda TargetStoreID:4368e6d3-55e9-4a51-9c76-cec8fc584603 Operator:op@test Ticket:TICKET-2026-1001 Note:Buyer of store C paid through the platform page; owner pays C out of band. PeriodStart: Type: SettleAmount:0 SettleNet:0 SettleCurrency:}
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_cli_e2e
+    settlement_resolve_test.go:372: close JSON: map[environment:SANDBOX operator_notes:[map[balance_txn_id:txn_PF15Odd note:Buyer of store C paid through the platform page; owner pays C out of band. operator:op@test period_start: settle_amount:0 settle_currency: settle_net:0 target_store_id:4368e6d3-55e9-4a51-9c76-cec8fc584603 target_tenant_id:b0ce5d12-17a2-4d16-b036-fb07acf42cda ticket:TICKET-2026-1001 type:]] period_start:2026-09-14 statements:[map[line_count:1 net_payable_minor:2400 replayed:false statement_id:4c23bbd2-1b72-4ebb-b354-094f56af9f8f store_id:4368e6d3-55e9-4a51-9c76-cec8fc584603] map[line_count:0 net_payable_minor:0 replayed:false statement_id:34f17f23-5fde-4de3-bf73-d21eb213ed9a store_id:aa60e383-a2ac-4a05-8503-6830e0503e1b]] ticket:TICKET-2026-1001]
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final
+=== RUN   TestPlatformSettlementPF15Resolve/PF15_closed_period
+    settlement_resolve_test.go:458: week 3 operator notes: [{BalanceTxnID:txn_PF15Fin TargetTenantID:b0ce5d12-17a2-4d16-b036-fb07acf42cda TargetStoreID:4368e6d3-55e9-4a51-9c76-cec8fc584603 Operator:op@test Ticket:TICKET-2026-1001 Note:C's buyer paid the platform page; owner pays C by transfer. PeriodStart: Type: SettleAmount:0 SettleNet:0 SettleCurrency:} {BalanceTxnID:txn_PF15Odd TargetTenantID:b0ce5d12-17a2-4d16-b036-fb07acf42cda TargetStoreID:4368e6d3-55e9-4a51-9c76-cec8fc584603 Operator:op@test Ticket:TICKET-2026-1001 Note:Buyer of store C paid through the platform page; owner pays C out of band. PeriodStart: Type: SettleAmount:0 SettleNet:0 SettleCurrency:}] (week 1's note must not be reprinted)
+--- FAIL: TestPlatformSettlementPF15Resolve (16.01s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_schema_privileges (0.04s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_seed_and_refuse (0.04s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_resolve_flow (0.01s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_append_only_in_depth (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_close_with_notes (0.00s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_cli_e2e (2.89s)
+    --- PASS: TestPlatformSettlementPF15Resolve/PF15_resolved_row_is_final (0.02s)
+    --- FAIL: TestPlatformSettlementPF15Resolve/PF15_closed_period (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.046s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+EXIT=1
