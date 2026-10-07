@@ -16,7 +16,7 @@ const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/compone
   compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 
-function harness() {
+function harness(readTagData = () => new Promise(() => {})) {
   const slots = []; let cursor = 0; const effects = []; const writes = [];
   const react = {
     useId: () => { const index = cursor++; return slots[index] ??= `synthetic-${index}`; },
@@ -42,7 +42,7 @@ function harness() {
       if (path === "../lib/customer-tags-model") return model;
       if (path === "../lib/orders-model") return { displayTime };
       // Pending read fixture deliberately never returns: only parent prop/effect/callback behavior is under test.
-      if (path === "../lib/customer-tags-client") return { readTagData: () => new Promise(() => {}) };
+      if (path === "../lib/customer-tags-client") return { readTagData };
       throw new Error(`Unexpected fixture import ${path}`);
     },
   });
@@ -92,4 +92,18 @@ test("explicit refresh signal clears old edit draft while passive array changes 
   const next = { ...h.props, reloadVersion: 1 };
   h.render(next); h.flush(); tree = h.render(next);
   assert.equal(h.textarea(tree).props.value, ""); assert.equal(h.button(tree, "Cancel"), undefined);
+});
+
+// Codex review P2 (PR #3): a note read that loses authorization must not leave private note bodies or a draft on screen.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+test("an unauthorized note read clears private note bodies and the draft", async () => {
+  const h = harness(() => Promise.reject(new Error("unauthorized"))); let tree = h.render();
+  h.textarea(tree).props.onChange({ target: { value: "unsaved synthetic draft" } });
+  await settle(); tree = h.render();
+  assert.ok(!h.nodes(tree).some((n) => n.type === "p" && n.props.children === note.body), "note body still rendered after unauthorized");
+  assert.equal(h.textarea(tree)?.props.value ?? "", "");
+});
+test("a transient note read failure keeps the notes already shown", async () => {
+  const h = harness(() => Promise.reject(new Error("retry_later"))); await settle(); const tree = h.render();
+  assert.ok(h.nodes(tree).some((n) => n.type === "p" && n.props.children === note.body));
 });
