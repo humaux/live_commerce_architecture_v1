@@ -441,7 +441,9 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 		return order.OrderID
 	}
 	parcelPair := func(buyerCap buyer.Capability, tag string) [2]string {
-		return [2]string{parcelOrder(buyerCap, tag, true), parcelOrder(buyerCap, tag, true)}
+		// Distinct tags per member: the tag seeds the begin/start idempotency keys, and a shared key replays
+		// the first order instead of placing a second one ("conflicting request or version").
+		return [2]string{parcelOrder(buyerCap, tag+"-a", true), parcelOrder(buyerCap, tag+"-b", true)}
 	}
 	shipCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
 	shipPair := parcelPair(shipCap, "ship")
