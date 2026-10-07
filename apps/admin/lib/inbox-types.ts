@@ -42,6 +42,8 @@ export type Message = {
 /** A9 current server window and takeover generation. */
 export type Thread = {
   items: Message[];
+  // Null or absent means the server cannot exclude an older UNKNOWN; the composer fails closed.
+  has_unknown_outbound?: boolean | null;
   window_open_until: string;
   mode: "auto" | "human";
   takeover_generation: number;

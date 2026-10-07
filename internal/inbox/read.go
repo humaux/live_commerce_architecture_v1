@@ -193,14 +193,16 @@ func (s *Service) ReadThread(ctx context.Context, tx pgx.Tx, conversationID stri
 		return out, databaseError(err)
 	}
 	rows.Close()
+	// Calls inbox.read_outbound (live-console-v1 §11 A9); authority is refreshed on every page, before display filtering.
+	outbound, authority, err := s.outboundItems(ctx, tx, conversationID, limit, out.Items, beforeSeq == nil)
+	if err != nil {
+		return out, err
+	}
+	out.HasUnknownOutbound = authority
 	if beforeSeq == nil {
 		// Outbound rows (the merchant's own sends) are merged by time on the first page only.
 		// ponytail: older pages show inbound rows only; the UI pages outbound through the first page's window. Upgrade path: a
 		// (conversation, created_at) keyset on inbox.read_outbound when threads outgrow one inbound page.
-		outbound, err := s.outboundItems(ctx, tx, conversationID, limit, out.Items)
-		if err != nil {
-			return out, err
-		}
 		out.Items = append(out.Items, outbound...)
 		sortThread(out.Items)
 	}

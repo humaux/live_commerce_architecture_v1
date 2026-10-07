@@ -115,13 +115,15 @@ type MessageItem struct {
 	Unreadable  *bool            `json:"unreadable,omitempty"`
 }
 
-// ThreadView is the A9 response envelope.
+// ThreadView is the A9 response envelope. HasUnknownOutbound is true for a known UNKNOWN send, false only for
+// an exhaustive scan of known states, and null when the bounded scan cannot establish safe sending authority.
 type ThreadView struct {
 	Items              []MessageItem `json:"items"`
 	WindowOpenUntil    time.Time     `json:"window_open_until"`
 	Mode               string        `json:"mode"`
 	TakeoverGeneration int64         `json:"takeover_generation"`
 	HumanUntil         *time.Time    `json:"human_until"`
+	HasUnknownOutbound *bool         `json:"has_unknown_outbound"`
 }
 
 // ClaimRef is one A13 claim; LC-B3 always returns them empty (bundles/claims are LC-B4). The shape is fixed here so

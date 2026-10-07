@@ -1,0 +1,14 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "env": {
+    "GOTOOLCHAIN": "go1.27.1",
+    "NODE_PATH": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules"
+  },
+  "exit_code": 0,
+  "timeout_seconds": 300,
+  "started_epoch": 1791399714.394857,
+  "elapsed_seconds": 9.025064945220947
+}

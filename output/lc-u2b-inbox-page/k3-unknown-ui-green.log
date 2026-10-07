@@ -1,0 +1,23 @@
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in en (33.92725ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-TW (2.419417ms)
+✔ persisted A9 UNKNOWN after page entry warns and blocks the real composer in zh-CN (2.314208ms)
+✔ A12 queued ACK followed by final A9 UNKNOWN overrides the local queued notice and blocks another send (3.596875ms)
+✔ a captured previously enabled composer cannot bypass final UNKNOWN learned by Refresh (2.969584ms)
+✔ a later A9 page omitting the known UNKNOWN is not delivery reconciliation (4.791542ms)
+✔ persisted queued is not mislabeled UNKNOWN and retains ordinary composer eligibility (3.092125ms)
+✔ persisted sent is not mislabeled UNKNOWN and retains ordinary composer eligibility (5.585291ms)
+✔ persisted failed is not mislabeled UNKNOWN and retains ordinary composer eligibility (6.605416ms)
+✔ persisted blocked is not mislabeled UNKNOWN and retains ordinary composer eligibility (0.913417ms)
+✔ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=true) (4.009083ms)
+✔ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=null) (2.25525ms)
+✔ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=undefined) (2.787375ms)
+✔ fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=false) (1.774459ms)
+✔ a refreshed unknown authority replaces old clear authority even for a captured composer (1.231584ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 460.13425

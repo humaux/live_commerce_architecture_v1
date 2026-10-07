@@ -1,0 +1,32 @@
+=== RUN   TestInboxUnknownAuthority
+=== RUN   TestInboxUnknownAuthority/empty
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/exhaustive_healthy
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/known_unknown
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/missing_operation
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/exactly_50_healthy
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/unknown_in_full_scan
+    inbox_unknown_authority_test.go:104: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound
+    inbox_unknown_authority_test.go:114: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound
+    inbox_unknown_authority_test.go:124: private A9 response must use no-store
+=== RUN   TestInboxUnknownAuthority/scope_not_found
+--- FAIL: TestInboxUnknownAuthority (24.98s)
+    --- FAIL: TestInboxUnknownAuthority/empty (0.03s)
+    --- FAIL: TestInboxUnknownAuthority/exhaustive_healthy (0.11s)
+    --- FAIL: TestInboxUnknownAuthority/known_unknown (0.01s)
+    --- FAIL: TestInboxUnknownAuthority/missing_operation (0.01s)
+    --- FAIL: TestInboxUnknownAuthority/exactly_50_healthy (0.12s)
+    --- FAIL: TestInboxUnknownAuthority/unknown_in_full_scan (0.12s)
+    --- FAIL: TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound (0.12s)
+    --- FAIL: TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound (13.26s)
+    --- PASS: TestInboxUnknownAuthority/scope_not_found (0.02s)
+FAIL
+FAIL	livecommerce/tests/foundation	26.028s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1

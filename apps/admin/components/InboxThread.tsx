@@ -51,6 +51,7 @@ export function InboxThread({
   const [revision, setRevision] = useState(0);
   const [delivery, setDelivery] = useState<string | null>(null);
   const persistedUnknown = useRef(false);
+  const historyClear = useRef(false);
   const [retry, setRetry] = useState(false);
   const pending = useRef(new ReplyReceipt());
   const clearGone = useCallback(() => {
@@ -65,6 +66,7 @@ export function InboxThread({
     setRetry(false);
     setDelivery(null);
     persistedUnknown.current = false;
+    historyClear.current = false;
     inFlight.current = false;
     setBusy(false);
   }, []);
@@ -106,6 +108,7 @@ export function InboxThread({
     async (before?: number) => {
       if (!cid || inFlight.current || gone.current) return;
       inFlight.current = true;
+      historyClear.current = false;
       setBusy(true);
       const ticket = fence.current.begin();
       try {
@@ -122,7 +125,10 @@ export function InboxThread({
           throw new InboxError("unavailable", 503);
         // A9 pages can omit older outbound rows: absence cannot reconcile a known final UNKNOWN.
         // Latch before React commits so previously captured callbacks also respect this authority.
-        persistedUnknown.current ||= data.items.some((item) => item.direction === "out" && item.send_state === "unknown");
+        persistedUnknown.current ||= data.has_unknown_outbound === true ||
+          data.items.some((item) => item.direction === "out" && item.send_state === "unknown");
+        // Null, absent or malformed authority is not proof of a clear history, including on older pages.
+        historyClear.current = data.has_unknown_outbound === false;
         setThread((old) =>
           before && old
             ? { ...data, items: [...data.items, ...old.items] }
@@ -252,6 +258,7 @@ export function InboxThread({
       !open ||
       Date.now() >= sendDeadline ||
       inFlight.current ||
+      !historyClear.current ||
       uncertainDelivery || persistedUnknown.current
     )
       return;
@@ -425,6 +432,9 @@ export function InboxThread({
             : (c[delivery as "queued"] ?? c.unknown)}
         </p>
       )}
+      {reply && thread && !historyClear.current && !uncertainDelivery && !busy && (
+        <p role="status" className={styles.notice}>{c.historyUnverified}</p>
+      )}
       {!reply && <p className={styles.notice}>{c.readonly}</p>}
       {reply && !capable && (
         <p className={styles.notice}>
@@ -487,6 +497,7 @@ export function InboxThread({
             !capable ||
             !open ||
             busy ||
+            !historyClear.current ||
             uncertainDelivery ||
             (!templateRow && !limit.valid)
           }

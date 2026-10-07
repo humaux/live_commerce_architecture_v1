@@ -320,6 +320,7 @@ const conversation = {
   linked_customer_id: null,
 };
 const thread = {
+  has_unknown_outbound: false,
   items: [
     {
       direction: "in",

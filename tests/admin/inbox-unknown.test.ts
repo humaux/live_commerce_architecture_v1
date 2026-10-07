@@ -122,3 +122,42 @@ for (const state of ["queued", "sent", "failed", "blocked"]) {
     assert.equal(sendControl(host).props.disabled, false);
   });
 }
+
+for (const fact of [true, null, undefined, "false"]) {
+  test(`fresh mount refuses when an old UNKNOWN is beyond 51 newer messages (fact=${String(fact)})`, async (t) => {
+    const env = environment(t);
+    const history = [
+      { ...thread.items[0], direction: "out", send_state: "unknown", text: "MOCK_OLD_UNKNOWN" },
+      ...Array.from({ length: 51 }, (_, index) => ({ ...thread.items[0], seq: index + 2, text: "MOCK_NEWER_HISTORY" })),
+    ];
+    const page = { ...thread, has_unknown_outbound: fact, items: history.slice(-50) };
+    const calls = transport(() => response(page));
+    const host = mount(env);
+    await host.waitFor(() => idle(host) && textOf(host.output).includes("MOCK_NEWER_HISTORY"), "first A9 page committed");
+    assert.equal(textOf(host.output).includes("MOCK_OLD_UNKNOWN"), false, "UNKNOWN is outside the visible page");
+    change(host, "reply-text", "MOCK_DUPLICATE_RISK");
+    assert.equal(sendControl(host).props.disabled, true, "only authoritative false may enable a fresh composer");
+    assert.ok(nodes(host.output).some((n) => n.props.role === "status" &&
+      textOf(n) === (fact === true ? warning.en : "Delivery history could not be fully verified. Sending is unavailable; check Messenger and contact support.")));
+    node(host, (n) => n.type === "form").props.onSubmit({ preventDefault() {} });
+    assert.equal(host.ref(ReplyReceipt).pending(), null);
+    assert.equal(sends(calls).length, 0);
+  });
+}
+
+test("a refreshed unknown authority replaces old clear authority even for a captured composer", async (t) => {
+  const env = environment(t);
+  let reads = 0;
+  const calls = transport(() => response(++reads === 1 ? projection("sent") : { ...projection("sent"), has_unknown_outbound: null }));
+  const host = mount(env);
+  await loaded(host, "sent");
+  change(host, "reply-text", "MOCK_CAPTURED_HISTORY");
+  assert.equal(sendControl(host).props.disabled, false);
+  const captured = node(host, (n) => n.type === "form").props.onSubmit;
+  clickText(host, "Refresh");
+  await host.waitFor(() => reads === 2 && idle(host), "fresh A9 unknown authority committed");
+  assert.equal(sendControl(host).props.disabled, true);
+  captured({ preventDefault() {} });
+  assert.equal(host.ref(ReplyReceipt).pending(), null);
+  assert.equal(sends(calls).length, 0);
+});

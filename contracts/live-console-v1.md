@@ -659,7 +659,7 @@ decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the 
 | A6 | POST `/live-sessions/{sid}/claims/offers/{oid}/recommend` | live:manage (+inbox:reply if post_comment) | `{expected_version, post_comment}` → `{recommended_at, operation_id?}` | 409 version_conflict\|offer_unavailable\|capability, 422 ig_live_unsupported | live.offer.recommended |
 | A7 | POST `/live-sessions/{sid}/lifecycle` | live:manage | `{action, expected_version, open_window?}` → `{lifecycle, version, window}` | 409 version_conflict\|invalid_transition\|too_many_open_windows, 402 billing_restricted | live.session.started\|ended\|archived |
 | A8 | GET `/inbox/conversations` | inbox:read | `?filter=all\|unreplied\|messenger\|instagram\|live_comment&session_id=&cursor=&limit≤50` → `{items: [{conversation_id?, bundle_id?, platform, display_name?, last_at, unread, unreplied, mode, assignee, window_open_until, linked_customer_id}], next_cursor, unread_total}` | 400 invalid_filter | — |
-| A9 | GET `/inbox/conversations/{cid}/messages` | inbox:read | `?before_seq=&limit≤50` → `{items: [{direction, seq?, at, text, attachments, kind?, send_state?, principal_id?, unreadable?}], window_open_until, mode, takeover_generation, human_until}` | 404 | `inbox.thread_opened` (principal, conversation; coalesced ≤ 1 per principal per conversation per hour; no content) |
+| A9 | GET `/inbox/conversations/{cid}/messages` | inbox:read | `?before_seq=&limit≤50` → `{items: [{direction, seq?, at, text, attachments, kind?, send_state?, principal_id?, unreadable?}], window_open_until, mode, takeover_generation, human_until, has_unknown_outbound: boolean|null}` | 404 | `inbox.thread_opened` (principal, conversation; coalesced ≤ 1 per principal per conversation per hour; no content) |
 | A10 | POST `/inbox/conversations/{cid}/read` | inbox:read (effective only with inbox:reply, §3.6) | `{read_seq}` → `{read_seq}` | 404, 422 | — |
 | A11 | POST `/inbox/conversations/{cid}/takeover` · `/release` | inbox:reply | `{expected_generation}` → `{mode, assignee, takeover_generation}` | 409 takeover_changed | inbox.takeover\|inbox.release |
 | A12 | POST `/inbox/conversations/{cid}/messages` | inbox:reply | `{text \| template ref, expected_generation}` → `{operation_id, outbound_id, send_state, takeover_generation}` | 409 window_closed\|takeover_changed\|capability\|conversation_gone\|duplicate_recent, 422 invalid_text, 429 rate_limited | inbox.dm.planned |
@@ -668,6 +668,15 @@ decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the 
 | A15 | GET `/inbox/order-prefill` | orders:read + inventory:reserve | `?bundle_id=` \| `?conversation_id=` → §5.1 step 1 | 404 | — |
 | A16 | POST `/orders/for-buyer` | inventory:reserve (+live:manage for a live-price grant, +inbox:reply if send) | §5.1 step 3 → §5.1 step 5 | the `orders/manual` codes + 409 bundle_already_ordered\|bundle_buyer_mismatch\|capability | order.manual_created + order.for_buyer_created (+claims.merchant_origin_granted, +inbox.dm.planned) |
 | — | `/message-templates` (W2-05B) | live:manage / inbox:reply | owned by W2-05B; this contract fixes only `{template_id, version, public_safe, kinds}` | | template.published |
+
+A9 additive delivery guard (PR #8 K3 ruling, 2026-10-08): every page returns `has_unknown_outbound` independently
+of its display window. `true` means a final UNKNOWN was found; `false` is allowed only when the outbound history
+was exhaustively checked and all states were known. `null` means the bounded read cannot exclude an older UNKNOWN
+or an operation state is unavailable. The current existing definer reads at most 50 outbound rows: hitting that cap
+without seeing UNKNOWN must return `null`, even if all displayed rows look successful. The UI permits sending only
+on explicit `false`, retains any already-observed UNKNOWN, and shows an unavailable reason for null/missing authority.
+A future unbounded metadata fact may restore eligibility for longer clear histories; this conservative fallback adds
+no database privileges or migration and never equates an omitted message with delivery reconciliation.
 
 Text inputs (A4/A5/A12): limits per §3.3 (Messenger 2000 runes, Instagram 1000 bytes, public 300 runes), NFC, no
 control chars except `\n`; template refs resolve only

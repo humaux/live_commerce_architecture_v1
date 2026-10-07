@@ -55,6 +55,7 @@ const en = {
   capability: "Reply capability is unavailable.",
   uncertain:
     "Delivery is uncertain. Check Messenger before taking another action; this reply is not automatically resent.",
+  historyUnverified: "Delivery history could not be fully verified. Sending is unavailable; check Messenger and contact support.",
   queued: "Queued",
   sent: "Sent",
   failed: "Failed",
@@ -160,6 +161,7 @@ const tw: Copy = {
   review: "僅限 App 角色測試帳號",
   capability: "目前無法使用回覆能力。",
   uncertain: "送達狀態不確定。請先到 Messenger 確認；系統不會自動重送。",
+  historyUnverified: "無法完整確認歷史送達狀態，暫停傳送。請到 Messenger 確認並聯絡支援。",
   queued: "排隊中",
   sent: "已送出",
   failed: "失敗",
@@ -262,6 +264,7 @@ const cn: Copy = {
   review: "仅限 App 角色测试账号",
   capability: "目前无法使用回复功能。",
   uncertain: "送达状态不确定。请先到 Messenger 确认；系统不会自动重发。",
+  historyUnverified: "无法完整确认历史送达状态，暂停发送。请到 Messenger 确认并联系支持。",
   queued: "排队中",
   sent: "已发送",
   failed: "失败",
