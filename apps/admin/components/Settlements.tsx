@@ -13,13 +13,17 @@ import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readSettlementDetail, readSettlements } from "@/lib/card-payments-client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import type { SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
+import { payoutState, periodLabel, type SettlementStatement } from "@/lib/card-payments-settlements-model.ts";
 import { cardPaymentsSettlementsCopy, type CardPaymentsSettlementsCopy } from "@/lib/card-payments-settlements-copy.ts";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./customers.css";
+
+const payoutTone = { paid: "success", pending: "warning", none: "neutral" } as const;
+const payoutText = (c: CardPaymentsSettlementsCopy, state: "paid" | "pending" | "none") =>
+  state === "paid" ? c.paid : state === "pending" ? c.pending : c.noPayout;
 
 /** Owns the statements list and the per-statement line detail; everything is a read (billing:manage). */
 export function Settlements({
@@ -130,9 +134,7 @@ function List({
         <tbody>
           {statements.map((s) => (
             <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}>
-              <td>
-                {s.period_start} – {s.period_end}
-              </td>
+              <td data-testid={`settlement-period-${s.statement_id}`}>{periodLabel(s.period_start, s.period_end)}</td>
               <td>{amount(s, s.captured_minor)}</td>
               <td>{amount(s, s.refunded_minor)}</td>
               <td>{amount(s, s.dispute_minor)}</td>
@@ -141,8 +143,8 @@ function List({
               <td>{amount(s, s.carried_in_minor)}</td>
               <td>{amount(s, s.net_payable_minor)}</td>
               <td>
-                <Badge tone={s.paid ? "success" : "warning"} data-testid={`settlement-status-${s.statement_id}`}>
-                  {s.paid ? c.paid : c.pending}
+                <Badge tone={payoutTone[payoutState(s)]} data-testid={`settlement-status-${s.statement_id}`} data-state={payoutState(s)}>
+                  {payoutText(c, payoutState(s))}
                 </Badge>
               </td>
               <td>
@@ -166,9 +168,7 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
       <dl>
         <div>
           <dt>{c.period}</dt>
-          <dd data-testid="settlement-detail-period">
-            {s.period_start} – {s.period_end}
-          </dd>
+          <dd data-testid="settlement-detail-period">{periodLabel(s.period_start, s.period_end)}</dd>
         </div>
         <div>
           <dt>{c.captured}</dt>
@@ -201,8 +201,8 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
         <div>
           <dt>{c.status}</dt>
           <dd>
-            <Badge tone={s.paid ? "success" : "warning"} data-testid="settlement-detail-status">
-              {s.paid ? c.paid : c.pending}
+            <Badge tone={payoutTone[payoutState(s)]} data-testid="settlement-detail-status" data-state={payoutState(s)}>
+              {payoutText(c, payoutState(s))}
             </Badge>
           </dd>
         </div>

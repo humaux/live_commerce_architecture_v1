@@ -2,7 +2,7 @@
 // PUT .../payments/card -> Go /v1/admin/stores/{id}/payments/card (internal/httpapi/payment_card.go;
 // integration:read / billing:manage, contract stripe-platform-account-v1).
 import { CardPayments } from "@/components/CardPayments";
-import { loadPage } from "../../customers/page-data";
+import { loadPage } from "../../../customers/page-data";
 
 export default async function CardPaymentsPage({
   params,

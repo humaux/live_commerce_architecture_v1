@@ -1,5 +1,6 @@
-// Purpose: admin card-payments model — strict parsers for the frozen platform-Stripe DTOs.
-// Depends on: customers-model.ts (object/count/isInstant helpers), Go internal/payments/platformstripe.
+// Purpose: admin card-payments model — strict parsers for the frozen platform-Stripe DTOs, the display state machine
+//   (cardView) and the exact PUT body (buildCardInput) so the page holds no rule of its own.
+// Depends on: customers-model.ts (object/count helpers), Go internal/payments/platformstripe.
 // Used by: card-payments-client.ts, CardPayments.tsx, tests/admin/card-payments-model.test.ts.
 // BFF `/api/stores/{store}/payments/card` -> Go `internal/httpapi/payment_card.go`
 // (contract stripe-platform-account-v1 §3/§5). Unknown key, wrong type or broken invariant = invalid read
@@ -113,4 +114,42 @@ export function descriptorPreview(base: string, suffix: string | null): string {
 export function descriptorBase(preview: string): string {
   const at = preview.indexOf("* ");
   return at < 0 ? preview : preview.slice(0, at);
+}
+
+// The suffix a DISABLED (or enabled) store retains is only visible as the tail of the final preview ("base* suffix");
+// recover it so a re-enable can keep it. Anything that is not a valid suffix is never pre-filled.
+export function descriptorSuffixOf(preview: string | null): string | null {
+  if (preview === null) return null;
+  const at = preview.indexOf("* ");
+  if (at < 0) return null;
+  const suffix = preview.slice(at + 2);
+  return validDescriptorSuffix(suffix) ? suffix : null;
+}
+
+// What the page offers, per platform state x store state x permission. The server re-decides every one of these
+// (allowlist, OPEN, block, terms); this only decides what to SHOW. Integrator ruling: platform not OPEN -> "not open yet" and
+// no enable control; BLOCKED -> suspended note and disable only. Contract 3.3: disable is never gated, so an ENABLED store keeps
+// a disable control even while the platform is CLOSED (the enable toggle is what the ruling hides).
+export type CardView = { notOpen: boolean; notAllowed: boolean; blocked: boolean; canEnable: boolean; canDisable: boolean };
+export function cardView(summary: CardSummary, canManage: boolean): CardView {
+  const open = summary.platform_state === "OPEN";
+  const state = summary.store_state;
+  return {
+    notOpen: !open,
+    notAllowed: open && !summary.allowed,
+    blocked: state === "BLOCKED",
+    canEnable: canManage && open && summary.allowed && summary.terms_version !== null && (state === "NONE" || state === "DISABLED"),
+    canDisable: canManage && (state === "ENABLED" || state === "BLOCKED"),
+  };
+}
+
+// The keyless CAS body. Enable accepts the platform's CURRENT terms (a drift answers terms_version_stale). Disable quotes the
+// terms this store accepted (the SQL ignores them on disable, but the transport requires a well-formed value) and never a suffix.
+export function buildCardInput(summary: CardSummary, enabled: boolean, suffix: string | null): CardInput {
+  return {
+    enabled,
+    terms_version: enabled ? (summary.terms_version as string) : (summary.accepted_terms_version ?? summary.terms_version ?? "none"),
+    descriptor_suffix: enabled ? suffix : null,
+    expected_version: summary.version,
+  };
 }

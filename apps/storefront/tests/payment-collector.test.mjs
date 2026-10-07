@@ -5,7 +5,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { validOrderPayment } from "../lib/payment-contract.ts";
-import { paymentCopy } from "../lib/payment-copy.ts";
+import { readFileSync } from "node:fs";
+import { collectorDisclosure, paymentCopy } from "../lib/payment-copy.ts";
 
 const orderID = "12345678-1234-1234-1234-123456789abc";
 const stripeMethod = {
@@ -72,4 +73,37 @@ test("disclosure renders the contract §5 line with all three slots substituted"
   );
   // No placeholder may survive a render.
   for (const locale of ["en", "zh-CN", "zh-TW"]) assert.ok(!render(locale).includes("{"), locale);
+});
+
+// ---- presence and absence by `collector` (the decision OrderPayment renders) ----
+
+test("the disclosure line exists exactly when the hosted view returns a collector", () => {
+  for (const locale of ["en", "zh-CN", "zh-TW"]) {
+    assert.equal(collectorDisclosure(locale, null, "Demo Store"), null, `${locale} null`);
+    assert.equal(collectorDisclosure(locale, undefined, "Demo Store"), null, `${locale} absent`);
+    const line = collectorDisclosure(locale, collector, "Demo Store");
+    assert.ok(line.includes("Platform Test") && line.includes("Demo Store") && line.includes("LCPLATFORM* SHOP"), `${locale}: ${line}`);
+    assert.ok(!line.includes("{"), locale);
+  }
+  assert.equal(
+    collectorDisclosure("zh-TW", collector, "Demo Store"),
+    "本筆信用卡款項由 Platform Test 代 Demo Store 收取，信用卡帳單顯示「LCPLATFORM* SHOP」。",
+  );
+});
+
+test("a shop or collector name with a replacement pattern is shown literally", () => {
+  const line = collectorDisclosure("en", { display_name: "A$&B", descriptor_preview: "X$1Y" }, "Shop $` Name");
+  assert.equal(line, 'Card payment collected by A$&B on behalf of Shop $` Name. Your card statement shows "X$1Y".');
+});
+
+test("OrderPayment renders the disclosure with the view, above every pay button, through the helper only", () => {
+  const source = readFileSync(new URL("../components/OrderPayment.tsx", import.meta.url), "utf8");
+  assert.match(source, /collectorDisclosure\(locale, view\.collector, shopName\)/);
+  const disclosure = source.indexOf('data-testid="collector-disclosure"');
+  assert.ok(disclosure > 0, "disclosure element");
+  assert.equal(source.split('data-testid="collector-disclosure"').length - 1, 1, "rendered once");
+  for (const match of source.matchAll(/data-testid="pay-order"/g))
+    assert.ok(disclosure < match.index, "the disclosure precedes every pay button");
+  // no hand-rolled substitution left in the component
+  assert.doesNotMatch(source, /\.replace\("\{display_name\}"/);
 });

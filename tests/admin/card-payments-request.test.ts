@@ -2,6 +2,7 @@
 // (apps/admin/lib/card-payments-request.ts) fencing Go internal/httpapi/payment_card.go (cvsRoute, keyed=false:
 // the PUT is CAS-guarded by expected_version, so an Idempotency-Key is refused) and settlement reads.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   cardPaymentsRoute,
@@ -127,4 +128,20 @@ test("PUT body is the exact frozen shape {enabled, terms_version, descriptor_suf
   // descriptor_suffix is present-but-nullable: the key may not be dropped.
   const missing = JSON.stringify({ enabled: true, terms_version: "pf-2026-10", expected_version: 0 });
   assert.equal(validCardPaymentsBody(missing), false);
+});
+
+// route.ts cannot be imported in plain Node (the `@/` alias), so its wiring of the grammar above is pinned in source.
+test("the BFF route wires the card grammar: keyless CAS PUT, exact body, no-store, auth required", () => {
+  const source = readFileSync("apps/admin/app/api/stores/[store]/[...resource]/route.ts", "utf8");
+  assert.match(source, /cardPaymentsRoute\(request\.method, path\)/);
+  assert.match(source, /cardPayments && !validCardPaymentsRequest\(cardPayments, request\)/);
+  assert.match(source, /cardPayments === "card-write" && !validCardPaymentsBody\(/);
+  // the PUT is the only keyless card command, and its key is never forwarded to Go (cvsRoute keyed=false refuses one)
+  assert.match(source, /const keyless = [^;]*cardPayments === "card-write"/);
+  // reads/writes need a real session (no shared fixture bearer) and answer private, no-store
+  assert.match(source, /\|\| cardPayments \|\| logistic \|\| accountRoute \|\| ads \|\| discoveryRoute\.test\(path\)\) && !authConfig/);
+  assert.match(source, /order \|\| orderSearch \|\| action \|\| customers \|\| cardPayments \|\| logistic \|\| storefront[^?]*\? "private, no-store"/);
+  // the generic tables name only these paths for the card resources
+  assert.match(source, /payments\/card\|settlements\|settlements\/\$\{uuid\}\)\$`/);
+  assert.match(source, /PUT: new RegExp\(`[^`]*\|payments\/card\)\$`\)/);
 });

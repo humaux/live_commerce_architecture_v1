@@ -20,7 +20,7 @@ import {
   readOrderPayment,
   requestPaymentSignal,
 } from "../lib/order-payment";
-import { paymentCopy } from "../lib/payment-copy";
+import { collectorDisclosure, paymentCopy } from "../lib/payment-copy";
 import { orderCopy } from "../lib/order-copy";
 import { useShopName } from "./ShopName";
 
@@ -271,6 +271,8 @@ export default function OrderPayment({
       ? stripePlan(view, Date.now())
       : null;
   const attempt = !!view && activeAttempt(view);
+  // §5 disclosure text; null (nothing rendered) unless the hosted view returned `collector`.
+  const collector = view ? collectorDisclosure(locale, view.collector, shopName) : null;
 
   // Refresh order's extra signal: registered only while a non-terminal Stripe attempt is
   // live and cleared with the epoch. A click is the only trigger; scheduled=false is silent.
@@ -429,6 +431,13 @@ export default function OrderPayment({
           <p className="order-note" data-testid="payment-commercial-status">
             {copy.orderState}: {orderCopy[locale][view.commercial_state]}
           </p>
+          {/* stripe-platform-account-v1 §5: platform collector disclosure, rendered with the view (so it is above the Stripe
+              pay button in every state, also while a read is in flight) whenever the hosted view returns `collector`. */}
+          {collector && (
+            <p className="order-note" data-testid="collector-disclosure">
+              {collector}
+            </p>
+          )}
           {view.refund && view.refund.pending_minor > 0 && (
             <p role="status" data-testid="refund-processing">
               {copy.refundProcessing}
@@ -472,16 +481,6 @@ export default function OrderPayment({
         <p>{copy.loading}</p>
       ) : plan ? (
         <>
-          {/* stripe-platform-account-v1 §5: platform collector disclosure above the Stripe pay button,
-              whenever the hosted view returns `collector` (derived connections only). */}
-          {view?.collector && (
-            <p className="order-note" data-testid="collector-disclosure">
-              {copy.collector
-                .replace("{display_name}", view.collector.display_name)
-                .replace("{store_name}", shopName)
-                .replace("{descriptor_preview}", view.collector.descriptor_preview)}
-            </p>
-          )}
           {plan.pay && view && (
             <p>
               {

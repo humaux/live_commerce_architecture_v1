@@ -16,8 +16,11 @@ import { money } from "@/lib/client";
 import { readCardSummary, setCardPayments } from "@/lib/card-payments-client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import {
+  buildCardInput,
+  cardView,
   descriptorBase,
   descriptorPreview,
+  descriptorSuffixOf,
   suffixBudget,
   validDescriptorSuffix,
   type CardSummary,
@@ -110,28 +113,13 @@ function Sections({
   const [dialog, setDialog] = useState<"enable" | "disable" | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ kind: "saved" | "conflict" | "error"; code?: string } | null>(null);
-  const platformOpen = summary.platform_state === "OPEN";
-  const canEnable =
-    canManage && platformOpen && summary.allowed && summary.terms_version !== null &&
-    (summary.store_state === "NONE" || summary.store_state === "DISABLED");
-  const canDisable = canManage && (summary.store_state === "ENABLED" || summary.store_state === "BLOCKED");
+  // The display state machine lives in card-payments-model.ts (unit-tested): not-open, not-allowlisted, BLOCKED, enable/disable.
+  const { notOpen, notAllowed, blocked, canEnable, canDisable } = cardView(summary, canManage);
 
   async function submit(enabled: boolean, suffix: string | null) {
     setBusy(true);
     setNote(null);
-    const outcome = await setCardPayments(
-      store.id,
-      {
-        enabled,
-        // Enable accepts the current platform terms (terms_version_stale guards a drift); disable ignores it.
-        terms_version: enabled
-          ? (summary.terms_version as string)
-          : summary.accepted_terms_version ?? summary.terms_version ?? "none",
-        descriptor_suffix: enabled ? suffix : null,
-        expected_version: summary.version,
-      },
-      boundary,
-    );
+    const outcome = await setCardPayments(store.id, buildCardInput(summary, enabled, suffix), boundary);
     setBusy(false);
     if (outcome.ok) {
       setDialog(null);
@@ -149,6 +137,13 @@ function Sections({
     ) {
       setDialog(null);
       setNote({ kind: "conflict" });
+      await refresh();
+      return;
+    }
+    // The platform suspended or de-listed the store while the dialog was open: say why, and reload so the badge catches up.
+    if (outcome.code === "platform_stripe_blocked" || outcome.code === "platform_stripe_not_allowed") {
+      setDialog(null);
+      setNote({ kind: "error", code: outcome.code });
       await refresh();
       return;
     }
@@ -176,9 +171,9 @@ function Sections({
           </p>
         )}
       </section>
-      {!platformOpen && <p className="orders-message" data-testid="card-not-open">{c.notOpen}</p>}
-      {platformOpen && !summary.allowed && <p className="orders-message" data-testid="card-not-allowed">{c.notAllowed}</p>}
-      {summary.store_state === "BLOCKED" && <p className="orders-message" data-testid="card-blocked-note">{c.blockedNote}</p>}
+      {notOpen && <p className="orders-message" data-testid="card-not-open">{c.notOpen}</p>}
+      {notAllowed && <p className="orders-message" data-testid="card-not-allowed">{c.notAllowed}</p>}
+      {blocked && <p className="orders-message" data-testid="card-blocked-note">{c.blockedNote}</p>}
       {(summary.currency || summary.min_minor !== null || summary.max_minor !== null) && (
         <section data-testid="card-limits">
           <h2>{c.limitsTitle}</h2>
@@ -257,14 +252,17 @@ function EnableDialog({
   onCancel: () => void;
 }) {
   const [accepted, setAccepted] = useState(false);
-  const [suffix, setSuffix] = useState("");
+  // A store that disabled and comes back keeps its suffix unless it clears the field (the GET only exposes the final preview).
+  const [suffix, setSuffix] = useState(descriptorSuffixOf(summary.descriptor_preview) ?? "");
   // The summary preview carries a DISABLED store's retained suffix; descriptorBase strips it back to the
   // platform base so the live check and preview never double-count ("* " can appear in neither part).
   const base = summary.descriptor_preview ? descriptorBase(summary.descriptor_preview) : null;
   const budget = suffixBudget(base);
   const value = suffix === "" ? null : suffix;
-  const invalid = value !== null && !validDescriptorSuffix(value);
-  const tooLong = value !== null && budget !== null && Array.from(value).length > budget;
+  // Length first (the server answers descriptor_suffix_too_long before the charset rule): the budget is 22 minus the platform base
+  // minus "* ", and never more than the 10 the charset rule allows (also while the server has published no base).
+  const tooLong = value !== null && Array.from(value).length > (budget ?? 10);
+  const invalid = value !== null && !tooLong && !validDescriptorSuffix(value);
   const canConfirm = accepted && !invalid && !tooLong && !busy && summary.terms_version !== null;
   return (
     <section role="dialog" aria-label={c.dialogTitle} data-testid="card-enable-dialog">
@@ -304,7 +302,7 @@ function EnableDialog({
       {invalid && (
         <p role="alert" data-testid="card-suffix-invalid">{c.suffixRule}</p>
       )}
-      {!invalid && tooLong && (
+      {tooLong && (
         <p role="alert" data-testid="card-suffix-too-long">{c.suffixTooLong}</p>
       )}
       {base !== null && (

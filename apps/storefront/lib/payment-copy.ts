@@ -128,3 +128,20 @@ export const paymentCopy: Record<Locale, Copy> = {
     collector: "本筆信用卡款項由 {display_name} 代 {store_name} 收取，信用卡帳單顯示「{descriptor_preview}」。",
   },
 };
+
+/**
+ * The platform-collector disclosure line (stripe-platform-account-v1 §5): who collects the card payment on behalf of which
+ * store, and what the card statement shows. null when the hosted view carries no `collector` (primary connections, PAYUNi), so
+ * nothing is rendered. Pure; function replacers keep a `$` in a shop name from being read as a replacement pattern.
+ */
+export function collectorDisclosure(
+  locale: Locale,
+  collector: { display_name: string; descriptor_preview: string } | null | undefined,
+  storeName: string,
+): string | null {
+  if (!collector) return null;
+  return paymentCopy[locale].collector
+    .replace("{display_name}", () => collector.display_name)
+    .replace("{store_name}", () => storeName)
+    .replace("{descriptor_preview}", () => collector.descriptor_preview);
+}
