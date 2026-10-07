@@ -25,6 +25,12 @@
   gap: 12px;
   margin-block: 12px;
 }
+.pm-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-block: 12px;
+  color: var(--muted);
+}
 .pm-photo {
   position: relative;
   border: 1px solid var(--line);

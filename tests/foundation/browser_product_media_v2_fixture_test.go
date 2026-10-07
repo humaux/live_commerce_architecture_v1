@@ -5,7 +5,7 @@ package foundation_test
 // Purpose: synthetic image fixtures for the PM-U real-upload browser gate — a valid JPEG carrying an EXIF orientation-6
 //   APP1 segment (the "phone photo" the admin UI must rotate and downsize before upload) and a deterministic > 2 MiB
 //   noisy JPEG, plus the fitPhoto mirror used to predict stored dimensions.
-// Depends on: stdlib image/jpeg only; the 2 MiB original cap and the 2000 px longest-side rule of
+// Depends on: stdlib image/jpeg/png; the 2 MiB original cap and the 2000 px longest-side rule of
 //   contracts/catalog-inventory-v1.md "Amendment — product-media-v2" and apps/admin/lib/photo-preprocess.ts.
 // Used by: tests/foundation/browser_product_media_v2_test.go (TestBrowserProductMediaV2RealUpload) only.
 // Invariants: bytes <= 2 MiB per original (catalog-inventory-v1.md amendment); EXIF orientation applied before sizing.
@@ -15,8 +15,25 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
+	"image/png"
 	"testing"
 )
+
+// pmv2TransparentPNG supplies a valid small logo with a transparent corner and a translucent center.
+func pmv2TransparentPNG(t *testing.T, w, h int) []byte {
+	t.Helper()
+	img := image.NewNRGBA(image.Rect(0, 0, w, h))
+	for y := h / 4; y < 3*h/4; y++ {
+		for x := w / 4; x < 3*w/4; x++ {
+			img.SetNRGBA(x, y, color.NRGBA{R: 40, G: 130, B: 220, A: 128})
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
 // pmv2Fit mirrors apps/admin/lib/product-media-model.ts fitPhoto: longest side capped, floor, never upscale.
 // Kept as an independent restatement so the gate catches a client rule that drifts from the documented 2000 px.

@@ -32,6 +32,7 @@ export function ProductMediaTiles({
   const dragged = useRef<number | null>(null);
   return (
     <div className={`pm-grid pm-${role}`} data-testid={`media-${role}-list`}>
+      {photos.length === 0 && <p className="pm-empty">{c.empty}</p>}
       {photos.map((photo, i) => (
         <div
           className="pm-photo"

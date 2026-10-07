@@ -1,0 +1,15 @@
+=== RUN   TestMerchantToolsDashboardScale
+    merchant_tools_order_smoke_test.go:590: DIAG iter 0: 57ms
+    merchant_tools_order_smoke_test.go:590: DIAG iter 1: 36ms
+    merchant_tools_order_smoke_test.go:590: DIAG iter 2: 33ms
+    merchant_tools_order_smoke_test.go:590: DIAG iter 3: 34ms
+    merchant_tools_order_smoke_test.go:590: DIAG iter 4: 27ms
+    merchant_tools_order_smoke_test.go:610: MTO03 block dashboard_orders        5ms err=<nil>
+    merchant_tools_order_smoke_test.go:610: MTO03 block dashboard_todos         7ms err=<nil>
+    merchant_tools_order_smoke_test.go:610: MTO03 block finance 7 days         12ms err=<nil>
+    merchant_tools_order_smoke_test.go:610: MTO03 block latest 10 orders        4ms err=<nil>
+    merchant_tools_order_smoke_test.go:630: MTO03 dashboard on 10002 orders (store total): worst of 5 = 56.603708ms
+--- PASS: TestMerchantToolsDashboardScale (7.54s)
+PASS
+ok  	livecommerce/tests/foundation	11.000s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
