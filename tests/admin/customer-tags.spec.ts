@@ -33,7 +33,7 @@ async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, a
   const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width, height: width === 390 ? 844 : 900 } });
   const page = await context.newPage(); await page.goto(`${origin}/en/`);
   await step(page, "Sign in with identity service", "signed callback opens the merchant workspace", async () => {
-    await page.getByRole("button", { name: "Sign in with identity service" }).click(); await page.getByTestId("workspace-sign-out").waitFor();
+    await page.getByRole("button", { name: "Sign in with identity service" }).click(); await page.getByTestId("shell-store-selector").waitFor(); // sign-out sits in the collapsed Account popover (WorkspaceFrame <details>), never visible here
   });
   expect((await context.cookies()).some((c) => c.name.startsWith("__Host-") && c.secure && c.httpOnly)).toBe(true);
   await detail(page, locale); return { page, context };

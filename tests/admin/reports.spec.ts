@@ -32,7 +32,7 @@ async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, a
   await page.goto(`${origin}/en/`);
   await step(page, "Sign in with identity service", "signed OIDC callback opens the merchant workspace", async () => {
     await page.getByRole("button", { name: "Sign in with identity service" }).click();
-    await page.getByTestId("workspace-sign-out").waitFor();
+    await page.getByTestId("shell-store-selector").waitFor(); // sign-out sits in the collapsed Account popover (WorkspaceFrame <details>), never visible here
   });
   const cookies = await context.cookies();
   expect(cookies.some((c) => c.name.startsWith("__Host-") && c.httpOnly && c.secure)).toBe(true);
