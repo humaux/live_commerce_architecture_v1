@@ -1,5 +1,4 @@
 {
-  "tested_sha": "af3f85ea4de977305c046cad24ea89eccfb1084e",
   "parents": [
     "f7b75a8fd787987c47b58760bb48da1a7ac88c09"
   ],
@@ -19,5 +18,7 @@
     "internal/payments/settlement/doc.go": "d4d7cff271d8fd0c6b5f3fe93bac63b38378e4314fefe871a90d4304d3c1385b",
     "internal/twcity/doc.go": "1a216eae9460f1aaa81647dc86a162e43e1417f7d1f05b6f564ea1fd975a2f58",
     "tests/claims/doc.go": "d1e02f26ef05656a5cc30baadcff2a1b5957ae68aa42a33c44c50a90c1416ebf"
-  }
+  },
+  "captured_sha": "af3f85ea4de977305c046cad24ea89eccfb1084e",
+  "validation_note": "Captured after parallel claim-label commit; initial six gate logs are historical f7b75a8f. Current validation is latest-38313587 runtime-trees.json."
 }
