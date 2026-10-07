@@ -19,8 +19,7 @@ func TestCellGuardsFormulaTriggers(t *testing.T) {
 		"\nLF":         "'\nLF",
 		"a=b":          "a=b",
 		"2026-10-07":   "2026-10-07",
-		// RULESET ACCEPTANCE (deliberate red): the guard MUST prefix this; the expectation below is wrong on purpose.
-		"=CMD()": "=CMD()",
+		"=CMD()":       "'=CMD()",
 	}
 	for in, want := range cases {
 		if got := Cell(in); got != want {
