@@ -71,7 +71,8 @@ func TestMerchantOrdersV2DomainReadAuthority(t *testing.T) {
 	}
 }
 
-// 0146 (W3-07B) adds seven parcel-group definers with the same shape (owner commerce_checkout_writer, EXECUTE commerce_runtime only);
+// 0146 (W3-07B) adds seven parcel-group definers with the same shape (owner commerce_checkout_writer, EXECUTE commerce_runtime only),
+// 0164 (W3-U4) the eighth (read_open_parcel_groups);
 // 0155 (W3-08B) adds the eight returns.* definers and fulfillment.merchant_cancel_order with it.
 // 0130 adds two read-only definers for the pick list: the shared reader (EXECUTE commerce_runtime only,
 // owner commerce_checkout_writer) and the session->orders resolution helper (claims-owned, EXECUTE
@@ -94,6 +95,7 @@ func TestMerchantOrdersV2PickListReadAuthority(t *testing.T) {
 		{"fulfillment.mark_parcel_group_shipped(bytea,uuid,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                  // 0146 W3-07B
 		{"fulfillment.guard_parcel_group_orders(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                // 0146 W3-07B
 		{"fulfillment.read_parcel_group_ids(bytea,uuid,uuid[])", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                    // 0146 W3-07B
+		{"fulfillment.read_open_parcel_groups(bytea,uuid)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},                         // 0164 W3-U4
 		{"returns.register_rma(bytea,uuid,uuid,text,bytea,text,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},             // 0155 W3-08B
 		{"returns.receive_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},            // 0155 W3-08B
 		{"returns.inspect_rma(bytea,uuid,uuid,text,bytea,bigint,jsonb)", "commerce_checkout_writer", []string{"commerce_runtime"}, false},            // 0155 W3-08B

@@ -164,9 +164,7 @@ func ListV2(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, 
 		row.Source = src
 		// A mask that is not exactly one printable rune + "***" (an unprintable first rune in a legacy name, or a projection
 		// bug) degrades THIS row to the placeholder: it hides, never reveals, and never makes the whole store list 503.
-		if row.RecipientMasked != "—" && (!textValue(row.RecipientMasked, 4, true) || len([]rune(row.RecipientMasked)) != 4 || !strings.HasSuffix(row.RecipientMasked, "***")) {
-			row.RecipientMasked = "—"
-		}
+		row.RecipientMasked = normalizeRecipientMask(row.RecipientMasked)
 		if err != nil || seen[row.OrderID] || (src != "storefront" && src != "merchant_manual") ||
 			row.OrderNumber != "LC-"+strings.ToUpper(strings.ReplaceAll(row.OrderID, "-", "")) ||
 			(row.DeliveryKind != "unknown" && !slices.Contains(orderDeliveries, row.DeliveryKind)) || !validOrderSessions(row.LiveSessions, 100) {
@@ -200,4 +198,14 @@ func validOrderSessions(items []OrderSession, max int) bool {
 		seen[item.ID] = true
 	}
 	return true
+}
+
+// normalizeRecipientMask keeps a recipient_masked projection only when it is "—" or exactly one printable rune + "***"; anything else
+// (an unprintable first rune in a legacy name, or a projection bug) degrades to the placeholder: it hides, never reveals. Shared by the
+// orders list and the open parcel-group read so both show the same mask.
+func normalizeRecipientMask(mask string) string {
+	if mask != "—" && (!textValue(mask, 4, true) || len([]rune(mask)) != 4 || !strings.HasSuffix(mask, "***")) {
+		return "—"
+	}
+	return mask
 }

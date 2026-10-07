@@ -1,7 +1,7 @@
-// Purpose: the W3-07B HTTP adapter of parcel groups (manual-fulfilment-v1 Amendment W3-07B): GET merge suggestions, POST create
-//   group, DELETE dissolve group and PUT group shipment. Each route is a thin transport gate over one internal/merchantorders
+// Purpose: the W3-07B HTTP adapter of parcel groups (manual-fulfilment-v1 Amendment W3-07B): GET merge suggestions, GET open groups
+//   (W3-U4), POST create group, DELETE dissolve group and PUT group shipment. Each route is a thin transport gate over one internal/merchantorders
 //   command; every rule (owner, destination, COD/CVS exclusion, CAS, atomic shipment) lives in migration 0146 and parcels.go.
-// Depends on: merchantorders.MergeSuggestions/CreateParcelGroup/DissolveParcelGroup/ShipParcelGroup, shipments.go helpers
+// Depends on: merchantorders.MergeSuggestions/OpenParcelGroups/CreateParcelGroup/DissolveParcelGroup/ShipParcelGroup, shipments.go helpers
 //   (shipmentRoute, shipmentScope, shipmentClassify, decodeShipmentBody), platform.WithScope (one READ COMMITTED transaction).
 // Used by: NewHandler (handler.go registerParcelRoutes). Tests: parcels_test.go (DB-free router) and TestParcelGroup* (REAL_PG).
 // Invariants: Idempotency-Key exactly once on POST/PUT, none on GET/DELETE; no query except ?expected_version on DELETE; every
@@ -26,7 +26,7 @@ type parcelCreateBody struct {
 	OrderIDs []string `json:"order_ids"`
 }
 
-// registerParcelRoutes mounts the four W3-07B routes; NewHandler calls it unconditionally.
+// registerParcelRoutes mounts the five parcel routes (four W3-07B + the W3-U4 open-groups read); NewHandler calls it unconditionally.
 func registerParcelRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const base = "/v1/admin/stores/{store_id}"
 	// GET suggestions: same buyer + same address, read only (orders:read).
@@ -35,6 +35,19 @@ func registerParcelRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			items, err := merchantorders.MergeSuggestions(ctx, tx, s, bearerToken(r))
 			return struct {
 				Items []merchantorders.MergeSuggestion `json:"items"`
+			}{items}, err
+		})
+		if ok {
+			respond(w, http.StatusOK, result)
+		}
+	}))
+	// GET open groups: the store's OPEN groups with members (masked recipients), so the UI can rebuild ship/dissolve panels after a
+	// reload (orders:read, no query). Calls fulfillment.read_open_parcel_groups via merchantorders.OpenParcelGroups (migration 0164).
+	mux.HandleFunc("GET "+base+"/parcel-groups", shipmentRoute(http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
+		result, ok := shipmentScope(w, r, pool, "orders:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			items, err := merchantorders.OpenParcelGroups(ctx, tx, s, bearerToken(r))
+			return struct {
+				Items []merchantorders.OpenParcelGroup `json:"items"`
 			}{items}, err
 		})
 		if ok {

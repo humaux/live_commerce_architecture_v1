@@ -349,7 +349,12 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
   address, `payment_mode` not `cash_on_delivery`/`pay_at_pickup`, no CVS destination or `cvs_shipments` row, no shipment head yet,
   not already in a group; all members of one owner and one destination hash.
 - **Routes** (admin, `store_id` from the session): `GET …/orders/merge-suggestions` (`orders:read`; `{items:[{recipient_name,
-  order_ids}]}`); `POST …/parcel-groups` (`fulfillment:write`, `Idempotency-Key`, `{order_ids}` → 201 `{id,state,version,order_ids}`);
+  order_ids}]}`); `GET …/parcel-groups` (`orders:read`, no query/body/key; Amendment W3-U4, migration `0164_open_parcel_groups.sql`
+  `fulfillment.read_open_parcel_groups(p_hash,p_store)`: the store's OPEN groups only, newest first, at most 200 →
+  `{items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]}`; `order_number` = `LC-<order id
+  without dashes, upper-case>` and `recipient_masked` = the orders-list mask (first non-whitespace character + `***`, `—` for a blank
+  name) — display fields only, never a full name, phone, address or amount; SHIPPED/DISSOLVED groups and other stores' groups never
+  appear; read only, no lock; the UI uses it to rebuild ship/dissolve panels after a reload); `POST …/parcel-groups` (`fulfillment:write`, `Idempotency-Key`, `{order_ids}` → 201 `{id,state,version,order_ids}`);
   `DELETE …/parcel-groups/{id}?expected_version=N` (OPEN only → `{id,state:DISSOLVED,version}`; member rows are deleted so the orders
   may regroup); `PUT …/parcel-groups/{id}/shipment` (`fulfillment:write`, `Idempotency-Key`, the §5.1 eight-key body with
   `status SHIPPED`, `expected_version 0`) = ONE transaction: lock the group, `RecordShipment` per member in id order with the same
@@ -370,7 +375,8 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
 - **Non-goals**: merged payment or refund, cross-address merge, splitting one order, COD/CVS merge, automatic merge.
   OPEN (PG-OPEN-1): a cancelled member should leave its group (W3-08B cancel command removes it; a group left with one order dissolves).
 - **Evidence**: `TestParcelGroup` (PG01–PG08 + pick-list/export adjacency), `TestParcelGroupACL`, MF02/WAS02/`PickListReadAuthority`
-  pins — REAL_PG with MOCK Stripe/ECPay fakes.
+  pins, `TestParcelGroupOpenRead` (W3-U4: empty, OPEN listed with version + masked members, SHIPPED/DISSOLVED/other-store absent,
+  authority, mask parity with the orders list) — REAL_PG with MOCK Stripe/ECPay fakes.
 
 ## Amendment W3-08B merchant cancel and returns (unit w3-08b-returns, migration `0155_returns.sql`, contract `returns-v1.md`)
 

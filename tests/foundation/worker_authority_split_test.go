@@ -183,6 +183,7 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 			`SELECT fulfillment.mark_parcel_group_shipped($1::bytea,$2::uuid,$3::uuid)`,
 			`SELECT fulfillment.guard_parcel_group_orders($1::bytea,$2::uuid,ARRAY[$3::uuid])`,
 			`SELECT fulfillment.read_parcel_group_ids($1::bytea,$2::uuid,ARRAY[$3::uuid])`,
+			`SELECT fulfillment.read_open_parcel_groups($1::bytea,$2::uuid) WHERE $3::uuid IS NOT NULL`, // 0164 (W3-U4)
 			// 0155 (W3-08B): returns and merchant cancel are merchant-side only as well.
 			`SELECT returns.register_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,'x','[]'::jsonb)`,
 			`SELECT returns.receive_rma($1::bytea,$2::uuid,$3::uuid,'was02-rma-key',$1::bytea,1,'[]'::jsonb)`,
