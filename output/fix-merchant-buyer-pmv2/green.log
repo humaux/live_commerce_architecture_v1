@@ -1,0 +1,24 @@
+✔ main/detail/sku caps use the existing frozen image contract (0.571292ms)
+✔ phone and tall dimensions fit2000 without enlarging small assets (0.143042ms)
+✔ upload query requires one exact role and sku value; reads/actions carry no query (0.354333ms)
+✔ role transport encodes current option values and refuses invalid identities (0.154625ms)
+✔ effective image axis follows current options, then falls back to first (0.067125ms)
+✔ detail and option photos cannot satisfy the main-photo recommendation (0.059292ms)
+✔ PM-U copy has matching keys in ja and all currently routed locales (0.127583ms)
+✔ real-upload mode builds both Next applications on a clean CI checkout (4.990083ms)
+✔ upload recovery journal survives a new session while remaining product/store scoped (0.0935ms)
+✔ an option upload receipt requires its captured axis, value and image id on canonical readback (0.087209ms)
+✔ failed durable recovery storage cannot authorize a media write (0.066208ms)
+✔ an active product needs a main image after canonical media is known; repair paths stay possible (0.04875ms)
+✔ empty media sections render a readable localized placeholder until photos are present (4.782375ms)
+✔ real-upload mode never exits through the storefront MOCK shortcut (7.951875ms)
+✔ a valid active zero-main product keeps an inline repair hint rather than a page error (3.727583ms)
+✔ a new product issues the image-axis stage only for a chosen axis (0.441208ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 232.494625
