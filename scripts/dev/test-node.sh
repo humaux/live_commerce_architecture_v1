@@ -18,6 +18,8 @@ node --test --experimental-strip-types tests/admin/orders-v2.test.ts
 node --test --experimental-strip-types tests/admin/store-number.test.ts
 node --test --experimental-strip-types tests/admin/platform-site.test.ts
 node --test --experimental-strip-types tests/admin/attribution.test.ts tests/admin/attribution-audience.test.ts tests/admin/attribution-format.test.ts
+# W4-U1 platform card payments + settlements: parsers (0137/0150 signs), BFF grammar, copy parity, display state machine (apps/storefront/tests/payment-collector.test.mjs runs in the first glob)
+node --test --experimental-strip-types tests/admin/card-payments-model.test.ts tests/admin/card-payments-request.test.ts tests/admin/card-payments-copy.test.ts tests/admin/card-payments-wire.test.ts
 node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts tests/admin/product-media-model.test.ts tests/admin/backend-parity.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 if [[ -n "${COMMERCE_R04_LIVEKIT_BINARY:-}" ]]; then

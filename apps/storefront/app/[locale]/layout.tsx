@@ -13,6 +13,7 @@ import { isLocale } from "@live-commerce/i18n";
 import type { Locale } from "@live-commerce/i18n";
 import CartDrawer from "../../components/CartDrawer";
 import CartProvider from "../../components/CartProvider";
+import { ShopNameProvider } from "../../components/ShopName";
 import { Announcement, PreviewBanner, ShopFooter, ShopHeader } from "../../components/ShopChrome";
 import { accentText, defaultDesign, onAccent } from "../../lib/design";
 import { storeImage } from "../../lib/routes";
@@ -63,7 +64,7 @@ export default async function Layout({ children, params }: { children: React.Rea
           {design.profile.announcement && <Announcement text={design.profile.announcement} />}
           <ShopHeader locale={locale} design={design} preview={keep} closed={shop.state === "closed"} />
           <div id="main" tabIndex={-1} className="sf-main">
-            {children}
+            <ShopNameProvider name={design.profile.name}>{children}</ShopNameProvider>
           </div>
           <ShopFooter locale={locale} design={design} preview={keep} />
           <CartDrawer locale={locale} />

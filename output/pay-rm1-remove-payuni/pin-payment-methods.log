@@ -1,0 +1,5 @@
+=== RUN   TestPaymentMethodsAuthorityAndEnvironment
+--- PASS: TestPaymentMethodsAuthorityAndEnvironment (1.36s)
+PASS
+ok  	livecommerce/tests/foundation	3.072s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

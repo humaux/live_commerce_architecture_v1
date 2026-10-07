@@ -1,6 +1,6 @@
 # Unit W4-01B — PAYUNi NotifyURL 接收器（后端，钱路）
 
-**已合并（651c5744, 0136）但从未部署；owner 2026-10-06 取消 PAYUNi → 保持关闭（`COMMERCE_PAYUNI_NOTIFY_ENABLED` 不设），由 `pay-remove-payuni.md` 删除。**
+**REMOVED（PAY-RM1, 2026-10-07, 迁移 0161）：曾合并（651c5744, 0136）但从未部署；owner 2026-10-06 取消 PAYUNi → 接收器路由、`internal/payments/payuninotify`、schema（两张 notify 表、四个 definer、review_cases 放宽）与 `commerce_payuni_ingress` 角色已由 PAY-RM1 前向删除；0161 若发现任何回执行或 `NOTIFY_MISMATCH` 复核行会 RAISE（22023）拒绝执行，绝不静默删数据。本文其余内容仅作历史记录。**
 
 状态：DRAFT（起草人 Claude Opus 子代理 2026-10-06，待 integrator 审核/冻结）。Base `r3/integration` `bb71f966`。
 迁移号占位 **0136**。覆盖 IMPLEMENTATION-PLAN W4-01B 的「补上 NotifyURL（B4）」部分（拆成独立单元：激活 W4-02B 依赖它证明回调可达）。

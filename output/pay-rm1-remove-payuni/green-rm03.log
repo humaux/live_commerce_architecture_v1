@@ -1,0 +1,4 @@
+=== RUN   TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute
+--- PASS: TestRemovePayuniNotifyRM03RouterHasNoNotifyRoute (0.00s)
+PASS
+ok  	livecommerce/cmd/api	0.428s
