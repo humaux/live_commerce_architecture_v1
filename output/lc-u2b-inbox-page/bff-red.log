@@ -1,0 +1,87 @@
+✖ A8/A9/A13 and published templates: exact reads forward once with no-store (4.415459ms)
+✖ real streamed POST bodies: A10-A14 exact keys reach upstream (1.480833ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (4.881625ms)
+✖ session, CSRF and store authority precede content forwarding (0.241708ms)
+✖ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (0.161417ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 1
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 169.9
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:56:1
+✖ A8/A9/A13 and published templates: exact reads forward once with no-store (4.415459ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  404 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/tests/admin/inbox-bff.test.ts:58:74)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:61:1
+✖ real streamed POST bodies: A10-A14 exact keys reach upstream (1.480833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  404 !== 200
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/tests/admin/inbox-bff.test.ts:63:114)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:76:1
+✖ session, CSRF and store authority precede content forwarding (0.241708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  404 !== 401
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/tests/admin/inbox-bff.test.ts:77:338)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-bff.test.ts:80:1
+✖ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (0.161417ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  404 !== 409
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-bff/tests/admin/inbox-bff.test.ts:81:444)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
