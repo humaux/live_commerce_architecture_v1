@@ -1,0 +1,70 @@
+diff --git a/tests/foundation/checkout_offline_test.go b/tests/foundation/checkout_offline_test.go
+index c94a31b1..55ac0222 100644
+--- a/tests/foundation/checkout_offline_test.go
++++ b/tests/foundation/checkout_offline_test.go
+@@ -139,6 +139,7 @@ func (e *tcvEnv) cofEnsureSettings(version int64, enabled, allowCVS bool, hours
+ 
+ func TestBankTransferLifecycle(t *testing.T) {
+ 	e := tcvNew(t)
++	t.Cleanup(func() { diagEquiv(t, e.p.f.owner, "BANKTRANSFER_LIFECYCLE") })
+ 	f := e.p.f
+ 	ctx := context.Background()
+ 	e.grantCreator("orders:read", "payments:refund", "fulfillment:write")
+diff --git a/tests/foundation/home_cod_test.go b/tests/foundation/home_cod_test.go
+index bf601bd0..86d7cd84 100644
+--- a/tests/foundation/home_cod_test.go
++++ b/tests/foundation/home_cod_test.go
+@@ -238,6 +238,7 @@ func TestHomeCodLifecycle(t *testing.T) {
+ // HCOD02: mode eligibility (home only, setting on), whole-TWD amount + cap, and the shared open-order limit.
+ func TestHomeCodEligibility(t *testing.T) {
+ 	e := tcvNew(t)
++	t.Cleanup(func() { diagEquiv(t, e.p.f.owner, "HOMECOD_ELIGIBILITY") })
+ 	e.grantCreator("orders:read", "fulfillment:write")
+ 	cvs, _, _ := e.service("cvs_711", "MANUAL", 0)
+ 
+diff --git a/tests/foundation/merchant_tools_order_smoke_test.go b/tests/foundation/merchant_tools_order_smoke_test.go
+index 1709b80f..c53ee721 100644
+--- a/tests/foundation/merchant_tools_order_smoke_test.go
++++ b/tests/foundation/merchant_tools_order_smoke_test.go
+@@ -19,6 +19,7 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 	"net/http"
++	"os"
+ 	"strings"
+ 	"sync/atomic"
+ 	"testing"
+@@ -389,6 +390,7 @@ func mtNum(t *testing.T, m map[string]any, path ...string) float64 {
+ 
+ func TestMerchantToolsDashboard(t *testing.T) {
+ 	e, a, cvsCode := mtOrderEnv(t)
++	t.Cleanup(func() { diagEquiv(t, e.p.f.owner, "MTO02") })
+ 	_ = cvsCode
+ 	sku := e.p.stock.skus[0].ID
+ 	var homeKey, cvsKey string
+@@ -580,11 +582,13 @@ func TestMerchantToolsDashboardScale(t *testing.T) {
+ 		mustExec(t, e.p.f.owner, `VACUUM checkout.orders`)
+ 	}()
+ 	_ = e.mtDashboard(a) // warm
++	diagDashboardTodos(t, e, os.Getenv("LC_DIAG_TAG"))
+ 	var worst time.Duration
+ 	for i := 0; i < 5; i++ {
+ 		start := time.Now()
+ 		w := a.call("GET", "/dashboard", "", "", nil)
+ 		took := time.Since(start)
++		t.Logf("DIAG iter %d: %s", i, took.Round(time.Millisecond))
+ 		if w.Code != 200 {
+ 			// Diagnose: the same read in process prints the real cause (never fails by itself).
+ 			err := platform.WithScope(ctx, e.p.f.runtime, e.token(), e.store(), "orders:read", func(tx pgx.Tx, s platform.Scope) error {
+diff --git a/tests/foundation/pick_list_test.go b/tests/foundation/pick_list_test.go
+index c08f5bb3..b1f79c95 100644
+--- a/tests/foundation/pick_list_test.go
++++ b/tests/foundation/pick_list_test.go
+@@ -546,6 +546,7 @@ func TestCarrierExportCOD(t *testing.T) {
+ // planted ledger rows.
+ func TestPickListRefundAndReviewExclusion(t *testing.T) {
+ 	e := rfxNew(t)
++	t.Cleanup(func() { diagEquiv(t, e.f.owner, "PICKLIST_REFUND_REVIEW") })
+ 	e.startWorker(t)
+ 	base := e.payInStore(t, e.storeFor(t))
+ 

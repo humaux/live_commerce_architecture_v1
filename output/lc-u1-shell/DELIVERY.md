@@ -1,20 +1,24 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source c743b465, CI 37443892071 and owner rule 2f596a0c.
+Depends on: contracts/live-console-v1.md LC-U1/Amendment 1, source 5012ce96, trunk f8f01b74 and owner focused-local/CI gate rules.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 — CI2 repairs submitted; GitHub runtime acceptance pending
+# LC-U1 — CI4 focused GREEN; full GitHub acceptance pending
+
+Author source **`5012ce963db5d88dfd0a9101c4738926c682d218`**, trunk **`f8f01b74`** merged. Latest: [CI4-DELIVERY.md](CI4-DELIVERY.md). Final-source local Console focus **3/3** and Studio main focus **1/1** both exit 0. Signed negative requests reach the unchanged 403 checks, logout/reauth fences pass, replay remains same-key/same-body/one-effect, and native calendar + save/reload + Taipei PG timestamp pass. Node **510/510**, types, check-gates (73 modes) and original privacy guard exit 0. All original assertions/thresholds remain. **E3 for these selected local MOCK/REAL_PG checks only**; full Console/Studio cases and Linux CI remain pending. W2-U2/U3 remain registered, **not started**, until full LC-U1 green and approved base.
+
+The CI3/CI2/D3/CI1 and LC-B7 sections below are historical checkpoints, not current-source runtime claims. Current acceptance/rerun requirements are in CI4-DELIVERY; no whole-unit completion is claimed.
 
 Latest CI2 follow-up: [CI2-DELIVERY.md](CI2-DELIVERY.md). Trunk `71235fc4` is merged; original TCV09 passes after removing the iframe/CSP exception. Console nil receipts, hidden Account sign-out, alert ambiguity and missing sweep CommentStream are source-fixed. Node **496/496**, types and check-gates pass. Local focused attempts were canceled before PG while waiting for the shared lock and remain **NOT_RUN**. New-source GitHub browser execution is pending; the older failure/ruling records below are historical.
 
 Latest D3 follow-up: [D3-DELIVERY.md](D3-DELIVERY.md) records the shared Claims/Console Go/SQL enum, third mode picker, zh-TW/en/ja host prompts, red→green parity and **477/477** Node result. It merges integration `8c3851e4` and requires the additional GitHub `--browser-e2e` real-click matrix. The source hashes there bind the final D3 commit; the older SHA and CI receipts below remain historical.
 
-Current source **`c743b465472a657f7652cc80934055d9e1b9577d`** includes trunk **`685d465c`**, the Next proxy repair, settings scene selector, updated leaf/title drivers and CI display/serial-fixture configuration. Local Node **465/465**, scoped **25/25**, both typechecks and check-gates exit 0. **TCV09 is still RED**, pending the explicit Facebook-preview/CSP ruling; it has not been weakened. Full per-failure attribution, command exits and rerun modes: [CI-37443892071.md](CI-37443892071.md).
+Historical CI1 source **`c743b465472a657f7652cc80934055d9e1b9577d`** included trunk **`685d465c`**, the Next proxy repair, settings scene selector, updated leaf/title drivers and CI display/serial-fixture configuration. Local Node **465/465**, scoped **25/25**, both typechecks and check-gates exited 0. TCV09 was RED at that checkpoint; the later CI2 non-iframe repair resolved it without weakening the guard. Historical attribution: [CI-37443892071.md](CI-37443892071.md).
 
 The earlier LC-B7 alignment and initial candidate receipts below remain historical evidence. No current browser PASS is claimed.
 
 - Branch: `unit/lc-u1-shell`; previous LC-B7 alignment source: `df8c6a2e7f3e52b45f23225cb055118d473081a6`.
 - Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell`.
 - Integrated base: `8a08656a46ab98db4497240e1ffc6c27b6e697b8`, including GitHub-only heavy-gate rule `2f596a0c`; merge `d50953a8` preserves both `--browser-live-console` and `--browser-tracking-backfill` and both Node registrations.
-- Evidence level: **E1 overall with a known blocking source guard**; **E3 for the local regressions and reproduced failures**. Browser, SQL and provider acceptance remain pending.
+- Historical LC-B7 evidence level: **E1 overall with the then-blocking source guard**; **E3 for local regressions and reproduced failures**. Current local/CI boundaries are in CI3-DELIVERY.
 - Root runtime model/effort: NOT_EXPOSED. Child transport/browser/safety roles requested `gpt-6.1-sol`, high; actual runtime telemetry NOT_EXPOSED. Raw author reports are retained as reports, not independent acceptance.
 
 ## Implemented

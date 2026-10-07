@@ -2,7 +2,7 @@
 // Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
-import { test, expect, type Page, type APIRequestContext } from "@playwright/test";
+import { test, expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
@@ -55,6 +55,20 @@ async function login(page: Page) {
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByTestId("shell-store-selector")).toBeAttached();
 }
+async function authorityCookies(context: BrowserContext) {
+  // Cookie inspection filters by scheme too. Query the same host's Secure
+  // scope; the actual BFF request still uses the unchanged loopback origin.
+  return context.cookies(origin.replace(/^http:/, "https:"));
+}
+async function authorityCookie(context: BrowserContext): Promise<string> {
+  // SECURITY/NEGATIVE: Node's APIRequestContext omits Secure cookies on this HTTP
+  // loopback fixture, unlike Chromium. Pin the existing signed browser authority
+  // so the negative probe reaches CSRF/permission checks, not the 401 login gate.
+  const cookies = await authorityCookies(context);
+  expect(cookies.some((cookie) => cookie.name === "__Host-commerce_session")).toBe(true);
+  return cookies.filter((cookie) => ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name))
+    .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+}
 const route = (locale: string, scene: string, selectedStore = store) => `${origin}/${locale}/studio/console?store=${selectedStore}&scene=${scene}`;
 async function phase(page: Page, value: string) {
   await expect(page.getByTestId("live-phase")).toHaveAttribute("data-phase", value);
@@ -89,7 +103,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     // Actual BFF CSRF/Origin refusal must happen before the MOCK write transport receives a command.
     const beforeRefusal = (await facts(request)).receipts.length;
     const refused = await page.request.post(`${origin}/api/stores/${store}/live-sessions/${scene}/lifecycle`, {
-      headers: { Origin: origin, "Idempotency-Key": `lc-u1-csrf-${name}` },
+      headers: { Cookie: await authorityCookie(page.context()), Origin: origin, "Idempotency-Key": `lc-u1-csrf-${name}` },
       data: { action: "start", expected_version: 1 },
     });
     expect(refused.status()).toBe(403);
@@ -178,6 +192,9 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect((await facts(request)).receipts).toHaveLength(beforeUnknown + 1);
     await page.getByTestId("live-command-retry").click();
     await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+    // The retry control hides at request start, not at acknowledgement. Wait
+    // for the same-key transport receipt before inspecting exact replay/effect counts.
+    await expect.poll(async () => (await facts(request)).receipts.filter((receipt) => receipt.key_hash === unknown.key_hash)).toHaveLength(2);
     const retries = (await facts(request)).receipts.filter((receipt) => receipt.key_hash === unknown.key_hash);
     expect(retries).toHaveLength(2);
     expect(retries.map((receipt) => receipt.body_hash)).toEqual([unknown.body_hash, unknown.body_hash]);
@@ -261,12 +278,16 @@ test("LC-U1 unknown receipt stays fenced after real logout and reauthentication"
   await page.getByTestId(`live-recommend-${offer}`).click();
   await expect(page.getByTestId("live-command-retry")).toBeVisible();
   const receipt = (await facts(request)).receipts.at(-1)!;
-  const before = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  const before = (await authorityCookies(page.context())).find((c) => c.name === "__Host-commerce_csrf")?.value;
   await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
   await page.getByTestId("workspace-sign-out").click();
   await expect(page.getByTestId("live-console")).toHaveCount(0);
+  // Clearing the private view precedes the hard logout redirect. Do not race
+  // that navigation with the next login's goto (net::ERR_ABORTED on Linux CI).
+  await page.waitForURL((url) => url.origin === new URL(origin).origin && url.pathname === "/en", { waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
   await login(page);
-  const after = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+  const after = (await authorityCookies(page.context())).find((c) => c.name === "__Host-commerce_csrf")?.value;
   expect(Boolean(before && after && before !== after)).toBe(true); // Never put cookie values in assertion diagnostics.
   await page.goto(route("en", lateDestination));
   await phase(page, "draft");
@@ -354,7 +375,7 @@ for (const [index, locale] of locales.entries()) {
       expect((await facts(request)).receipts).toHaveLength(after);
       // Authority negative only: direct BFF request supplements the real disabled-control clicks above.
       const forbidden = await context.request.post(`${origin}/api/stores/${store}/inventory/adjustments`, {
-        headers: { origin, "x-csrf-token": csrf, "idempotency-key": `no-stock-${locale}` },
+        headers: { Cookie: await authorityCookie(context), origin, "x-csrf-token": csrf, "idempotency-key": `no-stock-${locale}` },
         data: { warehouse_id: body.Warehouse, sku_id: body.SKU, delta: 1, expected_version: body.StockVersion + 1, reason: "live_console_edit" },
       });
       expect(forbidden.status()).toBe(403);

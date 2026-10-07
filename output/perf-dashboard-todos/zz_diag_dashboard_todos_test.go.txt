@@ -1,0 +1,256 @@
+package foundation_test
+
+// TEMPORARY diagnostic (perf-dashboard-todos): EXPLAIN + seq-scan deltas + JSON snapshot of identity.dashboard_todos on the MTO03 fixture.
+// Not committed; the patch is kept under output/perf-dashboard-todos/ for reproducibility. Enabled only when LC_DIAG_DIR is set.
+
+import (
+	"context"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"livecommerce/internal/platform"
+)
+
+func diagDashboardTodos(t *testing.T, e *tcvEnv, tag string) {
+	dir := os.Getenv("LC_DIAG_DIR")
+	if dir == "" {
+		return
+	}
+	ctx := context.Background()
+	owner := e.p.f.owner
+	var b strings.Builder
+	var tenant, cand string
+	if err := owner.QueryRow(ctx, `SELECT tenant_id::text FROM checkout.orders WHERE store_id=$1 LIMIT 1`, e.store()).Scan(&tenant); err != nil {
+		t.Fatal(err)
+	}
+	if err := owner.QueryRow(ctx, `SELECT id::text FROM checkout.orders WHERE store_id=$1 AND commercial_state='CONFIRMED' AND fulfillment_state='MANUAL_UNASSIGNED' LIMIT 1`, e.store()).Scan(&cand); err != nil {
+		t.Fatal(err)
+	}
+	store := e.store()
+	explain := func(label, q string) {
+		fmt.Fprintf(&b, "\n===== %s =====\n%s\n", label, q)
+		rows, err := owner.Query(ctx, "EXPLAIN (ANALYZE, BUFFERS, SETTINGS) "+q)
+		if err != nil {
+			fmt.Fprintf(&b, "ERR %v\n", err)
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var l string
+			_ = rows.Scan(&l)
+			b.WriteString(l + "\n")
+		}
+	}
+	fmt.Fprintf(&b, "tenant=%s store=%s candidate=%s\n", tenant, store, cand)
+	// table sizes and indexes
+	rows, _ := owner.Query(ctx, `SELECT schemaname||'.'||relname, n_live_tup FROM pg_stat_user_tables WHERE schemaname||'.'||relname IN
+		('checkout.orders','checkout.payment_attempts','fulfillment.payment_work_items','payments.facts','payments.review_cases','payments.stripe_refunds','payments.refund_facts','checkout.bank_transfers','fulfillment.cvs_shipments') ORDER BY 1`)
+	fmt.Fprintf(&b, "\n===== row counts (n_live_tup) =====\n")
+	for rows.Next() {
+		var n string
+		var c int64
+		_ = rows.Scan(&n, &c)
+		fmt.Fprintf(&b, "%s %d\n", n, c)
+	}
+	rows.Close()
+	rows, _ = owner.Query(ctx, `SELECT schemaname||'.'||tablename, indexdef FROM pg_indexes WHERE schemaname||'.'||tablename IN
+		('checkout.orders','checkout.payment_attempts','fulfillment.payment_work_items','payments.facts','payments.review_cases','payments.stripe_refunds','payments.refund_facts','checkout.bank_transfers','fulfillment.cvs_shipments') ORDER BY 1,2`)
+	fmt.Fprintf(&b, "\n===== indexes =====\n")
+	for rows.Next() {
+		var n, d string
+		_ = rows.Scan(&n, &d)
+		fmt.Fprintf(&b, "%s | %s\n", n, d)
+	}
+	rows.Close()
+
+	stat := func() map[string][3]int64 {
+		m := map[string][3]int64{}
+		r, _ := owner.Query(ctx, `SELECT schemaname||'.'||relname, coalesce(seq_scan,0), coalesce(seq_tup_read,0), coalesce(idx_scan,0) FROM pg_stat_user_tables
+			WHERE schemaname IN ('checkout','fulfillment','payments','identity')`)
+		for r.Next() {
+			var n string
+			var a, c, d int64
+			_ = r.Scan(&n, &a, &c, &d)
+			m[n] = [3]int64{a, c, d}
+		}
+		r.Close()
+		return m
+	}
+	// 1. the todos function through the real scope; JSON snapshot; seq-scan deltas.
+	hash := sha256.Sum256([]byte(e.token()))
+	time.Sleep(2 * time.Second)
+	before := stat()
+	var raw []byte
+	start := time.Now()
+	err := platform.WithScope(ctx, e.p.f.runtime, e.token(), e.store(), "orders:read", func(tx pgx.Tx, s platform.Scope) error {
+		return tx.QueryRow(ctx, `SELECT identity.dashboard_todos($1,$2::uuid)`, hash[:], e.store()).Scan(&raw)
+	})
+	took := time.Since(start)
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(2 * time.Second)
+	after := stat()
+	fmt.Fprintf(&b, "\n===== dashboard_todos call: %s =====\n", took.Round(time.Millisecond))
+	for n, a := range after {
+		d := [3]int64{a[0] - before[n][0], a[1] - before[n][1], a[2] - before[n][2]}
+		if d != [3]int64{} {
+			fmt.Fprintf(&b, "%-40s seq_scan+%d seq_tup_read+%d idx_scan+%d\n", n, d[0], d[1], d[2])
+		}
+	}
+	_ = os.WriteFile(dir+"/todos-"+tag+".json", append(raw, '\n'), 0o644)
+	if tag == "analyze" { // root-cause confirmation: same call after ANALYZE of the bulk-loaded table (diag only)
+		for i := 0; i < 3; i++ {
+			if i == 1 {
+				if _, err := owner.Exec(ctx, `ANALYZE checkout.orders`); err != nil {
+					t.Fatal(err)
+				}
+				fmt.Fprintf(&b, "-- ANALYZE checkout.orders --\n")
+			}
+			st := time.Now()
+			_ = platform.WithScope(ctx, e.p.f.runtime, e.token(), e.store(), "orders:read", func(tx pgx.Tx, s platform.Scope) error {
+				return tx.QueryRow(ctx, `SELECT identity.dashboard_todos($1,$2::uuid)`, hash[:], e.store()).Scan(&raw)
+			})
+			fmt.Fprintf(&b, "todos call #%d: %s\n", i, time.Since(st).Round(time.Millisecond))
+		}
+	}
+
+	lit := fmt.Sprintf("'%s'::uuid,'%s'::uuid", tenant, store)
+	explain("candidate: manual_shipment_eligible", fmt.Sprintf(`SELECT fulfillment.manual_shipment_eligible(%s,'%s'::uuid)`, lit, cand))
+	explain("candidate: order_money_shippable", fmt.Sprintf(`SELECT fulfillment.order_money_shippable(%s,'%s'::uuid)`, lit, cand))
+	explain("unshipped CTE (outer query only)", fmt.Sprintf(`SELECT o.tenant_id,o.store_id,o.id FROM checkout.orders o WHERE o.tenant_id='%s' AND o.store_id='%s' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'`, tenant, store))
+	explain("full todos select", fmt.Sprintf(`WITH unshipped AS MATERIALIZED (
+  SELECT o.tenant_id,o.store_id,o.id,o.snapshot#>>'{destination,kind}' AS kind FROM checkout.orders o
+  WHERE o.tenant_id='%[1]s' AND o.store_id='%[2]s' AND o.commercial_state IN ('CONFIRMED','AWAITING_COLLECTION') AND o.fulfillment_state='MANUAL_UNASSIGNED'
+   AND fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,o.id))
+ SELECT jsonb_build_object(
+  'awaiting_transfer_confirmation',(SELECT count(*) FROM checkout.bank_transfers t WHERE t.tenant_id='%[1]s' AND t.store_id='%[2]s' AND t.state='SUBMITTED'),
+  'to_ship',(SELECT count(*) FROM unshipped),
+  'cvs_awaiting_label',(SELECT count(*) FROM unshipped u WHERE u.kind LIKE 'cvs\_%%'
+     AND NOT EXISTS(SELECT 1 FROM fulfillment.cvs_shipments c WHERE c.tenant_id=u.tenant_id AND c.store_id=u.store_id AND c.order_id=u.id AND c.state NOT IN ('FAILED','ABANDONED'))),
+  'open_refunds',(SELECT count(*) FROM payments.stripe_refunds r WHERE r.tenant_id='%[1]s' AND r.store_id='%[2]s'
+     AND NOT EXISTS(SELECT 1 FROM payments.refund_facts rf WHERE rf.tenant_id=r.tenant_id AND rf.store_id=r.store_id AND rf.refund_id=r.id)))`, tenant, store))
+	// auto_explain of the nested statements of one candidate call (separate owner connection with a notice handler).
+	{
+		cc := owner.Config().ConnConfig.Copy()
+		var notes []string
+		cc.OnNotice = func(_ *pgconn.PgConn, n *pgconn.Notice) { notes = append(notes, n.Message) }
+		c, err := pgx.ConnectConfig(ctx, cc)
+		if err != nil {
+			fmt.Fprintf(&b, "\nauto_explain connect ERR %v\n", err)
+		} else {
+			for _, q := range []string{`LOAD 'auto_explain'`, `SET auto_explain.log_min_duration=0`, `SET auto_explain.log_analyze=on`, `SET auto_explain.log_buffers=on`,
+				`SET auto_explain.log_nested_statements=on`, `SET auto_explain.log_timing=off`, `SET client_min_messages=log`} {
+				if _, err := c.Exec(ctx, q); err != nil {
+					fmt.Fprintf(&b, "\nauto_explain setup %q ERR %v\n", q, err)
+				}
+			}
+			var ok bool
+			_ = c.QueryRow(ctx, fmt.Sprintf(`SELECT fulfillment.manual_shipment_eligible(%s,'%s'::uuid)`, lit, cand)).Scan(&ok)
+			fmt.Fprintf(&b, "\n===== auto_explain nested plans for ONE manual_shipment_eligible call =====\n")
+			for _, n := range notes {
+				b.WriteString(n + "\n")
+			}
+			c.Close(ctx)
+		}
+	}
+	if err := os.WriteFile(dir+"/explain-"+tag+".txt", []byte(b.String()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// diagEquiv compares the 0107 bodies (re-created as perfdiag.old_*) with the live (0157) functions over every order of the database,
+// including cross-tenant / NULL-argument probes, and appends a summary to $LC_DIAG_DIR/equiv.txt.
+func diagEquiv(t *testing.T, owner *pgxpool.Pool, label string) {
+	dir := os.Getenv("LC_DIAG_DIR")
+	if dir == "" {
+		return
+	}
+	ctx := context.Background()
+	raw, err := os.ReadFile("../../migrations/0107_home_cod.sql")
+	if err != nil {
+		t.Errorf("diagEquiv read: %v", err)
+		return
+	}
+	text := string(raw)
+	cut := func(from string) string {
+		i := strings.Index(text, from)
+		j := strings.Index(text[i:], "$$;")
+		return text[i : i+j+3]
+	}
+	var out strings.Builder
+	fmt.Fprintf(&out, "== %s ==\n", label)
+	stmts := []string{`CREATE SCHEMA IF NOT EXISTS perfdiag`}
+	for _, f := range []string{"CREATE OR REPLACE FUNCTION fulfillment.order_money_shippable", "CREATE OR REPLACE FUNCTION fulfillment.manual_shipment_eligible"} {
+		s := cut(f)
+		s = strings.ReplaceAll(s, "fulfillment.order_money_shippable", "perfdiag.old_oms")
+		s = strings.ReplaceAll(s, "fulfillment.manual_shipment_eligible", "perfdiag.old_msl")
+		stmts = append(stmts, s)
+	}
+	for _, s := range stmts {
+		if _, err := owner.Exec(ctx, s); err != nil {
+			fmt.Fprintf(&out, "setup ERR %v\n", err)
+			appendFile(dir+"/equiv.txt", out.String())
+			return
+		}
+	}
+	q := `SELECT commercial_state, payment_mode, fulfillment_state, count(*),
+	  count(*) FILTER (WHERE n_oms) AS oms_true, count(*) FILTER (WHERE n_msl) AS msl_true,
+	  count(*) FILTER (WHERE n_oms IS DISTINCT FROM o_oms OR n_msl IS DISTINCT FROM o_msl) AS mismatch,
+	  count(*) FILTER (WHERE x_oms IS DISTINCT FROM y_oms OR x_msl IS DISTINCT FROM y_msl) AS probe_mismatch
+	  FROM (SELECT o.commercial_state, o.payment_mode, o.fulfillment_state,
+	    fulfillment.order_money_shippable(o.tenant_id,o.store_id,o.id) n_oms, perfdiag.old_oms(o.tenant_id,o.store_id,o.id) o_oms,
+	    fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,o.id) n_msl, perfdiag.old_msl(o.tenant_id,o.store_id,o.id) o_msl,
+	    -- probes: foreign tenant, NULL store, NULL tenant, unknown order id
+	    (fulfillment.order_money_shippable(gen_random_uuid(),o.store_id,o.id), fulfillment.order_money_shippable(o.tenant_id,NULL,o.id),
+	     fulfillment.order_money_shippable(NULL,o.store_id,o.id), fulfillment.order_money_shippable(o.tenant_id,o.store_id,gen_random_uuid())) x_oms,
+	    (perfdiag.old_oms(gen_random_uuid(),o.store_id,o.id), perfdiag.old_oms(o.tenant_id,NULL,o.id),
+	     perfdiag.old_oms(NULL,o.store_id,o.id), perfdiag.old_oms(o.tenant_id,o.store_id,gen_random_uuid())) y_oms,
+	    (fulfillment.manual_shipment_eligible(gen_random_uuid(),o.store_id,o.id), fulfillment.manual_shipment_eligible(o.tenant_id,NULL,o.id),
+	     fulfillment.manual_shipment_eligible(NULL,o.store_id,o.id), fulfillment.manual_shipment_eligible(o.tenant_id,o.store_id,gen_random_uuid())) x_msl,
+	    (perfdiag.old_msl(gen_random_uuid(),o.store_id,o.id), perfdiag.old_msl(o.tenant_id,NULL,o.id),
+	     perfdiag.old_msl(NULL,o.store_id,o.id), perfdiag.old_msl(o.tenant_id,o.store_id,gen_random_uuid())) y_msl
+	    FROM checkout.orders o) z GROUP BY 1,2,3 ORDER BY 1,2,3`
+	rows, err := owner.Query(ctx, q)
+	if err != nil {
+		fmt.Fprintf(&out, "query ERR %v\n", err)
+		appendFile(dir+"/equiv.txt", out.String())
+		return
+	}
+	var tot, trues, bad int64
+	for rows.Next() {
+		var cs, pm, fs string
+		var n, ot, mt, mm, pmm int64
+		if err := rows.Scan(&cs, &pm, &fs, &n, &ot, &mt, &mm, &pmm); err != nil {
+			fmt.Fprintf(&out, "scan ERR %v\n", err)
+			break
+		}
+		fmt.Fprintf(&out, "%-20s %-18s %-18s n=%d money_shippable=%d eligible=%d mismatch=%d probe_mismatch=%d\n", cs, pm, fs, n, ot, mt, mm, pmm)
+		tot += n
+		trues += mt
+		bad += mm + pmm
+	}
+	rows.Close()
+	fmt.Fprintf(&out, "TOTAL orders=%d eligible_true=%d mismatches=%d\n", tot, trues, bad)
+	appendFile(dir+"/equiv.txt", out.String())
+	if bad != 0 {
+		t.Errorf("diagEquiv %s: %d mismatches", label, bad)
+	}
+	_, _ = owner.Exec(ctx, `DROP SCHEMA perfdiag CASCADE`)
+}
+
+func appendFile(path, s string) {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err == nil {
+		_, _ = f.WriteString(s)
+		_ = f.Close()
+	}
+}

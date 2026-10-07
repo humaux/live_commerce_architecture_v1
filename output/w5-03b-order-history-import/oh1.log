@@ -1,0 +1,34 @@
+=== RUN   TestOrderHistoryImport
+=== RUN   TestOrderHistoryImport/OH02_an_order_of_a_never-imported_customer_fails_and_creates_no_customer
+=== RUN   TestOrderHistoryImport/OH01_preview_rolls_back;_commit_archives_3_orders_from_7_lines
+=== RUN   TestOrderHistoryImport/OH03_I05_the_archive_touches_no_money,_order_or_inventory_row_and_no_such_function_reads_it
+    order_history_import_test.go:178: finance summary moved: {"code":"invalid_request","message":"Request validation failed.","request_id":"ccc5185c78722997534282ee70381f86","retryable":false,"details":{}}
+         -> {"code":"invalid_request","message":"Request validation failed.","request_id":"a6ce26718d71291360b95961ca6feffe","retryable":false,"details":{}}
+=== RUN   TestOrderHistoryImport/OH04_the_full_address_never_reaches_the_database;_only_the_city_does
+=== RUN   TestOrderHistoryImport/OH05_the_same_order_again_is_updated;_another_customer's_order_number_is_refused
+=== RUN   TestOrderHistoryImport/OH09_the_keyset_read_pages_newest_first_with_a_total
+    order_history_import_test.go:276: page 2: 422 map[code:invalid_request details:map[] message:Request validation failed. request_id:13424497cfda37bda797e869607f8595 retryable:false]
+=== RUN   TestOrderHistoryImport/OH07_permissions,_store_scope_and_table_grants
+=== RUN   TestOrderHistoryImport/OH10_the_merchant_privacy_export_contains_the_archive
+=== RUN   TestOrderHistoryImport/OH12_the_batch_and_results.csv_carry_row_numbers_and_codes_only
+=== RUN   TestOrderHistoryImport/OH06_erasure_deletes_the_archive_and_the_stale_file_fails_erased
+=== RUN   TestOrderHistoryImport/OH08_limits
+=== RUN   TestOrderHistoryImport/OH11_2000_archive_rows_per_customer,_then_order_limit
+--- FAIL: TestOrderHistoryImport (1.88s)
+    --- PASS: TestOrderHistoryImport/OH02_an_order_of_a_never-imported_customer_fails_and_creates_no_customer (0.02s)
+    --- PASS: TestOrderHistoryImport/OH01_preview_rolls_back;_commit_archives_3_orders_from_7_lines (0.02s)
+    --- FAIL: TestOrderHistoryImport/OH03_I05_the_archive_touches_no_money,_order_or_inventory_row_and_no_such_function_reads_it (0.09s)
+    --- PASS: TestOrderHistoryImport/OH04_the_full_address_never_reaches_the_database;_only_the_city_does (0.13s)
+    --- PASS: TestOrderHistoryImport/OH05_the_same_order_again_is_updated;_another_customer's_order_number_is_refused (0.01s)
+    --- FAIL: TestOrderHistoryImport/OH09_the_keyset_read_pages_newest_first_with_a_total (0.00s)
+    --- PASS: TestOrderHistoryImport/OH07_permissions,_store_scope_and_table_grants (0.02s)
+    --- PASS: TestOrderHistoryImport/OH10_the_merchant_privacy_export_contains_the_archive (0.01s)
+    --- PASS: TestOrderHistoryImport/OH12_the_batch_and_results.csv_carry_row_numbers_and_codes_only (0.00s)
+    --- PASS: TestOrderHistoryImport/OH06_erasure_deletes_the_archive_and_the_stale_file_fails_erased (0.02s)
+    --- PASS: TestOrderHistoryImport/OH08_limits (0.03s)
+    --- PASS: TestOrderHistoryImport/OH11_2000_archive_rows_per_customer,_then_order_limit (0.03s)
+FAIL
+FAIL	livecommerce/tests/foundation	3.374s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+bash scripts/dev/test-focused.sh '^TestOrderHistoryImport$'  23.49s user 2.68s system 115% cpu 22.597 total
