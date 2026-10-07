@@ -119,6 +119,38 @@ function assertExportBind(v, yaml) {
   assert.match(yaml, /^\s+(?:bind:\s*\{\s*)?create_host_path:\s*false(?:\s*\})?\s*$/m, "source must explicitly disable host-path creation");
 }
 
+test("shared loader makes API/worker LIVE pair file-only before Compose interpolation", () => fixture(dir => {
+  const file = `${dir}/compose.env`;
+  const render = (callerFlag = "1") => {
+    const r = run("bash", ["-c", 'source "$DEPLOY/scripts/lib.sh"; lc_load_env "$LC_COMPOSE_ENV"; lc_compose_all config --format json'], cleanEnv(dir, {
+      DEPLOY: deploy, LC_STRIPE_LIVE_ENABLED: callerFlag, LC_STRIPE_LIVE_APPROVAL_REF: "MOCK_CALLER_APPROVAL",
+      IMAGE_TAG: "caller-tag",
+    }));
+    assert.equal(r.status, 0, r.stderr);
+    return JSON.parse(r.stdout).services;
+  };
+  const assertPair = (services, flag, reference) => {
+    for (const name of ["api", "payment-worker-live"]) {
+      assert.equal(services[name].environment.COMMERCE_STRIPE_LIVE_ENABLED, flag, name);
+      assert.equal(services[name].environment.COMMERCE_STRIPE_LIVE_APPROVAL_REF, reference, name);
+    }
+    assert.equal(services.api.image, "lc-go:caller-tag", "ordinary environment override must remain intact");
+  };
+  setKey(file, "LC_STRIPE_LIVE_ENABLED", "0");
+  setKey(file, "LC_STRIPE_LIVE_APPROVAL_REF", "");
+  assertPair(render(), "0", "");
+  writeFileSync(file, readFileSync(file, "utf8").replace(/^LC_STRIPE_LIVE_(ENABLED|APPROVAL_REF)=.*\n/gm, ""));
+  assertPair(render(), "0", "");
+  setKey(file, "LC_STRIPE_LIVE_ENABLED", "1");
+  setKey(file, "LC_STRIPE_LIVE_APPROVAL_REF", "MOCK_FILE_APPROVAL");
+  assertPair(render("0"), "1", "MOCK_FILE_APPROVAL");
+  const readonly = run("bash", ["-c", 'source "$DEPLOY/scripts/lib.sh"; readonly LC_STRIPE_LIVE_ENABLED; lc_load_env "$LC_COMPOSE_ENV"'], cleanEnv(dir, {
+    DEPLOY: deploy, LC_STRIPE_LIVE_ENABLED: "1",
+  }));
+  assert.notEqual(readonly.status, 0, "readonly caller state must fail closed");
+  assert.ok(readonly.stderr.includes("cannot clear caller Stripe LIVE pair"));
+}));
+
 test("export bind accepts omitted JSON false but rejects unsafe source/config mutations", () => {
   const yaml = exportBindYAML();
   for (const bind of [{ create_host_path: false }, {}])

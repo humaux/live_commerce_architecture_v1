@@ -1,0 +1,9 @@
+S01	PASS	bash -n on all deploy scripts
+S01	PASS	shellcheck -S warning
+S02	PASS	digest pins
+S03	PASS	compose config (4 profile sets x 2 files, incl. claims + ops one-shots) + login/secret/network wiring matches logins.tsv
+S04	PASS	coverage=96.7%
+S05	PASS	caddy validate + fmt + adapt(on_demand, ask URL, log redaction) (image caddy:2.11.4-alpine)
+S06	PASS	ignore patterns
+S48	PASS	R3 operator/env/probe controls (MOCK, no database or provider calls)
+smoke static: 8 PASS, 0 FAIL, BLOCKED=-, NOT_RUN=-

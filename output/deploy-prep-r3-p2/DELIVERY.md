@@ -1,6 +1,10 @@
 <!-- Purpose: P2 follow-up implementation and evidence receipt. Depends on: owner review list, trunk0d6b4b5f and current source/gate hashes. Used by: integrator review, foundation shards and deploy-smoke CI. -->
 # deploy-prep-r3-p2 delivery
 
+Shared-loader follow-up supersedes the original source receipt below for lib.sh/Node controls; see
+[loader/DELIVERY.md](loader/DELIVERY.md) and its current hash receipt. The original P2 gates remain historical evidence
+for `121789dc`; integrator will push/run the combined foundation-shards + deploy-smoke once.
+
 - Branch/commit: `unit/deploy-prep-r3-p2`, this delivery commit (`git log -1 --format=%H -- output/deploy-prep-r3-p2/DELIVERY.md`). Base: `0d6b4b5f214b99589e459ec6a02cd75a54bf5933`. First Git mutation was the requested `git switch -c unit/deploy-prep-r3-p2 origin/r3/integration`; clean start.
 - Role/model/worktree: Codex-4 implementer (runtime model variant/effort not exposed), `/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3`. Owned source: expiry-worker config/loops/tests, deploy README/compose/env/ops/preflight/smoke, existing R3 Node controls and generated dependency maps. No migration, shared schema or module/lockfile edits. Read-only explorer configured gpt-6-luna/medium; independent reviewer gpt-6.1-sol/high; no parallel source writers or recursive delegation.
 
