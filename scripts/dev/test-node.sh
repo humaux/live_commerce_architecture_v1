@@ -26,3 +26,6 @@ else
   echo "NOT_RUN: tests/media/r04-input-runner.test.mjs (COMMERCE_R04_LIVEKIT_BINARY unset)" >&2
   [[ "${1:-}" != --require-r04 ]] || exit 2
 fi
+
+# W3-U1b pure selection, wire and request boundary negatives (no browser).
+node --test --experimental-strip-types tests/admin/picklist-model.test.ts
