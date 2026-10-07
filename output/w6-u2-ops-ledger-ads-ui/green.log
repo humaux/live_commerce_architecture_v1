@@ -1,0 +1,47 @@
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.133ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.423334ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.364792ms)
+✔ copy never calls a budget a hard stop and never offers resume (0.365209ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.434125ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (0.863125ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (1.142125ms)
+✔ money: whole units to minor with integer math; TWD must be whole (25.129333ms)
+✔ draft input: exact 11-key body and every local rule (1.999041ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.190583ms)
+✔ settings parser: environment enum, connections, identities, capi (0.4135ms)
+✔ connect state parser: pick list kinds and id match (0.1375ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.274083ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (7.562917ms)
+✔ capi body and validation (0.147542ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.197125ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.186ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.163458ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.062375ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.194292ms)
+✔ route grammar: exactly the frozen resources except meta/connect and meta/callback (0.918375ms)
+✔ query rule: only report has a query, from+to exactly once, real dates, at most 92 days (0.254125ms)
+✔ headers: If-Match is a bare revision, Idempotency-Key is the repo grammar (0.169625ms)
+✔ connect cookie: httpOnly, Secure, Lax, Path is the callback only, 10 minutes; cleared with Max-Age=0 (0.155791ms)
+✔ connect body: exactly {store: uuid} (0.147375ms)
+✔ dialog URL: only exactly https://www.facebook.com (0.161084ms)
+✔ callback parameters: bounded charset/length, duplicates rejected, Meta cancel is denied, extras ignored (2.136459ms)
+✔ callback redirect: only fixed codes and canonical uuids ever reach the URL (never code/state) (0.171833ms)
+✔ callback Go answers map to the fixed connect_error values (0.074458ms)
+✔ Go transport split: pause/end bodiless, approve keyless, nothing else (0.258333ms)
+✔ W6-06B route grammar and exact unbind body (0.197375ms)
+✔ W6-U2 unbind rejects literal and escaped duplicate account keys (0.245625ms)
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (2.131791ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.897583ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (14.981958ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.181ms)
+✔ read-only store capability never exposes a command even if the state allows one (0.060459ms)
+✔ duplicate escaped keys cannot bypass the exact command grammar (0.048333ms)
+✔ query backoff affects only its operation and expires without another action (0.052292ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 147.620458

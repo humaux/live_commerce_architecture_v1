@@ -1,0 +1,65 @@
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (1.114167ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.984667ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (23.615333ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.161833ms)
+✔ read-only store capability never exposes a command even if the state allows one (0.059625ms)
+✔ duplicate escaped keys cannot bypass the exact command grammar (0.228167ms)
+✔ query backoff affects only its operation and expires without another action (0.042834ms)
+✖ merchant reason text translates ledger events and conceals unknown or prototype codes (0.39075ms)
+✖ ledger read navigation requires effective integration:read permission regardless of role (0.105459ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 138.544875
+
+✖ failing tests:
+
+test at tests/admin/operations-model.test.ts:218:1
+✖ merchant reason text translates ledger events and conceals unknown or prototype codes (0.39075ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-opus-ui-sub/tests/admin/operations-model.test.ts:219:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/operations-model.test.ts:242:1
+✖ ledger read navigation requires effective integration:read permission regardless of role (0.105459ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u2-opus-ui-sub/tests/admin/operations-model.test.ts:243:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

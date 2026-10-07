@@ -1,0 +1,1 @@
+Initial exact JSX anchor assertion failed before changing source. Shell continued to a clean baseline gate; this run is explicitly not mutation evidence. Subsequent mutation wrapper uses set -euo pipefail and verifies source hashes.

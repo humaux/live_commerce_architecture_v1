@@ -1,0 +1,10 @@
+{
+  "sha": "dca90c2ae80e3ca5e98ce2b44836a48601a2c57d",
+  "ci_run": 37584601181,
+  "ci_sha": "64e0a7ea16127b55fbbf3d920ca8ab4e139f473f",
+  "files": {
+    "tests/foundation/browser_operations_ads_test.go": "1659bba0bde0ec3f52301544ee44b91c1435d6b8098a5c723c91c4a0c12db86d",
+    "tests/admin/operations-ads.spec.ts": "076539aaf36f471bd92c19dc90f41c4a940e41b83b48c86ae92844230e68dd17",
+    "apps/admin/components/operations.css": "d5cf2b2be86acd60a97b909666321e1f7922c273e864b6c7175f7cb5cb5bd397"
+  }
+}

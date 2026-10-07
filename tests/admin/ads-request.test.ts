@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
+  validAdsUnbindBody, adsAny, adsBodyless, adsKeyless, adsRoutes, callbackRedirect, clearConnectCookie, connectCookie, connectErrorFor, localeFromCookie, parseCallbackQuery,
   parseConnectBody, safeDialogURL, storeFromCookie, validAdsQuery, validIdempotencyKey, validIfMatch,
 } from "../../apps/admin/lib/ads-request.ts";
 
@@ -134,3 +134,20 @@ test("Go transport split: pause/end bodiless, approve keyless, nothing else", ()
   for (const bad of [`ads/drafts/${uuid}/publish`, `ads/drafts/${uuid}/pause`, "ads/drafts", `ads/drafts/${uuid}/approve/x`])
     assert.ok(!adsKeyless.test(bad), bad);
 });
+
+
+test("W6-06B route grammar and exact unbind body", () => {
+  assert.ok(method("GET").test("ads/catalog-feed"));
+  assert.ok(method("POST").test("ads/meta/unbind"));
+  assert.ok(!method("POST").test("ads/catalog-feed"));
+  assert.ok(!method("GET").test("ads/meta/unbind"));
+  assert.ok(!adsKeyless.test("ads/meta/unbind"));
+  assert.ok(!adsBodyless.test("ads/meta/unbind"));
+  assert.ok(validAdsQuery("https://admin.example/ads/catalog-feed","ads/catalog-feed"));
+  assert.ok(!validAdsQuery("https://admin.example/ads/catalog-feed?","ads/catalog-feed"));
+  for (const ad_account_id of ["0","9002","9".repeat(40)]) assert.ok(validAdsUnbindBody(JSON.stringify({ad_account_id})));
+  for (const raw of ["", "{}", "[]", "null", "{", JSON.stringify({ad_account_id:"act_9002"}), JSON.stringify({ad_account_id:9}),
+    JSON.stringify({ad_account_id:"9".repeat(41)}), JSON.stringify({ad_account_id:"9002",tenant_id:uuid})]) assert.ok(!validAdsUnbindBody(raw),raw);
+});
+
+test("W6-U2 unbind rejects literal and escaped duplicate account keys",()=>{assert.equal(validAdsUnbindBody('{"ad_account_id":"123","ad_account_id":"123"}'),false);assert.equal(validAdsUnbindBody(String.raw`{"ad_account_id":"123","\u0061d_account_id":"123"}`),false);});

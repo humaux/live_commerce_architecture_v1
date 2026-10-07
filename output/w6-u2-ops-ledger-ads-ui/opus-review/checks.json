@@ -1,0 +1,48 @@
+[
+  {
+    "command": "LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-operations-ads",
+    "phase": "private-canary mutation",
+    "exit": 1,
+    "evidence": "mutation-red.log",
+    "matched_failure": "loaded order body.not.toContainText(SYNTHETIC-DO-NOT-EXPOSE)"
+  },
+  {
+    "command": "LC_TEST_LOCK_WAIT=300 bash scripts/dev/test-local.sh --browser-operations-ads",
+    "phase": "exact restored green",
+    "exit": 0,
+    "playwright": 11,
+    "evidence": "browser-green.log"
+  },
+  {
+    "command": "node --test --experimental-strip-types tests/admin/operations-model.test.ts",
+    "exit": 0,
+    "tests": 9,
+    "evidence": "node-green.log"
+  },
+  {
+    "command": "cd apps/admin && pnpm exec tsc --noEmit -p .",
+    "exit": 0,
+    "evidence": "tsc.log"
+  },
+  {
+    "command": "pnpm exec tsc --noEmit --strict --skipLibCheck --types node --typeRoots apps/admin/node_modules/@types --target ES2022 --module ESNext --moduleResolution Bundler --allowImportingTsExtensions tests/admin/operations-ads.spec.ts",
+    "exit": 0,
+    "evidence": "browser-tsc.log"
+  },
+  {
+    "command": "go vet -tags browser ./tests/foundation",
+    "exit": 0,
+    "evidence": "vet.log"
+  },
+  {
+    "command": "bash scripts/dev/test-node.sh",
+    "exit": 0,
+    "evidence": "node.log"
+  },
+  {
+    "command": "bash scripts/dev/check-gates.sh",
+    "exit": 0,
+    "modes": 78,
+    "evidence": "check-gates.log"
+  }
+]

@@ -1,0 +1,12 @@
+✔ closed projections reject secret-shaped extras, invalid enums, IDs and contradictory capabilities (0.930333ms)
+✔ detail accepts only bounded events and keeps actual server action flags (0.882833ms)
+✔ BFF exact routes and request grammar forbid keys/body on reads, filters on detail and arbitrary writes (27.30525ms)
+✔ copy parity, safe object navigation and UNKNOWN/protective reasons (0.205708ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 127.88225

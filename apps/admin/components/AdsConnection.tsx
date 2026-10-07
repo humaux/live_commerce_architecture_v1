@@ -3,16 +3,21 @@
 // Used by: apps/admin/components/Ads.tsx
 "use client";
 // Extracted ads panel: existing BFF ads-client calls -> Go /v1/admin/stores/{store}/ads; no command or DTO changes.
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import {
+  postUnbind,
+  readCatalogFeed,
   postBindings,
   readConnectState,
   AdsReadError,
   type WriteResult,
 } from "@/lib/ads-client";
 import {
+  type AdsCode,
+  type AdsInFlight,
+  type CatalogFeed,
   accountReady,
   type ConnectError,
   type ConnectState,
@@ -59,6 +64,31 @@ export function ConnectionSection({
     after?: (value: T) => void,
   ) => Promise<void>;
 }) {
+  const [unbindAccount, setUnbindAccount] = useState<string | null>(null);
+  const [inFlight, setInFlight] = useState<{account:string;value:AdsInFlight} | null>(null);
+  const [unbindError, setUnbindError] = useState<AdsCode | null>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (unbindAccount) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [unbindAccount]);
+  // Store/session changes dismiss the old account and safe operation details.
+  useEffect(() => {setUnbindAccount(null);setInFlight(null);setUnbindError(null);}, [store.id, boundary.current]);
+  const canManage = store.role === "owner" || store.permissions?.includes("ads:manage") === true;
+  function unbind() {
+    if (!canManage || !unbindAccount || busy || uncertain) return;
+    const account = unbindAccount;
+    const body = JSON.stringify({ad_account_id:account});
+    setInFlight(null);setUnbindError(null);
+    void run(`unbind:${account}`,body,async (key) => {
+      const result = await postUnbind(store.id,key,body,boundary.current);
+      if (!result.ok) {
+        if (result.details) setInFlight({account,value:result.details});
+        if (!result.uncertain) setUnbindError(result.code);
+      }
+      return result;
+    },c.unbound,() => setUnbindAccount(null));
+  }
   const accounts = settings.connections.filter(
     (x) => x.provider === "meta_ads",
   );
@@ -138,10 +168,31 @@ export function ConnectionSection({
               <span className={x.enabled ? "ads-tone-ok" : "ads-tone-warn"}>
                 {x.enabled ? c.connEnabled : c.connDisabled}
               </span>
+              {canManage && x.provider === "meta_ads" && x.enabled && (
+                <button type="button" className="ads-inline ads-danger" data-testid="ads-unbind"
+                  aria-label={`${c.unbindButton}: ${x.asset_id}`} disabled={busy !== "" || !!uncertain || !!connect}
+                  onClick={() => {setInFlight(null);setUnbindError(null);setUnbindAccount(x.asset_id);}}>{c.unbindButton}</button>
+              )}
             </li>
           ))}
         </ul>
       )}
+      <dialog ref={dialog} className="ads-unbind-dialog" aria-labelledby="ads-unbind-h" aria-describedby="ads-unbind-copy"
+        data-testid="ads-unbind-confirm" onCancel={(event) => {if (busy) event.preventDefault();else setUnbindAccount(null);}}
+        onClose={() => setUnbindAccount(null)}>
+        <h3 id="ads-unbind-h">{c.unbindTitle}</h3>
+        <p className="ads-mono">{unbindAccount}</p>
+        <div id="ads-unbind-copy"><p>{c.unbindHistory}</p><p>{c.unbindPause}</p><p>{c.unbindLocal}</p><p>{c.unbindCapi}</p></div>
+        <div className="ads-actions">
+          <button type="button" className="ads-danger" data-testid="ads-unbind-yes" disabled={!canManage || busy !== "" || !!uncertain} onClick={unbind}>
+            {busy.startsWith("unbind:") ? c.sending : c.unbindConfirm}</button>
+          <button type="button" data-testid="ads-unbind-cancel" autoFocus disabled={busy !== ""} onClick={() => setUnbindAccount(null)}>{c.cancel}</button>
+        </div>
+        {unbindError && unbindError !== "operations_in_flight" && <p role="alert" data-testid="ads-unbind-error">{c.errors[unbindError]}</p>}
+        {uncertain.startsWith("unbind:") && <p role="alert">{c.uncertain}</p>}
+        {inFlight && inFlight.account === unbindAccount && <InFlightDetails c={c} value={inFlight.value} />}
+      </dialog>
+      <CatalogFeedCard c={c} store={store} />
       <h3>{c.identitiesTitle}</h3>
       {settings.identities.length === 0 ? (
         <p className="ads-empty">{c.identitiesEmpty}</p>
@@ -325,4 +376,54 @@ function PickStep({
       </fieldset>
     </form>
   );
+}
+
+
+function InFlightDetails({c,value}:{c:AdsCopy;value:AdsInFlight}) {
+  return <div className="ads-bad" role="alert" data-testid="ads-unbind-in-flight">
+    <p>{c.errors.operations_in_flight}</p><p data-testid="ads-unbind-total">{c.inFlightTotal(value.operations_total,value.operations.length)}</p>
+    <ul className="ads-list">{value.operations.map((op)=> <li key={op.operation_id}>
+      <span className="ads-mono">{op.operation_id}</span><span>{op.action}</span><span>{c.opStates[op.state]}</span>
+    </li>)}</ul>
+  </div>;
+}
+
+function CatalogFeedCard({c,store}:{c:AdsCopy;store:Store}) {
+  const [feed,setFeed] = useState<CatalogFeed | null>(null);
+  const [status,setStatus] = useState<"loading"|"ready"|"signed-out"|"forbidden"|"error">("loading");
+  const [tick,setTick] = useState(0);
+  const [copy,setCopy] = useState<""|"ok"|"error">("");
+  const current = useRef("");
+  current.current = store.id;
+  useEffect(()=> {
+    const active = new AbortController();
+    setFeed(null);setStatus("loading");setCopy("");
+    readCatalogFeed(store.id,active.signal).then((value)=> {
+      if (!active.signal.aborted) {setFeed(value);setStatus("ready");}
+    },(error:unknown)=> {
+      if (!active.signal.aborted) setStatus(error instanceof AdsReadError && (error.code === "signed-out" || error.code === "forbidden") ? error.code : "error");
+    });
+    return ()=>active.abort();
+  },[store.id,tick]);
+  async function copyURL() {
+    if (!feed?.feed_url) return;
+    const id = store.id;
+    try {await navigator.clipboard.writeText(feed.feed_url);if (current.current === id) setCopy("ok");}
+    catch {if (current.current === id) setCopy("error");}
+  }
+  return <div className="ads-feed" data-testid="ads-catalog-feed" aria-labelledby="ads-feed-h">
+    <h3 id="ads-feed-h">{c.feedTitle}</h3>
+    {status === "loading" && <p role="status">{c.loading}</p>}
+    {status !== "loading" && status !== "ready" && <div role="alert">
+      <p>{status === "signed-out" ? c.signedOut : status === "forbidden" ? c.forbidden : c.unavailable}</p>
+      {status === "error" && <button type="button" data-testid="ads-feed-retry" onClick={()=>setTick(n=>n+1)}>{c.retry}</button>}
+    </div>}
+    {status === "ready" && feed && (feed.feed_url ? <>
+      <p className="ads-note">{c.feedHowTo}</p>
+      <label className="ads-feed-url" htmlFor="ads-feed-url">{c.feedTitle}
+        <textarea id="ads-feed-url" data-testid="ads-feed-url" readOnly value={feed.feed_url} rows={2} /></label>
+      <button type="button" data-testid="ads-feed-copy" onClick={()=>void copyURL()}>{c.feedCopy}</button>
+      {copy && <p role={copy === "ok" ? "status" : "alert"} data-testid="ads-feed-copy-result">{copy === "ok" ? c.feedCopied : c.feedCopyFailed}</p>}
+    </> : <p className="ads-empty" data-testid="ads-feed-empty">{c.feedEmpty}</p>)}
+  </div>;
 }

@@ -1,0 +1,82 @@
+[
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-open-850dba95-b893-441a-81e8-a962a26745df",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-detail-refresh",
+    "action": "click",
+    "expected": "drawer events refresh",
+    "actual": "drawer events refresh",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operations-filter",
+    "action": "selectOption(FAILED)",
+    "expected": "persisted FAILED rows",
+    "actual": "HTTP 200 and selected FAILED",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-open-8645aac1-bd73-488f-9139-93682b563265",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-close",
+    "action": "click",
+    "expected": "drawer closes",
+    "actual": "drawer closes",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operations-filter",
+    "action": "selectOption(UNKNOWN)",
+    "expected": "persisted UNKNOWN rows",
+    "actual": "HTTP 200 and selected UNKNOWN",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operations-filter",
+    "action": "selectOption(READY)",
+    "expected": "persisted READY rows",
+    "actual": "HTTP 200 and selected READY",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-open-43989705-3f7f-4356-a0d3-5a0ad7f73d7f",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  },
+  {
+    "page": "http://127.0.0.1:52685/en/settings/operations?store=a417c40a-2091-4638-ae00-3f48c4b09d59",
+    "control": "operation-open-7625be0c-62e0-40bc-9808-924dd5fd6b25",
+    "action": "click",
+    "expected": "drawer exposes selected operation",
+    "actual": "drawer exposes selected operation",
+    "result": "PASS"
+  }
+]
