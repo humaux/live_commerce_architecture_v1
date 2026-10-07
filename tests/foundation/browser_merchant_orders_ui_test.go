@@ -3,8 +3,10 @@
 package foundation_test
 
 // Purpose: real merchant order browser fixtures and read-only authority proof; focused MOU07 is a separate local subset.
-//   W3-07B: after the read-only guard passes, two mergeable buyer pairs are created and parcel-merge.spec.ts runs against
-//   the same chain (merge -> group waybill -> members shipped -> dissolve -> block -> 409), then PG group state is asserted.
+//   W3-07B/W3-U4: after the read-only guard passes, three mergeable buyer pairs plus a COD and a CVS order of the first pair's
+//   buyer (same owner and address, must never be suggested) are created and parcel-merge.spec.ts runs against the same chain
+//   (merge -> group waybill -> members shipped; OPEN panel rebuilt after a reload -> dissolve/ship; uncertain dissolve reconciled;
+//   stale second tab -> 409), then PG group state is asserted.
 // Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts + parcel-merge.spec.ts.
 // Used by: --browser-merchant-orders-ui; focused test-focused invocations do not certify full MOU/native acceptance.
 
@@ -24,6 +26,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
@@ -389,32 +392,46 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	// W3-07B parcel-merge UI (Amendment W3-07B): the read-only guard above passed, so only now create real mergeable
 	// fixtures (they write checkout/payment tables) and drive parcel-merge.spec.ts against the same Next + Go + PG.
 	// One buyer capability per pair: same owner + identical bdHome destination -> exactly one suggestion per pair.
-	parcelPair := func(tag string) [2]string {
+	// parcelOrder places one order of buyerCap; paid=false stops at the hold (a DRAFT order that is never captured).
+	parcelOrder := func(buyerCap buyer.Capability, tag string, paid bool) string {
 		t.Helper()
-		buyerCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
-		var pair [2]string
-		for i := 0; i < 2; i++ {
-			clone := q
-			clone.cap = buyerCap
-			clone.bcHarness.prepare(t, buyerCap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
-			order, e := clone.bcHarness.begin(t04Key("mou-parcel-begin-" + tag))
-			if e != nil {
-				t.Fatal(e)
-			}
-			clone.hold = order
-			clone.input.OrderID = order.OrderID
-			if clone.result, e = clone.start(t04Key("mou-parcel-start-" + tag)); e != nil {
-				t.Fatal(e)
-			}
-			if e = pcApply(clone.worker, clone.result.AttemptID, pcRecord(t, clone, pcFull(clone))); e != nil {
-				t.Fatal(e)
-			}
-			pair[i] = order.OrderID
+		clone := q
+		clone.cap = buyerCap
+		clone.bcHarness.prepare(t, buyerCap, []storefront.Item{{SKUID: q.stock.skus[0].ID, Quantity: 1}})
+		order, e := clone.bcHarness.begin(t04Key("mou-parcel-begin-" + tag))
+		if e != nil {
+			t.Fatal(e)
 		}
-		return pair
+		if !paid {
+			return order.OrderID
+		}
+		clone.hold = order
+		clone.input.OrderID = order.OrderID
+		if clone.result, e = clone.start(t04Key("mou-parcel-start-" + tag)); e != nil {
+			t.Fatal(e)
+		}
+		if e = pcApply(clone.worker, clone.result.AttemptID, pcRecord(t, clone, pcFull(clone))); e != nil {
+			t.Fatal(e)
+		}
+		return order.OrderID
 	}
-	shipPair, dissolvePair := parcelPair("ship"), parcelPair("dissolve")
-	parcelFixtures, _ := json.Marshal(map[string][2]string{"ship": shipPair, "dissolve": dissolvePair})
+	parcelPair := func(buyerCap buyer.Capability, tag string) [2]string {
+		return [2]string{parcelOrder(buyerCap, tag, true), parcelOrder(buyerCap, tag, true)}
+	}
+	shipCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
+	shipPair := parcelPair(shipCap, "ship")
+	dissolvePair := parcelPair(mustIssue(t, q.cqHarness.service, q.f.storeA1), "dissolve")
+	stalePair := parcelPair(mustIssue(t, q.cqHarness.service, q.f.storeA1), "stale")
+	// W3-07B owner ruling: COD and CVS orders never merge. Two more orders of the SHIP pair's buyer (same owner, same home address,
+	// so they WOULD join its suggestion if they were mergeable) are turned into a COD and a CVS order. Disclosed owner-pool fixtures,
+	// shaped like real rows and proven against the order list/detail in a REAL_PG probe: the COD order is an unpaid hold in the COD
+	// state (a paid card order flipped to COD makes the v2 list answer 503), the CVS order is a paid order whose destination kind is
+	// cvs_711 (no home address, so no destination hash).
+	codOrder := parcelOrder(shipCap, "cod", false)
+	cvsOrder := parcelOrder(shipCap, "cvs", true)
+	mustExec(t, q.f.owner, `UPDATE checkout.orders SET payment_mode='cash_on_delivery',collection_state='PENDING',cod_surcharge_minor=0,cod_carrier='black_cat',commercial_state='AWAITING_COLLECTION' WHERE id=$1`, codOrder)
+	mustExec(t, q.f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{destination,kind}','"cvs_711"') WHERE id=$1`, cvsOrder)
+	parcelFixtures, _ := json.Marshal(map[string][]string{"ship": shipPair[:], "dissolve": dissolvePair[:], "stale": stalePair[:], "excluded": {codOrder, cvsOrder}})
 	parcelLog := browserLog(t, filepath.Join(evidence, "playwright-parcel.log"))
 	parcelBrowser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/parcel-merge.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results-parcel"))
 	parcelBrowser.Dir = root
@@ -423,23 +440,35 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if err = parcelBrowser.Run(); err != nil {
 		t.Fatalf("W3-07B parcel-merge browser gate failed: %v; evidence=%s", err, evidence)
 	}
-	// Server truth after the real clicks: the shipped pair sits in one SHIPPED group as MERCHANT_SHIPPED orders, the
-	// re-merged pair in one OPEN group, and the dissolved group remains as DISSOLVED history (members deleted).
-	var shippedMembers, openMembers, dissolvedGroups, shippedOrders int
-	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state='SHIPPED' AND m.order_id IN ($3,$4)`, q.f.tenantA, q.f.storeA1, shipPair[0], shipPair[1]).Scan(&shippedMembers); err != nil {
-		t.Fatal(err)
+	// Server truth after the real clicks: the ship pair sits in one SHIPPED group; the dissolve pair was dissolved twice (history
+	// kept, members deleted), re-merged and shipped from the RELOADED panel (a second SHIPPED group); the stale pair stays in one
+	// OPEN group (its stale single-order submit was refused); the COD and CVS orders never joined any group.
+	groupMembers := func(state string, ids ...string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state=$3 AND m.order_id=ANY($4::uuid[])`, q.f.tenantA, q.f.storeA1, state, ids).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
 	}
-	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state='OPEN' AND m.order_id IN ($3,$4)`, q.f.tenantA, q.f.storeA1, dissolvePair[0], dissolvePair[1]).Scan(&openMembers); err != nil {
-		t.Fatal(err)
+	orderCount := func(where string, ids ...string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=ANY($3::uuid[]) AND `+where, q.f.tenantA, q.f.storeA1, ids).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
 	}
+	var dissolvedGroups, groupedExcluded int
 	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_groups WHERE tenant_id=$1 AND store_id=$2 AND state='DISSOLVED'`, q.f.tenantA, q.f.storeA1).Scan(&dissolvedGroups); err != nil {
 		t.Fatal(err)
 	}
-	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id IN ($3,$4) AND fulfillment_state='MERCHANT_SHIPPED'`, q.f.tenantA, q.f.storeA1, shipPair[0], shipPair[1]).Scan(&shippedOrders); err != nil {
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders WHERE tenant_id=$1 AND store_id=$2 AND order_id=ANY($3::uuid[])`, q.f.tenantA, q.f.storeA1, []string{codOrder, cvsOrder}).Scan(&groupedExcluded); err != nil {
 		t.Fatal(err)
 	}
-	if shippedMembers != 2 || openMembers != 2 || dissolvedGroups != 1 || shippedOrders != 2 {
-		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openMembers=%d dissolved=%d shippedOrders=%d; evidence=%s", shippedMembers, openMembers, dissolvedGroups, shippedOrders, evidence)
+	shippedBoth := append(append([]string(nil), shipPair[:]...), dissolvePair[:]...)
+	shippedMembers, openStale, shippedOrders := groupMembers("SHIPPED", shippedBoth...), groupMembers("OPEN", stalePair[:]...), orderCount("fulfillment_state='MERCHANT_SHIPPED'", shippedBoth...)
+	staleShipped := orderCount("fulfillment_state='MERCHANT_SHIPPED'", append(stalePair[:], codOrder, cvsOrder)...)
+	if shippedMembers != 4 || openStale != 2 || dissolvedGroups != 2 || shippedOrders != 4 || staleShipped != 0 || groupedExcluded != 0 {
+		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openStale=%d dissolved=%d shippedOrders=%d staleOrExcludedShipped=%d groupedExcluded=%d; evidence=%s", shippedMembers, openStale, dissolvedGroups, shippedOrders, staleShipped, groupedExcluded, evidence)
 	}
 	t.Logf("MOU real-chain browser cases, trusted native visibility, PG read-only facts and W3-07B parcel-merge clicks checked; evidence=%s", evidence)
 }
