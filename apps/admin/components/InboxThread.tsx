@@ -50,6 +50,7 @@ export function InboxThread({
   const [older, setOlder] = useState(true);
   const [revision, setRevision] = useState(0);
   const [delivery, setDelivery] = useState<string | null>(null);
+  const persistedUnknown = useRef(false);
   const [retry, setRetry] = useState(false);
   const pending = useRef(new ReplyReceipt());
   const clearGone = useCallback(() => {
@@ -63,6 +64,7 @@ export function InboxThread({
     pending.current.clear();
     setRetry(false);
     setDelivery(null);
+    persistedUnknown.current = false;
     inFlight.current = false;
     setBusy(false);
   }, []);
@@ -95,6 +97,8 @@ export function InboxThread({
   const now = Date.now();
   const open = Number.isFinite(sendDeadline) && now < sendDeadline;
   const closing = Number.isFinite(hardDeadline) && !open && now < hardDeadline;
+  const uncertainDelivery = delivery === "unknown" ||
+    (thread?.items.some((item) => item.direction === "out" && item.send_state === "unknown") ?? false);
   const limit = textLimit(conversation.platform, text);
   const templateRow = templates.find(
     (item) => `${item.template_id}:${item.version}` === template,
@@ -117,6 +121,9 @@ export function InboxThread({
           !item || (item.attachments !== null && (!Array.isArray(item.attachments) ||
             item.attachments.some((attachment) => !attachment || typeof attachment.type !== "string")))))
           throw new InboxError("unavailable", 503);
+        // A9 is final delivery authority; update the action guard before React can commit its warning.
+        persistedUnknown.current = data.items.some((item) => item.direction === "out" && item.send_state === "unknown") ||
+          (!!before && persistedUnknown.current);
         setThread((old) =>
           before && old
             ? { ...data, items: [...data.items, ...old.items] }
@@ -246,7 +253,7 @@ export function InboxThread({
       !open ||
       Date.now() >= sendDeadline ||
       inFlight.current ||
-      delivery === "unknown"
+      uncertainDelivery || persistedUnknown.current
     )
       return;
     if (!pending.current.pending() && !templateRow && !limit.valid) return;
@@ -412,9 +419,9 @@ export function InboxThread({
           {inboxError(locale, error)}
         </p>
       )}
-      {delivery && (
+      {(delivery || uncertainDelivery) && (
         <p role="status" className={styles.notice}>
-          {delivery === "unknown"
+          {uncertainDelivery
             ? c.uncertain
             : (c[delivery as "queued"] ?? c.unknown)}
         </p>
@@ -481,7 +488,7 @@ export function InboxThread({
             !capable ||
             !open ||
             busy ||
-            delivery === "unknown" ||
+            uncertainDelivery ||
             (!templateRow && !limit.valid)
           }
           type="submit"
