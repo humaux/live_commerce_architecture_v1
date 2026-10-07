@@ -1,9 +1,9 @@
 # LC-U2b inbox page + BuyerPanel delivery
 
 - Branch: `unit/lc-u2b-inbox-page`; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page`.
-- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `08614fb63b80f98132851e6ecac9cbcd8e5c701e`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
-- Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. No push/merge/deployment.
-- Evidence: **E3 / MOCK for 19 focused Node tests plus 13 actual-source component/hook tests; E1 for TypeScript/structure. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN.**
+- Base: `f73405150a1cca3c588d4546f3b5a8e0d1a456a3` (owner-assigned base overrides the older brief reference). Tested source commit: `aa346aa741df9b50baa66e9002b3e3efde65788b`; authorized trunk merge: `26e9aec2` of `1aad42d0`; final evidence commit is reported in the author handoff. Source is also bound by `source-hashes.txt`.
+- Author: Codex-4, GPT-6-based Codex; exact parent model/effort not exposed. Only the requested local trunk merge; no push/deployment.
+- Evidence: **E3 / MOCK for actual-source Node component/hook and delayed-route counterexamples; E1 for TypeScript and harness/parser registration. Author scope follows the integrator ruling; browser acceptance is pending CI, not locally claimed. Backend feature availability is deferred to LC-B3b and does not block LC-U2b merging first. Current source BROWSER / REAL_PG / SANDBOX / LIVE NOT_RUN locally. The two prior browser CI failures at 08614fb6 are recorded below, without a runtime acceptance claim.**
 
 ## Summary
 
@@ -45,7 +45,7 @@ Worker-only registration/static checks and historical failure commands are prese
 3. Frozen A13 `internal/inbox/read.go:262` still returns empty claims/orders, ordinal 0, no display name/auto-reply; A8/A9/A13 expose no link version for A14. Honest empty/unavailable states are rendered; manual customer-link controls remain disabled with a reason. No guessed version or read-via-write. The integrator confirmed these real gaps and opened LC-B3b to supply them; LC-U2b merges first, then a small follow-up enables controls. No field is fabricated.
 4. A8 validates session_id but does not use it in the query; live_comment projection is absent. Bundle-only rows have no usable conversation/source-link URL: read-only bundle panel and explicit unavailable copy-link control. No fabricated deep link or reply.
 5. A9 exposes no binding id for capability matching. UI conservatively requires every matching-provider named dm_session row to be ok/review_required; missing/unknown blocks sends, review_required shows the app-role-only badge. Go is authoritative.
-6. Browser, Go compilation, PG runtime, visual QA/screenshots and normal/calibration runs are NOT_RUN under the owner RAM rule. CI harness currently targets headed Chromium; WebKit for this new mode is NOT_RUN.
+6. Browser, Go compilation, PG runtime, visual QA/screenshots and current normal/calibration runs are NOT_RUN locally under the owner RAM rule; prior 08614fb6 normal/calibration CI both FAILED without retained Playwright evidence. CI harness currently targets headed Chromium; WebKit for this new mode is NOT_RUN.
 
 ## Integrator-ruling follow-up (source 13ea07a8)
 
@@ -71,6 +71,29 @@ Worker-only registration/static checks and historical failure commands are prese
 - Targeted read-only security recheck found the missed A11/A12 write-404 retention; added red tests and shared cleanup solved it. Final recheck found no further confirmed P0/P1 in that fix, Humaux `2ec82daf-c65f-438c-a542-b0e62ca26939`. Opus final review/PR runtime acceptance still pending.
 - BROWSER/Go/PG/build/visual/provider modes remain **NOT_RUN** locally. `--browser-inbox` and `LC_INBOX_CALIBRATION=retain-thread` run on PR #8 after the integrator pushes. The intentional true-hide defect remains intact and must fail INU05 specifically; none of its assertions changed.
 
+## PR #8 browser failure evidence repair (source aa346aa7)
+
+- CI observed at 08614fb6: normal [37627918482](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/actions/runs/37627918482) and calibration [37627924858](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/actions/runs/37627924858) both failed `TestBrowserInboxUIRealChain` with only a generic Playwright exit 1. `gh run view 37627918482 --log-failed` and `gh run view 37627924858 --log-failed` each exited **0**; saved as `ci-37627918482.log` / `ci-37627924858.log`. Captured logs normalize trailing whitespace only; failure text and timestamps are retained. No failing INU case or production-flow root cause can be recovered from these logs.
+- `tests/foundation/browser_inbox_ui_test.go:124` now writes all owned evidence to `output/playwright/inbox-ui/<UTC timestamp>`: Next/Playwright logs, click ledger, native visibility records, screenshots and Playwright result/trace files. Existing `gates.yml` always-upload scope already covers this directory. The log is closed before failure parsing (`:239`); Go logs expose at most 20 records of test counts, failed INU IDs and source coordinates, never arbitrary titles/assertions/DOM text. Missing/no-summary output gets a fixed diagnostic pointing to the artifact. The actual Go summary fixture runs as the existing browser test's `failure_diagnostics` subtest on CI; **Go compilation/runtime NOT_RUN locally**.
+- Independent read-only review found a greedy failure-header parser P2. A title containing a second source coordinate/INU token selected the wrong case; `ci-evidence-parser-red.log` shows **1** at 84aa157c. The parser now anchors the reporter path/separator/first INU token; the strengthened Node counterexample and the actual Go fixture preserve the original coordinate/INU case. `ci-evidence-parser-green.log` shows **0, 5/5**. No test assertion was weakened.
+- Source-reading counterexample: INU04's two actual delayed A9 callbacks did not release their completion promises if canceled-request fulfillment threw. The Node gate transpiles and invokes the actual callbacks with a MOCK rejected fulfillment; `ci-evidence-red.log` is **1, 5 RED** against merge baseline 26e9aec2. Both callbacks now release in `finally` while propagating the original error; all stale-response and hidden-thread browser assertions remain. This is a reproduced harness wait defect, **not proof that it caused either lost CI failure**.
+- Authorized `git fetch origin && git merge origin/r3/integration` initially exited **1** for three content conflicts. Preserved both exact inbox/operations BFF permissions and no-store branches, and both inbox/operations-ads gate modes. `bash -n scripts/dev/test-node.sh scripts/dev/test-local.sh` -> **0**, `git add <three resolved paths>` -> **0**, `git commit --no-edit` -> **0**, merge **26e9aec2** includes fetched trunk **1aad42d0**. The retrospective whole-merge `git diff d868bd68 26e9aec2 --check` -> **2**, `ci-evidence-merge-check.log`, for pre-existing whitespace in incoming historical evidence logs; those logs were retained. The final unit source diff check is **0**.
+- Initial new-test driver setup failures (wrong TypeScript facade and generated function return) are retained, with source dumps omitted, in `ci-evidence-test-setup.log`; they are not acceptance evidence. Corrected test driver uses the installed `typescript-api`. The strict test project now also covers the new evidence test and the actual browser spec without starting a browser.
+
+Final local checks are pinned to **aa346aa741df9b50baa66e9002b3e3efde65788b**, source unchanged during execution. Each owned process group has a 300-second timeout and a 5-second termination grace. `source-hashes.txt` binds 27 unit files, including the merged shared route/runners/workflow.
+
+| Exact command | Exit / evidence |
+| --- | --- |
+| `node --test --experimental-strip-types tests/admin/inbox-evidence.test.ts` | **0, 5/5**, `ci-evidence-green.log`; initial **1** in `ci-evidence-red.log`, parser **1** in `ci-evidence-parser-red.log` |
+| `bash scripts/dev/test-node.sh` | **0**, `ci-evidence-node.log`; optional R04 binary remains explicitly NOT_RUN |
+| `bash scripts/dev/check-gates.sh` | **0**, `ci-evidence-check-gates.log`; 79 documented modes / 1219 top-level foundation tests, header ratchet green |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | **0**, `ci-evidence-admin-typecheck.log` |
+| `pnpm exec tsc --noEmit -p output/lc-u2b-inbox-page/pr8-test-tsconfig.json` | **0**, `ci-evidence-test-typecheck.log` |
+| `gofmt -w tests/foundation/browser_inbox_ui_test.go` | **0**, `ci-evidence-static.log`; static formatting only, source hash unchanged |
+| `git diff --check` | **0**, `ci-evidence-static.log`; unit delta only |
+
+Command outcomes, source SHA and timeout status are also in `ci-evidence-gates.json`; final read-only delivery audit checked the command records, and its missing static evidence/merge-command mismatch are corrected in `ci-evidence-static.log` and this section. `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` -> **0**, `ci-evidence-pr-plan.json` (49 modes, deploy=false). Independent security_reviewer (gpt-6.1-sol high) read-only final review at aa346aa7 found no remaining confirmed P0/P1/P2 in the evidence/parser/barrier/merge scope; Humaux `e2954fa3-6c8a-4e2c-91de-cf2966e71792`. That review did not independently execute Go/browser/PG or recover the lost runtime failure. Backend gaps remain deferred to LC-B3b; no Go backend/migration/OpenAPI or API-contract changes. Current normal browser green and INU05 calibration red remain **NOT_RUN locally / required on GitHub**.
+
 ## Independent work and custody
 
 Base for all worktrees: f7340515. No recursive delegation; interfaces frozen before UI/BFF wiring. Workers committed locally; parent applied their patches in its own branch.
@@ -86,9 +109,9 @@ Base for all worktrees: f7340515. No recursive delegation; interfaces frozen bef
 
 Humaux parent task `d378c85f-2030-4047-8dc9-e297bc45bfd4`; charter/fixes/problems stored, canvas updated and code indexed/linked. Independent terminal recheck memory `cd8d0b66-e163-4a57-8612-2a405d62faa1`. Opus/K3 acceptance still required. No active author processes; own transient patch/index fixtures removed; dependencies and worker commits preserved. No SSH, production host, live keys or real customer messages used.
 
-## CI gates (integrator, NOT_RUN)
+## CI gates (integrator; current source NOT_RUN)
 
-Integrator opens the PR for this author branch; LC-U2b is allowed to merge before LC-B3b. Pin the PR SHA, register run IDs/log paths with a timeout and completion notification, then run on GitHub:
+PR #8 already exists. The integrator pushes this commit; the fetched PR-triggered workflow automatically runs `foundation-shards` and the full CI-runnable browser set selected by `scripts/dev/pr-modes.mjs`, including `--browser-inbox`, admin-shell, click-sweep and visual-lint. Require the stable `Gates (GitHub runners) / required` result. LC-U2b remains allowed to merge before LC-B3b. Pin the PR SHA, register run IDs/log paths with a timeout and completion notification; current-source CI is NOT_RUN by the author. Relevant commands:
 
 ```sh
 bash scripts/dev/test-node.sh
@@ -102,4 +125,4 @@ bash scripts/dev/test-local.sh --browser-click-sweep
 bash scripts/dev/test-local.sh --browser-visual-lint
 ```
 
-Dispatch `gates.yml` normal modes on the integrator's branch; dispatch calibration separately with `extra_env='LC_INBOX_CALIBRATION=retain-thread'`. Calibration must fail **INU05 hidden thread retains private DM** after a trusted native hide, not startup/compile/locale failure. Dedicated loopback acceptance + loopback-test flag gate the intentional defect; generic fixture bypass stays off. Preserve normal-green/calibration-red at identical SHA and require restored normal green. Expected artifacts: next/browser logs, click ledger, native visibility record, 1440/390 screenshots and Playwright traces. None of these runtime artifacts exist yet.
+Normal gates run automatically on the integrator's PR push; dispatch calibration separately with `extra_env='LC_INBOX_CALIBRATION=retain-thread'`. Calibration must fail **INU05 hidden thread retains private DM** after a trusted native hide, not startup/compile/locale failure. Dedicated loopback acceptance + loopback-test flag gate the intentional defect; generic fixture bypass stays off. Preserve normal-green/calibration-red at identical SHA and require restored normal green. Expected artifacts: next/browser logs, click ledger, native visibility record, 1440/390 screenshots and Playwright traces. Current-source artifacts must be retained under `output/playwright/inbox-ui/<timestamp>`; prior 08614fb6 Playwright artifacts were lost. Neither prior failure qualifies as normal-green or INU05 calibration-red acceptance.
