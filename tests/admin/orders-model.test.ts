@@ -435,3 +435,12 @@ test("BTA01 bank-transfer summary: valid states, and every card or pickup invari
   assert.throws(() => parseOrderSummary({ ...pap, commercial_state: "AWAITING_TRANSFER" }), /unavailable/);
   assert.ok(orderStates.includes("AWAITING_TRANSFER" as never));
 });
+
+// W3-08B / W3-U5 CI 37512707012: a merchant-cancelled paid order keeps work_state READY (the payment work item is never
+// closed; the cancel-refund gap). Go validSummary accepts it, so the admin parser must too — refusing one row blanked the list.
+test("READY work is valid on a merchant-cancelled captured order, still refused when never captured or not cancelled", () => {
+  const cancelledPaid = { ...summary, commercial_state: "CANCELLED", fulfillment_state: "CANCELLED", payment_state: "CAPTURED", work_state: "READY" };
+  assert.equal(parseOrderSummary(cancelledPaid).work_state, "READY");
+  assert.throws(() => parseOrderSummary({ ...cancelledPaid, payment_state: "NOT_STARTED" }), /unavailable/);
+  assert.throws(() => parseOrderSummary({ ...cancelledPaid, fulfillment_state: "MANUAL_UNASSIGNED" }), /unavailable/);
+});

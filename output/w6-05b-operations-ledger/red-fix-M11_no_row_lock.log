@@ -1,0 +1,39 @@
+=== RUN   TestOperationsQueueProofThenRetryNeverDoublesEffect
+--- PASS: TestOperationsQueueProofThenRetryNeverDoublesEffect (5.70s)
+=== RUN   TestOperationsQueueAppliedEffectIsNeverRetried
+--- PASS: TestOperationsQueueAppliedEffectIsNeverRetried (3.24s)
+=== RUN   TestOperationsQueueConcurrentActionsYieldOneEffect
+    operations_queue_flow_test.go:330: 8 concurrent queries: ok=8 others=map[] jobs 1->9
+--- FAIL: TestOperationsQueueConcurrentActionsYieldOneEffect (0.33s)
+=== RUN   TestOperationsQueueCancelRacesDispatchClaim
+    operations_queue_flow_test.go:400: claim first: cancel=422 {"code":"invalid_request","message":"Request validation failed.","request_id":"70fad336e1a8fe03e015a07df66a38fd","retryable":false,"details":{}}
+         claim=claimed state=DISPATCHING gen=1: the claim must win and the cancel's CAS must refuse
+--- FAIL: TestOperationsQueueCancelRacesDispatchClaim (0.12s)
+=== RUN   TestOperationsQueueListIsStoreScopedAndFiltered
+--- PASS: TestOperationsQueueListIsStoreScopedAndFiltered (0.18s)
+=== RUN   TestOperationsQueuePaging
+--- PASS: TestOperationsQueuePaging (0.13s)
+=== RUN   TestOperationsQueueDTOHasExactKeysAndNoSecrets
+--- PASS: TestOperationsQueueDTOHasExactKeysAndNoSecrets (0.06s)
+=== RUN   TestOperationsQueueObjectMapping
+--- PASS: TestOperationsQueueObjectMapping (0.16s)
+=== RUN   TestOperationsQueueCancelRules
+--- PASS: TestOperationsQueueCancelRules (0.25s)
+=== RUN   TestOperationsQueueQueryRules
+--- PASS: TestOperationsQueueQueryRules (0.23s)
+=== RUN   TestOperationsQueueAdsLaneIsReadAndCancelOnly
+--- PASS: TestOperationsQueueAdsLaneIsReadAndCancelOnly (0.14s)
+=== RUN   TestOperationsQueueProtectiveOperationsCannotBeCancelled
+--- PASS: TestOperationsQueueProtectiveOperationsCannotBeCancelled (0.30s)
+=== RUN   TestOperationsQueueQueryHardCap
+--- PASS: TestOperationsQueueQueryHardCap (0.08s)
+=== RUN   TestOperationsQueueSQLDTOHasExactKeys
+--- PASS: TestOperationsQueueSQLDTOHasExactKeys (0.06s)
+=== RUN   TestOperationsQueueRetryRules
+--- PASS: TestOperationsQueueRetryRules (0.42s)
+=== RUN   TestOperationsQueueSQLFences
+--- PASS: TestOperationsQueueSQLFences (0.21s)
+FAIL
+FAIL	livecommerce/tests/foundation	12.374s
+FAIL
+test-focused: top-level PASS=14 FAIL=2 SKIP=0 exit=1

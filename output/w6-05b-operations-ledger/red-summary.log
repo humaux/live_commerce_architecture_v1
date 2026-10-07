@@ -1,0 +1,12 @@
+M1_floor_ignored exit 1
+M2_unknown_retry_allowed exit 1
+M3_cancel_after_dispatch exit 1
+M4_dto_leaks_semantic_key exit 0
+M5_store_scope_dropped exit 1
+M6_registry_too_wide exit 1
+M7_no_cas exit 1
+M8_job_unchecked exit 1
+M9_ads_lane_open exit 1
+M10_live_job_ignored exit 1
+M4b exit 1
+M11 exit 1

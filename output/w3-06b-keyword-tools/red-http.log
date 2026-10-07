@@ -1,0 +1,25 @@
+--- FAIL: TestKeywordToolRoutesTransportRules (0.00s)
+    keyword_tools_test.go:84: simulate: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"39ba75d32dda1e976bd51fee41449cb3","retryable":false,"details":{}}
+        ), want 401
+    keyword_tools_test.go:84: simulate with mode: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"68cbe3b79b9ed446805166346685db39","retryable":false,"details":{}}
+        ), want 401
+    keyword_tools_test.go:84: simulate no key: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"a2967a3be8928bf45386ec05465084fb","retryable":false,"details":{}}
+        ), want 401
+    keyword_tools_test.go:84: simulate empty comment is a sample: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"244522833f7a32a8b7af07abccb7c58a","retryable":false,"details":{}}
+        ), want 401
+    keyword_tools_test.go:84: simulate malformed key: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"48fec8b8ba77c52d87deda7452842657","retryable":false,"details":{}}
+        ), want 422
+    keyword_tools_test.go:84: simulate two keys: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"c7d6f368d3f3737ee2aa7a365889068b","retryable":false,"details":{}}
+        ), want 422
+    keyword_tools_test.go:84: simulate missing comment: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"c1307f4c1b9a643fad6306f8813a2e6f","retryable":false,"details":{}}
+        ), want 422
+    keyword_tools_test.go:84: simulate null comment: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"0655b19215a6ebfe6fb9fe87f39224e6","retryable":false,"details":{}}
+        ), want 400
+    keyword_tools_test.go:84: simulate unknown key: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"ff1333fdd111c116d00770c41c73a33c","retryable":false,"details":{}}
+        ), want 400
+    keyword_tools_test.go:84: simulate duplicate key: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"a6153c11ba68976005230db2970aebd9","retryable":false,"details":{}}
+        ), want 400
+    keyword_tools_test.go:84: simulate wrong type: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"8035319b228cf9949364b8028712bc4b","retryable":false,"details":{}}
+        ), want 400
+    keyword_tools_test.go:84: simulate query: status 404 ({"code":"not_found","message":"Resource not found.","request_id":"1e9bb1c3118e64e36cf224fe31738278","retryable":false,"details":{}}
+        ), want 422

@@ -1,0 +1,33 @@
+# RED (message-table entries removed, i.e. HEAD 84ac7f1f httperror)
+--- FAIL: TestFrozenCodesSurviveHTTPError (0.00s)
+    validate_test.go:117: code "operations_in_flight" is rewritten to "internal" by httperror (add it to the message table)
+    validate_test.go:117: code "binding_in_use" is rewritten to "internal" by httperror (add it to the message table)
+FAIL
+FAIL	livecommerce/internal/ads	0.413s
+FAIL
+--- FAIL: TestAdsUnbindRefusalEnvelope (0.00s)
+    --- FAIL: TestAdsUnbindRefusalEnvelope/operations_in_flight (0.00s)
+        ads_test.go:263: status=409 body={"code":"internal","message":"Request could not be completed.","request_id":"","retryable":false,"details":{"operations":[{"action":"meta.ads.pause","operation_id":"22222222-2222-4222-8222-222222222222","state":"DISPATCHING"}],"operations_total":1}}
+    --- FAIL: TestAdsUnbindRefusalEnvelope/binding_in_use (0.00s)
+        ads_test.go:263: status=409 body={"code":"internal","message":"Request could not be completed.","request_id":"","retryable":false,"details":{}}
+FAIL
+FAIL	livecommerce/internal/httpapi	0.381s
+FAIL
+
+# RED mutations on migrations/0160 (each restored afterwards)
+## M1 sweeper filter disabled (OR true)
+    unbind_guards_pg_test.go:181: unbound binding: non-counting drafts must leave both candidate lists (advance true/true insights true/true)
+--- FAIL: TestAdsUnbindGuardsRealPG (1.10s)
+    --- FAIL: TestAdsUnbindGuardsRealPG/sweeper_skips_drafts_of_an_unbound_binding_but_never_one_that_may_still_spend (0.00s)
+## M2 UNKNOWN/ACKNOWLEDGED dropped from the in-flight list
+    unbind_guards_pg_test.go:89: want 409 operations_in_flight, got <nil>
+    unbind_guards_pg_test.go:89: want 409 operations_in_flight, got <nil>
+    unbind_guards_pg_test.go:103: create draft: ads refusal: binding_disabled
+--- FAIL: TestAdsUnbindGuardsRealPG (1.06s)
+    --- FAIL: TestAdsUnbindGuardsRealPG/in-flight_UNKNOWN_refuses_with_the_operation_listed (0.01s)
+    --- FAIL: TestAdsUnbindGuardsRealPG/in-flight_ACKNOWLEDGED_refuses_with_the_operation_listed (0.00s)
+## M3 sweeper keeps no counting draft behind a disabled binding (OR false)
+    unbind_guards_pg_test.go:189: counting draft behind a disabled binding must stay a candidate (advance false/false insights false/false)
+--- FAIL: TestAdsUnbindGuardsRealPG (1.07s)
+    --- FAIL: TestAdsUnbindGuardsRealPG/sweeper_skips_drafts_of_an_unbound_binding_but_never_one_that_may_still_spend (0.00s)
+## note: feed ACTIVE/published predicates are also enforced by the 0074 ads_writer_domain_read / ads_writer_publication_read RLS policies, so removing the SQL predicate alone is unobservable (TestAdsCatalogFeedFiltersRealPG still passed); the test pins the behaviour.

@@ -1,0 +1,92 @@
+=== RUN   TestBlocklistRestrictedClaim
+--- PASS: TestBlocklistRestrictedClaim (11.55s)
+=== RUN   TestBlocklistCheckAndList
+--- PASS: TestBlocklistCheckAndList (1.92s)
+=== RUN   TestBlocklistDefinerRulesAndPrivacy
+--- PASS: TestBlocklistDefinerRulesAndPrivacy (0.85s)
+=== RUN   TestBlocklistLimit
+--- PASS: TestBlocklistLimit (2.61s)
+=== RUN   TestBlocklistClaimBlockRace
+=== RUN   TestBlocklistClaimBlockRace/a_block_holding_the_actor_key_is_seen_by_the_waiting_claim
+=== RUN   TestBlocklistClaimBlockRace/concurrent_claim_and_block_stay_consistent
+--- PASS: TestBlocklistClaimBlockRace (13.24s)
+    --- PASS: TestBlocklistClaimBlockRace/a_block_holding_the_actor_key_is_seen_by_the_waiting_claim (1.52s)
+    --- PASS: TestBlocklistClaimBlockRace/concurrent_claim_and_block_stay_consistent (3.16s)
+=== RUN   TestBlocklistErasureRemovesEntry
+--- PASS: TestBlocklistErasureRemovesEntry (0.94s)
+=== RUN   TestBlocklistCheckoutReminderSkipsRestricted
+--- PASS: TestBlocklistCheckoutReminderSkipsRestricted (1.52s)
+=== RUN   TestBlocklistErasureWithOnlyTheEntryLeft
+--- PASS: TestBlocklistErasureWithOnlyTheEntryLeft (1.01s)
+=== RUN   TestBlocklistPlannerACLPin
+--- PASS: TestBlocklistPlannerACLPin (0.01s)
+=== RUN   TestLiveA7ContainsMode
+--- PASS: TestLiveA7ContainsMode (0.16s)
+=== RUN   TestLiveClaimsKC06Ingest
+--- PASS: TestLiveClaimsKC06Ingest (0.98s)
+=== RUN   TestLiveClaimsKC07Concurrency
+=== RUN   TestLiveClaimsKC07Concurrency/duplicate-delivery-x20
+=== RUN   TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity
+=== RUN   TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave
+=== RUN   TestLiveClaimsKC07Concurrency/deactivate-vs-ingest
+=== RUN   TestLiveClaimsKC07Concurrency/owners-racing-to-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/release-vs-redeem
+=== RUN   TestLiveClaimsKC07Concurrency/cart-lock-ordering
+=== RUN   TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks
+--- PASS: TestLiveClaimsKC07Concurrency (1.59s)
+    --- PASS: TestLiveClaimsKC07Concurrency/duplicate-delivery-x20 (0.07s)
+    --- PASS: TestLiveClaimsKC07Concurrency/same-actor-rapid-set-quantity (0.11s)
+    --- PASS: TestLiveClaimsKC07Concurrency/close-s1-open-s2-interleave (0.09s)
+    --- PASS: TestLiveClaimsKC07Concurrency/deactivate-vs-ingest (0.10s)
+    --- PASS: TestLiveClaimsKC07Concurrency/owners-racing-to-redeem (0.17s)
+    --- PASS: TestLiveClaimsKC07Concurrency/release-vs-redeem (0.09s)
+    --- PASS: TestLiveClaimsKC07Concurrency/cart-lock-ordering (0.54s)
+    --- PASS: TestLiveClaimsKC07Concurrency/mixed-workload-zero-deadlocks (0.24s)
+=== RUN   TestLiveClaimsKC08ManualPrivacy
+--- PASS: TestLiveClaimsKC08ManualPrivacy (1.22s)
+=== RUN   TestLiveClaimsP2bLabelPrivacy
+--- PASS: TestLiveClaimsP2bLabelPrivacy (0.37s)
+=== RUN   TestLiveClaimsP2cDuplicateReconstructible
+--- PASS: TestLiveClaimsP2cDuplicateReconstructible (0.29s)
+=== RUN   TestLiveClaimsP2dLabelNormalization
+--- PASS: TestLiveClaimsP2dLabelNormalization (0.19s)
+=== RUN   TestLiveClaimsP2eModeTransitions
+--- PASS: TestLiveClaimsP2eModeTransitions (0.26s)
+=== RUN   TestLiveClaimsKC03Schema
+=== RUN   TestLiveClaimsKC03Schema/fresh-migrated-twice
+=== RUN   TestLiveClaimsKC03Schema/privilege-matrix
+=== RUN   TestLiveClaimsKC03Schema/definers
+=== RUN   TestLiveClaimsKC03Schema/checks-and-keys
+=== RUN   TestLiveClaimsKC03Schema/foreign-roles-denied
+=== RUN   TestLiveClaimsKC03Schema/release-only-with-rotation
+=== RUN   TestLiveClaimsKC03Schema/pool-validator
+=== RUN   TestLiveClaimsKC03Schema/populated-pre-0060-upgrade
+--- PASS: TestLiveClaimsKC03Schema (5.29s)
+    --- PASS: TestLiveClaimsKC03Schema/fresh-migrated-twice (0.08s)
+    --- PASS: TestLiveClaimsKC03Schema/privilege-matrix (0.10s)
+    --- PASS: TestLiveClaimsKC03Schema/definers (0.01s)
+    --- PASS: TestLiveClaimsKC03Schema/checks-and-keys (0.21s)
+    --- PASS: TestLiveClaimsKC03Schema/foreign-roles-denied (0.72s)
+    --- PASS: TestLiveClaimsKC03Schema/release-only-with-rotation (0.16s)
+    --- PASS: TestLiveClaimsKC03Schema/pool-validator (0.13s)
+    --- PASS: TestLiveClaimsKC03Schema/populated-pre-0060-upgrade (3.71s)
+=== RUN   TestLiveClaimsKC12Isolation
+--- PASS: TestLiveClaimsKC12Isolation (1.54s)
+=== RUN   TestLiveClaimsP2aPolicyContexts
+--- PASS: TestLiveClaimsP2aPolicyContexts (0.39s)
+=== RUN   TestLiveClaimsP2gLinkTTLInDatabase
+--- PASS: TestLiveClaimsP2gLinkTTLInDatabase (1.80s)
+=== RUN   TestLiveClaimsCoreSmoke
+--- PASS: TestLiveClaimsCoreSmoke (0.29s)
+=== RUN   TestLiveClaimsKC02Units
+--- PASS: TestLiveClaimsKC02Units (0.00s)
+=== RUN   TestLiveClaimsKC04Offers
+--- PASS: TestLiveClaimsKC04Offers (0.57s)
+=== RUN   TestLiveClaimsKC05Window
+--- PASS: TestLiveClaimsKC05Window (0.38s)
+=== RUN   TestLiveToolsLibraryImportAndCopy
+--- PASS: TestLiveToolsLibraryImportAndCopy (0.28s)
+PASS
+ok  	livecommerce/tests/foundation	51.074s
+test-focused: top-level PASS=26 FAIL=0 SKIP=0 exit=0
+exit=0

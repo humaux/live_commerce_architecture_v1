@@ -45,7 +45,8 @@ type CartInput struct {
 }
 
 // ClaimOrigin records which claim line a cart line came from. It is evidence only: Quote asks
-// claims.live_prices whether the origin still earns a live price (binding, link expiry, offer state).
+// claims.live_prices whether the origin still earns a live price (binding, link expiry, remaining claimed quantity, the offer's price; a paused offer still prices
+// the claims granted before the pause, migration 0158).
 type ClaimOrigin struct {
 	BundleID    string
 	OfferID     string
@@ -68,7 +69,7 @@ func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
 }
 
 // applyCartLivePrices stamps the live unit price on every cart line whose claim origin claims.live_prices
-// still honours (binding, link expiry, claimed quantity, active priced offer). It reuses liveClaimPrices
+// still honours (binding, link expiry, claimed quantity, priced offer, active or paused since 0158). It reuses liveClaimPrices
 // (claim_price.go), the same evaluator CreateQuote and RevalidateQuote use, and never reads a client value.
 func applyCartLivePrices(ctx context.Context, tx pgx.Tx, s buyer.Scope, out Cart) error {
 	if len(out.Items) == 0 {
