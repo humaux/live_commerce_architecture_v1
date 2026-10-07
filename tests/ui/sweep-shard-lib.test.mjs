@@ -15,8 +15,10 @@ test("G-UI8 storefront pages and the sweep's STOREFRONT_ROUTES are the same set"
   const base = "apps/storefront/app/[locale]";
   const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]));
   const pages = walk(base).filter((p) => p.endsWith("/page.tsx"))
-    .map((p) => p.slice(base.length, -"/page.tsx".length).replace(/\/\([^)]+\)/g, "") || "/");
+    // strip only COMPLETE route-group segments ("/(list)"), never a literal-parenthesis prefix such as "/(review)-link" (a distinct URL)
+    .map((p) => p.slice(base.length, -"/page.tsx".length).replace(/\/\([^/()]+\)(?=\/|$)/g, "") || "/");
   assert.deepEqual([...new Set(pages)].sort(), [...STOREFRONT_ROUTES].sort());
+  assert.equal(new Set(pages).size, pages.length, "two page.tsx files map to one URL: a group/literal-parenthesis mix-up would hide a page");
 });
 
 test("parseShard: i/N, empty means unsharded, anything malformed throws", () => {
