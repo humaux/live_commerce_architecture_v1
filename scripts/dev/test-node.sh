@@ -29,6 +29,9 @@ else
   [[ "${1:-}" != --require-r04 ]] || exit 2
 fi
 
+# PM-U pure resize/query/request contract (no browser).
+node --test --experimental-strip-types tests/admin/product-media-ui-model.test.ts
+node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts
 # W3-U1b pure selection, wire and request boundary negatives (no browser).
 node --test --experimental-strip-types tests/admin/picklist-model.test.ts
 

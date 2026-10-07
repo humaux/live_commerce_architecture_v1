@@ -1,3 +1,6 @@
+// Purpose: sweep every registered admin/buyer surface and run real-click merchant/buyer journeys.
+// Depends on: Playwright, signed Go/PG fixture, click-sweep-lib and the role-aware product-media journey driver.
+// Used by: --browser-click-sweep (and visual-audit delegation); no browser mutation shortcuts.
 // G-UI8 click-sweep runner (owner 2026-10-03, docs/engineering/ui-architecture.md 10.6b), started by tests/foundation/browser_click_sweep_test.go
 // (`bash scripts/dev/test-local.sh --browser-click-sweep`). One real stack: production admin Next (signed MOCK IdP) + production storefront Next (started
 // here behind a synthetic TLS edge for the virtual host) over the real Go API and an isolated PG. This process never sees a database credential.
@@ -27,6 +30,7 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
+import { uploadJourneyMainCover } from "./product-media-journey.mjs";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
@@ -356,6 +360,7 @@ async function placeCodOrder(page, v, product) {
 async function journeyProduct(state, journeys) {
   const unit = { app: "journey", journey: "J1", route: JOURNEY_PAGES.J1[0], viewport: "desktop", locale: "zh-TW" };
   const tag = facts.journey_tag, title = `Sweep Journey Tee ${tag}`;
+  let mainCoverID = "";
   const c = await browser.newContext(ctxOptions(VARIANTS[0], { storageState: state }));
   const page = await c.newPage();
   const u = (p) => `${adminOrigin}/zh-TW${p}${p.includes("?") ? "&" : "?"}store=${store}`;
@@ -412,14 +417,18 @@ async function journeyProduct(state, journeys) {
     }, page);
     await step(unit, "upload a cover, set Active and save", "the product is active and persists after a reload", async () => {
       const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"+"CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==","base64");
-      await page.getByTestId("photo-input").setInputFiles({name:"sweep-cover.png",mimeType:"image/png",buffer:png});
-      await expect(page.getByTestId("photo-row")).toHaveCount(1);
+      mainCoverID = await uploadJourneyMainCover(page, {name:"sweep-cover.png",mimeType:"image/png",buffer:png});
       await page.getByTestId("product-status").selectOption("active");
       await page.getByTestId("product-save").click();
       await expect(page.getByTestId("product-save")).toBeEnabled();
       await page.reload();
       await expect(page.getByTestId("product-status")).toHaveValue("active");
+      await expect(page.getByTestId("media-main-list").locator("img")).toHaveCount(1);
+      await expect(page.getByTestId("media-main-list").locator(`[data-image-id="${mainCoverID}"] img`)).toBeVisible();
+      await expect(page.getByTestId("media-sku-list").locator("img")).toHaveCount(0);
+      await expect(page.getByTestId("media-detail-list").locator("img")).toHaveCount(0);
       journeys.product_title = title;
+      journeys.product_image_id = mainCoverID;
     }, page);
     await step(unit, "the merchant list shows the product (search + click)", "the row is listed with status active", async () => {
       await page.goto(u("/products"));
@@ -435,6 +444,14 @@ async function journeyProduct(state, journeys) {
       await sp.getByTestId("product-card").filter({ hasText: title }).first().click();
       await expect(sp.getByRole("heading", { level: 1 })).toHaveText(title);
       await expect(sp.getByTestId("add-to-cart")).toBeEnabled();
+      assert(mainCoverID, "the merchant uploaded a real main cover");
+      const cover = sp.getByTestId("product-gallery-active-image");
+      await expect(cover).toBeVisible();
+      const coverSrc = await cover.getAttribute("src");
+      assert(coverSrc, "the buyer cover has a media source");
+      assert.equal(new URL(coverSrc, origin).pathname.split("/").at(-1), mainCoverID);
+      // Read-only decode measurement proves the persisted cover actually loaded on the buyer page.
+      await expect.poll(() => cover.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
     }, sp);
     await sc.close();
   } finally { await c.close().catch(() => {}); }
