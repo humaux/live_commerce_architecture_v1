@@ -123,6 +123,11 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		// the unresolved unmapped_source rows block the WHOLE environment's close (0150 §6.2)
 		_, err := e.closeWeek(w1, "")
 		pslWantRefused(t, "unmapped source blocks close", err, "settlement_unattributed")
+		// P2-1: the refusal names the blocking unmapped_source ids (Stripe ids, oldest first) so an operator needs no owner SQL to find them;
+		// the foreign_connection and unsupported_type rows never block close and are not listed
+		if !strings.HasSuffix(err.Error(), "settlement_unattributed: txn_PF15Odd,txn_PF15Odd2") {
+			t.Fatalf("close refusal does not list the blocking rows: %v", err)
+		}
 		// a foreign connection and an unsupported type are not attribution questions: they never block close and are not resolvable
 		_, err = resolve("txn_PF15X1", stripeadmin.ResolveNotStoreRevenue, "", "", "another account's money")
 		pslWantRefused(t, "foreign_connection is unresolvable", err, "unresolvable_reason")
@@ -142,7 +147,9 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 			`'PROD','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','not a store sale',NULL,NULL`,
 			`'SANDBOX','txn_PF15Odd','not_store_revenue','o','` + pslTicket + `','not a store sale',NULL,NULL`,
 			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','short','not a store sale',NULL,NULL`,
-			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','   ',NULL,NULL`, // a blank note is no note
+			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','   ',NULL,NULL`,                   // a blank note is no note
+			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','two'||chr(10)||'lines',NULL,NULL`, // P2-2: no control characters
+			`'SANDBOX','txn_PF15Odd','not_store_revenue','op@test','` + pslTicket + `','tab'||chr(9)||'bed',NULL,NULL`,
 		} {
 			var out string
 			err := e.f.owner.QueryRow(ctx, `SELECT payments.record_settlement_resolution($1::uuid,$2::uuid,$3::uuid,`+args+`)::text`,
@@ -150,6 +157,12 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 			if sqlState(err) != "22023" {
 				t.Fatalf("SQL accepted %s: %v", args, err)
 			}
+		}
+		// the table CHECK refuses a control character even for a direct owner insert (the definer is not the only door)
+		if _, err := e.f.owner.Exec(ctx, `INSERT INTO payments.settlement_unattributed_resolutions(balance_txn_id,tenant_id,store_id,environment,
+			resolution,operator,ticket,note) VALUES('txn_PF15Odd2',$1,$2,'SANDBOX','not_store_revenue','op@test',$3,E'a\nb')`,
+			e.op.TenantID, e.op.StoreID, pslTicket); sqlState(err) != "23514" {
+			t.Fatalf("table CHECK accepted a control character: %v", err)
 		}
 		// a half target pair (tenant without store) is structural too
 		var out string
@@ -180,6 +193,8 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		pslWantRefused(t, "blank note", err, "")
 		_, err = resolve("txn_PF15Odd", stripeadmin.ResolveNotStoreRevenue, "", "", strings.Repeat("n", 501))
 		pslWantRefused(t, "oversized note", err, "")
+		_, err = resolve("txn_PF15Odd", stripeadmin.ResolveNotStoreRevenue, "", "", "two\nlines")
+		pslWantRefused(t, "note with a control character", err, "")
 		// success: the never-created charge is assigned to enrolled store C; v1 RECORDS the assignment, it moves no money
 		assign, err := resolve("txn_PF15Odd", stripeadmin.ResolveAssignedToStore, e.c.f.tenantA, e.storeC,
 			"Buyer of store C paid through the platform page; owner pays C out of band.")
@@ -265,6 +280,10 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 			n.Operator != "op@test" || n.Ticket != pslTicket || !strings.Contains(n.Note, "out of band") {
 			t.Fatalf("operator note: %+v", n)
 		}
+		// P1-2: the note carries what the owner needs to settle it: the period, the type and the SIGNED settlement-currency amounts
+		if n.PeriodStart != w1.Format("2006-01-02") || n.Type != "charge" || n.SettleCurrency != "HKD" || n.SettleAmount != 641 || n.SettleNet != 641-26 {
+			t.Fatalf("operator note amounts: %+v", n)
+		}
 		// a replayed close prints the notes again: they belong to the close result, not to its first run
 		again, err := e.reg.SettlementClose(ctx, e.op, "SANDBOX", w1.Format("2006-01-02"), "op@test", "", pslTicket)
 		if err != nil || len(again.Statements) != 1 || !again.Statements[0].Replayed || len(again.OperatorNotes) != 1 {
@@ -330,7 +349,7 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		scope := []string{"--tenant", e.op.TenantID, "--store", e.op.StoreID, "--principal", e.op.PrincipalID,
 			"--operator", "op@test", "--ticket", pslTicket}
 		closeArgs := append([]string{"settlement-close", "--environment", "SANDBOX", "--period-start", w2.Format("2006-01-02")}, scope...)
-		fail("stripeadmin: rejected: settlement_unattributed", closeArgs...)
+		fail("stripeadmin: rejected: settlement_unattributed: txn_PF15Cli", closeArgs...) // P2-1: the CLI prints the blocking id
 		resolveArgs := append([]string{"settlement-resolve", "--environment", "SANDBOX", "--balance-txn", "txn_PF15Cli",
 			"--resolution", "not_store_revenue", "--note", "Dispute-shaped adjustment the CLI e2e wrote off; not a store sale."}, scope...)
 		out := ok(resolveArgs...)
@@ -344,11 +363,12 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		// a refusal is the one fixed code on stderr and nothing on stdout (the unresolvable reason check runs first)
 		fail("stripeadmin: rejected: unresolvable_reason", append([]string{"settlement-resolve", "--environment", "SANDBOX",
 			"--balance-txn", "txn_PF15X1", "--resolution", "not_store_revenue", "--note", "another account's money"}, scope...)...)
-		// the close the CLI unblocks: C's charged week plus A's chained empty statement, and week 1's note reprinted
+		// the close the CLI unblocks: C's charged week plus A's chained empty statement. P1-2: week 1's assigned_to_store note belongs to
+		// the week-1 close and is NOT reprinted here (this week has none)
 		out = ok(closeArgs...)
 		stmts, _ := out["statements"].([]any)
 		notes, _ := out["operator_notes"].([]any)
-		if len(stmts) != 2 || len(notes) != 1 {
+		if len(stmts) != 2 || len(notes) != 0 {
 			t.Fatalf("close JSON: %v", out)
 		}
 		var cStmt map[string]any
@@ -360,9 +380,6 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		want := float64(e.oc1.captured + pslFee(29, e.oc1.captured, settleOf(e.oc1.captured)))
 		if cStmt == nil || cStmt["line_count"] != float64(1) || cStmt["net_payable_minor"] != want {
 			t.Fatalf("C statement: %v (want net %v)", cStmt, want)
-		}
-		if n, _ := notes[0].(map[string]any); n["balance_txn_id"] != "txn_PF15Odd" || n["target_store_id"] != e.storeC || n["ticket"] != pslTicket {
-			t.Fatalf("close note: %v", notes[0])
 		}
 		// the CLI's resolve row and its audit row exist; the CLI replay wrote neither
 		if n := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed_resolutions`); n != 3 {
@@ -411,6 +428,17 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 		if kind, store, _, _, mismatch, _ := e.line(t, "txn_PF15FinCtl"); kind != "CHARGE" || store != e.storeA || mismatch != nil {
 			t.Fatalf("control line: %s %s %v", kind, store, mismatch)
 		}
+		// P1-1: 0150 keeps the unattributed row when a later sync attributes it. The row is still unmapped_source, so without a check it
+		// could be resolved now: the statement credits store A with the line AND the note tells the owner to pay A again. Either
+		// resolution is refused once a line exists, and nothing is written.
+		before := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed_resolutions`)
+		_, err := resolve("txn_PF15FinCtl", stripeadmin.ResolveAssignedToStore, e.a.f.tenantA, e.storeA, "A's own charge: pay A again?")
+		pslWantRefused(t, "assigned_to_store on a row that has a line", err, "already_attributed")
+		_, err = resolve("txn_PF15FinCtl", stripeadmin.ResolveNotStoreRevenue, "", "", "claims it is not store revenue")
+		pslWantRefused(t, "not_store_revenue on a row that has a line", err, "already_attributed")
+		if after := countRows(t, e.f.owner, `SELECT count(*) FROM payments.settlement_unattributed_resolutions`); after != before {
+			t.Fatalf("a refused resolve wrote %d resolution rows", after-before)
+		}
 	})
 
 	// ---------------------------------------------------------------------------------------------------------
@@ -420,14 +448,24 @@ func TestPlatformSettlementPF15Resolve(t *testing.T) {
 	// ---------------------------------------------------------------------------------------------------------
 	t.Run("PF15_closed_period", func(t *testing.T) {
 		e.sync(t, w3, w4) // close of w3 requires coverage of [w2, w4)
-		if _, err := e.closeWeek(w3, ""); err != nil {
+		closed, err := e.reg.SettlementClose(ctx, e.op, "SANDBOX", w3.Format("2006-01-02"), "op@test", "", pslTicket)
+		if err != nil {
 			t.Fatalf("close week 3: %v", err)
+		}
+		// P1-2: the week-3 close prints week 3's assigned_to_store note (txn_PF15Fin) and NOT week 1's txn_PF15Odd, which the week-1 close
+		// already printed. The note carries the period and the signed settlement amounts.
+		if len(closed.OperatorNotes) != 1 {
+			t.Fatalf("week 3 operator notes: %+v (week 1's note must not be reprinted)", closed.OperatorNotes)
+		}
+		if n := closed.OperatorNotes[0]; n.BalanceTxnID != "txn_PF15Fin" || n.TargetStoreID != e.storeC || n.PeriodStart != w3.Format("2006-01-02") ||
+			n.Type != "charge" || n.SettleCurrency != "HKD" || n.SettleAmount != settleOf(e.oc2.captured) || n.SettleNet != settleOf(e.oc2.captured)-29 {
+			t.Fatalf("week 3 operator note: %+v", n)
 		}
 		e.sync(t, w3, w4, pslCharge("txn_PF15Late", "pi_pf15late", 2500, 641, 26, d(w3, 2)))
 		if got := e.unattributed(t, "txn_PF15Late"); got != "unmapped_source" {
 			t.Fatalf("late row reason = %s", got)
 		}
-		_, err := resolve("txn_PF15Late", stripeadmin.ResolveNotStoreRevenue, "", "", "late never-created charge")
+		_, err = resolve("txn_PF15Late", stripeadmin.ResolveNotStoreRevenue, "", "", "late never-created charge")
 		pslWantRefused(t, "row in a closed period", err, "period_already_closed")
 		// replay idempotency survives the period close: an operator re-running the same fix never hits a conflict
 		note := "Stripe-side dispute adjustment with an unclassified category; not a store sale."
