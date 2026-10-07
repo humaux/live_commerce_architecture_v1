@@ -199,9 +199,17 @@ func TestRemovePayuniNotifyRM01Schema(t *testing.T) {
 // the named 22023 exception, leaving the receiver and the data fully intact. Forward-only, never silent.
 func TestRemovePayuniNotifyRM02SeededDataBlocks(t *testing.T) {
 	ctx := context.Background()
+	// Every migration from 0161 on is pre-marked so the DB stays at the 0160 state; unmark() releases only 0161,
+	// so later migrations (0162, ...) stay skipped and never run on the half-built schema.
 	versions := rmVersions("0161", "zzz")
-	if len(versions) != 1 || !strings.HasPrefix(versions[0], "0161_") {
-		t.Fatalf("expected exactly one 0161_* removal migration, got %v", versions)
+	n0161 := 0
+	for _, v := range versions {
+		if strings.HasPrefix(v, "0161_") {
+			n0161++
+		}
+	}
+	if n0161 != 1 || !strings.HasPrefix(versions[0], "0161_") {
+		t.Fatalf("expected exactly one 0161_* removal migration (first from 0161 on), got %v", versions)
 	}
 	sums := rmChecksums(t, versions)
 	db := mciStartPG(t)

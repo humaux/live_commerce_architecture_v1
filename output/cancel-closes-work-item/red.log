@@ -1,0 +1,20 @@
+e3534f2571293cb499c08784e40717f73ffb4658
+Wed Oct  7 06:08:59 UTC 2026
+=== RUN   TestMerchantCancelClosesWorkItem
+=== RUN   TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE
+=== RUN   TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162)
+    returns_test.go:1232: 0162: the cancel left 1 work item rows — the projection would keep work_state=READY on a CANCELLED order
+=== RUN   TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list
+    returns_test.go:1249: 0162: the cancel left 1 work item rows while the refund was in flight
+=== RUN   TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY
+    returns_test.go:1284: open ../../migrations/0162_cancel_closes_work_item.sql: no such file or directory
+--- FAIL: TestMerchantCancelClosesWorkItem (12.56s)
+    --- PASS: TestMerchantCancelClosesWorkItem/a_never-paid_hold_cancels_to_work_state_NONE (0.07s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/cancelling_a_fully_refunded_paid_order_closes_the_work_item:_work_state_NONE_(0162) (2.28s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/a_refund_in_flight_at_cancel_time_closes_the_work_item;_its_later_failure_stays_visible_in_the_gap_list (0.95s)
+    --- FAIL: TestMerchantCancelClosesWorkItem/the_0162_backfill_closes_legacy_cancelled_rows_and_keeps_open-gap_rows_READY (3.89s)
+FAIL
+FAIL	livecommerce/tests/foundation	13.900s
+FAIL
+test-focused: top-level PASS=0 FAIL=1 SKIP=0 exit=1
+exit=1 (red: expected FAIL on trunk)

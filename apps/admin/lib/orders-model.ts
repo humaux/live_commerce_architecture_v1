@@ -279,7 +279,8 @@ export function parseOrderSummary(value: unknown): OrderSummary {
     (row.fulfillment_state === "PAID_ALLOCATION_FAILED" &&
       (row.payment_state !== "REVIEW_REQUIRED" || row.work_state !== "REVIEW_REQUIRED")) ||
     // Mirrors Go validSummary (internal/merchantorders/orders.go): READY also belongs to a merchant-cancelled paid order
-    // (W3-08B; the payment work item is never closed and a cancel-refund gap leaves it READY). Refusing it blanked the list.
+    // (W3-08B). Since 0162 a merchant cancel closes the payment work item (and the backfill closed the legacy rows), so this is
+    // tolerance only for databases migrated before 0162; refusing it blanked the whole list. Do not tighten it.
     (row.work_state === "READY" &&
       (!capturedStates.includes(row.payment_state) ||
         !((row.commercial_state === "CONFIRMED" &&
