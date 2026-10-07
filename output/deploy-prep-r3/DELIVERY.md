@@ -1,6 +1,13 @@
 <!-- Purpose: deploy-prep-r3 code-side implementation and gate receipt. Depends on: unit brief, CHECKLIST, RELEASE-GATE-PLAN and hash-bound evidence. Used by: Claude Opus review/CI/merge. -->
 # deploy-prep-r3 delivery
 
+## CI correction r1 — supersedes the original local receipt below
+
+Current correction is based on integrator merge `9bd4ad24`. CI found the normalized-JSON false-field assumption and
+ShellCheck SC1007. Both are fixed with regression controls; see [CI-r1 delivery](ci-r1/DELIVERY.md) and
+`ci-r1/EVIDENCE.sha256` for current commands/hashes. The original receipt and `EVIDENCE.sha256` below are historical
+evidence for `14a64391`, not acceptance of the merged/corrected release. Owner will rerun GitHub CI; no push/deploy here.
+
 - Branch/commit: `unit/deploy-prep-r3`, this delivery commit (`git log -1 --format=%H -- output/deploy-prep-r3/DELIVERY.md`). Base: `86e404a4f0411bb4349b65234c4afb2f85688e19`; starting brief commit: `a3122263e5e18d8f37ffcf6377cf6fa8fbd08f93`.
 - Model/role: Codex-4 implementer, runtime model variant/effort not exposed. Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/deploy-prep-r3`. Owned paths: deploy wiring/scripts/env/runbook, dependency maps, R3 Node controls and existing SL06 foundation acceptance bridge, Node gate registration and `output/deploy-prep-r3/`. No Go production source, migrations, module/lockfiles or shared API schema edits.
 - Summary: twelve source deliveries collected with line anchors/hashes/dispositions in CHECKLIST. `ops-admin.sh:65` admits eleven platform operator commands and refuses unknowns; `ops-admin.sh:72` confines export paths; existing Stripe platform/sandbox/LIVE-pair gates tested with a stub only. Existing foundation `TestStripeSL06LiveProcess/shell_ops_admin_r3` invokes the same controls in CI.

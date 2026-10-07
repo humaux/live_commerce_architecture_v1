@@ -72,7 +72,7 @@ esac
 # W4-S2: the CSV must reach the only writable bind, never an arbitrary container path.
 # O_EXCL in the CLI refuses overwrites; duplicate flags and traversal are refused here.
 if [[ "$tool:$sub" == stripe-admin:settlement-export ]]; then
-  export_out= export_count=0
+  export_out='' export_count=0
   for ((i = 0; i < ${#args[@]}; i++)); do
     case "${args[$i]}" in
     --out=*) export_out=${args[$i]#--out=}; export_count=$((export_count + 1)) ;;

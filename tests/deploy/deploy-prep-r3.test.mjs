@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,6 +37,33 @@ function setKey(file, key, value) {
   const s = readFileSync(file, "utf8"), re = new RegExp(`^${key}=.*$`, "m");
   writeFileSync(file, re.test(s) ? s.replace(re, `${key}=${value}`) : `${s}\n${key}=${value}\n`);
 }
+
+// Keep the original YAML for the export bind: compose-go's older JSON encoder omits false,
+// while omitting create_host_path in YAML can default to true. Never infer safety from JSON alone.
+function exportBindYAML() {
+  const stripe = readFileSync(`${deploy}/compose.yml`, "utf8").match(/^  stripe-admin:\n[\s\S]*?(?=^  [a-z0-9-]+:)/m)?.[0];
+  const mount = stripe?.match(/^    volumes:\n((?:^ {6,}.*\n)+)/m)?.[1];
+  assert.ok(mount, "stripe-admin export bind missing");
+  assert.equal((mount.match(/^\s+target:/gm) ?? []).length, 1, "probe must copy only the export bind");
+  assert.match(mount, /^\s+target: \/exports$/m);
+  return mount;
+}
+function assertExportBind(v, yaml) {
+  assert.equal(v.type, "bind");
+  assert.ok(v.bind, "normalized bind options missing");
+  assert.ok(v.bind.create_host_path === false || v.bind.create_host_path === undefined, "automatic bind creation is unsafe");
+  assert.match(yaml, /^\s+(?:bind:\s*\{\s*)?create_host_path:\s*false(?:\s*\})?\s*$/m, "source must explicitly disable host-path creation");
+}
+
+test("export bind accepts omitted JSON false but rejects unsafe source/config mutations", () => {
+  const yaml = exportBindYAML();
+  for (const bind of [{ create_host_path: false }, {}])
+    assert.doesNotThrow(() => assertExportBind({ type: "bind", bind }, yaml));
+  assert.throws(() => assertExportBind({ type: "bind", bind: { create_host_path: true } }, yaml));
+  assert.throws(() => assertExportBind({ type: "bind", bind: {} }, yaml.replace("create_host_path: false", "create_host_path: true")));
+  assert.throws(() => assertExportBind({ type: "bind", bind: {} }, yaml.replace(/^.*create_host_path.*\n/m, "")));
+  assert.throws(() => assertExportBind({ type: "bind" }, yaml));
+});
 
 test("sanctioned operator allowlist and fail-closed gates (fake docker, no network)", () => fixture((dir) => {
   writeFileSync(`${dir}/bin/docker`, '#!/usr/bin/env bash\nprintf "%s\\n" "$@" >"$STUB_LOG"\nexit "${STUB_EXIT:-0}"\n', { mode: 0o755 });
@@ -119,7 +146,7 @@ test("platform operator custody, export mount and binary are wired", () => fixtu
   const v = services["stripe-admin"].volumes.find(v => v.target === "/exports");
   assert.equal(v.source, `${dir}/state/settlements`);
   assert.equal(v.read_only ?? false, false);
-  assert.equal(v.bind.create_host_path, false);
+  assertExportBind(v, exportBindYAML());
   for (const [file, needle] of [
     ["docker/go.Dockerfile", /ARG GO_CMDS="[^"]*\bplatform-admin\b/],
     ["postgres/logins.tsv", /lc_platform_operator\tcommerce_platform_operator\tinherit_noset\tcore\tplatform-admin:COMMERCE_PLATFORM_OPERATOR_DATABASE_URL/],
@@ -128,6 +155,36 @@ test("platform operator custody, export mount and binary are wired", () => fixtu
     ["scripts/host-setup.sh", /mkdirp 0700 65532 65532 "\$state\/settlements"/],
     ["scripts/smoke.sh", /chown 65532:65532 "\$dir\/state\/settlements"/],
   ]) assert.match(readFileSync(`${deploy}/${file}`, "utf8"), needle);
+}));
+
+test("actual export bind refuses a missing directory; enabling auto-create is detected", () => fixture((dir) => {
+  const image = readFileSync(`${deploy}/compose.yml`, "utf8").match(/image: (postgres@sha256:[a-f0-9]{64})/)[1];
+  const source = `${dir}/state/settlements`;
+  const project = `lc-r3-bind-${path.basename(dir).toLowerCase()}`;
+  const file = `${dir}/bind-probe.yml`;
+  const args = ["compose", "--project-name", project, "--env-file", `${dir}/compose.env`, "-f", file];
+  const yaml = exportBindYAML();
+  // Only Docker create: no PostgreSQL process, build, pull, secret, network or deployed service.
+  for (const [label, mount] of [["source", yaml], ["unsafe mutation", yaml.replace("create_host_path: false", "create_host_path: true")]]) {
+    writeFileSync(file, `services:\n  export-probe:\n    image: ${image}\n    network_mode: none\n    mem_limit: 64m\n    pids_limit: 64\n    volumes:\n${mount}`);
+    assert.equal(existsSync(source), false, "probe source must be absent before create");
+    try {
+      const r = run("docker", [...args, "create", "--pull", "never", "--no-build"], cleanEnv(dir));
+      const refusesMissingSource = r.status !== 0 && /bind source path does not exist|bind source path .*does not exist/.test(r.stdout + r.stderr);
+      if (label === "source") {
+        assert.ok(refusesMissingSource, "explicit false must refuse the missing source, not fail for an unrelated reason");
+        assert.equal(existsSync(source), false, "safe config must not create the source");
+      } else {
+        assert.equal(r.status, 0, r.stdout + r.stderr);
+        assert.equal(refusesMissingSource, false, "auto-create mutation must fail the safety predicate");
+      }
+    } finally {
+      const cleanup = run("docker", [...args, "down", "--volumes", "--remove-orphans"], cleanEnv(dir));
+      assert.equal(cleanup.status, 0, cleanup.stderr);
+      // Only this fixture's path; Docker Desktop may not expose a daemon-created path on the host.
+      rmSync(source, { recursive: true, force: true });
+    }
+  }
 }));
 
 test("R3 preflight rejects cancelled PAYUNi, validates Page app and keeps LIVE pair mandatory", () => fixture((dir) => {
