@@ -3,6 +3,29 @@ Depends on: frozen LC-U2a brief, live-console-v1, SOURCE-SHA256.txt and logs in 
 Used by: integrator/K3 and the eventual PR; no production or LIVE Meta acceptance claim. -->
 # LC-U2a delivery
 
+## Current: K3 round 1 batch (2026-10-08)
+
+K3 reviewed the initial delivery as PASS (no P0/P1, three P2s). The integrator required all three P2s in this batch; all are fixed without layout, Go or SQL changes. Latest trunk `e705f70a` merged as `7b00ef97`; the sole BFF conflict was resolved as a union of parcel routes and the comment/inbox exclusion from the general Studio path.
+
+Tested code: **`b215fe3cff6ab3fe51d8f74de03d7fa4cffe3cb8`**. The final handoff commit adds evidence only. Source hashes: `k3-r1/SOURCE-SHA256.txt`.
+
+- **P2-1:** private/unreplied A8 views now re-read every 10 s while visible, with single-flight chained timers, 3/6/12/24/30 s failure backoff, Retry-After minimum and success reset. Hide, filter changes and unmount cancel the timer/request; existing authority fences still discard stale responses. Two actual-component fake-timer tests cover both filters, fresh rows, backoff/reset, hiding/revealing and leaving the filter.
+- **P2-2:** shared comment-text validation rejects all C0/C1 control characters except LF (including Tab and CR). The reply form shows the existing three-language `invalid_text` copy before any POST or receipt arming. Tests cover the control range and the real form handler's zero-POST/zero-receipt refusal.
+- **P2-3:** the BFF and browser transport pass the validated resource path to `inboxErrorCode`; comment codes apply only to exact A2–A5 resources. The pre-existing A8–A14 code sets are unchanged. The real BFF seam test proves `409 no_source` becomes safe `503 retry_later` on A8 but remains `409 no_source` on A2.
+
+| Requested local gate | Exit | Evidence |
+|---|---:|---|
+| Focused Node counterexamples | 1 → 0 | `k3-r1/red.log`: five intended failures / 22 passes; `green.log`: 27/27 |
+| `bash scripts/dev/test-node.sh` | 0 | `k3-r1/node.log`: 1155 tests |
+| `bash scripts/dev/check-gates.sh` | 0 | `k3-r1/gates.log`: 82 modes documented, architecture/header checks pass |
+| `pnpm --filter admin exec tsc --noEmit` | 0 | `k3-r1/typecheck.log` |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-live-console` | 0 | `k3-r1/browser-console.log`, `console-playwright.log`: 20/20; original `output/playwright/live-console-2605234982/` |
+| `LC_TEST_LOCK_WAIT=14400 bash scripts/dev/test-local.sh --browser-inbox` | 0 | `k3-r1/browser-inbox.log`, `inbox-playwright.log`: 13/13; original `output/playwright/inbox-ui/20261008T144600.681124000/` |
+
+The browser modes ran strictly serially on this pinned source; both harnesses and all owned gate commands have ended. No assertion/timeout/threshold was weakened. `k3-r1/hash-verification.log` confirms the nine changed source/test files remain identical to the tested code. NOT_RUN this batch: a new calibration run (prior calibration below is historical), CI click-sweep/visual-lint/broad PR gates, new independent review, LIVE Meta/production; the unrelated R04 input runner still reports its missing binary. No push/deploy; integrator pushes and opens the PR. Result: E3 for this batch's requested local gates, not independent approval of the new diff.
+
+## Historical initial delivery (superseded by the code/gates above)
+
 - Branch: `unit/lc-u2a-comment-stream`.
 - Tested implementation: `35795208da5016c6206a101beb16e4eec8987c86`; final delivery commit is evidence-only.
 - Assigned base: `a698d44c`; brief `4ecbc161`; merged remote trunk `d3fd1026` in `f2626fe3` before browser gates.
