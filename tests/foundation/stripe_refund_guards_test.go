@@ -1,3 +1,6 @@
+// Purpose: pin Stripe refund definer deltas, authority and leakage regression checks.
+// Depends on: migration bodies, REAL_PG catalogs, refund MOCK harness.
+// Used by: RF12 and foundation gates.
 package foundation_test
 
 // RF12 (contracts/stripe-refund-v1.md §4.4, §4.6, §9, PROCESS §5): guards. Prefix `srg`.
@@ -240,6 +243,18 @@ func TestStripeRF12Guards(t *testing.T) {
 			}
 			switch x.name {
 			case "apply_stripe_observation":
+				// 0167 adds only a zero-line proof at each stock transition. Compare the rest
+				// byte-for-byte with 0062 before retaining the original refund review assertion.
+				proof := regexp.MustCompile(`(?s)-- A6 empty-reservation proof:.*?-- End A6 empty-reservation proof\.`)
+				if len(proof.FindAllString(newBody, -1)) != 2 {
+					t.Fatal("0167 must contain exactly two empty-reservation proof blocks")
+				}
+				beforeA6, _ := srgOldUntil(t, qualified, func(base string, post bool) bool { return post || base >= "0167_" })
+				restored := proof.ReplaceAllString(newBody, "IF NOT FOUND THEN RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409'; END IF;")
+				if restored != beforeA6 {
+					t.Fatal("0167 changed behavior outside the two empty-reservation guards")
+				}
+				removed, added, unified = srgDiff(srgLines(oldBody), srgLines(beforeA6))
 				// §4.4: ONE change, the post-capture review branch runs only when v_new_capture OR v_closed_before.
 				// SQL comment lines are documentation (PROCESS §5), not behaviour: the delta is judged on code lines.
 				var code []string
