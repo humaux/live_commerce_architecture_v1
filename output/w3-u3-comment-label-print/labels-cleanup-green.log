@@ -1,0 +1,8 @@
+=== RUN   TestBrowserLiveConsoleRealChain
+=== RUN   TestBrowserLiveConsoleRealChain/labels
+    browser_live_console_test.go:644: LC-U1 MOCK Console; LC-U2a REAL_PG + MOCK Graph browser evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u3-comment-label-print/output/playwright/live-console-2308806012
+--- PASS: TestBrowserLiveConsoleRealChain (22.13s)
+    --- PASS: TestBrowserLiveConsoleRealChain/labels (22.13s)
+PASS
+ok  	livecommerce/tests/foundation	24.588s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0
