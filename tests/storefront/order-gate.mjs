@@ -1,5 +1,6 @@
-// Actual buyer form -> production Next -> Go -> isolated PostgreSQL.
-// Only synthetic TLS/domain routing and causal network/storage faults live here.
+// Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
+// Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
+// Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -13,13 +14,14 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
+import { displayTime } from "../../packages/format/src/index.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
 const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
-const secrets=[], pageErrors=[];
+const secrets=[], pageErrors=[], closedContextStates=new Map();
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
@@ -57,8 +59,16 @@ async function startNext() {
 function arm(suffix,fields={}) {
   return hook={path:`/api/buyer/${suffix}`,entered:deferred(),release:deferred(),result:deferred(),...fields};
 }
-async function newContext(mobile=false) {
-  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900}}));contexts.push(c);
+async function newContext(mobile=false,timezoneId="America/Los_Angeles") {
+  const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900},timezoneId}));contexts.push(c);
+  // A short-lived context still belongs to BO06: retain its audit before Playwright disposes its pages/cookies.
+  const close=c.close.bind(c);
+  c.close=async (...args)=>{
+    if(closedContextStates.has(c))return close(...args);
+    const states=await captureContextState(c);
+    await close(...args);
+    closedContextStates.set(c,states);
+  };
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -80,6 +90,19 @@ async function newContext(mobile=false) {
   });return c;
 }
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
+const historyRead=(p)=>p.waitForResponse(r=>r.status()===200&&r.request().method()==="GET"&&new URL(r.url()).pathname==="/api/buyer/orders"&&new URL(r.url()).searchParams.get("limit")==="20");
+const historyTimeZone={en:"Times are Taipei time (UTC+8).","zh-CN":"时间均为台北时间（UTC+8）。","zh-TW":"時間皆為台北時間（UTC+8）。"};
+async function assertHistoryTimes(p,locale,response) {
+  const body=await response.json();
+  assert.equal(body.items.length,2,"actual UI-triggered history GET returns both orders");
+  await expect(p.getByTestId("order-history").locator("p.order-note")).toContainText(historyTimeZone[locale]);
+  for(const item of body.items) {
+    const row=p.locator(".history-list li").filter({has:p.locator(`button[data-order-id="${item.order_id}"]`)});
+    await expect(row).toHaveCount(1);
+    await expect(row.locator("time[datetime]")).toHaveAttribute("datetime",item.created_at);
+    await expect(row.locator("time[datetime]")).toHaveText(displayTime(locale,item.created_at));
+  }
+}
 async function quotePage(c,clock=false,p) {
   if(!p){p=await c.newPage();if(clock)await p.clock.install();}
   await reachCheckout(p,origin,"en",process.env.LC_ORDER_PRODUCT); // product page -> Add to cart -> /en/checkout (also for a page that continued shopping: its cart is empty)
@@ -136,6 +159,33 @@ async function rememberCookie(c) {
   const cookie=(await c.cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
   secrets.push(cookie.value);const payload=JSON.parse(Buffer.from(cookie.value.split(".")[0],"base64url").toString());if(payload.token)secrets.push(payload.token);
 }
+async function captureContextState(c) {
+  await rememberCookie(c);
+  const states=[];
+  for(const p of c.pages()){
+    assert.equal(await p.evaluate(()=>document.cookie),"");
+    states.push(await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}})));
+  }
+  return states;
+}
+async function stableLocaleTarget(p,mobile=false) {
+  // Causal layout gate: release the real destination-head read only after the footer link is positioned.
+  // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
+  const headLoading=arm("destination",{method:"GET",after:true});
+  await switchLocale(p,"zh-TW");await headLoading.result.promise;
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  await expect(p.getByTestId("cart-line")).toHaveCount(1);
+  await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
+  const languageLink=p.locator('footer nav a[hreflang="en"]');await languageLink.scrollIntoViewIfNeeded();
+  const languagePosition=()=>languageLink.evaluate(link=>({top:link.getBoundingClientRect().top+scrollY,height:link.getBoundingClientRect().height,documentHeight:document.documentElement.scrollHeight}));
+  const beforeHead=await languagePosition();headLoading.release.resolve();
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  const afterHead=await languagePosition();
+  assert.equal(afterHead.top,beforeHead.top,"loading completion must not move the footer language target");
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit")await languageLink.tap();else await languageLink.click();await expect(p).toHaveURL(`${origin}/en/checkout`);
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  pass(`BO01 ${mobile?"mobile":"desktop"} delivery-head completion keeps the language target stable`);
+}
 async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
@@ -169,6 +219,7 @@ try {
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
+  await stableLocaleTarget(a); // Run before filling PII so the original language/unsaved-address assertions retain their input.
   for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveCount(1);
   await expect(a.locator('input[name="phone"]')).toHaveAttribute("type","tel");
   await fill(a);
@@ -258,7 +309,7 @@ try {
   pass("BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST");
 
   // BO05: a committed checkout with no reply survives document death/reload.
-  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await fill(lost);await confirm(lost);
+  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await stableLocaleTarget(lost,true);await fill(lost);await confirm(lost);
   await capture(lost,"mobile-address.png");
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
@@ -385,9 +436,11 @@ try {
   const summaryKeys=["order_id","created_at","cart_id","cart_version","commercial_state","fulfillment_state","currency","total_minor"].sort();
   for(const summary of [...firstHistory.body.items,...secondHistory.body.items])assert.deepEqual(Object.keys(summary).sort(),summaryKeys);
   const pointerB=await stored(a,"commerce-purchase-order-v1:"),cartB=(await api(a,"GET","cart")).body;
-  const historyLoading=arm("orders?limit=20",{method:"GET",after:true});await a.getByTestId("toggle-order-history").click();
+  assert.equal(await a.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"America/Los_Angeles");
+  const historyLoading=arm("orders?limit=20",{method:"GET",after:true}),firstHistoryUI=historyRead(a);await a.getByTestId("toggle-order-history").click();
   assert.equal(await historyLoading.result.promise,200);await expect(a.getByTestId("order-history").getByRole("status")).toBeVisible();historyLoading.release.resolve();
   await expect(a.locator(".history-list li")).toHaveCount(2);
+  await assertHistoryTimes(a,"en",await firstHistoryUI);
   await expect(a.locator(".history-list li").first().locator("button")).toHaveAttribute("data-order-id",orderB);
   await capture(a,"desktop-history.png",true,historyReview);
   await a.setViewportSize({width:390,height:844});await capture(a,"mobile-history.png",true,historyReview);
@@ -397,22 +450,35 @@ try {
   assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);assert.deepEqual((await api(a,"GET","cart")).body,cartB);
   await a.getByRole("button",{name:"Back to orders",exact:true}).click();
   for(const [locale,title] of [["zh-CN","我的订单"],["zh-TW","我的訂單"],["en","Your orders"]]){
-    await switchLocale(a,locale);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
+    await switchLocale(a,locale);const localeHistory=historyRead(a);await a.getByTestId("toggle-order-history").click(); // full navigation: the history view is reopened from the pinned order
     await expect(a.getByTestId("order-history").getByRole("heading",{name:title,exact:true})).toBeVisible();
-    await expect(a.locator(".history-list li")).toHaveCount(2);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
+    await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,locale,await localeHistory);assert.deepEqual(await stored(a,"commerce-purchase-order-v1:"),pointerB);
   }
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-id")).toHaveText(orderB);
-  pass("BH04 owned keyset pages and history loading/detail/locales/back preserve current B locator and cart");
+  pass("BH04 owned history renders each server created_at in Taipei across locales under Los Angeles browser time");
 
   // Lose only the convenience locator, retaining the same HttpOnly credential.
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);
+  const reloadedHistory=historyRead(a);await a.getByTestId("toggle-order-history").click();await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
   await a.getByTestId("toggle-order-history").click();await expect(a.getByTestId("order-section")).toHaveCount(0);
-  pass("BH05 authoritative history survives noncredential locator loss without repinning an old order");
+  pass("BH05 authoritative Taipei history survives reload and noncredential locator loss without repinning an old order");
+
+  // Same owned session, read-only history in UTC: no extra order or fixture row.
+  const utcContext=await newContext(false,"UTC");await utcContext.addCookies(await c1.cookies(origin));
+  const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
+  assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
+  await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
+  await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  const utcReloadHistory=historyRead(utcPage);await utcPage.getByTestId("toggle-order-history").click();
+  await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
+  await utcContext.close();
+  pass("BH05 same owned history renders Taipei times in UTC browser context");
 
   // Preserve an already advanced cart, including another tab's selected items.
   const previousCart=(await api(tab1,"GET","cart")).body;
@@ -449,11 +515,14 @@ try {
   await expect(foreign.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,serviceBefore);
   await expect(foreign.getByTestId("create-order")).toBeDisabled();
   pass("BO02 service revision drift rejects a previously confirmed quotation without an order");
-  for(const c of contexts){await rememberCookie(c);for(const p of c.pages()){
-    assert.equal(await p.evaluate(()=>document.cookie),"");
-    const state=await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));
+  // Regression: this buyer is finished, like PR7's short-lived UTC context; BO06 must still audit its state.
+  await c7.close();
+  const contextStates=[];
+  for(const c of contexts)contextStates.push(...(closedContextStates.get(c)??await captureContextState(c)));
+  // Compare every open/closed snapshot only after all contexts contributed their bearer canaries.
+  for(const state of contextStates){
     for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets])assert(!state.includes(value),"PII/bearer leaked into persistent storage");
-  }}
+  }
   const attempted=JSON.stringify(storageWrites),urls=requestURLs.join("\n"),messages=consoleText.join("\n");
   for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets]){
     assert(!attempted.includes(value),"PII/bearer attempted persistent write");assert(!urls.includes(value)&&!urls.includes(encodeURIComponent(value)),"PII/bearer URL leak");assert(!messages.includes(value),"PII/bearer console leak");

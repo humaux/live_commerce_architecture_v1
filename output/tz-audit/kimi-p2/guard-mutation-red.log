@@ -1,0 +1,27 @@
+✖ TSX seam refuses an unlisted import (3.487ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 193.295875
+
+✖ failing tests:
+
+test at tests/admin/.tz-pr7-guard-7bb0869790d64ee3b8ad969878a960dc.mjs:60:1
+✖ TSX seam refuses an unlisted import (3.487ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/tests/admin/.tz-pr7-guard-7bb0869790d64ee3b8ad969878a960dc.mjs:63:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: { code: 'ERR_ASSERTION', message: 'packages/format/src/index.ts: unlisted dependency @/lib/unlisted-timezone-probe' },
+    operator: 'throws',
+    diff: 'simple'
+  }

@@ -1,0 +1,45 @@
+✔ OrderHistory renders server order instant in Taipei (27.093333ms)
+✔ ClaimLink renders claim expiry in Taipei (4.195625ms)
+✔ BankTransfer renders deadline and proof instant in Taipei (2.468917ms)
+✔ ShopFooter uses Taipei year across UTC year boundary (2.821125ms)
+✔ Meta rejection wording is preserved as bounded Unicode text, never translated (1.803917ms)
+✔ frozen error codes: model list equals the frozen list, each is read from both error shapes (0.377416ms)
+✔ copy: every code, status, op state and connect error has text in all three locales (0.321375ms)
+✔ copy never calls a budget a hard stop and never offers resume (1.7625ms)
+✔ draft: every §5.1 status parses; unknown status/template/op state is an error, never guessed (0.475291ms)
+✔ draft: optional fields, remote ids and the Ads Manager link (1.054917ms)
+✔ action hints: pause whenever a remote id exists and not ENDED; a paused draft is only ever copied (X7) (0.273333ms)
+✔ money: whole units to minor with integer math; TWD must be whole (16.581708ms)
+✔ Taipei schedule: wall inputs and draft projections ignore the viewer zone (4.300625ms)
+✔ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.413833ms)
+✔ draft input: exact 11-key body and every local rule (3.486458ms)
+✔ draft form round trip and X7 copy (blank schedule, no id, no revision) (0.254833ms)
+✔ settings parser: environment enum, connections, identities, capi (0.603958ms)
+✔ connect state parser: pick list kinds and id match (0.141833ms)
+✔ report: three separate blocks, orders may be null, no combined figure (0.343125ms)
+✔ default report window is the Asia/Taipei store day whatever the viewer's zone is (Taipei midnight boundary) (3.502834ms)
+✔ capi body and validation (0.197042ms)
+✔ W6-06B unbind response: exact keys, account, UUIDs and outcome semantics (0.191167ms)
+✔ W6-06B in-flight details preserve bounded items and total, reject unknown shapes (0.231667ms)
+✔ W6-06B catalog feed has exact public URL/domain pairs or published-store empty (0.228042ms)
+✔ W6-06B copy preserves unbind boundaries and feed recovery in three locales (0.07425ms)
+✔ W6-06B feed selection follows origin order, not full feed URL order (0.069583ms)
+✔ customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize (4.959167ms)
+✔ customer row invariants: nulls for bundle-only/erased, counts, money, consents (1.319625ms)
+✔ customer detail: bounded lists, order summaries reuse the orders parser, id must match (7.543208ms)
+✔ erasure summary is four counts only (0.087167ms)
+✔ finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag (0.285917ms)
+✔ financeDay is the UTC+8 day (0.07075ms)
+✔ finance defaults keep Taipei dates across midnight, leap day and year end (0.074167ms)
+✔ tags and notes are parsed strictly (W6-01B) (0.658375ms)
+✔ Ads merchant timestamp uses Taipei at the year boundary (12.748625ms)
+✔ Design version published_at cell uses Taipei at the year boundary (3.235292ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.893416ms)
+ℹ tests 37
+ℹ suites 0
+ℹ pass 37
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 244.774333

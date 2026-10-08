@@ -1,0 +1,142 @@
+apps/storefront/components/OrderHistory.tsx:160:                    {new Intl.DateTimeFormat(locale, {
+apps/storefront/components/OrderHistory.tsx:163:                    }).format(new Date(order.created_at))}
+apps/admin/lib/password-request.ts:124:  const remaining = Math.floor((Date.parse(expiresAt) - now.getTime()) / 1000);
+apps/storefront/lib/payment-contract.ts:108:  const time = Date.parse(value);
+apps/storefront/lib/payment-contract.ts:111:    new Date(time).toISOString().slice(0, 19) === value.slice(0, 19)
+apps/admin/components/StudioClaims.tsx:455:    if (applied) setRefreshedAt(Date.now());
+apps/storefront/lib/cvs-contract.ts:33:  typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/storefront/components/ShopChrome.tsx:188:        <p>© {new Date().getFullYear()} {profile.name}</p>
+apps/admin/lib/auth.ts:363:  const remaining = Math.floor((Date.parse(expiresAt) - Date.now()) / 1000);
+apps/storefront/lib/privacy-contract.ts:64:  typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value) && Number.isFinite(Date.parse(value));
+apps/storefront/components/BankTransfer.tsx:68:  const [now, setNow] = useState(() => Date.now());
+apps/storefront/components/BankTransfer.tsx:71:  const [paidAt, setPaidAt] = useState(() => localInput(new Date()));
+apps/storefront/components/BankTransfer.tsx:105:    const tick = window.setInterval(() => setNow(Date.now()), 30_000);
+apps/storefront/components/BankTransfer.tsx:122:    const iso = paidAt ? new Date(paidAt).toISOString() : "";
+apps/storefront/components/BankTransfer.tsx:125:    if (minor === null || !paidAt || Number.isNaN(Date.parse(paidAt)) || !validProofBody(body)) {
+apps/storefront/components/BankTransfer.tsx:173:  const dateText = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+apps/admin/lib/meta-health-model.ts:25:  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(s) && Number.isFinite(Date.parse(s)) ? s : bad();
+apps/storefront/components/ClaimLink.tsx:340:              {copy.expires(new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(preview.expires_at)))}
+apps/storefront/lib/bank-transfer-contract.ts:74:const isTime = (v: unknown): v is string => typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/storefront/lib/bank-transfer-contract.ts:145:    Number.isFinite(Date.parse(v.paid_at))
+apps/storefront/lib/bank-transfer-contract.ts:170:  const left = Date.parse(deadlineISO) - nowMs;
+apps/admin/lib/claims-request.ts:53:    typeof item.expires_at !== "string" || !Number.isFinite(Date.parse(item.expires_at))) return false;
+apps/admin/components/MetaConnect.tsx:334:              {Date.parse(connected.route_expires_at) - Date.now() < 30 * day && connected.status === "active" && (
+apps/storefront/components/OrderFlow.tsx:138:    !quote || Date.parse(quote.expires_at) <= Date.now(),
+apps/storefront/components/OrderFlow.tsx:225:            Math.min(2_147_483_647, Date.parse(quote.expires_at) - Date.now()),
+apps/storefront/components/OrderFlow.tsx:262:    const quoteExpired = !quote || Date.parse(quote.expires_at) <= Date.now();
+apps/storefront/components/OrderFlow.tsx:315:        !quote || Date.parse(quote.expires_at) <= Date.now() ? null : saved,
+apps/storefront/components/OrderFlow.tsx:589:                  Date.now(),
+apps/storefront/components/OrderFlow.tsx:788:            {new Intl.DateTimeFormat(locale, {
+apps/storefront/components/OrderFlow.tsx:792:            }).format(new Date(order.hold_expires_at))} · {common.taipeiTime}
+apps/storefront/components/OrderPayment.tsx:76:    now >= Date.parse(view.handoff_expires_at);
+apps/storefront/components/OrderPayment.tsx:201:    let started = Date.now();
+apps/storefront/components/OrderPayment.tsx:211:        Date.now() - started >= POLL_WINDOW_MS
+apps/storefront/components/OrderPayment.tsx:234:      started = Date.now();
+apps/storefront/components/OrderPayment.tsx:271:      ? stripePlan(view, Date.now())
+apps/admin/lib/meta-connect-model.ts:33:const time = (value: unknown) => (typeof value === "string" && stamp.test(value) && Number.isFinite(Date.parse(value)) ? value : bad());
+apps/admin/lib/operations-model.ts:102:  if (!Number.isFinite(Date.parse(s))) throw new Error("instant");
+apps/admin/app/[locale]/finance/page.tsx:20:  const now = new Date();
+apps/admin/lib/picklist-model.ts:123:    !Number.isFinite(Date.parse(v.generated_at)) ||
+apps/admin/lib/design-model.ts:40:const stamp = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
+apps/admin/components/Finance.tsx:32:  const a = Date.parse(`${from}T00:00:00Z`);
+apps/admin/components/Finance.tsx:33:  const b = Date.parse(`${to}T00:00:00Z`);
+apps/admin/lib/studio-client.ts:116:        result.expires_at <= Math.floor(Date.now() / 1000)) throw new StudioError("uncertain");
+apps/admin/lib/logistics-model.ts:20:const isTime = (v: unknown): v is string => typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/admin/lib/logistics-model.ts:350:  return validityDays !== null && now > Date.parse(a.created_at) + validityDays * 86_400_000;
+apps/admin/lib/ads-model.ts:99:  if (!timestamp.test(v) || !Number.isFinite(Date.parse(v))) throw new AdsParseError(key);
+apps/admin/lib/ads-model.ts:402:  const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/ads-model.ts:403:  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+apps/admin/lib/ads-model.ts:407:  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / dayMs);
+apps/admin/lib/ads-model.ts:418:const storeDay = (ms: number) => instantToTaipei(new Date(ms).toISOString()).slice(0, 10);
+apps/admin/lib/ads-model.ts:428:  const t = new Date(y, mo - 1, d, h, mi, 0, 0);
+apps/admin/lib/ads-model.ts:432:export const isoSeconds = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+apps/admin/lib/ads-model.ts:434:  const d = new Date(ms);
+apps/admin/lib/ads-model.ts:453:    currency: d.currency, budget: minorToWhole(d.lifetime_budget_minor), starts_local: epochToLocal(Date.parse(d.starts_at)),
+apps/admin/lib/ads-model.ts:454:    ends_local: epochToLocal(Date.parse(d.ends_at)), countries: d.countries.join(","), age_min: String(d.age_min), age_max: String(d.age_max),
+apps/storefront/lib/purchase.ts:98:  typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/storefront/lib/purchase.ts:524:  now = Date.now(),
+apps/storefront/lib/purchase.ts:558:    Date.parse(quote.expires_at) <= now ||
+apps/storefront/lib/purchase.ts:559:    Date.parse(destination.expires_at) <= now
+apps/storefront/lib/purchase.ts:1020:    if (!matches || !current || Date.parse(current.expires_at) <= Date.now())
+apps/admin/lib/customers-model.ts:98:  return typeof value === "string" && instant.test(value) && Number.isFinite(Date.parse(value));
+apps/admin/lib/customers-model.ts:270:  const shifted = new Date(now.getTime() + 8 * 3_600_000 + offsetDays * 86_400_000);
+apps/admin/lib/customers-model.ts:271:  return shifted.toISOString().slice(0, 10);
+apps/admin/app/api/auth/password/step1.ts:131:          new Date(),
+apps/admin/lib/orders-v2.ts:18:    Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+apps/admin/lib/operations-request.ts:116:  now = Date.now(),
+apps/admin/lib/claims-model.ts:69:const date = (value: unknown) => typeof value === "string" && value.length <= 40 && Number.isFinite(Date.parse(value));
+apps/admin/lib/attribution-model.ts:137:  ) && Number.isFinite(Date.parse(s))
+apps/admin/lib/attribution-model.ts:144:    Number.isFinite(Date.parse(s)) &&
+apps/admin/lib/attribution-model.ts:145:    new Date(s).toISOString().slice(0, 10) === s
+apps/admin/lib/ads-request.ts:46:    const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/ads-request.ts:47:    return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? t.getTime() : NaN;
+apps/admin/lib/team-model.ts:22:const instant = (value: unknown): value is string => typeof value === "string" && value.length <= 40 && Number.isFinite(Date.parse(value));
+apps/admin/lib/entry-state.ts:48:  now = Date.now(),
+apps/admin/components/AdsResults.tsx:76:    const { from: a, to: b } = defaultReportWindow(Date.now());
+apps/admin/lib/customers-request.ts:51:  const back = new Date(parsed);
+apps/admin/lib/customers-request.ts:52:  return back.getUTCFullYear() === +match[1] && back.getUTCMonth() === +match[2] - 1 && back.getUTCDate() === +match[3]
+apps/admin/lib/returns-model.ts:56:  return Number.isFinite(new Date(value).getTime());
+apps/admin/lib/returns-model.ts:105:  if (new Date(v.updated_at as string).getTime() < new Date(v.created_at as string).getTime()) throw new Error("unavailable");
+apps/admin/lib/card-payments-request.ts:26:  const back = new Date(parsed);
+apps/admin/lib/card-payments-request.ts:27:  return back.getUTCFullYear() === +match[1] && back.getUTCMonth() === +match[2] - 1 && back.getUTCDate() === +match[3];
+apps/admin/lib/studio-model.ts:69:  if (!match || !Number.isFinite(Date.parse(value))) return false;
+apps/admin/lib/studio-model.ts:70:  const wall = new Date(`${match[1]}Z`);
+apps/admin/lib/studio-model.ts:71:  return Number.isFinite(wall.getTime()) && wall.toISOString().slice(0, 19) === match[1];
+apps/admin/lib/transfer-model.ts:20:const isTime = (v: unknown): v is string => typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/admin/lib/catalog-v2-model.ts:105:const timestamp = (v: unknown): string => { if (typeof v !== "string" || !Number.isFinite(Date.parse(v))) throw new Error("invalid"); return v; };
+apps/admin/lib/claim-source-model.ts:36:    typeof row.updated_at !== "string" || row.updated_at.length > 40 || !Number.isFinite(Date.parse(row.updated_at))) invalid();
+apps/storefront/lib/claim-contract.ts:59:const time = (value: unknown) => typeof value === "string" && value.length <= 40 && Number.isFinite(Date.parse(value));
+apps/admin/lib/card-payments-settlements-model.ts:14:  return typeof value === "string" && instantPattern.test(value) && Number.isFinite(Date.parse(value));
+apps/admin/lib/card-payments-settlements-model.ts:62:  const back = new Date(parsed);
+apps/admin/lib/card-payments-settlements-model.ts:63:  return back.getUTCFullYear() === +match[1] && back.getUTCMonth() === +match[2] - 1 && back.getUTCDate() === +match[3]
+apps/admin/lib/card-payments-settlements-model.ts:101:  return `${start} – ${last === null ? end : new Date((last - 1) * 86_400_000).toISOString().slice(0, 10)}`;
+apps/storefront/lib/ad-touch.ts:155:  now = Date.now(),
+apps/storefront/lib/ad-touch.ts:175:  now = Date.now(),
+apps/storefront/lib/ad-touch.ts:202:  const clicked = Date.parse(row.clicked_at);
+apps/storefront/lib/ad-touch.ts:208:    new Date(clicked).toISOString() !== row.clicked_at
+apps/storefront/lib/ad-touch.ts:226:  now = Date.now(),
+apps/storefront/lib/ad-touch.ts:262:    ? { draft_id: drafts[0], clicked_at: new Date(now).toISOString(), fbc, fbp }
+apps/storefront/lib/buyer-server.ts:317:      e.iat > Math.floor(Date.now() / 1000) + 60 ||
+apps/storefront/lib/buyer-server.ts:921:      expires === null ? null : new Date(expires * 1000).toISOString(),
+apps/storefront/lib/buyer-server.ts:926:  const iat = Math.floor(Date.now() / 1000);
+apps/storefront/lib/buyer-server.ts:984:  const iat = Math.floor(Date.now() / 1000);
+apps/storefront/lib/buyer-server.ts:1042:  const iat = Math.floor(Date.now() / 1000);
+apps/storefront/lib/buyer-server.ts:1126:    (!found.envelope || found.envelope.exp <= Math.floor(Date.now() / 1000))
+apps/storefront/lib/buyer-server.ts:1141:    found.envelope!.exp <= Math.floor(Date.now() / 1000)
+apps/storefront/lib/buyer-server.ts:1181:    if (found.envelope.exp <= Math.floor(Date.now() / 1000))
+apps/storefront/lib/buyer-server.ts:1223:        ? Date.parse(expiry.expires_at)
+apps/storefront/lib/buyer-server.ts:1228:      effective <= Date.now()
+apps/admin/components/ManualOrder.tsx:158:              {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{new Date(placed.expires_at).toLocaleString(locale)}</dd></div>}
+apps/admin/lib/orders-model.ts:184:  const parsed = new Date(value);
+apps/admin/lib/orders-model.ts:185:  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 19) === value.slice(0, 19);
+apps/admin/lib/promotions-model.ts:35:const isTime = (v: unknown): v is string => typeof v === "string" && Number.isFinite(Date.parse(v));
+apps/admin/lib/promotions-model.ts:117:    (startsAt !== null && endsAt !== null && Date.parse(endsAt) <= Date.parse(startsAt))
+apps/storefront/lib/buyer-client.ts:185:        !Number.isFinite(Date.parse(value.expires_at)))) ||
+apps/storefront/lib/order-payment.ts:489:    if (seen && (seen.count >= 30 || Date.now() - seen.at < 10_000))
+apps/storefront/lib/order-payment.ts:491:    refreshLog.set(id, { at: Date.now(), count: (seen?.count ?? 0) + 1 });
+apps/admin/app/[locale]/ads/attribution/page.tsx:49:  const today = instantToTaipei(new Date().toISOString()).slice(0, 10);
+apps/admin/app/[locale]/ads/attribution/page.tsx:50:  const first = new Date(`${today}T00:00:00Z`);
+apps/admin/app/[locale]/ads/attribution/page.tsx:51:  first.setUTCDate(first.getUTCDate() - 6);
+apps/admin/app/[locale]/ads/attribution/page.tsx:55:  const from = suppliedFrom || first.toISOString().slice(0, 10),
+apps/admin/components/Entry.tsx:98:      expiresAt: Date.now() + ENTRY_TTL_MS,
+apps/admin/components/Ads.tsx:50:  const t = Date.parse(iso);
+apps/admin/components/Ads.tsx:52:    ? new Date(t).toLocaleString(locale, {
+apps/admin/components/Ads.tsx:270:      Date.now(),
+apps/admin/components/Design.tsx:652:  const when = new Intl.DateTimeFormat(locale, {
+apps/admin/components/Design.tsx:691:                  <td>{when.format(new Date(v.published_at))}</td>
+apps/admin/components/OrderCvsShipment.tsx:138:  const lapsed = attempt !== null && labelLapsed(attempt, shipment?.validity_days ?? null, Date.now());
+apps/admin/components/Studio.tsx:87:    const date = new Date(taipeiToInstant(form.scheduled) ?? NaN);
+apps/admin/components/Studio.tsx:88:    if (!Number.isFinite(date.getTime()) || instantToTaipei(date.toISOString()) !== form.scheduled ||
+apps/admin/components/Studio.tsx:89:      date.getUTCFullYear() < 2000 || date.getUTCFullYear() > 2199) return null;
+apps/admin/components/Studio.tsx:90:    return { title: form.title, scheduled_at: date.toISOString(), aspect_ratio: form.aspect };
+apps/admin/components/Studio.tsx:120:  const [now, setNow] = useState(() => Date.now());
+apps/admin/components/Studio.tsx:377:    const remaining = Date.parse(deadline) - Date.now();
+apps/admin/components/Studio.tsx:378:    setNow(Date.now());
+apps/admin/components/Studio.tsx:380:    const timer = window.setTimeout(() => setNow(Date.now()), Math.min(remaining + 20, 2_147_483_647));
+apps/admin/components/Studio.tsx:597:  const preparedCurrent = !!prepared && Date.parse(prepared.start_before) > now;
+apps/admin/components/PasswordAuth.tsx:91:  const [now, setNow] = useState(() => Date.now());
+apps/admin/components/PasswordAuth.tsx:105:    const timer = setInterval(() => setNow(Date.now()), 1000);
+apps/admin/components/PasswordAuth.tsx:163:    setNow(Date.now());
+apps/admin/components/PasswordAuth.tsx:164:    setResendAt(Date.now() + RESEND_COOLDOWN_SECONDS * 1000);
+apps/admin/components/OperationsLedger.tsx:184:      Math.max(0, queryWait.until - Date.now()),
+apps/admin/components/OperationsLedger.tsx:266:            until: Date.now() + result.retryAfter * 1000,

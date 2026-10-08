@@ -1,0 +1,21 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit",
+  "base_sha": "5176e490f79a820fb28d36f6ac5095141eaa28c5",
+  "source_files": {
+    "tests/admin/ads.spec.ts": "3d7c990dd7cabd29f42a3050927c0fa791593ba791cc26663136c12bc0aa65e1",
+    "tests/admin/design.spec.ts": "81e6a55fc66f5ae283a9ee7d26c89da425f6d33e41a1bff4ec83bea3ea61130c",
+    "tests/storefront/manual-order-link-gate.mjs": "2196110d74cd9497cafe56fe3a1c28187017e8c4998430d20856491c37c5d3e7",
+    "tests/storefront/claim-checkout.mjs": "d341b20235b0f4622d65e489adc3b772b4422c09ceec79aa0e6e21d9009831de",
+    "tests/storefront/offline-buyer.mjs": "fe54c2d9597b60a218bafb974810fc93e883a24a568336629c9e57b5e2455d96",
+    "tests/storefront/order-gate.mjs": "3a8a45b659cfff1ee1eefca0b3f931a5071e8a46f4e85b2ffde05d4ded4d662e"
+  },
+  "timeout_seconds": 240,
+  "exit_code": 0,
+  "elapsed_seconds": 28.137019872665405,
+  "source_unchanged": true,
+  "state": "complete"
+}
