@@ -27,13 +27,15 @@ const record=(control,action,actual)=>ledger.push({case:current,control,action,a
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const routePath=`/api/stores/${store}/tools/orders/for-buyer`;
 const isSubmit=r=>r.request().method()==="POST" && new URL(r.url()).pathname===routePath;
-async function openConversation(page,locale,id) {
+async function openConversation(page,locale,id,inspectPrefill) {
  await page.goto(`${origin}/${locale}/messages?store=${store}`);
  await page.getByTestId(`conversation-${id}`).click();
  await expect(page.getByTestId("buyer-panel")).toBeVisible();
  const prefill=page.waitForResponse(r=>r.request().method()==="GET" && new URL(r.url()).pathname===`/api/stores/${store}/tools/inbox/order-prefill` && new URL(r.url()).searchParams.get("conversation_id")===id);
  await page.getByTestId("buyer-create-order").click();
- assert.equal((await prefill).status(),200,"real A15 prefill must succeed");
+ const response=await prefill;
+ assert.equal(response.status(),200,"real A15 prefill must succeed");
+ if(inspectPrefill) inspectPrefill(await response.json());
  const drawer=page.getByTestId("create-order-drawer");
  await expect(drawer).toBeVisible();
  // G-UI8 audit [READ/MEASURE]: inspect native dialog state, without altering product behavior.
@@ -109,12 +111,18 @@ try {
   await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
   await expect(page.getByTestId("dashboard-page")).toBeVisible();
   current=`DU3-linked-${locale}-${width}`;
-  let drawer=await openConversation(page,locale,fixture.Linked);
+  let remaining;
+  let drawer=await openConversation(page,locale,fixture.Linked,prefill=>{
+   remaining=prefill.items.find(item=>item.sku_id===sku)?.live_quantity_remaining;
+   assert.equal(remaining,2,"fresh claim A15 remaining quantity is exactly two");
+  });
   await expect(drawer.getByTestId("drawer-linked-customer")).toBeVisible();
   await expect(drawer.getByTestId("drawer-name")).toHaveValue("王小明");
   await expect(drawer.getByTestId("drawer-phone")).toHaveValue("0912-345-678");
   await expect(drawer.getByTestId("drawer-option")).toHaveValue(home);
   await expect(drawer.getByTestId("drawer-city")).toHaveValue("中正區");
+  // The fixture claim is exactly two units and no live-price use exists before this first submit.
+  await expect(drawer.getByTestId("drawer-claim-0")).toContainText(new RegExp(`(?:^|\\D)${remaining}(?:\\D|$)`));
   await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toHaveValue("2");
   await drawer.getByTestId(`drawer-plus-${sku}`).click();
   await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toHaveValue("3");
@@ -200,6 +208,34 @@ try {
    failed.push(current);ledger.push({case:current,control:"explicit retry",action:"click",actual:outcome,status:"FAIL"});
   } else record("UNKNOWN explicit retry","commit/abort/click","same key/body; real replay 200; exact one request order and receipt in PG");
   cases++;
+
+  // Keep this privacy regression in the same matrix entry, with no additional order creation.
+  current=`DU3-auth-boundary-${locale}-${width}`;
+  await drawer.getByTestId("drawer-close").click();
+  drawer=await openConversation(page,locale,fixture.Unlinked);
+  await addCatalog(drawer);await fillEmpty(drawer);
+  await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
+  await expect(drawer.getByTestId("drawer-name")).toHaveValue("SYNTHETIC Drawer Buyer");
+  let boundaryPosts=0;
+  const boundaryRequest=request=>{if(request.method()==="POST" && new URL(request.url()).pathname===routePath) boundaryPosts++;};
+  page.on("request",boundaryRequest);
+  const beforeBoundary=await (await fetch(`${api}/__test/drawer-facts`)).json();
+  const csrf=(await context.cookies()).filter(cookie=>cookie.name==="__Host-commerce_csrf");
+  assert.equal(csrf.length,1,"the actual signed login supplied exactly one CSRF cookie");
+  // A real session-boundary fault: a rejected replacement cookie makes the real sessionBoundary throw.
+  // No cookie value, private field, assertion dump or response body is written to the ledger.
+  await context.addCookies([{...csrf[0],value:"LC-U3-rotated-invalid-CSRF"}]);
+  await drawer.getByTestId("drawer-submit").click();
+  // G-UI8 audit [READ/MEASURE]: poll actual DOM and input properties without modifying the product.
+  await expect.poll(()=>page.evaluate(()=>{
+   const surfaces=[document.documentElement.outerHTML,...[...document.querySelectorAll("input,textarea")].map(element=>element.value)];
+   return ["SYNTHETIC Drawer Buyer","0912345678","drawer@example.invalid","Taipei Region","1 Synthetic Drawer Road","Synthetic Floor 1"].every(value=>surfaces.every(surface=>!surface.includes(value)));
+  }),{message:"auth boundary must remove every draft contact/address from the DOM"}).toBe(true);
+  const afterBoundary=await (await fetch(`${api}/__test/drawer-facts`)).json();
+  page.off("request",boundaryRequest);
+  assert.equal(boundaryPosts,0,"rejected session boundary must never POST A16");
+  assert.equal(afterBoundary.orders,beforeBoundary.orders,"session boundary creates no order");
+  record("CSRF session boundary","rotate actual cookie then click submit","private draft removed; zero A16 requests; PG order count unchanged");
   await context.close();
  }
  // Open directly from the real signed-ingress claimed comment row in the actual console.
