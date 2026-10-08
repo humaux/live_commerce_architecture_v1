@@ -1,0 +1,62 @@
+{
+  "check-gates-final.log": {
+    "sha256": "6c0aaae31ae93d642dc0b5d0442022cf6672a2aee5a7c5fc1f78c311669f71c2",
+    "bytes": 3500,
+    "archive": "check-gates-final.log.gz"
+  },
+  "check-gates.log": {
+    "sha256": "f1698329c7266eeaa035eb742d4bba6af26e29de83cc30f28e362402ae22e267",
+    "bytes": 3499,
+    "archive": "check-gates.log.gz"
+  },
+  "green-focused.log": {
+    "sha256": "8f9155c2eaefb753d0b78e8a2382d2bdb41a2396407a4670a30e112aa3b083e8",
+    "bytes": 9863,
+    "archive": "green-focused.log.gz"
+  },
+  "green-scope-control.log": {
+    "sha256": "a068668029f8b818a089d1dbe33316be9a1dd5b3f42116b2af873dd0917b943a",
+    "bytes": 6745,
+    "archive": "green-scope-control.log.gz"
+  },
+  "install.log": {
+    "sha256": "b77f6c404edcff3e4f4ab5b4bf741cf5f9f42dbaa1f87d5082500af8a43e6c59",
+    "bytes": 514,
+    "archive": "install.log.gz"
+  },
+  "node.log": {
+    "sha256": "4caf1ce64e5d4b7229daf5c0259c48157d9a48bcd55855fb8207fd5428388ef4",
+    "bytes": 112221,
+    "archive": "node.log.gz"
+  },
+  "red-valid.log": {
+    "sha256": "98a2500dbbf41feaa9558bde486f48f31f1217fcb552424097a5975c8ca7318d",
+    "bytes": 6999,
+    "archive": "red-valid.log.gz"
+  },
+  "red.log": {
+    "sha256": "d5573843a518956a378b31d2057ceb5360148a32ab2fc4b589e37ef247b2a263",
+    "bytes": 6731,
+    "archive": "red.log.gz"
+  },
+  "stripe-package-gates.log": {
+    "sha256": "f15db62a15c258df65679e441a7feee362ba659605db0bc20ca71dcdd3ae8589",
+    "bytes": 36754,
+    "archive": "stripe-package-gates.log.gz"
+  },
+  "stripe-regression.log": {
+    "sha256": "71c536fac5a85ec8e19fcf00e0edb7b5d1f4133d70378343b209539bd76857ca",
+    "bytes": 84383,
+    "archive": "stripe-regression.log.gz"
+  },
+  "typecheck-admin.log": {
+    "sha256": "18888e037704a2c0b8d6922a994f8d496bf85a37ae37595625c7da915bb0a0be",
+    "bytes": 146,
+    "archive": "typecheck-admin.log.gz"
+  },
+  "upgrade.log": {
+    "sha256": "e381c3180ebaa502dc9d1cbc156acdc77cdc42c0e1a2ec5c3a1b9dfc5585cb55",
+    "bytes": 15761,
+    "archive": "upgrade.log.gz"
+  }
+}
