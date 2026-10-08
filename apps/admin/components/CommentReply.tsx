@@ -14,6 +14,8 @@ import {
 import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import type { StreamComment } from "@/src/features/live/comment-model";
 import type { ConsoleCapabilities } from "@/src/features/live/console-model";
+import { sessionBoundary } from "@/lib/settings-client";
+import { CommentReceipt } from "@/src/features/live/comment-receipt";
 
 /** Submits one immutable attempt; browser transport uncertainty locks this comment until verified externally. */
 export function CommentReply({
@@ -44,6 +46,8 @@ export function CommentReply({
     [error, setError] = useState(""),
     [state, setState] = useState<SendState | null>(null),
     [confirm, setConfirm] = useState(false);
+  const [receiptReady,setReceiptReady]=useState(false),[receiptBlocked,setReceiptBlocked]=useState(true);
+  const receipt=useRef<CommentReceipt|null>(null);
   const fence = useRef(new InboxFence()),
     active = useRef(false),
     callbacks = useRef({ onSent, onDenied });
@@ -55,7 +59,17 @@ export function CommentReply({
     ];
   const capable = !!cap && ["ok", "review_required"].includes(cap.state);
   const terminalUnknown =
-    state === "unknown" || comment.marks.private_reply?.state === "unknown";
+    receiptBlocked || state === "unknown" || comment.marks.private_reply?.state === "unknown";
+  useEffect(()=>{
+    let alive=true;
+    void sessionBoundary().then(boundary=>{
+      if(!alive)return;
+      try {receipt.current=new CommentReceipt(sessionStorage,store.id,session,boundary);setReceiptBlocked(receipt.current.blocked());}
+      catch {setReceiptBlocked(true);}
+      setReceiptReady(true);
+    }).catch(()=>{if(alive)callbacks.current.onDenied();});
+    return()=>{alive=false;receipt.current=null;};
+  },[store.id,session]);
   const privateReason =
     mode === "private" && !comment.marks.private_reply_available
       ? (comment.marks.private_reply_unavailable_reason ?? "used")
@@ -110,6 +124,7 @@ export function CommentReply({
   const send = async (preempt = false) => {
     if (
       active.current ||
+      !receiptReady ||
       terminalUnknown ||
       !allowed ||
       !capable ||
@@ -117,6 +132,7 @@ export function CommentReply({
       (rule && !(canPreempt && preempt))
     )
       return;
+    if(!receipt.current?.arm()){setReceiptBlocked(true);return;}
     active.current = true;
     setBusy(true);
     setError("");
@@ -149,6 +165,10 @@ export function CommentReply({
       )
         throw new InboxError("retry_later", 503);
       setState(value.send_state);
+      // A queued public send has no terminal-state field in A2. Preserve the coarse guard
+      // until explicit external verification rather than pretending the operation is final.
+      if(["sent","failed","blocked"].includes(value.send_state))setReceiptBlocked(!receipt.current?.clear());
+      else setReceiptBlocked(true);
       setText("");
       setTemplate("");
       callbacks.current.onSent();
@@ -156,7 +176,8 @@ export function CommentReply({
       if (!fence.current.current(ticket)) return;
       const code = e instanceof InboxError ? e.code : "retry_later";
       setError(code);
-      if (!(e instanceof InboxError) || e.status >= 500) setState("unknown");
+      if (!(e instanceof InboxError) || e.status >= 500){setState("unknown");setReceiptBlocked(true);}
+      else setReceiptBlocked(!receipt.current?.clear());
       if (e instanceof InboxError && [401, 403].includes(e.status))
         callbacks.current.onDenied();
       if (code === "auto_pending_confirm") setConfirm(true);
@@ -216,11 +237,14 @@ export function CommentReply({
           {commentReason(locale, rule)}
         </p>
       )}
-      {terminalUnknown && (
+      {receiptReady && terminalUnknown && (
         <p role="alert" data-testid="comment-unknown">
           {c.verify}
         </p>
       )}
+      {receiptReady && receiptBlocked && !busy && <button type="button" data-testid="comment-verified" onClick={()=>{
+        if(window.confirm(c.confirmVerified) && receipt.current?.clear()){setReceiptBlocked(false);setState(null);setError("");setText("");setTemplate("");}
+      }}>{c.verified}</button>}
       {state && (
         <p role="status" data-testid="comment-send-state">
           {c[state]}

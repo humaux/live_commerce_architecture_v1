@@ -37,7 +37,7 @@ type Scene = { ID: string; Title: string; Phase: string; Offer: string; SKU: str
 type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number;comments:{requests:number;older_requests:number;private_requests:number;public_requests:number;private_operations:number;graph_sends:number} };
 
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
-test.use({ baseURL: origin, trace: "off", screenshot: "only-on-failure" });
+test.use({ baseURL: origin, trace: "off", screenshot: "off", video:"off" });
 test.setTimeout(110_000);
 
 async function facts(request: APIRequestContext): Promise<Facts> {
@@ -88,7 +88,6 @@ async function phase(page: Page, value: string) {
 
 test.describe("LC-U2a REAL_PG comment stream",()=>{
   // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
-  test.use({screenshot:"off",trace:"off",video:"off"});
   for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
     test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
       const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));
@@ -111,6 +110,11 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
       await expect(page.getByTestId("comment-rule")).toHaveText(c.used);
       await expect(page.getByTestId("comment-send")).toBeDisabled();
       expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      // Explicit merchant verification unlocks only future sends; queued is not a final delivery fact.
+      if(await page.getByTestId("comment-verified").isVisible()) {
+        page.once("dialog",dialog=>dialog.accept());await page.getByTestId("comment-verified").click();
+        expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      }
       await page.getByTestId("comment-reply").getByRole("button",{name:c.publicReply,exact:true}).click();
       await expect(page.getByTestId("comment-reply")).toContainText(c.publicRule);
       await page.getByTestId("comment-reply-text").fill("https://checkout.stripe.com/pay/synthetic");
@@ -135,6 +139,20 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
     expect((await facts(request)).comments.requests).toBe(before);
     await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
     } finally { await close(); }
+  });
+  test("unknown public ACK stays fenced across selection and reload",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.latest_ref}`).click();await page.getByRole("button",{name:"Public reply",exact:true}).click();
+    await page.getByTestId("comment-reply-text").fill("Synthetic public ACK case");
+    // FAULT INJECTION: the command reaches real Go/PG; only its acknowledgement is dropped.
+    await page.route(`**/comments/${comments.latest_ref}/public-reply`,async r=>{const real=await r.fetch();expect(real.status()).toBe(200);await r.abort("connectionreset");},{times:1});
+    const before=(await facts(request)).comments.public_requests;
+    await page.getByTestId("comment-send").click();await expect(page.getByTestId("comment-unknown")).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.reply_refs[0]}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+    await page.reload();await page.getByTestId(`comment-select-${comments.latest_ref}`).click();await expect(page.getByTestId("comment-send")).toBeDisabled();
+    expect((await facts(request)).comments.public_requests).toBe(before+1);
+    const flags=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith("live-comment-unresolved:")));
+    expect(flags).toHaveLength(1);expect(flags[0][1]).toBe("1");expect(flags[0][0]).not.toContain(comments.latest_ref);
   });
   test("LCU2_RESET epoch replacement clears every old comment before reread",async({page,request})=>{
     await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();

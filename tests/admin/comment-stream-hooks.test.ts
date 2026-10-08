@@ -3,6 +3,9 @@
 // Used by: test-node; complements real Go/PG browser gates rather than replacing them.
 import test from "node:test";
 import assert from "node:assert/strict";
+const stored=new Map<string,string>();
+Object.assign(globalThis,{sessionStorage:{getItem:(k:string)=>stored.get(k)??null,setItem:(k:string,v:string)=>stored.set(k,v),removeItem:(k:string)=>stored.delete(k)}});
+test.beforeEach(()=>stored.clear());
 import {
   environment,
   store,
@@ -18,6 +21,17 @@ const { CommentReply } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+test("UNKNOWN and queued public receipt survive selection remount without storing private identifiers",async t=>{
+  const env=environment(t);let sends=0;
+  globalThis.fetch=async(_url,init)=>{if(init?.method==="POST"){sends++;return response({send_state:"queued",operation_id:sid,outbound_id:sid});}return response({items:[]});};
+  const props={store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null},reply_public:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}};
+  let h=env.mount(()=>CommentReply(props as any));await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.onClick();h.flush();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic unresolved public"}});h.flush();node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();assert.equal(sends,1);
+  h.dispose();h=env.mount(()=>CommentReply({...props,comment:{...row,ref:"987654"}} as any));await h.settle();
+  assert.equal(nodes(h.output).find(n=>n.type==="fieldset")?.props.disabled,true,"queued receipt blocks new replies after navigation until verified");
+  assert.equal(stored.size,1);for(const [key,value] of stored){assert.doesNotMatch(key,/123_456|987654|Synthetic/);assert.equal(value,"1");}
+});
 const row = {
   ref: "123_456",
   parent_ref: null,

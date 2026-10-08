@@ -29,6 +29,8 @@ const en = {
   publicRule: "Public replies must not contain payment links.",
   verify:
     "Delivery is uncertain. Verify in Messenger before taking any further action; this reply will not be resent automatically.",
+  verified:"I checked delivery in Messenger",
+  confirmVerified:"Have you checked this session's pending replies in Messenger? This only unlocks new replies; it does not resend anything.",
   testOnly: "Test accounts only",
   permission: "Reply permission is required.",
   preempt:
@@ -115,6 +117,8 @@ const tw: Copy = {
   window: "買家主動傳訊後才開啟 24 小時私訊視窗；傳送此私密回覆不會開啟視窗。",
   publicRule: "公開回覆不得包含付款連結。",
   verify: "傳送結果未確認。請先到 Messenger 核對；系統不會自動重送。",
+  verified:"已到 Messenger 核對傳送結果",
+  confirmVerified:"已在 Messenger 核對這個場次尚未確認的回覆了嗎？此操作僅解鎖後續回覆，不會重送。",
   testOnly: "僅測試帳號",
   permission: "需要回覆訊息權限。",
   preempt:
@@ -188,6 +192,8 @@ const cn: Copy = {
     "买家主动发消息后才开启 24 小时私信窗口；发送此私密回复不会开启窗口。",
   publicRule: "公开回复不得包含付款链接。",
   verify: "发送结果未确认。请先到 Messenger 核对；系统不会自动重发。",
+  verified:"已到 Messenger 核对发送结果",
+  confirmVerified:"已在 Messenger 核对这个场次尚未确认的回复了吗？此操作仅解锁后续回复，不会重发。",
   testOnly: "仅测试账号",
   permission: "需要回复消息权限。",
   preempt:
