@@ -189,6 +189,7 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
 });
 
 test("CTUI real CAS conflicts, refresh discards only explicit user intent", async ({ browser }) => {
+  // Scope recovery controls to tags/notes: imported customers also have an archive Refresh.
   // Keep assertions on the feature's feedback; Next also renders an empty route-announcer alert.
   const { page, context } = await signed(browser, "en", 1440), c = customerTagsCopy.en;
   try {
@@ -197,7 +198,7 @@ test("CTUI real CAS conflicts, refresh discards only explicit user intent", asyn
     await ctl("concurrent-tags");
     await step(page, "stale Save tags", "actual 409 keeps winning tag set and offers explicit Refresh", async () => {
       await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
-      await page.getByRole("button", { name: c.refresh, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: "Seed02", exact: true })).toBeChecked(); await expect(editor.getByRole("checkbox", { name: "Seed01", exact: true })).not.toBeChecked();
+      await editor.getByRole("button", { name: c.refresh, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: "Seed02", exact: true })).toBeChecked(); await expect(editor.getByRole("checkbox", { name: "Seed01", exact: true })).not.toBeChecked();
     });
     const seed = noteRow(page, "w6ui-seed-note-51");
     await seed.getByRole("button", { name: c.noteEdit, exact: true }).click(); await fill(page, notes.getByRole("textbox"), "w6ui-stale-draft", "old note version draft");
@@ -208,7 +209,7 @@ test("CTUI real CAS conflicts, refresh discards only explicit user intent", asyn
     await expect(notes.getByRole("textbox"), "CTUI-DRAFT-VERSION-FENCE").toHaveValue("w6ui-stale-draft");
     await step(page, "stale Save note", "409 refuses silent version rebase; draft survives until explicit Refresh", async () => {
       await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
-      await expect(notes.getByRole("textbox")).toHaveValue("w6ui-stale-draft"); await page.getByRole("button", { name: c.refresh, exact: true }).click();
+      await expect(notes.getByRole("textbox")).toHaveValue("w6ui-stale-draft"); await notes.getByRole("button", { name: c.refresh, exact: true }).click();
       await expect(notes.getByRole("textbox")).toHaveValue(""); await expect(noteRow(page, "w6ui-concurrent-version")).toHaveCount(1);
     });
   } finally { await context.close(); }
