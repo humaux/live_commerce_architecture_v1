@@ -486,7 +486,7 @@ export function CreateOrderDrawer({
         <section data-testid="drawer-result" aria-live="polite">
           <h3>{c.success}</h3>
           <p>{money(locale, result.currency, result.total_minor)}</p>
-          <p>{displayTime(locale, result.expires_at)}</p>
+          <p>{c.expires} · {displayTime(locale, result.expires_at)}</p>
           <p data-testid="drawer-live-result">
             {result.live_price === "applied" ? c.applied : c.notApplied}{" "}
             {createOrderReason(locale, result.live_price_reason)}

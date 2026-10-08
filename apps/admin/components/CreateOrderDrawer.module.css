@@ -59,6 +59,7 @@
   min-height: 44px;
 }
 .drawer p {
+  margin-block: 10px;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }

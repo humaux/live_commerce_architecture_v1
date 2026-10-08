@@ -51,11 +51,11 @@ export function ManualOrderFormFields({ locale, store, value, onChange, availabl
       {mapOnly && <p className="mt-warn" role="status" style={{ marginTop: 12 }}>{c.mapOnly}</p>}
       {option?.delivery_kind === "home" && (
         <FormRow style={{ marginTop: 12 }}>
-          <Field id={`${idPrefix}-region`} label={c.region}><input id={`${idPrefix}-region`} value={home.region} maxLength={100} onChange={(e) => onChange({ home: { ...home, region: e.target.value } })} /></Field>
+          <Field id={`${idPrefix}-region`} label={c.region}><input id={`${idPrefix}-region`} data-testid={`${idPrefix}-region`} value={home.region} maxLength={100} onChange={(e) => onChange({ home: { ...home, region: e.target.value } })} /></Field>
           <Field id={`${idPrefix}-city`} label={c.city}><input id={`${idPrefix}-city`} data-testid={`${idPrefix}-city`} value={home.city} maxLength={100} onChange={(e) => onChange({ home: { ...home, city: e.target.value } })} /></Field>
-          <Field id={`${idPrefix}-postal`} label={c.postal} width="short"><input id={`${idPrefix}-postal`} value={home.postal_code} maxLength={20} onChange={(e) => onChange({ home: { ...home, postal_code: e.target.value } })} /></Field>
+          <Field id={`${idPrefix}-postal`} label={c.postal} width="short"><input id={`${idPrefix}-postal`} data-testid={`${idPrefix}-postal`} value={home.postal_code} maxLength={20} onChange={(e) => onChange({ home: { ...home, postal_code: e.target.value } })} /></Field>
           <Field id={`${idPrefix}-line1`} label={c.line1} width="long"><input id={`${idPrefix}-line1`} data-testid={`${idPrefix}-line1`} value={home.line1} maxLength={200} onChange={(e) => onChange({ home: { ...home, line1: e.target.value } })} /></Field>
-          <Field id={`${idPrefix}-line2`} label={c.line2} width="long"><input id={`${idPrefix}-line2`} value={home.line2} maxLength={200} onChange={(e) => onChange({ home: { ...home, line2: e.target.value } })} /></Field>
+          <Field id={`${idPrefix}-line2`} label={c.line2} width="long"><input id={`${idPrefix}-line2`} data-testid={`${idPrefix}-line2`} value={home.line2} maxLength={200} onChange={(e) => onChange({ home: { ...home, line2: e.target.value } })} /></Field>
         </FormRow>
       )}
       {option && option.delivery_kind !== "home" && !mapOnly && (

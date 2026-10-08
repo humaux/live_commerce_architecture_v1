@@ -32,8 +32,7 @@ async function openConversation(page,locale,id,inspectPrefill) {
  await page.getByTestId(`conversation-${id}`).click();
  await expect(page.getByTestId("buyer-panel")).toBeVisible();
  const prefill=page.waitForResponse(r=>r.request().method()==="GET" && new URL(r.url()).pathname===`/api/stores/${store}/tools/inbox/order-prefill` && new URL(r.url()).searchParams.get("conversation_id")===id);
- await page.getByTestId("buyer-create-order").click();
- const response=await prefill;
+ const [response]=await Promise.all([prefill,page.getByTestId("buyer-create-order").click()]);
  assert.equal(response.status(),200,"real A15 prefill must succeed");
  if(inspectPrefill) inspectPrefill(await response.json());
  const drawer=page.getByTestId("create-order-drawer");
@@ -46,8 +45,7 @@ async function openConversation(page,locale,id,inspectPrefill) {
 }
 async function submit(page,drawer) {
  const pending=page.waitForResponse(isSubmit);
- await drawer.getByTestId("drawer-submit").click();
- const response=await pending;
+ const [response]=await Promise.all([pending,drawer.getByTestId("drawer-submit").click()]);
  assert(response.headers()["cache-control"]?.includes("no-store"));
  return response;
 }
