@@ -61,6 +61,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"]) for (const width of [1586, 390]) 
     await page.screenshot({ path: `${evidence}/labels-${locale}-${width}-preview.png`, fullPage: false });
     await page.getByTestId("comment-label-print").click();
     await expect.poll(() => writes.length).toBe(3);
+    expect(writes.map((write) => write.ref).sort()).toEqual([...data.print_refs].sort());
     expect(new Set(writes.map((w) => w.key)).size).toBe(3);
     for (const w of writes) { expect(w.status).toBe(200); expect(w.body).toBe("{}"); expect(w.key).toMatch(/^[0-9a-f-]{36}$/); }
     await expect.poll(() => page.evaluate(() => (window as unknown as { printCalls: number }).printCalls)).toBe(1);
