@@ -68,7 +68,7 @@ export default function BankTransfer({
 }) {
   const copy = bankTransferCopy[locale];
   // The proof is entered as device-local wall time; its saved echo is explicitly store time.
-  const inputTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const inputTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
   const inputTimeZoneID = `transfer-paid-at-zone-${orderID}`;
   const [view, setView] = useState<TransferView | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
