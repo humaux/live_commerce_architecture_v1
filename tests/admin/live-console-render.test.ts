@@ -28,6 +28,8 @@ function render(locale: "en" | "zh-TW" | "zh-CN", platform: string, embeddable: 
   if (process.env.LC_LIVE_RENDER_FAULT === "notice") source = source.replace('data.stream.source_platform === "instagram" || !data.stream.video_embeddable', "true");
   runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: (name: string) => {
     if (name === "react") return { ...React, useEffect: () => {} };
+    // LC-U1 render host isolates offers/lifecycle; LC-U2a executes its real child in separate hook/browser gates.
+    if (name === "./CommentStream") return { CommentStream: () => null };
     if (name === "next/navigation") return { useRouter: () => ({ push: () => {} }) };
     if (name === "react/jsx-runtime") {
       const runtime = app(name);

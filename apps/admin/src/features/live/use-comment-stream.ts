@@ -4,7 +4,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { inboxRead, InboxError } from "../../../lib/inbox-client";
-import { useInboxPrivacy } from "../messages/use-privacy";
+import { useInboxPrivacy } from "../messages/index";
 import {
   applyCommentPage,
   commentDelay,

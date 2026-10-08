@@ -32,11 +32,11 @@ const en = {
   testOnly: "Test accounts only",
   permission: "Reply permission is required.",
   preempt:
-    "An automatic reply is pending. Send this manual reply instead? The buyer's claim link may then need manual handling.",
+    "The system may be about to send a claim link automatically. A manual private reply uses this comment's only private-reply opportunity. Continue?",
   confirm: "Confirm manual reply",
   cancel: "Cancel",
   pendingLink:
-    "The claim link needs manual handling; it has not been delivered automatically.",
+    "This buyer's claim link cannot be sent because this comment's private-reply opportunity is used. After the buyer messages, resend the claim link by DM within 24 hours.",
   reset: "Comment stream restarted. Reloading current comments.",
   hidden: "Comments cleared while this page is hidden.",
   queued: "Queued",
@@ -118,10 +118,10 @@ const tw: Copy = {
   testOnly: "僅測試帳號",
   permission: "需要回覆訊息權限。",
   preempt:
-    "自動回覆正在等待。要改為手動回覆嗎？買家的認領連結可能需要手動處理。",
+    "系統可能正要自動傳送認領連結。手動私訊會用掉這則留言唯一一次私訊機會，確定繼續？",
   confirm: "確認手動回覆",
   cancel: "取消",
-  pendingLink: "認領連結待手動處理，尚未自動送達。",
+  pendingLink: "此買家的認領連結無法送出：這則留言的私訊額度已用。買家回覆私訊後 24 小時內可用一般私訊補發認領連結",
   reset: "留言串已重啟，正在重新載入。",
   hidden: "頁面隱藏時已清除留言。",
   queued: "排隊中",
@@ -191,9 +191,9 @@ const cn: Copy = {
   testOnly: "仅测试账号",
   permission: "需要回复消息权限。",
   preempt:
-    "自动回复正在等待。要改为手动回复吗？买家的认领链接可能需要手动处理。",
+    "系统可能正要自动发送认领链接。手动私信会用掉这条评论唯一一次私信机会，确定继续？",
   confirm: "确认手动回复",
-  pendingLink: "认领链接待手动处理，尚未自动送达。",
+  pendingLink: "此买家的认领链接无法发出：这条评论的私信额度已用。买家回复私信后 24 小时内可用普通私信补发认领链接",
   reset: "评论流已重启，正在重新加载。",
   hidden: "页面隐藏时已清除评论。",
   queued: "排队中",

@@ -7,6 +7,8 @@ import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { workspaceCopy } from "../../apps/admin/src/features/live/workspace-copy";
 import { money } from "../../packages/format/src/index";
+import { commentCopy } from "../../apps/admin/src/features/live/comment-copy";
+import { nativePage } from "./fixtures/native-device";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -25,12 +27,14 @@ const control = required("LC_BROWSER_CONSOLE_CONTROL");
 const narrowToken = required("LC_BROWSER_CONSOLE_NARROW_TOKEN");
 const readToken = required("LC_BROWSER_CONSOLE_READ_TOKEN");
 const scenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_SCENES"));
+const comments: {session:string;bundle:string;claim_ref:string;latest_ref:string;old_ref:string;reset_ref:string;reply_refs:string[]}=JSON.parse(required("LC_BROWSER_CONSOLE_COMMENTS"));
 if (scenes.length !== 6 || new Set(scenes).size !== 6) throw new Error("six independent Console scenes required");
 const locales = ["en", "zh-TW", "zh-CN"] as const;
 const sizes = [{ width: 1586, height: 992 }, { width: 390, height: 844 }];
+const streamSizes = [{width:1440,height:992},{width:390,height:844}];
 type Receipt = { scene: string; action: string; key_hash: string; body_hash: string; status: number; effect: boolean; input: Record<string, unknown> };
 type Scene = { ID: string; Title: string; Phase: string; Offer: string; SKU: string; Warehouse: string; Active: boolean; Stock: number; StockVersion: number; OfferVersion: number; Reads: number[] | null; Recommended: unknown; Copied: boolean };
-type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number };
+type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number;comments:{requests:number;older_requests:number;private_requests:number;public_requests:number;private_operations:number;graph_sends:number} };
 
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
 test.use({ baseURL: origin, trace: "off", screenshot: "only-on-failure" });
@@ -81,6 +85,65 @@ const route = (locale: string, scene: string, selectedStore = store) => `${origi
 async function phase(page: Page, value: string) {
   await expect(page.getByTestId("live-phase")).toHaveAttribute("data-phase", value);
 }
+
+test.describe("LC-U2a REAL_PG comment stream",()=>{
+  // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
+  test.use({screenshot:"off",trace:"off",video:"off"});
+  for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
+    test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
+      const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));
+      await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(50);
+      const before=(await facts(request)).comments;
+      await page.getByTestId("comment-older").click();
+      await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(60);
+      expect((await facts(request)).comments.older_requests).toBe(before.older_requests+1);
+      await page.getByTestId("comment-filter-keyword").click();await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(1);
+      await page.getByTestId(`comment-select-${comments.claim_ref}`).click();
+      await expect(page.getByTestId("buyer-panel")).toBeVisible();await expect(page.getByTestId("buyer-panel")).toContainText("A1");
+      await page.getByTestId("comment-filter-private").click();await expect(page.getByTestId("comment-conversations").locator("li")).toHaveCount(1);
+      await page.getByTestId("comment-filter-unreplied").click();await expect(page.getByTestId("comment-conversations").locator("li")).toHaveCount(1);
+      await page.getByTestId("comment-filter-all").click();
+      await page.getByTestId(`comment-select-${comments.reply_refs[li*2+wi]}`).click();
+      await expect(page.getByTestId("comment-reply")).toContainText(c.one);await expect(page.getByTestId("comment-reply")).toContainText(c.window);
+      await page.getByTestId("comment-reply-text").fill(`Synthetic thanks ${li}-${wi}`);
+      const sent=page.waitForResponse(r=>r.url().endsWith("/private-reply")&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await sent).status()).toBe(200);
+      await expect(page.getByTestId("comment-rule")).toHaveText(c.used);
+      await expect(page.getByTestId("comment-send")).toBeDisabled();
+      expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      await page.getByTestId("comment-reply").getByRole("button",{name:c.publicReply,exact:true}).click();
+      await expect(page.getByTestId("comment-reply")).toContainText(c.publicRule);
+      await page.getByTestId("comment-reply-text").fill("https://checkout.stripe.com/pay/synthetic");
+      const denied=page.waitForResponse(r=>r.url().endsWith("/public-reply")&&r.request().method()==="POST",{timeout:15000});
+      await page.getByTestId("comment-send").click();expect((await denied).status()).toBe(422);
+      await expect(page.getByTestId("comment-reply-error")).toHaveText(c.public_reply_forbidden_content);
+      expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:[page.getByTestId("comment-rows"),page.getByTestId("comment-buyer"),page.getByTestId("comment-reply-text")]});
+    });
+  }
+  test("native hidden tab stops A2 and clears private selections",async({request})=>{
+    const {page,close}=await nativePage(evidence,"console-native-");
+    try {
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await page.getByTestId(`comment-select-${comments.claim_ref}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    const cover=await page.context().newPage();await cover.goto("about:blank");await cover.bringToFront();
+    await expect.poll(()=>page.evaluate(()=>document.visibilityState)).toBe("hidden");
+    await expect(page.getByTestId("comment-rows")).toHaveCount(0);await expect(page.getByTestId("buyer-panel")).toHaveCount(0);
+    const before=(await facts(request)).comments.requests;
+    await cover.waitForTimeout(6500); // two real 3s intervals; absence of requests is the assertion.
+    expect((await facts(request)).comments.requests).toBe(before);
+    await page.bringToFront();await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();await cover.close();
+    } finally { await close(); }
+  });
+  test("LCU2_RESET epoch replacement clears every old comment before reread",async({page,request})=>{
+    await login(page);await page.goto(route("en",comments.session));await expect(page.getByTestId(`comment-row-${comments.latest_ref}`)).toBeVisible();
+    await fault(request,comments.session,"comments_reset");
+    await expect(page.getByTestId(`comment-row-${comments.reset_ref}`)).toBeVisible();
+    await expect(page.getByTestId(`comment-row-${comments.latest_ref}`),"LCU2_RESET old epoch retained").toHaveCount(0);
+    await expect(page.getByTestId("comment-rows").locator("li")).toHaveCount(1);
+  });
+});
 async function screenshot(page: Page, name: string) {
   // G-UI8 audit [READ/MEASURE]: layout and storage reads do not change product state.
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);

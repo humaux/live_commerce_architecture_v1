@@ -30,6 +30,8 @@ function fixture() {
     runInNewContext(ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
       exports, require: (name: string) => {
         if (name === "react") return react;
+        // This host measures the LC-U1 stock editor, not the separately gated private comment workspace.
+        if (name === "./CommentStream") return { CommentStream: () => null };
         if (name === "next/navigation") return { useRouter: () => ({ push: () => {} }) };
         if (name.endsWith("settings-client")) return settings;
         if (name.endsWith("console-client")) return { executeLiveRequest: async (r: any, k: string, b: string) => { calls.push({ ...r, key: k, boundary: b }); return execute(r, k, b); } };
