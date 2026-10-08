@@ -1,0 +1,13 @@
+apps/storefront/components/OrderHistory.tsx:160:                    {new Intl.DateTimeFormat(locale, {
+apps/storefront/components/OrderFlow.tsx:788:            {new Intl.DateTimeFormat(locale, {
+apps/storefront/components/BankTransfer.tsx:46:  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+apps/storefront/components/BankTransfer.tsx:173:  const dateText = (iso: string) => new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+apps/storefront/components/ClaimLink.tsx:340:              {copy.expires(new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(preview.expires_at)))}
+apps/storefront/components/ShopChrome.tsx:188:        <p>© {new Date().getFullYear()} {profile.name}</p>
+apps/admin/lib/orders-v2.ts:18:    Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
+apps/admin/lib/ads-model.ts:402:  const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/customers-model.ts:271:  return shifted.toISOString().slice(0, 10);
+apps/admin/lib/ads-request.ts:46:    const t = new Date(Date.UTC(y, m - 1, d));
+apps/admin/lib/attribution-model.ts:145:    new Date(s).toISOString().slice(0, 10) === s
+apps/admin/lib/card-payments-settlements-model.ts:101:  return `${start} – ${last === null ? end : new Date((last - 1) * 86_400_000).toISOString().slice(0, 10)}`;
+apps/admin/app/[locale]/ads/attribution/page.tsx:55:  const from = suppliedFrom || first.toISOString().slice(0, 10),

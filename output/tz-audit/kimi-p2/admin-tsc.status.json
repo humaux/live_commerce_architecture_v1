@@ -1,0 +1,1 @@
+{"command": ["pnpm", "exec", "tsc", "--noEmit", "-p", "."], "exit_code": 0, "elapsed_seconds": 3.106947898864746, "timeout_seconds": 240, "source_manifest": "source-hashes.json"}

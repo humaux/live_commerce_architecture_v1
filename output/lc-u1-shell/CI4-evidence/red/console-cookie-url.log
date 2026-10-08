@@ -1,0 +1,90 @@
+
+Running 3 tests using 1 worker
+
+(node:19896) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/live-console.spec.ts:81:3 › LC-U1 MOCK contract real clicks en-1586 (893ms)
+(node:20011) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 tests/admin/live-console.spec.ts:264:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication (1.8m)
+(node:22261) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 tests/admin/live-console.spec.ts:319:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful (860ms)
+
+
+  1) tests/admin/live-console.spec.ts:81:3 › LC-U1 MOCK contract real clicks en-1586 ───────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      61 |   // so the negative probe reaches CSRF/permission checks, not the 401 login gate.
+      62 |   const cookies = await context.cookies(origin);
+    > 63 |   expect(cookies.some((cookie) => cookie.name === "__Host-commerce_session")).toBe(true);
+         |                                                                               ^
+      64 |   return cookies.filter((cookie) => ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name))
+      65 |     .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+      66 | }
+        at authorityCookie (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:63:79)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:101:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md
+
+  2) tests/admin/live-console.spec.ts:264:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication 
+
+    Test timeout of 110000ms exceeded.
+
+    Error: page.waitForURL: Test timeout of 110000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "http://127.0.0.1:61858/en/" until "domcontentloaded"
+      navigated to "http://127.0.0.1:61858/en"
+      navigated to "http://127.0.0.1:61858/en"
+    ============================================================
+
+      277 |   // Clearing the private view precedes the hard logout redirect. Do not race
+      278 |   // that navigation with the next login's goto (net::ERR_ABORTED on Linux CI).
+    > 279 |   await page.waitForURL(`${origin}/en/`, { waitUntil: "domcontentloaded" });
+          |              ^
+      280 |   await expect(page.getByRole("button", { name: "Sign in with identity service" })).toBeVisible();
+      281 |   await login(page);
+      282 |   const after = (await page.context().cookies(origin)).find((c) => c.name === "__Host-commerce_csrf")?.value;
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:279:14
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-unknown-18708-logout-and-reauthentication/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-unknown-18708-logout-and-reauthentication/error-context.md
+
+  3) tests/admin/live-console.spec.ts:319:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      61 |   // so the negative probe reaches CSRF/permission checks, not the 401 login gate.
+      62 |   const cookies = await context.cookies(origin);
+    > 63 |   expect(cookies.some((cookie) => cookie.name === "__Host-commerce_session")).toBe(true);
+         |                                                                               ^
+      64 |   return cookies.filter((cookie) => ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name))
+      65 |     .map((cookie) => `${cookie.name}=${cookie.value}`).join("; ");
+      66 | }
+        at authorityCookie (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:63:79)
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console.spec.ts:370:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-en-boun-dac4a-bled-missing-A1-is-graceful/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/lc-u1-shell/ci4-console-focused/live-console-2686155802/results/live-console-LC-U1-en-boun-dac4a-bled-missing-A1-is-graceful/error-context.md
+
+  3 failed
+    tests/admin/live-console.spec.ts:81:3 › LC-U1 MOCK contract real clicks en-1586 ────────────────
+    tests/admin/live-console.spec.ts:264:1 › LC-U1 unknown receipt stays fenced after real logout and reauthentication 
+    tests/admin/live-console.spec.ts:319:3 › LC-U1 en: bounded live_adjust works, no-stock permission stays disabled, missing A1 is graceful 

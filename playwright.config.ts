@@ -24,6 +24,8 @@ const suites: Record<string, string[]> = {
   "studio-ui": ["studio-ui.spec.ts"],
   // KC16: admin + storefront Next, Go and PG are started by browser_live_claims_test.go.
   "live-claims": ["claims-ui.spec.ts"],
+  // LC-U1: real signed session/BFF; Console upstream and receipts explicitly MOCK.
+  "live-console": ["live-console.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
   "store-design": ["design.spec.ts"],
   "product-media-v2": ["product-media-v2.spec.ts"],

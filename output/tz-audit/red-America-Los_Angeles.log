@@ -1,0 +1,55 @@
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (2.348416ms)
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.23675ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.044834
+
+✖ failing tests:
+
+test at tests/admin/ads-model.test.ts:208:1
+✖ Taipei schedule: wall inputs and draft projections ignore the viewer zone (2.348416ms)
+  AssertionError [ERR_ASSERTION]: 2026-10-07T00:00 under America/Los_Angeles
+  + actual - expected
+
+  + 1791356400000
+  - 1791302400000
+         ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/tests/admin/ads-model.test.ts:216:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1791356400000,
+    expected: 1791302400000,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/ads-model.test.ts:230:1
+✖ Taipei schedule: invalid calendar days are rejected and all copy names UTC+8 (0.23675ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /Asia\/Taipei.*UTC\+8/. Input:
+
+  'Local time. Start at least 10 minutes from now; run at most 30 days.'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit/tests/admin/ads-model.test.ts:235:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Local time. Start at least 10 minutes from now; run at most 30 days.',
+    expected: /Asia\/Taipei.*UTC\+8/,
+    operator: 'match',
+    diff: 'simple'
+  }

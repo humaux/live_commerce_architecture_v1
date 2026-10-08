@@ -1,0 +1,39 @@
+(node:37555) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (26.632167ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (1.904166ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (3.017583ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.363959ms)
+✔ Next proxy admits the exact console family and results query before the BFF (73.738667ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.113125ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (36.63175ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.18925ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.417792ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.30875ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.032875ms)
+(node:37556) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (10.184042ms)
+✔ A7 returns a separate lifecycle version and closed full KEYWORD_QTY_CONTAINS window (0.476666ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (1.489333ms)
+✔ A5 copy parses real Go envelope, copied offer prices and KEYWORD_QTY_CONTAINS window (1.685833ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.359125ms)
+(node:37557) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Live settings navigation accepts a scene picker entry but never a malformed or unscoped deep link (8.316292ms)
+✔ LC-B7 stock permission admits live_adjust without inventory:write, not unrelated grants (0.160292ms)
+✔ Instagram comment total stays unavailable; Facebook observed count is not a platform total (0.081916ms)
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.053291ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.134041ms)
+✔ LC-U1 links only explicit FB post identities, never arbitrary URLs or guessed videos (0.084334ms)
+✔ LC-U1 Facebook preview keeps the original no-frame CSP and uses a safe external link (1.1525ms)
+✔ LC-U1 delayed copy completion cannot navigate after store switch or unmount (0.147334ms)
+✔ LC-U1 receipt fence survives cookie rotation; pending replay still has a separate session boundary (0.46625ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 414.696958

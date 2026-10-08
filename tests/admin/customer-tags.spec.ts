@@ -146,10 +146,14 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
       // or an initial request can consume it just before reload (CI 37729726011). Notes may already contain detail
       // data; the enabled pagination control proves that its independent read has also completed.
       await expect(page.getByTestId("customer-tags-editor").getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
+      await expect(notes.locator("ul > li")).toHaveCount(50);
       await expect(notes.getByRole("button", { name: c.notesMore, exact: true })).toBeEnabled();
       await ctl("fault", fault);
       await step(page, `${fault} Retry`, "failed genuine read is visible and Retry restores controls/notes", async () => {
-        await page.reload(); const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
+        const resource = fault === "tag-read-503" ? "/customers/tags" : `/customers/${customer}/notes`;
+        const failedRead = page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(resource));
+        await page.reload(); expect((await failedRead).status()).toBe(503);
+        const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
         await expect(region).toContainText(c.unavailable); await region.getByRole("button", { name: c.retry, exact: true }).click();
         if (fault === "tag-read-503") await expect(region.getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
         else await expect(region.locator("ul > li")).toHaveCount(50);
@@ -194,6 +198,7 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
 });
 
 test("CTUI real CAS conflicts, refresh discards only explicit user intent", async ({ browser }) => {
+  // CAS recovery is shared by tags/notes, outside their sections; archive Refresh is a separate sibling.
   // Keep assertions on the feature's feedback; Next also renders an empty route-announcer alert.
   const { page, context } = await signed(browser, "en", 1440), c = customerTagsCopy.en;
   try {
@@ -202,7 +207,7 @@ test("CTUI real CAS conflicts, refresh discards only explicit user intent", asyn
     await ctl("concurrent-tags");
     await step(page, "stale Save tags", "actual 409 keeps winning tag set and offers explicit Refresh", async () => {
       await editor.getByRole("button", { name: c.editorSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
-      await page.getByRole("button", { name: c.refresh, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: "Seed02", exact: true })).toBeChecked(); await expect(editor.getByRole("checkbox", { name: "Seed01", exact: true })).not.toBeChecked();
+      await page.locator(".customer-tags-notes > .ct-status").getByRole("button", { name: c.refresh, exact: true }).click(); await expect(editor.getByRole("checkbox", { name: "Seed02", exact: true })).toBeChecked(); await expect(editor.getByRole("checkbox", { name: "Seed01", exact: true })).not.toBeChecked();
     });
     const seed = noteRow(page, "w6ui-seed-note-51");
     await seed.getByRole("button", { name: c.noteEdit, exact: true }).click(); await fill(page, notes.getByRole("textbox"), "w6ui-stale-draft", "old note version draft");
@@ -213,7 +218,7 @@ test("CTUI real CAS conflicts, refresh discards only explicit user intent", asyn
     await expect(notes.getByRole("textbox"), "CTUI-DRAFT-VERSION-FENCE").toHaveValue("w6ui-stale-draft");
     await step(page, "stale Save note", "409 refuses silent version rebase; draft survives until explicit Refresh", async () => {
       await notes.getByRole("button", { name: c.noteSave, exact: true }).click(); await expect(page.getByTestId("customer-detail").getByRole("alert")).toContainText(c.errors.version_changed);
-      await expect(notes.getByRole("textbox")).toHaveValue("w6ui-stale-draft"); await page.getByRole("button", { name: c.refresh, exact: true }).click();
+      await expect(notes.getByRole("textbox")).toHaveValue("w6ui-stale-draft"); await page.locator(".customer-tags-notes > .ct-status").getByRole("button", { name: c.refresh, exact: true }).click();
       await expect(notes.getByRole("textbox")).toHaveValue(""); await expect(noteRow(page, "w6ui-concurrent-version")).toHaveCount(1);
     });
   } finally { await context.close(); }

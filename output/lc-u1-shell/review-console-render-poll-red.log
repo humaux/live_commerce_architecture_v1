@@ -1,0 +1,37 @@
+✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (84.703917ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 376.589042
+
+✖ failing tests:
+
+test at tests/admin/live-console-render.test.ts:43:1
+✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (84.703917ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  -   true,
+      false,
+      false,
+      false,
+  +   false
+    ]
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:47:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ false, false, false, false ],
+    expected: [ true, false, false, false ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

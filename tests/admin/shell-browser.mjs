@@ -266,6 +266,8 @@ export async function runShellGate({
       // Each rendered destination is actually clicked, not inferred from the registry.
       const navPaths = [
         "studio",
+        "studio/console",
+        "studio/claims",
         "orders",
         "products",
         "collections",
@@ -282,8 +284,10 @@ export async function runShellGate({
       for (const id of navPaths) {
         await openMenu();
         const target = page.getByTestId(
-          id === "studio"
-            ? "nav-group-live"
+          id === "studio/console"
+            ? "nav-live-console"
+            : id === "studio/claims"
+              ? "nav-claims"
             : id === "customers"
               ? "nav-group-customers"
               : id === "design"
@@ -292,8 +296,10 @@ export async function runShellGate({
                   ? "nav-group-finance"
                   : `nav-${id}`,
         );
-        const group = ["products", "collections", "inventory"].includes(id)
-          ? "catalog"
+        const group = ["studio", "studio/console", "studio/claims"].includes(id)
+          ? "live"
+          : ["products", "collections", "inventory"].includes(id)
+            ? "catalog"
           : ["promotions", "ads"].includes(id)
             ? "marketing"
             : ["settings", "team", "billing"].includes(id)
@@ -348,7 +354,7 @@ export async function runShellGate({
         width,
         height,
         axe: "no serious/critical",
-        navigation: "13 destinations clicked",
+        navigation: `${navPaths.length} destinations clicked`,
         geometry: "pass",
         touch: width < 1024 ? "44px" : "not required",
       });

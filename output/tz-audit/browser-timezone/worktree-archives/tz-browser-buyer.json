@@ -1,0 +1,11 @@
+{
+  "base_sha": "5176e490f79a820fb28d36f6ac5095141eaa28c5",
+  "worktree": "/Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-buyer",
+  "changed_files": [
+    "tests/storefront/claim-checkout.mjs",
+    "tests/storefront/offline-buyer.mjs",
+    "tests/storefront/order-gate.mjs"
+  ],
+  "raw_patch_sha256": "bef1579ef62ff1044c022b41f39e304fc1133ef0a16da2823dd92b3ef9c9b9ad",
+  "archived_patch": "output/tz-audit/browser-timezone/worktree-archives/tz-browser-buyer.patch.gz"
+}

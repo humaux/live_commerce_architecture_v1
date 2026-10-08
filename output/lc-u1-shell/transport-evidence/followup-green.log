@@ -1,0 +1,26 @@
+(node:33776) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated CONTAINS window/stats (13.253625ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (2.97525ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.355458ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.131083ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (24.394083ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.157917ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (1.34775ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.26625ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.281041ms)
+(node:33777) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (7.402167ms)
+✔ A7 returns a separate lifecycle version and closed full CONTAINS window (0.144875ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (0.169625ms)
+✔ A5 copy parses real Go envelope, copied offer prices and CONTAINS window (0.374083ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.086084ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 227.760709

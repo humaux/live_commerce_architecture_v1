@@ -1,0 +1,5 @@
+# Purpose: preserve actual local-error seam command output after this prologue.
+# Depends on: worker6d61a1d4 and original raw log SHA256=75b69aea69b2bba15a8440267d1f40972d4fea2ee670589803852a2ddc0819b3.
+# Used by: root/integrator; browser acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+check-headers: OK (base 86f638b54ba54473c3cd9353fb203a4dbcfcceca)

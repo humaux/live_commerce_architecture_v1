@@ -1,5 +1,34 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+## Trunk union addendum — #13, #5 and #7
+
+`git fetch origin && git merge origin/r3/integration` fetched **83c7f7e0b8e14ad9f570b51b0c92d67e9f6ef46e** onto **032029f5c3d5c4b3005ef3597159d3814b60e21e**. Fetch succeeded; merge initially exited1 for the sole conflict in `tests/admin/customer-tags.spec.ts`. `scripts/dev/test-local.sh`, shared BFF and Playwright config auto-merged. The CTUI conflict now retains our genuine-read readiness comments/checks **and** trunk's exact50-note assertion; trunk's captured503 response check is also retained. No MOU03 wait/assertion or product choice was changed by resolution.
+
+The shell mode union was verified against both parents, not assumed from an automatic merge. All **82 registered mode occurrence counts** equal the corresponding union maximum; zero mismatches. For the four requested modes the entire ordered role sequence (allow list, usage, presence checks, build list, dispatch, existing comments) also matches its source side:
+
+| Mode | Prior branch | Incoming trunk | Merged |
+|---|---:|---:|---:|
+| `--browser-live-console` | 0 | 5 | **5** |
+| `--browser-migration-import` | 0 | 5 | **5** |
+| `--browser-merchant-orders-ui` | 5 | 5 | **5** |
+| `--browser-merchant-orders-bff` | 6 | 5 | **6** |
+
+Parcel acceptance remains inside merchant-orders-ui and merchant-orders-bff; no standalone parcel mode was invented. The Playwright `parcel-merge-ui` suite remains alongside both incoming suites. Exact parent SHAs, script hash, all82 counts and per-mode role/line maps are in `trunk-union-r13/mode-counts.json` and `mode-roles.json`.
+
+| Command/check | Exit | Result |
+|---|---:|---|
+| Parent mode count + role sequence comparison | 0 | all82 counts preserved; all4 requested role sequences equal their source |
+| `bash -n scripts/dev/test-local.sh` | 0 | shell syntax |
+| `bash scripts/dev/check-gates.sh` | 0 | **82 modes, all documented; every tracked test file is run** |
+| `bash scripts/dev/test-node.sh` | 0 | **1137 tests** across the registered runners |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | strict admin typecheck |
+| `git diff --check HEAD -- scripts/dev/test-local.sh tests/admin/customer-tags.spec.ts playwright.config.ts` | 0 | resolved source clean |
+| `git diff --cached --check` before our evidence additions | 2 | incoming already-committed raw evidence whitespace only, 39 output paths; raw evidence retained unchanged |
+
+Gate manifests pin the tested resolved index tree. Logs are under `trunk-union-r13/`; normalized views retain raw gzip when needed. This is **E3 registry/Node verification**, not browser acceptance of the new merged tree. Browser/PG modes after this merge are **NOT_RUN**. The MOU03 `Page.close()` cause and required Linux close-lifecycle evidence remain **UNRESOLVED**, as documented below. No push/rebase/force-push.
+
+---
+
 ## Current packet fbdf8ebb — MOU03 diagnosis BLOCKED; no product fix claimed
 
 The CI failure remains **UNRESOLVED**. This batch commits diagnostic evidence only. All product code, MOU03 waits/assertions, fixture behavior and timeouts remain unchanged from **fbdf8ebb0d1e091230fae7a646ce5405b84b2c50**. The local gates below are passing baseline observations, not red→green proof of a repair.

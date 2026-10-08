@@ -405,7 +405,7 @@ export function WorkspaceFrame({
               error === "expired" ? "shell-session-expired" : undefined
             }
           >
-            <p>{error === "expired" ? c.sessionExpired : c.unavailable}</p>
+            <h1>{error === "expired" ? c.sessionExpired : c.unavailable}</h1>
             {error === "expired" ? (
               <a data-testid="shell-sign-in" href={localizedPath(locale, "/")}>
                 {c.signIn}
@@ -415,7 +415,7 @@ export function WorkspaceFrame({
             )}
           </div>
         ) : !data || data.key !== storeParam ? (
-          <p role="status">{c.loading}</p>
+          <div className={s.status} role="status"><h1>{c.loading}</h1></div>
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
             <h1>{c.forbidden}</h1>
