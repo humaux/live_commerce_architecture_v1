@@ -135,7 +135,7 @@ export function parseCommentPage(value: unknown): CommentPage {
     !(
       r.older_cursor === null ||
       (typeof r.older_cursor === "string" &&
-        /^[A-Za-z0-9_-]{1,2048}$/.test(r.older_cursor))
+        /^[A-Za-z0-9_.-]{1,1024}$/.test(r.older_cursor))
     ) ||
     !["facebook", "instagram"].includes(String(stream.source_platform)) ||
     typeof stream.video_embeddable !== "boolean"

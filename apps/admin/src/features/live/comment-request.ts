@@ -44,7 +44,7 @@ export function validCommentRequest(request: Request, path: string): boolean {
   const q = new URL(request.url).searchParams;
   for (const [k, v] of q) {
     if (q.getAll(k).length !== 1) return false;
-    if (k === "before_cursor" && /^[A-Za-z0-9_-]{1,1024}$/.test(v)) continue;
+    if (k === "before_cursor" && /^[A-Za-z0-9_.-]{1,1024}$/.test(v)) continue;
     if (
       ["after_epoch", "after_seq", "limit"].includes(k) &&
       /^(0|[1-9][0-9]*)$/.test(v) &&

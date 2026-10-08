@@ -14,10 +14,17 @@ import {
   commentViewResource,
   commentDelay,
   emptyComments,
+  parseCommentPage,
 } from "../../apps/admin/src/features/live/comment-model.ts";
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
+const signedCursor=`eyJ0ZXN0IjoxfQ.${"a".repeat(43)}`;
+test("real bridge sealCursor uses payload.signature rather than plain base64url",()=>{
+  assert.equal(validCommentRequest(req(`?before_cursor=${signedCursor}`),path),true);
+  const value={epoch:1,reset:false,items:[],next:{epoch:1,seq:0},older_cursor:signedCursor,stream:{state:"live",source_platform:"facebook",video_embeddable:true}};
+  assert.equal(parseCommentPage(value).older_cursor,signedCursor);
+});
 const req = (query = "", method = "GET") =>
   new Request(`https://console.invalid/${path}${query}`, {
     method,
