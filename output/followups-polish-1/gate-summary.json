@@ -1,0 +1,202 @@
+{
+  "base": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+  "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+  "runs": [
+    {
+      "name": "reports",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-reports"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/reports",
+      "timeout_seconds": 1800,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:54:27Z",
+      "state": "complete",
+      "pid": 19210,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 50.102
+    },
+    {
+      "name": "order",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-order"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/order",
+      "timeout_seconds": 1800,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:55:17Z",
+      "state": "complete",
+      "pid": 26043,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 39.976
+    },
+    {
+      "name": "ops-polish",
+      "command": [
+        "bash",
+        "scripts/dev/test-local.sh",
+        "--browser-ops-polish"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/ops-polish",
+      "timeout_seconds": 1800,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:55:57Z",
+      "state": "complete",
+      "pid": 26221,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 58.911
+    },
+    {
+      "name": "admin-tsc",
+      "command": [
+        "pnpm",
+        "--dir",
+        "apps/admin",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "."
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:54:27Z",
+      "state": "complete",
+      "pid": 19461,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 8.445
+    },
+    {
+      "name": "storefront-tsc",
+      "command": [
+        "pnpm",
+        "--dir",
+        "apps/storefront",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "."
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:54:27Z",
+      "state": "complete",
+      "pid": 19462,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 6.769
+    },
+    {
+      "name": "node",
+      "command": [
+        "bash",
+        "scripts/dev/test-node.sh"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:54:27Z",
+      "state": "complete",
+      "pid": 19428,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 41.407
+    },
+    {
+      "name": "check-gates",
+      "command": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T13:54:27Z",
+      "state": "complete",
+      "pid": 19465,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 26.156
+    },
+    {
+      "name": "browser-tsc-with-node",
+      "command": [
+        "pnpm",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "--strict",
+        "--skipLibCheck",
+        "--target",
+        "ES2022",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "Bundler",
+        "--esModuleInterop",
+        "--lib",
+        "ES2022,DOM,DOM.Iterable",
+        "--types",
+        "node",
+        "--typeRoots",
+        "apps/admin/node_modules/@types",
+        "tests/admin/reports.spec.ts",
+        "tests/admin/ops-polish.spec.ts"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T14:13:11Z",
+      "state": "complete",
+      "pid": 40703,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 0.779
+    },
+    {
+      "name": "staged-check-gates",
+      "command": [
+        "bash",
+        "scripts/dev/check-gates.sh"
+      ],
+      "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/followups-polish-1",
+      "out": "/Volumes/data/live_commerce_architecture_v1/output/followups-polish-1/final/local",
+      "timeout_seconds": 900,
+      "head": "e5c228a552ccae72ed9d6b7cd40dc035ae251e01",
+      "source_sha256": "a940c110cda617e5ed5f4761d41c0d6827b1e80a7e9664a68e9eabfc69d4756a",
+      "started_at": "2026-10-08T14:09:41Z",
+      "state": "complete",
+      "pid": 39642,
+      "exit_code": 0,
+      "source_unchanged": true,
+      "elapsed_seconds": 3.489
+    }
+  ]
+}

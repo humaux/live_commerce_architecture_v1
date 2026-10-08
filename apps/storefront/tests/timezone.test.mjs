@@ -24,11 +24,11 @@ const react = (states) => {
   let i = 0;
   return { useState: (initial) => [i < states.length ? states[i++] : (typeof initial === "function" ? initial() : initial), () => {}], useRef: (value) => ({ current: value }), useEffect() {}, useCallback: (fn) => fn };
 };
-function load(name, states, modules = {}) {
+function load(name, states, modules = {}, globals = {}) {
   const source = readFileSync(new URL(`../components/${name}.tsx`, import.meta.url), "utf8");
   const code = swc.transformSync(source, { filename: `${name}.tsx`, jsc: { parser: { syntax: "typescript", tsx: true }, target: "es2022", transform: { react: { runtime: "automatic" } } }, module: { type: "commonjs" } }).code;
   const exports = {};
-  runInNewContext(code, { exports, Date: fakeDate, window: {}, require: (id) => {
+  runInNewContext(code, { ...globals, exports, Date: fakeDate, window: {}, require: (id) => {
     if (id === "react") return react(states);
     if (id === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
     if (id === "../../../packages/format/src/index") return format;
@@ -119,6 +119,23 @@ for (const [locale, prefix] of [["en", "Your device time zone: "], ["zh-TW", "�
     assert.equal(typeof descriptionID, "string", "device-zone hint is associated with the input");
     const hint = find(tree, node => node.props?.id === descriptionID);
     assert.equal(text(hint), prefix + Intl.DateTimeFormat().resolvedOptions().timeZone);
+  });
+}
+
+for (const [locale, generic] of [["en", "Your device time zone"], ["zh-TW", "你裝置的時區"], ["zh-CN", "你设备的时区"]]) {
+  test(`BankTransfer input has a generic label when Intl has no zone in ${locale}`, () => {
+    const view = { state: "SUBMITTED", deadline_at: "2026-12-31T17:30:00Z", currency: "TWD", amount_minor: 100, bank: null,
+      proof: { last5: "12345", amount_minor: 100, paid_at: instant } };
+    // Only the component's native Intl capability is absent; the shared formatter and copy are real modules.
+    const component = load("BankTransfer", [view, false, Date.parse(instant), "", "", "", false, "", null], {
+      "../lib/buyer-client": { BuyerClientError: Error }, "../lib/purchase": {}, "../lib/bank-transfer-copy": { bankTransferCopy },
+      "../lib/browse-copy": { browseCopy }, "../lib/bank-transfer-contract": bankTransferContract,
+    }, { Intl: { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: undefined }) }) } }).default;
+    const tree = component({ context: "test", orderID: "order-1", locale, money: () => "NT$1", refreshToken: 0 });
+    const field = find(tree, node => node.type === "input" && node.props.name === "paid_at");
+    assert.ok(field, "editable input is loaded");
+    const hint = find(tree, node => node.props?.id === field.props["aria-describedby"]);
+    assert.equal(text(hint), generic);
   });
 }
 
