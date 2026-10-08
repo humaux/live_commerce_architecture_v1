@@ -9,6 +9,7 @@ import path from "node:path";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
 import { importCopy } from "../../apps/admin/lib/import-copy";
 import { importViewCopy } from "../../apps/admin/lib/import-view-copy";
+import { customersCopy } from "../../apps/admin/lib/customers-copy";
 import { importHistoryCopy } from "../../apps/admin/lib/import-history-copy";
 
 const required = (name: string) => { const value = process.env[name]; if (!value) throw new Error(`${name} required`); return value; };
@@ -326,7 +327,18 @@ test("MIUI imported-only erasure removes history and tombstone blocks same sourc
     const order: FileCase = { prefix: "ERASE-ORDER", buffer: Buffer.from("order_id,customer_id,ordered_at,status,total\nMIUI-ERASE-H,ERASE-A,2026-04-01,paid,100\n"), mapping: { order_id: "order_id", customer_id: "customer_id", ordered_at: "ordered_at", status: "status", total: "total" }, markers: [] };
     await upload(page, order, "orders"); await preview(page, order, { new: 1, update: 0, failed: 0 }); await confirm(page, { created: 1, updated: 0, failed: 0 }); const before = await state(), owner = before.owners["ERASE-A"];
     await page.goto(`${origin}/en/customers/${owner}?store=${store}`);
-    await step(page, "customer erasure", "typed deliberate erasure deletes only owned profile/archive", async () => { await page.getByTestId("customer-erase").click(); await page.getByTestId("erase-typed").fill("ERASE"); await page.getByTestId("erase-submit").click(); await expect(page.getByTestId("customer-erased")).toBeVisible(); });
+    await step(page, "customer erasure", "typed deliberate erasure removes the imported-only customer projection and archive", async () => {
+      await page.getByTestId("customer-erase").click(); await page.getByTestId("erase-typed").fill("ERASE");
+      const erasedResponse = page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname.endsWith(`/customers/${owner}/erasure`));
+      const refreshedDetail = page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(`/customers/${owner}`));
+      await page.getByTestId("erase-submit").click();
+      expect((await erasedResponse).status()).toBe(200); expect((await refreshedDetail).status()).toBe(404);
+      // 0152 customer visibility comes from orders, claims or import_profiles. This owner has only
+      // an import profile; 0156 erasure removes it and its archive, so there is no retained inactive detail.
+      await expect(page.getByTestId("customer-detail")).toContainText(customersCopy.en.notFound);
+      await expect(page.getByTestId("customer-historical-orders")).toHaveCount(0);
+      await expect(page.getByTestId("customer-erase")).toHaveCount(0);
+    });
     const erased = await state(); expect(erased.owners["ERASE-A"]).toBeUndefined(); expect(erased.counts.history).toBe(before.counts.history - 1); expect(erased.counts.profiles).toBe(before.counts.profiles - 1);
     await page.goto(`${origin}/en/customers/import?store=${store}`);
     const changed = { ...file, buffer: Buffer.from(file.buffer.toString("utf8").replace("MIUI-NAME-ERASE-A", "MIUI-NAME-ERASE-CHANGED")) };
