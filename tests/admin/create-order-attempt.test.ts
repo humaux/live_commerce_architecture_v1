@@ -79,3 +79,21 @@ test("post-dispatch auth refusal can follow commit and must retain the order gua
     false,
   );
 });
+
+test("a definitive response unlocks only the explicit new-attempt action", () => {
+  const attempt = new OrderAttempt(() => crypto.randomUUID());
+  const first = attempt.prepare({ customer: { name: "original" } });
+  assert.equal(attempt.startNew(), false, "UNKNOWN cannot be replaced");
+  assert.equal(attempt.prepare({ customer: { name: "edited" } }), first);
+  attempt.finish();
+  assert.equal(attempt.resolved(), true);
+  assert.equal(
+    attempt.prepare({ customer: { name: "edited" } }),
+    first,
+    "definitive response alone never replaces receipt",
+  );
+  assert.equal(attempt.startNew(), true);
+  const next = attempt.prepare({ customer: { name: "edited" } });
+  assert.notEqual(next.key, first.key);
+  assert.equal(JSON.parse(next.body).customer.name, "edited");
+});

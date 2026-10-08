@@ -24,7 +24,7 @@ async function fenced(boundary: string): Promise<string | null> {
   return csrf;
 }
 
-async function write<T>(url: string, init: { headers: Record<string, string>; body: string | Blob }, boundary: string, parse: (v: unknown) => T, timeoutMs: number,
+async function write<T>(url: string, init: { headers: Record<string, string>; body: string | Blob }, boundary: string, parse: (v: unknown, status: number) => T, timeoutMs: number,
   accept: (status: number) => boolean): Promise<Outcome<T>> {
   const csrf = await fenced(boundary);
   if (!csrf) return { ok: false, code: "unauthorized", uncertain: false, status: 401 };
@@ -36,7 +36,7 @@ async function write<T>(url: string, init: { headers: Record<string, string>; bo
     const value: unknown = await response.json().catch(() => null);
     if (!accept(response.status)) return { ok: false, code: safeError(value).code, uncertain: response.status >= 500, status: response.status };
     try {
-      return { ok: true, value: parse(value), status: response.status };
+      return { ok: true, value: parse(value, response.status), status: response.status };
     } catch {
       return { ok: false, code: "retry_later", uncertain: true, status: 503 };
     }
@@ -53,7 +53,7 @@ export const sendImport = (store: string, mode: "preview" | "commit", file: Blob
 /** POST orders/manual. The Idempotency-Key is chosen by the caller and reused for a retry of the same attempt (replay, never a second order). */
 export const placeManualOrder = (store: string, key: string, body: unknown, boundary: string): Promise<Outcome<ManualResult>> =>
   write(`${base(store)}/orders/manual`, { headers: { "Content-Type": "application/json", "Idempotency-Key": key }, body: JSON.stringify(body) }, boundary,
-    parseManualResult, 18000, (status) => status === 200 || status === 201);
+    (value, status) => parseManualResult(value, { allowRedactedLink: status === 200 }), 18000, (status) => status === 200 || status === 201);
 
 /** POST orders/manual/regenerate-link (K3 F2). The Idempotency-Key is chosen by the caller and reused for a retry of the SAME attempt: the new
  *  link token is derived from it, so a replay re-delivers the same link and a new key is a new link (the previous one invalidated in SQL). */

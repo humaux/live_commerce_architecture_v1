@@ -107,6 +107,7 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "./customers.css": {}, "./merchant-tools.css": {},
     "@/lib/manual-order-form": { emptyManualForm: () => ({ home: {}, cvs: {} }) },
     "./ManualOrderFormFields": {},
+    "@/lib/create-order-attempt": compile("apps/admin/lib/create-order-attempt.ts", {}),
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.
   const tree = ManualOrder({ locale: "zh-TW", stores: [], store: { id: "store", name: "store" },

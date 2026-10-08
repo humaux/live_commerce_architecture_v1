@@ -290,7 +290,7 @@ export function CreateOrderDrawer({
     option.pickup_selection !== "buyer_entered";
   const pending = !!attempt.current.pending();
   const close = () => {
-    if (sending.current || pending || copying.current) return;
+    if (sending.current || (pending && !attempt.current.resolved()) || copying.current) return;
     clear();
     onClose();
   };
@@ -304,6 +304,7 @@ export function CreateOrderDrawer({
       guarded ||
       result ||
       duplicate ||
+      attempt.current.resolved() ||
       (!pending && (problem || mapOnly || prefill.bundles.length > 5))
     )
       return;
@@ -347,19 +348,19 @@ export function CreateOrderDrawer({
         setResult(safe);
         setError("");
         setUncertain(false);
-        attempt.current.clear();
+        attempt.current.finish();
         guard.current?.clear();
       } else {
         setError(outcome.code);
         if (outcome.code === "bundle_already_ordered") {
           setDuplicate({ id: outcome.order_id ?? null });
-          attempt.current.clear();
+          attempt.current.finish();
           guard.current?.clear();
           setUncertain(false);
         } else if (retainOrderAttempt(outcome, uncertain)) {
           setUncertain(true);
         } else {
-          attempt.current.clear();
+          attempt.current.finish();
           guard.current?.clear();
         }
         if ([401, 403].includes(outcome.status)) expire();
@@ -381,6 +382,10 @@ export function CreateOrderDrawer({
         setBusy(false);
       }
     }
+  }
+  function newAttempt() {
+    if (sending.current || result || duplicate || !attempt.current.startNew()) return;
+    setError(""); setUncertain(false);
   }
   async function copy() {
     if (copying.current || !result || !privacy.visible) return;
@@ -456,7 +461,7 @@ export function CreateOrderDrawer({
         <button
           type="button"
           data-testid="drawer-close"
-          disabled={busy || pending || copyBusy}
+          disabled={busy || (pending && !attempt.current.resolved()) || copyBusy}
           onClick={close}
         >
           {c.close}
@@ -573,6 +578,7 @@ export function CreateOrderDrawer({
               data-testid="drawer-submit"
               disabled={
                 busy ||
+                attempt.current.resolved() ||
                 !boundary ||
                 (!pending &&
                   (!!problem || mapOnly || prefill.bundles.length > 5))
@@ -580,6 +586,7 @@ export function CreateOrderDrawer({
             >
               {uncertain ? c.retry : c.create}
             </button>
+            {attempt.current.resolved() && <button type="button" data-testid="drawer-new-attempt" disabled={busy} onClick={newAttempt}>{c.newAttempt}</button>}
           </form>
         )
       )}

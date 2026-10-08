@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant manual-order entry workflow.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/manual-order-form, ./ManualOrderFormFields, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/manual-order-form, @/lib/create-order-attempt, ./ManualOrderFormFields, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
 // Used by: apps/admin/app/[locale]/orders/new/page.tsx
 "use client";
 
@@ -8,8 +8,8 @@
 // BFF /api/stores/{store}/tools/{orders/manual/options, orders/manual} -> Go internal/httpapi/merchanttools.go -> internal/merchanttools
 // (contract storefront-v2 G3). Products and variants come from the existing catalog reads (BFF catalog-products, products/{id}).
 // There is NO price field anywhere in this form or in the request: the server quotes from the catalog (I05), so the displayed unit prices are
-// information only. The submit key is kept for a retry of the SAME body (an uncertain answer replays, never double-reserves) and replaced as
-// soon as the form changes. The session fence is lib/merchant-tools-client.
+// information only. The submitted body/key is immutable and separate from the editable draft. UNKNOWN replays the original request;
+// a definitive response only unlocks an explicit new-attempt action. The session fence is lib/merchant-tools-client.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
@@ -23,6 +23,7 @@ import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib
 import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { emptyManualForm, type ManualFormLine, type ManualFormValues } from "@/lib/manual-order-form";
+import { OrderAttempt, retainOrderAttempt } from "@/lib/create-order-attempt";
 import { ManualOrderFormFields } from "./ManualOrderFormFields";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
@@ -66,7 +67,9 @@ export function ManualOrder({
   const [copied, setCopied] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenFailure, setRegenFailure] = useState("");
-  const attempt = useRef<{ body: string; key: string } | null>(null);
+  const attempt = useRef(new OrderAttempt());
+  const attemptOption = useRef<ManualOption | null>(null);
+  const sending = useRef(false);
   const regen = useRef<{ body: string; key: string } | null>(null);
 
   const available: ManualOption[] = options.data ?? [];
@@ -88,32 +91,37 @@ export function ManualOrder({
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!store || problem || mapOnly || busy) return;
-    const body = manualBody(draft);
-    const text = JSON.stringify(body);
-    // A new key only when the request differs; the same body after an uncertain answer re-sends the same key (replay).
-    if (!attempt.current || attempt.current.body !== text) attempt.current = { body: text, key: crypto.randomUUID() };
-    setBusy(true);
-    setFailure("");
-    const outcome = await placeManualOrder(store.id, attempt.current.key, body, boundary);
-    setBusy(false);
-    if (outcome.ok) {
-      setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (option?.cod_surcharge_minor ?? 0) : null);
-      setPlaced(outcome.value);
-      return;
-    }
-    setUncertain(outcome.uncertain);
-    setFailure(c.errors[outcome.code] ?? c.errors.default);
-    if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
+    if (!store || sending.current || attempt.current.resolved() || (!attempt.current.pending() && (problem || mapOnly))) return;
+    // Draft edits never alter a submitted request. Even an invalid new draft can retry the old valid receipt.
+    if (!attempt.current.pending()) { attempt.current.prepare(manualBody(draft)); attemptOption.current = option; }
+    const receipt = attempt.current.pending()!;
+    sending.current = true; setBusy(true); setFailure("");
+    try {
+      const outcome = await placeManualOrder(store.id, receipt.key, JSON.parse(receipt.body), boundary);
+      if (outcome.ok) {
+        attempt.current.finish(); setUncertain(false);
+        setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (attemptOption.current?.cod_surcharge_minor ?? 0) : null);
+        setPlaced(outcome.value); return;
+      }
+      const retain = retainOrderAttempt(outcome, uncertain);
+      setUncertain(retain); setFailure(c.errors[outcome.code] ?? c.errors.default);
+      if (!retain) attempt.current.finish();
+    } catch { setUncertain(true); setFailure(c.errors.retry_later); }
+    finally { sending.current = false; setBusy(false); }
+  }
+  function newAttempt() {
+    if (sending.current || !attempt.current.startNew()) return false;
+    attemptOption.current = null; setFailure(""); setUncertain(false); return true;
   }
   function reset() {
+    if (!newAttempt()) return;
     setPlaced(null); setCodDue(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
-    setOptionKey(""); setMode(""); setFailure(""); setUncertain(false); setCopied(false); attempt.current = null;
+    setOptionKey(""); setMode(""); setCopied(false);
     setRegenFailure(""); regen.current = null;
   }
   async function regenerate() {
-    if (!store || !placed || regenBusy || placed.buyer_link === null) return;
-    const body = { order_id: placed.order_id, locale: buyerLocale };
+    if (!store || !placed || regenBusy || placed.link_state !== "configured") return;
+    const body = { order_id: placed.order_id, locale: attempt.current.pending() ? JSON.parse(attempt.current.pending()!.body).locale : buyerLocale };
     const text = JSON.stringify(body);
     // A new key only when the request differs; the same body after an uncertain answer re-sends the same key (replay, same link).
     if (!regen.current || regen.current.body !== text) regen.current = { body: text, key: crypto.randomUUID() };
@@ -175,7 +183,7 @@ export function ManualOrder({
                 </div>
                 {regenFailure && <p className="mt-warn" role="alert" data-testid="manual-order-regen-error">{regenFailure}</p>}
               </>
-            ) : <p className="mt-warn">{c.noLink}</p>}
+            ) : placed.link_state === "configured" ? <><p className="mt-note">{c.replayLink}</p><button type="button" data-testid="manual-order-regenerate" disabled={regenBusy} onClick={() => void regenerate()}>{regenBusy ? c.regenerating : c.regenerate}</button>{regenFailure && <p role="alert">{regenFailure}</p>}</> : <p className="mt-warn">{c.noLink}</p>}
             <div className="mt-actions" style={{ marginTop: 16 }}>
               <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>
               <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link>
@@ -189,11 +197,13 @@ export function ManualOrder({
               value={{ lines, name, phone, email, optionKey, mode, home, cvs, buyerLocale }}
               onChange={changeFields} available={available} optionsReady={options.status === "ready"} />
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
-            {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
+            {attempt.current.pending() && <p className="mt-note">{c.frozenDraft}</p>}
+            {problem && !attempt.current.pending() && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
-              <button type="submit" className="primary" data-testid="manual-order-submit" disabled={!!problem || mapOnly || busy || !boundary}>
+              <button type="submit" className="primary" data-testid="manual-order-submit" disabled={busy || !boundary || attempt.current.resolved() || (!attempt.current.pending() && (!!problem || mapOnly))}>
                 {busy ? c.submitting : uncertain ? c.retryButton : c.submit}
               </button>
+              {attempt.current.resolved() && <button type="button" data-testid="manual-order-new-attempt" disabled={busy} onClick={newAttempt}>{c.newAttempt}</button>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>
             </div>
           </form>
