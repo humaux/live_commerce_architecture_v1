@@ -1,0 +1,23 @@
+task_id: c975698a-sub-private-evidence
+base_commit: 33f5d30f44f4a0dfb486fa96f49d73b765b6e5f4
+status: actual installed snapshot method + actual extracted worker fixture lifecycle with fake page/use; browser/Go/PG NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-credential-artifacts.test.ts"]
+exit_code: 0
+sha256 c26a7b153cdc66ba43a5a6129cdeb9238b3b24b0d526ae6a43e260028606a41a tests/admin/inbox-private-evidence.ts
+sha256 e522f6b599cd082328be029b3eb915817746850df6f33b61430aa66bd17c0043 tests/admin/inbox-credential-artifacts.test.ts
+sha256 54bf5935cf339938408c656bde958047a1217bf77434acdf75a0c717cddaaeae node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/index.js
+
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (1.404917ms)
+✔ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (15.085584ms)
+✔ worker restores prior environment even when use rejects (absent) (3.550292ms)
+✔ worker restores prior environment even when use rejects (empty) (3.036583ms)
+✔ worker restores prior environment even when use rejects (existing-policy) (2.033042ms)
+✔ fixture is worker-auto and module collection does not suppress ordinary diagnostics (164.139ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 377.403083

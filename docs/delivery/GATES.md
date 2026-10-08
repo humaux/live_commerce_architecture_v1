@@ -72,6 +72,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--browser-merchant-buyer` | isolated merchant-to-buyer browser chain; not provider payment or real DNS/TLS deployment proof | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-buyer` |
 | `--browser-manual-order` | merchant UI creates a manual bank-transfer order and copies the buyer link, a FRESH browser opens it (fragment read client-side, posted once, history replaced, cookie set by the BFF), sees the order and bank details, submits the transfer proof; the same link in another fresh browser is the one refusal page; independent PG readback (source, proof, link used once, audit). Production admin + storefront Next, signed MOCK IdP, local TLS/CONNECT edge; not provider or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-manual-order` |
 | `--browser-merchant-orders-bff` | isolated Next + Go + PG merchant-order read transport; not merchant UI or provider acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-orders-bff` |
+| `--browser-inbox` | LC-U2b real clicks, signed MOCK OIDC + Next + Go + PG; INU09 native claim-link clipboard + persisted M7 receipt; native hidden-thread calibration; zh-TW/zh-CN/en at 1440/390, live Meta NOT_RUN | T3 browser CI only | `bash scripts/dev/test-local.sh --browser-inbox` |
 | `--browser-merchant-orders-ui` | isolated merchant C order UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-merchant-orders-ui` |
 | `--browser-input-delivery` | isolated HTTPS signed browser + Next + Go + PG input token transport; not decoded SFU media, recovery or production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-input-delivery` |
 | `--browser-studio-bff` | isolated signed OIDC + Next + Go + PG Studio BFF transport; not Studio page/UI, Cloud or provider acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-studio-bff` |
@@ -237,6 +238,23 @@ The two long gates and the foundation suite run as parallel slices; nothing is r
 
 Shard counts live in `scripts/dev/ci-plan.mjs` (`SWEEP_SHARDS`, `VISUAL_SHARDS`); the click-sweep unit costs used only for balancing are `tests/ui/click-sweep-weights.json` (a missing key gets a default, so a new route is still covered). Refresh the foundation plan after a trunk run: `gh run download <run> -D d; node scripts/dev/shard-plan.mjs --ingest d/*/ci-gates/shard_g*.log; node scripts/dev/shard-plan.mjs --write`. `go vet ./...` runs once per full run (the unit shard / the serial run), not in every foundation group. Playwright browsers are cached per Playwright version (`/opt/ms-playwright`).
 
+## Pull-request gates (`.github/workflows/gates.yml`, unit ci-pr-gates)
+
+Integration is by PR only. A PR into `r3/integration` runs a set the repo computes, never one the merging agent picks: `node scripts/dev/pr-modes.mjs <base> <head>` maps the changed paths to modes, `ci-plan.mjs` fans them out, and ONE job ends the run.
+
+| Changed paths | Modes run |
+| --- | --- |
+| only `internal/ cmd/ migrations/ contracts/ docs/ deploy/ output/ go.mod go.sum tests/foundation/` (not `browser_*`) or `*.md` (docs-only included) | `foundation-shards` (11 jobs) |
+| anything else (`apps/ packages/ tests/admin/ tests/e2e/ tests/ui/ tests/foundation/browser_* scripts/ .github/ playwright.config.ts`, package files, unknown paths) | `foundation-shards` + every `--browser-*` mode of the test-local.sh usage line (derived like `release-gate.sh`, never a second list), click-sweep x10 and visual-lint x4 included (about 70 jobs) |
+| `deploy/` or `scripts/deploy*` (on top of the above) | also `deploy-smoke.yml`, called as a reusable workflow so the required check waits for it |
+
+Excluded from the PR browser set (EXCLUDED_MODES in `pr-modes.mjs`): `--stripe-browser` (needs a Stripe test key; gates.yml has no secrets). It stays an integrator SANDBOX run.
+
+- **Required check (for the owner's branch ruleset): `Gates (GitHub runners) / required`.** It is red when plan, any gate leg, the sweep/visual aggregate or an expected deploy-smoke failed, was cancelled or was skipped. Individual `gate (<mode>)` names change with the plan: never require them.
+- `extra_env` is ignored on pull_request. Calibration and fault-injection runs stay a separate `workflow_dispatch`.
+- A newer push to the same PR cancels the older run (`gates-pr-<number>`).
+- Merge is a squash, only after `required` is green AND the commit status `review/independent` on the PR head SHA is success (posted by the reviewer or integrator).
+
 ## Node unit suites (no Docker; `bash scripts/dev/test-node.sh`, run by CI and release-gate G06n)
 
 | Suite | Covers | Note |
@@ -363,3 +381,4 @@ Stripe login fails its privilege validation); see `output/promotions/tests/DEFEC
 
 | `--browser-migration-import` | W5-U1 signed HTTPS customer/history CSV real clicks, private row verdicts, original byte/mapping replay, stale/UNKNOWN, consent/tombstone/city warnings and read-only paged archive; real scoped Go/PG, MOCK IdP; zh-TW/en1440/390 | MOCK (BROWSER) | `bash scripts/dev/test-local.sh --browser-migration-import` (GitHub only) |
 | `tests/admin/import-wizard.spec.ts` | `--browser-migration-import` |
+LC-U2b: run `--browser-inbox` on a GitHub runner, then repeat with `LC_INBOX_CALIBRATION=retain-thread`. The injected real hidden-thread defect must fail `INU05 hidden thread retains private DM`; a generic failure does not calibrate the gate. Keep both run IDs and artifacts tied to the same SHA. INU09 must issue the flagged bundle link through the real BFF, compare the native clipboard credential hash with PG and preserve a token-free command receipt; its credential-bearing scenario keeps trace/video off. Locale coverage is zh-TW, zh-CN and en at 1440 and 390 per the integrator correction; deferred backend projections/link version remain honest unavailable states until LC-B3b.

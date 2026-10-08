@@ -1,0 +1,17 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (21.954459ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (12.586208ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.008209ms)
+✔ session, CSRF and store authority precede content forwarding (4.054958ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (7.177833ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (3.960084ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (6.431584ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.565875ms)
+✔ real M7 response keeps no-referrer after matching Next production header rules (10.285ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 220.44225

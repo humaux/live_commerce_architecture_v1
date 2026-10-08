@@ -184,8 +184,8 @@ func (w *rpWorld) bundle(session, platform string, at time.Time, accepted, sent 
 	}
 	if sent {
 		w.exec(`INSERT INTO integration.operations(id,tenant_id,store_id,principal_id,binding_id,binding_version,provider,external_asset_id,purpose,action,semantic_key,request_hash,request,
-		  job_id,state,generation) VALUES(gen_random_uuid(),$1,$2,$3,gen_random_uuid(),1,'facebook','page','service','meta.private_reply','mpr:'||replace($4::uuid::text,'-',''),sha256('x'::bytea),
-		  jsonb_build_object('bundle_id',$4::uuid::text),$5,'SUCCEEDED',1)`, w.tenant, w.store, w.staff, id, rpJob.Add(1))
+		  job_id,state,generation,created_at) VALUES(gen_random_uuid(),$1,$2,$3,gen_random_uuid(),1,'facebook','page','service','meta.private_reply','mpr:'||replace($4::uuid::text,'-',''),sha256('x'::bytea),
+		  jsonb_build_object('bundle_id',$4::uuid::text),$5,'SUCCEEDED',1,$6)`, w.tenant, w.store, w.staff, id, rpJob.Add(1), at) // created_at = the claim time: the funnel reads operations only up to range end + 7 days, so a now() default broke this test once the wall clock passed 2026-10-07
 	}
 	for _, o := range orders {
 		w.exec(`INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at) VALUES($1,$2,$3,$4,gen_random_uuid(),1,$5,$6)`,
@@ -511,7 +511,7 @@ func TestReportRP06ExportPermissionAuditAndCSV(t *testing.T) {
 	}
 	for i, slug := range []string{"products", "channels", "funnel", "manual-orders"} {
 		status, body, hdr := w.get(w.exporter, slug+".csv"+rpQ)
-		if status != 200 || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store" ||
+		if status != 200 || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store, private" ||
 			!strings.Contains(hdr.Get("Content-Disposition"), "attachment; filename=\"report-") {
 			t.Fatalf("%s.csv: %d %v %s", slug, status, hdr, body)
 		}

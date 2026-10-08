@@ -6,6 +6,7 @@ import { expect, test, type Browser, type Locator, type Page } from "@playwright
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { reportsCopy } from "../../apps/admin/lib/reports-copy";
+import { shellCopy } from "../../apps/admin/src/shell-copy";
 
 const required = (key: string) => { const value = process.env[key]; if (!value) throw new Error(`${key} required`); return value; };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), evidence = required("LC_BROWSER_EVIDENCE"), store = required("LC_W6UI_STORE");
@@ -154,18 +155,39 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await page.keyboard.press("ArrowRight"); await expect(page.getByTestId("reports-tab-channels")).toBeFocused();
         await page.keyboard.press("End"); await expect(page.getByTestId("reports-tab-manual-orders")).toHaveAttribute("aria-selected", "true");
       }, "keyboard");
+      await step(page, "Product sort survives refresh", "clicking a column records the order in the address and a refresh keeps the same order", async () => {
+        await page.getByTestId("reports-tab-products").click();
+        const header = page.getByTestId("reports-products-table").locator("thead th").filter({ has: page.getByRole("button", { name: new RegExp(`^${c.units.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) }) });
+        await header.getByRole("button").click();
+        const order = await header.getAttribute("aria-sort");
+        expect(order === "ascending" || order === "descending").toBe(true);
+        await expect(page).toHaveURL(new RegExp(`sort=units&dir=${order === "ascending" ? "asc" : "desc"}`));
+        const rows = () => page.getByTestId("reports-products-table").locator("tbody tr").evaluateAll((r) => r.map((row) => row.textContent));
+        const before = await rows();
+        await page.reload();
+        await expect(header).toHaveAttribute("aria-sort", order!);
+        expect(await rows()).toEqual(before);
+      });
       await step(page, "Select Channels", "the Channels tab is selected and recorded in the address", async () => {
         await page.getByTestId("reports-tab-channels").click();
         await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
         await expect(page).toHaveURL(/report=channels/);
       });
-      await fill(page, page.getByTestId("reports-from"), "2026-09-02", c.from);
-      await step(page, "Edited range not applied", "CSV stays disabled until Show applies the edited range", async () => {
-        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+      await fill(page, page.getByTestId("reports-from"), "2026-10-01", c.from);
+      await fill(page, page.getByTestId("reports-to"), "2026-10-31", c.to);
+      await step(page, "Edited range not applied", "Channels and Funnel retain the September data label; October inputs do not imply a new query", async () => {
+        for (const tab of ["channels", "funnel", "channels"]) {
+          await page.getByTestId(`reports-tab-${tab}`).click();
+          await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-09-01 – 2026-09-30 (${c.taipeiTime})`);
+          await expect(page.getByTestId("reports-range-pending")).toHaveText(c.rangePending);
+          await expect(page.getByTestId(`reports-csv-${tab}`)).toBeDisabled();
+        }
       });
       await step(page, "Show report", "date change navigates and survives refresh", async () => {
-        await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-09-02/);
-        await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-09-02");
+        await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-10-01/);
+        await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-10-01 – 2026-10-31 (${c.taipeiTime})`);
+        await expect(page.getByTestId("reports-range-pending")).toHaveCount(0);
+        await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-10-01");
         // Codex review P2 (PR #3): the selected report tab survives Show and refresh instead of resetting to Products.
         await expect(page).toHaveURL(/report=channels/);
         await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
@@ -187,6 +209,9 @@ test("RPUI 92/93 days, reversed dates, real truncated/failed reads and empty suc
     await fill(page, page.getByTestId("reports-from"), "2026-10-02", c.from);
     await expect(page.getByTestId("reports-show")).toBeDisabled();
     await page.goto(`${origin}/en/finance/reports?store=${store}&from=2026-09-01&to=2026-09-30`);
+    // Arm the one-shot fault only after this document's initial read has settled; otherwise it can consume
+    // the fault just before reload and leave the new document with a healthy response.
+    await expect(page.getByTestId("reports-products-table")).toBeVisible();
     for (const fault of ["read-503", "truncate-report"]) {
       await ctl("fault", fault);
       await step(page, `fault ${fault}`, "actual failed response shows unavailable; Retry reads genuine data", async () => {
@@ -208,7 +233,14 @@ test("RPUI reader/no-orders signed identities: export disabled and funnel permis
         await expect(page.getByTestId("reports-products-table")).toBeVisible();
         await expect(page.getByTestId("reports-csv-products")).toBeDisabled(); await expect(page.getByTestId("reports-page")).toContainText(c.csvForbidden);
         await step(page, "reader Funnel", "missing live:read is an explicit permission refusal", async () => { await page.getByTestId("reports-tab-funnel").click(); await expect(page.getByTestId("reports-page")).toContainText(c.forbidden); });
-      } else { await expect(page.getByTestId("reports-page")).toContainText(c.forbidden); await expect(page.getByTestId("reports-products-table")).toHaveCount(0); }
+      } else {
+        await step(page, "No orders permission", "the route guard refuses access before report controls or data mount", async () => {
+          await expect(page.getByTestId("route-forbidden")).toBeVisible();
+          await expect(page.getByTestId("route-forbidden")).toContainText(shellCopy.en.forbidden);
+          await expect(page.getByTestId("reports-page")).toHaveCount(0);
+          await expect(page.getByTestId("reports-products-table")).toHaveCount(0);
+        }, "observe");
+      }
     } finally { await context.close(); }
   }
 });

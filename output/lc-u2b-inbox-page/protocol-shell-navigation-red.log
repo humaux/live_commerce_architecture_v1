@@ -1,0 +1,62 @@
+✖ actual shell-store-selector captures selection before synchronous privacy teardown (allowed=true) (13.513166ms)
+✔ actual shell-store-selector captures selection before synchronous privacy teardown (allowed=false) (1.915375ms)
+✖ actual locale-switch captures selection before synchronous privacy teardown (allowed=true) (3.507833ms)
+✔ actual locale-switch captures selection before synchronous privacy teardown (allowed=false) (1.38375ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 219.752125
+
+✖ failing tests:
+
+test at tests/admin/inbox-shell-navigation.test.ts:30:5
+✖ actual shell-store-selector captures selection before synchronous privacy teardown (allowed=true) (13.513166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   '/en/?store=MOCK_OLD_STORE'
+  -   '/en/?store=MOCK_NEW_STORE'
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-shell-navigation.test.ts:39:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '/en/?store=MOCK_OLD_STORE' ],
+    expected: [ '/en/?store=MOCK_NEW_STORE' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-shell-navigation.test.ts:30:5
+✖ actual locale-switch captures selection before synchronous privacy teardown (allowed=true) (3.507833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   '/en/messages?store=MOCK_STORE'
+  -   '/zh-TW/messages?store=MOCK_STORE'
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-shell-navigation.test.ts:39:14)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ '/en/messages?store=MOCK_STORE' ],
+    expected: [ '/zh-TW/messages?store=MOCK_STORE' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { loadPage } from "../../customers/page-data";
 import { financeDay } from "@/lib/customers-model";
 import { reportFromQuery, validReportsQuery } from "@/lib/reports-request";
+import { parseProductSort } from "@/lib/reports-presentation";
 import { Reports } from "@/components/Reports";
 
 /** Render report controls after trusted store resolution; no report facts are fetched on the server. */
@@ -13,11 +14,13 @@ export default async function ReportsPage({ params, searchParams }: {
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const page = await loadPage(params, searchParams, ["store", "from", "to", "report"]);
+  const page = await loadPage(params, searchParams, ["store", "from", "to", "report", "sort", "dir"]);
   const now = new Date();
   const from = page.query.from ?? financeDay(now, -29), to = page.query.to ?? financeDay(now);
   const tab = reportFromQuery(page.query.report);
-  if (!tab || !!page.query.from !== !!page.query.to || !validReportsQuery("products", `/?from=${from}&to=${to}`)) notFound();
+  const order = parseProductSort(page.query.sort, page.query.dir);
+  if (!tab || !order || !!page.query.from !== !!page.query.to || !validReportsQuery("products", `/?from=${from}&to=${to}`)) notFound();
   return <Reports locale={page.locale} stores={page.stores} store={page.store} initialError={page.initialError}
-    renderKey={page.renderKey} initialFrom={from} initialTo={to} initialTab={tab} />;
+    renderKey={page.renderKey} initialFrom={from} initialTo={to} initialTab={tab}
+    initialSort={order.sort} initialAscending={order.ascending} />;
 }

@@ -658,8 +658,8 @@ decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the 
 | A5 | POST `/live-sessions/{sid}/comments/{ref}/public-reply` | inbox:reply | same as A4 | 409 capability\|ig_live_unsupported, 422 public_reply_forbidden_content | inbox.public_reply.planned |
 | A6 | POST `/live-sessions/{sid}/claims/offers/{oid}/recommend` | live:manage (+inbox:reply if post_comment) | `{expected_version, post_comment}` → `{recommended_at, operation_id?}` | 409 version_conflict\|offer_unavailable\|capability, 422 ig_live_unsupported | live.offer.recommended |
 | A7 | POST `/live-sessions/{sid}/lifecycle` | live:manage | `{action, expected_version, open_window?}` → `{lifecycle, version, window}` | 409 version_conflict\|invalid_transition\|too_many_open_windows, 402 billing_restricted | live.session.started\|ended\|archived |
-| A8 | GET `/inbox/conversations` | inbox:read | `?filter=all\|unreplied\|messenger\|instagram\|live_comment&session_id=&cursor=&limit≤50` → `{items: [{conversation_id?, bundle_id?, platform, display_name?, last_at, unread, unreplied, mode, assignee, window_open_until, linked_customer_id}], next_cursor, unread_total}` | 400 invalid_filter | — |
-| A9 | GET `/inbox/conversations/{cid}/messages` | inbox:read | `?before_seq=&limit≤50` → `{items: [{direction, seq?, at, text, attachments, kind?, send_state?, principal_id?, unreadable?}], window_open_until, mode, takeover_generation, human_until}` | 404 | `inbox.thread_opened` (principal, conversation; coalesced ≤ 1 per principal per conversation per hour; no content) |
+| A8 | GET `/inbox/conversations` | inbox:read | `?filter=all\|unreplied\|messenger\|instagram\|live_comment&session_id=&cursor=&limit≤50` → `{items: [{conversation_id?, bundle_id?, platform, display_name?, last_at, unread, unreplied, mode, assignee, window_open_until, linked_customer_id, link_version}], next_cursor, unread_total}` (amendment "LC-B3b" adds link_version, the session_id filter and live_comment rows with an opaque keyset cursor) | 400 invalid_filter | — |
+| A9 | GET `/inbox/conversations/{cid}/messages` | inbox:read | `?before_seq=&limit≤50` → `{items: [{direction, seq?, at, text, attachments, kind?, send_state?, principal_id?, unreadable?}], window_open_until, mode, takeover_generation, human_until, link_version, binding_id, has_unknown_outbound: boolean\|null}` | 404 | `inbox.thread_opened` (principal, conversation; coalesced ≤ 1 per principal per conversation per hour; no content) |
 | A10 | POST `/inbox/conversations/{cid}/read` | inbox:read (effective only with inbox:reply, §3.6) | `{read_seq}` → `{read_seq}` | 404, 422 | — |
 | A11 | POST `/inbox/conversations/{cid}/takeover` · `/release` | inbox:reply | `{expected_generation}` → `{mode, assignee, takeover_generation}` | 409 takeover_changed | inbox.takeover\|inbox.release |
 | A12 | POST `/inbox/conversations/{cid}/messages` | inbox:reply | `{text \| template ref, expected_generation}` → `{operation_id, outbound_id, send_state, takeover_generation}` | 409 window_closed\|takeover_changed\|capability\|conversation_gone\|duplicate_recent, 422 invalid_text, 429 rate_limited | inbox.dm.planned |
@@ -668,6 +668,15 @@ decoder (unknown keys 400), `Cache-Control: no-store`, errors `{code}` from the 
 | A15 | GET `/inbox/order-prefill` | orders:read + inventory:reserve | `?bundle_id=` \| `?conversation_id=` → §5.1 step 1 | 404 | — |
 | A16 | POST `/orders/for-buyer` | inventory:reserve (+live:manage for a live-price grant, +inbox:reply if send) | §5.1 step 3 → §5.1 step 5 | the `orders/manual` codes + 409 bundle_already_ordered\|bundle_buyer_mismatch\|capability | order.manual_created + order.for_buyer_created (+claims.merchant_origin_granted, +inbox.dm.planned) |
 | — | `/message-templates` (W2-05B) | live:manage / inbox:reply | owned by W2-05B; this contract fixes only `{template_id, version, public_safe, kinds}` | | template.published |
+
+A9 additive delivery guard (PR #8 K3 ruling, 2026-10-08): every page returns `has_unknown_outbound` independently
+of its display window. `true` means a final UNKNOWN was found; `false` is allowed only when the outbound history
+was exhaustively checked and all states were known. `null` means the bounded read cannot exclude an older UNKNOWN
+or an operation state is unavailable. The current existing definer reads at most 50 outbound rows: hitting that cap
+without seeing UNKNOWN must return `null`, even if all displayed rows look successful. The UI permits sending only
+on explicit `false`, retains any already-observed UNKNOWN, and shows an unavailable reason for null/missing authority.
+A future unbounded metadata fact may restore eligibility for longer clear histories; this conservative fallback adds
+no database privileges or migration and never equates an omitted message with delivery reconciliation.
 
 Text inputs (A4/A5/A12): limits per §3.3 (Messenger 2000 runes, Instagram 1000 bytes, public 300 runes), NFC, no
 control chars except `\n`; template refs resolve only
@@ -1098,3 +1107,24 @@ policy is unverified (EVIDENCE_GAP; message tags were removed 2026-02-09), so th
 - **DEFERRED: automatic trigger and settings** (integrator ruling 2026-10-06). The PSID and the display copy need the inbox payload ring, which stays API-only: claims-worker
   does not get it and there is no second sealing path. v1 = merchant-triggered only (single buyer or batch). No River kind `checkout_reminder_v1`, and the settings routes
   (`GET|PUT /live-settings/reminder`) are removed until an automatic path exists; the empty table `live.reminder_settings` is kept for it (no definer, no grant to a login).
+
+## Amendment "LC-B3b" inbox read gaps (2026-10-07; migration 0165; integrator rulings in `docs/delivery/units/lc-b3b-buyer-panel.md`)
+
+All changes are additive response fields or filters; no permission, route or error code changes; out-of-scope tenant/store stays 404 (LCN03); responses stay `private, no-store`.
+
+- **Identity link (I09).** The only link from a conversation to bundles is `inbox.bundle_peers` (§3.7, written when a private reply succeeds) plus the explicit A14
+  `linked_customer_id`. `claims.bundles.owner_id`, display names and any name matching never feed a panel field, a suggestion or a prefill.
+- **A13** (`inbox.buyer_panel`). `?conversation_id=`: the bundles are the store's non-purged bundles whose `bundle_peers` row equals the conversation's
+  (app, object, asset, peer); a conversation without links answers 200 with empty claims/orders (P2-7c). `?bundle_id=`: that bundle only (404 when purged or out of scope).
+  - `claims` = accepted claim lines `{session_id, offer_id, keyword, quantity}`, newest session first (then keyword, offer_id), at most 50.
+  - `claim_total_minor` = Σ quantity × the unit price the claim RECORDED (`claims.live_price_uses.unit_price_minor` of the newest use of that bundle/offer; 0 for a line
+    never ordered at a live price), over the full set (not only the 50 shown). Never recomputed from the current catalogue.
+  - `orders` is present only when the principal holds `orders:read` (decided inside the definer; the key is omitted entirely otherwise): orders created from those bundles
+    (claim checkout `claims.order_origins` ∪ `claims.live_price_uses` ∪ A16 `inbox.order_for_buyer`, deduplicated by order_id), newest first, at most 20, `number` = `LC-` + the upper-case hex of the order id. Price-neutral checkouts are included through `order_origins`.
+  - `purchase_ordinal` = count (full set, not gated by `orders:read`) of those orders in `CONFIRMED` or `AWAITING_COLLECTION`; CANCELLED and unpaid states never count. The UI shows 第 N 次購買.
+  - `display_name` only from the conversation's own newest inbound envelope (as A8); never from a bundle or an order. `auto_reply: {send_state}` is the §4.4 state of the
+    newest automated (`origin_kind=auto`) private-reply operation of those bundles (a manual send never counts); omitted when none.
+- **A8.** `session_id` keeps conversations whose peer is `bundle_peers`-linked to a non-purged bundle of that session (also narrows the link-pending bundle rows in SQL before their bound).
+  `filter=live_comment` returns the bundle-only rows (`bundle_id`, `session_id`, `conversation_id: null`, platform facebook rendered as `messenger`, real `link_pending_manual`) of
+  the store's non-purged facebook/instagram bundles, at most `limit`, ordered by `(created_at DESC, bundle_id DESC)`. The LC-B3b review amendment (2026-10-08) adds keyset pagination: `next_cursor` encodes the last returned bundle's stored timestamp and ID using the existing opaque A8 cursor format. Follow it with the same filter and session; a full final page may lead to an empty terminal page. Tenant/store/session and keyset predicates apply before LIMIT. Other filters retain their conversation cursor and first-page pending-link append. Every item gains `link_version` (`inbox.conversation_state.version`; explicit `null` on bundle-only rows).
+- **A9.** The header gains `link_version` (the value A14 takes as `expected_version`) and `binding_id` (the enabled binding of the conversation's provider and asset, same rule as `plan_dm`; `null` when none).

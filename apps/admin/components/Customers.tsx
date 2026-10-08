@@ -135,8 +135,11 @@ export function Customers({
           </label>
           {catalog.status === "unavailable" && <button type="button" onClick={catalog.reload}>{tc.retry}</button>}
         </form>
+          {/* After a write the catalogue is re-read IN PLACE (refresh): reload() would flip the status to loading, unmount the
+              manager and its open dialog before the success notice shows (Codex review P2, PR #3). */}
           {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
-            onChanged={() => { catalog.reload(); read.reload(); }} />}
+            onChanged={() => { void catalog.refresh(); read.reload(); }}
+            onScopeLost={() => { catalog.reload(); read.reload(); }} />}
           {store && canSeeReports(store) && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
           {store?.permissions?.includes("customers:privacy") && <Link className="orders-export" href={`/${locale}/customers/import?store=${store.id}`} data-testid="customers-import">{c.importLink}</Link>}
           <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>

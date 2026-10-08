@@ -1,0 +1,39 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (25.206291ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (13.617583ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.543834ms)
+✔ session, CSRF and store authority precede content forwarding (3.242167ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (8.131208ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (3.551083ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (4.969292ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.372458ms)
+✖ real M7 response keeps no-referrer after matching Next production header rules (12.396667ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 205.51825
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:465:1
+✖ real M7 response keeps no-referrer after matching Next production header rules (12.396667ms)
+  AssertionError [ERR_ASSERTION]: global Next header rules must not replace M7 privacy policy
+  + actual - expected
+
+  + 'same-origin'
+  - 'no-referrer'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-bff.test.ts:481:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'same-origin',
+    expected: 'no-referrer',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

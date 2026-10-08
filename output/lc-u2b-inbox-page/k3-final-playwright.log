@@ -1,0 +1,22 @@
+
+Running 13 tests using 1 worker
+
+(node:90324) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/admin/inbox-bundle-ui.spec.ts:61:1 › INU09 flagged bundle copies actual M7 link through native clipboard and persists one token-free receipt (1.3s)
+(node:90341) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/admin/inbox-ui.spec.ts:91:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG (1.9s)
+  ✓   3 tests/admin/inbox-ui.spec.ts:193:1 › INU02 inbox reader never POSTs; viewer cannot enter; cross-store thread is 404 (991ms)
+  ✓   4 tests/admin/inbox-ui.spec.ts:229:1 › INU08 committed send with lost acknowledgment retries exact body/key once (1.0s)
+  ✓   5 tests/admin/inbox-ui.spec.ts:291:1 › INU03 closed message window and missing capability disable sends with visible reason (943ms)
+  ✓   6 tests/admin/inbox-ui.spec.ts:319:1 › INU04 stale decrypted responses cannot repaint another conversation or store (1.1s)
+  ✓   7 tests/admin/inbox-ui.spec.ts:401:1 › INU05 native hide clears private thread; visible return reauthorizes before repaint (2.4s)
+  ✓   8 tests/admin/inbox-ui.spec.ts:519:3 › INU06 zh-TW desktop1440/mobile390 real controls and no overflow (1.2s)
+  ✓   9 tests/admin/inbox-ui.spec.ts:547:3 › INU07 zh-TW localized controls at1440/mobile390 (1.0s)
+  ✓  10 tests/admin/inbox-ui.spec.ts:519:3 › INU06 zh-CN desktop1440/mobile390 real controls and no overflow (1.1s)
+  ✓  11 tests/admin/inbox-ui.spec.ts:547:3 › INU07 zh-CN localized controls at1440/mobile390 (975ms)
+  ✓  12 tests/admin/inbox-ui.spec.ts:519:3 › INU06 en desktop1440/mobile390 real controls and no overflow (1.1s)
+  ✓  13 tests/admin/inbox-ui.spec.ts:547:3 › INU07 en localized controls at1440/mobile390 (984ms)
+
+  13 passed (17.7s)

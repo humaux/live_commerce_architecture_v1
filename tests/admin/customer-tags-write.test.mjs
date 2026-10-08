@@ -16,7 +16,7 @@ function harness(outcomes, logouts = []) {
   let cursor = 0; let keys = 0;
   const react = {
     useState: (initial) => {
-      const index = cursor++; if (!(index in slots)) slots[index] = { value: initial };
+      const index = cursor++; if (!(index in slots)) slots[index] = { value: typeof initial === "function" ? initial() : initial };
       return [slots[index].value, (value) => { slots[index].value = typeof value === "function" ? value(slots[index].value) : value; }];
     },
     useRef: (initial) => { const index = cursor++; return slots[index] ??= { current: initial }; },
@@ -42,12 +42,15 @@ function harness(outcomes, logouts = []) {
       throw new Error(`Unexpected fixture import ${path}`);
     },
   });
-  const render = () => { cursor = 0; return module.exports.useTagWrite("synthetic-store", "synthetic-boundary"); };
+  let args = ["synthetic-boundary", "synthetic-scope"];
+  const render = () => { cursor = 0; return module.exports.useTagWrite("synthetic-store", args[0], args[1]); };
   render(); for (const effect of effects.splice(0)) effect();
+  // A hide/navigation: the view unmounts (cleanups run, state gone) and a fresh instance mounts on the same module.
+  const remount = (boundary = args[0]) => { for (const cleanup of cleanups.splice(0)) cleanup(); slots.length = 0; args = [boundary, args[1]]; const hook = render(); for (const effect of effects.splice(0)) effect(); return hook; };
   const settle = async () => { for (let n = 0; n < 8; n++) await Promise.resolve(); return render(); };
   const start = (hook, body = "first synthetic note") => hook.run("POST", "customers/abcdef11-1111-4111-8111-111111111111/notes",
     { body }, (v) => v, async (value) => { commits.push(value); });
-  return { calls, commits, render, settle, start, keyCount: () => keys, unmount: () => { for (const cleanup of cleanups) cleanup(); } };
+  return { calls, commits, render, remount, settle, start, keyCount: () => keys, unmount: () => { for (const cleanup of cleanups) cleanup(); } };
 }
 
 for (const code of ["unauthorized", "forbidden", "version_changed"]) {
@@ -94,4 +97,30 @@ test("an unauthorized write signals the global logout; forbidden does not", asyn
   h.start(h.render()); await h.settle(); assert.deepEqual(lost, ["logout"]);
   const kept = []; const f = harness([{ ok: false, code: "forbidden", uncertain: false }], kept);
   f.start(f.render()); await f.settle(); assert.deepEqual(kept, []);
+});
+
+// Codex review P1 (PR #3): an UNKNOWN command outlives its view. A remount (hide/navigation) must stay locked with the SAME key, or a
+// new UUID could duplicate a note whose first attempt committed. Memory only (the command holds the note body); cleared by a trusted
+// success or a session-boundary change.
+test("UNKNOWN command survives unmount/remount: still locked, same-key retry, cleared by trusted success", async () => {
+  const h = harness([{ ok: false, code: "retry_later", uncertain: true }, { ok: true, value: "confirmed receipt" }]);
+  h.start(h.render()); await h.settle();
+  let hook = h.remount();
+  assert.equal(hook.locked, true); assert.equal(hook.uncertain, true);
+  h.start(hook, "different fresh note"); assert.equal(h.calls.length, 1); assert.equal(h.keyCount(), 1);
+  hook.retry(); hook = await h.settle();
+  assert.equal(h.calls.length, 2); assert.equal(h.calls[1].command, h.calls[0].command); assert.equal(h.calls[1].command.key, "synthetic-key-1");
+  assert.equal(h.calls[1].command.body, '{"body":"first synthetic note"}');
+  assert.equal(hook.locked, false);
+  assert.equal(h.remount().locked, false, "trusted success clears the remembered command");
+});
+test("a command unmounted while in flight is treated as UNKNOWN on remount", async () => {
+  const h = harness([() => new Promise(() => {})]);
+  h.start(h.render()); await h.settle();
+  const hook = h.remount(); assert.equal(hook.locked, true); assert.equal(hook.uncertain, true);
+});
+test("a session boundary change drops the remembered UNKNOWN command", async () => {
+  const h = harness([{ ok: false, code: "retry_later", uncertain: true }]);
+  h.start(h.render()); await h.settle();
+  assert.equal(h.remount("another-boundary").locked, false);
 });

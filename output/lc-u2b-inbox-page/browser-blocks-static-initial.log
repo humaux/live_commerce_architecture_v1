@@ -1,0 +1,40 @@
+command: node --test --experimental-strip-types tests/admin/inbox-entry.test.ts tests/admin/inbox-browser-source.test.ts
+exit: 1
+✔ actual login settles authentication and the real fixture-store navigation before Messages (24.476416ms)
+✔ A real Inbox selection admits Go A9 attachments null without losing thread (35.682209ms)
+✔ A real Inbox selection admits Go A9 attachments empty array without losing thread (2.63275ms)
+✔ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.641834ms)
+✔ C A8 HTTP200 empty list is ordinary data with no alert, selection or focus request storm (0.8395ms)
+✔ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (1.407375ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (1.049667ms)
+✔ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.444833ms)
+✔ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (1.691167ms)
+✖ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.828959ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 542.182958
+
+✖ failing tests:
+
+test at tests/admin/inbox-entry.test.ts:201:1
+✖ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.828959ms)
+  AssertionError [ERR_ASSERTION]: existing owner call helper must assert real A8 GET200 through mounted router
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-entry.test.ts:209:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

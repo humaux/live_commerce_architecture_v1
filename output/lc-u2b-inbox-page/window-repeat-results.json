@@ -1,0 +1,96 @@
+{
+  "source": "39abae9f218339fba579761d4ef178cac4ea08d6",
+  "commands": {
+    "normal": [
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "tests/admin/inbox-review.test.ts"
+    ],
+    "nice19": [
+      "nice",
+      "-n",
+      "19",
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "tests/admin/inbox-review.test.ts"
+    ]
+  },
+  "timeout_seconds_per_run": 30,
+  "elapsed_seconds": 16.37,
+  "runs": [
+    {
+      "profile": "normal",
+      "run": 1,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "normal",
+      "run": 2,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "normal",
+      "run": 3,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "normal",
+      "run": 4,
+      "exit": 1,
+      "timeout": false,
+      "tests": 14,
+      "pass": 12,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "nice19",
+      "run": 1,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "nice19",
+      "run": 2,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "nice19",
+      "run": 3,
+      "exit": 0,
+      "timeout": false,
+      "tests": 14,
+      "pass": 14,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    },
+    {
+      "profile": "nice19",
+      "run": 4,
+      "exit": 1,
+      "timeout": false,
+      "tests": 14,
+      "pass": 13,
+      "source": "39abae9f218339fba579761d4ef178cac4ea08d6"
+    }
+  ]
+}

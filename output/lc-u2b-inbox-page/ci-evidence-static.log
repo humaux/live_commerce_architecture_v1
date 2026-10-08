@@ -1,0 +1,21 @@
+source: aa346aa741df9b50baa66e9002b3e3efde65788b
+
+command: gofmt -w tests/foundation/browser_inbox_ui_test.go
+exit: 0
+
+command: git diff --check
+exit: 0
+
+command: git merge-base --is-ancestor 1aad42d0 HEAD
+exit: 0
+
+Go source hash before/after formatting: fcf2519ab9d2ee3dde6e22d3c3fed338a80c2e3b081689b59325dee2b8604924 (unchanged)
+
+Initial added-evidence git diff --cached --check -> exit 2 (35 whitespace findings).
+Captured logs normalized for trailing whitespace only; failure text, statuses, timestamps retained.
+ci-37627918482.log: 15 trailing-whitespace-only lines normalized
+ci-37627924858.log: 14 trailing-whitespace-only lines normalized
+ci-evidence-red.log: 4 trailing-whitespace-only lines normalized
+ci-evidence-parser-red.log: 2 trailing-whitespace-only lines normalized
+
+Final git diff --cached --check -> exit 0.

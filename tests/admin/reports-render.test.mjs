@@ -270,20 +270,196 @@ test("an uncertain export scope persists per store in tab storage and re-locks a
   const storage = memoryStorage();
   const scope = `${id}|${from}|${to}|products`, other = `${id}|2026-09-02|${to}|products`;
   assert.deepEqual(client.loadUncertainScopes(id, storage), []);
-  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
-  assert.deepEqual(client.rememberUncertainScope(id, scope, storage), [scope]);
-  assert.deepEqual(client.rememberUncertainScope(id, other, storage), [scope, other]);
+  assert.equal(client.rememberUncertainScope(id, scope, storage), true);
+  assert.equal(client.rememberUncertainScope(id, scope, storage), true);
+  assert.deepEqual(client.loadUncertainScopes(id, storage), [scope]);
+  assert.equal(client.rememberUncertainScope(id, other, storage), true);
+  assert.deepEqual(client.loadUncertainScopes(id, storage), [scope, other]);
   // A new render (fresh workspace state) reads the stored set and keeps the same scope locked.
   assert.equal(client.exportOutcome(scope, null, client.loadUncertainScopes(id, storage)), "uncertain");
   assert.equal(client.exportOutcome(`${id}|${from}|${to}|channels`, null, client.loadUncertainScopes(id, storage)), null);
   assert.deepEqual(client.loadUncertainScopes("22222222-2222-4222-8222-222222222222", storage), []);
-  for (const raw of ["not json", "{}", "[1,null]"]) assert.deepEqual(client.loadUncertainScopes(id, memoryStorage({[`lc.reports.uncertain.${id}`]: raw})), []);
+  // Corrupt storage reads as none (a fresh tab has no in-memory locks either).
+  for (const raw of ["not json", "{}", "[1,null]"]) assert.deepEqual(downloadClient({cookie:"csrf-pair",boundary:"session"}).loadUncertainScopes(id, memoryStorage({[`lc.reports.uncertain.${id}`]: raw})), []);
   assert.doesNotMatch([...storage.data.values()].join(), /@|render/);
 });
 test("unavailable tab storage fails closed to the in-memory lock without throwing", () => {
   const client = downloadClient({cookie:"csrf-pair",boundary:"session"});
   const broken = { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } };
   assert.deepEqual(client.loadUncertainScopes(id, broken), []);
-  assert.deepEqual(client.rememberUncertainScope(id, "s", broken), ["s"]);
-  assert.deepEqual(client.rememberUncertainScope(id, "s", null), ["s"]);
+  // Not persisted -> false (callers must not dispatch), yet the in-memory lock still holds for the tab.
+  assert.equal(client.rememberUncertainScope(id, "s", broken), false);
+  assert.equal(client.rememberUncertainScope(id, "t", null), false);
+  assert.deepEqual(client.loadUncertainScopes(id, broken), ["s", "t"]);
+});
+
+// Codex review P2 (PR #3): the lock is PENDING before the audited GET dispatches, so a refresh/close mid-request (the page never
+// sees a result) still counts as uncertain on the next mount; only a definitive outcome releases it.
+const pendingKey = `lc.reports.uncertain.${id}`;
+const csv = () => new Response("units\n1", {headers:{"Cache-Control":"private, no-store","Content-Type":"text/csv; charset=utf-8","Content-Disposition":`attachment; filename="report-products-${from}-${to}.csv"`}});
+test("export lock is stored before dispatch; refused/delivered outcomes release it, uncertain and cut-short keep it", async () => {
+  await browserFixture(async () => {
+    const scope = `${id}|${from}|${to}|products`;
+    const run = (client, storage) => client.exportWithLock(id, scope, () => client.downloadReport(id, "products", from, to, "session", new AbortController().signal), storage);
+    const cases = [["done", () => csv(), false], ["forbidden", () => new Response("{}", {status:403}), false], ["not-found", () => new Response("{}", {status:404}), false],
+      ["signed-out", () => new Response("{}", {status:401}), false], ["unavailable", () => new Response("{}", {status:422}), false],
+      ["uncertain", () => new Response("{}", {status:503}), true], ["uncertain", () => { throw new Error("aborted by pagehide"); }, true]];
+    for (const [expected, respond, locked] of cases) {
+      const storage = memoryStorage(); const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); let atDispatch = null;
+      globalThis.fetch = async () => { atDispatch = storage.getItem(pendingKey); return respond(); };
+      assert.equal(await run(client, storage), expected);
+      assert.deepEqual(JSON.parse(atDispatch), [scope], `${expected}: pending lock must exist when the GET is dispatched`);
+      assert.deepEqual(client.loadUncertainScopes(id, storage), locked ? [scope] : [], expected);
+    }
+    // Pre-dispatch refusal (no session cookie) never reached the server and is released too.
+    const storage = memoryStorage(); const client = downloadClient({cookie:"",boundary:"session"});
+    globalThis.fetch = async () => { throw new Error("must not send"); };
+    assert.equal(await run(client, storage), "signed-out"); assert.deepEqual(client.loadUncertainScopes(id, storage), []);
+    // Page goes away mid-request: the run never resolves, nothing releases the lock, and a fresh mount sees it as uncertain.
+    const cut = memoryStorage(); const fresh = downloadClient({cookie:"csrf-pair",boundary:"session"});
+    void fresh.exportWithLock(id, scope, () => new Promise(() => {}), cut);
+    assert.equal(fresh.exportOutcome(scope, null, fresh.loadUncertainScopes(id, cut)), "uncertain");
+  });
+});
+test("releasing one scope keeps the other uncertain scopes of the store", () => {
+  const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); const storage = memoryStorage();
+  client.rememberUncertainScope(id, "a", storage); client.rememberUncertainScope(id, "b", storage);
+  client.forgetUncertainScope(id, "a", storage); assert.deepEqual(client.loadUncertainScopes(id, storage), ["b"]);
+  client.forgetUncertainScope(id, "a", { getItem() { throw new Error("denied"); }, setItem() { throw new Error("denied"); } });
+});
+
+// Codex review P2 (PR #3): if the lock cannot be persisted BEFORE dispatch, the audited GET is not sent at all.
+test("export is refused and nothing is dispatched when the lock cannot be saved (denied, full or no storage)", async () => {
+  await browserFixture(async (clicks) => {
+    const scope = `${id}|${from}|${to}|products`;
+    const denied = { getItem: () => null, setItem() { throw new DOMException("quota", "QuotaExceededError"); } };
+    for (const storage of [denied, null]) {
+      const client = downloadClient({cookie:"csrf-pair",boundary:"session"}); let sent = 0;
+      globalThis.fetch = async () => { sent++; return csv(); };
+      const result = await client.exportWithLock(id, scope, () => client.downloadReport(id, "products", from, to, "session", new AbortController().signal), storage);
+      assert.equal(result, "lock-failed"); assert.equal(sent, 0, "no request may be sent without a persisted lock"); assert.deepEqual(clicks, []);
+      assert.equal(client.exportOutcome(scope, {scope, outcome: result}, client.loadUncertainScopes(id, storage)), "lock-failed");
+    }
+  });
+});
+test("copy for an unsaved export lock exists in every locale", () => {
+  for (const locale of ["en", "zh-CN", "zh-TW"]) assert.match(copy[locale].csvLockFailed, /\S/);
+});
+
+// Codex review P2 (PR #3): the product sort is encoded in the page URL, validated against the sortable fields.
+test("product sort query parses strictly and defaults to net_minor descending", () => {
+  const { parseProductSort, productSorts } = adminRequire("./lib/reports-presentation.ts");
+  assert.deepEqual(parseProductSort(undefined, undefined), { sort: "net_minor", ascending: false });
+  assert.deepEqual(parseProductSort("name", undefined), { sort: "name", ascending: true });
+  assert.deepEqual(parseProductSort("units", undefined), { sort: "units", ascending: false });
+  assert.deepEqual(parseProductSort("units", "asc"), { sort: "units", ascending: true });
+  assert.deepEqual(parseProductSort(undefined, "asc"), { sort: "net_minor", ascending: true });
+  for (const key of productSorts) for (const dir of ["asc", "desc"]) assert.deepEqual(parseProductSort(key, dir), { sort: key, ascending: dir === "asc" });
+  for (const [sort, dir] of [["", undefined], ["Units", "asc"], ["sku_id", "asc"], ["__proto__", "asc"], ["units", ""], ["units", "ASC"], ["units", "up"]]) assert.equal(parseProductSort(sort, dir), null, `${sort}/${dir}`);
+});
+
+// Codex review P2 (PR #3): for a legacy Store (no permission list) the export-permission probe's authority refusals fail the whole
+// guarded read closed (the already-fetched report is hidden); only a transient probe failure falls back to "unknown hint".
+test("legacy-store permission probe: forbidden/not-found/signed-out fail the read closed, transient falls back", async () => {
+  class ReadError extends Error { constructor(code) { super(code); this.code = code; } }
+  class OrderReadError extends Error { constructor(code) { super(code); this.code = code; } }
+  let captured = null, probe = null;
+  const shell = ({children}) => createElement("div", null, children);
+  const Reports = load("../../apps/admin/components/Reports.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shell,DateControl:()=>null},
+    "@/lib/model":{}, "@/lib/customers-client":{ReadError,useGuardedRead:(_scope,run)=>{captured=run;return {status:"loading",data:null,boundary:"",reload(){},refresh:async()=>false};}},
+    "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError,readOrderActions:async()=>{throw probe;}},
+    "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
+    "@/lib/reports-client":{readReport:async()=>({name:"products",report:{rows:[]}}),downloadReport:async()=>"done",exportOutcome:()=>null,exportWithLock:async()=>"done",loadUncertainScopes:()=>[]},
+    "@/lib/reports-copy":{reportsCopy:{en:new Proxy({tabs:{}},{get:(t,k)=>k in t?t[k]:"x"})}}, "@/lib/reports-presentation":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shell}, "./AdminPageHeader":{AdminPageHeader:()=>null},
+    "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
+    "./orders.css":{}, "./reports.css":{},
+  }).Reports;
+  renderToStaticMarkup(createElement(Reports, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
+  assert.equal(typeof captured, "function");
+  for (const code of ["forbidden","not-found","signed-out"]) {
+    probe = new OrderReadError(code);
+    await assert.rejects(() => captured(new AbortController().signal), (e) => e instanceof ReadError && e.code === code, code);
+  }
+  probe = new OrderReadError("unavailable");
+  const fallback = await captured(new AbortController().signal);
+  assert.equal(fallback.canExport, false); assert.equal(fallback.permissionKnown, false);
+  probe = new Error("network");
+  assert.equal((await captured(new AbortController().signal)).permissionKnown, false);
+});
+
+// Reports/Finance component loaders (SSR, stubbing only the guarded-read hook and layout shells).
+const shellOf = ({children}) => createElement("div", null, children);
+const proxyCopy = new Proxy({tabs:{}}, {get:(t,k)=>k in t?t[k]:String(k)});
+function loadReports(read, exportOutcome, overrides = {}) {
+  return load("../../apps/admin/components/Reports.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "@live-commerce/i18n":{}, "@live-commerce/ui":{TabStrip:shellOf,DateControl:()=>null},
+    "@/lib/model":{}, "@/lib/customers-client":{ReadError:class extends Error{},useGuardedRead:()=>read},
+    "@/lib/customers-model":{financeDay:()=>"2026-09-01"}, "@/lib/orders-client":{OrderReadError:class extends Error{},readOrderActions:async()=>({})},
+    "@/lib/reports-request":adminRequire("./lib/reports-request.ts"),
+    "@/lib/reports-client":{readReport:async()=>({}),downloadReport:async()=>"done",exportOutcome,exportWithLock:async()=>"done",loadUncertainScopes:()=>[]},
+    "@/lib/reports-copy":{reportsCopy:{en:proxyCopy}}, "@/lib/reports-presentation":{},
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null},
+    "./ReportViews":{ProductReportTable:()=>null,ChannelReportChart:()=>null,FunnelReportChart:()=>null,ManualReportTable:()=>null},
+    "./orders.css":{}, "./reports.css":{}, ...overrides,
+  }).Reports;
+}
+
+test("channel and funnel data retain their applied dates while draft dates wait for Show", () => {
+  const react = adminRequire("react");
+  for (const locale of ["en", "zh-TW", "zh-CN"]) for (const name of ["channels", "funnel"]) {
+    const renderRange = (appliedFrom, appliedTo, pending) => {
+      const read = {status:"ready",boundary:"b",data:{canExport:true,permissionKnown:true,view:{name,report:{from:appliedFrom,to:appliedTo}}},reload(){}};
+      const Component = loadReports(read, () => null, {
+        "@/lib/reports-copy":{reportsCopy:copy},
+        react: {...react, useState(initial) {
+          const state = react.useState(initial);
+          // Model unsubmitted date-input state only; the report read and its echoed range stay unchanged.
+          return pending && (initial === from || initial === to) ? [initial === from ? "2026-10-01" : "2026-10-31", state[1]] : state;
+        }},
+      });
+      return render(Component, {locale,stores:[],store:{id,name:"Synthetic",currency:"TWD"},initialError:null,renderKey:"range",initialFrom:appliedFrom,initialTo:appliedTo,initialTab:name});
+    };
+    const draft = renderRange(from, to, true);
+    const label = /data-testid="reports-applied-range"[^>]*>(.*?)<\/p>/.exec(draft)?.[1];
+    assert.ok(label, "APPLIED-RANGE-MUST-BE-VISIBLE");
+    assert.ok(label.includes(from) && label.includes(to)); assert.doesNotMatch(label,/2026-10/);
+    assert.match(draft, /data-testid="reports-range-pending"/);
+    assert.ok(draft.includes(copy[locale].rangePending));
+    const applied = renderRange("2026-10-01", "2026-10-31", false);
+    const updated = /data-testid="reports-applied-range"[^>]*>(.*?)<\/p>/.exec(applied)?.[1];
+    assert.ok(updated?.includes("2026-10-01") && updated.includes("2026-10-31"));
+    assert.doesNotMatch(applied, /data-testid="reports-range-pending"/);
+  }
+});
+// Codex review P2 (PR #3): another user signing in within the same tab (new session boundary) must not inherit an uncertain lock.
+test("an uncertain export lock is bound to the session boundary, so a different user does not inherit it", () => {
+  const real = downloadClient({cookie:"csrf-pair",boundary:"session"}).exportOutcome;
+  const seen = []; let locked = [];
+  const Reports = (boundary) => loadReports({status:"ready",boundary,data:{canExport:true,permissionKnown:true,view:null},reload(){},refresh:async()=>false},
+    (scope, last) => { seen.push(scope); return real(scope, last, locked); });
+  const html = (boundary) => renderToStaticMarkup(createElement(Reports(boundary), {locale:"en",stores:[],store:{id,name:"S",currency:"TWD"},initialError:null,renderKey:"r",initialFrom:from,initialTo:to}));
+  html("user-a-boundary"); locked = [seen.at(-1)];
+  assert.match(seen.at(-1), /user-a-boundary/);
+  assert.match(html("user-a-boundary"), /csvUnknown/);
+  assert.doesNotMatch(html("user-b-boundary"), /csvUnknown/);
+});
+
+// Codex review P2 (PR #3): staff with orders:read but not customers:read reach reports from the Finance landing page.
+test("Finance landing links to reports under the same canSeeReports rule", () => {
+  const read = {status:"ready",boundary:"b",data:{rows:[],totals:[],from,to},reload(){},refresh:async()=>true};
+  const Finance = load("../../apps/admin/components/Finance.tsx", {
+    "next/navigation":{useRouter:()=>({push(){}})}, "next/link":{__esModule:true,default:({href,children,...p})=>createElement("a",{href,...p},children)},
+    "@live-commerce/i18n":{}, "@live-commerce/ui":{DateControl:()=>null,TableFrame:shellOf}, "@/lib/model":{}, "@/lib/client":{money:()=>""},
+    "@/lib/customers-client":{financeCSVHref:()=>"/x.csv",readFinance:async()=>({}),useGuardedRead:()=>read},
+    "@/lib/customers-model":adminRequire("./lib/customers-model.ts"), "@/lib/orders-client":{readOrderActions:async()=>({orders_export:false})},
+    "@/lib/customers-copy":adminRequire("./lib/customers-copy.ts"), "@/lib/reports-copy":{reportsCopy:{en:{title:"Sales reports"}}},
+    "@/lib/presentation-copy":adminRequire("./lib/presentation-copy.ts"),
+    "./WorkspaceFrame":{WorkspaceFrame:shellOf}, "./AdminPageHeader":{AdminPageHeader:()=>null}, "./orders.css":{}, "./order-actions.css":{}, "./customers.css":{},
+  }).Finance;
+  const html = (permissions) => renderToStaticMarkup(createElement(Finance, {locale:"en",stores:[],store:{id,name:"S",currency:"TWD",permissions},from,to,today:to,initialError:null,renderKey:"r"}));
+  assert.match(html(["orders:read"]), new RegExp(`data-testid="finance-reports"`)); assert.match(html(["orders:read"]), new RegExp(`/en/finance/reports\\?store=${id}`));
+  assert.match(html(undefined), /finance-reports/);
+  assert.doesNotMatch(html(["customers:read"]), /finance-reports/);
 });

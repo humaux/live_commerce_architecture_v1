@@ -1,0 +1,44 @@
+task_id: c975698a-sub-discovery
+base_commit: 751bb9cc89ee73bc4066565143e211d097aef2ce
+status: real Playwright --list only; browsers/server/Go/PG NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-discovery.test.ts"]
+exit_code: 1
+sha256 9a96c4a6b0f0a141cc39b8ae37c9578a18c322776b3c58152cea2188b221e1d6 tests/admin/inbox-discovery.test.ts
+sha256 bf1329ead52d10e0716ab4c9752e30b9583d9670d966406e716416177b729fff playwright.config.ts
+sha256 a4162b608acaa48fe3c0a0ce71c595fb4d0653aaf5f9827521c3ee137bb83ae9 tests/admin/inbox-ui.spec.ts
+
+✖ real Playwright --list collects each original INU case and isolated INU09 exactly once (403.975625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 498.413167
+
+✖ failing tests:
+
+test at tests/admin/inbox-discovery.test.ts:29:1
+✖ real Playwright --list collects each original INU case and isolated INU09 exactly once (403.975625ms)
+  AssertionError [ERR_ASSERTION]: actual Playwright collection failed: Cannot use({ trace }) in a describe group, because it forces a new worker.
+  Make it top-level in the test file or put in the configuration file.
+  Cannot use({ video }) in a describe group, because it forces a new worker.
+  Make it top-level in the test file or put in the configuration file.
+  Cannot use({ screenshot }) in a describe group, because it forces a new worker.
+  Make it top-level in the test file or put in the configuration file.
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-discovery.test.ts:66:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

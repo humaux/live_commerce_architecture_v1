@@ -1,0 +1,6 @@
+[
+  {
+    "run": "p1-red",
+    "reason": "WIP and new fixture seeded live_price_minor=0, rejected by CHECK before assertions; ordinary offer uses NULL. NOT regression RED."
+  }
+]

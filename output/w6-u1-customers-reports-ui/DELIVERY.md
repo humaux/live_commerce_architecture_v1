@@ -103,3 +103,39 @@ Remote origin advanced during handoff to35abffcadaa1240888d291391712e1411cb820a3
 After incoming catch-all/Node runner/tagged Go additions, reran affected checks: W6 focused Node82PASS0FAIL exit0 (node-latest), adminTS0 (ts-latest), fulltest-node0 (all-node-latest; optional R04 NOT_RUN), fresh same-browser-tag/both-acceptance-env DB-only TestW6UISeedFocused PASS1FAIL0SKIP0 exit0 (seed-latest). Previous specTS0 binds unchanged4e spec bytes. A wrapper setup NameError occurred before any second PG process/container was started; fixed wrapper and preserved seed-latest-wrapper-setup.log, not a behavioral calibration.
 
 Latest-origin strict headers now exit0, the five inherited earlier ads header gaps were resolved by incomingW6-U2; prior exit1 remains historical. check-gates/bashtable syntax and CI-plan checks pass on the combined mode registry; current manifest56files includes the changed legacy catch-all dependency. Both P2 source hashes remain exactly9cc4be84/08326865, so the narrow readonly review still binds them. All local processes finished; no local browser/Next/full foundation. Final SHA will be appended to the main receipt after FINAL STEP git add -A && git commit.
+
+## Current batch — PR3 packet a83e2aea (2026-10-08)
+
+Base: `a83e2aea` after the required `git fetch origin && git merge --no-edit origin/unit/w6-u1-customers-reports-ui` (both exit0; clean fast-forward from ab3). Branch remains `unit/w6-u1-customers-reports-ui`. Codex-2 owns the patch; one high-effort read-only explorer independently traced CI and checked the narrow diff (exact deployed model ID unavailable). No delegated writer. Integrator owns K3 pre-review and push.
+
+Changes:
+
+- **4212542034:** real tag/note DELETE accepts a zero-byte stream without Content-Type; rejects nonempty bytes even with a forged zero length. JSON MIME checks, session/store/Origin/CSRF and idempotency fences remain. Tests invoke actual route/auth/backend helpers with native Requests and fake only upstream fetch.
+- **REAL reports gate:** Go `writeAttachment` overwrote the private response policy with `no-store`; BFF correctly required the frozen `reporting-v2.md` §1 `no-store, private` contract. The shared generated-attachment writer now retains that private policy. Existing attachment, report-export and customer-import assertions are strengthened to the exact policy. No BFF validator relaxation or API/SQL/schema/dependency change.
+- **4212542061 (data correctness):** all report panels show response-echoed applied dates and Taipei timezone. Edited inputs show localized pending guidance; CSV stays disabled until Show applies them. Channels/Funnel tests keep September labels while October is only a draft, then verify Show and refresh update the label.
+- Local real-click continuation exposed old spec defects after the formerly failing operations: nested dialog locators inside `has`, Next route-announcer matching the global alert selector, a one-shot report fault armed before the previous read settled, and outdated shell-denial/session-expiry expectations. Selectors/readiness now follow the actual feature and shell states. Error, CSV, audit, CAS, UNKNOWN same-key, privacy and permission assertions remain; no timeout increase, skipped test, weaker threshold or fixture replacement.
+- A newly added assumption that revoked retries send no browser POST was disproved by trace (the BFF returns401 before any backend note write). It was corrected to assert401, the same key, unchanged backend count, expired shell and private UI absence. This was a test-oracle correction, not a production auth change.
+
+Evidence is preserved in the **main checkout**: `/Volumes/data/live_commerce_architecture_v1/output/w6-u1-customers-reports-ui/round-a83e2aea/`. `acceptance-source.json` binds production/spec bytes; `receipt.json` binds the final commit after commit. CI source traces from run37654986134 are retained in `ci-customers/` and `ci-reports/`; local failure and green browser traces/ledgers are retained separately.
+
+| Command | Actual result | Evidence |
+|---|---|---|
+| `node --test tests/admin/w6-route-seam.test.mjs` | RED exit1:5PASS/2FAIL → GREEN exit0:7PASS | delete-{red,green}.log + status |
+| `go test ./internal/httpapi -run '^TestWriteAttachment$' -count=1` before header repair | RED exit1 | csv-cache-red.log |
+| `go test ./internal/httpapi -run '^Test(WriteAttachment\|ReportRoutesTransportRulesBeforeDatabase\|ParseReportQuery)$' -count=1` | GREEN exit0 | csv-cache-green.log |
+| focused Reports SSR date regression; then full reports-render suite | RED exit1:0PASS/1FAIL → GREEN exit0:27PASS | dates-{red,green}.log |
+| `bash scripts/dev/test-focused.sh '^Test(ReportRP06ExportPermissionAuditAndCSV\|CustomerImport)$'` | exit0:2 top-level PASS/0FAIL/0SKIP, real PG | focused-pg.log |
+| `bash scripts/dev/test-local.sh --browser-customers-billing` | final exit0:legacy admin12PASS + buyer flow; W6 9PASS | browser-customers-billing-attempt4.log; local-customers-green/ |
+| `bash scripts/dev/test-local.sh --browser-reports` | final exit0:7PASS | browser-reports-attempt3.log; local-reports-green/ |
+| `bash scripts/dev/test-node.sh` | exit0:736PASS/0FAIL/0SKIP (optional R04 separately NOT_RUN) | node.log; handoff-node.log |
+| `pnpm --filter @live-commerce/admin typecheck` | exit0 | types.log; handoff-types.log |
+| strict `pnpm exec tsc --noEmit --strict --skipLibCheck --target ES2023 --module esnext --moduleResolution bundler --esModuleInterop --allowImportingTsExtensions --typeRoots apps/admin/node_modules/@types --types node tests/admin/customer-tags.spec.ts tests/admin/reports.spec.ts` | exit0 | handoff-spec-types.log |
+| `bash scripts/dev/check-gates.sh` | exit0;79 modes documented, header ratchet passes | gates.log; handoff-gates.log |
+
+Earlier browser attempts remain honestly RED: customers attempts1/2/3 each exit1 (nested `has`, route-announcer ambiguity, then the newly introduced over-strong POST-count assumption); reports attempts1/2 each exit1 (one-shot fault race, then route-guard expectation). They are distinct diagnosed failures, not repeated blind retries. The final seven reports and nine W6 customer scenarios have no skips. Per-command status JSON records real child exits rather than wrapper exits. PG/test-local modes ran strictly one at a time using the heartbeat lock. Next production builds ran as part of the explicitly requested browser modes.
+
+The older planner on this branch requires two arguments: the protocol's one-argument command exited1 with usage; `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` exited0, selected49 modes (`required-plan.json`). No planner changes belong to this batch.
+
+**Deferred:** 4212542044/4212542053 (CSS), 4212542070 (tag directory navigation), 4212542075 (note editing UX) are recorded in `FOLLOWUPS.md`. Both final requested browser modes pass with report CSS unchanged. Known browser-identity trunk flake remains Codex-1's lane.
+
+**NOT_RUN / remaining:** K3 pre-review and new GitHub CI at the final SHA; other planner-selected modes/full foundation/admin-shell/click-sweep/visual-lint; provider SANDBOX/LIVE; optional R04 binary. Existing calibration fault modes were not rerun in this repair batch. No production access, live keys, real money, push, PR creation or release-branch merge. Acceptance is **BROWSER MOCK + REAL_PG, E3** in the measured local environment, not deployment/provider acceptance. Stop after commit for integrator review.

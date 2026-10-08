@@ -1,0 +1,46 @@
+task_id: 0b278eb7-323b-4f94-9c9c-bcb96772c6df-sub-review2-expiry-test
+base_commit: 75d589d8cab66c9c76509215c618a08bf17f8760
+status: MOCK actual-component lifecycle; only Date.now stubbed; BROWSER/Go/PG/build NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "--test-name-pattern", "expired cached issued link", "tests/admin/inbox-review-recovery.test.ts"]
+exit_code: 1
+sha256 d84dcfc5d1bfe512fe3bab306d1b723dc3cd84a067c5cb9fac4a21128b3fc620 tests/admin/inbox-review-recovery.test.ts
+sha256 5b9b4a6d6be0a2138585cd4b310aa62c6089a40f4470d931834d090e89bfd001 tests/admin/inbox-review-host.test.ts
+sha256 2025d8a4b1bce10ba2e5b13c4c76e8d0971f6cc167438d942a09dad84c040108 apps/admin/src/features/messages/bundle-recovery.tsx
+sha256 7cb8287ad0d16036dd72d75c523f27ed02fa3bb47cec1f4ed0e2a2428727646e apps/admin/components/Inbox.tsx
+sha256 416bc2fb4bf0e4497f6b88029148c63054ab31ba2c8a54661eed4b8dc093e3a7 apps/admin/lib/claims-client.ts
+sha256 5cd6222d4588254ae44a516adebacd182a4a40ac15d54c8b8b9b6cb7f83d4bed apps/admin/lib/studio-client.ts
+
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (32.156333ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 458.188083
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:556:1
+✖ review2 P2 expired cached issued link cannot be recopied or silently reissued (32.156333ms)
+  AssertionError [ERR_ASSERTION]: expired M7 credential must not reach clipboard on explicit recopy
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-recovery.test.ts:567:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+strict typecheck command argv: ["node", "--input-type=module", "-e", "import ts from \"typescript-api\"; const file=\"apps/admin/tsconfig.json\"; const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(file,ts.sys.readFile).config,ts.sys,\"apps/admin\"); parsed.options.incremental=false; parsed.options.types=[\"node\",\"react\"]; parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"]; const program=ts.createProgram([\"tests/admin/inbox-review-recovery.test.ts\",\"apps/admin/next-env.d.ts\"],parsed.options); const errors=ts.getPreEmitDiagnostics(program); console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"})); process.exit(errors.length?1:0);"]
+strict typecheck exit_code: 0
+
+
+Existing22 test statements unchanged byte-for-byte; existing13 file untouched.

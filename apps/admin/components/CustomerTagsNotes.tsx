@@ -14,9 +14,9 @@ import type { useTagWrite } from "../lib/customer-tags-write";
 import { displayTime } from "../lib/orders-model";
 
 /** Notes use server pages and versions; only privacy holders or proven authors see edit/delete controls. */
-export function CustomerNotes({ locale, store, detail, boundary, write, refresh, reloadVersion = 0 }: {
+export function CustomerNotes({ locale, store, detail, boundary, write, refresh, reloadVersion = 0, onScopeLost }: {
   locale: Locale; store: Store; detail: CustomerDetail; boundary: string;
-  write: ReturnType<typeof useTagWrite>; refresh: () => Promise<void>; reloadVersion?: number;
+  write: ReturnType<typeof useTagWrite>; refresh: () => Promise<void>; reloadVersion?: number; onScopeLost?: () => void;
 }) {
   const c = customerTagsCopy[locale]; const inputID = useId();
   const [notes, setNotes] = useState(detail.notes);
@@ -34,6 +34,7 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
   const mounted = useRef(true);
   const generation = useRef(0);
   const explicitReload = useRef(reloadVersion);
+  const scopeSignalled = useRef(false); // at most one scope-lost signal per mount: forbidden may only mean notes are not allowed, never a reload loop
   const resource = `customers/${detail.customer_id}/notes`;
 
   useEffect(() => {
@@ -57,8 +58,12 @@ export function CustomerNotes({ locale, store, detail, boundary, write, refresh,
   // note bodies or a draft on screen until an unrelated navigation (Codex review P2, PR #3); transient failures keep them.
   const authLost = (e: unknown) => ["unauthorized", "forbidden", "not_found"].includes(String((e as { message?: unknown } | null)?.message));
   // "unauthorized" also ends the session for the whole page (global logout lifecycle -> the guarded customer read clears).
+  // forbidden/not_found additionally ask the parent guarded detail read to re-run (once): if the detail is still allowed it stays
+  // and the notes stay dropped with the unavailable copy; if the scope is really gone the server answers and the guard clears PII.
   const dropPrivate = (e: unknown) => { setNotes([]); setAfter(""); setBody(""); setEditing(null); setDeleting(null);
-    if (String((e as { message?: unknown } | null)?.message) === "unauthorized") signalLogout(); };
+    const code = String((e as { message?: unknown } | null)?.message);
+    if (code === "unauthorized") signalLogout();
+    else if (!scopeSignalled.current) { scopeSignalled.current = true; onScopeLost?.(); } };
 
   async function more() {
     if (!after || loading.current || write.locked) return;

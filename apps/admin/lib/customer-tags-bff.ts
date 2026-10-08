@@ -14,7 +14,20 @@ export async function customerTagsBFF(request: Request, store: string, resource:
       if (status === 401) clearAuthCookies(response.headers);
       return response;
     },
-    body: async (r) => r.body === null ? "" : readBody(r, "application/json", 16 << 10),
+    body: async (r) => {
+      if (r.method !== "DELETE") return r.body === null ? "" : readBody(r, "application/json", 16 << 10);
+      // Next represents a bodyless DELETE as an empty stream. No representation means no MIME requirement;
+      // still reject actual bytes, regardless of Content-Length, before either deletion can reach Go.
+      const reader = r.body?.getReader();
+      if (!reader) return "";
+      try {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) return "";
+          if (part.value.byteLength) { await reader.cancel(); throw new Error("body"); }
+        }
+      } finally { reader.releaseLock(); }
+    },
     forward: callBackend,
     authorize: async (r, selected) => {
       if (authConfig) {

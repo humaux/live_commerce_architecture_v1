@@ -1,0 +1,32 @@
+Mutation: remove only stopped.current from actual copy action admission; onClick exposes actual Promise
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "--test-name-pattern=lost M7 ACK", "tests/admin/inbox-review-recovery.test.ts"]
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (653.928292ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1059.643875
+
+✖ failing tests:
+
+test at tests/admin/inbox-review-recovery.test.ts:294:1
+✖ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (653.928292ms)
+  AssertionError [ERR_ASSERTION]: a captured retry handler cannot mint a fresh key after null replay
+
+  3 !== 2
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-review-recovery.test.ts:330:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Exit 1

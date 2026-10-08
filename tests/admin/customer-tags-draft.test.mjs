@@ -129,3 +129,19 @@ test("non-privacy writer: own notes keep Edit and Delete on a fresh mount, other
   assert.deepEqual(labels(rows[0]), ["Edit", "Delete"]);
   assert.deepEqual(labels(rows[1]), []);
 });
+
+// Codex review P2 (PR #3): a notes read refused as forbidden/not_found asks the parent detail guard to re-run, at most once per
+// mount (forbidden can also mean "notes not allowed" while the detail is allowed: no reload loop). Transient failures stay local.
+test("notes forbidden/not_found signals scope loss exactly once per mount, never on transient failure", async () => {
+  for (const code of ["forbidden", "not_found"]) {
+    const lost = []; const h = harness(() => Promise.reject(new Error(code)), [], { onScopeLost: () => lost.push(code) }); await settle();
+    assert.deepEqual(lost, [code]);
+    // The parent re-read hands back fresh notes; the same mount reads again, is refused again, and must not signal again.
+    const next = { ...h.props, detail: { ...h.props.detail, notes: [{ ...note }] } };
+    h.render(next); h.flush(); await settle();
+    assert.deepEqual(lost, [code], `${code}: second refusal must not re-signal`);
+  }
+  for (const code of ["retry_later", "unavailable"]) { const lost = []; harness(() => Promise.reject(new Error(code)), [], { onScopeLost: () => lost.push(code) }); await settle(); assert.deepEqual(lost, [], code); }
+  const lost = []; const logouts = []; harness(() => Promise.reject(new Error("unauthorized")), logouts, { onScopeLost: () => lost.push("x") }); await settle();
+  assert.deepEqual(logouts, ["logout"]); assert.deepEqual(lost, []);
+});

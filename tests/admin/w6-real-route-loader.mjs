@@ -39,8 +39,11 @@ export async function loadW6RealRoutes() {
       COMMERCE_OIDC_ISSUER: "http://127.0.0.1:9101", COMMERCE_BFF_KEY: Buffer.alloc(32, 19).toString("base64url") });
     const customers = await import("../../apps/admin/app/api/stores/[store]/customers/route.ts");
     const reports = await import("../../apps/admin/app/api/stores/[store]/reports/[report]/route.ts");
+    const note = await import("../../apps/admin/app/api/stores/[store]/customers/[customer]/notes/[note]/route.ts");
+    const tag = await import("../../apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts");
+    const tags = await import("../../apps/admin/app/api/stores/[store]/customers/tags/route.ts");
     const auth = await import("../../apps/admin/lib/auth.ts");
-    return { customers, reports, auth };
+    return { customers, reports, note, tag, tags, auth };
   })();
   return loaded;
 }
@@ -55,6 +58,8 @@ export async function w6RealBoundary() {
     if (url.origin !== apiOrigin) throw new Error("unexpected upstream origin");
     if (url.pathname === "/v1/admin/stores") return Response.json({ items: [{ id: W6_STORE, name: "Synthetic", currency: "TWD", permissions: ["customers:read", "orders:read", "orders:export", "live:read"] }] });
     if (url.pathname.endsWith("/customers")) return Response.json({ items: [], next_cursor: "" });
+    if (init.method === "DELETE" && url.pathname.endsWith(`/notes/${W6_TAG}`)) return Response.json({ note_id: W6_TAG, deleted: true });
+    if (init.method === "DELETE" && url.pathname.endsWith(`/customers/tags/${W6_TAG}`)) return Response.json({ tag_id: W6_TAG, deleted: true });
     if (url.pathname.endsWith("/reports/products")) return Response.json({ from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", truncated: false, rows: [] }, { headers: { "Cache-Control": "private, no-store" } });
     if (url.pathname.endsWith("/reports/products.csv")) return new Response("sku_id,product_id,code,name,currency,environment,units,captured_minor,refunded_minor,net_minor,offline_units,offline_minor\r\n", { headers: {
       "Cache-Control": "private, no-store", "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="report-products-2026-09-01-2026-09-30.csv"', "Set-Cookie": "untrusted-upstream=1" } });

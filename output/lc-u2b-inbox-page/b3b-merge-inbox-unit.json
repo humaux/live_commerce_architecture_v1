@@ -1,0 +1,10 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/inbox"
+  ],
+  "source_sha": "c3b41bd95fe412cad069b93f9e0c206c53e86bf9",
+  "exit_code": 0,
+  "elapsed_seconds": 0.987
+}

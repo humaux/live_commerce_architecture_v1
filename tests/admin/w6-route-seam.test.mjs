@@ -1,9 +1,55 @@
-// Purpose: independent native-Request proof for P2 customer query dispatch and private report Cookie cache variation.
+// Purpose: native-Request proof for bodyless tag/note DELETE, query dispatch and private report Cookie cache variation.
 // Depends on: real W6 route/auth/backend modules through w6-real-route-loader; upstream fetch only is fake.
 // Used by: focused Node P2 red/green and root test-node gate registration; no PG/Next/browser runtime.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { w6RealBoundary, W6_TAG } from "./w6-real-route-loader.mjs";
+import { w6RealBoundary, W6_STORE, W6_TAG } from "./w6-real-route-loader.mjs";
+
+for (const kind of ["tag", "note"]) test(`P1 actual ${kind} DELETE accepts an empty Next-style stream without JSON MIME`, async () => {
+  const boundary = await w6RealBoundary();
+  const resource = kind === "tag" ? `customers/tags/${W6_TAG}` : `customers/${W6_STORE}/notes/${W6_TAG}`;
+  const context = { params: Promise.resolve({ store: W6_STORE, tag: W6_TAG, customer: W6_STORE, note: W6_TAG }) };
+  try {
+    for (const streamed of [false, true]) {
+      boundary.calls.length = 0;
+      const request = new Request(boundary.request(resource, { "Idempotency-Key": "synthetic-delete-key" }), {
+        method: "DELETE", ...(streamed ? { body: new ReadableStream({ start(c) { c.enqueue(new Uint8Array()); c.close(); } }), duplex: "half" } : {}),
+      });
+      assert.equal(request.headers.get("content-type"), null);
+      assert.equal(request.body !== null, streamed);
+      const response = await boundary[kind].DELETE(request, context);
+      assert.equal(response.status, 200, "EMPTY-DELETE-MUST-REACH-GO");
+      assert.equal((await response.json()).deleted, true);
+      assert.equal(boundary.calls.length, 2, "real store authorization then exactly one deletion");
+      const forwarded = boundary.calls[1];
+      assert.equal(forwarded.init.body, undefined);
+      assert.equal(forwarded.headers.get("content-type"), null);
+      assert.equal(forwarded.headers.get("idempotency-key"), "synthetic-delete-key");
+    }
+    for (const type of [null, "text/plain", "application/json"]) {
+      boundary.calls.length = 0;
+      const headers = { "Idempotency-Key": "synthetic-delete-key", "Content-Length": "0", ...(type ? { "Content-Type": type } : {}) };
+      const request = new Request(boundary.request(resource, headers), {
+        method: "DELETE", body: new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode("{}")); c.close(); } }), duplex: "half",
+      });
+      assert.equal((await boundary[kind].DELETE(request, context)).status, 422, "nonempty DELETE is never forwarded, even with a false zero length");
+      assert.equal(boundary.calls.length, 1, "only the authority lookup may run");
+    }
+  } finally { boundary.restore(); }
+});
+
+test("P1 body-carrying tag writes still require JSON MIME through the real BFF", async () => {
+  const boundary = await w6RealBoundary();
+  try {
+    for (const type of [null, "text/plain"]) {
+      const headers = { "Idempotency-Key": "synthetic-create-key", ...(type ? { "Content-Type": type } : {}) };
+      const request = new Request(boundary.request("customers/tags", headers), { method: "POST", body: '{"name":"Synthetic","color":"blue"}' });
+      if (!type) request.headers.delete("content-type");
+      assert.equal((await boundary.tags.POST(request, boundary.customerContext)).status, 422);
+      assert.equal(boundary.calls.length, 0, "MIME refusal before upstream");
+    }
+  } finally { boundary.restore(); }
+});
 
 test("P2 customer bare/encoded tag keys are invalid422 through the actual leaf before any backend", async () => {
   const boundary = await w6RealBoundary();

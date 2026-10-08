@@ -1,0 +1,22 @@
+✔ hiding aborts requests and rejects late responses, even after reveal (0.628417ms)
+✔ switching selection invalidates both reads and write completions (0.061875ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.061458ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (0.954541ms)
+✖ uncertain transport retries retain the exact submission; definitive conflicts retire it (1.661292ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.964041
+
+✖ failing tests:
+
+test at tests/admin/inbox-privacy.test.ts:40:1
+✖ uncertain transport retries retain the exact submission; definitive conflicts retire it (1.661292ms)
+  TypeError: ReplyReceipt is not a constructor
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-privacy.test.ts:43:19)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)
