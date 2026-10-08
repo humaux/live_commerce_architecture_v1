@@ -1,6 +1,6 @@
-// Purpose: real-click buyer checkout, order recovery and owned history browser gate.
-// Depends on: production Next/Go/isolated PostgreSQL, Playwright and buyer order BFF.
-// Used by: TestBrowserBuyerOrderUI (--browser-order); synthetic TLS and causal faults only.
+// Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
+// Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
+// Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
 import assert from "node:assert/strict";
 import http from "node:http";
 import https from "node:https";
@@ -21,7 +21,7 @@ assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTR
 const origin="https://buyer.example", checkoutPath="/en/checkout";
 const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[];
 const pii={recipient_name:"Synthetic Gate Recipient",phone:"+886900000091",region:"Synthetic Region",city:"Synthetic City",postal_code:"99991",line1:"Synthetic Address Ninety One",line2:"Synthetic Unit Ninety Two"};
-const secrets=[], pageErrors=[];
+const secrets=[], pageErrors=[], closedContextStates=new Map();
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const listen=async s=>{s.listen(0,"127.0.0.1");await once(s,"listening");return s.address().port;};
@@ -61,6 +61,14 @@ function arm(suffix,fields={}) {
 }
 async function newContext(mobile=false,timezoneId="America/Los_Angeles") {
   const c=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:mobile?{width:390,height:844}:{width:1440,height:900},timezoneId}));contexts.push(c);
+  // A short-lived context still belongs to BO06: retain its audit before Playwright disposes its pages/cookies.
+  const close=c.close.bind(c);
+  c.close=async (...args)=>{
+    if(closedContextStates.has(c))return close(...args);
+    const states=await captureContextState(c);
+    await close(...args);
+    closedContextStates.set(c,states);
+  };
   await c.exposeBinding("__gateStorageWrite",(_,value)=>storageWrites.push(value));
   await c.addInitScript(()=>{
     const native=Storage.prototype.setItem;
@@ -151,6 +159,33 @@ async function rememberCookie(c) {
   const cookie=(await c.cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
   secrets.push(cookie.value);const payload=JSON.parse(Buffer.from(cookie.value.split(".")[0],"base64url").toString());if(payload.token)secrets.push(payload.token);
 }
+async function captureContextState(c) {
+  await rememberCookie(c);
+  const states=[];
+  for(const p of c.pages()){
+    assert.equal(await p.evaluate(()=>document.cookie),"");
+    states.push(await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}})));
+  }
+  return states;
+}
+async function stableLocaleTarget(p,mobile=false) {
+  // Causal layout gate: release the real destination-head read only after the footer link is positioned.
+  // A buyer can press a language link while this read completes; removing the loading paragraph must not move it.
+  const headLoading=arm("destination",{method:"GET",after:true});
+  await switchLocale(p,"zh-TW");await headLoading.result.promise;
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  await expect(p.getByTestId("cart-line")).toHaveCount(1);
+  await expect(p.getByRole("status").filter({hasText:"正在載入收件資訊…"})).toBeVisible();
+  const languageLink=p.locator('footer nav a[hreflang="en"]');await languageLink.scrollIntoViewIfNeeded();
+  const languagePosition=()=>languageLink.evaluate(link=>({top:link.getBoundingClientRect().top+scrollY,height:link.getBoundingClientRect().height,documentHeight:document.documentElement.scrollHeight}));
+  const beforeHead=await languagePosition();headLoading.release.resolve();
+  await expect(p.locator('input[name="recipient_name"]')).toBeEnabled();
+  const afterHead=await languagePosition();
+  assert.equal(afterHead.top,beforeHead.top,"loading completion must not move the footer language target");
+  if(mobile&&process.env.LC_BROWSER_ENGINE==="webkit")await languageLink.tap();else await languageLink.click();await expect(p).toHaveURL(`${origin}/en/checkout`);
+  await expect(p.getByTestId("address-section")).toBeVisible();
+  pass(`BO01 ${mobile?"mobile":"desktop"} delivery-head completion keeps the language target stable`);
+}
 async function capture(p,name,fullPage=true,directory=review) {
   await mkdir(directory,{recursive:true});
   await p.screenshot({path:path.join(evidence,name),fullPage});await copyFile(path.join(evidence,name),path.join(directory,name));
@@ -184,6 +219,7 @@ try {
 
   // BO01/BO03: native form, all locales, in-memory PII and causal lost PUT.
   const c1=await newContext(),{p:a,quote:q1}=await quotePage(c1);await rememberCookie(c1);
+  await stableLocaleTarget(a); // Run before filling PII so the original language/unsaved-address assertions retain their input.
   for(const name of Object.keys(pii))await expect(a.locator(`input[name="${name}"]`)).toHaveCount(1);
   await expect(a.locator('input[name="phone"]')).toHaveAttribute("type","tel");
   await fill(a);
@@ -273,7 +309,7 @@ try {
   pass("BO04 actual second-tab recovery queues on Web Lock and resumes same order without second POST");
 
   // BO05: a committed checkout with no reply survives document death/reload.
-  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await fill(lost);await confirm(lost);
+  const c4=await newContext(true),{p:lost,quote:q4}=await quotePage(c4);await stableLocaleTarget(lost,true);await fill(lost);await confirm(lost);
   await capture(lost,"mobile-address.png");
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
@@ -479,11 +515,14 @@ try {
   await expect(foreign.locator(".purchase-error")).toContainText("changed");assert.equal((await control("facts")).length,serviceBefore);
   await expect(foreign.getByTestId("create-order")).toBeDisabled();
   pass("BO02 service revision drift rejects a previously confirmed quotation without an order");
-  for(const c of contexts){await rememberCookie(c);for(const p of c.pages()){
-    assert.equal(await p.evaluate(()=>document.cookie),"");
-    const state=await p.evaluate(()=>JSON.stringify({local:{...localStorage},session:{...sessionStorage}}));
+  // Regression: this buyer is finished, like PR7's short-lived UTC context; BO06 must still audit its state.
+  await c7.close();
+  const contextStates=[];
+  for(const c of contexts)contextStates.push(...(closedContextStates.get(c)??await captureContextState(c)));
+  // Compare every open/closed snapshot only after all contexts contributed their bearer canaries.
+  for(const state of contextStates){
     for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets])assert(!state.includes(value),"PII/bearer leaked into persistent storage");
-  }}
+  }
   const attempted=JSON.stringify(storageWrites),urls=requestURLs.join("\n"),messages=consoleText.join("\n");
   for(const value of [...Object.values(pii),"Synthetic Changed Unit","Synthetic Concurrent Address","Synthetic Confirmed New Address",...secrets]){
     assert(!attempted.includes(value),"PII/bearer attempted persistent write");assert(!urls.includes(value)&&!urls.includes(encodeURIComponent(value)),"PII/bearer URL leak");assert(!messages.includes(value),"PII/bearer console leak");

@@ -1,6 +1,6 @@
 # tz-audit delivery
 
-Latest follow-up: PR #7 P1 real-browser timezone coverage below. Current six-spec source hashes and final local checks are in `browser-timezone/`; prior audit/P2/trunk validation is historical.
+Latest batch: PR #7 packet `pr7-08a54057`, documented in `round-08a54057/DELIVERY.md`. It fixes the Chromium context/count regressions and labels device-local transfer input. Earlier audit/P1/P2 evidence below is historical; the old browser-coverage P1 is resolved per the integrator.
 
 - Branch: `unit/tz-audit`; base `35abffcadaa1240888d291391712e1411cb820a3`. Worktree `.worktrees/tz-audit`. Final commit SHA is reported with the handoff; tested source is bound by `source-hashes.json` and unchanged during all gates.
 - Author: Codex-3 (GPT-6; exact runtime model ID not exposed). Explorer: gpt-6-luna / medium / read-only on main worktree. Storefront writer: ui_worker gpt-6-sol / medium, `unit/tz-audit-storefront`, owns four storefront components plus timezone/claim tests. Independent admin test author: test_worker gpt-6-sol / medium, `unit/tz-audit-admin-tests`, owns `tests/admin/timezone-ui.test.mjs`. Independent source/test reviewer: security_reviewer gpt-6.1-sol / high, read-only on main worktree. All start from35abffca; child worktree patches/test source and logs are archived in this output before removal.
