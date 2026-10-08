@@ -1,4 +1,4 @@
-# Single test-local mode registry — implementation checkpoint
+# Single test-local mode registry — final local delivery
 
 - Owner: Codex-4, primary implementer; current runtime model/effort inherited and not independently exposed. Read-only consumer explorer/security reviewer and independent test worker (isolated primary-output oracle directory, no source writes).
 - Branch/worktree: unit/ci-pr-modes-coverage, .worktrees/ci-pr-modes-coverage. Base88d3ba1369de0b13c4a9d4ba8051c1540ca9cfd6 (integrator-provided merged trunk). No push.
@@ -34,9 +34,23 @@ Metadata commands: --list and --dry-run MODE are inert; dry-run prints selected 
 
 E3 here is command-boundary MOCK equivalence and static/Node gates, not real fixture/browser acceptance. The oracle tools are retained exactly as executed; their interpreter/shebang is this Mac's /opt/homebrew/bin/python3, not a claimed portable CI harness. Fixtures are task-owned, commands are stubbed, no realcredentials/provider/network are used. Raw synthetic key-shaped values are hashed in committed evidence; raw-to-redacted hashes retained.
 
-## Next green checkpoint
+## Real representative modes — final GREEN
 
-NOT_RUN at this implementation checkpoint: real backend-only --buyer-http; real --browser-picklist; real --browser-click-sweep@1/10 (canonical LC_SWEEP_SHARD=1/10 invocation). These run serially after this commit. Full foundation/all browser modes/providerSANDBOX/LIVE/deployment remain NOT_RUN. Author commits; integrator obtains cross-review, opens PR and pushes.
+All three ran serially on immutable **fd5566d61b1d5b047bddd95fc53111fffe941b92**, after implementation commit **f7b4f5a0e3231cdaeb8f8abc0614005d7d5bc3fc**. Each result JSON pins the same runner/runtime/selector hashes and verifies they remained unchanged. No new source changes followed these runs; this final commit adds delivery evidence only.
+
+| Exact command | Exit | Result / evidence under real/ |
+|---|---:|---|
+| `bash scripts/dev/test-local.sh --buyer-http` | **0** | REAL_PG backend-only subset; buyer-http.json/log |
+| `bash scripts/dev/test-local.sh --browser-picklist` | **0** | Real browser selections/print/CSV/confirmation/UNKNOWN/scope; MOCK upstream; picklist.json/log |
+| `LC_SWEEP_SHARD=1/10 bash scripts/dev/test-local.sh --browser-click-sweep` | **0** | Canonical CI invocation of --browser-click-sweep@1/10; click-shard-1-of-10.json/log |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | **0** | typecheck.log |
+| `bash scripts/dev/check-gates.sh` after evidence packaging | **0** | check-gates-checkpoint-green.log;82 modes documented |
+
+The click-sweep slice reports8 page/viewport/locale units,0 page-load failures,86 control entries (77PASS/0FAIL/9SKIP under the unchanged gate rules), and10 journey steps (10PASS/0FAIL). Shard index1/of10, complete=true,0 known/new failures and0 stale defect entries are retained in the **current** ledger dated2026-10-08, copied from the run backup before tracked baseline artifacts were restored. It proves this slice only, not all10 shards or a global sweep aggregate.
+
+Root independently recomputed the archived before/after command, environment, exit, utility and artifact comparisons for all120 oracle cases; root-equivalence-audit.json binds the archive hash and confirms zero differences. The independent source/metadata review PASS is separate from the actual runtime receipts above.
+
+**E3 local acceptance:** the requested static, selector, command-equivalence and three representative runtime gates are green. Full foundation, all remaining browser modes/other9 sweep shards, full sweep aggregate, GitHub/Linux runtime, physical Safari and provider SANDBOX/LIVE/deployment remain **NOT_RUN**. Test processes/own PG fixture finished normally; own generated tracked screenshots/ledgers were backed up then restored; transient gate output was moved into primary real/generated-untracked. No other worker output/cache was removed. No push; integrator owns cross-review/opening the PR.
 
 Evidence packaging: the original replay scripts are retained losslessly as `.raw.gz` and normalized readable `.txt` views, not tracked `*.test.mjs` files falsely registered as live repo tests. The executed scripts in primary evidence retain their original filenames and byte equality. The initial checkpoint whitespace check reported only two trailing-blank-line findings in these copied scripts; their views now pass without changing the executed originals.
 The packaging check correctly rejected evidence names still containing `.test.` even with a `.txt`/`.gz` suffix; the archived assertion script now uses `monotonicity-assertions` filenames. No gate rule was relaxed.
