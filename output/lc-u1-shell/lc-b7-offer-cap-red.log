@@ -1,0 +1,27 @@
+(node:80573) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (26.162042ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 200.694334
+
+✖ failing tests:
+
+test at tests/admin/live-console-bff.test.ts:47:1
+✖ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (26.162042ms)
+  Error: unavailable
+      at json (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/lib/studio-client.ts:32:11)
+      at read (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/lib/studio-client.ts:43:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async parsed (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/apps/admin/src/features/live/console-client.ts:18:22)
+      at async TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-bff.test.ts:51:43)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    code: 'unavailable',
+    api: ''
+  }

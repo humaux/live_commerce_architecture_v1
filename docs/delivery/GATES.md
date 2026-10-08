@@ -77,6 +77,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `--browser-input-delivery` | isolated HTTPS signed browser + Next + Go + PG input token transport; not decoded SFU media, recovery or production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-input-delivery` |
 | `--browser-studio-bff` | isolated signed OIDC + Next + Go + PG Studio BFF transport; not Studio page/UI, Cloud or provider acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-studio-bff` |
 | `--browser-studio-ui` | isolated Studio B UI with signed MOCK IdP and local MOCK Egress; not Cloud or production acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-studio-ui` |
+| `--browser-live-console` | LC-U1 three locales × 1586x992/390x844, real signed MOCK OIDC, production Next/BFF/session/CSRF and PG identity; Console read/write upstream and persistent in-process receipts explicitly MOCK. Lifecycle, copy, offer/stock/recommend, CAS conflict, UNKNOWN same-key retry, 5 s polling, store/logout clearing, canonical KEYWORD_QTY_CONTAINS, IG total unavailable, missing A1, bounded live_adjust without live:manage, no-inventory 403 and below_reserved refusal. Does not accept LC-B1/LC-B7 SQL, media broadcast, Meta or production | T3 browser (MOCK upstream) | `bash scripts/dev/test-local.sh --browser-live-console` |
 | `--browser-claim-checkout` | CDC04/CDC05 real-click claim → checkout → pay-at-pickup; real PG, production Next, MOCK manual claims; chosen SKU/quantity, merge/recovery, sold-out/expiry, three locales; iPhone WebKit through seventh step; no PSP/Meta/LIVE acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-claim-checkout` |
 | `--browser-live-claims` | KC16 isolated admin + storefront Next, Go and PG claims chain; signed MOCK IdP, MOCK manual ingress; no provider or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-live-claims` |
 | `--browser-order` | isolated buyer address/order UI gate; not provider payment or deployment acceptance | T3 browser | `bash scripts/dev/test-local.sh --browser-order` |
@@ -163,6 +164,7 @@ Smoke S29m BLOCKED is accepted in the CI job (F11), not by release-gate.
 | `tests/admin/input-delivery.spec.ts`, `studio-input.test.ts`, `studio-input-client.test.ts` | `--browser-input-delivery` |
 | `tests/admin/studio-bff.spec.ts`, `studio-request.test.ts` | `--browser-studio-bff` |
 | `tests/admin/studio-ui.spec.ts` | `--browser-studio-ui` |
+| `tests/admin/live-console*.spec.ts`, `tests/foundation/browser_live_console_test.go` | `--browser-live-console` (author static checks never replace independent browser execution; mock-receipts.json and locale/viewport screenshots retained) |
 | `tests/admin/orders-bff.spec.ts`, `orders-request.test.ts` | `--browser-merchant-orders-bff` |
 | `tests/admin/orders-ui.spec.ts`, `orders-model.test.ts` | `--browser-merchant-orders-ui` |
 | `tests/admin/manual-fulfilment.spec.ts`, `refund.spec.ts`, `refund-bff.test.ts` | `--browser-refund-fulfilment` |

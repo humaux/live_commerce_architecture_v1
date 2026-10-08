@@ -1,0 +1,179 @@
+{
+  "pull_request": {
+    "number": 5,
+    "url": "https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/pull/5",
+    "title": "LC-U1 (W2-U1) live console workspace shell",
+    "state": "OPEN",
+    "owner": "luogangan7-lgtm",
+    "repo": "live_commerce_architecture_v1"
+  },
+  "conversation_comments": [
+    {
+      "id": "IC_kwDOUv1K_c8AAAABZ98hIw",
+      "body": "#### \ufe0f\u2705 There are no secrets present in this pull request anymore.\n\nIf these secrets were true positive and are still valid, we highly recommend you to revoke them.\nWhile these secrets were previously flagged, we no longer have a reference to the\nspecific commits where they were detected. Once a secret has been leaked into a git\nrepository, you should consider it compromised, even if it was deleted immediately.\nFind [here](https://docs.gitguardian.com/platform/remediate/remediate-incidents) more information about risks.\n\n---\n\n<sup><sub>\ud83e\udd89 [GitGuardian](https://dashboard.gitguardian.com/auth/login/?utm_medium=checkruns&amp;utm_source=github&amp;utm_campaign=cr1) detects secrets in your source code to help developers and security teams secure the modern development process. You are seeing this because you or someone else with access to this repository has authorized GitGuardian to scan your pull request.<br/></sup></sub>\n",
+      "createdAt": "2026-10-07T12:12:34Z",
+      "updatedAt": "2026-10-07T17:00:02Z",
+      "author": {
+        "login": "gitguardian"
+      }
+    },
+    {
+      "id": "IC_kwDOUv1K_c8AAAABZ98lWQ",
+      "body": "<!-- codex-pull-request-review-summary -->\n<!-- codex-security-review:v1 {\"blockingSeverityThreshold\":\"P0\",\"headSha\":\"2ad65bcd1789476ebab06fa5023c966e59578114\",\"mergeGateEnabled\":false,\"pullRequestNumber\":5,\"repository\":\"luogangan7-lgtm/live_commerce_architecture_v1\",\"status\":\"running\"} -->\n## Codex Review Summary\n\nThis comment shows the latest Codex review activity on this pull request.\n\n| Review | Status | Commit | Review trigger |\n| --- | --- | --- | --- |\n| \ud83d\udcdd **Code Review** | \u26a0\ufe0f **Failed** <relative-time datetime=\"2026-10-07T16:54:15.756663Z\">2026-10-07T16:54:15.756663Z</relative-time> | `2ad65bc` | New commits |\n| \ud83d\udd12 **Security Review** | \ud83d\udd04 **Running** since <relative-time datetime=\"2026-10-07T16:49:06.612680Z\">2026-10-07T16:49:06.612680Z</relative-time> | `2ad65bc` | New commits |\n\n\n\n<details> <summary>\u2139\ufe0f About Codex in GitHub</summary>\n<br/>\n\n[Your team has set up Codex to review pull requests in this repo](https://chatgpt.com/codex/cloud/settings/general). Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\" or \"@codex security review\".\n\nCodex reacts with \ud83d\udc40 while any review is running, comments if it has suggestions, and reacts with \ud83d\udc4d once all reviews finish with no findings.\n\n</details>",
+      "createdAt": "2026-10-07T12:12:38Z",
+      "updatedAt": "2026-10-07T16:55:12Z",
+      "author": {
+        "login": "chatgpt-codex-connector"
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "id": "PRR_kwDOUv1K_c8AAAABRGFCXA",
+      "state": "COMMENTED",
+      "body": "\n### \ud83d\udca1 Codex Review\n\nHere are some automated review suggestions for this pull request.\n\n**Reviewed commit:** `1fe069ccc5`\n    \n\n<details> <summary>\u2139\ufe0f About Codex in GitHub</summary>\n<br/>\n\n[Your team has set up Codex to review pull requests in this repo](https://chatgpt.com/codex/cloud/settings/general). Reviews are triggered when you\n- Open a pull request for review\n- Mark a draft as ready\n- Comment \"@codex review\".\n\nIf Codex has suggestions, it will comment; otherwise it will react with \ud83d\udc4d.\n\n\n\n\nCodex can also answer questions or update the PR. Try commenting \"@codex address that feedback\".\n            \n</details>",
+      "submittedAt": "2026-10-07T12:22:45Z",
+      "author": {
+        "login": "chatgpt-codex-connector"
+      }
+    },
+    {
+      "id": "PRR_kwDOUv1K_c8AAAABRHaNNw",
+      "state": "COMMENTED",
+      "body": "",
+      "submittedAt": "2026-10-07T14:10:27Z",
+      "author": {
+        "login": "luogangan7-lgtm"
+      }
+    },
+    {
+      "id": "PRR_kwDOUv1K_c8AAAABRMdoDQ",
+      "state": "COMMENTED",
+      "body": "## \u603b\u4f53\u8bc4\u4ef7\n\u672c\u6b21\u57fa\u4e8e `2ad65bcd1789476ebab06fa5023c966e59578114`\uff0c\u5ba1\u67e5\u65b0\u589e\u63a7\u53f0/\u573a\u6b21\u9009\u62e9/\u590d\u5236\u3001BFF \u4e0e DTO \u89e3\u6790\u5668\u3001\u547d\u4ee4\u65e5\u5fd7\u3001Studio/Claims \u96c6\u6210\u3001\u5bfc\u822a/CSS\uff0c\u4ee5\u53ca\u76f8\u5173\u6d4b\u8bd5\u548c CI \u914d\u7f6e\u3002\u4ec5\u9759\u6001\u9605\u8bfb GitHub \u4ee3\u7801\u4e0e\u65e2\u6709 CI\uff0c\u6ca1\u6709\u8fd0\u884c\u9879\u76ee\u3001\u6784\u5efa\u6216\u6d4f\u89c8\u5668\u3002**\u5efa\u8bae\u4fee\u590d\u4e0b\u8ff0\u4ea4\u4e92\u95ee\u9898\u5e76\u53d6\u5f97\u5f53\u524d head \u7684\u5b8c\u6574\u7eff\u8272 CI \u540e\u518d\u5408\u5e76\uff1b\u6ca1\u6709\u786e\u8ba4\u65b0\u589e P0/P1\u3002**\n\n## \u53d1\u73b0\n### P2\uff1a\u8f6e\u8be2\u66f4\u65b0\u5e93\u5b58\u7248\u672c\u65f6\u4f1a\u65e0\u63d0\u793a\u4e22\u6389\u6b63\u5728\u7f16\u8f91\u7684\u5e93\u5b58\u6570\u91cf\n\u4f4d\u7f6e\uff1a[LiveConsole.tsx L105\u2013106](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/blob/2ad65bcd1789476ebab06fa5023c966e59578114/apps/admin/components/LiveConsole.tsx#L105-L106)\uff0c\u4ee5\u53ca [L124\u2013125](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/blob/2ad65bcd1789476ebab06fa5023c966e59578114/apps/admin/components/LiveConsole.tsx#L124-L125)\u3002\n\nOfferRow \u7684 key \u5305\u542b offer.version \u4e0e stock.balance_version\uff0c\u800c\u6570\u91cf\u8f93\u5165\u53ea\u5728 useState \u521d\u59cb\u5316\u65f6\u53d6\u670d\u52a1\u5668 sellable\u3002\u5546\u5bb6\u8f93\u5165\u65b0\u5e93\u5b58\u4f46\u5c1a\u672a\u4fdd\u5b58\u65f6\uff0c\u4e70\u5bb6\u4e0b\u5355\u6216\u53e6\u4e00\u64cd\u4f5c\u5458\u8c03\u6574\u5e93\u5b58\u4f7f\u4e0b\u4e00\u6b21 5 \u79d2 A1 \u8f6e\u8be2\u5e26\u56de\u65b0 balance_version\uff0cReact \u5c31\u4f1a\u5378\u8f7d\u6574\u4e2a\u8f93\u5165\u884c\uff0c\u8986\u76d6\u672a\u63d0\u4ea4\u7684\u6570\u91cf\u5e76\u4e22\u5931\u7126\u70b9\uff1boffer.version \u7684\u5916\u90e8\u53d8\u5316\u4e5f\u4e00\u6837\u3002\u76f4\u64ad\u4e2d\u5e93\u5b58\u53d8\u5316\u6b63\u662f\u6b63\u5e38\u9ad8\u9891\u573a\u666f\u3002\n\n\u5efa\u8bae\u4ee5\u7a33\u5b9a offer_id \u4fdd\u7559\u884c\u8eab\u4efd\uff0c\u5c06\u670d\u52a1\u5668\u5feb\u7167\u4e0e\u7f16\u8f91\u8349\u7a3f\u5206\u5f00\uff1b\u8349\u7a3f\u672a\u4fee\u6539\u65f6\u540c\u6b65\u65b0\u503c\uff0c\u5df2\u4fee\u6539\u65f6\u4fdd\u7559\u8f93\u5165\u5e76\u660e\u786e\u63d0\u793a\u7248\u672c\u51b2\u7a81/\u8981\u6c42\u91cd\u65b0\u786e\u8ba4\uff0c\u7ee7\u7eed\u4f7f\u7528\u76f8\u5e94 CAS\u3002\u8865\u771f\u5b9e\u6d4f\u89c8\u5668\u56de\u5f52\uff1a\u8f93\u5165\u6570\u91cf \u2192 \u5916\u90e8\u5e93\u5b58\u53d8\u5316 \u2192 \u7b49\u5f85\u81ea\u52a8\u8f6e\u8be2 \u2192 \u65ad\u8a00\u8349\u7a3f\u3001\u7126\u70b9\u53ca\u51b2\u7a81\u63d0\u793a \u2192 \u660e\u786e\u63d0\u4ea4\u5e76\u68c0\u67e5\u6700\u7ec8\u5e93\u5b58\u3002\u73b0\u6709\u5e93\u5b58\u6d4b\u8bd5\u662f fill \u540e\u7acb\u5373 click\uff0c\u6ca1\u6709\u8986\u76d6\u8be5\u4e2d\u65ad\u3002\n\n## \u4f18\u70b9\u4e0e\u5269\u4f59\u9a8c\u8bc1\n- \u4e25\u683c DTO/\u65b9\u6cd5/\u67e5\u8be2\u767d\u540d\u5355\uff0c\u5199\u5165\u590d\u7528\u670d\u52a1\u7aef CAS \u548c\u5e42\u7b49\u952e\uff1bUNKNOWN \u65e5\u5fd7\u4fdd\u5b58\u539f\u59cb\u8bf7\u6c42\uff0c\u5237\u65b0\u4e0e\u91cd\u65b0\u767b\u5f55\u4e0d\u4f1a\u76f2\u53d1\u65b0\u547d\u4ee4\u3002\n- A1 \u53ef\u89c1\u9875\u9762\u5355\u8bf7\u6c42\u8f6e\u8be2\u3001\u9000\u907f\u4e0e\u8f85\u52a9\u8bfb\u5206\u79bb\uff1bIG \u4e0d\u53ef\u7528\u8ba1\u6570\u4e0d\u4f2a\u88c5\u4e3a 0\uff0c\u91d1\u989d\u4fdd\u7559\u670d\u52a1\u7aef\u4e8b\u5b9e\uff1b\u54cd\u5e94\u5f0f\u5217\u5e03\u5c40\u3001\u8bed\u4e49\u6807\u9898\u548c\u4e09\u8bed\u8def\u5f84\u8f83\u5b8c\u6574\u3002\n- \u5df2\u6838\u67e5\u5148\u524d\u201c\u590d\u5236\u6807\u9898\u672a\u968f\u6e90\u573a\u6b21\u91cd\u547d\u540d\u66f4\u65b0\u201d\u7684\u4fee\u590d\uff0c\u4e0d\u91cd\u590d\u63d0\u51fa\u5df2\u89e3\u51b3\u95ee\u9898\u3002\u73b0\u6709\u6d4b\u8bd5\u8986\u76d6\u590d\u5236\u665a\u56de\u5305\u3001\u6362\u5e97/\u9000\u51fa\u3001UNKNOWN \u540c\u952e\u91cd\u8bd5\u3001BFF/\u89e3\u6790\u53ca\u4e09\u8bed\u591a\u5c3a\u5bf8\uff1b\u5b9e\u9645\u89c6\u89c9\u548c\u64cd\u4f5c\u9a8c\u6536\u4ecd\u9700\u6d4f\u89c8\u5668\u8bc1\u636e\uff0c\u672c\u5ba1\u67e5\u4e0d\u58f0\u79f0\u5df2\u5b9e\u6d4b\u3002\n- \u6838\u5fc3\u5b9e\u73b0\u3001\u534f\u8bae\u548c\u6743\u9650\u8fb9\u754c\u76f8\u5bf9\u6e05\u6670\uff1b\u5efa\u8bae\u628a\u8f6e\u8be2\u66f4\u65b0\u4e0e\u8868\u5355\u8349\u7a3f\u7684\u751f\u547d\u5468\u671f\u5206\u79bb\uff0c\u907f\u514d\u7528\u7ec4\u4ef6\u91cd\u5efa\u627f\u62c5\u540c\u6b65\u903b\u8f91\u3002\n\n## \u5f53\u524d head \u7684 CI\n- [Foundation 37654995141](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/actions/runs/37654995141)\uff1a\u5931\u8d25\u3002Node unit suites \u6210\u529f\uff1b\u201cReal PostgreSQL, race detector and vet\u201d\u5931\u8d25\uff1bReachable vulnerability scan \u8df3\u8fc7\u3002\u4ec5 job/step \u8bc1\u636e\u4e0d\u8db3\u4ee5\u786e\u5b9a\u6839\u56e0\uff0c\u4e0d\u628a\u5b83\u5f52\u56e0\u4e8e\u672c\u53d1\u73b0\u3002\n- [Gates 37654995775](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/actions/runs/37654995775)\uff1a\u6392\u961f\u3002PR \u63cf\u8ff0\u6216\u4ed3\u5e93\u4e2d\u7684\u65e7\u7eff\u706f\u8bb0\u5f55\u4e0d\u80fd\u66ff\u4ee3\u6b64 head \u9a8c\u6536\u3002\n",
+      "submittedAt": "2026-10-07T21:58:53Z",
+      "author": {
+        "login": "luogangan7-lgtm"
+      }
+    },
+    {
+      "id": "PRR_kwDOUv1K_c8AAAABRMkbXw",
+      "state": "COMMENTED",
+      "body": "\u8865\u5145\u4e3a\u5177\u4f53\u884c\u5185\u8bc4\u8bba\uff1a\u5e93\u5b58\u7f16\u8f91\u7684\u7126\u70b9/\u8349\u7a3f\u751f\u547d\u5468\u671f\uff0c\u4ee5\u53ca\u76f4\u64ad\u6765\u6e90\u63d0\u793a\u7684\u9519\u8bef\u5206\u652f\u3002\u5df2\u67e5\u770b\u4ed3\u5e93\u5185 1586px \u4e0e 390px Console \u622a\u56fe\uff1bCI4-DELIVERY \u660e\u786e\u5176\u6e90\u4e3a\u65e7\u63d0\u4ea4 5012ce96\u3001MOCK \u4e1a\u52a1\u5feb\u7167\uff0c\u8fd9\u4e9b\u56fe\u7247\u4ec5\u7528\u4e8e\u8bf4\u660e\u5df2\u6709\u89c6\u89c9\u8868\u73b0\uff0c\u4e0d\u4ee3\u8868\u5f53\u524d head \u7684\u6d4f\u89c8\u5668\u9a8c\u6536\u3002\u672c\u8f6e\u6ca1\u6709\u8fd0\u884c\u9879\u76ee\u3001\u6784\u5efa\u6216\u6d4b\u8bd5\u3002",
+      "submittedAt": "2026-10-07T22:11:00Z",
+      "author": {
+        "login": "luogangan7-lgtm"
+      }
+    },
+    {
+      "id": "PRR_kwDOUv1K_c8AAAABRNTqVA",
+      "state": "COMMENTED",
+      "body": "",
+      "submittedAt": "2026-10-07T23:51:02Z",
+      "author": {
+        "login": "luogangan7-lgtm"
+      }
+    }
+  ],
+  "review_threads": [
+    {
+      "id": "PRRT_kwDOUv1K_c6p5kn_",
+      "isResolved": true,
+      "isOutdated": false,
+      "path": "apps/admin/src/features/live/SessionCopy.tsx",
+      "line": 21,
+      "diffSide": "RIGHT",
+      "startLine": 21,
+      "startDiffSide": null,
+      "originalLine": 21,
+      "originalStartLine": null,
+      "resolvedBy": {
+        "login": "luogangan7-lgtm"
+      },
+      "comments": {
+        "nodes": [
+          {
+            "id": "PRRC_kwDOUv1K_c76vsOe",
+            "body": "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Refresh the copy title when the draft changes**\n\nWhen a merchant renames the selected session and saves it in Studio, the detail refresh updates `draft.title` without remounting this component because its parent key contains only the session ID. This `useState` initializer therefore retains the pre-edit title, so subsequently opening \u201cCopy previous session\u201d silently prefills the old name. Synchronize the title while the copy form is closed, or include the draft version in the component identity.\n\nUseful? React with \ud83d\udc4d\u00a0/ \ud83d\udc4e.",
+            "createdAt": "2026-10-07T12:22:45Z",
+            "updatedAt": "2026-10-07T12:22:45Z",
+            "author": {
+              "login": "chatgpt-codex-connector"
+            }
+          },
+          {
+            "id": "PRRC_kwDOUv1K_c760Bcf",
+            "body": "Fixed in 5fb19555 (pushed with 267b076a): the copy form now resyncs its title from the saved draft while it is closed, without replacing an open edit, so a Studio rename is reflected the next time \"Copy previous session\" opens. Red\u2192green node test; full test-node, tsc, check-gates green.\n\n_\ud83e\udd16 Addressed by [Claude Code](https://claude.com/claude-code)_",
+            "createdAt": "2026-10-07T14:10:26Z",
+            "updatedAt": "2026-10-07T14:10:27Z",
+            "author": {
+              "login": "luogangan7-lgtm"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "PRRT_kwDOUv1K_c6qHcUH",
+      "isResolved": false,
+      "isOutdated": false,
+      "path": "apps/admin/components/LiveConsole.tsx",
+      "line": 107,
+      "diffSide": "RIGHT",
+      "startLine": 107,
+      "startDiffSide": null,
+      "originalLine": 107,
+      "originalStartLine": null,
+      "resolvedBy": null,
+      "comments": {
+        "nodes": [
+          {
+            "id": "PRRC_kwDOUv1K_c77Fgl5",
+            "body": "[P2] \u5e93\u5b58\u8f6e\u8be2\u4e0d\u5e94\u91cd\u5efa\u6b63\u5728\u7f16\u8f91\u7684\u5546\u54c1\u884c\n\n\u8fd9\u91cc\u628a `offer.version` \u548c `stock.balance_version` \u653e\u8fdb React key\uff0c\u800c `OfferRow` \u7b2c 123 \u884c\u4ec5\u5728\u521d\u59cb\u5316\u65f6\u8bfb\u53d6\u6570\u91cf\u3002\u64cd\u4f5c\u5458\u8f93\u5165\u5e93\u5b58\u4f46\u5c1a\u672a\u4fdd\u5b58\u65f6\uff0c\u53ea\u8981\u4e70\u5bb6\u4e0b\u5355\u6216\u53e6\u4e00\u64cd\u4f5c\u5458\u4fee\u6539\u5e93\u5b58\uff0c\u4e0b\u4e00\u6b21 5 \u79d2 A1 \u8f6e\u8be2\u5c31\u4f1a\u5378\u8f7d\u8f93\u5165\u884c\uff1a\u672a\u63d0\u4ea4\u6570\u91cf\u88ab\u670d\u52a1\u7aef\u503c\u8986\u76d6\uff0c\u952e\u76d8\u7126\u70b9\u4e5f\u6d88\u5931\u3002\u8fd9\u662f\u6b63\u5e38\u76f4\u64ad\u6d41\u91cf\u4e0b\u4f1a\u53d1\u751f\u7684\u7f16\u8f91\u4e2d\u65ad\uff0c\u4e0d\u53ea\u662f\u9759\u6001\u6837\u5f0f\u95ee\u9898\u3002\n\n\u8bf7\u5c06 key \u56fa\u5b9a\u4e3a `offer_id`\uff0c\u5206\u5f00\u7ba1\u7406\u670d\u52a1\u5668\u5feb\u7167\u548c\u7f16\u8f91\u8349\u7a3f\uff1a\u672a\u7f16\u8f91\u65f6\u540c\u6b65\u65b0\u503c\uff1b\u5df2\u7f16\u8f91\u65f6\u4fdd\u7559\u8f93\u5165\u548c\u7126\u70b9\uff0c\u5e76\u5c31\u7248\u672c\u53d8\u5316\u663e\u793a\u884c\u5185\u63d0\u793a\uff0c\u8981\u6c42\u91cd\u65b0\u786e\u8ba4\u540e\u7528\u5bf9\u5e94 CAS \u63d0\u4ea4\u3002\u4e0d\u8981\u76f4\u63a5\u7528 effect \u65e0\u6761\u4ef6\u8986\u76d6\u8349\u7a3f\u3002\u8865\u6d4f\u89c8\u5668\u56de\u5f52\uff1a\u805a\u7126\u6570\u91cf\u6846\u5e76\u8f93\u5165 \u2192 \u5916\u90e8\u5e93\u5b58\u53d8\u5316 \u2192 \u7b49\u5f85\u81ea\u52a8\u8f6e\u8be2 \u2192 \u68c0\u67e5\u8349\u7a3f/\u7126\u70b9\u4fdd\u7559\u53ca\u7248\u672c\u63d0\u793a \u2192 \u660e\u786e\u63d0\u4ea4\u5e76\u6838\u5bf9\u6700\u7ec8\u5e93\u5b58\u3002\u6b64\u7ed3\u8bba\u6765\u81ea\u5f53\u524d head \u7684\u7ec4\u4ef6\u4e0e\u8f6e\u8be2\u4ee3\u7801\uff0c\u672a\u5728\u5f53\u524d\u6d4f\u89c8\u5668\u6267\u884c\u3002",
+            "createdAt": "2026-10-07T22:11:00Z",
+            "updatedAt": "2026-10-07T22:11:00Z",
+            "author": {
+              "login": "luogangan7-lgtm"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "PRRT_kwDOUv1K_c6qHcUL",
+      "isResolved": true,
+      "isOutdated": false,
+      "path": "apps/admin/components/LiveConsole.tsx",
+      "line": 101,
+      "diffSide": "RIGHT",
+      "startLine": 101,
+      "startDiffSide": null,
+      "originalLine": 101,
+      "originalStartLine": null,
+      "resolvedBy": {
+        "login": "luogangan7-lgtm"
+      },
+      "comments": {
+        "nodes": [
+          {
+            "id": "PRRC_kwDOUv1K_c77Fgl9",
+            "body": "[P2] \u5c06 Instagram \u4e0d\u53ef\u5d4c\u5165\u63d0\u793a\u9650\u5b9a\u5230 Instagram \u6765\u6e90\n\n`source_platform === \"instagram\" || !video_embeddable` \u4f1a\u8ba9\u666e\u901a Facebook \u573a\u6b21\uff08\u6216\u5c1a\u672a\u8fde\u63a5\u6765\u6e90\u7684\u573a\u6b21\uff09\u5728 `video_embeddable=false` \u65f6\u4e5f\u663e\u793a\u201cInstagram Live cannot be embedded here. Watch in Instagram\u201d\u3002\u540c\u4e00\u533a\u5757\u4e0a\u4e00\u884c\u5374\u663e\u793a\u201cOpen Facebook post\u201d\u6216\u201c\u6ca1\u6709\u5df2\u9a8c\u8bc1 Facebook \u94fe\u63a5\u201d\uff0c\u628a\u201cFacebook \u65e0\u6cd5\u5185\u5d4c\u201d\u548c\u201cInstagram \u5e73\u53f0\u9650\u5236\u201d\u6df7\u6210\u4e86\u77db\u76fe\u7684\u64cd\u4f5c\u6307\u5f15\u3002\n\n\u4ed3\u5e93[1586px \u622a\u56fe](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/blob/2ad65bcd1789476ebab06fa5023c966e59578114/output/lc-u1-shell/CI4-evidence/console/en-1586-live.png)\u4e2d\u5df2\u80fd\u770b\u89c1 Facebook \u94fe\u63a5\u4e0b\u65b9\u7d27\u63a5 Instagram \u63d0\u793a\uff1b[390px \u622a\u56fe](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/blob/2ad65bcd1789476ebab06fa5023c966e59578114/output/lc-u1-shell/CI4-evidence/console/en-narrow-permission.png)\u4e5f\u4fdd\u7559\u8be5\u989d\u5916\u63d0\u793a\u5757\u3002\u6ce8\u610f\uff1a[\u8bc1\u636e\u8bf4\u660e](https://github.com/luogangan7-lgtm/live_commerce_architecture_v1/blob/2ad65bcd1789476ebab06fa5023c966e59578114/output/lc-u1-shell/CI4-DELIVERY.md)\u5c06\u5b83\u4eec\u7ed1\u5b9a\u5230\u65e7\u63d0\u4ea4 5012ce96 \u548c MOCK \u4e1a\u52a1\u5feb\u7167\uff0c\u5e76\u975e\u672c head \u5b9e\u6d4b\uff1b\u5f53\u524d\u6761\u4ef6\u4ecd\u76f4\u63a5\u652f\u6301\u8fd9\u4e00\u95ee\u9898\u3002\n\n\u8bf7\u6309\u6765\u6e90\u5206\u522b\u6e32\u67d3\uff1aInstagram \u624d\u663e\u793a Instagram \u9650\u5236\uff1bFacebook \u4e0d\u53ef\u5185\u5d4c\u65f6\u53ea\u4fdd\u7559\u5bf9\u5e94\u7684\u5916\u94fe/\u8bbf\u95ee\u8bf4\u660e\uff1b\u672a\u7ed1\u5b9a\u6765\u6e90\u65f6\u663e\u793a\u914d\u7f6e\u5165\u53e3\uff0c\u4e0d\u5f15\u5bfc\u53bb\u9519\u8bef\u5e73\u53f0\u3002\u8fd9\u6837\u4e5f\u80fd\u53bb\u6389\u7a84\u5c4f\u4e0a\u65e0\u5173\u7684\u8bf4\u660e\u5757\u3002\u8865\u4e09\u79cd\u6765\u6e90 \u00d7 \u53ef/\u4e0d\u53ef\u5185\u5d4c\u7684\u7ec4\u4ef6\u65ad\u8a00\u53ca 390/1586px \u89c6\u89c9\u56de\u5f52\u3002",
+            "createdAt": "2026-10-07T22:11:00Z",
+            "updatedAt": "2026-10-07T22:11:00Z",
+            "author": {
+              "login": "luogangan7-lgtm"
+            }
+          },
+          {
+            "id": "PRRC_kwDOUv1K_c77ICow",
+            "body": "Valid, deferred: this PR is past its first review round; under the convergence rule UX P2 items go to output/integrator/FOLLOWUPS.md. (4212525433, the stock poll rebuilding an edited row, is being fixed in this PR because it loses the merchant's input.)\n\n_\ud83e\udd16 Addressed by [Claude Code](https://claude.com/claude-code)_",
+            "createdAt": "2026-10-07T23:51:02Z",
+            "updatedAt": "2026-10-07T23:51:02Z",
+            "author": {
+              "login": "luogangan7-lgtm"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

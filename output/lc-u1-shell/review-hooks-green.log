@@ -1,0 +1,15 @@
+✔ A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds (83.226041ms)
+✔ Retry-After is a minimum; hidden tabs cancel polling; forbidden locks and conceals (56.115708ms)
+✔ secondary reads are mount/refresh only, independent from A1 and non-fatal (70.243084ms)
+✔ UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload (30.820667ms)
+✔ first definite 403 clears journal but locks commands; late success after navigation clears only its own key (31.619583ms)
+✔ private reads preserve Retry-After seconds and dates, without changing existing error codes (19.660542ms)
+✔ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (54.493625ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 551.768

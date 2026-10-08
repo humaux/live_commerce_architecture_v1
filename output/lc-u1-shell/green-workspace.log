@@ -1,0 +1,11 @@
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.500167ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.105917ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (0.146875ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 104.379292

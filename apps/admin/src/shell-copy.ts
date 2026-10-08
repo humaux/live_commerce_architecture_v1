@@ -4,7 +4,7 @@
 // Shell-only copy; business status language stays inside its domain.
 const en = {
   overview: "Overview",
-  live: "Live & posts",
+  live: "Live",
   orders: "Orders & shipping",
   catalog: "Products & inventory",
   messages: "Inbox",
@@ -14,7 +14,9 @@ const en = {
   finance: "Payments & reports",
   settings: "Settings",
   dashboard: "Overview",
-  studio: "Sessions",
+  studio: "Live sessions",
+  liveConsole: "Live console",
+  liveSettings: "Live settings",
   claims: "Comment claims",
   orderList: "Orders",
   orderNew: "Create order",
@@ -68,7 +70,7 @@ export type ShellCopy = typeof en;
 export type ShellLabel = keyof ShellCopy;
 const zhCN: ShellCopy = {
   overview: "总览",
-  live: "直播与贴文",
+  live: "直播",
   orders: "订单与发货",
   catalog: "商品与库存",
   messages: "消息中心",
@@ -78,7 +80,9 @@ const zhCN: ShellCopy = {
   finance: "收款与报表",
   settings: "设置",
   dashboard: "总览",
-  studio: "场次",
+  studio: "直播场次",
+  liveConsole: "直播控台",
+  liveSettings: "直播设置",
   claims: "留言认领",
   orderList: "订单",
   orderNew: "创建订单",
@@ -130,7 +134,7 @@ const zhCN: ShellCopy = {
 };
 const zhTW: ShellCopy = {
   overview: "總覽",
-  live: "直播與貼文",
+  live: "直播",
   orders: "訂單與出貨",
   catalog: "商品與庫存",
   messages: "訊息中心",
@@ -140,7 +144,9 @@ const zhTW: ShellCopy = {
   finance: "收款與報表",
   settings: "設定",
   dashboard: "總覽",
-  studio: "場次",
+  studio: "直播場次",
+  liveConsole: "直播控台",
+  liveSettings: "直播設定",
   claims: "留言認領",
   orderList: "訂單",
   orderNew: "建立訂單",

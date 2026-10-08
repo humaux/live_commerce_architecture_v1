@@ -1,0 +1,32 @@
+(node:52115) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ offer controls read authoritative limits without parsing unrelated KEYWORD_QTY_CONTAINS window/stats (14.722292ms)
+✔ offer controls accept 101 through the backend cap of 200 distinct offers, reject 201 (2.841875ms)
+✔ offer toggle preserves exactly the authoritative maximum in the real M4 payload (3.724167ms)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.427792ms)
+✔ Next proxy admits the exact console family and results query before the BFF (71.443ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.114291ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (41.56875ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.162833ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (2.14825ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.369375ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.35ms)
+✔ journal replay sends the exact original method/path/body/key for all five commands (1.9595ms)
+(node:52116) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds (79.823291ms)
+✔ Retry-After is a minimum; hidden tabs cancel polling; forbidden locks and conceals (27.857ms)
+✔ secondary reads are mount/refresh only, independent from A1 and non-fatal (24.705334ms)
+✔ UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload (20.646083ms)
+✔ first definite 403 clears journal but locks commands; late success after navigation clears only its own key (20.592084ms)
+✔ private reads preserve Retry-After seconds and dates, without changing existing error codes (18.29325ms)
+✔ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (52.108417ms)
+✔ restored copy success dispatches completion only in the still-current scene (41.022333ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 571.297542
