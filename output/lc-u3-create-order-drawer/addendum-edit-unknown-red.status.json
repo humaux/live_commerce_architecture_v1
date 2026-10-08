@@ -1,0 +1,19 @@
+{
+  "name": "addendum-edit-unknown-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "0d91f23656f1614bcada089eebed7233b1209c1c",
+  "source_sha256": "198e3d53fba29148525eaede6ee2a0836c5f54a7d7ea78ebc97630c4241e1ff8",
+  "started_at": "2026-10-08T15:42:39Z",
+  "state": "complete",
+  "pid": 71006,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 62.964
+}

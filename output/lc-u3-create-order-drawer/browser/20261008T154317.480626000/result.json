@@ -1,0 +1,102 @@
+{
+  "cases": 25,
+  "failed": [
+    "DU3-manual-unknown-draft-edit"
+  ],
+  "results": [
+    {
+      "case": "DU3-manual-unknown-draft-edit",
+      "attempts": 2,
+      "same_key": false,
+      "same_body": false,
+      "pg_delta": 2,
+      "pg_request_orders": 2,
+      "pg_request_receipts": 2,
+      "replay_status": 201
+    },
+    {
+      "case": "DU3-linked-en-1440",
+      "order_id": "7e7146cc-8653-46f7-940c-b2cd7b936806"
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-390",
+      "order_id": "9467f61f-6d07-46bb-935d-435e4cf0708b"
+    },
+    {
+      "case": "DU3-single-order-en-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-1440",
+      "order_id": "b69599c9-a6d6-4c7b-97c6-86cf641d32e9"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-390",
+      "order_id": "3239e862-2a4c-46e1-a197-139842d6f308"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-1440",
+      "order_id": "cd0210a8-fc81-4de3-b4bc-f937c380a9da"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-390",
+      "order_id": "2070e654-51c5-4b3e-af77-a3e771ac39ed"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    }
+  ]
+}

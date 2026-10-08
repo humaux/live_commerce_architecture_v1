@@ -1,0 +1,590 @@
+[
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "manual UNKNOWN draft edit retry",
+    "action": "commit/abort/fill/click",
+    "actual": "edited draft; original key/body; real replay 200; exact one order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-manual-unknown-draft-edit",
+    "control": "manual-order-new-attempt",
+    "action": "real 422 then explicit click",
+    "actual": "zero PG orders; submit remains disabled after refusal/draft edit; new-attempt enables without network write",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "drawer-new-attempt",
+    "action": "real 422 then explicit click",
+    "actual": "zero PG orders; submit remains disabled after refusal/draft edit; new-attempt enables without network write",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-en-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-en-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-en-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-en-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-en-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-TW-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-TW-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-TW-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-TW-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-TW-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-1440",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-1440",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-1440",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-1440",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-1440",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-1440",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-linked-zh-CN-390",
+    "control": "linked order/send/copy",
+    "action": "click +/- then create and copy",
+    "actual": "real order; window_closed; native clipboard; bearer absent from DOM/storage/URL",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-duplicate-zh-CN-390",
+    "control": "duplicate/view order",
+    "action": "submit again then click view",
+    "actual": "real 409 points at first order",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-unlinked-zh-CN-390",
+    "control": "unlinked warning/empty fields/zero",
+    "action": "edit form",
+    "actual": "no customer guessing; quantity zero removes; valid catalog line re-added",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-390",
+    "control": "UNKNOWN draft edit protection",
+    "action": "inspect native disabled fields",
+    "actual": "customer and quantity cannot alter unresolved attempt",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-single-order-zh-CN-390",
+    "control": "UNKNOWN explicit retry",
+    "action": "commit/abort/click",
+    "actual": "same key/body; real replay 200; exact one request order and receipt in PG",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "BuyerPanel create order",
+    "action": "click",
+    "actual": "real A15 and native dialog opened",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "catalog search and variant",
+    "action": "fill/search/expand/add",
+    "actual": "one real catalog SKU selected",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-auth-boundary-zh-CN-390",
+    "control": "CSRF session boundary",
+    "action": "rotate actual cookie then click submit",
+    "actual": "private draft removed; zero A16 requests; PG order count unchanged",
+    "status": "PASS"
+  },
+  {
+    "case": "DU3-comment-trigger",
+    "control": "claimed comment direct create",
+    "action": "click",
+    "actual": "real CommentStream opens bundle-prefilled drawer without guessed conversation",
+    "status": "PASS"
+  }
+]

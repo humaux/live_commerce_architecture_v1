@@ -1,0 +1,15 @@
+✔ TSX seam refuses an unlisted import (3.399125ms)
+✔ Ads merchant timestamp uses Taipei at the year boundary (11.377584ms)
+✔ Design version published_at cell uses Taipei at the year boundary (1.775292ms)
+✔ ManualOrder bank-transfer expiry uses Taipei at the year boundary (2.679791ms)
+✔ shared ManualOrder form keeps fresh defaults and legacy input IDs (3.720041ms)
+✔ shared drawer quantity controls namespace IDs, bound quantity and remove zero in all locales (8.216458ms)
+✔ shared delivery choice emits one patch with the only allowed payment mode (2.999875ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 157.661375

@@ -1,0 +1,29 @@
+(node:70558) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ UNKNOWN preserves the exact original bytes and key despite draft edits (0.435166ms)
+✔ navigation guard stores only an opaque boolean and blocks replacement attempts (1.372084ms)
+✔ unavailable storage never permits an unguarded money write (0.070375ms)
+✔ post-dispatch auth refusal can follow commit and must retain the order guard (0.13175ms)
+✖ a definitive response unlocks only the explicit new-attempt action (1.317791ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90.737042
+
+✖ failing tests:
+
+test at tests/admin/create-order-attempt.test.ts:83:1
+✖ a definitive response unlocks only the explicit new-attempt action (1.317791ms)
+  TypeError: attempt.startNew is not a function
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer/tests/admin/create-order-attempt.test.ts:86:23)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

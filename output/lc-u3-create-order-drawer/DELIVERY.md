@@ -1,5 +1,21 @@
 # LC-U3 create-order drawer delivery
 
+## Current addendum — ManualOrder P1 (4212512394)
+
+- Implementation `d0422a6c`; real regressions `0d91f236`, `778de008`; base previous delivery `6aabe6b6`. This addendum supersedes the original claim that ManualOrder submission behavior is unchanged.
+- Root cause: editing the live draft after UNKNOWN regenerated its request key/body. The real baseline `addendum-edit-unknown-red.log` failed only `DU3-manual-unknown-draft-edit`: two attempts, different key and body, HTTP201, two request-specific PG orders/receipts (store total15 instead of14).
+- Shared `OrderAttempt` now retains its immutable snapshot after both ambiguous and definitive responses. `finish()` only records definitive settlement; only the explicit `startNew()` action clears the receipt for a fresh key. ManualOrder keeps editable draft fields separate; retries ignore draft edits and use the original request. Drawer keeps editing blocked for unresolved attempts. Both submit handlers and buttons reject a settled receipt until the merchant clicks the localized new-attempt control.
+- ManualOrder HTTP200 replay accepts the server-redacted configured/null buyer link without treating a successful replay as UNKNOWN; HTTP201 remains strict. Existing regeneration recovers that link using the original submitted locale. The default result parser remains strict.
+- **Final real browser GREEN:** `addendum-edit-unknown-green.log`, `browser/20261008T154854.154170000/result.json`: 25 cases, PG14/14, legacy10/10. The edited ManualOrder retry has same key/body, HTTP200, PG delta1, exact one order and receipt. Both real422 refusal subchecks prove editing cannot enable submit, explicit new-attempt enables it, and clicking that action sends no POST and creates no order.
+- **Calibration:** `addendum-calibration-red.log` exits1 only for `DU3-single-order-en-1440`; all25 cases run, PG15 instead of14. The ManualOrder edited-draft regression remains GREEN during this drawer fault.
+- **Final local commands:** `bash scripts/dev/test-node.sh`, `bash scripts/dev/check-gates.sh`, `pnpm --dir apps/admin exec tsc --noEmit -p .`, `GOFLAGS=-p=1 go vet -tags browser ./tests/foundation`, `GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-manual-order` all exit0. `LC_DRAWER_CALIBRATION=new-key-on-retry GOFLAGS=-p=1 bash scripts/dev/test-local.sh --browser-manual-order` exits1 as required. Evidence: `addendum-{node,gates,typecheck,vet,edit-unknown-green,calibration-red}.{log,status.json}`.
+- All final commands share unchanged source SHA-256 `091a4f21bac71315adf405441d5bb11e23520b26fd56342ed73a621dc0dcd7ea`, committed verbatim in `d0422a6c`. Node lifecycle red→green: `addendum-lifecycle-{red,green}.log`.
+- E3, real Chromium/Next/BFF/Go/PG with synthetic data and MOCK identity/provider. Read-only source spotcheck found no additional money/state issue; K3 independent acceptance remains pending. Mode remains `--browser-manual-order`; no new mode, product Go or contract change.
+- Test author configured `gpt-6.1-sol/high`, separate `unit/lc-u3-retry-tests` worktree, own paths limited to browser driver and Go fixture. Root implemented/reviewed product and ran every runtime gate. Temporary test worktree archived then removed; delivery worktree retained. No push.
+
+## Original delivery evidence (historical, before this addendum)
+
+
 - Branch: `unit/lc-u3-create-order-drawer`. Base: LC-U2a `9ce09803`; frozen brief `ba2bab32`. No trunk merge, push, PR or deployment performed.
 - Tested implementation: `faac7bf2` (preceding integration `142a58c5`, API `97b1243d`, shared form `d00d04c7`). All final gates share source SHA-256 `16e8ac45852239ae02f80174697bfc84f96003e63459dd38e705124badb5e988`; each `*.status.json` records command, base HEAD, timeout, elapsed time, source hash and unchanged-source check. The five then-uncommitted changes were committed verbatim as `faac7bf2`.
 - Implementer: Codex-3, GPT-6 runtime family (exact parent deployment/effort not exposed). Child explorers and writers configured `gpt-6.1-sol`, high effort except browser mapping medium. Child worktrees were isolated; no recursive delegation.
