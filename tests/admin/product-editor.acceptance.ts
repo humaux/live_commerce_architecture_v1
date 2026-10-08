@@ -134,6 +134,39 @@ export function registerProductEditorAcceptance() {
           }
           await shot(`list-${locale}-${width}`);
           await page.getByTestId("product-new").click();
+          if (width === 390) {
+            const toggle = page.locator(".pe-readiness-toggle");
+            const checklist = page.locator("#pe-readiness-section");
+            await expect(toggle).toBeVisible();
+            await expect(toggle).toHaveAttribute("aria-expanded", "false");
+            await expect(checklist).toBeHidden();
+            await toggle.click();
+            await expect(toggle).toHaveAttribute("aria-expanded", "true");
+            await expect(checklist).toBeVisible();
+            const missing = checklist.locator(".pe-readiness:has([data-ready=false])");
+            const missingCount = await missing.count();
+            expect(missingCount).toBeGreaterThan(0);
+            for (let i = 0; i < missingCount; i++) {
+              const entry = missing.nth(i);
+              const target = await entry.getAttribute("aria-controls");
+              const label = await entry.innerText();
+              expect(target).toBeTruthy();
+              await entry.click();
+              await expect(entry).toHaveAttribute("aria-current", "location");
+              // READ/MEASURE only: the actual checklist click must focus a visible field in its section.
+              await expect.poll(() => page.locator(`[data-testid=product-fields] [id="${target}"]`).evaluate((section) => {
+                const active = document.activeElement;
+                if (!(active instanceof HTMLElement) || !section.contains(active)) return false;
+                const field = active.getBoundingClientRect(), pane = section.closest(".pe-fields")!.getBoundingClientRect();
+                return field.height > 0 && field.top >= pane.top && field.bottom <= pane.bottom;
+              })).toBe(true);
+              ledger.push({ page: "new", locale, width, control: `readiness/${label}`, action: "click missing item", expected: `visible field focus in ${target}`, actual: "PASS" });
+            }
+            await toggle.click();
+            await expect(toggle).toHaveAttribute("aria-expanded", "false");
+            await expect(checklist).toBeHidden();
+            ledger.push({ page: "new", locale, width, control: "readiness toggle", action: "click expand, missing items, click collapse", expected: "aria-expanded false→true→false; missing list visible then hidden; entries navigate", actual: "PASS", persistence: "view state only" });
+          }
           await page
             .getByTestId("product-name")
             .fill(`${tag} studio collection`);

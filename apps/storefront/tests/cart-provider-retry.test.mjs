@@ -33,6 +33,56 @@ const cart = {
 const expiry = new Date(Date.now() + 3600_000).toISOString();
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+for (const failure of ["read", "lost-write", "refresh-read"]) {
+  test(`rotated buyer context clears the prior cart on ${failure} and preserves the B receipt`, async () => {
+    browser();
+    const oldFetch = globalThis.fetch, contextB = "b".repeat(43);
+    let session = { state: "active", context: ctx, expires_at: expiry };
+    const cartB = { ...cart, id: "00000000-0000-0000-0000-000000000004", version: 20, items: [{ sku_id: sku, quantity: 2 }] };
+    const puts = []; let sessionWrites = 0;
+    globalThis.fetch = async (url, init = {}) => {
+      if (url === "/api/buyer/session") return Response.json(session);
+      if (String(url).startsWith("/api/buyer/session/")) { sessionWrites++; throw new Error("must reuse active B"); }
+      if (url === "/api/buyer/cart" && init.method === "PUT") {
+        puts.push({ body: init.body, key: new Headers(init.headers).get("Idempotency-Key"), context: new Headers(init.headers).get("X-Buyer-Context") });
+        if (puts.length === 1) throw new Error("synthetic lost B acknowledgement");
+        return Response.json({ ...cartB, version: 21 });
+      }
+      if (url === "/api/buyer/cart") {
+        if (session.context === ctx) return Response.json(cart);
+        if (failure !== "lost-write") return Response.json({ code: "unavailable" }, { status: 503 });
+        return Response.json({ ...cartB, version: puts.length > 1 ? 22 : 20 });
+      }
+      throw new Error("unexpected MOCK route");
+    };
+    try {
+      const { render, api } = harness();
+      const settle = async () => { for (let n = 0; n < 4; n++) await tick(); render(); };
+      render(); await settle();
+      assert.equal(api().context, ctx); assert.equal(api().cart.id, cart.id); assert.equal(api().count, 5);
+      session = { state: "active", context: contextB, expires_at: expiry };
+      if (failure === "refresh-read") await api().refresh(); else assert.equal(await api().add(sku, 1), false);
+      await settle();
+      assert.equal(api().context, contextB);
+      assert.equal(api().cart, null, "cart A must not remain visible after adopting context B");
+      assert.equal(api().count, 0);
+      assert.equal(pendingPurchase(ctx), null);
+      if (failure === "lost-write") {
+        assert.equal(api().problem, "uncertain");
+        const pending = pendingPurchase(contextB); assert.equal(pending?.kind, "cart");
+        assert.equal(puts.length, 1); assert.equal(puts[0].key, pending.key); assert.equal(puts[0].context,contextB);
+        await api().retry(); await settle();
+        assert.equal(puts.length, 2); assert.deepEqual(puts[1], puts[0], "Retry must keep B's exact key and body");
+        assert.equal(pendingPurchase(contextB), null); assert.equal(api().cart.id, cartB.id); assert.equal(api().cart.version, 22);
+      } else { assert.equal(puts.length, 0); assert.equal(pendingPurchase(contextB), null); }
+      assert.equal(sessionWrites, 0, "never create another buyer session to recover B");
+    } finally {
+      globalThis.fetch = oldFetch;
+      for (const name of ["window", "localStorage", "sessionStorage", "navigator"]) delete globalThis[name];
+    }
+  });
+}
+
 function browser() {
   const data = new Map();
   const storage = {
