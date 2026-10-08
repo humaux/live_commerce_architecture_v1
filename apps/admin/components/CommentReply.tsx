@@ -195,9 +195,9 @@ export function CommentReply({
       )
         throw new InboxError("retry_later", 503);
       setState(value.send_state);
-      // A queued public send has no terminal-state field in A2. Preserve the coarse guard
-      // until explicit external verification rather than pretending the operation is final.
-      if (["sent", "failed", "blocked"].includes(value.send_state))
+      // queued is an acknowledged operation, not an unknown transport result. Its per-comment
+      // state stays visible; only UNKNOWN may fence every comment in the session across reloads.
+      if (value.send_state !== "unknown")
         setReceiptBlocked(!receipt.current?.clear());
       else setReceiptBlocked(true);
       setText("");

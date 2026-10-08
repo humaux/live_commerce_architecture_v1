@@ -5,7 +5,7 @@
 // Used by: every admin client module under apps/admin/lib (browser fetch -> this route -> Go /v1/admin/stores/...);
 //   health responses are closed and private/no-store.
 import { validMediaQuery } from "@/lib/product-media-model";
-import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode } from "@/lib/inbox-bff";
+import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode, invalidCommentCursor, inboxResponseLimit } from "@/lib/inbox-bff";
 import { callBackend, fixtureSession } from "@/lib/backend";
 import { consoleAny, consolePaths, consoleRoutes, validConsoleBody, validConsoleQuery } from "@/src/features/live/console-request";
 import { parseConsole, parseCopyResult, parseLifecycleResult, parseRecommendResult, parseSessionResults } from "@/src/features/live/console-model";
@@ -123,6 +123,7 @@ async function route(request: Request, context: Context) {
   if (inbox && !authConfig) return error(404, "not_found");
   if (inbox && !inboxRoute(request.method, path)) return error(405, "method_not_allowed", path.endsWith("/messages") ? "GET, POST" : inboxRoute("GET", path) ? "GET" : "POST");
   if (inbox && !validInboxRequest(request, path)) {
+    if (invalidCommentCursor(request, path)) return error(400, "invalid_cursor");
     const filters = new URL(request.url).searchParams.getAll("filter");
     if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
     return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
@@ -413,7 +414,7 @@ async function route(request: Request, context: Context) {
     let body: string;
     let value: unknown;
     // A9 permits 50 Unicode messages; a 256 KiB ceiling rejects valid 2000-rune pages.
-    try { body = await readBody(response, "application/json", 1 << 20); value = JSON.parse(body); }
+    try { body = await readBody(response, "application/json", inboxResponseLimit(request.method, path)); value = JSON.parse(body); }
     catch { return error(503, "retry_later"); }
     if (!response.ok) {
       const code = inboxErrorCode(response.status, value, path);

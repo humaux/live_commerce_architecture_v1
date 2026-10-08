@@ -75,6 +75,8 @@ export function applyCommentPage(
 ): CommentBuffer {
   if (page.reset || (old.epoch !== 0 && old.epoch !== page.epoch))
     return { ...emptyComments(), reset: true };
+  // Historical paging stops at the memory cap: never consume a cursor for an unseen page.
+  if (older && old.items.length >= 1000) return old;
   const map = new Map(
     (older ? [...page.items, ...old.items] : [...old.items, ...page.items]).map(
       (row) => [row.ref, row],
@@ -82,7 +84,7 @@ export function applyCommentPage(
   );
   return {
     epoch: page.epoch,
-    items: [...map.values()].slice(-1000),
+    items: older ? [...map.values()].slice(0, 1000) : [...map.values()].slice(-1000),
     next: older ? old.next : page.next,
     older: older || !old.epoch ? page.older_cursor : old.older,
     reset: false,

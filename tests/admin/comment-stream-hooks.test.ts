@@ -29,6 +29,57 @@ const { CommentStream } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+test("PR18 A8 clears names synchronously and keeps loaded older pages through a head poll",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
+  const item=(id:string,name:string)=>({conversation_id:id,bundle_id:null,display_name:name,platform:"facebook",last_at:"2026-10-08T01:00:00Z",unreplied:true});
+  globalThis.fetch=async input=>String(input).includes("inbox/conversations") ? response({items:[String(input).includes("cursor=")?item("old","Synthetic older buyer"):item("head","Synthetic head buyer")],next_cursor:String(input).includes("cursor=")?"":"more",unread_total:2}):response(page());
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  node(h,n=>n.type==="button"&&textOf(n)===commentCopy("en").older).props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("Synthetic older buyer"));
+  t.mock.timers.tick(10000);await h.settle();
+  assert.ok(textOf(h.output).includes("Synthetic older buyer"),"background head must not discard loaded tail");
+  assert.equal(nodes(h.output).filter(n=>n.type==="button"&&textOf(n)===commentCopy("en").older).length,0,"exhausted older cursor remains exhausted");
+  env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
+  // Inspect React state storage before ANY next render/passive effect: privacy callback must clear it now.
+  assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name?.includes("Synthetic"))),false,"A8 names must be synchronously cleared");
+  h.flush();assert.equal(textOf(h.output).includes("Synthetic older buyer"),false);
+});
+test("PR18 A8 hides clear before effects even without pagination",async t=>{
+  const env=environment(t);
+  globalThis.fetch=async input=>String(input).includes("inbox/conversations")?response({items:[{conversation_id:sid,bundle_id:null,display_name:"PRIVATE_A8_NAME",platform:"facebook",last_at:"2026-10-08T01:00:00Z",unreplied:true}],next_cursor:"",unread_total:1}):response(page());
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();node(h,n=>n.props["data-testid"]==="comment-filter-private").props.onClick();await h.settle();
+  assert.ok(textOf(h.output).includes("PRIVATE_A8_NAME"));
+  env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));
+  assert.equal(h.slots.some(s=>s.value?.items?.some((r:any)=>r.display_name==="PRIVATE_A8_NAME")),false);
+});
+test("PR18 quiet A2 stream refreshes delayed claim marks without a new sequence or user refresh",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
+  let completed=false;const urls:string[]=[];
+  globalThis.fetch=async input=>{const url=String(input);urls.push(url);return response(url.includes("after_seq")?page(1,[]):page(1,[completed?{...row,marks:{...row.marks,claim:{status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid}}}:row]));};
+  const h=env.mount(()=>useCommentStream(store.id,sid,true));await h.settle();assert.equal(h.output.buffer.items[0].marks.claim,null);
+  h.output.select({ref:row.ref});h.flush();completed=true;
+  for(let n=0;n<4;n++){t.mock.timers.tick(3000);await h.settle();}
+  assert.equal(h.output.buffer.items[0].marks.claim?.bundle_id,sid);
+  assert.equal(h.output.selection.ref,row.ref);
+  assert.ok(urls.some(u=>u.includes("after_seq")),"incremental cursor still used");
+  assert.ok(urls.filter(u=>!u.includes("after_seq")).length>=2,"bounded recent window automatically re-read");
+});
+test("PR18 late claim automatically exposes keyword view and the reused BuyerPanel",async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
+  let completed=false,panelReads=0;
+  globalThis.fetch=async input=>{
+    const url=String(input);
+    if(url.includes("buyer-panel?")){panelReads++;assert.ok(url.includes(`bundle_id=${sid}`));return response({display_name:"SYNTHETIC_LATE_BUYER",platform:"facebook",purchase_ordinal:1,claims:[],claim_total_minor:0,orders:[],link_pending_manual:false});}
+    if(url.includes("message-templates"))return response({items:[]});
+    return response(url.includes("after_seq")?page(1,[]):page(1,[completed?{...row,marks:{...row.marks,claim:{status:"ACCEPTED",reason:null,offer_id:sid,keyword:"A1",quantity:1,bundle_id:sid}}}:row]));
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]===`comment-select-${row.ref}`).props.onClick();await h.settle();assert.equal(panelReads,0);
+  completed=true;for(let n=0;n<4;n++){t.mock.timers.tick(3000);await h.settle();}
+  assert.equal(panelReads,1);assert.ok(textOf(h.output).includes("SYNTHETIC_LATE_BUYER"));
+  node(h,n=>n.props["data-testid"]==="comment-filter-keyword").props.onClick();await h.settle();assert.ok(textOf(h.output).includes("A1"));
+});
 for(const filter of ["private","unreplied"])test(`K3 A8 ${filter} polls every 10s, backs off, resets, pauses hidden and stops off-filter`,async t=>{
   const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
   let reads=0,failures=0;
@@ -43,7 +94,7 @@ for(const filter of ["private","unreplied"])test(`K3 A8 ${filter} polls every 10
   node(h,n=>n.props["data-testid"]===`comment-filter-${filter}`).props.onClick();await h.settle();assert.equal(reads,1);
   t.mock.timers.tick(9999);await h.settle();assert.equal(reads,1);t.mock.timers.tick(1);await h.settle();assert.equal(reads,2,"idle A8 view must refresh without a merchant action");assert.ok(textOf(h.output).includes("Synthetic new DM"));
   failures=5;t.mock.timers.tick(10000);await h.settle();assert.equal(reads,3);
-  for(const delay of [3000,6000,12000,24000,30000]){const previous=reads;t.mock.timers.tick(delay-1);await h.settle();assert.equal(reads,previous);t.mock.timers.tick(1);await h.settle();assert.equal(reads,previous+1);}
+  for(const delay of [10000,20000,30000,30000,30000]){const previous=reads;t.mock.timers.tick(delay-1);await h.settle();assert.equal(reads,previous);t.mock.timers.tick(1);await h.settle();assert.equal(reads,previous+1);}
   const successful=reads;t.mock.timers.tick(9999);await h.settle();assert.equal(reads,successful);t.mock.timers.tick(1);await h.settle();assert.equal(reads,successful+1);
   env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));h.flush();const hidden=reads;
   t.mock.timers.tick(60000);await h.settle();assert.equal(reads,hidden);assert.equal(textOf(h.output).includes("Synthetic new DM"),false);
@@ -63,14 +114,14 @@ test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt
   await h.settle();assert.ok(textOf(h.output).includes(commentCopy("en").verify));
   assert.equal(node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.disabled,true);
 });
-test("UNKNOWN and queued public receipt survive selection remount without storing private identifiers", async (t) => {
+for(const state of ["unknown","queued"] as const)test(`PR18 ${state} public receipt has the correct cross-comment fence`, async (t) => {
   const env = environment(t);
   let sends = 0;
   globalThis.fetch = async (_url, init) => {
     if (init?.method === "POST") {
       sends++;
       return response({
-        send_state: "queued",
+        send_state: state,
         operation_id: sid,
         outbound_id: sid,
       });
@@ -124,10 +175,10 @@ test("UNKNOWN and queued public receipt survive selection remount without storin
   await h.settle();
   assert.equal(
     nodes(h.output).find((n) => n.type === "fieldset")?.props.disabled,
-    true,
-    "queued receipt blocks new replies after navigation until verified",
+    state === "unknown",
+    "only UNKNOWN blocks a new comment after navigation",
   );
-  assert.equal(stored.size, 1);
+  assert.equal(stored.size, state === "unknown" ? 1 : 0);
   for (const [key, value] of stored) {
     assert.doesNotMatch(key, /123_456|987654|Synthetic/);
     assert.equal(value, "1");

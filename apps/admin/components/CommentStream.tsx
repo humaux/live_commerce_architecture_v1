@@ -2,7 +2,7 @@
 // Depends on: A2/A8 inbox transport, privacy hook, transient comment model and W0 presentation tokens.
 // Used by: LiveConsole; names/text live only in visible component memory, never URLs or storage.
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
@@ -14,7 +14,6 @@ import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import {
   commentViewResource,
   commentSendState,
-  commentDelay,
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
@@ -41,19 +40,25 @@ export function CommentStream({
     [filter, setFilter] = useState<CommentFilter>("all"),
     [conversations, setConversations] = useState<ConversationList | null>(null),
     [listError, setListError] = useState("");
+  const request = useRef(0), paginated = useRef(false), paging = useRef(false);
+  const clearConversations = useCallback(() => {
+    request.current++; paginated.current = false; paging.current = false;
+    setConversations(null); setListError("");
+  }, []);
   const stream = useCommentStream(
     store.id,
     session,
     permitted(store, "live:read"),
     calibration,
+    clearConversations,
   );
   const { privacy, selection, select } = stream,
-    resource = commentViewResource(filter, session),
-    request = useRef(0);
+    resource = commentViewResource(filter, session);
   useEffect(() => {
     const generation = ++request.current;
     setConversations(null);
     setListError("");
+    paginated.current = false; paging.current = false;
     if (
       !resource ||
       !privacy.visible ||
@@ -72,11 +77,16 @@ export function CommentStream({
         const data = await inboxRead<ConversationList>(store.id, resource, AbortSignal.any([ticket.signal, controller.signal]));
         if (generation !== request.current || !privacy.fence.current(ticket)) return;
         if (!Array.isArray(data.items)) throw new InboxError("unavailable", 503);
-        setConversations(data); setListError(""); failures = 0;
+        setConversations((old) => {
+          if (!old || !paginated.current) return data;
+          const identity = (row: ConversationItem) => row.conversation_id ?? row.bundle_id;
+          const head = new Set(data.items.map(identity));
+          return { ...data, items: [...data.items, ...old.items.filter((row) => !head.has(identity(row)))], next_cursor: old.next_cursor };
+        }); setListError(""); failures = 0;
       } catch (e) {
         if (generation !== request.current || !privacy.fence.current(ticket)) return;
         if (e instanceof InboxError && [401, 403].includes(e.status)) privacy.expire();
-        delay = Math.max(commentDelay(++failures), e instanceof InboxError ? e.retryAfter : 0);
+        delay = Math.max(Math.min(30000, 10000 * 2 ** failures++), e instanceof InboxError ? e.retryAfter : 0);
         setListError(e instanceof InboxError ? e.code : "unavailable");
       } finally {
         if (generation === request.current && privacy.fence.current(ticket) && !privacy.blocked.current && document.visibilityState === "visible")
@@ -110,7 +120,8 @@ export function CommentStream({
     select(item.bundle_id ? { bundle: item.bundle_id } : null);
   };
   const loadConversations = async () => {
-    if (!resource || !conversations?.next_cursor) return;
+    if (!resource || !conversations?.next_cursor || paging.current) return;
+    paging.current = true;
     const generation = request.current,
       ticket = privacy.fence.begin();
     try {
@@ -119,17 +130,19 @@ export function CommentStream({
         `${resource}&cursor=${encodeURIComponent(conversations.next_cursor)}`,
         ticket.signal,
       );
-      if (generation === request.current && privacy.fence.current(ticket))
+      if (generation === request.current && privacy.fence.current(ticket)) {
+        paginated.current = true;
         setConversations((old) =>
-          old ? { ...data, items: [...old.items, ...data.items] } : data,
+          old ? { ...data, items: [...new Map([...old.items, ...data.items].map((row) => [row.conversation_id ?? row.bundle_id, row])).values()] } : data,
         );
+      }
     } catch (e) {
       if (generation === request.current && privacy.fence.current(ticket)) {
         if (e instanceof InboxError && [401, 403].includes(e.status))
           privacy.expire();
         setListError(e instanceof InboxError ? e.code : "unavailable");
       }
-    }
+    } finally { if (generation === request.current) paging.current = false; }
   };
   return (
     <div className="comment-workspace" data-testid="comment-workspace">
@@ -267,12 +280,13 @@ export function CommentStream({
               <button
                 type="button"
                 data-testid="comment-older"
-                disabled={stream.busy}
+                disabled={stream.busy || stream.buffer.items.length >= 1000}
                 onClick={stream.older}
               >
                 {c.older}
               </button>
             )}
+            {stream.buffer.items.length >= 1000 && <p className="live-helper">{locale === "en" ? "1,000 comments in memory. Refresh to return to the recent window before loading earlier comments." : locale === "zh-CN" ? "已载入 1,000 条评论。请刷新回到最近评论，再载入较早评论。" : "已載入 1,000 則留言。請重新整理回到最近留言，再載入較早留言。"}</p>}
           </>
         )}
         {privacy.visible && chosen && (
