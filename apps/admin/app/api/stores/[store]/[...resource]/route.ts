@@ -139,7 +139,8 @@ async function route(request: Request, context: Context) {
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
   // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
   const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
-  const studio = path.startsWith("live-sessions");
+  // A2-A5 use the exact inbox privacy/grammar seam, not Studio's general-purpose payload path.
+  const studio = path.startsWith("live-sessions") && !inbox;
   if (studio && !authConfig) return error(404, "not_found");
   const input = studioInputRoute.test(path);
   // Trusted deployment origin, not forwarded headers or fixture auth, controls
@@ -406,7 +407,7 @@ async function route(request: Request, context: Context) {
       if (response.status === 429 && /^(?:[1-9][0-9]{0,2}|[12][0-9]{3}|3[0-5][0-9]{2}|3600)$/.test(backoff)) denied.headers.set("Retry-After", backoff);
       return denied;
     }
-    return new Response(body, {status: response.status, headers: {"Content-Type":"application/json", "Cache-Control":"private, no-store"}});
+    return new Response(body, {status: response.status, headers: {"Content-Type":"application/json", "Cache-Control":"private, no-store", "Referrer-Policy":"no-referrer"}});
   }
   if (studio) {
     let body: string;

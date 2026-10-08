@@ -1,0 +1,41 @@
+✔ A2 grammar refuses private/duplicate/ambiguous cursors and keys on reads (11.686458ms)
+✔ A3-A5 exact comment ref and bodies; explicit preemption private only (0.268667ms)
+✔ A4/A5 preserve frozen refusal codes, never provider/debug text (0.072166ms)
+✔ reset invalidates old buffers and cursor before reread; older page cannot advance live cursor (0.362625ms)
+✔ filter resources have only authorised opaque ids; backoff is capped and success resets (0.0685ms)
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (21.943666ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (10.293666ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (6.803458ms)
+✔ session, CSRF and store authority precede content forwarding (2.517708ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (6.531417ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (6.21175ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (4.919583ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.380083ms)
+✖ real M7 response keeps no-referrer after matching Next production header rules (2.452291ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 13
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 195.8935
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:465:1
+✖ real M7 response keeps no-referrer after matching Next production header rules (2.452291ms)
+  Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/node_modules/next/constants.js' imported from data:text/javascript,import%20constants%20from%20%22file%3A%2F%2F%2FVolumes%2Fdata%2Flive_commerce_architecture_v1%2F.worktrees%2Flc-u2a-comment-stream%2Fapps%2Fadmin%2Fnode_modules%2Fnext%2Fconstants.js%22%3B%20export%20const%20PHASE_PRODUCTION_BUILD%20%3D%20constants.PHASE_PRODUCTION_BUILD%3B
+      at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+      at moduleResolve (node:internal/modules/esm/resolve:861:10)
+      at defaultResolve (node:internal/modules/esm/resolve:988:11)
+      at #cachedDefaultResolve (node:internal/modules/esm/loader:697:20)
+      at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:714:38)
+      at nextStep (node:internal/modules/customization_hooks:189:26)
+      at resolve (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/tests/admin/inbox-bff.test.ts:35:12)
+      at nextStep (node:internal/modules/customization_hooks:189:26)
+      at resolveWithHooks (node:internal/modules/customization_hooks:417:10)
+      at ModuleLoader.resolveSync (node:internal/modules/esm/loader:736:14) {
+    code: 'ERR_MODULE_NOT_FOUND',
+    url: 'file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2a-comment-stream/apps/admin/node_modules/next/constants.js'
+  }

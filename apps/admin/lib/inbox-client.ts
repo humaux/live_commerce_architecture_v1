@@ -13,11 +13,13 @@ import {
 export class InboxError extends Error {
   readonly code: string;
   readonly status: number;
-  constructor(code: string, status: number) {
+  readonly retryAfter: number;
+  constructor(code: string, status: number, retryAfter = 0) {
     super(code);
     this.name = "InboxError";
     this.code = code;
     this.status = status;
+    this.retryAfter = retryAfter;
   }
 }
 function resourcePath(store: string, resource: string, method: string) {
@@ -64,6 +66,7 @@ async function transport<T>(
       credentials: "same-origin",
       cache: "no-store",
       redirect: "error",
+      referrerPolicy: "no-referrer",
       signal: signal
         ? AbortSignal.any([signal, AbortSignal.timeout(8000)])
         : AbortSignal.timeout(8000),
@@ -103,7 +106,8 @@ async function transport<T>(
   signal?.throwIfAborted();
   if (!response.ok) {
     const code = inboxErrorCode(response.status, value);
-    throw new InboxError(code ?? "retry_later", code ? response.status : 503);
+    const after = response.headers.get("retry-after") ?? "";
+    throw new InboxError(code ?? "retry_later", code ? response.status : 503, /^[0-9]{1,4}$/.test(after) ? Math.min(3600,Number(after))*1000 : 0);
   }
   return value as T;
 }
