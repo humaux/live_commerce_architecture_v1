@@ -26,3 +26,11 @@ No browser/PG suite or provider/production action was run for this merge. **Prev
 Source SHA-256: `next.config.ts` 6117b0410b0c4a6fefab905b7907f3dffcb1f32ecde3208e5bbdcef0d3c6f9d1; `test-local.sh` b75e39f129c24bf0caab71d99c00113a33ade2b13b4dce605d12a6f5bdceb96d; `browser_click_sweep_test.go` 78f02c945f6bdd4d6b930e79dcf4074a727b86e94eabdc4a62a06825b27e7a84; `GATES.md` 237ecefa3e522ada7025e7dccd1cdc8201c39e47cc2de36822d983347613ca9f.
 
 Commit locally and stop; integrator owns push and PR acceptance. No owned background process remains.
+
+## Integrator addendum verification
+
+Rechecked merge **0456860bb9fc29e3d40e8fd6d5cf9f8946de99ea** against both parents: Next header behavior from both sides is retained (including inbox M7 no-referrer); mode lists contain both modes; sweep options mount both the LC-U1 comment stream and trunk inbox/templates, including the real empty-list route check. No further source edits or unresolved conflicts.
+
+- `node --test --experimental-strip-types tests/admin/shell-registry.test.ts` → **exit 0, 11/11**, including G-UI1 bidirectional route inventory, copy-key parity, and dynamic/public route checks. Evidence: `addendum-shell-registry.log`.
+- `LC_HEADER_BASE=d90991b3 bash scripts/dev/check-gates.sh` → **exit 0: 80 modes, all documented; every tracked test file is run**. Evidence: `addendum-check-gates.log`.
+- This addendum commit contains evidence/docs only; merged-source hashes and runtime NOT_RUN boundaries above remain unchanged.
