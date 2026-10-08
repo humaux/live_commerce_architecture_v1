@@ -1,6 +1,45 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
-## Current round at 44bb155e — CTUI read-fault race repaired
+## Current packet fbdf8ebb — MOU03 diagnosis BLOCKED; no product fix claimed
+
+The CI failure remains **UNRESOLVED**. This batch commits diagnostic evidence only. All product code, MOU03 waits/assertions, fixture behavior and timeouts remain unchanged from **fbdf8ebb0d1e091230fae7a646ce5405b84b2c50**. The local gates below are passing baseline observations, not red→green proof of a repair.
+
+### Exact CI boundary
+
+Run **37749360188**, job **113218584535**: `orders-ui.spec.ts:358` is the test declaration, but the unfinished operation is **line 493, `await otherTab.close()`**. The trace's `call@633` begins at16763.253ms and has no after/completion event; teardown starts at43682ms. Before it, delayed-selection, pagehide/history, cross-tab sign-out, detail-count-zero and `noPII` assertions all succeeded. The last detail-count-zero check completes at16761ms.
+
+The logout POST returned204, ending around16740.076ms. The replacement `/en` document returned200, HAR body end16760.024ms; close begins ~3.23ms later, with14 static requests recorded after it. Across241 HAR rows no request duration exceeds1second. This rules out an observed long-held parcel request as the first failing operation; it does **not** establish a browser-internal root. `test-failed-2.png` visibly shows the rendered sign-in page at failure. The trace/archive hash and original path are in `mou-round/ci-close-facts.json`; the original failure log, bounded trace review and independent product review are retained alongside it.
+
+### Product causality checked
+
+MerchantOrders, ParcelGroup, WorkspaceFrame, shell/api, session-events, the MOU spec, Playwright config and package inputs are unchanged between44bb155e andfbdf8ebb. The #3 merge changes `customers-client` used by Dashboard, but its added signed-out propagation has generation/abort/blocked guards. Existing shell logout signals synchronously **before** the POST, invalidating outstanding Dashboard reads. Logout listeners clear/block/abort; they neither broadcast again nor navigate/reload. No feedback loop or product starvation was demonstrated. The shell's full navigation after sign-out also predates this batch.
+
+Independent E1 trace and product reviews agree that a speculative parcel/shell patch is unsupported. There is no product RED reproducer yet, therefore no new behavior test or claimed fix. Removing `otherTab.close()`, waiting for navigation, increasing timeout or weakening MOU assertions was not done.
+
+### Fresh local commands (unchanged product)
+
+| Command | Exit | Evidence under mou-round/ |
+|---|---:|---|
+| `bash scripts/dev/test-local.sh --browser-merchant-orders-ui` | 0 | baseline.json/log; **10 MOU + 1 parcel case passed**, local-playwright.log / local-playwright-parcel.log |
+| `bash scripts/dev/test-local.sh --browser-customers-billing` | 0 | customers.json/log; baseline12 + CTUI9 |
+| `bash scripts/dev/test-local.sh --browser-picklist` | 0 | picklist.json/log |
+| `bash scripts/dev/test-local.sh --browser-cvs` | 0 | cvs.json/log; Chromium MOCK + WebKit passed; SANDBOX skipped |
+| `node --test --experimental-strip-types tests/admin/parcels-bff.test.ts tests/admin/inbox-bff.test.ts tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts tests/admin/w6-route-seam.test.mjs` | 0 | bff-seams.json/log;46 tests |
+| `bash scripts/dev/test-node.sh` | 0 | node.json/log; 910 tests |
+| `bash scripts/dev/check-gates.sh` | 0 | check-gates.json/log;80 modes all documented |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | typecheck.json/log |
+
+E3 applies to these local unchanged-source runs only; it does not close the CI failure. Browser modes ran sequentially with the shared lock. Own generated tracked screenshots/ledger were backed up to primary `mou-round/generated/` then restored, and transient print/gate outputs archived there. Processes ended normally; no other task outputs were removed. Original raw logs remain in primary output; normalized committed views have lossless raw gzip copies and hashes where needed.
+
+### BLOCKED / next evidence required
+
+The missing distinction is Linux close lifecycle: whether Playwright stalls before emitting `Target.closeTarget`, during its acknowledgement, or waiting for the target-closed event. A bounded lifecycle-only diagnostic should retain method/phase/id/timestamps, without cookies, authorization headers or private request data, while preserving the original MOU03 actions/assertions. A new Linux observation is required before assigning a product cause or selecting a repair. No assertion is made that a rerun PASS alone fixes it.
+
+**NOT_RUN:** product red→green (no justified product patch), Linux rerun with close lifecycle instrumentation, known settings identity flake (explicitly excluded), provider SANDBOX/LIVE, deployment. No push. This is a diagnostic handoff for integrator decision, not a merge-ready fix.
+
+---
+
+## Historical round at 44bb155e — CTUI read-fault race repaired
 
 Merged `origin/r3/integration` **97e34a4c7646de9d0753fb83ed88d56c1b43f01c** (PR #3) with `git fetch origin && git merge origin/r3/integration`, exit **0**, as **5ca3b82cede63d2e691b3b3b88e0da80c945ed20**. No conflicts. The integrator confirmed picklist, Studio and CVS passed Linux CI at 44bb155e; the older Studio/CVS open findings below are historical and closed.
 
