@@ -105,8 +105,12 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         if (!session.context) throw new Error("no context");
         const ctx = session.context;
         const known = knownOrderID(ctx);
+        // Publish the obtained context BEFORE the write (PR #1 review comment 4212512400): if this
+        // first write's response is lost, the UI goes "uncertain" and Retry must resume the SAME
+        // journalled request (same purchase context + Idempotency-Key). With context set only on
+        // success the Retry button was dead and the buyer's only escape was a second purchase.
+        setContext(ctx);
         if (known) {
-          setContext(ctx);
           setOrderID(known);
           setProblem("order");
           return false;
@@ -114,7 +118,6 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         const current = await readPurchase("cart", ctx, validCart);
         const result = await writePurchase(ctx, { kind: "cart", body: build(current) });
         if (result.kind !== "cart") throw new Error("unexpected result");
-        setContext(ctx);
         setCart(result.value);
         setOrderID(null);
         return true;
