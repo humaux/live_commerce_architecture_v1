@@ -131,3 +131,19 @@ test("PR #1 4212540344: per-row matrix labels reappear where the matrix header i
   assert.equal((variants.match(/aria-label=\{/g) ?? []).length >= 7, true);
   assert.match(variants, /<label>\n\s+<span>\{c\.price\}<\/span>/);
 });
+test("PR #1 4212540352: pre-publish missing-items list collapses behind a toggle at ≤900px instead of being removed", () => {
+  const css = readFileSync(new URL("../../apps/admin/components/ProductDocument.css", import.meta.url), "utf8");
+  const form = readFileSync(new URL("../../apps/admin/components/ProductDocumentForm.tsx", import.meta.url), "utf8");
+  // The old unconditional removal is gone…
+  assert.doesNotMatch(css, /\.pe-index section \{\n\s+display: none;\n\s*\}/);
+  // …replaced by a checkbox accordion scoped to the small-screen block…
+  const media = css.indexOf("@media (max-width: 900px)");
+  const rule = css.indexOf(".pe-readiness-toggle:not(:checked) ~ section", media);
+  assert.ok(rule > media, "collapse rule must live in the ≤900px block");
+  assert.match(css.slice(rule), /\.pe-readiness-toggle:not\(:checked\) ~ section \{\n\s+display: none;\n\s*\}/);
+  // …with the real toggle markup in the editor (checkbox stays in the DOM and names the label)…
+  assert.match(form, /className="pe-readiness-toggle" type="checkbox" id="pe-readiness-toggle"/);
+  assert.match(form, /<label className="pe-readiness-toggle-label" htmlFor="pe-readiness-toggle">/);
+  // …and desktop hides only the toggle chrome, never the section.
+  assert.match(css, /\.pe-readiness-toggle-label \{\n\s+display: none;\n\s*\}/);
+});

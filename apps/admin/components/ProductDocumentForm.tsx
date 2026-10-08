@@ -298,6 +298,13 @@ export function ProductDocumentForm({
             </button>
           ))}
         </nav>
+        {/* CSS-only accordion: on ≤900px the readiness list collapses behind this toggle instead
+            of disappearing (PR #1 review comment 4212540352). The checkbox stays focusable and
+            names the toggle; desktop (>900px) hides both chrome pieces and always shows the section. */}
+        <input className="pe-readiness-toggle" type="checkbox" id="pe-readiness-toggle" />
+        <label className="pe-readiness-toggle-label" htmlFor="pe-readiness-toggle">
+          {c.progress}
+        </label>
         <section>
           <h2>{c.progress}</h2>
           <h3>{c.required}</h3>
