@@ -14,6 +14,7 @@ import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import {
   commentViewResource,
   commentSendState,
+  commentDelay,
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
@@ -60,25 +61,33 @@ export function CommentStream({
       !permitted(store, "inbox:read")
     )
       return;
-    const ticket = privacy.fence.begin();
-    void inboxRead<ConversationList>(store.id, resource, ticket.signal)
-      .then((data) => {
-        if (
-          generation === request.current &&
-          privacy.fence.current(ticket) &&
-          Array.isArray(data.items)
-        )
-          setConversations(data);
-      })
-      .catch((e) => {
-        if (generation !== request.current || !privacy.fence.current(ticket))
-          return;
-        if (e instanceof InboxError && [401, 403].includes(e.status))
-          privacy.expire();
+    let timer: ReturnType<typeof setTimeout> | undefined, failures = 0;
+    const controller = new AbortController();
+    // Schedule after settlement: A8 never overlaps itself or follows A2's faster cadence.
+    const load = async () => {
+      if (generation !== request.current || document.visibilityState !== "visible" || privacy.blocked.current) return;
+      const ticket = privacy.fence.begin();
+      let delay = 10000;
+      try {
+        const data = await inboxRead<ConversationList>(store.id, resource, AbortSignal.any([ticket.signal, controller.signal]));
+        if (generation !== request.current || !privacy.fence.current(ticket)) return;
+        if (!Array.isArray(data.items)) throw new InboxError("unavailable", 503);
+        setConversations(data); setListError(""); failures = 0;
+      } catch (e) {
+        if (generation !== request.current || !privacy.fence.current(ticket)) return;
+        if (e instanceof InboxError && [401, 403].includes(e.status)) privacy.expire();
+        delay = Math.max(commentDelay(++failures), e instanceof InboxError ? e.retryAfter : 0);
         setListError(e instanceof InboxError ? e.code : "unavailable");
-      });
+      } finally {
+        if (generation === request.current && privacy.fence.current(ticket) && !privacy.blocked.current && document.visibilityState === "visible")
+          timer = setTimeout(() => void load(), delay);
+      }
+    };
+    void load();
     return () => {
       request.current++;
+      controller.abort();
+      clearTimeout(timer);
     };
   }, [
     resource,

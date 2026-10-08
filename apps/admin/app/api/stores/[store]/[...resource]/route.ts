@@ -416,7 +416,7 @@ async function route(request: Request, context: Context) {
     try { body = await readBody(response, "application/json", 1 << 20); value = JSON.parse(body); }
     catch { return error(503, "retry_later"); }
     if (!response.ok) {
-      const code = inboxErrorCode(response.status, value);
+      const code = inboxErrorCode(response.status, value, path);
       const denied = error(code ? response.status : 503, code ?? "retry_later");
       if (response.status === 401) clearAuthCookies(denied.headers);
       const backoff = response.headers.get("retry-after") ?? "";

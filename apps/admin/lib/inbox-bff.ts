@@ -151,9 +151,10 @@ const errors: Record<number, Set<string>> = {
   429: new Set(["rate_limited"]),
   503: new Set(["retry_later", "unavailable"]),
 };
-/** Keep frozen codes, flatten all provider/debug strings to a fixed safe error. */
-export function inboxErrorCode(status: number, value: unknown): string | null {
+/** Keep each route family's frozen codes; never widen the pre-existing A8-A14 seam. */
+export function inboxErrorCode(status: number, value: unknown, path = ""): string | null {
+  if (commentResource(path)) return commentErrorCode(status, value);
   const code =
     value && typeof value === "object" && "code" in value ? value.code : null;
-  return typeof code === "string" && errors[status]?.has(code) ? code : commentErrorCode(status,value);
+  return typeof code === "string" && errors[status]?.has(code) ? code : null;
 }

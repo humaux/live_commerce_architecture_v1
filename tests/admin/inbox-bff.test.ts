@@ -143,6 +143,14 @@ async function call(path: string, over: Options = {}) {
   };
 }
 const base = `inbox/conversations/${cid}`;
+test("K3 comment-only no_source cannot widen the existing inbox error seam",async t=>{
+  t.after(()=>{answer={status:200,body:JSON.stringify({items:[],next_cursor:"",unread_total:0})};});
+  answer={status:409,body:JSON.stringify({code:"no_source",debug:"DO_NOT_FORWARD"})};
+  const inbox=await call("inbox/conversations",{query:`?filter=live_comment&session_id=${cid}`});
+  assert.equal(inbox.status,503);assert.equal(inbox.body.code,"retry_later");assert.equal(JSON.stringify(inbox.body).includes("DO_NOT_FORWARD"),false);
+  const comments=await call(`live-sessions/${cid}/comments`);
+  assert.equal(comments.status,409);assert.equal(comments.body.code,"no_source");
+});
 test("LC-U2a real BFF seam A2-A5 exact grammar, privacy, denial and no diagnostic reflection", async () => {
   const root=`live-sessions/${cid}/comments`;
   answer={status:200,body:JSON.stringify({items:[]})};

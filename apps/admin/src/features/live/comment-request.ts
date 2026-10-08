@@ -60,6 +60,11 @@ export function validCommentRequest(request: Request, path: string): boolean {
     !(q.has("before_cursor") && q.has("after_epoch"))
   );
 }
+/** Mirror Go checkText's control-character rule: only LF is permitted among C0/C1 controls. */
+export function validCommentText(text: unknown): text is string {
+  return typeof text === "string" && text.trim().length > 0 && text.length <= 8000 &&
+    !/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/.test(text);
+}
 /** Text/template exclusivity and explicit private-only automatic-reply preemption. */
 export function validCommentBody(path: string, raw: string): boolean {
   if (!write.test(path)) return false;
@@ -79,13 +84,7 @@ export function validCommentBody(path: string, raw: string): boolean {
   )
     return false;
   const fields = keys.filter((k) => k !== "confirm_preempt_auto");
-  if (fields.length === 1 && fields[0] === "text")
-    return (
-      typeof b.text === "string" &&
-      b.text.trim().length > 0 &&
-      b.text.length <= 8000 &&
-      !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(b.text)
-    );
+  if (fields.length === 1 && fields[0] === "text") return validCommentText(b.text);
   return (
     fields.length === 2 &&
     fields.includes("template_id") &&

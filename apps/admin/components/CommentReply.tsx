@@ -14,6 +14,7 @@ import {
 import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import type { StreamComment } from "@/src/features/live/comment-model";
 import { commentSendState } from "@/src/features/live/comment-model";
+import { validCommentText } from "@/src/features/live/comment-request";
 import type { ConsoleCapabilities } from "@/src/features/live/console-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { CommentReceipt } from "@/src/features/live/comment-receipt";
@@ -157,6 +158,7 @@ export function CommentReply({
       (rule && !(canPreempt && preempt))
     )
       return;
+    if (!selected && !validCommentText(text)) { setError("invalid_text"); return; }
     if (!receipt.current?.arm()) {
       setReceiptBlocked(true);
       return;

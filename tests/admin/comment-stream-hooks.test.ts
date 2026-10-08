@@ -24,9 +24,39 @@ const { useCommentStream } =
   await import("../../apps/admin/src/features/live/use-comment-stream.ts");
 const { CommentReply } =
   await import("../../apps/admin/components/CommentReply.tsx");
+const { CommentStream } =
+  await import("../../apps/admin/components/CommentStream.tsx");
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+for(const filter of ["private","unreplied"])test(`K3 A8 ${filter} polls every 10s, backs off, resets, pauses hidden and stops off-filter`,async t=>{
+  const env=environment(t);t.mock.timers.enable({apis:["setTimeout","Date"],now:Date.parse("2026-10-08T01:00:00Z")});
+  let reads=0,failures=0;
+  globalThis.fetch=async input=>{
+    if(String(input).includes("inbox/conversations")){
+      reads++;if(failures>0){failures--;return response({code:"unavailable"},503);}
+      return response({items:reads>1?[{bundle_id:sid,conversation_id:null,platform:"facebook",display_name:"Synthetic new DM",last_at:"2026-10-08T01:00:00Z",unread:true,unreplied:true,mode:null,assignee:null,window_open_until:null,linked_customer_id:null}]:[],next_cursor:"",unread_total:0});
+    }
+    return response(page());
+  };
+  const h=env.mount(()=>CommentStream({store,session:sid,locale:"en",platform:"facebook",capabilities:{}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]===`comment-filter-${filter}`).props.onClick();await h.settle();assert.equal(reads,1);
+  t.mock.timers.tick(9999);await h.settle();assert.equal(reads,1);t.mock.timers.tick(1);await h.settle();assert.equal(reads,2,"idle A8 view must refresh without a merchant action");assert.ok(textOf(h.output).includes("Synthetic new DM"));
+  failures=5;t.mock.timers.tick(10000);await h.settle();assert.equal(reads,3);
+  for(const delay of [3000,6000,12000,24000,30000]){const previous=reads;t.mock.timers.tick(delay-1);await h.settle();assert.equal(reads,previous);t.mock.timers.tick(1);await h.settle();assert.equal(reads,previous+1);}
+  const successful=reads;t.mock.timers.tick(9999);await h.settle();assert.equal(reads,successful);t.mock.timers.tick(1);await h.settle();assert.equal(reads,successful+1);
+  env.document.visibilityState="hidden";env.document.dispatchEvent(new Event("visibilitychange"));h.flush();const hidden=reads;
+  t.mock.timers.tick(60000);await h.settle();assert.equal(reads,hidden);assert.equal(textOf(h.output).includes("Synthetic new DM"),false);
+  env.document.visibilityState="visible";env.document.dispatchEvent(new Event("visibilitychange"));await h.settle();assert.equal(reads,hidden+1);
+  node(h,n=>n.props["data-testid"]==="comment-filter-all").props.onClick();await h.settle();const stopped=reads;t.mock.timers.tick(60000);await h.settle();assert.equal(reads,stopped);
+});
+test("K3 pasted tab is refused with invalid_text copy before any reply POST",async t=>{
+  const env=environment(t);let sends=0;
+  globalThis.fetch=async(_url,init)=>{if(init?.method==="POST")sends++;return response({items:[],send_state:"queued"});};
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:row,locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}} as any));await h.settle();
+  node(h,n=>n.props["data-testid"]==="comment-reply-text").props.onChange({target:{value:"Synthetic\treply"}});h.flush();node(h,n=>n.type==="form").props.onSubmit({preventDefault(){}});await h.settle();
+  assert.equal(sends,0);assert.equal(stored.size,0,"invalid text must not arm an uncertain-send receipt");assert.ok(textOf(h.output).includes(commentCopy("en").invalid_text));
+});
 test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt",async t=>{
   const env=environment(t);globalThis.fetch=async()=>response({items:[]});
   const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply:{kind:"manual",state:"UNKNOWN",blocked_reason:null},private_reply_available:false,private_reply_unavailable_reason:"auto_pending"}},locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null},reply_public:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}} as any));

@@ -20,6 +20,12 @@ import {
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
+test("K3 reply text rejects every C0/C1 control except newline",()=>{
+  const p=`${path}/123/private-reply`;
+  for(const n of [...Array(32).keys(),...Array.from({length:33},(_,i)=>127+i)]) {
+    assert.equal(validCommentBody(p,JSON.stringify({text:`before${String.fromCharCode(n)}after`})),n===10,`control U+${n.toString(16)}`);
+  }
+});
 const signedCursor = `eyJ0ZXN0IjoxfQ.${"a".repeat(43)}`;
 test("SQL operation marks map to every merchant-visible delivery state",()=>{
   assert.deepEqual(["READY","DISPATCHING","SUCCEEDED","ACKNOWLEDGED","FAILED_FINAL","BLOCKED_POLICY","STALE_BINDING","CANCELLED","UNKNOWN"].map(commentSendState),["queued","queued","sent","sent","failed","blocked","blocked","blocked","unknown"]);
