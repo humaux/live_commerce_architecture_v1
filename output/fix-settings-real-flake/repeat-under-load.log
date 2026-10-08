@@ -1,0 +1,60 @@
+2026-10-07T18:53:18Z
+ 2:53  up 8 days, 10:09, 1 user, load averages: 7.29 11.14 9.74
+50211 19   0.0 00:00
+50212 19   0.0 00:00
+50213 19   0.0 00:00
+50214 19   0.0 00:00
+round=1 exit=0
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/output/playwright/settings-real-20261007T185344.988155000
+--- PASS: TestBrowserSettingsWizardRealChain (8.51s)
+PASS
+ok  	livecommerce/tests/foundation	22.983s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
+2026-10-07T18:53:54Z
+ 2:53  up 8 days, 10:10, 1 user, load averages: 14.83 12.53 10.31
+50211 19   0.0 00:36
+50212 19   0.0 00:36
+50213 19   0.0 00:36
+50214 19   0.0 00:36
+round=2 exit=0
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/output/playwright/settings-real-20261007T185423.865128000
+--- PASS: TestBrowserSettingsWizardRealChain (6.93s)
+PASS
+ok  	livecommerce/tests/foundation	22.955s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
+2026-10-07T18:54:32Z
+ 2:54  up 8 days, 10:10, 1 user, load averages: 13.72 12.63 10.44
+50211 19   0.0 01:14
+50212 19   0.0 01:14
+50213 19   0.0 01:14
+50214 19   0.0 01:14
+round=3 exit=0
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/output/playwright/settings-real-20261007T185506.616527000
+--- PASS: TestBrowserSettingsWizardRealChain (8.62s)
+PASS
+ok  	livecommerce/tests/foundation	29.662s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
+2026-10-07T18:55:16Z
+ 2:55  up 8 days, 10:11, 1 user, load averages: 16.73 13.46 10.85
+50211 19   0.0 01:58
+50212 19   0.0 01:58
+50213 19   0.0 01:58
+50214 19   0.0 01:58
+round=4 exit=0
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/output/playwright/settings-real-20261007T185643.973242000
+--- PASS: TestBrowserSettingsWizardRealChain (7.42s)
+PASS
+ok  	livecommerce/tests/foundation	22.540s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
+2026-10-07T18:56:52Z
+ 2:56  up 8 days, 10:13, 1 user, load averages: 17.15 15.12 11.82
+50211 19   0.0 03:34
+50212 19   0.0 03:34
+50213 19   0.0 03:34
+50214 19   0.0 03:34
+round=5 exit=0
+    browser_identity_chain_test.go:47: PASS: browser -> Next -> Go -> real PG, signed MOCK IdP; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/fix-settings-real-flake/output/playwright/settings-real-20261007T185812.954067000
+--- PASS: TestBrowserSettingsWizardRealChain (8.01s)
+PASS
+ok  	livecommerce/tests/foundation	22.165s
+PASS: isolated PG + signed MOCK IdP browser chain; fixture removed at exit.
