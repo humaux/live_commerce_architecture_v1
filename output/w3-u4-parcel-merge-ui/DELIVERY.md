@@ -1,5 +1,24 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+## CTUI / W5 conflict union — requested browser regressions GREEN
+
+The actual conflict was `tests/admin/customer-tags.spec.ts`, resolved in merge **9c82aaf9c613816fe3975c0502a648f85c14c4c1**. Comparing against both merge parents confirms both intents: retain #2's genuine catalogue/notes readiness before fault injection, plus W5's50-note readiness assertion, actual503 response assertion and scoped CAS Refresh control (separate from archive Refresh). Existing error/Retry, tags, cap, pagination, persistence, draft and CAS expectations remain.
+
+Using the installed `typescript-api` AST printer with comments removed, the **entire merged executable spec equals the incoming W5/trunk spec**. Against #2's pre-merge spec, all **101 original expect chains remain in order**, with103 in the merged spec. Only the clearer #2 readiness comment differs from incoming trunk. Evidence: `ctui-w5-union/assertion-union.json`. The first standalone checker attempt selected native TypeScript7, which lacks createPrinter (exit1); rerun with the existing compiler-API dependency exited0. This was a checker setup correction, not a test failure or source change.
+
+Both requested modes were run sequentially on frozen9c82aaf9; `customer-tags.spec.ts` SHA256 **5298e1505fb5ebd0f378f2f1ff0db2c7d23cb506540d201cb2ba9fabc6b8bcf8** remained unchanged during both runs.
+
+| Exact command | Exit | Evidence under ctui-w5-union/ |
+|---|---:|---|
+| `bash scripts/dev/test-local.sh --browser-customers-billing` | **0** | customers.json/log; baseline12 and **CTUI9/9**, ctui-playwright.log |
+| `bash scripts/dev/test-local.sh --browser-migration-import` | **0** | migration-import.json/log; **15/15**, migration-playwright.log |
+
+**E3, BROWSER + REAL_PG with signed MOCK identity and synthetic data.** No source changes were needed after the merge. The previous merge's Node1137/check-gates82/typecheck evidence still binds identical runtime source. This follow-up commit adds only evidence/documentation. Test fixtures/processes completed normally; no push.
+
+These results close the requested customer-tag/import union validation. **MOU03's Linux Page.close cause remains unresolved**; this pair of gates does not claim to repair it. New Linux CI, physical/provider SANDBOX/LIVE and deployment remain NOT_RUN. Raw logs remain in primary output with hash-bound lossless copies for normalized committed log views.
+
+---
+
 ## Trunk union addendum — #13, #5 and #7
 
 `git fetch origin && git merge origin/r3/integration` fetched **83c7f7e0b8e14ad9f570b51b0c92d67e9f6ef46e** onto **032029f5c3d5c4b3005ef3597159d3814b60e21e**. Fetch succeeded; merge initially exited1 for the sole conflict in `tests/admin/customer-tags.spec.ts`. `scripts/dev/test-local.sh`, shared BFF and Playwright config auto-merged. The CTUI conflict now retains our genuine-read readiness comments/checks **and** trunk's exact50-note assertion; trunk's captured503 response check is also retained. No MOU03 wait/assertion or product choice was changed by resolution.
