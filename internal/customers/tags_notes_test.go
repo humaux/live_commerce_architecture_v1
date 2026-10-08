@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/command"
+	"livecommerce/internal/platform"
 )
 
 func TestValidTagNameAndNoteBody(t *testing.T) {
@@ -87,5 +88,33 @@ func TestDecodeRejectsTagAndNoteDrift(t *testing.T) {
 		if _, err := decodeDetail(good(mut)); err == nil {
 			t.Fatalf("%s accepted", name)
 		}
+	}
+}
+
+// TestNoteOwnIsComputedAndNeverStored: Own is the caller's authorship (decoded from no database field), set after strict
+// decoding for the detail/list paths, and the idempotency receipt must not carry it (a receipt is replayed to any caller).
+func TestNoteOwnIsComputedAndNeverStored(t *testing.T) {
+	const other = "99999999-9999-4999-8999-999999999999"
+	scope := platform.Scope{PrincipalID: testUUID}
+	d, err := decodeDetail(detailJSON(t, func(m map[string]any) {
+		m["notes"] = []map[string]any{
+			{"id": testUUID, "body": "mine", "author_id": testUUID, "created_at": testTS, "edited_at": nil, "version": 1},
+			{"id": other, "body": "theirs", "author_id": other, "created_at": testTS, "edited_at": nil, "version": 1},
+		}
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	markOwn(d.Notes, scope)
+	if !d.Notes[0].Own || d.Notes[1].Own {
+		t.Fatalf("own flags = %v %v, want true false", d.Notes[0].Own, d.Notes[1].Own)
+	}
+	raw, _ := json.Marshal(d.Notes[0])
+	if !strings.Contains(string(raw), `"own":true`) {
+		t.Fatalf("note JSON lacks own: %s", raw)
+	}
+	rec, _ := json.Marshal(noteReceipt{ID: testUUID, AuthorID: testUUID})
+	if strings.Contains(string(rec), "own") {
+		t.Fatalf("receipt carries own: %s", rec)
 	}
 }

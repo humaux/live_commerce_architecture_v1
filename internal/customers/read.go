@@ -97,6 +97,7 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, customerID
 	if err != nil {
 		return Detail{}, err
 	}
+	markOwn(d.Notes, scope)
 	ids := d.OrderIDs
 	if len(ids) > detailOrders {
 		ids = ids[:detailOrders]

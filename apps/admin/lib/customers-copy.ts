@@ -1,3 +1,6 @@
+// Purpose: plain customer/privacy/finance copy, including import origin and report entry.
+// Depends on: current routed locales; no formatting or data access.
+// Used by: Customers, CustomerDetail and Finance; consent authority remains server-side.
 // Copy for the admin Customers, Customer detail and Finance pages (BFF customers*, finance/summary* -> Go
 // internal/customers + internal/reporting; contract customers-billing-v1 §5, U9 locales zh-CN / zh-TW / en).
 // Owns every string those pages show, including the erase dialog text (U2: says what is kept) and the error map for the
@@ -12,6 +15,8 @@ const en = {
   store: "Store",
   search: "Search by name or phone digits",
   searchHint: "Names match from the start; phone search uses the digits at the end of the number.",
+  imported: "Imported",
+  reportsLink: "Sales reports",
   searchButton: "Search",
   clear: "Clear",
   refresh: "Refresh",
@@ -155,6 +160,8 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     store: "店铺",
     search: "按姓名或手机号码数字搜索",
     searchHint: "姓名从开头匹配；手机号码按末尾数字搜索。",
+    imported: "已导入",
+    reportsLink: "销售报表",
     searchButton: "搜索",
     clear: "清除",
     refresh: "刷新",
@@ -287,6 +294,8 @@ export const customersCopy: Record<Locale, CustomersCopy> = {
     store: "店鋪",
     search: "依姓名或手機號碼數字搜尋",
     searchHint: "姓名從開頭比對；手機號碼依尾數搜尋。",
+    imported: "已匯入",
+    reportsLink: "銷售報表",
     searchButton: "搜尋",
     clear: "清除",
     refresh: "重新整理",

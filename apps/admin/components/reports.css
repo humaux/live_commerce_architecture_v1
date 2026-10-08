@@ -1,0 +1,38 @@
+/* Purpose: scoped responsive report controls, tables and CSS/SVG charts.
+ * Depends on: existing admin CSS tokens and Reports/ReportViews DOM; no remote assets.
+ * Used by: Reports.tsx. */
+.reports-page { display: grid; gap: 20px; }
+.reports-page p { line-height: 1.65; }
+.reports-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; }
+.reports-controls label { display: grid; gap: 6px; }
+.reports-controls select, .reports-controls input { min-height: var(--ui-target); font: inherit; color: var(--ink); }
+.reports-controls button, .reports-tabs button, .reports-table button, .reports-export button { min-height: var(--ui-target); }
+.reports-tabs button[aria-selected="true"] { color: var(--focus); border-bottom: 3px solid currentColor; }
+.reports-tabs button { padding: 8px 18px; white-space: nowrap; }
+.reports-basis { padding-inline-start: 14px; border-inline-start: 3px solid var(--focus); }
+.reports-basis p { margin: 6px 0; }
+.reports-scroll { max-width: 100%; overflow: auto; }
+.reports-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.reports-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.reports-table caption { text-align: start; padding: 12px 0; font-weight: 600; }
+.reports-table th, .reports-table td { text-align: start; padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; vertical-align: top; }
+.reports-table th:first-child { white-space: normal; min-width: 160px; max-width: 260px; overflow-wrap: anywhere; }
+.reports-table th small { display: block; font-weight: normal; }
+.reports-table th button { border: 0; background: transparent; color: inherit; padding: 4px 0; font: inherit; cursor: pointer; text-align: start; }
+.reports-channels { display: grid; gap: 24px; }
+.reports-channel { min-width: 0; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+.reports-channel h3 { margin-bottom: 8px; }
+.reports-channel svg { width: min(100%, 640px); height: 32px; display: block; }
+.reports-bar-track { fill: var(--line); }
+.reports-bar-fill { fill: var(--focus); }
+.reports-funnel { list-style: none; padding: 0; max-width: 640px; display: grid; gap: 12px; }
+.reports-funnel li > div { display: flex; justify-content: space-between; gap: 16px; }
+.reports-funnel svg { width: 100%; height: 40px; display: block; margin: 8px 0; }
+.reports-funnel p { margin: 6px 0; }
+.reports-export { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+@media (max-width: 680px) {
+  .reports-controls label { flex: 1 1 140px; min-width: 0; }
+  .reports-controls input, .reports-controls select { width: 100%; min-width: 0; }
+  .reports-table th, .reports-table td { padding: 10px 12px; }
+  .reports-page { gap: 16px; }
+}

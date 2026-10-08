@@ -1,3 +1,6 @@
+// Purpose: DB-free customer transport and private attachment contract regressions.
+// Depends on: actual customerRoute/writeAttachment and httptest; no database or network.
+// Used by: go test ./internal/httpapi and the foundation unit shard.
 // customers_test.go covers the customer routes' transport rules that hold BEFORE any database work (methods,
 // queries, Idempotency-Key, strict bodies, path ids), the list-query grammar and the privacy error table.
 // Real-PG permissions, tenancy, keyset stability and export/erasure outcomes are CB03-CB05/CB09
@@ -204,7 +207,7 @@ func TestCustomersClassify(t *testing.T) {
 func TestWriteAttachment(t *testing.T) {
 	w := httptest.NewRecorder()
 	writeAttachment(w, "application/json", `attachment; filename="customer-`+custID+`.json"`, []byte(`{"a":1}`))
-	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Content-Length") != "7" ||
+	if w.Code != 200 || w.Header().Get("Cache-Control") != "no-store, private" || w.Header().Get("Content-Length") != "7" ||
 		!strings.HasPrefix(w.Header().Get("Content-Disposition"), "attachment;") || w.Header().Get("Content-Type") != "application/json" {
 		t.Fatalf("%d %v", w.Code, w.Header())
 	}
