@@ -11,6 +11,9 @@ import { inboxRead, inboxWrite, InboxError } from "@/lib/inbox-client";
 import { inboxCopy, inboxError } from "@/src/features/messages/copy";
 import { permitted } from "@/src/features/messages/privacy";
 import { useInboxPrivacy } from "@/src/features/messages/use-privacy";
+import { CreateOrderDrawer } from "./CreateOrderDrawer";
+import { createOrderCopy } from "@/lib/create-order-copy";
+import type { Locale } from "@live-commerce/i18n";
 import styles from "@/src/features/messages/Inbox.module.css";
 
 /** Fetch exactly one conversation or bundle; hidden/obsolete scopes discard all buyer fields and drafts. */
@@ -40,6 +43,7 @@ export function BuyerPanel({
   const [customer, setCustomer] = useState("");
   const [busy, setBusy] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [orderOpen, setOrderOpen] = useState(false);
   const callbacks = useRef({ onUnauthorized, onLinked });
   callbacks.current = { onUnauthorized, onLinked };
   const clear = useCallback(() => {
@@ -47,6 +51,7 @@ export function BuyerPanel({
     setError(null);
     setCustomer("");
     setBusy(false);
+    setOrderOpen(false);
   }, []);
   const privacy = useInboxPrivacy(clear);
   const data = value?.scope === scope && privacy.visible ? value.data : null;
@@ -156,6 +161,9 @@ export function BuyerPanel({
   return (
     <aside className={styles.panel} data-testid="buyer-panel" aria-busy={busy}>
       <h2>{c.buyer}</h2>
+      {data && <button type="button" data-testid="buyer-create-order" disabled={!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")} onClick={() => setOrderOpen(true)}>{createOrderCopy[locale as Locale].title}</button>}
+      {data && (!permitted(store, "inventory:reserve") || !permitted(store, "orders:read")) && <p>{createOrderCopy[locale as Locale].permission}</p>}
+      {orderOpen && data && <CreateOrderDrawer key={scope} locale={locale as Locale} store={store} conversationId={conversationId} bundleId={bundleId} onUnauthorized={privacy.expire} onClose={() => setOrderOpen(false)} />}
       {!privacy.visible && (
         <p className={styles.notice}>
           {privacy.blocked.current ? c.signedOut : c.hidden}

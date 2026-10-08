@@ -85,7 +85,7 @@ export function ManualOrderFormFields({ locale, store, value, onChange, availabl
       )}
       <p className="mt-note">{c.noCard}</p>
       <FormRow style={{ marginTop: 14 }}><Field id={`${idPrefix}-buyer-locale`} label={c.linkTitle} width="short">
-        <select id={`${idPrefix}-buyer-locale`} value={buyerLocale} onChange={(e) => onChange({ buyerLocale: e.target.value as Locale })}>
+        <select id={`${idPrefix}-buyer-locale`} data-testid={`${idPrefix}-buyer-locale`} value={buyerLocale} onChange={(e) => onChange({ buyerLocale: e.target.value as Locale })}>
           {(["zh-TW", "zh-CN", "en"] as const).map((l) => <option key={l} value={l}>{l}</option>)}
         </select>
       </Field></FormRow>

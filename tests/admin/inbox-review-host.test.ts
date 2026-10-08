@@ -151,6 +151,11 @@ const react = {
     if (!same(host.slots[index]?.deps, deps)) host.slots[index] = { value: callback, deps };
     return host.slots[index].value;
   },
+  useMemo(factory: () => unknown, deps: unknown[]) {
+    const host = active, index = host.cursor++;
+    if (!same(host.slots[index]?.deps, deps)) host.slots[index] = {value: factory(), deps};
+    return host.slots[index].value;
+  },
   useEffect(effect: () => any, deps: unknown[]) {
     const host = active,
       index = host.cursor++;
@@ -168,8 +173,10 @@ const defaultHealth = {
     { capabilities: [{ binding_id: "MOCK_BINDING", provider: "facebook", capability: "dm_session", state: "ok" }] },
   ],
 };
+let nextHookId = 0;
 const runtime = {
   ...react,
+  useId: () => react.useRef(`mock-id-${++nextHookId}`).current,
   health: defaultHealth,
   jsx: (type: unknown, props: any, key?: string): VNode => ({ type, props: { ...props, key } }),
   Fragment: Symbol("fragment"),
@@ -181,7 +188,7 @@ export function setHealth(health: any) {
 (globalThis as any).__inboxReviewRuntime = runtime;
 const mock = (code: string) => `data:text/javascript,${encodeURIComponent(code)}`;
 const runtimeURL = mock(`const r=globalThis.__inboxReviewRuntime;
-export const {useState,useRef,useCallback,useEffect,jsx,Fragment}=r;export const jsxs=jsx;`);
+export const {useState,useRef,useCallback,useEffect,useId,useMemo,jsx,Fragment}=r;export const jsxs=jsx;`);
 const adapters: Record<string, string> = {
   react: runtimeURL,
   "react/jsx-runtime": runtimeURL,
