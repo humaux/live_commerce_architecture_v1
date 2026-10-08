@@ -1,0 +1,21 @@
+{
+  "_header": {
+    "Purpose": "pin readiness source/command/exit",
+    "Depends on": "actualhelper/currentrun",
+    "Used by": "integrator CI retry"
+  },
+  "run_id": "w5-readiness-node-red",
+  "pid": 93839,
+  "command": [
+    "node",
+    "--test",
+    "tests/admin/import-readiness.test.mjs"
+  ],
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w5-u1-import-wizard-ui/readiness/red.log",
+  "timeout_seconds": 120,
+  "started_at": 1791379657.112182,
+  "state": "finished",
+  "wake": "child monitors and notifies root before source edit",
+  "exit_code": 1,
+  "finished_at": 1791379657.454035
+}

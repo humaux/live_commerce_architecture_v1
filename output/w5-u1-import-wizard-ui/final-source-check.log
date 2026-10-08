@@ -1,0 +1,51 @@
+# Purpose: preserve final local static command output after this prologue.
+# Depends on: ['shasum', '-a', '256', '-c', 'output/w5-u1-import-wizard-ui/source.sha256']; original main log SHA256=dd9d55eb9f500e8c414daa51516fdbd060951b45d8cb26336ab7b317054ca48d.
+# Used by: integrator; browser acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+apps/admin/app/[locale]/customers/import/page.tsx: OK
+apps/admin/app/api/stores/[store]/customers/[customer]/historical-orders/route.ts: OK
+apps/admin/app/api/stores/[store]/imports/[param]/[action]/route.ts: OK
+apps/admin/components/CustomerDetail.tsx: OK
+apps/admin/components/CustomerHistoricalOrders.tsx: OK
+apps/admin/components/Customers.tsx: OK
+apps/admin/components/ImportWizard.tsx: OK
+apps/admin/components/ImportWizardSteps.tsx: OK
+apps/admin/components/import-history.css: OK
+apps/admin/components/import-wizard.css: OK
+apps/admin/lib/auth.ts: OK
+apps/admin/lib/backend.ts: OK
+apps/admin/lib/customers-copy.ts: OK
+apps/admin/lib/import-bff.ts: OK
+apps/admin/lib/import-client.ts: OK
+apps/admin/lib/import-copy.ts: OK
+apps/admin/lib/import-header.ts: OK
+apps/admin/lib/import-history-client.ts: OK
+apps/admin/lib/import-history-copy.ts: OK
+apps/admin/lib/import-history-model.ts: OK
+apps/admin/lib/import-model.ts: OK
+apps/admin/lib/import-proxy.ts: OK
+apps/admin/lib/import-request.ts: OK
+apps/admin/lib/import-view-copy.ts: OK
+apps/admin/lib/import-view-model.ts: OK
+apps/admin/lib/model.ts: OK
+apps/admin/lib/settings-client.ts: OK
+apps/admin/src/features/customers/routes.ts: OK
+apps/admin/src/shell-copy.ts: OK
+docs/delivery/GATES.md: OK
+scripts/dev/test-local.sh: OK
+scripts/dev/test-node.sh: OK
+tests/admin/import-client.test.mjs: OK
+tests/admin/import-coordinator.test.mjs: OK
+tests/admin/import-history-bff.test.mjs: OK
+tests/admin/import-history-client.test.mjs: OK
+tests/admin/import-history-model.test.ts: OK
+tests/admin/import-history-test-loader.mjs: OK
+tests/admin/import-history-ui.test.mjs: OK
+tests/admin/import-integration.test.ts: OK
+tests/admin/import-view.test.ts: OK
+tests/admin/import-wire-header.test.ts: OK
+tests/admin/import-wire-model.test.ts: OK
+tests/admin/import-wire-real-loader.mjs: OK
+tests/admin/import-wizard.spec.ts: OK
+tests/foundation/browser_migration_import_ui_test.go: OK
+tests/foundation/browser_w6_customers_reports_test.go: OK

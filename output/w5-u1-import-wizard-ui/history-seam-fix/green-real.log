@@ -1,0 +1,86 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=d8951b0bb16ed141e97a084733cc8595a93cd6215a7f2d55dfdbc5f502936bcb.
+# Used by: integrator; runtime browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+TAP version 13
+# Subtest: real cookie and CSRF helpers generate and validate the actual host-cookie pair
+ok 1 - real cookie and CSRF helpers generate and validate the actual host-cookie pair
+  ---
+  duration_ms: 7.808792
+  type: 'test'
+  ...
+# Subtest: exact route rejects methods/keys/body/query/scope before any upstream request using real localError
+ok 2 - exact route rejects methods/keys/body/query/scope before any upstream request using real localError
+  ---
+  duration_ms: 7.294667
+  type: 'test'
+  ...
+# Subtest: missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF
+ok 3 - missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF
+  ---
+  duration_ms: 8.338875
+  type: 'test'
+  ...
+# Subtest: actual authenticatedStores denies a store absent from the server projection
+ok 4 - actual authenticatedStores denies a store absent from the server projection
+  ---
+  duration_ms: 5.842334
+  type: 'test'
+  ...
+# Subtest: private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go
+ok 5 - private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go
+  ---
+  duration_ms: 11.995417
+  type: 'test'
+  ...
+# Subtest: actual safeError/localError preserve coded status with no-store and redact upstream diagnostics
+ok 6 - actual safeError/localError preserve coded status with no-store and redact upstream diagnostics
+  ---
+  duration_ms: 12.050667
+  type: 'test'
+  ...
+# Subtest: actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private
+ok 7 - actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private
+  ---
+  duration_ms: 6.657792
+  type: 'test'
+  ...
+# Subtest: actual client issues GET50/after through real route/private successful projection
+ok 8 - actual client issues GET50/after through real route/private successful projection
+  ---
+  duration_ms: 18.848
+  type: 'test'
+  ...
+# Subtest: actual helper-issued browser fence rejects changed parent before dispatch
+ok 9 - actual helper-issued browser fence rejects changed parent before dispatch
+  ---
+  duration_ms: 3.268
+  type: 'test'
+  ...
+# Subtest: private success from real route is discarded when the browser session changes during upstream read
+ok 10 - private success from real route is discarded when the browser session changes during upstream read
+  ---
+  duration_ms: 6.497292
+  type: 'test'
+  ...
+# Subtest: real localError no-store 401/403/404/503 preserves correct read category with no retry
+ok 11 - real localError no-store 401/403/404/503 preserves correct read category with no retry
+  ---
+  duration_ms: 11.932208
+  type: 'test'
+  ...
+# Subtest: malformed sensitive backend projection becomes real unavailable, never a fake BFF success
+ok 12 - malformed sensitive backend projection becomes real unavailable, never a fake BFF success
+  ---
+  duration_ms: 3.741958
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1170.108625

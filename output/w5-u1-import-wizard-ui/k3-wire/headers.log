@@ -1,0 +1,5 @@
+# Purpose: preserve K3 local output after this prologue.
+# Depends on: original main raw SHA256=2e2ed136169da7bbee191d2fb5a6906926041791e77a670351608765efd99285.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw remains.
+check-headers: OK (base c39f0aeb60017aad7824ea30d985e8d5a742f550)

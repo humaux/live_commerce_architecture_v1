@@ -48,6 +48,12 @@ node --test --experimental-strip-types tests/admin/customer-tags-bff.test.ts tes
   tests/admin/customer-tags-ui.test.mjs tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs tests/admin/guarded-read-logout.test.mjs tests/admin/customer-tags-write.test.mjs tests/admin/customer-tags-scope.test.mjs \
   tests/admin/reports-bff.test.ts tests/admin/reports-render.test.mjs tests/admin/w6-integration.test.ts tests/admin/w6-route-seam.test.mjs
 
+# W5-U1 immutable raw CSV import, private row projection, read-only archive and form lifecycle (no browser/PG).
+node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tests/admin/import-wire-header.test.ts \
+  tests/admin/import-client.test.mjs tests/admin/import-history-model.test.ts tests/admin/import-history-client.test.mjs \
+  tests/admin/import-history-bff.test.mjs tests/admin/import-history-ui.test.mjs tests/admin/import-view.test.ts \
+  tests/admin/import-integration.test.ts tests/admin/import-coordinator.test.mjs tests/admin/import-readiness.test.mjs
+
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs
 node --test tests/ci/shard-plan.test.mjs tests/ci/ci-plan.test.mjs tests/ci/pr-modes.test.mjs
