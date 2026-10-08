@@ -1,0 +1,25 @@
+mcr.microsoft.com/playwright@sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717: Pulling from playwright
+0b613318ea87: Pulling fs layer
+4e974a32d5a9: Pulling fs layer
+378405c73c48: Pulling fs layer
+95dcd3cccc7b: Pulling fs layer
+4a443c404e85: Pulling fs layer
+42d8ea885f2f: Pulling fs layer
+01224c0c46db: Pulling fs layer
+0b613318ea87: Download complete
+378405c73c48: Download complete
+0b613318ea87: Pull complete
+4e974a32d5a9: Download complete
+95dcd3cccc7b: Download complete
+42d8ea885f2f: Download complete
+01224c0c46db: Download complete
+4a443c404e85: Download complete
+378405c73c48: Pull complete
+4a443c404e85: Pull complete
+95dcd3cccc7b: Pull complete
+42d8ea885f2f: Pull complete
+01224c0c46db: Pull complete
+4e974a32d5a9: Pull complete
+Digest: sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717
+Status: Downloaded newer image for mcr.microsoft.com/playwright@sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717
+mcr.microsoft.com/playwright@sha256:a0f4498920a5dbac63196d9140ed738ef00470f27e2e74029abd8850b7bd5717

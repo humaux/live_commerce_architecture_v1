@@ -1,0 +1,17 @@
+{
+  "command": [
+    "pnpm",
+    "--filter",
+    "@live-commerce/admin",
+    "exec",
+    "tsc",
+    "--noEmit"
+  ],
+  "base_sha": "973ed2d02f10caa4f233566d7e32be25257f53a5",
+  "file_hashes": {
+    "tests/admin/picklist-fixture.mjs": "2aec740140a5f6987e2f7ffbdb45cc710efa002739ebfc9f520abbc1a44890e3",
+    "tests/admin/picklist-model.test.ts": "84cc585efefffca83b87bafdd4e1cbc72965aed1b5e5ffab3eb56647be1bd41a"
+  },
+  "exit": 0,
+  "elapsed_seconds": 0.846
+}

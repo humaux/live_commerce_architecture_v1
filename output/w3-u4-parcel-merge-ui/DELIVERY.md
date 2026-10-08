@@ -1,5 +1,47 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+## Round packet 973ed2d0 — picklist repaired; Studio root UNRESOLVED
+
+**Partial handoff, not a claim that both CI failures are fixed.** Picklist is repaired with E3 red→green evidence. Studio's first failed operation is identified, but a product root cause has not been proven; no speculative Studio product or acceptance-test change is included. CVS passed Linux CI on973 per integrator and is CLOSED; this round's requested local CVS regression also passed.
+
+### Verified picklist root and repair
+
+The new parcel reads on MerchantOrders reached an incomplete W3-U1b MOCK fixture. It returned404 for `orders/merge-suggestions` and `parcel-groups`; the correct privacy teardown then removed the order row while the first checkbox click was waiting. CI log: round973/picklist/ci-gates/--browser-picklist.log. The fixture now returns contract-valid empty collections for those two GETs, after its existing token and exact-store checks. Missing token remains401, wrong store and unsupported POST remain404. No product privacy behavior changed.
+
+An actual fixture HTTP regression test passes each response through the two production parcel parsers and checks the denial cases. RED404≠200 → GREEN. All52 original Node assertion calls/order and the entire picklist browser spec are unchanged; independent source review receipt `a4f80bac-d039-4162-bfbb-a806bfab38c0`. The original full picklist browser gate now passes all its locale/viewport interactions.
+
+### Studio: precise boundary and remaining gap
+
+CI run37713621244/job113105067253 first fails `studio-ui.spec.ts:198`: the native date picker leaves the date unchanged after click→ArrowRight→Enter. Initial create/PATCH/reload already returned200, and main has not armed lost-ACK or started the worker. The Go errors quoted in the packet are postflight checks of an incomplete scenario, not proof of a changed retry key or bad migration. `authority=0` means no unauthorized forwarded headers. This is not the October5 readiness diagnosis.
+
+Untouched973 passed the complete local Studio gate. Relevant Studio/CSS/spec/harness files are byte-identical to trunk18f82636; source hashes and precise CI coordinates are retained. macOS native-control experiments with/without tracing gave existing handler30/30, preventDefault30/30; native Linux ARM gave existing handler15/15 and preventDefault14/15. The native-only negative controls did not select a date. These results do not justify a handler change. Linux amd64 under local ARM emulation did not start Node/Chromium, so it is NOT_RUN; the native ARM diagnostic required releasing the isolated xvfb-run PID1 readiness wait after its X socket existed and is not equivalent to GitHub x64. No experiment changed Studio assertions or waits.
+
+See `round973/STUDIO-DIAGNOSIS.md`. A reproduced Linux failure still needs native popup/key-routing and input/change/value-write chronology to distinguish focus/activation from controlled-state overwrite. Existing CI artifacts do not capture that boundary. **Local PASS does not close the unproven Studio root; this batch should not be represented as both findings fixed.**
+
+### Commands and exit codes
+
+| Command | Exit | Evidence under round973/ |
+|---|---:|---|
+| `node --test --experimental-strip-types --test-name-pattern='pick fixture serves the scoped parcel' tests/admin/picklist-model.test.ts` | 1 RED → 0 GREEN | pick-fixture-red.log, pick-fixture-green.log, pick-fixture-red-green.json |
+| `bash scripts/dev/test-local.sh --browser-picklist` | 0 | picklist-green.json/log, local-picklist/ |
+| `bash scripts/dev/test-local.sh --browser-studio-ui` (untouched973 baseline) | 0 | studio-baseline.json/log, local-studio/; not a repaired Studio claim |
+| `bash scripts/dev/test-local.sh --browser-cvs` | 0 | cvs-green.json/log, local-cvs/; MOCK+WebKit PASS, SANDBOX NOT_RUN |
+| `bash scripts/dev/test-node.sh` | 0 | node.json/log; 649 tests |
+| `bash scripts/dev/check-gates.sh` | 0 | check-gates.json/log |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | typecheck.json/log |
+| Strict changed-test TypeScript check, with allowJs to resolve the existing .mjs fixture | 0 | exact argv in test-typecheck-with-js.json; initial helper configuration without allowJs failed existing imports (test-typecheck.json/log), preserved |
+| Native picker diagnostic commands | 0 completion | native-picker-*.json and Linux command JSONs; completion is not every variant passing |
+| Linux amd64 diagnostic before Node startup | 137 / NOT_RUN | linux-native-not-run.txt; removed only the owned labelled container |
+| `git diff --check` | 0 | final source/evidence check |
+
+Raw build logs contained carriage-return progress lines and trailing whitespace, so the initial staged diff check exited2. Committed text views are whitespace-normalized; original bytes remain in the primary archive and lossless `.raw.gz` files, mapped by `round973/normalized-log-views.json`. The final staged check exits0.
+
+All browser modes were run serially. Only `tests/admin/picklist-fixture.mjs` and `tests/admin/picklist-model.test.ts` change executable repository test code. Studio/product/migrations/CVS code is unchanged. Gate manifests bind973 plus exact two-file hashes. MAIN `/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/round973/` retains287 evidence files in archive-hashes.json, including downloaded CI and local screenshots/traces; committed files are the top-level logs/manifests/diagnostic sources, not bulk archives.
+
+No push. Owned processes and labelled probe containers ended; generated picklist/CVS files moved to the retained evidence tree. Pinned public Playwright images remain as dependency cache; other containers and caches were not cleaned. Optional media R04, provider SANDBOX/LIVE, and a new Linux CI run are NOT_RUN. Await integrator review/ruling for the unproven Studio item.
+
+---
+
 Migration references in historical prose below are normalized to the current allocation **0166**. Original command outputs and their historical counts/checksums remain unchanged; current merged R2 pin is **91** (0165 already merged).
 
 ## Codex-4 migration addendum 2 — 2026-10-08 (current)
