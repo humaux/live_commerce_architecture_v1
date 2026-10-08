@@ -1,0 +1,21 @@
+# Purpose: preserve current W6 P2 command evidence after this prologue.
+# Depends on: DELIVERY command and original main raw SHA256=882681094777d4acdea5411f3fc9b14f8e165efd0f2aeda39e51dac84c0a8fe2.
+# Used by: integrator; full browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original main bytes and SHA above retained.
+✔ selected tag survives searches and cursor pagination while an empty filter is omitted (22.74125ms)
+✔ customer list dispatch preserves legacy requests and sends every tag query to the closed W6 authority (186.841209ms)
+✔ reports are a finance subpage and preserve the existing single finance navigation entry (0.126625ms)
+✔ an authoritative erased customer immediately unmounts the cached private tags/notes subtree (19.275333ms)
+✔ the actual customer row shows manual tags and imported status without changing consent (3.722625ms)
+✔ P2 customer bare/encoded tag keys are invalid422 through the actual leaf before any backend (258.976208ms)
+✔ P2 report products real session/CSRF response is private and Vary Cookie (1.591ms)
+✔ P2 report products.csv real session/CSRF response is private and Vary Cookie (0.6115ms)
+✔ P2 report malformed query and wrong CSRF are rejected by actual helpers before upstream (0.463709ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 498.631542

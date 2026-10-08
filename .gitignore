@@ -6,7 +6,7 @@
 .worktrees/
 bin/
 coverage.out
-node_modules/
+node_modules
 .next/
 .impeccable/questions/
 *.tsbuildinfo

@@ -1,0 +1,5 @@
+# Purpose: preserve current W6 P2 command evidence after this prologue.
+# Depends on: DELIVERY command and original main raw SHA256=f3d0f1b510c4c8763bc0fcc6fe71fd3b685dd2ba1ddd9b463e3b8f7f9ad6a212.
+# Used by: integrator; full browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original main bytes and SHA above retained.
+check-headers: OK (base 00979c2779bcdca384cc8cf31fd8e0678d5a748e)

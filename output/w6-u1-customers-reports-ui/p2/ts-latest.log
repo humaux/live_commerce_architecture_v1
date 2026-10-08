@@ -1,0 +1,7 @@
+# Purpose: preserve latest-origin local evidence after this prologue.
+# Depends on: current source/commands and original main SHA256=2583e31c1292f326f038baaa8b25784bb5e6b4f6570f6fbb714215df67bdcc86.
+# Used by: integrator normal/calibration retry.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u1-customers-reports-ui/apps/admin
+> tsc --noEmit

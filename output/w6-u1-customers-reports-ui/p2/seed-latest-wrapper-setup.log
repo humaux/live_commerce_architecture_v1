@@ -1,0 +1,8 @@
+# Purpose: preserve latest-origin local evidence after this prologue.
+# Depends on: current source/commands and original main SHA256=95a98b793ac94bd2987c949e47d88dff0f5963fe6d8583d5595727675de8efbd.
+# Used by: integrator normal/calibration retry.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+# Purpose: preserve wrapper setup failure before any PostgreSQL start.
+# Depends on: initial Python runner JSON literal pg:true.
+# Used by: distinguish setup error from behavior red.
+NameError: name true is not defined (Python inline wrapper); no test process/container started.

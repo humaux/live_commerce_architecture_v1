@@ -468,6 +468,13 @@ func TestCustomerTags(t *testing.T) {
 		if err != nil || n.AuthorID != c.authorA || n.Version != 1 || n.EditedAt != nil {
 			t.Fatalf("author A note: %+v %v", n, err)
 		}
+		// own: the response and the detail read say so for the author (non-privacy) and say false for another reader
+		if dn := c.detail(c.authorATok, a1, custA).Notes; !n.Own || len(dn) != 1 || !dn[0].Own {
+			t.Fatalf("author A does not see own=true: create %v detail %+v", n.Own, dn)
+		}
+		if dn := c.detail(c.adminTok, a1, custA).Notes; len(dn) != 1 || dn[0].Own {
+			t.Fatalf("admin sees A's note as own: %+v", dn)
+		}
 		if _, err := c.editNote(c.authorBTok, a1, custA, n.ID, "B edits A", 1); !errors.Is(err, platform.ErrForbidden) {
 			t.Fatalf("author B edits A's note: %v", err)
 		}

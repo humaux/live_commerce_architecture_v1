@@ -15,9 +15,11 @@ import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { financeCSVHref, readFinance, useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import { isSandbox, type FinanceRow } from "@/lib/customers-model";
+import { canSeeReports, isSandbox, type FinanceRow } from "@/lib/customers-model";
 import { readOrderActions } from "@/lib/orders-client";
+import Link from "next/link";
 import { customersCopy } from "@/lib/customers-copy";
+import { reportsCopy } from "@/lib/reports-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { DateControl, TableFrame } from "@live-commerce/ui";
@@ -116,6 +118,9 @@ export function Finance({
             <a className="orders-export" data-testid="finance-csv" href={financeCSVHref(store.id, from, to)} download>
               {c.csv}
             </a>
+          )}
+          {store && canSeeReports(store) && (
+            <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="finance-reports">{reportsCopy[locale].title}</Link>
           )}
           {!valid && <p className="orders-bad" role="alert" data-testid="finance-range-invalid">{c.rangeInvalid}</p>}
           <p className="orders-export-hint">{c.csvHint}</p>

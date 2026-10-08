@@ -1,0 +1,36 @@
+{
+  "_header": {
+    "Purpose": "pin latest-origin process/source/exit evidence",
+    "Depends on": "current source and command",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "post-latest-origin affected check",
+  "Depends on": "current source hash and merged35ab origin",
+  "Used by": "integrator CI retry",
+  "run_id": "node-latest-32081",
+  "pid": 32081,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/customer-tags-bff.test.ts",
+    "tests/admin/customer-tags-proxy.test.ts",
+    "tests/admin/customer-tags-ui.test.mjs",
+    "tests/admin/customer-tags-client.test.mjs",
+    "tests/admin/customer-tags-draft.test.mjs",
+    "tests/admin/customer-tags-write.test.mjs",
+    "tests/admin/reports-bff.test.ts",
+    "tests/admin/reports-render.test.mjs",
+    "tests/admin/w6-integration.test.ts",
+    "tests/admin/w6-route-seam.test.mjs"
+  ],
+  "timeout_seconds": 120,
+  "state": "finished",
+  "at": "2026-10-07T12:32:37.713989+00:00",
+  "wake": "root activeforeground awaitedcompletion",
+  "failure_match": "nonzero orzero matchedtest",
+  "base": "d997e786e918b328315607570195ab6a4179288d",
+  "PG_ENV": null,
+  "exit_code": 0,
+  "ended_at": "2026-10-07T12:32:45.019534+00:00"
+}

@@ -1,0 +1,126 @@
+// Purpose: regress the actual write hook's UNKNOWN lifetime and explicit same-command retry across auth refusals.
+// Depends on: customer-tags-write source, TypeScript API, controlled React hooks and synthetic transport outcomes.
+// Used by: W6-U1 local red/green evidence; no browser, PG, note storage or real authority.
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript-api";
+
+const source = ts.transpileModule(readFileSync(new URL("../../apps/admin/lib/customer-tags-write.ts", import.meta.url), "utf8"), {
+  compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS },
+}).outputText;
+
+function harness(outcomes, logouts = []) {
+  const slots = []; const effects = []; const cleanups = []; const calls = []; const commits = [];
+  let cursor = 0; let keys = 0;
+  const react = {
+    useState: (initial) => {
+      const index = cursor++; if (!(index in slots)) slots[index] = { value: typeof initial === "function" ? initial() : initial };
+      return [slots[index].value, (value) => { slots[index].value = typeof value === "function" ? value(slots[index].value) : value; }];
+    },
+    useRef: (initial) => { const index = cursor++; return slots[index] ??= { current: initial }; },
+    useEffect: (effect, deps) => {
+      const index = cursor++; const old = slots[index];
+      if (!old || deps.some((v, i) => !Object.is(v, old.deps[i]))) {
+        slots[index] = { deps }; effects.push(() => { const cleanup = effect(); if (cleanup) cleanups.push(cleanup); });
+      }
+    },
+  };
+  const module = { exports: {} };
+  runInNewContext(source, { module, exports: module.exports, crypto: { randomUUID: () => `synthetic-key-${++keys}` },
+    require: (path) => {
+      if (path === "react") return react;
+      if (path === "./customer-tags-client") return { sendTagCommand: async (store, command, boundary, parse) => {
+        calls.push({ store, command, boundary });
+        const outcome = outcomes.shift();
+        assert.ok(outcome, "no implicit retry or unexpected command");
+        const result = typeof outcome === "function" ? await outcome() : outcome;
+        return result.ok ? { ok: true, value: parse(result.value) } : result;
+      } };
+      if (path === "./session-events") return { signalLogout: () => logouts.push("logout") }; // event-dispatch edge only
+      throw new Error(`Unexpected fixture import ${path}`);
+    },
+  });
+  let args = ["synthetic-boundary", "synthetic-scope"];
+  const render = () => { cursor = 0; return module.exports.useTagWrite("synthetic-store", args[0], args[1]); };
+  render(); for (const effect of effects.splice(0)) effect();
+  // A hide/navigation: the view unmounts (cleanups run, state gone) and a fresh instance mounts on the same module.
+  const remount = (boundary = args[0]) => { for (const cleanup of cleanups.splice(0)) cleanup(); slots.length = 0; args = [boundary, args[1]]; const hook = render(); for (const effect of effects.splice(0)) effect(); return hook; };
+  const settle = async () => { for (let n = 0; n < 8; n++) await Promise.resolve(); return render(); };
+  const start = (hook, body = "first synthetic note") => hook.run("POST", "customers/abcdef11-1111-4111-8111-111111111111/notes",
+    { body }, (v) => v, async (value) => { commits.push(value); });
+  return { calls, commits, render, remount, settle, start, keyCount: () => keys, unmount: () => { for (const cleanup of cleanups) cleanup(); } };
+}
+
+for (const code of ["unauthorized", "forbidden", "version_changed"]) {
+  test(`UNKNOWN survives settled ${code} retry until trusted success; fresh run ignored`, async () => {
+    const h = harness([{ ok: false, code: "retry_later", uncertain: true }, { ok: false, code, uncertain: false }, { ok: true, value: "confirmed receipt" }]);
+    h.start(h.render()); let hook = await h.settle();
+    assert.equal(hook.locked, true); assert.equal(h.calls.length, 1);
+    assert.equal(h.commits.length, 0); // No automatic retry and no invented saved state.
+    hook.retry(); hook = await h.settle();
+    assert.equal(hook.locked, true); assert.equal(hook.uncertain, true); assert.equal(hook.error, code);
+    h.start(hook, "different fresh note"); hook = await h.settle();
+    assert.equal(h.calls.length, 2); assert.equal(h.keyCount(), 1);
+    hook.retry(); hook = await h.settle();
+    assert.equal(h.calls.length, 3); assert.equal(hook.locked, false); assert.equal(hook.uncertain, false);
+    assert.deepEqual(h.commits, ["confirmed receipt"]);
+    for (const call of h.calls) {
+      assert.equal(call.command, h.calls[0].command); assert.equal(call.command.key, "synthetic-key-1");
+      assert.equal(call.command.method, "POST"); assert.equal(call.command.body, '{"body":"first synthetic note"}');
+      assert.equal(call.store, "synthetic-store"); assert.equal(call.boundary, "synthetic-boundary");
+    }
+  });
+}
+test("first-attempt preflight refusal is settled and permits a fresh action", async () => {
+  const h = harness([{ ok: false, code: "unauthorized", uncertain: false }, { ok: true, value: "new confirmed receipt" }]);
+  h.start(h.render()); let hook = await h.settle(); assert.equal(hook.locked, false);
+  h.start(hook, "new synthetic note"); hook = await h.settle();
+  assert.equal(h.keyCount(), 2); assert.equal(h.calls.length, 2); assert.equal(hook.locked, false);
+  assert.notEqual(h.calls[0].command.key, h.calls[1].command.key);
+});
+test("UNKNOWN and in-flight retries prevent duplicate dispatch; unmount discards stale outcome", async () => {
+  let resolve;
+  const h = harness([{ ok: false, code: "retry_later", uncertain: true }, () => new Promise((done) => { resolve = done; })]);
+  h.start(h.render()); let hook = await h.settle(); hook.retry();
+  hook.retry(); h.start(hook, "different synthetic note");
+  assert.equal(h.calls.length, 2); assert.equal(h.keyCount(), 1);
+  h.unmount(); resolve({ ok: true, value: "stale old-scope receipt" }); await h.settle();
+  assert.equal(h.commits.length, 0); assert.equal(h.calls.length, 2);
+});
+
+// Codex review P2 (PR #3): a write refused as unauthorized ends the session for the whole page (global logout lifecycle),
+// so the guarded customer read clears PII; a forbidden refusal stays local. Sticky UNKNOWN handling is unchanged.
+test("an unauthorized write signals the global logout; forbidden does not", async () => {
+  const lost = []; const h = harness([{ ok: false, code: "unauthorized", uncertain: false }], lost);
+  h.start(h.render()); await h.settle(); assert.deepEqual(lost, ["logout"]);
+  const kept = []; const f = harness([{ ok: false, code: "forbidden", uncertain: false }], kept);
+  f.start(f.render()); await f.settle(); assert.deepEqual(kept, []);
+});
+
+// Codex review P1 (PR #3): an UNKNOWN command outlives its view. A remount (hide/navigation) must stay locked with the SAME key, or a
+// new UUID could duplicate a note whose first attempt committed. Memory only (the command holds the note body); cleared by a trusted
+// success or a session-boundary change.
+test("UNKNOWN command survives unmount/remount: still locked, same-key retry, cleared by trusted success", async () => {
+  const h = harness([{ ok: false, code: "retry_later", uncertain: true }, { ok: true, value: "confirmed receipt" }]);
+  h.start(h.render()); await h.settle();
+  let hook = h.remount();
+  assert.equal(hook.locked, true); assert.equal(hook.uncertain, true);
+  h.start(hook, "different fresh note"); assert.equal(h.calls.length, 1); assert.equal(h.keyCount(), 1);
+  hook.retry(); hook = await h.settle();
+  assert.equal(h.calls.length, 2); assert.equal(h.calls[1].command, h.calls[0].command); assert.equal(h.calls[1].command.key, "synthetic-key-1");
+  assert.equal(h.calls[1].command.body, '{"body":"first synthetic note"}');
+  assert.equal(hook.locked, false);
+  assert.equal(h.remount().locked, false, "trusted success clears the remembered command");
+});
+test("a command unmounted while in flight is treated as UNKNOWN on remount", async () => {
+  const h = harness([() => new Promise(() => {})]);
+  h.start(h.render()); await h.settle();
+  const hook = h.remount(); assert.equal(hook.locked, true); assert.equal(hook.uncertain, true);
+});
+test("a session boundary change drops the remembered UNKNOWN command", async () => {
+  const h = harness([{ ok: false, code: "retry_later", uncertain: true }]);
+  h.start(h.render()); await h.settle();
+  assert.equal(h.remount("another-boundary").locked, false);
+});
