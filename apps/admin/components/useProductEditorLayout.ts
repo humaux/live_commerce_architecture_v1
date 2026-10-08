@@ -165,9 +165,16 @@ export function useProductEditorLayout(
           target.getBoundingClientRect().top -
           root.getBoundingClientRect().top,
       });
-      target
-        .querySelector<HTMLElement>("input,textarea,button,select")
-        ?.focus({ preventScroll: true });
+      const control = target.querySelector<HTMLElement>("input,textarea,button,select");
+      control?.focus({ preventScroll: true });
+      if (control) {
+        // Expanded readiness leaves a shorter field pane; long translated hints
+        // can push the first control below it even after aligning the section.
+        // Reveal the control inside this pane, never by scrolling the outer shell.
+        const field = control.getBoundingClientRect(), area = root.getBoundingClientRect();
+        if (field.bottom > area.bottom) root.scrollTop += field.bottom - area.bottom;
+        else if (field.top < area.top) root.scrollTop -= area.top - field.top;
+      }
       onSection(id);
     },
     [onSection],
