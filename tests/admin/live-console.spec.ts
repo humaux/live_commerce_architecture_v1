@@ -89,6 +89,17 @@ async function phase(page: Page, value: string) {
 
 test.describe("LC-U2a REAL_PG comment stream",()=>{
   // Comment text/name/PSIDs may not enter automatic failure artifacts, even in synthetic fixtures.
+  const reads=new WeakMap<Page,Record<string,unknown>[]>();
+  test.beforeEach(async({page})=>{
+    const rows:Record<string,unknown>[]=[];reads.set(page,rows);
+    page.on("response",async r=>{
+      if(!new URL(r.url()).pathname.endsWith("/comments"))return;
+      let value:any;try{value=await r.json();}catch{value={};}
+      rows.push({status:r.status(),count:Array.isArray(value.items)?value.items.length:null,epoch:typeof value.epoch==="number"?value.epoch:null,reset:value.reset===true,
+        code:["not_found","no_source","forbidden","stream_unavailable","invalid_request","invalid_cursor"].includes(value.code)?value.code:null});
+    });
+  });
+  test.afterEach(async({page},info)=>{await writeFile(`${evidence}/comment-reads-${info.testId.replace(/[^a-zA-Z0-9_-]/g,"")}.json`,JSON.stringify(reads.get(page)??[]));});
   for(const [li,locale] of locales.entries())for(const [wi,size] of streamSizes.entries()) {
     test(`pagination filters buyer and one-shot replies ${locale}-${size.width}`,async({page,request})=>{
       const c=commentCopy(locale);await page.setViewportSize(size);await login(page);await page.goto(route(locale,comments.session));
