@@ -1,6 +1,36 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
-## Inbox trunk union merge — current PR #2 batch
+## Current round at 44bb155e — CTUI read-fault race repaired
+
+Merged `origin/r3/integration` **97e34a4c7646de9d0753fb83ed88d56c1b43f01c** (PR #3) with `git fetch origin && git merge origin/r3/integration`, exit **0**, as **5ca3b82cede63d2e691b3b3b88e0da80c945ed20**. No conflicts. The integrator confirmed picklist, Studio and CVS passed Linux CI at 44bb155e; the older Studio/CVS open findings below are historical and closed.
+
+**Root and minimal correction.** CI run **37729726011**, job **113155952226**, failed the `tag-read-503 Retry` assertion before any DELETE. The trace shows the initial catalogue GET starting at 15397.669 ms and receiving 503; `page.reload` starts at 15407.958 ms. The fresh catalogue GET at 15551.698 ms returns 200. `detail()` waited only for the notes container, so an unfinished initial read consumed the next-request fault. The fresh page correctly displayed successful data. This is a fault-injection preparation race, not a BFF or product failure.
+
+The spec now waits for the genuine Seed01 catalogue checkbox and the enabled notes pagination control before arming **each** one-shot read fault. An enabled pagination control proves the independent notes read completed; prepopulated detail rows alone cannot prove that. All original reload, unavailable-copy, explicit Retry, catalogue, cap, pagination and persistence assertions remain. No sleep, timeout, retry budget, product behavior or fixture response was changed. Independent AST review found all **98 original expect chains in their original order**, plus exactly two readiness assertions.
+
+The merged customer-tag product and exact BFF leaves equal trunk; the parcel/inbox catch-all equals the previous PR head. Both route families retain their method/body/permission behavior. `w6-round/source-union-proof.json` records the hashes and comparisons.
+
+**Evidence level E3, real Go/PG with signed MOCK identity and synthetic data.** Source is merge 5ca3b82c plus `tests/admin/customer-tags.spec.ts` SHA-256 **100557a7df9255e42efad7b56d767bbf9172cf43fe53b309dbd067bee4b60e52**. Each result JSON records this source/hash and verifies the file remained unchanged throughout its gate. RED is the original CI failure (`ci-red-playwright.log`, `ci-trace-facts.json`, original trace hash/path). The unchanged local baseline passed: no local RED is claimed. The fixed full mode passes, including both injected 503/Retry cases and **101/101 click-ledger entries**.
+
+| Command | Exit | Evidence under w6-round/ |
+|---|---:|---|
+| `bash scripts/dev/test-local.sh --browser-customers-billing` (unchanged baseline) | 0 | customers-before.json/log |
+| `bash scripts/dev/test-local.sh --browser-customers-billing` (fixed) | 0 | customers-green.json/log; base suite 12 + CTUI 9; green-playwright.log; green-w6ui-click-ledger.json |
+| `bash scripts/dev/test-local.sh --browser-picklist` | 0 | picklist.json/log; original real-click case passed |
+| `bash scripts/dev/test-local.sh --browser-cvs` | 0 | cvs.json/log; MOCK Chromium and WebKit passed |
+| `node --test --experimental-strip-types tests/admin/parcels-bff.test.ts tests/admin/inbox-bff.test.ts tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts tests/admin/w6-route-seam.test.mjs` | 0 | bff-seams.json/log; 46 tests including real Request/handler/auth seam cases |
+| `bash scripts/dev/test-node.sh` | 0 | node.json/log; 910 tests across 18 Node test invocations |
+| `bash scripts/dev/check-gates.sh` | 0 | check-gates.json/log; **80 modes, all documented; every tracked test file is run** |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | typecheck.json/log |
+| `git diff --check` | 0 | final source and evidence staging check |
+
+Browser modes ran sequentially through the existing shared lock. Test processes ended normally. Own generated CVS prints and gate output were moved to the primary checkout `output/w3-u4-parcel-merge-ui/w6-round/generated/`; no other task files were removed. Raw logs remain in that primary checkout; any normalized committed log view has a lossless `.raw.gz` and hash mapping.
+
+**NOT_RUN / handoff:** New-head Linux CI and K3 pre-push review belong to the integrator. Studio was not rerun in this batch (the integrator confirmed its previous head passed; this change touches only CTUI). CVS SANDBOX, real providers, billing SANDBOX/LIVE and deployment are NOT_RUN. No push, rebase, force-push, production operation or deferred-review scope change. No known remaining P0/P1 in this batch; independent source review is E1 and does not substitute for the integrator's acceptance.
+
+---
+
+## Historical: Inbox trunk union merge (superseded by the current round below)
 
 Merge commit **`4c51ddff25e4cb43590fedcdf565429a00b12d58`** combines local `1ee8afaa12082c66ac6a13b0a8ed2226686e5ff0` with fetched `origin/r3/integration` **`f2ac619f15be832475b37ffabd4bbd497e5c4bb3`**, which contains merged PR #8. No rebase, force-push or push.
 
