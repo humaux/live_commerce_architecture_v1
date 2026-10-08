@@ -1,0 +1,159 @@
+
+Running 8 tests using 1 worker
+
+  ✓  1 tests/admin/ops-polish.spec.ts:80:1 › OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker, (N) title, filters kept (18.8s)
+  ✓  2 tests/admin/ops-polish.spec.ts:194:3 › OP2 new marker and title count in zh-TW (3.9s)
+  ✓  3 tests/admin/ops-polish.spec.ts:194:3 › OP2 new marker and title count in zh-CN (3.8s)
+  ✘  4 tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en (10.7s)
+  ✘  5 tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN (10.8s)
+  ✘  6 tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW (10.8s)
+  ✓  7 tests/admin/ops-polish.spec.ts:250:1 › OP4 the same nav on the orders page (1.7s)
+  ✓  8 tests/admin/ops-polish.spec.ts:259:1 › OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it (1.4s)
+
+
+  1) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -1,8 +1,11 @@
+      Array [
+        "nav-group-overview",
+        "nav-group-live",
+    +   "nav-studio",
+    +   "nav-live-console",
+    +   "nav-claims",
+        "nav-orders",
+        "nav-group-catalog",
+        "nav-group-marketing",
+        "nav-group-storefront",
+        "nav-group-finance",
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      222 |   await expect.poll(() => nav.locator('button[data-testid^="nav-"]').evaluateAll(
+      223 |     (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
+    > 224 |   )).toEqual([
+          |      ^
+      225 |     "nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog",
+      226 |     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
+      227 |   ]);
+        at assertRegistryNavigation (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:224:6)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:245:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-adf80--nav-entries-are-gone-in-en/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-adf80--nav-entries-are-gone-in-en/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-adf80--nav-entries-are-gone-in-en/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-adf80--nav-entries-are-gone-in-en/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -1,8 +1,11 @@
+      Array [
+        "nav-group-overview",
+        "nav-group-live",
+    +   "nav-studio",
+    +   "nav-live-console",
+    +   "nav-claims",
+        "nav-orders",
+        "nav-group-catalog",
+        "nav-group-marketing",
+        "nav-group-storefront",
+        "nav-group-finance",
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      222 |   await expect.poll(() => nav.locator('button[data-testid^="nav-"]').evaluateAll(
+      223 |     (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
+    > 224 |   )).toEqual([
+          |      ^
+      225 |     "nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog",
+      226 |     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
+      227 |   ]);
+        at assertRegistryNavigation (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:224:6)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:245:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-6249b-v-entries-are-gone-in-zh-CN/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-6249b-v-entries-are-gone-in-zh-CN/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-6249b-v-entries-are-gone-in-zh-CN/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-6249b-v-entries-are-gone-in-zh-CN/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 3
+
+    @@ -1,8 +1,11 @@
+      Array [
+        "nav-group-overview",
+        "nav-group-live",
+    +   "nav-studio",
+    +   "nav-live-console",
+    +   "nav-claims",
+        "nav-orders",
+        "nav-group-catalog",
+        "nav-group-marketing",
+        "nav-group-storefront",
+        "nav-group-finance",
+
+    Call Log:
+    - Timeout 10000ms exceeded while waiting on the predicate
+
+      222 |   await expect.poll(() => nav.locator('button[data-testid^="nav-"]').evaluateAll(
+      223 |     (buttons) => buttons.map((button) => button.getAttribute("data-testid")),
+    > 224 |   )).toEqual([
+          |      ^
+      225 |     "nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog",
+      226 |     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
+      227 |   ]);
+        at assertRegistryNavigation (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:224:6)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:245:11
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-33609-v-entries-are-gone-in-zh-TW/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-33609-v-entries-are-gone-in-zh-TW/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-33609-v-entries-are-gone-in-zh-TW/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/ops-polish-admin/20261007T192222.816231045/results/ops-polish-OP4-Studio-subt-33609-v-entries-are-gone-in-zh-TW/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en 
+    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN 
+    tests/admin/ops-polish.spec.ts:236:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW 
+  5 passed (1.1m)

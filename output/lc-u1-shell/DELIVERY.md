@@ -1,9 +1,13 @@
 <!-- Purpose: Hand off the LC-U1 UI candidate and exact GitHub-only acceptance gates without claiming unrun browser results.
-Depends on: PR5 SessionCopy title repair/comment4206805918, trunk1aad42d0 and automatic PR required-set workflow.
+Depends on: PR5 packet2ad65bcd, stock edit/comment4212525433 repair and the automatic PR required-set workflow.
 Used by: The integrator pushing unit/lc-u1-shell and running .github/workflows/gates.yml; independent review. -->
-# LC-U1 PR5 — SessionCopy title and latest trunk repair
+# LC-U1 PR5 — latest packet repair
 
-Latest: [PR5-TITLE-DELIVERY.md](PR5-TITLE-DELIVERY.md). Fetch/merge **49dca3b8** includes **1aad42d0** and preceding PR4 fixes; preserve PR6 required workflow and LC sweep isolation. Closed-only title sync fixes same-session rename without erasing open input or remounting an UNKNOWN owner. Actual-component red→green; Node **672/672**, admin tsc, check-gates **79**, check-pkgdocs and depmap --check all exit0. **Commit only, no push; integrator pushes PR5, full required set runs automatically. New-source full PR acceptance remains NOT_RUN.**
+Latest: [PR5-ROUND2-DELIVERY.md](PR5-ROUND2-DELIVERY.md), source **de968f18477f648aeb99a22a59f65f423385e27b**, merge **6d75db16** includes trunk #10/#11/#12. Stable offer keys preserve edited stock across polls; changed snapshots require explicit confirmation before CAS Save. Ops-polish exact navigation expectations now cover the approved expanded Live group. **Local ops-polish exit0 (both halves; admin8/8), full live-console exit0 (11/11), Node672/672, admin tsc and check-gates79 exit0.** Comment4212525437 stays deferred in FOLLOWUPS. No push; integrator K3 pre-review and fresh required CI remain pending.
+
+The title-sync and earlier checkpoints below are historical evidence, not the latest packet's source.
+
+Previous: [PR5-TITLE-DELIVERY.md](PR5-TITLE-DELIVERY.md). Fetch/merge **49dca3b8** includes **1aad42d0** and preceding PR4 fixes; preserve PR6 required workflow and LC sweep isolation. Closed-only title sync fixes same-session rename without erasing open input or remounting an UNKNOWN owner. Actual-component red→green; Node **672/672**, admin tsc, check-gates **79**, check-pkgdocs and depmap --check all exit0. **Commit only, no push; integrator pushes PR5, full required set runs automatically. New-source full PR acceptance remains NOT_RUN.**
 
 Earlier source and CI checkpoints below are historical, not this candidate's whole-runtime verdict.
 
