@@ -1,0 +1,19 @@
+{
+  "name": "browser-baseline-red",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "8cef0fc6997e1905d7693210de923403556302a8",
+  "source_sha256": "837a3795723b447c69686c8698e6a426f2c5c439cbbf59644de4d9b95154c2f7",
+  "started_at": "2026-10-08T15:07:51Z",
+  "state": "complete",
+  "pid": 18415,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 65.244
+}

@@ -1,0 +1,24 @@
+(node:49962) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ UNKNOWN preserves the exact original bytes and key despite draft edits (0.319917ms)
+✔ navigation guard stores only an opaque boolean and blocks replacement attempts (0.282417ms)
+✔ unavailable storage never permits an unguarded money write (0.056ms)
+✖ post-dispatch auth refusal can follow commit and must retain the order guard (0.481916ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 78.358792
+
+✖ failing tests:
+
+test at tests/admin/create-order-attempt.test.ts:56:1
+✖ post-dispatch auth refusal can follow commit and must retain the order guard (0.481916ms)
+  TypeError: retainOrderAttempt is not a function
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-ui-worker/tests/admin/create-order-attempt.test.ts:58:49)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

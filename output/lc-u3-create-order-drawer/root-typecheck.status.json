@@ -1,0 +1,24 @@
+{
+  "name": "root-typecheck",
+  "command": [
+    "pnpm",
+    "--dir",
+    "apps/admin",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "-p",
+    "."
+  ],
+  "timeout_seconds": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "head": "142a58c5204159c671a38dfeb077de9a787a113d",
+  "source_sha256": "16e8ac45852239ae02f80174697bfc84f96003e63459dd38e705124badb5e988",
+  "started_at": "2026-10-08T15:31:06Z",
+  "state": "complete",
+  "pid": 59595,
+  "exit_code": 0,
+  "source_unchanged": true,
+  "elapsed_seconds": 0.798
+}

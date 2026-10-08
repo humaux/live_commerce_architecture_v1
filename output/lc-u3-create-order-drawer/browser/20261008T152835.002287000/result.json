@@ -1,0 +1,90 @@
+{
+  "cases": 24,
+  "failed": [],
+  "results": [
+    {
+      "case": "DU3-linked-en-1440",
+      "order_id": "07fffc7c-a9d4-4fb2-9c0e-09a146c1ac45"
+    },
+    {
+      "case": "DU3-single-order-en-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-en-390",
+      "order_id": "81d149eb-2924-459a-baf6-5a9476741ce6"
+    },
+    {
+      "case": "DU3-single-order-en-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-1440",
+      "order_id": "a3b56f3c-1ce9-47a9-9d4f-7bf141ed676a"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-TW-390",
+      "order_id": "34e821c4-3a48-44da-b99f-4040a3340e5e"
+    },
+    {
+      "case": "DU3-single-order-zh-TW-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-1440",
+      "order_id": "0e77fe01-c8b4-4b10-bf74-59d3087ccfe2"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-1440",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    },
+    {
+      "case": "DU3-linked-zh-CN-390",
+      "order_id": "1ddbe585-a276-47e8-bf44-7fdac5510605"
+    },
+    {
+      "case": "DU3-single-order-zh-CN-390",
+      "attempts": 2,
+      "same_key": true,
+      "same_body": true,
+      "pg_delta": 1,
+      "pg_request_orders": 1,
+      "pg_request_receipts": 1,
+      "replay_status": 200
+    }
+  ]
+}

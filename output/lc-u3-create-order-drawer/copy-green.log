@@ -1,0 +1,14 @@
+✔ LC-U3 all coded errors have explicit safe copy en (0.3865ms)
+✔ LC-U3 eligibility and every live/send reason en (0.10525ms)
+✔ LC-U3 all coded errors have explicit safe copy zh-TW (0.048958ms)
+✔ LC-U3 eligibility and every live/send reason zh-TW (0.066041ms)
+✔ LC-U3 all coded errors have explicit safe copy zh-CN (0.04425ms)
+✔ LC-U3 eligibility and every live/send reason zh-CN (0.058583ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 78.040875

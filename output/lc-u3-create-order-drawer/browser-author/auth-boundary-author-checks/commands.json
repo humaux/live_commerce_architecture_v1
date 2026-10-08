@@ -1,0 +1,18 @@
+[
+  {
+    "argv": [
+      "node",
+      "--check",
+      "tests/admin/create-order-drawer-gate.mjs"
+    ],
+    "exit_code": 0
+  },
+  {
+    "argv": [
+      "bash",
+      "scripts/dev/check-headers.sh",
+      "26c5148a"
+    ],
+    "exit_code": 0
+  }
+]

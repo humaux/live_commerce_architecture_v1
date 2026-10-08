@@ -1,0 +1,18 @@
+{
+  "name": "root-gates",
+  "command": [
+    "bash",
+    "scripts/dev/check-gates.sh"
+  ],
+  "timeout_seconds": 300,
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "head": "142a58c5204159c671a38dfeb077de9a787a113d",
+  "source_sha256": "16e8ac45852239ae02f80174697bfc84f96003e63459dd38e705124badb5e988",
+  "started_at": "2026-10-08T15:28:35Z",
+  "state": "complete",
+  "pid": 53455,
+  "exit_code": 0,
+  "source_unchanged": true,
+  "elapsed_seconds": 14.513
+}

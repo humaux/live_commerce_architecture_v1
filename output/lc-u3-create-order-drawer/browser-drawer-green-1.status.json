@@ -1,0 +1,19 @@
+{
+  "name": "browser-drawer-green-1",
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-manual-order"
+  ],
+  "cwd": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u3-create-order-drawer",
+  "out": "/Volumes/data/live_commerce_architecture_v1/output/lc-u3-create-order-drawer",
+  "timeout_seconds": 1800,
+  "head": "142a58c5204159c671a38dfeb077de9a787a113d",
+  "source_sha256": "be4506f8955823b905b0489aeef8ef9f16aa02709e16b668f566e8e931a743b4",
+  "started_at": "2026-10-08T15:25:55Z",
+  "state": "complete",
+  "pid": 50478,
+  "exit_code": 1,
+  "source_unchanged": true,
+  "elapsed_seconds": 65.517
+}

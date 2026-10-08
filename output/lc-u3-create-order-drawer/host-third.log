@@ -1,0 +1,14 @@
+✔ real SQL UNKNOWN mark blocks public-mode switching without a local receipt (13.480625ms)
+✔ UNKNOWN and queued public receipt survive selection remount without storing private identifiers (2.659166ms)
+✔ actual A2 hook fake clock: 3/6/12/24/30 backoff, success reset, hide clears and stops, 403 locks (5.250875ms)
+✔ actual reset clears selected buyer and rereads without the old epoch cursor (1.154166ms)
+✔ reply hints, coded error, UNKNOWN and capability state execute the actual composer (1.184917ms)
+✔ tests/admin/inbox-review-host.test.ts (422.772708ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 471.7985
