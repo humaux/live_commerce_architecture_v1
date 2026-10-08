@@ -9,6 +9,7 @@ import ts from "typescript-api";
 import { importCopy } from "../../apps/admin/lib/import-copy.ts";
 import { importViewCopy } from "../../apps/admin/lib/import-view-copy.ts";
 import { importFields, requiredImportFields } from "../../apps/admin/lib/import-model.ts";
+import { readImportHeader } from "../../apps/admin/lib/import-header.ts";
 
 const source = readFileSync(new URL("../../apps/admin/components/ImportWizard.tsx", import.meta.url), "utf8");
 const ast = ts.createSourceFile("ImportWizard.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
@@ -21,7 +22,7 @@ const preview = { file_sha256: "a".repeat(64), headers: ["ref", "label"], mappin
   rows: [{ row: 2, outcome: "created" }] };
 const receipt = { batch_id: "abcdef11-1111-4111-8111-111111111111", created: 1, updated: 0, failed: 0, replayed: false };
 
-function harness(commit) {
+function harness(commit, headerReader = async () => ["ref", "label"], locale = "en") {
   const slots = [], effects = [], calls = [], auth = [];
   let cursor = 0, unconfirmed = 0;
   const hooks = {
@@ -32,16 +33,16 @@ function harness(commit) {
     useEffect(effect, dependencies) { const index = cursor++; if (!slots[index]) { slots[index] = { dependencies }; effects.push(() => { slots[index].cleanup = effect(); }); } },
   };
   const module = { exports: {} }, jsx = (type, props) => ({ type, props });
-  runInNewContext(compiled, { module, exports: module.exports, ...hooks, AbortController, File, Set, Object,
+  runInNewContext(compiled, { module, exports: module.exports, ...hooks, AbortController, File, Set, Object, Error,
     importCopy, importViewCopy, importFields, requiredImportFields, pageHidden: () => false,
     document: { visibilityState: "visible" },
     ImportColumnMapping: "mapping", ImportPreviewCounts: "counts", ImportVerdictTable: "verdicts",
-    readImportHeader: async () => ["ref", "label"],
+    readImportHeader: headerReader,
     guessImportMapping: () => ({ external_id: "ref", name: "label", phone: "" }),
     sendImport: async args => { calls.push(args); return args.action === "preview" ? { kind: "preview", value: preview } : commit(args); },
     require: name => { if (name === "react/jsx-runtime") return { jsx, jsxs: jsx }; throw Error("unexpected import " + name); },
   });
-  const props = { locale: "en", store: "store", boundary: "scope", onSignedOut: value => auth.push(value), onUnconfirmed: () => { unconfirmed++; } };
+  const props = { locale, store: "store", boundary: "scope", onSignedOut: value => auth.push(value), onUnconfirmed: () => { unconfirmed++; } };
   let tree;
   function render() { cursor = 0; tree = module.exports.ImportForm(props); for (const effect of effects.splice(0)) effect(); return tree; }
   function nodes() { const all = []; function visit(node) { if (!node || typeof node !== "object") return; all.push(node); for (const child of [node.props?.children].flat(Infinity)) visit(child); } visit(tree); return all; }
@@ -54,8 +55,19 @@ function harness(commit) {
     await click("import-preview"); await click("import-confirm-next"); return file;
   }
   function unmount() { for (const slot of slots) slot?.cleanup?.(); }
-  return { render, control, has: id => nodes().some(node => node.props?.["data-testid"] === id), click, ready, calls, auth, unmount, unconfirmed: () => unconfirmed };
+  return { render, control, nodes, has: id => nodes().some(node => node.props?.["data-testid"] === id), click, ready, calls, auth, unmount, unconfirmed: () => unconfirmed };
 }
+
+test("oversize file uses the actual header guard and specific size guidance in all locales without dispatch", async () => {
+  for (const locale of ["en", "zh-TW", "zh-CN"]) {
+    const h = harness(() => { throw Error("must not dispatch"); }, readImportHeader, locale);
+    h.render(); await h.click("import-type-customers");
+    h.control("import-file").props.onChange({ target: { files: [new File([new Uint8Array((2 << 20) + 1)], "too-large.csv")] } });
+    await tick(); h.render();
+    assert.equal(h.nodes().find(n => n.props?.role === "alert")?.props.children, importCopy[locale].fileTooLarge, "MIUI-SIZE-GUIDANCE");
+    assert.equal(h.calls.length, 0); assert.equal(h.has("import-preview"), false); assert.equal(h.has("import-retry-same"), false);
+  }
+});
 
 test("commit uses the original requested mapping, including an empty optional field, not resolved preview metadata", async () => {
   const h = harness(async () => ({ kind: "receipt", value: receipt }));

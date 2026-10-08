@@ -104,7 +104,10 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
       if (!mounted.current || current !== revision.current || pageHidden()) return;
       setFile(chosen); setHeaders(names); setMapping(guessImportMapping(kind, names)); setStage("mapping");
     } catch (cause) {
-      if (mounted.current && current === revision.current) setError(c.errors[cause instanceof Error ? cause.message : ""] ?? c.headersFailure);
+      if (mounted.current && current === revision.current) {
+        const code = cause instanceof Error ? cause.message : "";
+        setError(code === "file_too_large" ? c.fileTooLarge : c.errors[code] ?? c.headersFailure);
+      }
     } finally { inflight.current = false; if (mounted.current && current === revision.current) setBusy(false); }
   }
   async function execute(action: "preview" | "commit", replay = false) {
