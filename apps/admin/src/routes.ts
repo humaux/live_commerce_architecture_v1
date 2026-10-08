@@ -13,6 +13,7 @@ import { storefrontRoutes } from "./features/storefront/routes.ts";
 import { financeRoutes } from "./features/finance/routes.ts";
 import { settingsRoutes } from "./features/settings/routes.ts";
 import { identityRoutes } from "./features/identity/routes.ts";
+import { messagesRoutes } from "./features/messages/routes.ts";
 export const routes: readonly RouteEntry[] = [
   ...overviewRoutes,
   ...liveRoutes,
@@ -24,6 +25,7 @@ export const routes: readonly RouteEntry[] = [
   ...financeRoutes,
   ...settingsRoutes,
   ...identityRoutes,
+  ...messagesRoutes,
 ];
 export const groups: readonly { id: GroupID; icon: string }[] = [
   { id: "overview", icon: "dashboard" },

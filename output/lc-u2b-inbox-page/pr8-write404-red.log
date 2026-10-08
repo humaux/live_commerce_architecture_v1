@@ -1,0 +1,60 @@
+task_id: lc-u2b-pr8-component-tests-write404
+parent_task_id: db10123d-1eba-4b95-8d38-e346102d80b3
+base_commit: d32b009311d87d37ac2181cc26e3bd9b0838b5c8
+previous_tests_commit: 2327ae889f247331acc2f78dd015a0ee0b9c8f63
+evidence: MOCK Node actual component handlers/client; BROWSER/Go/PG/build NOT_RUN
+command argv: ['node', '--test', '--experimental-strip-types', '--test-name-pattern', 'write 404 clears private state', 'tests/admin/inbox-review.test.ts']
+exit_code: 1
+Original11 test statements verified equal against2327 (blankline removal only); generic host formatting unchanged behavior
+Strict typescript-api test + actualadminconfig+next-env.d.ts: exit0
+sha256 c3bd9e63d0d44b4a3fca1332828682b483217933d82a200f711ca3a33fff6d22 tests/admin/inbox-review.test.ts
+sha256 42f90bbd57560fced47253c4bfe694c0fe4849ae1082bb9e8bdf70fad5ca2e3d apps/admin/components/InboxThread.tsx
+sha256 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88 apps/admin/lib/inbox-client.ts
+sha256 d7af9586828221b518a90ab5352ddd1793d3e38cacf683b3a6089e8921cf9c3b apps/admin/src/features/messages/privacy.ts
+
+✖ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (133.34575ms)
+✖ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (33.690416ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 596.246792
+
+✖ failing tests:
+
+test at tests/admin/inbox-review.test.ts:555:3
+✖ P1-2 actual A11 takeover write 404 clears private state despite failing follow-up A9 (133.34575ms)
+  AssertionError [ERR_ASSERTION]: write404 itself clears DM even if subsequent A9 is unavailable
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:596:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-review.test.ts:555:3
+✖ P1-2 actual A12 send write 404 clears private state despite failing follow-up A9 (33.690416ms)
+  AssertionError [ERR_ASSERTION]: write404 itself clears DM even if subsequent A9 is unavailable
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review.test.ts:596:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

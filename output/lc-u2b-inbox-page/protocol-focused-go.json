@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^(TestLiveConsoleSendLCN11Unknown|TestLiveConsoleSendLCN13DisplayCopyAndThread|TestLiveConsoleSendLCN06DM|TestLiveConsoleInboxLCN03PermissionSplit|TestLiveConsoleInboxCrossStoreIsolation|TestLiveClaimsCoreSmoke|TestLiveClaimsKC12Isolation|TestLiveClaimsP2gLinkTTLInDatabase|TestLiveLifecycleMultiWindow)$"
+  ],
+  "source": "751bb9cc89ee73bc4066565143e211d097aef2ce",
+  "exit": 0,
+  "timeout": false,
+  "elapsed_seconds": 67.769,
+  "log": "output/lc-u2b-inbox-page/protocol-focused-go.log"
+}

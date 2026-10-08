@@ -1,0 +1,4 @@
+Immutable source edf43f4f38a65159722d65f7c0df871e9a2515e6
+Command ["pnpm", "exec", "tsc", "--noEmit", "-p", "output/lc-u2b-inbox-page/pr8-test-tsconfig.json"]
+
+Exit 0

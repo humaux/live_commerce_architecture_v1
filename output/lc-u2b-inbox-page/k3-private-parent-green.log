@@ -1,0 +1,24 @@
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (0.463583ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.136125ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.124958ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (150.309542ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (4.25675ms)
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (0.712458ms)
+✔ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (17.542625ms)
+✔ worker restores prior environment even when use rejects (absent) (3.166292ms)
+✔ worker restores prior environment even when use rejects (empty) (1.509ms)
+✔ worker restores prior environment even when use rejects (existing-policy) (1.508708ms)
+✔ fixture is worker-auto and module collection does not suppress ordinary diagnostics (24.740875ms)
+✔ ordinary matcher ARIA context bypasses fallback flag and remains in actual installed diagnostics (0.843625ms)
+✔ private test teardown removes only matcher page context while preserving failure (failed status) (2.603667ms)
+✔ private test teardown removes only matcher page context while preserving failure (rejected use) (1.370041ms)
+✔ matcher guard is test-auto without replacing the installed artifact auto fixture (1.090209ms)
+✔ real Playwright --list collects each original INU case and isolated INU09 exactly once (410.09275ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 490.775791

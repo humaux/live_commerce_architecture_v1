@@ -1,0 +1,41 @@
+✔ hiding aborts requests and rejects late responses, even after reveal (0.357041ms)
+✔ switching selection invalidates both reads and write completions (0.060167ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.053833ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (1.095084ms)
+✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (0.696375ms)
+✔ privacy calibration cannot activate with production origin or ordinary caller env (0.109667ms)
+✔ late focus/pageshow while native document remains hidden cannot reveal requests (0.07325ms)
+✔ terminal navigation revocation cannot be undone by focus or refresh until a new page fence (0.049459ms)
+✔ a ticket from another store/page fence is never accepted (0.046042ms)
+✖ focus while already visible preserves the active epoch and the uncertain reply receipt (0.370959ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 9
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 110.871125
+
+✖ failing tests:
+
+test at tests/admin/inbox-privacy.test.ts:137:1
+✖ focus while already visible preserves the active epoch and the uncertain reply receipt (0.370959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-privacy.test.ts:143:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

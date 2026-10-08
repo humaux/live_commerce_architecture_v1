@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestInboxUnknownAuthority$"
+  ],
+  "exit_code": 1,
+  "timeout_seconds": 900,
+  "started_epoch": 1791399316.616769,
+  "elapsed_seconds": 66.04293084144592,
+  "base_commit": "e376e52c7de4645ed51547f603f0240c4e205aab"
+}

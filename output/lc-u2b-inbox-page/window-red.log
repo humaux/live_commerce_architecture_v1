@@ -1,0 +1,151 @@
+task_id: 31db6443-939f-4d93-bf35-d2e9bde3a5a7-sub-window-tests
+base_commit: 6202abb1456f9594ed3e674e943a40c1f030d401
+status: MOCK actual components/clients; fake clock/timer driver; SQL/Go/PG/BROWSER/build NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-window.test.ts"]
+exit_code: 1
+sha256 17c58a16c202857d83f770ee6fe7a39aa597ed09ce3e044b99e8a82e4b0f9a87 tests/admin/inbox-window.test.ts
+sha256 fbbe0732daa9abf40cff885c251a21b6af9028e04fd874308f4bb9f0c9b4436f tests/admin/inbox-review-host.test.ts
+sha256 8b987b84a0a78906363703068467a2a7c12fe97a43b77b5d0ea6eb2dd67a5bbd apps/admin/components/InboxThread.tsx
+sha256 103d69f50db6aaa485dc015976cacaee5adbfb20737e1d7fb682150e8fe1ff94 apps/admin/src/features/messages/bundle-recovery.tsx
+sha256 f94ac10597d88bfec4664a34ddc84e7b4123cfe53f2d2e651d1205a698d2e2b2 apps/admin/src/features/messages/copy.ts
+sha256 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88 apps/admin/lib/inbox-client.ts
+
+✔ window strict eligibility with 300001ms before hard 24h deadline (19.568041ms)
+✖ window strict eligibility with 300000ms before hard 24h deadline (2.672875ms)
+✖ window strict eligibility with 60000ms before hard 24h deadline (1.989291ms)
+✔ window strict eligibility with 0ms before hard 24h deadline (3.150875ms)
+✔ window invalid server deadline fails closed without preparing a send (0.911583ms)
+✖ window captured enabled form callback cannot POST after crossing safe cutoff (1.454958ms)
+✖ window deadline timer closes controls at cutoff and hard end without waiting for 15s poll (4.435667ms)
+✖ quota recovery gives exact zh-TW comment-quota and DM-window instructions beside copy only (0.554416ms)
+✖ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.136208ms)
+✖ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.114ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 3
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 383.45275
+
+✖ failing tests:
+
+test at tests/admin/inbox-window.test.ts:77:3
+✖ window strict eligibility with 300000ms before hard 24h deadline (2.672875ms)
+  AssertionError [ERR_ASSERTION]: SQL cutoff is strict, including equality
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:81:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:77:3
+✖ window strict eligibility with 60000ms before hard 24h deadline (1.989291ms)
+  AssertionError [ERR_ASSERTION]: SQL cutoff is strict, including equality
+
+  false !== true
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:81:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:106:1
+✖ window captured enabled form callback cannot POST after crossing safe cutoff (1.454958ms)
+  AssertionError [ERR_ASSERTION]: the current clock must be rechecked before key preparation or POST
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:115:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:122:1
+✖ window deadline timer closes controls at cutoff and hard end without waiting for 15s poll (4.435667ms)
+  AssertionError [ERR_ASSERTION]: actual component schedules imminent cutoff instead of retaining enabled control for 15s
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:128:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:149:3
+✖ quota recovery gives exact zh-TW comment-quota and DM-window instructions beside copy only (0.554416ms)
+  AssertionError [ERR_ASSERTION]: operator receives supplied literal instructions, not generic manual-link text
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:165:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:149:3
+✖ quota recovery gives exact zh-CN comment-quota and DM-window instructions beside copy only (0.136208ms)
+  AssertionError [ERR_ASSERTION]: operator receives supplied literal instructions, not generic manual-link text
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:165:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-window.test.ts:149:3
+✖ quota recovery gives exact en comment-quota and DM-window instructions beside copy only (0.114ms)
+  AssertionError [ERR_ASSERTION]: operator receives supplied literal instructions, not generic manual-link text
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-window.test.ts:165:12)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

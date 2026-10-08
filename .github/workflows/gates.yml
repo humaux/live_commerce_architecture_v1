@@ -33,7 +33,7 @@ on:
       extra_env:
         description: >-
           Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
-          e.g. LC_PM_UI_INJECT_FAULT=missing-detail). Empty for normal runs.
+          e.g. LC_PM_UI_INJECT_FAULT=missing-detail or LC_INBOX_CALIBRATION=retain-thread for --browser-inbox). Empty for normal runs.
         default: ''
         required: false
 

@@ -1,0 +1,41 @@
+{
+  "source": "845989e6f331dbcf64c10378ba71c14dea95edc5",
+  "node_counts": {
+    "tests": 758,
+    "pass": 758,
+    "fail": 0,
+    "skipped": 0
+  },
+  "browser": {
+    "normal": {
+      "directory": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/output/playwright/inbox-ui/20261007T194025.454189000",
+      "playwright_pass_count": 13,
+      "playwright_fail_count": 0,
+      "credential_evidence_verified": true,
+      "ledger_pass_rows": 31,
+      "ledger_fail_rows": 0
+    },
+    "credential": {
+      "directory": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/output/playwright/inbox-ui/20261007T193905.010832000",
+      "playwright_pass_count": 0,
+      "playwright_fail_count": 1,
+      "credential_evidence_verified": true,
+      "ledger_pass_rows": 0,
+      "ledger_fail_rows": 1,
+      "matcher_failure_present": true,
+      "page_snapshot_present": false,
+      "trace_count": 0,
+      "screenshot_count": 0
+    },
+    "visibility": {
+      "directory": "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/output/playwright/inbox-ui/20261007T193931.610436000",
+      "playwright_pass_count": 12,
+      "playwright_fail_count": 1,
+      "credential_evidence_verified": true,
+      "ledger_pass_rows": 30,
+      "ledger_fail_rows": 1
+    }
+  },
+  "gates": "k3-final-gates.json",
+  "browser_commands": "k3-final-browser-matrix.json"
+}

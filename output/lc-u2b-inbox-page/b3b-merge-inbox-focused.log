@@ -1,0 +1,149 @@
+=== RUN   TestInboxUnknownAuthority
+=== RUN   TestInboxUnknownAuthority/empty
+=== RUN   TestInboxUnknownAuthority/exhaustive_healthy
+=== RUN   TestInboxUnknownAuthority/known_unknown
+=== RUN   TestInboxUnknownAuthority/missing_operation
+=== RUN   TestInboxUnknownAuthority/exactly_50_healthy
+=== RUN   TestInboxUnknownAuthority/unknown_in_full_scan
+=== RUN   TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound
+=== RUN   TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound
+=== RUN   TestInboxUnknownAuthority/scope_not_found
+--- PASS: TestInboxUnknownAuthority (22.44s)
+    --- PASS: TestInboxUnknownAuthority/empty (0.03s)
+    --- PASS: TestInboxUnknownAuthority/exhaustive_healthy (0.14s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown (0.01s)
+    --- PASS: TestInboxUnknownAuthority/missing_operation (0.01s)
+    --- PASS: TestInboxUnknownAuthority/exactly_50_healthy (0.06s)
+    --- PASS: TestInboxUnknownAuthority/unknown_in_full_scan (0.05s)
+    --- PASS: TestInboxUnknownAuthority/old_unknown_outside_50_newer_outbound (0.04s)
+    --- PASS: TestInboxUnknownAuthority/known_unknown_below_50_newer_inbound (13.12s)
+    --- PASS: TestInboxUnknownAuthority/scope_not_found (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/conversation
+=== RUN   TestLiveConsoleBuyerPanelReviewOriginProjections/bundle
+--- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections (0.17s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/conversation (0.03s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewOriginProjections/bundle (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelReviewLiveCommentPagination
+=== RUN   TestLiveConsoleBuyerPanelReviewLiveCommentPagination/whole_store
+=== RUN   TestLiveConsoleBuyerPanelReviewLiveCommentPagination/session_1775ca0a-98f3-4942-8ccc-16733e720e96
+=== RUN   TestLiveConsoleBuyerPanelReviewLiveCommentPagination/session_b0ddd0f0-4ef6-4458-ab4e-268c6a667240
+--- PASS: TestLiveConsoleBuyerPanelReviewLiveCommentPagination (0.10s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewLiveCommentPagination/whole_store (0.01s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewLiveCommentPagination/session_1775ca0a-98f3-4942-8ccc-16733e720e96 (0.02s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewLiveCommentPagination/session_b0ddd0f0-4ef6-4458-ab4e-268c6a667240 (0.00s)
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/all
+=== RUN   TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/unreplied
+--- PASS: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit (0.08s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/all (0.01s)
+    --- PASS: TestLiveConsoleBuyerPanelReviewPendingSessionBeforeLimit/unreplied (0.01s)
+=== RUN   TestLiveConsoleBuyerPanelClaimsAndOrders
+--- PASS: TestLiveConsoleBuyerPanelClaimsAndOrders (0.06s)
+=== RUN   TestLiveConsoleBuyerPanelPriceNeutralOrigin
+--- PASS: TestLiveConsoleBuyerPanelPriceNeutralOrigin (0.04s)
+=== RUN   TestLiveConsoleBuyerPanelUnlinkedAndI09
+--- PASS: TestLiveConsoleBuyerPanelUnlinkedAndI09 (0.04s)
+=== RUN   TestLiveConsoleBuyerPanelScope404
+--- PASS: TestLiveConsoleBuyerPanelScope404 (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelOrdersPermission
+--- PASS: TestLiveConsoleBuyerPanelOrdersPermission (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelBounds
+--- PASS: TestLiveConsoleBuyerPanelBounds (0.20s)
+=== RUN   TestLiveConsoleBuyerPanelAutoReply
+--- PASS: TestLiveConsoleBuyerPanelAutoReply (0.02s)
+=== RUN   TestLiveConsoleBuyerPanelA8SessionAndLiveComment
+--- PASS: TestLiveConsoleBuyerPanelA8SessionAndLiveComment (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelA9A14
+--- PASS: TestLiveConsoleBuyerPanelA9A14 (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelLeakScan
+--- PASS: TestLiveConsoleBuyerPanelLeakScan (0.03s)
+=== RUN   TestLiveConsoleBuyerPanelExactACL
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[])
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.link_pending_bundles(int,uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int,timestamptz,uuid)
+=== RUN   TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid)
+--- PASS: TestLiveConsoleBuyerPanelExactACL (0.01s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.buyer_panel_claims(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.orders_of_bundles(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/claims.session_peer_linked(uuid,uuid,uuid,text,text,text,text) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/checkout.order_panel_facts(uuid,uuid,uuid[]) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.buyer_panel(uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.link_pending_bundles(int,uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.live_comment_bundles(uuid,int,timestamptz,uuid) (0.00s)
+    --- PASS: TestLiveConsoleBuyerPanelExactACL/inbox.conversation_binding(uuid) (0.00s)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[])
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count()
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text)
+=== RUN   TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe()
+--- PASS: TestLiveConsoleInboxMigration0122ExactACL (0.02s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.principal_holds(text[]) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.advance_conversation_state() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.dm_window(uuid,uuid,uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.read_thread(uuid,bigint,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.list_conversations(text,uuid,timestamptz,uuid,int) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.conversation_meta(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/social.unread_conversation_count() (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.mark_read(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.takeover(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.release(uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.customer_link(uuid,uuid,bigint) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/inbox.thread_opened(uuid) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.finish_meta_resubscribe(uuid,text,text) (0.00s)
+    --- PASS: TestLiveConsoleInboxMigration0122ExactACL/integration.claim_meta_resubscribe() (0.00s)
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7
+=== RUN   TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit
+--- PASS: TestLiveConsoleInboxLCN03PermissionSplit (0.03s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_cannot_open_inbox:read_scope (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/viewer_definer_gate_denies_read_and_mark_read (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/reader_sees_the_conversation_and_mark_read_stays_put_without_inbox:reply (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/replier_mark_read_advances_to_7 (0.00s)
+    --- PASS: TestLiveConsoleInboxLCN03PermissionSplit/A9_thread_opened_requires_inbox:read_and_coalesces_its_audit (0.01s)
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee
+=== RUN   TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404
+--- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink (0.03s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A11_takeover/release_CAS_and_audit (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/lazy_expiry_reads_auto_+_generation+1_with_cleared_assignee (0.01s)
+    --- PASS: TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink/A14_customer_link_CAS,_audit_and_foreign_404 (0.01s)
+=== RUN   TestLiveConsoleInboxCrossStoreIsolation
+--- PASS: TestLiveConsoleInboxCrossStoreIsolation (0.01s)
+=== RUN   TestLiveConsoleSendLCN11Unknown
+=== RUN   TestLiveConsoleSendLCN11Unknown/5xx
+=== RUN   TestLiveConsoleSendLCN11Unknown/garbled
+=== RUN   TestLiveConsoleSendLCN11Unknown/hang
+--- PASS: TestLiveConsoleSendLCN11Unknown (15.24s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/5xx (2.30s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/garbled (1.99s)
+    --- PASS: TestLiveConsoleSendLCN11Unknown/hang (3.26s)
+=== RUN   TestLiveConsoleSendLCN13DisplayCopyAndThread
+--- PASS: TestLiveConsoleSendLCN13DisplayCopyAndThread (2.57s)
+PASS
+ok  	livecommerce/tests/foundation	43.223s
+test-focused: top-level PASS=21 FAIL=0 SKIP=0 exit=0

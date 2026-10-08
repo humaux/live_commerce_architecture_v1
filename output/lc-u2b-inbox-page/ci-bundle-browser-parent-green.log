@@ -1,0 +1,23 @@
+Sourcebasef6e1745a + integratedbec02ce9 browser proof
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "tests/admin/inbox-bundle-browser.test.ts", "tests/admin/inbox-browser-source.test.ts", "tests/admin/inbox-evidence.test.ts"]
+✔ actual login settles authentication and the real fixture-store navigation before Messages (27.179083ms)
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (1.134625ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.482083ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.345ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (183.444541ms)
+✔ single-OPEN fixture closes the inherited intake window before opening bundle recovery (2.025458ms)
+✔ inbox evidence is covered by the CI upload root (0.924084ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.131083ms)
+✔ failure diagnostics match INU cases/counts without admitting private text (2.457334ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (17.463834ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (7.770959ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 341.599625
+
+Exit 0

@@ -1,0 +1,106 @@
+Immutable source 33f5d30f44f4a0dfb486fa96f49d73b765b6e5f4
+Command ["bash", "scripts/dev/test-local.sh", "--browser-inbox"]
+
+> live-commerce-workspace@ build:admin /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page
+> pnpm --filter @live-commerce/admin build
+
+
+> @live-commerce/admin@ build /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/apps/admin
+> next build && node ../../scripts/dev/package-admin.mjs
+
+▲ Next.js 16.3.5 (Turbopack)
+✓ Running next.config.ts took 178ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1282ms
+  Running TypeScript ...
+  Finished TypeScript in 358ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/15) ...
+  Generating static pages using 9 workers (3/15)
+  Generating static pages using 9 workers (7/15)
+  Generating static pages using 9 workers (11/15)
+✓ Generating static pages using 9 workers (15/15) in 95ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /_not-found
+├ ƒ /[locale]
+├ ƒ /[locale]/ads
+├ ƒ /[locale]/ads/attribution
+├ ƒ /[locale]/billing
+├ ƒ /[locale]/collections
+├ ƒ /[locale]/customers
+├ ƒ /[locale]/customers/[customer]
+├ ƒ /[locale]/design
+├ ƒ /[locale]/finance
+├ ƒ /[locale]/inventory
+├ ƒ /[locale]/invite/[token]
+├ ƒ /[locale]/messages
+├ ƒ /[locale]/orders
+├ ƒ /[locale]/orders/cvs-print
+├ ƒ /[locale]/orders/new
+├ ƒ /[locale]/products
+├ ƒ /[locale]/products/[product]
+├ ƒ /[locale]/products/import
+├ ƒ /[locale]/promotions
+├ ƒ /[locale]/reset
+├ ƒ /[locale]/returns
+├ ƒ /[locale]/settings
+├ ƒ /[locale]/settings/operations
+├ ƒ /[locale]/settings/payments/card
+├ ƒ /[locale]/settings/settlements
+├ ƒ /[locale]/signup
+├ ƒ /[locale]/studio
+├ ƒ /[locale]/studio/claims
+├ ƒ /[locale]/team
+├ ƒ /api/ads/meta/callback
+├ ƒ /api/ads/meta/connect
+├ ƒ /api/auth/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/password/login
+├ ƒ /api/auth/password/reset
+├ ƒ /api/auth/password/signup
+├ ƒ /api/auth/password/verify
+├ ƒ /api/meta/callback
+├ ƒ /api/meta/connect
+├ ƒ /api/onboarding/initial-store
+├ ƒ /api/stores
+├ ƒ /api/stores/[store]/[...resource]
+├ ƒ /api/stores/[store]/orders/export
+├ ƒ /api/stores/[store]/orders/pick-list
+├ ƒ /api/stores/[store]/shipments/cvs-batch
+├ ƒ /api/stores/[store]/tools/[...resource]
+├ ƒ /api/team/[action]
+├ ƒ /site/[locale]/[page]
+├ ƒ /site/robots.txt
+└ ƒ /site/sitemap.xml
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+Packaged standalone admin server and static assets.
+=== RUN   TestBrowserInboxUIRealChain
+=== RUN   TestBrowserInboxUIRealChain/failure_diagnostics
+=== NAME  TestBrowserInboxUIRealChain
+    browser_inbox_ui_test.go:330: Playwright 12 failed
+    browser_inbox_ui_test.go:330: Playwright failed INU01 (inbox-ui.spec.ts:91:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU02 (inbox-ui.spec.ts:184:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU08 (inbox-ui.spec.ts:220:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU03 (inbox-ui.spec.ts:282:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU04 (inbox-ui.spec.ts:310:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU05 (inbox-ui.spec.ts:392:1)
+    browser_inbox_ui_test.go:330: Playwright failed INU06 (inbox-ui.spec.ts:510:3)
+    browser_inbox_ui_test.go:330: Playwright failed INU07 (inbox-ui.spec.ts:538:3)
+    browser_inbox_ui_test.go:335: inbox browser failed: exit status 1; evidence=/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/output/playwright/inbox-ui/20261007T182425.128205000
+--- FAIL: TestBrowserInboxUIRealChain (167.82s)
+    --- PASS: TestBrowserInboxUIRealChain/failure_diagnostics (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	168.610s
+FAIL
+
+Exit 1

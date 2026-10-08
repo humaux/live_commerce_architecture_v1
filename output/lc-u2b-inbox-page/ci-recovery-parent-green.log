@@ -1,0 +1,36 @@
+Parentbasef982e5a1 + recovery0eab305b
+Exact CI Node24.21 UTC/C.UTF-8 CI2026timestamp digest-delay50ms
+Command ["/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "tests/admin/inbox-review-recovery.test.ts"]
+✔ review2 P1 bundle-only row opens real A13 and issues existing M7 claim link to clipboard (398.933833ms)
+✔ review2 P1 clipboard denial recopy reuses cached issued URL without another M7 POST (415.487417ms)
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (470.243833ms)
+✔ review2 P1 missing CSRF before cached recopy cannot copy or issue again (367.033834ms)
+✔ review2 P1 missing CSRF before uncertain retry rejects preserved receipt dispatch (316.866125ms)
+✔ review2 P1 late issued-link completion after hide cannot write clipboard (363.200666ms)
+✔ review2 P1 late issued-link completion after selection cannot write clipboard (363.951292ms)
+✔ review2 P1 late issued-link completion after unmount cannot write clipboard (364.718125ms)
+✔ review2 P1 late issued-link completion after logout cannot write clipboard (365.49775ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:read) (210.433416ms)
+✔ review2 P1 claim-link issuance denied without both live read/manage (inbox:read,live:manage) (207.247666ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"missingSession":true} (210.022666ms)
+✔ review2 P1 missing authoritative recovery identity never guesses generation {"noBundle":true} (264.203084ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate ok (224.575208ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate review_required (210.479291ms)
+✔ review2 P2 exactly one matching binding uses named DM hard gate missing_permission (209.62525ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,dm_session:missing_permission) (213.772958ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:missing_permission,dm_session:reauth_required) (215.060958ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:ok,read_comment:missing_permission) (207.610667ms)
+✔ review2 P2 multiple same-provider bindings advisory only (dm_session:review_required,dm_session:ok) (203.916917ms)
+✔ review2 P2 actual scoped A12 409 capability refusal remains visible after advisory submit (522.279042ms)
+✔ review2 P2 missing health and single binding without named DM remain disabled (208.156042ms)
+✔ review2 P2 expired cached issued link cannot be recopied or silently reissued (415.18375ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7377.414709
+
+Exit 0

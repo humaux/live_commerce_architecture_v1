@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^(TestInboxUnknownAuthority|TestLiveConsoleSendLCN11Unknown|TestLiveConsoleSendLCN13DisplayCopyAndThread|TestLiveConsoleSendLCN06DM|TestLiveConsoleInboxLCN03PermissionSplit|TestLiveConsoleInboxCrossStoreIsolation|TestLiveClaimsCoreSmoke|TestLiveClaimsKC12Isolation|TestLiveClaimsP2gLinkTTLInDatabase|TestLiveLifecycleMultiWindow|TestLiveConsoleSendMigration0128ExactACL)$"
+  ],
+  "source": "adad419d696af8ca66333917aca3a45272602174",
+  "exit": 0,
+  "timeout": false,
+  "elapsed_seconds": 71.544,
+  "log": "output/lc-u2b-inbox-page/k3-parent-focused-go.log"
+}

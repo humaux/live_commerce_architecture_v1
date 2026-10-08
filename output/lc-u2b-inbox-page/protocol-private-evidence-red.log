@@ -1,0 +1,141 @@
+task_id: c975698a-sub-private-evidence
+base_commit: 33f5d30f44f4a0dfb486fa96f49d73b765b6e5f4
+status: actual installed Playwright method + baseline absence of worker guard, fake page/use only; browser/Go/PG NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-credential-artifacts.test.ts"]
+exit_code: 1
+test_sha256: d22783479c1b1ec2a321dc9d969a3eb835edf2a5d1defffca119f9aa59ed4f46
+
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (0.548125ms)
+✖ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (0.770625ms)
+✖ worker restores prior environment even when use rejects (absent) (0.330041ms)
+✖ worker restores prior environment even when use rejects (empty) (0.170042ms)
+✖ worker restores prior environment even when use rejects (existing-policy) (0.17275ms)
+✖ fixture is worker-auto and module collection does not suppress ordinary diagnostics (0.123375ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 1
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 231.431208
+
+✖ failing tests:
+
+test at tests/admin/inbox-credential-artifacts.test.ts:60:1
+✖ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (0.770625ms)
+  AssertionError [ERR_ASSERTION]: sensitive worker must not call the credential-bearing ARIA snapshot
+
+  1 !== 0
+
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:64:12
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:62:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:71:3
+✖ worker restores prior environment even when use rejects (absent) (0.330041ms)
+  AssertionError [ERR_ASSERTION]: fixture must propagate the original use failure
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: AssertionError [ERR_ASSERTION]: guard is active only inside worker use
+
+    undefined !== '1'
+
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:74:14
+        at Object.run (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:24:100)
+        at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:34)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1201:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+        at Test.postRun (node:internal/test_runner/test:1330:19)
+        at Test.run (node:internal/test_runner/test:1258:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:71:3
+✖ worker restores prior environment even when use rejects (empty) (0.170042ms)
+  AssertionError [ERR_ASSERTION]: fixture must propagate the original use failure
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: AssertionError [ERR_ASSERTION]: guard is active only inside worker use
+
+    '' !== '1'
+
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:74:14
+        at Object.run (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:24:100)
+        at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:34)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1201:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+        at Test.postRun (node:internal/test_runner/test:1330:19)
+        at Test.run (node:internal/test_runner/test:1258:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:71:3
+✖ worker restores prior environment even when use rejects (existing-policy) (0.17275ms)
+  AssertionError [ERR_ASSERTION]: fixture must propagate the original use failure
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: AssertionError [ERR_ASSERTION]: guard is active only inside worker use
+    + actual - expected
+
+    + 'existing-policy'
+    - '1'
+
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:74:14
+        at Object.run (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:24:100)
+        at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:73:34)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1201:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+        at Test.postRun (node:internal/test_runner/test:1330:19)
+        at Test.run (node:internal/test_runner/test:1258:12)
+        at async Test.processPendingSubtests (node:internal/test_runner/test:831:7),
+    operator: 'rejects',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-credential-artifacts.test.ts:79:1
+✖ fixture is worker-auto and module collection does not suppress ordinary diagnostics (0.123375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'absent'
+  - '"worker"'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-credential-artifacts.test.ts:81:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'absent',
+    expected: '"worker"',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

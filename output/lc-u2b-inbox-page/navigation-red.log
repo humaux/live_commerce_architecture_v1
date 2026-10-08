@@ -1,0 +1,29 @@
+✔ hiding aborts requests and rejects late responses, even after reveal (0.64525ms)
+✔ switching selection invalidates both reads and write completions (0.089834ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.060625ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (1.513ms)
+✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (0.777042ms)
+✔ privacy calibration cannot activate with production origin or ordinary caller env (0.202458ms)
+✔ late focus/pageshow while native document remains hidden cannot reveal requests (0.093708ms)
+✖ terminal navigation revocation cannot be undone by focus or refresh until a new page fence (0.104208ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 98.146542
+
+✖ failing tests:
+
+test at tests/admin/inbox-privacy.test.ts:118:1
+✖ terminal navigation revocation cannot be undone by focus or refresh until a new page fence (0.104208ms)
+  TypeError: fence.revoke is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-privacy.test.ts:121:9)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

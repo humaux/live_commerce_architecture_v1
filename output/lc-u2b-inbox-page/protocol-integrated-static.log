@@ -1,0 +1,27 @@
+✔ actual login settles the role home and fixture store (real switch) (35.908542ms)
+✔ actual login settles the role home and fixture store (already selected) (7.999458ms)
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (1.136375ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (0.530417ms)
+✔ persisted link and token-free command receipt are compared without disclosing credentials (0.284291ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (306.116083ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (5.478458ms)
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (1.469542ms)
+✔ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (29.579667ms)
+✔ worker restores prior environment even when use rejects (absent) (2.564709ms)
+✔ worker restores prior environment even when use rejects (empty) (9.637541ms)
+✔ worker restores prior environment even when use rejects (existing-policy) (6.038958ms)
+✔ fixture is worker-auto and module collection does not suppress ordinary diagnostics (188.422542ms)
+✔ real Playwright --list collects each original INU case and isolated INU09 exactly once (603.249834ms)
+✔ inbox evidence is covered by the CI upload root (3.397ms)
+✔ failed Playwright closes its log and emits sanitized diagnostics before Fatalf (0.24575ms)
+✔ failure diagnostics match INU cases/counts without admitting private text (1.545292ms)
+✔ INU04 delayed handler 1 signals completion when fulfillment rejects (24.125875ms)
+✔ INU04 delayed handler 2 signals completion when fulfillment rejects (2.909125ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 720.271666

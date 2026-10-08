@@ -1,0 +1,37 @@
+Before Go credential evidence scan runs on failures
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-bundle-browser.test.ts"]
+✔ bundle fixture uses real claim commands and mounts existing M6/M7 without issuing early (1.048292ms)
+✔ sensitive bundle scenario clicks native clipboard with trace/video disabled and no token body reads (1.030958ms)
+✖ persisted link and token-free command receipt are compared without disclosing credentials (1.47175ms)
+✔ actual clipboard evaluator exports only safe summary and detects malformed or retained synthetic credentials (257.630917ms)
+✔ claim-window fixture isolates recovery after the current migration permits multiple OPEN windows (4.875042ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 414.440875
+
+✖ failing tests:
+
+test at tests/admin/inbox-bundle-browser.test.ts:34:1
+✖ persisted link and token-free command receipt are compared without disclosing credentials (1.47175ms)
+  AssertionError [ERR_ASSERTION]: credential evidence is inspected before returning a browser failure
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-bundle-browser.test.ts:42:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+Exit 1
