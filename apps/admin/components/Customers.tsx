@@ -1,5 +1,5 @@
 // Purpose: Owns the paginated merchant customer search page.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/orders-model, @/lib/customers-copy, ./CustomerTags, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
 // Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
 
@@ -15,7 +15,10 @@ import { Badge } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readCustomers, useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import type { Customer } from "@/lib/customers-model";
+import { canSeeReports, type Customer } from "@/lib/customers-model";
+import { readTagCatalog } from "@/lib/customer-tags-client";
+import { customerTagsCopy } from "@/lib/customer-tags-copy";
+import { CustomerTagManager, TagBadges } from "./CustomerTags";
 import { displayTime } from "@/lib/orders-model";
 import { customersCopy, type CustomersCopy } from "@/lib/customers-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -25,11 +28,12 @@ import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
 
-function url(locale: Locale, store: string, q: string, after: string) {
+function url(locale: Locale, store: string, q: string, after: string, tag = "") {
   const params = new URLSearchParams();
   if (store) params.set("store", store);
   if (q) params.set("q", q);
   if (after) params.set("after", after);
+  if (tag) params.set("tag", tag);
   return `/${locale}/customers${params.size ? `?${params}` : ""}`;
 }
 /** Owns the paginated merchant customer search page. Loads customer results through customers-client. */
@@ -43,6 +47,7 @@ export function Customers({
   store,
   q,
   after,
+  tag = "",
   initialError,
   renderKey,
 }: {
@@ -51,6 +56,7 @@ export function Customers({
   store: Store | null;
   q: string;
   after: string;
+  tag?: string;
   initialError: ReadCode | null;
   renderKey: string;
 }) {
@@ -59,11 +65,14 @@ export function Customers({
   const [draft, setDraft] = useState(q);
   const previous = useRef<string[]>([]);
   const read = useGuardedRead(
-    `${renderKey}|${locale}|${store?.id ?? ""}|${q}|${after}`,
-    store ? (signal) => readCustomers(store.id, q, after, signal) : null,
+    `${renderKey}|${locale}|${store?.id ?? ""}|${q}|${after}|${tag}`,
+    store ? (signal) => readCustomers(store.id, q, after, signal, tag) : null,
     initialError,
   );
-  const go = (nextStore: string, nextQ: string, nextAfter: string) => router.push(url(locale, nextStore, nextQ, nextAfter));
+  const catalog = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}|tag-catalog`,
+    store ? (signal) => readTagCatalog(store.id, signal) : null, initialError);
+  const tc = customerTagsCopy[locale];
+  const go = (nextStore: string, nextQ: string, nextAfter: string, nextTag = tag) => router.push(url(locale, nextStore, nextQ, nextAfter, nextTag));
   function search(event: FormEvent) {
     event.preventDefault();
     previous.current = [];
@@ -80,7 +89,10 @@ export function Customers({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="customers">
       <div className="orders-page customers-page" data-testid="customers-page">
         <AdminPageHeader locale={locale} description={c.subtitle} />
-        <form className="orders-controls" role="search" onSubmit={search}>
+        {/* The search <form> is display:contents inside the controls row: the tag manager dialog has its own <form>s,
+            which must not nest in (and bubble submit to) the search form (Codex review P2, PR #3). */}
+        <div className="orders-controls">
+        <form className="customers-search-form" role="search" onSubmit={search}>
           <label className="customers-search">
             {c.search}
             <input
@@ -113,8 +125,24 @@ export function Customers({
             <Icon name="refresh" size={18} />
             {c.refresh}
           </button>
-          <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
+          <label className="customers-search">{tc.filterLabel}
+            <select data-testid="customers-tag-filter" value={tag} disabled={!store || catalog.status !== "ready"}
+              onChange={event => { previous.current = []; go(store?.id ?? "", q, "", event.target.value); }}>
+              <option value="">{tc.filterAll}</option>
+              {catalog.data?.items.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              {tag && !catalog.data?.items.some(item => item.id === tag) && <option value={tag}>{tc.editorEmpty}</option>}
+            </select>
+          </label>
+          {catalog.status === "unavailable" && <button type="button" onClick={catalog.reload}>{tc.retry}</button>}
         </form>
+          {/* After a write the catalogue is re-read IN PLACE (refresh): reload() would flip the status to loading, unmount the
+              manager and its open dialog before the success notice shows (Codex review P2, PR #3). */}
+          {store && catalog.status === "ready" && <CustomerTagManager locale={locale} store={store} boundary={catalog.boundary}
+            onChanged={() => { void catalog.refresh(); read.reload(); }}
+            onScopeLost={() => { catalog.reload(); read.reload(); }} />}
+          {store && canSeeReports(store) && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
+          <p id="customers-search-hint" className="orders-export-hint">{c.searchHint}</p>
+        </div>
         {(read.status === "loading" || read.status === "hidden") && (
           <p className="orders-message" role="status">{c.loading}</p>
         )}
@@ -146,7 +174,7 @@ export function Customers({
               </table>
             </div>
             {page.items.length === 0 && (
-              <p className="orders-message" role="status" aria-live="polite">{q ? c.emptySearch : c.empty}</p>
+              <p className="orders-message" role="status" aria-live="polite">{q || tag ? c.emptySearch : c.empty}</p>
             )}
             <footer className="orders-pager">
               <span>{c.pageCount}: {page.items.length}</span>
@@ -191,6 +219,8 @@ function CustomerRow({ row, c, locale, store }: { row: Customer; c: CustomersCop
           {row.phone_last3 && <small>{c.phoneEnding} {row.phone_last3}</small>}
         </Link>
         {!row.active && <Badge tone="neutral">{c.erased}</Badge>}
+        {row.imported && <Badge tone="neutral">{c.imported}</Badge>}
+        <TagBadges tags={row.tags} locale={locale} />
       </td>
       <td data-label={c.orders}>{c.ordersPaid(row.orders_count, row.paid_orders_count)}</td>
       <td data-label={c.spent}>

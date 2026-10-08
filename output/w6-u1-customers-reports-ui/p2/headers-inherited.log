@@ -1,0 +1,10 @@
+# Purpose: preserve current W6 P2 command evidence after this prologue.
+# Depends on: DELIVERY command and original main raw SHA256=56f7608978a5824df441af68e0aa34a6b0e90323b42e7de31c889623de3ebd82.
+# Used by: integrator; full browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original main bytes and SHA above retained.
+check-headers: apps/admin/lib/ads-client.ts lacks a 'Purpose:' header line (see docs/delivery/AGENT-PREAMBLE.md §3)
+check-headers: apps/admin/lib/ads-copy.ts lacks a 'Purpose:' header line (see docs/delivery/AGENT-PREAMBLE.md §3)
+check-headers: apps/admin/lib/ads-model.ts lacks a 'Purpose:' header line (see docs/delivery/AGENT-PREAMBLE.md §3)
+check-headers: apps/admin/lib/ads-request.ts lacks a 'Purpose:' header line (see docs/delivery/AGENT-PREAMBLE.md §3)
+check-headers: apps/admin/src/features/settings/routes.ts lacks a 'Purpose:' header line (see docs/delivery/AGENT-PREAMBLE.md §3)
+check-headers: 5 file(s) without the Purpose/Depends on/Used by header

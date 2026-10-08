@@ -1,0 +1,32 @@
+{
+  "_header": {
+    "Purpose": "pin latest-origin process/source/exit evidence",
+    "Depends on": "current source and command",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "postlatest-origin DB-only shared seed check",
+  "Depends on": "35ab merge/currentGo tags and acceptance env",
+  "Used by": "integrator CI retry",
+  "run_id": "seed-latest-36133",
+  "pid": 36133,
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^TestW6UISeedFocused$"
+  ],
+  "env_names": [
+    "LC_FOCUSED_TAGS=browser",
+    "LC_FOCUSED_TIMEOUT=180s",
+    "LC_W6UI_CUSTOMERS_ACCEPTANCE=1",
+    "LC_W6UI_REPORTS_ACCEPTANCE=1"
+  ],
+  "source_sha": "d997e786e918b328315607570195ab6a4179288d",
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w6-u1-customers-reports-ui/p2/seed-latest.log",
+  "timeout_seconds": 1200,
+  "state": "finished",
+  "at": "2026-10-07T12:33:29.376219+00:00",
+  "wake": "root boundedforeground toolawait",
+  "failure_match": "nonzero orPASS0 orSKIP",
+  "exit_code": 0,
+  "ended_at": "2026-10-07T12:36:26.685128+00:00"
+}

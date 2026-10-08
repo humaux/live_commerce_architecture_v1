@@ -200,7 +200,7 @@ const detail = () => ({
   claims: [{ session_id: other, platform: "manual", bound_at: t0, line_count: 2 }],
   consent_history: [{ purpose: "marketing_messages", channel: "meta_dm", granted: true, source: "buyer_checkout", policy_version: "lc-2026-10", occurred_at: t0 }],
   privacy_actions: [{ kind: "EXPORT", via: "merchant", completed_at: t0, summary: { orders: 1 } }],
-  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1 }],
+  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1, own: false }],
 });
 
 test("customer list and detail decode exactly the frozen Go DTOs", () => {

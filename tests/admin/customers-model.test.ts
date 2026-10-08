@@ -33,7 +33,7 @@ const detail = () => ({
   consent_history: [{ purpose: "marketing_messages", channel: "meta_dm", granted: true, source: "buyer_checkout",
     policy_version: "lc-2026-10", occurred_at: "2026-09-10T00:00:00Z" }],
   privacy_actions: [{ kind: "EXPORT", via: "merchant", completed_at: "2026-09-11T00:00:00Z", summary: null }],
-  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1 }],
+  tags_revision: "a".repeat(64), notes: [{ id: "66666666-6666-4666-8666-666666666666", body: "only 7-11\nfixed", author_id: "77777777-7777-4777-8777-777777777777", created_at: "2026-09-12T00:00:00.000000Z", edited_at: null, version: 1, own: false }],
 });
 
 test("customer list accepts the frozen row and rejects unknown keys, dup ids, bad cursor, oversize", () => {

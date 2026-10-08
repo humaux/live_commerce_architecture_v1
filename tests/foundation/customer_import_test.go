@@ -1,3 +1,6 @@
+// Purpose: customer import privacy, replay and private result-file HTTP acceptance.
+// Depends on: migration-import-v1, real PG fixtures and the full httpapi router.
+// Used by: TestCustomerImport in focused and foundation gates.
 package foundation_test
 
 // CI01-CI15 (contracts/migration-import-v1.md; unit w5-02b-customer-import; tier REAL_PG over httpapi.NewHandler, MOCK data: every
@@ -314,7 +317,7 @@ func TestCustomerImport(t *testing.T) {
 			t.Fatalf("unguarded stored name: %q %v", name, err)
 		}
 		st, raw, hdr := c.call("GET", c.imports(c.store)+"/"+cm["batch_id"].(string)+"/results.csv", c.adminTok, "")
-		if st != 200 || !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store" {
+		if st != 200 || !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store, private" {
 			t.Fatalf("results.csv: %d %q %v", st, raw, hdr)
 		}
 		body := string(raw)
