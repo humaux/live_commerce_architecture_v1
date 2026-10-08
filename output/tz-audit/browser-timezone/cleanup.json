@@ -1,0 +1,13 @@
+{
+  "removed_owned_worktrees": [
+    "tz-browser-admin",
+    "tz-browser-buyer",
+    "tz-browser-proof"
+  ],
+  "removed_owned_root_outputs": [
+    "output/tz-browser-admin",
+    "output/tz-browser-buyer"
+  ],
+  "owned_active_processes": [],
+  "preserved_other_worktrees_and_containers": true
+}

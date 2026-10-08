@@ -1,5 +1,5 @@
 // Purpose: The one admin BFF catch-all: proxies exactly the allowlisted per-store resources to Go, nothing generic
-//   (including Meta health B1/B2, the W3-U5 returns/cancel grammar, the W6-05B operations ledger and the W6-06B ads unbind/feed).
+//   (including LC-U1 console/results, PM-v2 media, Meta health B1/B2, the W3-U5 returns/cancel grammar, the W6-05B operations ledger and the W6-06B ads unbind/feed).
 // Depends on: @/lib/backend, @/lib/auth, server session/store/CSRF authority and the per-domain request grammars in
 //   @/lib/*-request (orders, customers, logistics, promotions, studio, claims, design, meta-connect, ads, returns).
 // Used by: every admin client module under apps/admin/lib (browser fetch -> this route -> Go /v1/admin/stores/...);
@@ -7,6 +7,8 @@
 import { validMediaQuery } from "@/lib/product-media-model";
 import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode } from "@/lib/inbox-bff";
 import { callBackend, fixtureSession } from "@/lib/backend";
+import { consoleAny, consolePaths, consoleRoutes, validConsoleBody, validConsoleQuery } from "@/src/features/live/console-request";
+import { parseConsole, parseCopyResult, parseLifecycleResult, parseRecommendResult, parseSessionResults } from "@/src/features/live/console-model";
 import {
   orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery, validReturnsQuery,
 } from "@/lib/orders-request";
@@ -81,13 +83,13 @@ const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
 const studioInputReadRoute = new RegExp(`^${studioInputRead}$`);
 const studioInputRoute = new RegExp(`^${studioInput}$`);
 const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start|token))`;
-const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
+const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath}|${consolePaths.GET}|${consolePaths.POST})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET}|payments/card|settlements|settlements/${uuid})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET}|${consolePaths.GET}|payments/card|settlements|settlements/${uuid})$`,
   ),
   POST: new RegExp(
-    `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
+    `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST}|${consolePaths.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -235,7 +237,7 @@ async function route(request: Request, context: Context) {
   }
   if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD) return error(413, "invalid_request");
   if (studio) {
-    if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
+    if (!(consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
       return error(422, "invalid_request");
     if (
       request.method === "GET" &&
@@ -329,6 +331,7 @@ async function route(request: Request, context: Context) {
       try {
         if (!request.body) return error(400, "invalid_json");
         init.body = await readBody(request, "application/json");
+        if (consoleRoutes.POST.test(path) && !validConsoleBody(path, init.body)) return error(400, "invalid_json");
       } catch {
         return error(400, "invalid_json");
       }
@@ -411,8 +414,18 @@ async function route(request: Request, context: Context) {
       const tokenResponse = input && path.endsWith("/token");
       const inputRead = studioInputReadRoute.test(path);
       const claimLink = claimLinkRoute(path);
-      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : 256 << 10);
+      // A1 includes up to 200 offers; legal Unicode names/variants can exceed the normal Studio 256 KiB cap.
+      const consoleRead = request.method === "GET" && consoleRoutes.GET.test(path) && path.endsWith("/console");
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
+      if (consoleAny.test(path) && response.ok) {
+        const session = resource[1];
+        if (path.endsWith("/console")) parseConsole(parsed, session);
+        else if (path.endsWith("/lifecycle")) parseLifecycleResult(parsed, session);
+        else if (path.endsWith("/recommend")) parseRecommendResult(parsed);
+        else if (path.endsWith("/copy")) parseCopyResult(parsed);
+        else if (path === "live-sessions/results") parseSessionResults(parsed, url.searchParams.getAll("session_id"));
+      }
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
       // The claim link token leaves the BFF only in this closed shape (§7.1 M7).
       if (claimLink && response.ok && !validClaimLink(parsed)) return error(503, "retry_later");

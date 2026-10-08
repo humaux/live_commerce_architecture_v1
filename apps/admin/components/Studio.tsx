@@ -8,6 +8,12 @@ import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { Badge, DateControl, Field, FormRow } from "@live-commerce/ui";
+import { money } from "@live-commerce/format";
+import { readSessionResults } from "@/src/features/live/console-client";
+import { useLiveRead } from "@/src/features/live/use-live-workspace";
+import { workspaceCopy } from "@/src/features/live/workspace-copy";
+import { SessionCopy } from "@/src/features/live/SessionCopy";
+import "@/src/features/live/workspace.css";
 import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
@@ -138,6 +144,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const concealed = useRef<Concealed | null>(initialRecovery ?? null);
   const explicitDeparture = useRef(false);
   const previous = useRef<string[]>([]);
+  const copyNavigationGuard = useRef<() => boolean>(() => true);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
   // A visible shell is not an authenticated Studio read. Creation must wait
@@ -145,6 +152,10 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const creationReady = currentPage.status === "ready" && !!boundary.current;
   const selectedID = scene || (concealed.current?.scope === scope ? concealed.current.selectedID : "") ||
     (pinnedScene.scope === scope ? pinnedScene.id : "") || currentPage.data?.items[0]?.session_id || "";
+  const resultIDs = currentPage.data?.items.map((item) => item.session_id) ?? [];
+  const results = useLiveRead(`${storeID}:results:${resultIDs.join(",")}`, currentPage.status === "ready" && resultIDs.length > 0,
+    (signal) => readSessionResults(storeID, resultIDs, signal));
+  const liveCopy = workspaceCopy[locale];
   const detailKey = `${storeID}|${selectedID}`;
   const currentDetail = detail.key === detailKey && (!cookie.current || csrfCookie() === cookie.current)
     ? detail : { key: detailKey, status: "initial" as Status, data: null };
@@ -468,6 +479,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     if (recoveryGuard) return false;
     if (pending.current || actionError === "uncertain") return false;
     if (dirty.current && !window.confirm(c.dirty)) return false;
+    if (!copyNavigationGuard.current()) return false;
     if (sameRecovery(historyRecovery, scope, scene)) historyRecovery = null;
     if (depart) explicitDeparture.current = true;
     return true;
@@ -616,6 +628,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {shown && <button type="button" className="studio-refresh" data-testid="studio-open-claims"
             onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/claims?store=${encodeURIComponent(storeID)}&scene=${encodeURIComponent(shown.draft.session_id)}`); }}>
             {c.claims}</button>}
+          {shown && <button type="button" data-testid="studio-open-console" onClick={() => { if (mayLeave(true)) router.push(`/${locale}/studio/console?store=${storeID}&scene=${shown.draft.session_id}`); }}>{liveCopy.viewConsole}</button>}
           <button type="button" className="studio-refresh" onClick={refresh}>{c.refresh}</button>
         </>} />
       {recoveryElsewhere && historyRecovery && <p className="studio-note" role="status">
@@ -640,6 +653,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                 onClick={() => { navigate(storeID, cursor, item.session_id); }}>
                 <strong>{item.title}</strong><Badge>{c.state[item.state as keyof typeof c.state] ?? item.state}</Badge>
                 <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
+                <span className="live-session-results" data-testid={`live-session-results-${item.session_id}`}>
+                  {results.data?.items.filter((result) => result.session_id === item.session_id).map((result) => <span key={result.session_id}>
+                    {liveCopy.orders} {result.orders} · {liveCopy.paidOrders} {result.paid_orders}
+                    {result.money.map((bucket) => <span key={bucket.currency}> · {liveCopy.paid} {money(locale, bucket.currency, bucket.paid_minor)}{bucket.sandbox_paid_minor > 0 ? ` · ${liveCopy.sandbox} ${money(locale, bucket.currency, bucket.sandbox_paid_minor)}` : ""}</span>)}
+                    {result.multi_session_orders > 0 && <span> · {liveCopy.multiSession}</span>}
+                  </span>)}
+                  {results.error && liveCopy.noResults}
+                </span>
               </button>)}
             </div>
             <div className="studio-pager">
@@ -699,6 +720,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
             <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
           {!mediaOn && actionAlert}
+          {shown && <SessionCopy key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} boundary={boundary.current} disabled={!shown.can_manage || busy || formDirty || recoveryGuard || recoveryElsewhere || actionError === "uncertain" || actionError === "conflict"} refresh={refresh} navigationGuard={copyNavigationGuard} />}
         </section>
         {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
           <div className="studio-status-title"><h2>{c.rehearsal}</h2><Badge tone="info">MOCK</Badge></div>

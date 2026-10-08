@@ -1,0 +1,12 @@
+# tz-audit-admin-tests delivery
+- task_id: codex-tz-audit-v2-sub-admin-tests
+- Role/model/effort: independent test author / gpt-6-sol / medium
+- Base/head: 35abffcadaa1240888d291391712e1411cb820a3 / 35abffcadaa1240888d291391712e1411cb820a3 (uncommitted test-only diff)
+- Worktree/branch: .worktrees/tz-audit-admin-tests / unit/tz-audit-admin-tests
+- Allowed/changed source: tests/admin/timezone-ui.test.mjs; evidence: output/tz-audit-admin-tests/*
+- Test SHA256: 690d2ba2666176a79bdf637ad20713e760289711added54f6d3fe4b2d3ce7320
+- Summary: three actual TSX component paths compiled by Next SWC; Ads private when, Design Versions published_at, ManualOrder placed bank-transfer expiry. Actual packages/format/src/index.ts is compiled for @live-commerce/format; only shell/hooks/presentation dependencies are simulated.
+- UTC: `TZ=UTC node --test tests/admin/timezone-ui.test.mjs` => exit 1, tests 3/pass 0/fail 3; red-UTC.log. Outputs 2026-12-31 16:30/4:30 PM rather than 2027-01-01 00:30.
+- Los Angeles: `TZ=America/Los_Angeles node --test tests/admin/timezone-ui.test.mjs` => exit 1, tests 3/pass 0/fail 3; red-America-Los_Angeles.log. Outputs 2026-12-31 08:30/8:30 AM rather than 2027-01-01 00:30.
+- Evidence class: MOCK component regression. Browser click persistence: NOT_RUN. Integrated green: NOT_RUN; root must copy test to fixed tree and run both TZs independently.
+- Risk: hook fixture assumes placed is useState call 14; if component hook order changes, fixture may need adjustment. No HTTP/BFF seam is tested.

@@ -1,0 +1,27 @@
+{
+  "command": [
+    "pnpm",
+    "exec",
+    "tsc",
+    "--noEmit",
+    "--strict",
+    "--target",
+    "ES2023",
+    "--module",
+    "ESNext",
+    "--moduleResolution",
+    "Bundler",
+    "--allowImportingTsExtensions",
+    "--esModuleInterop",
+    "--skipLibCheck",
+    "--types",
+    "node",
+    "--typeRoots",
+    "apps/admin/node_modules/@types",
+    "tests/admin/ads.spec.ts",
+    "tests/admin/design.spec.ts"
+  ],
+  "exit_code": 0,
+  "stdout": "",
+  "stderr": ""
+}

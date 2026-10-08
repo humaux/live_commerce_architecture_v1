@@ -1,0 +1,1 @@
+{"command": ["bash", "scripts/dev/test-node.sh"], "base_sha": "35abffca", "source_manifest": "source-hashes.json", "timeout_seconds": 240, "exit_code": 0, "elapsed_seconds": 37.44677019119263}

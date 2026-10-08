@@ -1,0 +1,185 @@
+
+Running 8 tests using 1 worker
+
+(node:66129) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (13.0s)
+(node:66303) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (12.2s)
+(node:66520) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (13.1s)
+(node:66605) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  4 tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1 (13.0s)
+(node:67986) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  5 tests/admin/design.spec.ts:405:1 › SDB02 BFF: allowlist, no query, 64 KiB generic cap vs 260 KiB design cap, CSRF/key/origin, identity headers, media bytes (1.5s)
+  ✓  6 tests/admin/design.spec.ts:509:1 › SDB03 read-only member: the page opens, every write is refused by the server and the UI says so; nothing is stored (710ms)
+  ✓  7 tests/admin/design.spec.ts:532:1 › SDB04 stale write: a second tab that saved first makes this tab's save a conflict with a reload path (2.0s)
+  ✓  8 tests/admin/design.spec.ts:559:1 › SDB05 a 422 reaches the editor with the offending field path (contract B-acceptance: details {path, reason}), through the BFF and on the field (802ms)
+
+
+  1) tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('design-version-row').first().locator('td').nth(2)
+    Expected: "10/08/2026, 00:03"
+    Received: "10/07/2026, 09:03"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByTestId('design-version-row').first().locator('td').nth(2) with timeout 10000ms
+      - waiting for getByTestId('design-version-row').first().locator('td').nth(2)
+        24 × locator resolved to <td>10/07/2026, 09:03</td>
+           - unexpected value "10/07/2026, 09:03"
+
+
+      301 |     await expect(rows.first()).toContainText("v1");
+      302 |     await expect(rows.first()).toContainText(c.versions.live);
+    > 303 |     await expect(rows.first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+          |                                                     ^
+      304 |     if (j.locale === "en" && j.viewport === "desktop") {
+      305 |       // The already published store is read in a UTC mobile context; no second fixture or publish.
+      306 |       const utcContext = await page.context().browser()!.newContext({
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof/tests/admin/design.spec.ts:303:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-d2e5f-t-publish-v2-rollback-to-v1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-d2e5f-t-publish-v2-rollback-to-v1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-d2e5f-t-publish-v2-rollback-to-v1/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-d2e5f-t-publish-v2-rollback-to-v1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('design-version-row').first().locator('td').nth(2)
+    Expected: "2026/10/08 00:04"
+    Received: "2026/10/07 09:04"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByTestId('design-version-row').first().locator('td').nth(2) with timeout 10000ms
+      - waiting for getByTestId('design-version-row').first().locator('td').nth(2)
+        24 × locator resolved to <td>2026/10/07 09:04</td>
+           - unexpected value "2026/10/07 09:04"
+
+
+      301 |     await expect(rows.first()).toContainText("v1");
+      302 |     await expect(rows.first()).toContainText(c.versions.live);
+    > 303 |     await expect(rows.first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+          |                                                     ^
+      304 |     if (j.locale === "en" && j.viewport === "desktop") {
+      305 |       // The already published store is read in a UTC mobile context; no second fixture or publish.
+      306 |       const utcContext = await page.context().browser()!.newContext({
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof/tests/admin/design.spec.ts:303:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-26d0e-t-publish-v2-rollback-to-v1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-26d0e-t-publish-v2-rollback-to-v1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-26d0e-t-publish-v2-rollback-to-v1/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-26d0e-t-publish-v2-rollback-to-v1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('design-version-row').first().locator('td').nth(2)
+    Expected: "10/08/2026, 00:04"
+    Received: "10/07/2026, 09:04"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByTestId('design-version-row').first().locator('td').nth(2) with timeout 10000ms
+      - waiting for getByTestId('design-version-row').first().locator('td').nth(2)
+        24 × locator resolved to <td>10/07/2026, 09:04</td>
+           - unexpected value "10/07/2026, 09:04"
+
+
+      301 |     await expect(rows.first()).toContainText("v1");
+      302 |     await expect(rows.first()).toContainText(c.versions.live);
+    > 303 |     await expect(rows.first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+          |                                                     ^
+      304 |     if (j.locale === "en" && j.viewport === "desktop") {
+      305 |       // The already published store is read in a UTC mobile context; no second fixture or publish.
+      306 |       const utcContext = await page.context().browser()!.newContext({
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof/tests/admin/design.spec.ts:303:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-0994b-t-publish-v2-rollback-to-v1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-0994b-t-publish-v2-rollback-to-v1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-0994b-t-publish-v2-rollback-to-v1/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-0994b-t-publish-v2-rollback-to-v1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByTestId('design-version-row').first().locator('td').nth(2)
+    Expected: "2026/10/08 00:04"
+    Received: "2026/10/07 09:04"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByTestId('design-version-row').first().locator('td').nth(2) with timeout 10000ms
+      - waiting for getByTestId('design-version-row').first().locator('td').nth(2)
+        24 × locator resolved to <td>2026/10/07 09:04</td>
+           - unexpected value "2026/10/07 09:04"
+
+
+      301 |     await expect(rows.first()).toContainText("v1");
+      302 |     await expect(rows.first()).toContainText(c.versions.live);
+    > 303 |     await expect(rows.first().locator("td").nth(2)).toHaveText(displayTime(j.locale, publishedAt!));
+          |                                                     ^
+      304 |     if (j.locale === "en" && j.viewport === "desktop") {
+      305 |       // The already published store is read in a UTC mobile context; no second fixture or publish.
+      306 |       const utcContext = await page.context().browser()!.newContext({
+        at /Volumes/data/live_commerce_architecture_v1/.worktrees/tz-browser-proof/tests/admin/design.spec.ts:303:53
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-2c4bb-t-publish-v2-rollback-to-v1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-2c4bb-t-publish-v2-rollback-to-v1/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-2c4bb-t-publish-v2-rollback-to-v1/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/store-design/20261007T160340.914735000/results/design-SDB01-merchant-jour-2c4bb-t-publish-v2-rollback-to-v1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+    tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW desktop: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+    tests/admin/design.spec.ts:108:3 › SDB01 merchant journey en mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+    tests/admin/design.spec.ts:108:3 › SDB01 merchant journey zh-TW mobile: profile, logo, sections, page, save, guard, publish v1, edit, publish v2, rollback to v1
+  4 passed (1.0m)

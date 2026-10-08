@@ -89,6 +89,8 @@ jobs:
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
       MODE: ${{ matrix.mode }}
+      # Sweep fingerprints cover a shared store; concurrent UI copies alter another page's before/after state.
+      LC_SWEEP_WORKERS: "1"
       EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
     steps:
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0

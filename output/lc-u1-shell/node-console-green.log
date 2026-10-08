@@ -1,0 +1,29 @@
+(node:28504) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ console BFF admits exactly A1/A7/A6 and A5 read/copy methods (0.660417ms)
+✔ results query is canonical repeated session_id 1..50, everything else queryless (0.204709ms)
+✔ real BFF route forwards only exact resources, authenticates scope and returns private scrubbed errors (48.179958ms)
+✔ new commands reject unknown keys and preserve frozen copy/lifecycle/recommend body (0.205167ms)
+✔ browser commands reuse Studio fences, exact no-comment recommend body and backend refusal codes (3.34475ms)
+✔ results client preserves canonical ids/order and rejects invalid list before fetch (0.310875ms)
+✔ stock client reuses catalog transport/key/parser and fences a changed login without retries (1.19925ms)
+(node:28505) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ A1 strict MOCK snapshot preserves unavailable counts, capability unknown and server stock (11.256584ms)
+✔ A7 returns a separate lifecycle version and closed full CONTAINS window (0.139625ms)
+✔ A5 results retain separate environments/currencies and bind exact requested ids/order (0.176167ms)
+✔ A5 copy parses real Go envelope, copied offer prices and CONTAINS window (1.165959ms)
+✔ A6 accepts optional operation UUID, never guessed send success (0.208583ms)
+(node:28506) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ LC-U1 one primary action follows lifecycle, never planning or transport state (0.566333ms)
+✔ LC-U1 stock target uses sellable delta and rejects fractions, negative and over-limit changes (0.182375ms)
+✔ LC-U1 embeds only explicit public FB post identities, never arbitrary URLs or guessed videos (0.197292ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 250.091292

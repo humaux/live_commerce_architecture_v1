@@ -1,0 +1,30 @@
+✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (94.620875ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 288.665792
+
+✖ failing tests:
+
+test at tests/admin/live-console-render.test.ts:43:1
+✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (94.620875ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /live-instagram-notice/. Input:
+  
+  '<section class="live-console" data-testid="live-console"><div class="live-status-toolbar"><p>畫面顯示時每 5 秒更新</p><button type="button" data-testid="live-console-refresh">重新整理</button></div><p role="alert">部分場次控制暫時無法讀取；直播統計仍可查看，請重新整理以核對控制狀態。</p><div class="live-phase-header"><div><h2>A1 PRIVATE TITLE</h2><ol class="live-phases" data-testid="live-phase" data-phase="draft"><li aria-current="step">開播前準備</li><li>直播中</li><li>直播後</li></ol></div><button type="button" class="primary" data-testid="live-primary-action" disabled="" aria-describedby="live-management-reason">開始直播</button><p id="live-management-reason">需要直播管理權限。</p></div><dl class="live-status-bar"><div><dt>留言</dt><dd>—</dd></div><div><dt>關鍵字留言</dt><dd>0</dd></div><div><dt>買家</dt><dd>0</dd></div><div><dt>訂單</dt><dd>0</dd></div><div><dt>訂單金額</dt><dd>NT$0</dd></div><div><dt>營業額（已收款）</dt><dd>NT$0</dd></div></dl><p class="live-helper">更新於 2026/10/07 08:00 · 台北時間</p><p class="live-helper" role="status">留言接收: 尚未開始</p><div class="live-console-columns"><section class="live-preview"><h3>Facebook 直播／貼文</h3><p>尚未連接可驗證的 Facebook 貼文連結，請核對留言來源設定。</p><p class="live-instagram-notice">Instagram 直播無法嵌入此處，請在 Instagram 觀看；支援的留言另行接收。</p><a href="/zh-TW/studio/claims?store=11111111-1111-4111-8111-111111111111&amp;scene=22222222-2222-4222-8222-222222222222">設定商品與留言來源</a></section><section class="live-products"><h3>本場商品</h3><p>本場尚未加入商品。</p><ul></ul></section></div></section>'
+  
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-shell/tests/admin/live-console-render.test.ts:47:72)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '<section class="live-console" data-testid="live-console"><div class="live-status-toolbar"><p>畫面顯示時每 5 秒更新</p><button type="button" data-testid="live-console-refresh">重新整理</button></div><p role="alert">部分場次控制暫時無法讀取；直播統計仍可查看，請重新整理以核對控制狀態。</p><div class="live-phase-header"><div><h2>A1 PRIVATE TITLE</h2><ol class="live-phases" data-testid="live-phase" data-phase="draft"><li aria-current="step">開播前準備</li><li>直播中</li><li>直播後</li></ol></div><button type="button" class="primary" data-testid="live-primary-action" disabled="" aria-describedby="live-management-reason">開始直播</button><p id="live-management-reason">需要直播管理權限。</p></div><dl class="live-status-bar"><div><dt>留言</dt><dd>—</dd></div><div><dt>關鍵字留言</dt><dd>0</dd></div><div><dt>買家</dt><dd>0</dd></div><div><dt>訂單</dt><dd>0</dd></div><div><dt>訂單金額</dt><dd>NT$0</dd></div><div><dt>營業額（已收款）</dt><dd>NT$0</dd></div></dl><p class="live-helper">更新於 2026/10/07 08:00 · 台北時間</p><p class="live-helper" role="status">留言接收: 尚未開始</p><div class="live-console-columns"><section class="live-preview"><h3>Facebook 直播／貼文</h3><p>尚未連接可驗證的 Facebook 貼文連結，請核對留言來源設定。</p><p class="live-instagram-notice">Instagram 直播無法嵌入此處，請在 Instagram 觀看；支援的留言另行接收。</p><a href="/zh-TW/studio/claims?store=11111111-1111-4111-8111-111111111111&amp;scene=22222222-2222-4222-8222-222222222222">設定商品與留言來源</a></section><section class="live-products"><h3>本場商品</h3><p>本場尚未加入商品。</p><ul></ul></section></div></section>',
+    expected: /live-instagram-notice/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }
