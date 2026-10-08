@@ -41,7 +41,7 @@ The product now disables each versioned Save until its target observation exists
 | `git diff --check` | 0 | author command receipt |
 | `node scripts/dev/pr-modes.mjs origin/r3/integration HEAD` | 0 | `ci-plan.json`, `ci-plan.log` |
 
-The repeat driver is a **serial stability experiment, not failed-test retry**: it stops on any nonzero exit. Four bounded CPU workers run at **nice 19**, gates at **nice 10**, with the existing machine-wide PG lock. At sampled boundaries the machine load reached **17.15**. This Mac's `node` command is a Python wrapper, so its parent shows 0% CPU; `load-child-evidence.log` records the actual four node children at approximately **87–89% CPU each**, nice 19. The script's exit cleanup also terminated those children; their exact PIDs were verified absent afterward. No other agent's process was stopped. Product/spec stayed unchanged throughout all runs.
+The repeat driver is a **serial stability experiment, not failed-test retry**: it stops on any nonzero exit. Four bounded CPU workers run at **nice 19**, gates at **nice 10**, with the existing machine-wide PG lock. At sampled boundaries the machine load reached **17.15**. This Mac's `node` command is a Python wrapper, so its parent shows 0% CPU; `load-child-evidence.log` records the actual four node children at approximately **60.7–73.6% (retained samples; corrected by Codex-4 cross-review) CPU each**, nice 19. The script's exit cleanup also terminated those children; their exact PIDs were verified absent afterward. No other agent's process was stopped. Product/spec stayed unchanged throughout all runs.
 
 ### Source SHA-256
 
