@@ -11,4 +11,3 @@ for (const row of rows) {
     assert.equal(row.deployDropped, false, "legacy deploy-smoke was dropped for " + JSON.stringify(row.paths));
   });
 }
-

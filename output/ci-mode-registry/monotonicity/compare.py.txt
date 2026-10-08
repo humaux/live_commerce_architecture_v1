@@ -58,4 +58,3 @@ for i,(name,paths) in enumerate(cases):
 (root/'cli-comparison.json').write_text(json.dumps(cli,ensure_ascii=False,indent=2)+'\n')
 summary={'path_sets':len(cases),'api_drops':[x['name'] for x in api if x['dropped'] or x['deployDropped']], 'cli_drops':[{'name':x['name'],'old_modes':len(x['before']['modes']),'new_modes':len(x['after']['modes']),'deploy_dropped':x['deployDropped'],'display':x['legacy_git_display']} for x in cli if x['dropped'] or x['deployDropped']]}
 (root/'comparison-summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2)+'\n');print(json.dumps(summary,ensure_ascii=False))
-

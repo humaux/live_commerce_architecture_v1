@@ -37,3 +37,6 @@ E3 here is command-boundary MOCK equivalence and static/Node gates, not real fix
 ## Next green checkpoint
 
 NOT_RUN at this implementation checkpoint: real backend-only --buyer-http; real --browser-picklist; real --browser-click-sweep@1/10 (canonical LC_SWEEP_SHARD=1/10 invocation). These run serially after this commit. Full foundation/all browser modes/providerSANDBOX/LIVE/deployment remain NOT_RUN. Author commits; integrator obtains cross-review, opens PR and pushes.
+
+Evidence packaging: the original replay scripts are retained losslessly as `.raw.gz` and normalized readable `.txt` views, not tracked `*.test.mjs` files falsely registered as live repo tests. The executed scripts in primary evidence retain their original filenames and byte equality. The initial checkpoint whitespace check reported only two trailing-blank-line findings in these copied scripts; their views now pass without changing the executed originals.
+The packaging check correctly rejected evidence names still containing `.test.` even with a `.txt`/`.gz` suffix; the archived assertion script now uses `monotonicity-assertions` filenames. No gate rule was relaxed.
