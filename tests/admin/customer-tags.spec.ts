@@ -142,9 +142,17 @@ test("CTUI catalogue duplicate/length, tag filter clear and persistence, notes p
   try {
     const notes = page.getByTestId("customer-notes");
     for (const fault of ["tag-read-503", "notes-read-503"]) {
+      // Finish the initial/current read before arming a one-shot failure for the next document.
+      // Otherwise the outgoing page can consume the 503 immediately before reload (captured network trace).
+      await expect(page.getByTestId("customer-tags-editor").getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
+      await expect(notes.locator("ul > li")).toHaveCount(50);
+      await expect(notes.getByRole("button", { name: c.notesMore, exact: true })).toBeEnabled();
       await ctl("fault", fault);
       await step(page, `${fault} Retry`, "failed genuine read is visible and Retry restores controls/notes", async () => {
-        await page.reload(); const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
+        const resource = fault === "tag-read-503" ? "/customers/tags" : `/customers/${customer}/notes`;
+        const failedRead = page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(resource));
+        await page.reload(); expect((await failedRead).status()).toBe(503);
+        const region = fault === "tag-read-503" ? page.getByTestId("customer-tags-editor") : notes;
         await expect(region).toContainText(c.unavailable); await region.getByRole("button", { name: c.retry, exact: true }).click();
         if (fault === "tag-read-503") await expect(region.getByRole("checkbox", { name: "Seed01", exact: true })).toBeVisible();
         else await expect(region.locator("ul > li")).toHaveCount(50);
