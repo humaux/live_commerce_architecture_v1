@@ -1,5 +1,44 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+## Codex-4 owner batch — 2026-10-08 (current handoff)
+
+**Status: local requested gates GREEN; privacy P1 fixed (E3, MOCK/REAL_PG). Original Linux CVS close-stall root cause remains UNKNOWN.** This record does not claim that the historical CI failure has a proven product fix. Integrator K3 review and same-head Linux CI remain required; no push or production action performed.
+
+- Owner/worktree/branch: Codex-4, `.worktrees/w3-u4-parcel-merge-ui`, `unit/w3-u4-parcel-merge-ui`; fetched and merged remote `b4495ba2` before changes. Primary model/effort is not exposed by this runtime; independent scoped roles: test_worker, platform_explorer, security_reviewer. Current tested source is `a6bd46d8154fb2b05f3c80adc1c1ba7ab099e7e6`; exact changed-source hashes are in `codex4-source-hashes.json` (this final commit adds evidence/docs only).
+- Commits: `75b9de32` private-scope teardown; `cf84032f` fresh-checkout fixture isolation; `e27728c5` actual parcel suite registration; `a6bd46d8` deterministic observation of real refusal before its real group refresh.
+- Product change: either parcel read returning signed-out/forbidden/not-found aborts its sibling and synchronously revokes parent order scope. Order list/detail, selections, search, groups, capabilities and session boundary clear; delayed siblings, order polls and capability reads cannot repaint. Ordinary 503 remains a local Retry. Only `MerchantOrders.tsx` and `ParcelGroup.tsx` change product behavior.
+- Privacy proof: independent test uses the actual lifecycle source, actual clients and real `OrderReadError` (MOCK network): RED 7 failures + 2 controls, GREEN 9/9. Real browser adds six denial cases (both reads × 401/403/404) with actual Go sibling responses and the real order poll held until private UI is gone, then checks again after completion. Complete MOU/parcel browser scenario now passes.
+- Required gate repairs uncovered on execution: original MOU proof deliberately mutates catalogue price to 99999; later parcel checkout incorrectly reused it. Restore only fresh-checkout catalogue/service inputs after original frozen-order/read-only proofs; focused real PG test reproduces contamination and checks old snapshot unchanged. The Go-selected `parcel-merge-ui` suite was absent from Playwright config; register it and test actual CLI collection. Finally, an actual 409 followed by a group 200 about 19 ms later replaces the form containing the old error. The test holds that unchanged response, observes the original error first, then releases it for original group/hint assertions. All 121 previous assertion chains remain, with three actual-response checks added. These repairs are test fixture/configuration changes, not explanations of the CVS CI failure.
+- Deferred comments `4212524352`, `4212524369`, `4212524378` untouched. No Go product, migration, API, OpenAPI or dependency/lockfile changes.
+
+### Commands and exit codes
+
+| Command | Exit | Result / evidence |
+|---|---:|---|
+| `git fetch origin && git merge origin/unit/w3-u4-parcel-merge-ui` | 0 | Fast-forward to b4495ba2; no push |
+| `node --test --experimental-strip-types tests/admin/parcels-scope.test.ts` | 1 → 0 | 7 RED + 2 controls → 9 GREEN; `codex4-scope-test-red.log`, `codex4-scope-parent-green.log` |
+| `bash scripts/dev/test-focused.sh '^TestParcelFixtureSameBuyerTwoOrders$'` | 1 → 0 | REAL_PG polluted-price reproduction; unchanged final Go file hashes in `codex4-fixture-price-green.json` |
+| `node --test --experimental-strip-types tests/admin/parcels-discovery.test.ts` | 1 → 0 | Actual Playwright CLI rejects missing suite, then collects exact parcel case; discovery logs |
+| `bash scripts/dev/test-local.sh --browser-cvs` | 0 | Untouched b449 baseline and e277 product-final run both pass MOCK + WebKit; `codex4-cvs-baseline.*`, `codex4-cvs-final.*` |
+| `bash scripts/dev/test-local.sh --browser-merchant-orders-ui` | 0 | MOU r4: 10 original cases + complete parcel case including six scope denials; `codex4-mou-r4.*` binds final spec hash. Earlier r1/r2/r3 are retained RED evidence |
+| `bash scripts/dev/test-local.sh --browser-order` | 0 | 23 UI/history cases and real PG exact counts; `codex4-order-final.*` |
+| `bash scripts/dev/test-node.sh` | 0 | 648 tests; `codex4-node-final.*` |
+| `bash scripts/dev/check-gates.sh` | 0 | Mode/test/header coverage; `codex4-check-gates-final.*` |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | `codex4-typecheck-final.*` |
+| Strict TypeScript API check of three new/changed test files using admin tsconfig | 0 | Exact executable argv: `codex4-tests-typecheck-final.json`; log alongside |
+| `git diff --check` | 0 | No whitespace errors |
+
+### Evidence and unresolved boundary
+
+- **Original CVS CI:** preserved trace shows popup `Page.close` waiting about 172 seconds. The later `goto` starts after the 180-second deadline; no orders render loop is proven. Original local b449 and final product source both pass. No CVS test wait or print behavior changed. See `codex4-cvs-diagnosis.md` and `.json`; integrator must classify/retest the original Linux close stall. This item is UNKNOWN, not silently CLOSED.
+- Authoritative retained evidence root: `/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/`. Browser archives: `/Volumes/data/live_commerce_architecture_v1/output/playwright/pr2-local-runs/`; complete file hashes: `codex4-evidence-archive.json`. Original CI trace: `/Volumes/data/live_commerce_architecture_v1/output/playwright/pr2-ci-37654972345/trace.zip`.
+- MOU GREEN archive: `merchant-orders-c-browser/20261007T235521.914375000/` (Playwright logs + native visibility). CVS GREEN: `taiwan-cvs/20261007T235324.193982000/`; order: `buyer-order-4227139714/`. RED MOU runs also retained. All fixture identities are synthetic.
+- Independent source-only review: no scoped P0/P1; AST comparison confirms 121 existing assertion chains retained (E1, not a second runtime acceptance). Humaux receipt `1c0c55a1-1e67-47c6-bc3c-e8f85a2da679`.
+- NOT_RUN: CVS SANDBOX/live providers (owner test keys absent), optional media R04 binary suite, post-handoff Linux CI/K3 review. No production/live customer messages or deployment.
+- Cleanup: test scripts ended; own generated visuals archived with hashes, then only 22 tracked generated-output paths restored. Own untracked CVS print output moved to archive. Other worktrees/processes/caches untouched.
+
+---
+
 - Unit: `docs/delivery/units/w3-u4-parcel-merge-ui.md` (W3-07B amendment, manual-fulfilment-v1)
 - Branch: `unit/w3-u4-parcel-merge-ui`, worktree `.worktrees/w3-u4-parcel-merge-ui`, base SHA `49859ae2` (trunk)
 - Role/model: UI implementer (ui_worker scope), Kimi K3 (Claude Code harness)

@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "node",
+    "--input-type=module",
+    "-e",
+    "import ts from \"typescript-api\";const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(\"apps/admin/tsconfig.json\",ts.sys.readFile).config,ts.sys,\"apps/admin\");parsed.options.incremental=false;parsed.options.types=[\"node\",\"react\"];parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"];const program=ts.createProgram([\"tests/admin/parcels-scope.test.ts\",\"tests/admin/parcels-discovery.test.ts\",\"tests/admin/parcel-merge.spec.ts\",\"apps/admin/next-env.d.ts\"],parsed.options);const errors=ts.getPreEmitDiagnostics(program);console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"}));process.exit(errors.length?1:0);"
+  ],
+  "source_sha": "a6bd46d8154fb2b05f3c80adc1c1ba7ab099e7e6",
+  "exit_code": 0,
+  "elapsed_seconds": 1.003
+}
