@@ -1,0 +1,59 @@
+task_id: c975698a-sub-browser-session
+base_commit: c87adefba99d9be5a19ec1a0369d8c5804db95d8
+status: MOCK actual spec blocks and installed cookie matcher; browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-browser-session.test.ts
+exit_code: 1
+sha256 825798c544fadf2b83f495b07897a817e22a67ad57a0985759a1dc9760595e38 tests/admin/inbox-ui.spec.ts
+sha256 5725b135bccd4952d0bf44d072c33bfdea7c3f388c4f4a243590f3bc10cef4d6 tests/admin/inbox-browser-session.test.ts
+sha256 549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171 node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js
+✔ installed APIRequestContext cookie rules exclude Secure cookie from HTTP127 but retain HTTPS/localhost (0.414583ms)
+✖ actual INU02 cross uses browser auth and retains exact 404/DM absence (15.48625ms)
+✔ actual INU02 cross still rejects wrong authority 401 (2.023875ms)
+✔ actual INU02 cross still rejects wrong authority 200 (1.019042ms)
+✔ actual INU02 cross still rejects DM in denied response (0.8545ms)
+✖ actual INU02 denied uses browser auth and retains exact 403/DM absence (0.891583ms)
+✔ actual INU02 denied still rejects wrong authority 401 (2.48425ms)
+✔ actual INU02 denied still rejects wrong authority 200 (1.440959ms)
+✔ actual INU02 denied still rejects DM in denied response (0.831ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 7
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 756.101708
+
+✖ failing tests:
+
+test at tests/admin/inbox-browser-session.test.ts:61:3
+✖ actual INU02 cross uses browser auth and retains exact 404/DM absence (15.48625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  401 !== 404
+
+      at Object.toBe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts:46:75)
+      at eval (eval at probe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts:43:10), <anonymous>:6:28) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-session.test.ts:61:3
+✖ actual INU02 denied uses browser auth and retains exact 403/DM absence (0.891583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  401 !== 403
+
+      at Object.toBe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts:46:75)
+      at eval (eval at probe (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts:43:10), <anonymous>:6:29) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 401,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

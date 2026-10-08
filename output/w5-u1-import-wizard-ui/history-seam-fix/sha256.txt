@@ -1,0 +1,6 @@
+# Purpose: preserve actual history real-helper local evidence after this prologue.
+# Depends on: sourceafefed5e and original main raw SHA256=ff649db9877e651aaddf6c857ef726d28b729e3f4c50ffdb46cdcef04c9e148b.
+# Used by: integrator; runtime browser acceptance pending.
+a9410e5984c9d66ec6383cdcd7996c83a67e9a0e5d4a029b02e6aeab650a55e5  tests/admin/import-history-bff.test.mjs
+490106b956176cafe64f9b1c4daf61cea72f1c53a56bf85b8c57b7b3d836be84  tests/admin/import-history-client.test.mjs
+60d51c21ec4a9b6f8c97833f994469c75628c1613f3c8bd916e649da3ce36117  tests/admin/import-history-test-loader.mjs

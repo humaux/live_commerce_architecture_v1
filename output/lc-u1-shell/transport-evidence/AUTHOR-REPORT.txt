@@ -1,0 +1,59 @@
+# LC-U1 transport delivery
+
+- task_id: LC-U1-transport (parent LC-U1)
+- Base commit: `51e738947fb1bbb4228e1d84fdeacf93aa5c2b0a`
+- Branch/commit: `codex/lc-u1-transport` / `a069d0151fdb550efeb71528faaa482b164e5a74`
+- Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u1-transport`
+- Role: UI transport implementer. Model: Codex/GPT-6 per session instructions; exact runtime model ID and reasoning setting UNKNOWN.
+- Contract: frozen `live-console-v1` §§7,9,11,16 and Amendment 1; real A5 `internal/live/results.go`, `copy.go`, `internal/httpapi/live_flow.go`. Contract/interface changes: none.
+
+## Changed paths and implementation
+
+1. `apps/admin/src/features/live/console-model.ts`: closed typed A1 console/offer DTOs, A7 lifecycle receipts, A5 results and actual copy envelope, A6 recommendations. CONTAINS accepted in full lifecycle/copy windows; separate lifecycle version, currencies and LIVE/SANDBOX amounts retained. A1 window has only the four fields frozen in §7.1; A7/copy use full claims.Window.
+2. `apps/admin/src/features/live/console-client.ts`: existing Studio read/write transport reused for console/results/copy/lifecycle/recommend/toggle; recommend posts no external comment. Inventory reuses catalog-v2 send and parseBalance, supplied key, pre/post session fence and StudioError normalization. No retries, new generic transport, secrets, amounts or balances derived as truth.
+3. `apps/admin/src/features/live/console-request.ts`: exact method/path expressions, canonical 1..50 repeated session_id query grammar and closed command JSON validation.
+4. `apps/admin/app/api/stores/[store]/[...resource]/route.ts`: precise five endpoint additions, no-query/body/key/CSRF/auth fences retained; successful new response DTOs validated before browser delivery; upstream error codes preserved and diagnostics scrubbed.
+5. `tests/admin/live-console-model.test.ts`: parser counterexamples including unknown capability, unavailable comments, unsafe integer amounts, session mismatch, actual copy envelope, CONTAINS and separate payment environments.
+6. `tests/admin/live-console-bff.test.ts`: exact grammar, real BFF module with synthetic fetch upstream, authenticated store scope, CSRF/key/refusal/copy/recommend/results paths, existing browser write fence and catalogue stock transport checks.
+
+All changed files have Purpose/Depends on/Used by headers. No Go/SQL/UI component/shared schema/lockfile writes. Co-Authored-By trailer present. Worktree clean after commit. No process, container, port or real-key fixture started.
+
+## Actual commands and exits
+
+Commands ran from the worktree above; evidence directory is the main checkout's `/Volumes/data/live_commerce_architecture_v1/output/lc-u1-transport/`.
+
+| Command | Exit | Evidence / result |
+| --- | --- | --- |
+| `node --test --experimental-transform-types tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts` before implementation | 1 | `red.log`: 0 pass / 2 failed test modules, console modules absent |
+| `pnpm install --offline --frozen-lockfile` | 0 | `install.log`; no lockfile changes |
+| same focused Node command after implementation | 0 | `green-node.log`: 12 pass / 0 fail / 0 skip |
+| `pnpm typecheck:admin` | 0 | `typecheck.log`; initial new-parser type narrowing errors were fixed before this final green run |
+| `bash scripts/dev/check-headers.sh 51e738947fb1bbb4228e1d84fdeacf93aa5c2b0a` | 0 | observed output: `check-headers: OK (base 51e738947fb1bbb4228e1d84fdeacf93aa5c2b0a)` |
+| `git diff --cached --check` | 0 | no whitespace errors before commit |
+| `LC_HEADER_BASE=51e738947fb1bbb4228e1d84fdeacf93aa5c2b0a bash scripts/dev/check-gates.sh` | 1 | `gates.log`: ONLY both new Node suites are not registered in any runner; G-UI3/G-UI5 PASS |
+| `git commit -m 'feat(admin): add frozen live console transport and BFF routes' -m 'Co-Authored-By: Codex <noreply@openai.com>'` | 0 | commit above |
+| `shasum -a 256` on the six changed files | 0 | `hashes.txt`; ties tested contents to the commit |
+
+Evidence level: E3 for the author-run Node MOCK slice, E1 for strict compilation/header checks. Independent acceptance and global gate remain pending; this is not a release verdict.
+
+## Unresolved / NOT_RUN
+
+- A1 `/console` implementation and bounded inventory:live_adjust backend path remain absent at the pinned base. A1 parser is frozen-contract MOCK support; 404/unavailable must remain visible, never silently replaced with LIVE success.
+- Narrow stock permission is NOT enabled here; Go still requires inventory:write. Parent UI must disable inventory:live_adjust-only controls with the accurate backend-not-implemented reason until LC-B7.
+- Main must register `tests/admin/live-console-model.test.ts` and `tests/admin/live-console-bff.test.ts` in `scripts/dev/test-node.sh` (outside this unit's write paths), then rerun check-gates. No acceptance standard was weakened.
+- PG, test-focused, test-local, browser/click ledger, SANDBOX, Meta and LIVE: NOT_RUN by parent scheduling instruction.
+- Humaux store/canvas/code-index tools: unavailable in this session (tool inventory name search returned none); persistence UNKNOWN, main must record delivery through its available tools. No parent canvas or task ownership modified.
+- No recursive delegation, merge, push, deployment or real external writes performed.
+
+## Follow-up: preserve the existing M4 quantity limit (2026-10-06)
+
+- task_id: LC-U1-transport; fix base_commit `a069d0151fdb550efeb71528faaa482b164e5a74`; fix commit `18470e4810298f5e049ecdb3f51b4631afd458e6`.
+- Only changed `apps/admin/src/features/live/console-client.ts` and `tests/admin/live-console-bff.test.ts` in the same isolated worktree.
+- Root review found frozen §7.2's abbreviated PATCH cannot be sent directly to current `internal/httpapi/claims.go`: M4 requires `max_quantity_per_claim`. `toggleOffer(store,sid,offerId,version,active,maxQuantityPerClaim,key,boundary)` now validates 1..999 and preserves the authoritative maximum in its exact three-field payload. No backend change or contract rewrite.
+- New `readOfferControls(store,sid,signal): Promise<Offer[]>` reuses Studio GET `/claims`, accepts only an object with an offers array ≤100, verifies unique offer IDs and parses every full existing Offer for this session. It does not consume unrelated board window/stats, avoiding the old parseWindow's CONTAINS incompatibility. UI must compare console/board offer version and use the captured authoritative maximum for explicit same-key retries.
+- `node --test --experimental-transform-types tests/admin/live-console-bff.test.ts` before fix → exit 1; `followup-red.log`, two targeted failures (missing read helper and incompatible old toggle signature).
+- `node --test --experimental-transform-types tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts` after fix → exit 0, 14 pass / 0 fail / 0 skip; `followup-green.log`.
+- `pnpm typecheck:admin` → exit 0; `followup-typecheck.log`.
+- `bash scripts/dev/check-headers.sh a069d0151fdb550efeb71528faaa482b164e5a74` and `git diff --check` → exit 0.
+- No PG/browser/test-local/SANDBOX/LIVE execution. Independent main review/runner registration remains main-owned. Worktree clean.
+- Humaux tools became available for this follow-up; own fix record stored under `[fix] LC-U1 transport M4 preserved limit and offer-controls read at 18470e48` (queued indexing; parent canvas remains main-owned).

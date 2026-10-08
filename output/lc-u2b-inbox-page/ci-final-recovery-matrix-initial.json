@@ -1,0 +1,515 @@
+{
+  "source": "c3bca7871953c5f88c055c7619030aecc4c182a4",
+  "timeout_seconds_per_process": 60,
+  "termination_grace_seconds": 5,
+  "elapsed_seconds": 68.803,
+  "runs": [
+    {
+      "run": 1,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 2,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 3,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 4,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 5,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 6,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 7,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 8,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 9,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 10,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2026-10-07T16:32:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 11,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 12,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 13,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 14,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 15,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 16,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 17,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 18,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 19,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 20,
+      "command": [
+        "nice",
+        "-n",
+        "19",
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "Asia/Shanghai",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2031-06-15T00:01:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "50"
+      },
+      "node": "v24.21.0",
+      "nice19": true,
+      "exit": 0,
+      "timeout": false,
+      "tests": 23,
+      "pass": 23,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    },
+    {
+      "run": 21,
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/inbox-review-recovery.test.ts"
+      ],
+      "environment": {
+        "CI": "true",
+        "TZ": "UTC",
+        "LANG": "C.UTF-8",
+        "LC_RECOVERY_TEST_NOW": "2098-12-31T23:59:00Z",
+        "LC_RECOVERY_TEST_DIGEST_DELAY_MS": "0"
+      },
+      "node": "v24.21.0",
+      "nice19": false,
+      "exit": 1,
+      "timeout": false,
+      "tests": 23,
+      "pass": 16,
+      "source": "c3bca7871953c5f88c055c7619030aecc4c182a4"
+    }
+  ]
+}

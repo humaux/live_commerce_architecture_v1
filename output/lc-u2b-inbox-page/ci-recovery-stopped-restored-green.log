@@ -1,0 +1,13 @@
+Restored actual stopped guard; same full-action test and pressure
+Command ["node_modules/.cache/lc-u2b-ci-node/node-v24.21.0-darwin-arm64/bin/node", "--test", "--experimental-strip-types", "--test-name-pattern=lost M7 ACK", "tests/admin/inbox-review-recovery.test.ts"]
+✔ review2 P1 lost M7 ACK retries exact receipt and null replay token never mints a fresh key (479.740209ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 779.395541
+
+Exit 0

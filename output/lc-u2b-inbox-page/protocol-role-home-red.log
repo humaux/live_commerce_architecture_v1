@@ -1,0 +1,35 @@
+Source33f5d30f before real role-home/Go-selector fixes
+Command ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-browser-source.test.ts"]
+✖ actual login settles authentication and the real fixture-store navigation before Messages (16.010125ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 250.479625
+
+✖ failing tests:
+
+test at tests/admin/inbox-browser-source.test.ts:15:1
+✖ actual login settles authentication and the real fixture-store navigation before Messages (16.010125ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:29:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:54:39)
+      at login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:61:17), <anonymous>:20:24)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:64:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Exit 1

@@ -1,0 +1,30 @@
+{
+  "_header": {
+    "Purpose": "pin current K3 local evidence",
+    "Depends on": "actualsource/run and original raw SHA256=5c6b123de698cc104e02839e7cdcbdb08aba85b043fd5680d1a9cf0f529f0830",
+    "Used by": "integrator normal/calibration"
+  },
+  "Purpose": "pin K3 followup local checks",
+  "Depends on": "current source and command",
+  "Used by": "integrator threeGitHub runs",
+  "run_id": "test-node-66367",
+  "pid": 66367,
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "timeout_seconds": 180,
+  "state": "finished",
+  "at": "2026-10-07T13:05:44.217734+00:00",
+  "wake": "rootactiveforeground awaitedcompletion",
+  "failure_match": "nonzero orno matchedtest",
+  "base": "b20e1bcf998b4e66450b9e18a957fe5c6fb8183c",
+  "source_hashes": {
+    "apps/admin/lib/import-client.ts": "a719c5c7653d1a7ae1d00ed322d7b0aef27709aa1bb1ca5ebab4515417c33d0b",
+    "apps/admin/lib/import-proxy.ts": "56b278c358a7aa745f6175e89b97bcd2a4425dc8c51a874205978cf22f55c966",
+    "apps/admin/components/ImportWizard.tsx": "5841479c9ca9697c2dca6ac242ec1601698e248173982d283eebba4ac8fe9480",
+    "apps/admin/lib/import-view-model.ts": "c82133417e1e743f4dcfc4fa604775df795bbcd7c0a31980a869445820fdd160"
+  },
+  "exit_code": 0,
+  "ended_at": "2026-10-07T13:06:06.338881+00:00"
+}

@@ -1,0 +1,14 @@
+# Purpose: preserve green-view.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=0e5d8302c37624f6877b481b2a7659721803489551ff8f47776a6b166acbff2d.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (2.920833ms)
+✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.609166ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.771042

@@ -1,0 +1,27 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (26.527584ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (11.083042ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (5.700791ms)
+✔ session, CSRF and store authority precede content forwarding (3.515ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (8.910209ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (5.192209ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (4.89625ms)
+✔ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.586ms)
+✔ three unit languages cover identical fixed labels and delivery states (5.6695ms)
+✔ hiding aborts requests and rejects late responses, even after reveal (1.351208ms)
+✔ switching selection invalidates both reads and write completions (0.347584ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.370666ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (2.3065ms)
+✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (0.544583ms)
+✔ privacy calibration cannot activate with production origin or ordinary caller env (0.168583ms)
+✔ late focus/pageshow while native document remains hidden cannot reveal requests (0.100708ms)
+✔ terminal navigation revocation cannot be undone by focus or refresh until a new page fence (0.057916ms)
+✔ a ticket from another store/page fence is never accepted (0.053791ms)
+✔ focus while already visible preserves the active epoch and the uncertain reply receipt (0.089167ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 251.345875

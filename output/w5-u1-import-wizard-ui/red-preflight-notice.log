@@ -1,0 +1,35 @@
+# Purpose: preserve red-preflight-notice.log local evidence; raw original command output follows this prologue.
+# Depends on: commands/status recorded in DELIVERY.md; original main-checkout log SHA256=8ff013190f3f550d07fafbee40ffdefa757fb81d991c9ff8f7a42aee817d020b.
+# Used by: integrator source handoff; does not certify real browser acceptance.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (78.382291ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (1.631584ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (1.462958ms)
+✖ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (12.856291ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 981.247792
+
+✖ failing tests:
+
+test at tests/admin/import-coordinator.test.mjs:92:1
+✖ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (12.856291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  1 !== 0
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-import-wizard-ui/tests/admin/import-coordinator.test.mjs:96:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

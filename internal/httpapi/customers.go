@@ -1,3 +1,6 @@
+// Purpose: merchant customer HTTP transport and private generated attachments.
+// Depends on: customers/reporting services, authenticated platform scope and customerRoute guards.
+// Used by: NewHandler, customer/report/import/finance/merchant-tool attachment routes.
 // customers.go owns the merchant customer HTTP adapter of contracts/customers-billing-v1.md §5 (FROZEN):
 // GET customers (list), GET customers/{id} (detail), POST customers/{id}/consent-withdrawals,
 // POST customers/{id}/exports and POST customers/{id}/erasure. Each handler is the Go endpoint; the admin BFF
@@ -194,7 +197,8 @@ func customersClassify(err error) (int, string) {
 func writeAttachment(w http.ResponseWriter, contentType, disposition string, body []byte) {
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Disposition", disposition)
-	w.Header().Set("Cache-Control", "no-store")
+	// Generated merchant documents retain the private policy promised by customerRoute and reporting-v2 §1.
+	w.Header().Set("Cache-Control", "no-store, private")
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)

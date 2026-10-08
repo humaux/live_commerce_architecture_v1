@@ -1,0 +1,15 @@
+✔ merge suggestions accept the frozen shape and reject drift (2.525458ms)
+✔ created group requires the OPEN state and its members (0.255417ms)
+✔ dissolved group is exactly id/state/version (0.096708ms)
+✔ group shipment carries one SHIPPED version per member (5.083084ms)
+✔ three locales cover the same keys and every refusal code (0.871292ms)
+✔ exactly the four W3-07B resources route (47.359417ms)
+✔ dissolve carries exactly ?expected_version=N (N >= 1) (5.1105ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 224.553375

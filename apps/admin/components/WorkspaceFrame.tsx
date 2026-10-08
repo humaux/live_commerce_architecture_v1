@@ -302,9 +302,11 @@ export function WorkspaceFrame({
                   value={selectedStore?.id ?? ""}
                   disabled={locked || !stores.length}
                   onChange={(e) => {
+                    // Inbox teardown flushes controlled inputs; retain the user's choice before it runs.
+                    const nextStore = e.currentTarget.value;
                     if (before())
                       window.location.assign(
-                        `/${locale}/?store=${encodeURIComponent(e.target.value)}`,
+                        `/${locale}/?store=${encodeURIComponent(nextStore)}`,
                       );
                   }}
                 >
@@ -324,10 +326,11 @@ export function WorkspaceFrame({
                 value={locale}
                 disabled={locked}
                 onChange={(e) => {
+                  const nextLocale = e.currentTarget.value as Locale;
                   if (before())
                     router.push(
                       localizedPath(
-                        e.target.value as Locale,
+                        nextLocale,
                         error === "expired" || signingOut
                           ? "/"
                           : `${pathname}?${search}`,
@@ -402,7 +405,7 @@ export function WorkspaceFrame({
               error === "expired" ? "shell-session-expired" : undefined
             }
           >
-            <p>{error === "expired" ? c.sessionExpired : c.unavailable}</p>
+            <h1>{error === "expired" ? c.sessionExpired : c.unavailable}</h1>
             {error === "expired" ? (
               <a data-testid="shell-sign-in" href={localizedPath(locale, "/")}>
                 {c.signIn}
@@ -412,7 +415,7 @@ export function WorkspaceFrame({
             )}
           </div>
         ) : !data || data.key !== storeParam ? (
-          <p role="status">{c.loading}</p>
+          <div className={s.status} role="status"><h1>{c.loading}</h1></div>
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
             <h1>{c.forbidden}</h1>

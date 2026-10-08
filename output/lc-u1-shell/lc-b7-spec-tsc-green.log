@@ -1,0 +1,2 @@
+tests/admin/live-console.spec.ts(8,31): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../apps/admin/src/features/live/workspace-copy.js'?
+tests/admin/live-console.spec.ts(9,23): error TS2835: Relative import paths need explicit file extensions in ECMAScript imports when '--moduleResolution' is 'node16' or 'nodenext'. Did you mean '../../packages/format/src/index.js'?

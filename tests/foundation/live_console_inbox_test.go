@@ -88,7 +88,7 @@ func lcOwnStores(t *testing.T, f *testFixture) (tenant, store1, store2 string) {
 
 // lcListIDs returns the conversation ids visible through social.list_conversations under the current scope.
 func lcListIDs(ctx context.Context, tx pgx.Tx) ([]string, error) {
-	rows, err := tx.Query(ctx, `SELECT conversation_id::text FROM social.list_conversations('all', NULL, NULL, 50)`)
+	rows, err := tx.Query(ctx, `SELECT conversation_id::text FROM social.list_conversations('all', NULL, NULL, NULL, 50)`)
 	if err != nil {
 		return nil, err
 	}
@@ -198,11 +198,11 @@ func TestLiveConsoleInboxMigration0122ExactACL(t *testing.T) {
 		{"social.read_thread(uuid,bigint,int)", "commerce_meta_writer",
 			"TABLE(event_id uuid, key_id text, nonce bytea, ciphertext bytea, app_id text, object text, asset_id text, event_key text, payload_hash text, tenant_id uuid, store_id uuid, route_id uuid, route_epoch bigint, server_seq bigint, occurred_at timestamp with time zone, direction text)", true,
 			[]string{"commerce_meta_writer", "commerce_runtime"}},
-		{"social.list_conversations(text,timestamptz,uuid,int)", "commerce_meta_writer",
-			"TABLE(conversation_id uuid, platform text, last_at timestamp with time zone, unread boolean, unreplied boolean, mode text, assignee uuid, window_open_until timestamp with time zone, linked_customer_id uuid)", true,
+		{"social.list_conversations(text,uuid,timestamptz,uuid,int)", "commerce_meta_writer",
+			"TABLE(conversation_id uuid, platform text, last_at timestamp with time zone, unread boolean, unreplied boolean, mode text, assignee uuid, window_open_until timestamp with time zone, linked_customer_id uuid, link_version bigint)", true,
 			[]string{"commerce_meta_writer", "commerce_runtime"}},
 		{"social.conversation_meta(uuid)", "commerce_meta_writer",
-			"TABLE(platform text, mode text, assignee uuid, takeover_generation bigint, human_until timestamp with time zone, window_open_until timestamp with time zone, last_inbound_at timestamp with time zone, last_inbound_seq bigint, read_seq bigint, linked_customer_id uuid, status text)", true,
+			"TABLE(platform text, mode text, assignee uuid, takeover_generation bigint, human_until timestamp with time zone, window_open_until timestamp with time zone, last_inbound_at timestamp with time zone, last_inbound_seq bigint, read_seq bigint, linked_customer_id uuid, status text, link_version bigint)", true,
 			[]string{"commerce_meta_writer", "commerce_runtime"}},
 		{"social.unread_conversation_count()", "commerce_meta_writer", "bigint", true,
 			[]string{"commerce_meta_writer", "commerce_runtime"}},
@@ -284,7 +284,7 @@ func TestLiveConsoleInboxLCN03PermissionSplit(t *testing.T) {
 
 	t.Run("viewer definer gate denies read and mark_read", func(t *testing.T) {
 		tx := lcRoleTx(t, f, "commerce_runtime", tenantA, storeA1, viewerPrincipal)
-		_, err := tx.Exec(ctx, `SELECT * FROM social.list_conversations('all', NULL, NULL, 50)`)
+		_, err := tx.Exec(ctx, `SELECT * FROM social.list_conversations('all', NULL, NULL, NULL, 50)`)
 		requirePGCode(t, err, "PT403", "viewer list_conversations")
 		_ = tx.Rollback(ctx)
 
@@ -446,7 +446,7 @@ func TestLiveConsoleInboxLCN10TakeoverExpiryCustomerLink(t *testing.T) {
 
 		var listMode, listAssignee string
 		err = platform.WithScope(ctx, f.runtime, readerToken, storeA1, "inbox:read", func(tx pgx.Tx, _ platform.Scope) error {
-			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,'') FROM social.list_conversations('all', NULL, NULL, 50) WHERE conversation_id::text=$1`, conv).Scan(&listMode, &listAssignee)
+			return tx.QueryRow(ctx, `SELECT mode, coalesce(assignee::text,'') FROM social.list_conversations('all', NULL, NULL, NULL, 50) WHERE conversation_id::text=$1`, conv).Scan(&listMode, &listAssignee)
 		})
 		if err != nil {
 			t.Fatal(err)

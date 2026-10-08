@@ -1,0 +1,9 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-node.sh"
+  ],
+  "tested_index_tree": "3e9ee524309bea5eb37290bd59f6fe42c20547fa",
+  "exit_code": 0,
+  "seconds": 20.777350902557373
+}

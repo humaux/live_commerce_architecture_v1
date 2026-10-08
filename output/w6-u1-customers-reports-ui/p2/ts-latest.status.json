@@ -1,0 +1,27 @@
+{
+  "_header": {
+    "Purpose": "pin latest-origin process/source/exit evidence",
+    "Depends on": "current source and command",
+    "Used by": "integrator CI retry"
+  },
+  "Purpose": "post-latest-origin affected check",
+  "Depends on": "current source hash and merged35ab origin",
+  "Used by": "integrator CI retry",
+  "run_id": "ts-latest-32082",
+  "pid": 32082,
+  "command": [
+    "pnpm",
+    "--filter",
+    "@live-commerce/admin",
+    "typecheck"
+  ],
+  "timeout_seconds": 120,
+  "state": "finished",
+  "at": "2026-10-07T12:32:37.714157+00:00",
+  "wake": "root activeforeground awaitedcompletion",
+  "failure_match": "nonzero orzero matchedtest",
+  "base": "d997e786e918b328315607570195ab6a4179288d",
+  "PG_ENV": null,
+  "exit_code": 0,
+  "ended_at": "2026-10-07T12:32:45.298816+00:00"
+}

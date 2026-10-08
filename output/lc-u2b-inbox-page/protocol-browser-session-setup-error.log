@@ -1,0 +1,45 @@
+task_id: c975698a-sub-browser-session
+base_commit: c87adefba99d9be5a19ec1a0369d8c5804db95d8
+status: MOCK actual spec blocks and installed cookie matcher; browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-browser-session.test.ts
+exit_code: 1
+sha256 825798c544fadf2b83f495b07897a817e22a67ad57a0985759a1dc9760595e38 tests/admin/inbox-ui.spec.ts
+sha256 be39c3b6a6c7c0c24b53922f633bd00b04f4e60a0663a9790521faf8469662d6 tests/admin/inbox-browser-session.test.ts
+sha256 549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171 node_modules/.pnpm/playwright-core@1.63.0/node_modules/playwright-core/lib/coreBundle.js
+node:internal/modules/cjs/loader:1476
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'playwright-core/package.json'
+Require stack:
+- /Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1476:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1049:27)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1094:12)
+    at require.resolve (node:internal/modules/helpers:171:31)
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts:11:42
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-browser-session.test.ts'
+  ]
+}
+
+Node.js v24.15.0
+✖ tests/admin/inbox-browser-session.test.ts (157.826459ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 161.195417
+
+✖ failing tests:
+
+test at tests/admin/inbox-browser-session.test.ts:1:1
+✖ tests/admin/inbox-browser-session.test.ts (157.826459ms)
+  'test failed'

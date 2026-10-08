@@ -1,11 +1,14 @@
 // Purpose: The one admin BFF catch-all: proxies exactly the allowlisted per-store resources to Go, nothing generic
-//   (including Meta health B1/B2, the W3-U5 returns/cancel grammar, the W6-05B operations ledger and the W6-06B ads unbind/feed).
+//   (including LC-U1 console/results, PM-v2 media, Meta health B1/B2, the W3-U5 returns/cancel grammar, the W6-05B operations ledger and the W6-06B ads unbind/feed).
 // Depends on: @/lib/backend, @/lib/auth, server session/store/CSRF authority and the per-domain request grammars in
 //   @/lib/*-request (orders, customers, logistics, promotions, studio, claims, design, meta-connect, ads, returns).
 // Used by: every admin client module under apps/admin/lib (browser fetch -> this route -> Go /v1/admin/stores/...);
 //   health responses are closed and private/no-store.
 import { validMediaQuery } from "@/lib/product-media-model";
+import { inboxResource, inboxRoute, validInboxRequest, validInboxBody, inboxErrorCode } from "@/lib/inbox-bff";
 import { callBackend, fixtureSession } from "@/lib/backend";
+import { consoleAny, consolePaths, consoleRoutes, validConsoleBody, validConsoleQuery } from "@/src/features/live/console-request";
+import { parseConsole, parseCopyResult, parseLifecycleResult, parseRecommendResult, parseSessionResults } from "@/src/features/live/console-model";
 import {
   orderActionRoute, validCSVHeaders, validKeylessCommandRequest, validKeylessRequest, validOrdersQuery, validReturnsQuery,
 } from "@/lib/orders-request";
@@ -21,6 +24,7 @@ import {
   DESIGN_MAX_JSON, designDetails, designGetPaths, designPostPaths, designPutPaths, isDesignImageBytes, isDesignJsonPut, isDesignPath, isDesignUpload, validDesignRequest,
 } from "@/lib/design-request";
 import { metaHealthRoute, validMetaHealthRequest, validRecheckBody } from "@/lib/meta-health-request";
+import { parcelRoute, validParcelDeleteQuery } from "@/lib/parcels-request";
 import { parseMetaHealth, parseRecheck } from "@/lib/meta-health-model";
 import { metaConnectAny, metaConnectRoutes, validMetaConnectRequest } from "@/lib/meta-connect-request";
 import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch, validAdsUnbindBody } from "@/lib/ads-request";
@@ -80,13 +84,13 @@ const studioInputRead = `${studioDetail}/input(?:/prepared)?`;
 const studioInputReadRoute = new RegExp(`^${studioInputRead}$`);
 const studioInputRoute = new RegExp(`^${studioInput}$`);
 const studioAction = `${studioDetail}/(?:rehearsal/(?:start|stop)|input/(?:start|token))`;
-const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath})$`);
+const studioAny = new RegExp(`^(?:live-sessions|${studioDetail}|${studioAction}|${studioInputRead}|${studioDetail}/${claimsSubpath}|${consolePaths.GET}|${consolePaths.POST})$`);
 const routes: Record<string, RegExp> = {
   GET: new RegExp(
-    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET}|payments/card|settlements|settlements/${uuid})$`,
+    `^(catalog-ledger|${catalogProducts}|products|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionImage}|warehouses|inventory|products/${uuid}/skus|${purchaseEntry}|${storefrontRead}|${storefrontDomains}|${imagesRoot}|${imageItem}|${designGetPaths}|${account}|${setting}|markets|${deliveryCollection}|${paymentCollection}|${policy}|${orders}|live-sessions|${studioDetail}|${studioInputRead}|${claimsRoutes.GET}|${adsRoutes.GET}|${metaConnectRoutes.GET}|${consolePaths.GET}|payments/card|settlements|settlements/${uuid})$`,
   ),
   POST: new RegExp(
-    `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST})$`,
+    `^(orders/search|products|${productCommands}|skus|warehouses|inventory/adjustments|products/${uuid}/archive|${storefrontWrite}|${storefrontDomains}|${storefrontDomainMove}|${imageWrites}|${designPostPaths}|${catalogV2Writes}|skus/${uuid}/(archive|price)|provider-accounts|provider-accounts/${uuid}/rotate|${inspect}|markets|live-sessions|${studioAction}|${claimsRoutes.POST}|${adsRoutes.POST}|${metaConnectRoutes.POST}|${consolePaths.POST})$`,
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
@@ -115,6 +119,14 @@ async function route(request: Request, context: Context) {
   const error = localError;
   const { store, resource } = await context.params;
   const path = resource.join("/");
+  const inbox = inboxResource(path);
+  if (inbox && !authConfig) return error(404, "not_found");
+  if (inbox && !inboxRoute(request.method, path)) return error(405, "method_not_allowed", path.endsWith("/messages") ? "GET, POST" : inboxRoute("GET", path) ? "GET" : "POST");
+  if (inbox && !validInboxRequest(request, path)) {
+    const filters = new URL(request.url).searchParams.getAll("filter");
+    if (path === "inbox/conversations" && filters.length === 1 && filters[0] && !["all", "unreplied", "messenger", "instagram", "live_comment"].includes(filters[0])) return error(400, "invalid_filter");
+    return error(path === "inbox/buyer-panel" && request.method === "GET" ? 400 : 422, "invalid_request");
+  }
   const operation = operationRoute(request.method, path);
   if (operation && !validOperationsRequest(operation, request)) return error(422,"invalid_request");
   const health = metaHealthRoute(request.method, path);
@@ -128,6 +140,9 @@ async function route(request: Request, context: Context) {
   // taiwan-cvs-logistics-v1 §8/§16.5: GET|PUT logistics/ecpay, POST logistics/ecpay/enabled, GET|PUT logistics/cvs-settings.
   // storefront-v2 §F (unit promotions): GET|POST promotions, POST promotions/{id} share the logistics exact-resource policy (no query, keyed JSON).
   const logistic = logisticsRoute(request.method, path) ?? promotionsRoute(request.method, path);
+  // W3-07B parcel groups (lib/parcels-request.ts grammar): GET orders/merge-suggestions, GET parcel-groups (open groups, W3-U4),
+  // POST parcel-groups, DELETE parcel-groups/{id}?expected_version=N (keyless/bodyless), PUT parcel-groups/{id}/shipment -> Go parcels.go.
+  const parcel = parcelRoute(request.method, path);
   const studio = path.startsWith("live-sessions");
   if (studio && !authConfig) return error(404, "not_found");
   const input = studioInputRoute.test(path);
@@ -136,7 +151,7 @@ async function route(request: Request, context: Context) {
   if (input && !authConfig?.publicOrigin.startsWith("https://")) return error(404, "not_found");
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !operation))
+  if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !parcel && !inbox && !operation))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -150,7 +165,7 @@ async function route(request: Request, context: Context) {
   // Merchant Page/Instagram connect (meta-connect-request.ts): exact resources, no query; a read carries no body or key.
   if (metaConnectAny.test(path) && !validMetaConnectRequest(request)) return error(422, "invalid_request");
   // New setup routes require actual session/store authority, never a shared fixture.
-  if ((operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
+  if ((parcel || operation || health || studio || order || orderSearch || action || customers || cardPayments || logistic || accountRoute || ads || discoveryRoute.test(path)) && !authConfig)
     return error(404, "not_found");
   // Query grammar, Idempotency-Key presence and empty/JSON body declaration (keyless: billing POSTs; bodyless: export, portal).
   if (customers && !validCustomersRequest(customers, request)) return error(422, "invalid_request");
@@ -161,9 +176,20 @@ async function route(request: Request, context: Context) {
   if ((action || logistic) && request.url.includes("?") &&
     !(request.method === "GET" && path === "returns" && validReturnsQuery(request.url)))
     return error(422, "invalid_request");
+  // W3-07B: exact resources; the dissolve DELETE MUST carry exactly one CAS expected_version and every other parcel route no query
+  // at all (validParcelDeleteQuery inspects the raw URL before Next.js drops a bare '?').
+  if (parcel === "delete" ? !validParcelDeleteQuery(request.url) : parcel && request.url.includes("?"))
+    return error(422, "invalid_request");
   // Reads and the keyless refresh carry no body and no key; only commands do.
   // (keyless-command = print-form: a JSON body but no Idempotency-Key.)
   if (action && action !== "command" && action !== "keyless-command" && !validKeylessRequest(action, request))
+    return error(422, "invalid_request");
+  // W3-07B: the parcel reads and the dissolve DELETE are keyless and bodyless (Go refuses a key on DELETE). Only a GET can be
+  // judged by `request.body === null`: Next 16 gives EVERY non-GET request a (usually empty) body stream, so the DELETE is fenced
+  // by its framing headers alone and its body is never forwarded (init below carries none).
+  if ((parcel === "get" || parcel === "delete") &&
+    ((parcel === "get" && request.body !== null) || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+      (request.headers.has("content-length") && request.headers.get("content-length") !== "0")))
     return error(422, "invalid_request");
   if (action === "keyless-command" && !validKeylessCommandRequest(request)) return error(422, "invalid_request");
   // Logistics reads carry no body/key/transfer-encoding, like every other exact BFF read.
@@ -226,7 +252,7 @@ async function route(request: Request, context: Context) {
   }
   if (imageUpload && Number(request.headers.get("content-length") ?? "0") > MAX_UPLOAD) return error(413, "invalid_request");
   if (studio) {
-    if (!validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path))))
+    if (!(consoleAny.test(path) ? validConsoleQuery(request.url, path) : validStudioQuery(request.url, request.method === "GET" && (path === "live-sessions" || claimsCollection(path)))))
       return error(422, "invalid_request");
     if (
       request.method === "GET" &&
@@ -270,7 +296,7 @@ async function route(request: Request, context: Context) {
     token = sessionToken(request) ?? undefined;
     if (!token) {
       const denied = error(401, "unauthorized");
-      if (order || orderSearch || action || customers || cardPayments || logistic) clearAuthCookies(denied.headers);
+      if (order || orderSearch || action || customers || cardPayments || logistic || inbox) clearAuthCookies(denied.headers);
       return denied;
     }
     if (
@@ -297,7 +323,8 @@ async function route(request: Request, context: Context) {
       return error(403, "forbidden");
   }
   const init: RequestInit = { method: request.method };
-  if (request.method !== "GET" && action !== "refresh") {
+  // W3-07B: the dissolve DELETE is bodyless by contract — skip the JSON body branch for it.
+  if (request.method !== "GET" && action !== "refresh" && parcel !== "delete") {
     if (!authConfig) {
       const host = request.headers.get("host");
       if (request.headers.get("origin") !== `http://${host}`)
@@ -320,6 +347,7 @@ async function route(request: Request, context: Context) {
       try {
         if (!request.body) return error(400, "invalid_json");
         init.body = await readBody(request, "application/json");
+        if (consoleRoutes.POST.test(path) && !validConsoleBody(path, init.body)) return error(400, "invalid_json");
       } catch {
         return error(400, "invalid_json");
       }
@@ -350,6 +378,7 @@ async function route(request: Request, context: Context) {
     if (operation === "command" && !validOperationBody(typeof init.body === "string" ? init.body : "")) return error(422,"invalid_request");
     if (path === "ads/meta/unbind" && !validAdsUnbindBody(typeof init.body === "string" ? init.body : "")) return error(422,"invalid_request");
     if (health === "recheck" && !validRecheckBody(typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
+    if (inbox && !validInboxBody(path, typeof init.body === "string" ? init.body : "")) return error(422, "invalid_request");
     // Exact bodies for the customers/billing commands (closed keys, ERASE word, consent pairs, price id).
     if (customers && !validCustomersBody(customers, typeof init.body === "string" ? init.body : "")) return error(400, "invalid_json");
     // The payments/card PUT body is the exact frozen CAS shape (card-payments-request.ts).
@@ -371,14 +400,48 @@ async function route(request: Request, context: Context) {
     };
   }
   const response = await callBackend(path + url.search, init, token, store);
+  if (inbox) {
+    // Authentication denial revokes cookies even when the upstream body is non-JSON or truncated.
+    if (response.status === 401) {
+      const denied = error(401, "unauthorized");
+      clearAuthCookies(denied.headers);
+      try { await response.body?.cancel(); } catch { /* Cookie revocation is independent of body cleanup. */ }
+      return denied;
+    }
+    // Calls Go frozen A8-A14/template reads; body text is never logged and diagnostic payloads never escape.
+    let body: string;
+    let value: unknown;
+    // A9 permits 50 Unicode messages; a 256 KiB ceiling rejects valid 2000-rune pages.
+    try { body = await readBody(response, "application/json", 1 << 20); value = JSON.parse(body); }
+    catch { return error(503, "retry_later"); }
+    if (!response.ok) {
+      const code = inboxErrorCode(response.status, value);
+      const denied = error(code ? response.status : 503, code ?? "retry_later");
+      if (response.status === 401) clearAuthCookies(denied.headers);
+      const backoff = response.headers.get("retry-after") ?? "";
+      if (response.status === 429 && /^(?:[1-9][0-9]{0,2}|[12][0-9]{3}|3[0-5][0-9]{2}|3600)$/.test(backoff)) denied.headers.set("Retry-After", backoff);
+      return denied;
+    }
+    return new Response(body, {status: response.status, headers: {"Content-Type":"application/json", "Cache-Control":"private, no-store"}});
+  }
   if (studio) {
     let body: string;
     try {
       const tokenResponse = input && path.endsWith("/token");
       const inputRead = studioInputReadRoute.test(path);
       const claimLink = claimLinkRoute(path);
-      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : 256 << 10);
+      // A1 includes up to 200 offers; legal Unicode names/variants can exceed the normal Studio 256 KiB cap.
+      const consoleRead = request.method === "GET" && consoleRoutes.GET.test(path) && path.endsWith("/console");
+      body = await readBody(response, "application/json", tokenResponse || inputRead || claimLink ? 8192 : consoleRead ? 512 << 10 : 256 << 10);
       const parsed: unknown = JSON.parse(body);
+      if (consoleAny.test(path) && response.ok) {
+        const session = resource[1];
+        if (path.endsWith("/console")) parseConsole(parsed, session);
+        else if (path.endsWith("/lifecycle")) parseLifecycleResult(parsed, session);
+        else if (path.endsWith("/recommend")) parseRecommendResult(parsed);
+        else if (path.endsWith("/copy")) parseCopyResult(parsed);
+        else if (path === "live-sessions/results") parseSessionResults(parsed, url.searchParams.getAll("session_id"));
+      }
       if (tokenResponse && response.ok && !validStudioInputToken(parsed)) return error(503, "retry_later");
       // The claim link token leaves the BFF only in this closed shape (§7.1 M7).
       if (claimLink && response.ok && !validClaimLink(parsed)) return error(503, "retry_later");
@@ -499,7 +562,7 @@ async function route(request: Request, context: Context) {
     status: response.status,
     headers: {
       "Content-Type": "application/json",
-      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || metaConnectAny.test(path) ? "private, no-store" : "no-store",
+      "Cache-Control": order || orderSearch || action || customers || cardPayments || logistic || storefront || parcel || metaConnectAny.test(path) ? "private, no-store" : "no-store",
       "X-Request-ID": response.headers.get("x-request-id") ?? "",
     },
   });
@@ -507,7 +570,7 @@ async function route(request: Request, context: Context) {
 async function proxy(request: Request, context: Context) {
   const path = (await context.params).resource.join("/");
   const response = await route(request, context);
-  if (path.startsWith("live-sessions") || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
+  if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates" || path.startsWith("operations") || path === "ads/catalog-feed" || path === "ads/meta/unbind") response.headers.set("Cache-Control", "private, no-store");
   // Every M7 answer (success or not) forbids a Referer, like the Go route (§7.1).
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
@@ -524,11 +587,16 @@ const unsupported = async (_request: Request, context: Context) => {
     : path.startsWith("live-sessions") && !studioAny.test(path)
     ? localError(404, "not_found")
     : localError(405, "method_not_allowed", "GET, POST, PATCH, PUT");
-  if (path.startsWith("live-sessions"))
+  if (path.startsWith("live-sessions") || path.startsWith("inbox/") || path === "message-templates")
     response.headers.set("Cache-Control", "private, no-store");
   if (claimLinkRoute(path)) response.headers.set("Referrer-Policy", "no-referrer");
   return response;
 };
-export const DELETE = unsupported;
+// W3-07B: DELETE exists only for parcel-groups/{id} (the CAS dissolve); every other DELETE stays unsupported (405/404).
+const proxyDelete = async (request: Request, context: Context) => {
+  const path = (await context.params).resource.join("/");
+  return parcelRoute("DELETE", path) ? proxy(request, context) : unsupported(request, context);
+};
+export const DELETE = proxyDelete;
 export const OPTIONS = unsupported;
 export const HEAD = unsupported;

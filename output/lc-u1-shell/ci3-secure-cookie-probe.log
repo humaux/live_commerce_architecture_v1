@@ -1,0 +1,1 @@
+PASS Node APIRequestContext excludes Secure-cookie authority on HTTP loopback; explicit existing-cookie header reaches the request. No browser/PG/provider used.

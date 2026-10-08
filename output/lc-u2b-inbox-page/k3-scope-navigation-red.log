@@ -1,0 +1,211 @@
+✖ actual login settles /en and fixture store (real switch, scoped=false) (16.844208ms)
+✖ actual login settles /en and fixture store (real switch, scoped=true) (3.300875ms)
+✖ actual login settles /en/inventory and fixture store (real switch, scoped=false) (2.702583ms)
+✖ actual login settles /en/inventory and fixture store (real switch, scoped=true) (1.88375ms)
+✖ actual login settles /en/messages and fixture store (real switch, scoped=false) (3.1815ms)
+✖ actual login settles /en/messages and fixture store (real switch, scoped=true) (2.023541ms)
+✖ actual login settles /en and fixture store (already selected, scoped=false) (2.159833ms)
+✔ actual login settles /en and fixture store (already selected, scoped=true) (3.102958ms)
+✖ actual login settles /en/inventory and fixture store (already selected, scoped=false) (4.080916ms)
+✔ actual login settles /en/inventory and fixture store (already selected, scoped=true) (2.294ms)
+✖ actual login settles /en/messages and fixture store (already selected, scoped=false) (1.614459ms)
+✔ actual login settles /en/messages and fixture store (already selected, scoped=true) (1.215584ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 3
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 279.50825
+
+✖ failing tests:
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en and fixture store (real switch, scoped=false) (16.844208ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en and fixture store (real switch, scoped=true) (3.300875ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/inventory and fixture store (real switch, scoped=false) (2.702583ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/inventory and fixture store (real switch, scoped=true) (1.88375ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/messages and fixture store (real switch, scoped=false) (3.1815ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/messages and fixture store (real switch, scoped=true) (2.023541ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en and fixture store (already selected, scoped=false) (2.159833ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/inventory and fixture store (already selected, scoped=false) (4.080916ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-browser-source.test.ts:18:1
+✖ actual login settles /en/messages and fixture store (already selected, scoped=false) (1.614459ms)
+  AssertionError [ERR_ASSERTION]: actual navigation destination must match the requested wait
+
+  false !== true
+
+      at Object.waitForURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:35:14)
+      at Object.toHaveURL (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:59:39)
+      at selectFixtureStore (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:10:28)
+      at async login (eval at <anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:66:17), <anonymous>:25:5)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-browser-source.test.ts:69:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

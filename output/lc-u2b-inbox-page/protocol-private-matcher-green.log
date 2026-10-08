@@ -1,0 +1,27 @@
+task_id: c975698a-sub-private-matcher
+base_commit: c6c628fcd6fde4a367b14902582a9aefb933ed04
+status: MOCK installed serializer/buildErrorContext and fixture lifecycle; browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/inbox-credential-artifacts.test.ts
+exit_code: 0
+sha256 4a1e3ee15b4b0443d256573a5909a126564a9f3b89edc12735d8963f15681bea tests/admin/inbox-private-evidence.ts
+sha256 165d97e50b8906d2c4c58c3b70b3f20a56bc5c022bfb08835b2df4f2406b717e tests/admin/inbox-credential-artifacts.test.ts
+sha256 3d6676ca271c075b1e7c8e2cd6ad5331430cf29a3332d1f621054ff7d8e06478 node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/worker/workerProcessEntry.js
+sha256 ffc1843cebb3e90e1674c07ee2607a4a63152eff609e5f9865bbb2f9eb02e9a1 node_modules/.pnpm/playwright@1.63.0/node_modules/playwright/lib/errorContext.js
+✔ ordinary Playwright diagnostics still capture failed-page ARIA when private guard is absent (0.585833ms)
+✔ sensitive worker lifecycle prevents actual installed snapshot capture without masking the failure (14.10825ms)
+✔ worker restores prior environment even when use rejects (absent) (2.066917ms)
+✔ worker restores prior environment even when use rejects (empty) (1.267917ms)
+✔ worker restores prior environment even when use rejects (existing-policy) (1.84775ms)
+✔ fixture is worker-auto and module collection does not suppress ordinary diagnostics (24.959125ms)
+✔ ordinary matcher ARIA context bypasses fallback flag and remains in actual installed diagnostics (0.791667ms)
+✔ private test teardown removes only matcher page context while preserving failure (failed status) (2.672083ms)
+✔ private test teardown removes only matcher page context while preserving failure (rejected use) (1.292916ms)
+✔ matcher guard is test-auto without replacing the installed artifact auto fixture (1.060708ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 370.615833

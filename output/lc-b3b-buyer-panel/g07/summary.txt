@@ -1,0 +1,4 @@
+release-gate  commit=aa3a264cfb0f  dirty_files=0  modes_in_test-local=78  evidence=/Volumes/data/live_commerce_architecture_v1/output/release-gate/20261007T160259Z-aa3a264cfb0f
+ID                       TIER       STATUS   NOTE
+G07                      REAL_PG    FAIL     test-local.sh exit 1
+OVERALL: FAIL (1 FAIL, 0 NOT_RUN [0 accepted, 0 UNACCEPTED], 0 PASS) [subset via --only: not a release verdict]

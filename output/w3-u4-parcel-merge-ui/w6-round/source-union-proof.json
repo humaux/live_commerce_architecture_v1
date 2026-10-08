@@ -1,0 +1,63 @@
+{
+  "source": "5ca3b82cede63d2e691b3b3b88e0da80c945ed20",
+  "product_files": [
+    {
+      "path": "apps/admin/components/CustomerTags.tsx",
+      "sha256": "7385646986e3ea534ef43a1594345d628f73340c62e3a176ff0589601a12cf55",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/components/CustomerTagsNotes.tsx",
+      "sha256": "d2bcffc43f29550b79d587b311f14027e781207cecfd63b955544ec1ddc2d3eb",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/lib/customer-tags-client.ts",
+      "sha256": "aa35f6e16110f1a04587b9affb36f09ff2db7fc1ae107997f6889d67ae50b944",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/lib/customer-tags-proxy.ts",
+      "sha256": "d370377eb85e84e281ca1cb3731d9f5f09759ae0b9ac1cf0ad7d028a8d1a445e",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/[customer]/notes/[note]/route.ts",
+      "sha256": "7d2dc44f3c65165b030b8182ad26840907dffe7f871fbfe2af7acc333a8dbce7",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/[customer]/notes/route.ts",
+      "sha256": "2cdbef64829f06783f7017a389eb32303fa4dfd96dbe1e2313e4a85a61e51ae3",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/[customer]/tags/route.ts",
+      "sha256": "95752a9349e29d6d3926d6cb3501dc54fa2f46fe215ec7a34ef66a70167fe614",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/route.ts",
+      "sha256": "9cc4be843615235d214db9fa2f332a6889022cdb01684041eb6a454d34348474",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/tags/[tag]/route.ts",
+      "sha256": "357498613bf30a49ba5a2560d685a366fa5619bb76334a38ccac522b5f0f2d22",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/customers/tags/route.ts",
+      "sha256": "eb8e2f0f3a5a946bf76bbd7886dad1199551f1ca84b61e06b9cb6fecf7b8135b",
+      "equals_trunk97e34": true
+    },
+    {
+      "path": "apps/admin/app/api/stores/[store]/[...resource]/route.ts",
+      "sha256": "71c35817324f017caba391f0800869f5f7c94b484c0bbe68ba17d98654d165b6",
+      "equals_previous_pr44bb": true
+    }
+  ],
+  "spec_all_original_statements_preserved": true,
+  "spec_sha256": "100557a7df9255e42efad7b56d767bbf9172cf43fe53b309dbd067bee4b60e52",
+  "added_lines": 5
+}

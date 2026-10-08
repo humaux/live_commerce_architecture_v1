@@ -1,0 +1,22 @@
+{
+  "base_sha": "35abffcadaa1240888d291391712e1411cb820a3",
+  "node": "v24.15.0",
+  "files": {
+    "apps/admin/components/Ads.tsx": "9229ab0210790022c6559e3fbbcb44659578fadd773dbccbd6c46f94d653d120",
+    "apps/admin/components/Design.tsx": "e5e087db84c4be1f9bc4ef198c0367cbeb8fe6aa421bdaa9173b56cb0a86dd09",
+    "apps/admin/components/ManualOrder.tsx": "418cd0a2fe13421fb124a3d461d3f5b824b3d14e83964038b5232cbb6a29243c",
+    "apps/admin/lib/ads-copy.ts": "b8b2639c59a40b8297eceafaeeaf95807e8ba72c96c28455fba7b0d126e506b5",
+    "apps/admin/lib/ads-model.ts": "d2a7640aa57f6d9a066fd82de19dfec3560a4c466c2de080d09c76f0c32cfbfe",
+    "apps/storefront/components/BankTransfer.tsx": "360dd25eca8499357e55ace2e45e788690a585eed2b997f4aceb3c6488523f73",
+    "apps/storefront/components/ClaimLink.tsx": "4d8d8313e1ca7203137ed21485f21a4a2182ae3991d70dadf87e301c5e01cf12",
+    "apps/storefront/components/OrderHistory.tsx": "4a5614dbbae097bbc933ed7fbf7e830aaf07eb23075908244856702bda7a6ad3",
+    "apps/storefront/components/ShopChrome.tsx": "7df2a59ea8a1c1ffc960c9dd7b9cff6d46e8dfdcde99f0fc9e8fd86bead2c7f6",
+    "apps/storefront/tests/claim.test.mjs": "918a52ca727bd26abfe631fb8acef055d64c198f60da92f08df5fd54f7f36db5",
+    "scripts/dev/test-node.sh": "91d9e39d5ded88d893ef7bf558aa0fa21ce05dbd015f7a29cd5e805741a4eafe",
+    "tests/admin/ads-model.test.ts": "b472a6265840bea8df7571d4b89afd3db885d02278aeb91991e38acf39a21c52",
+    "tests/admin/ads.spec.ts": "36db36f457ec28b6b28112e9392f3519795defbd402cffefa246e9752ce427d2",
+    "tests/admin/customers-model.test.ts": "348e44501b42b8f27487c1d40ed9b63bbe334dcd4fd6450f60447c4fbff6a548",
+    "apps/storefront/tests/timezone.test.mjs": "3d3b9180c4f2893de6400003a69d7b6f8fed7db7f7cbfef45976ed85d8e50d28",
+    "tests/admin/timezone-ui.test.mjs": "46e22c9a2bbcc4aeb7ae13c25753e90944464e334233ca66c37d756607f6df90"
+  }
+}

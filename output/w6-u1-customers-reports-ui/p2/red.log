@@ -1,0 +1,74 @@
+# Purpose: preserve current W6 P2 command evidence after this prologue.
+# Depends on: DELIVERY command and original main raw SHA256=706078d35c474af3a2df922abd23b2bcf01fa65d9d0008763552f1dcfc970bd2.
+# Used by: integrator; full browser acceptance pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original main bytes and SHA above retained.
+✔ selected tag survives searches and cursor pagination while an empty filter is omitted (35.112208ms)
+✔ customer list dispatch preserves legacy requests and sends every tag query to the closed W6 authority (213.88025ms)
+✔ reports are a finance subpage and preserve the existing single finance navigation entry (0.138917ms)
+✔ an authoritative erased customer immediately unmounts the cached private tags/notes subtree (20.149791ms)
+✔ the actual customer row shows manual tags and imported status without changing consent (3.911875ms)
+✖ P2 customer bare/encoded tag keys are invalid422 through the actual leaf before any backend (299.541ms)
+✖ P2 report products real session/CSRF response is private and Vary Cookie (1.621125ms)
+✖ P2 report products.csv real session/CSRF response is private and Vary Cookie (0.528292ms)
+✔ P2 report malformed query and wrong CSRF are rejected by actual helpers before upstream (0.495334ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 6
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 512.463458
+
+✖ failing tests:
+
+test at tests/admin/w6-route-seam.test.mjs:8:1
+✖ P2 customer bare/encoded tag keys are invalid422 through the actual leaf before any backend (299.541ms)
+  AssertionError [ERR_ASSERTION]: P2-BARE-TAG-422 ?tag
+
+  405 !== 422
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u1-p2-tests/tests/admin/w6-route-seam.test.mjs:14:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 405,
+    expected: 422,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/w6-route-seam.test.mjs:21:52
+✖ P2 report products real session/CSRF response is private and Vary Cookie (1.621125ms)
+  AssertionError [ERR_ASSERTION]: P2-REPORT-VARY-COOKIE products
+
+  null !== 'Cookie'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u1-p2-tests/tests/admin/w6-route-seam.test.mjs:26:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'Cookie',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/w6-route-seam.test.mjs:21:52
+✖ P2 report products.csv real session/CSRF response is private and Vary Cookie (0.528292ms)
+  AssertionError [ERR_ASSERTION]: P2-REPORT-VARY-COOKIE products.csv
+
+  null !== 'Cookie'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w6-u1-p2-tests/tests/admin/w6-route-seam.test.mjs:26:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: 'Cookie',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

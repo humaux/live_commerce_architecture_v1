@@ -1,0 +1,7 @@
+tests/admin/inbox-bff.test.ts(367,9): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(368,9): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(369,10): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(381,40): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(391,40): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(409,9): error TS18046: 'error' is of type 'unknown'.
+tests/admin/inbox-bff.test.ts(410,9): error TS18046: 'error' is of type 'unknown'.

@@ -1,0 +1,23 @@
+✔ hiding aborts requests and rejects late responses, even after reveal (0.376792ms)
+✔ switching selection invalidates both reads and write completions (0.061292ms)
+✔ owner and explicit inbox permissions only; viewer fails closed (0.053417ms)
+✔ Messenger counts Unicode codepoints; Instagram counts NFC UTF8 bytes (0.791375ms)
+✔ uncertain transport retries retain the exact submission; definitive conflicts retire it (1.272917ms)
+✖ privacy calibration cannot activate with production origin or ordinary caller env (0.14925ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.883
+
+✖ failing tests:
+
+test at tests/admin/inbox-privacy.test.ts:54:1
+✖ privacy calibration cannot activate with production origin or ordinary caller env (0.14925ms)
+  TypeError: inboxCalibration is not a function
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-privacy.test.ts:57:16)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

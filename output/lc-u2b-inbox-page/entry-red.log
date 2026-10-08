@@ -1,0 +1,180 @@
+task_id: edd5cae0-c990-4d51-83e8-8f67b75f37f6-sub-entry-tests
+base_commit: 39abae9f218339fba579761d4ef178cac4ea08d6
+status: component MOCK; Go source STRUCTURE_ONLY; Go/PG/BROWSER/build NOT_RUN
+command argv: ["node", "--test", "--experimental-strip-types", "tests/admin/inbox-entry.test.ts"]
+exit_code: 1
+sha256 4e23fae6971cbcffbafd9ebe8749426786f7c0350153cd69715da9fd8114e91b tests/admin/inbox-entry.test.ts
+sha256 fbbe0732daa9abf40cff885c251a21b6af9028e04fd874308f4bb9f0c9b4436f tests/admin/inbox-review-host.test.ts
+sha256 7cb8287ad0d16036dd72d75c523f27ed02fa3bb47cec1f4ed0e2a2428727646e apps/admin/components/Inbox.tsx
+sha256 aa20480320750cef30e2ad9ab080b630aa6cde9400b39c034032a4ea5152ebfd apps/admin/components/InboxThread.tsx
+sha256 d0280415210abff8e3f4f82376d61d47fa7ce654add30e4c48312e0c8bbc8b9a apps/admin/components/BuyerPanel.tsx
+sha256 80efa1d6c1ba3a4d62103a08826e2c4c1c018c524563cdb30c90efbd41977b88 apps/admin/lib/inbox-client.ts
+sha256 3651772b62080a90f3d901cf4b892fde1724f4450d0193bace6e20358f93072e tests/foundation/browser_click_sweep_test.go
+
+✖ A real Inbox selection admits Go A9 attachments null without losing thread (22.418041ms)
+✔ A real Inbox selection admits Go A9 attachments empty array without losing thread (4.262459ms)
+✖ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.700041ms)
+✔ C A8 HTTP200 empty list is ordinary data with no alert, selection or focus request storm (1.0005ms)
+✖ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (1.009333ms)
+✖ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.7015ms)
+✖ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.761792ms)
+✖ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (0.898958ms)
+✖ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.285958ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 2
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 415.742417
+
+✖ failing tests:
+
+test at tests/admin/inbox-entry.test.ts:87:3
+✖ A real Inbox selection admits Go A9 attachments null without losing thread (22.418041ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted rejection: valid null/empty attachment projection must render
+  Actual message: "Cannot read properties of null (reading 'map')"
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:92:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: TypeError: Cannot read properties of null (reading 'map')
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/apps/admin/components/InboxThread.tsx:254:224
+        at Array.map (<anonymous>)
+        at Object.InboxThread [as type] (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/apps/admin/components/InboxThread.tsx:254:30)
+        at child.host [as render] (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:56:48)
+        at Host.flush (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:43:23)
+        at inspect (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:103:16)
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:89:51
+        at node:internal/process/task_queues:150:7
+        at AsyncResource.runInAsyncScope (node:async_hooks:227:14)
+        at AsyncResource.runMicrotask (node:internal/process/task_queues:147:8),
+    expected: undefined,
+    operator: 'doesNotReject',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:121:1
+✖ A malformed non-array A9 attachments is refused without painting DM or crashing selected entry (1.700041ms)
+  AssertionError [ERR_ASSERTION]: Got unwanted rejection: malformed arrays fail closed, not a component exception
+  Actual message: "item.attachments.map is not a function"
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:126:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: TypeError: item.attachments.map is not a function
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/apps/admin/components/InboxThread.tsx:254:224
+        at Array.map (<anonymous>)
+        at Object.InboxThread [as type] (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/apps/admin/components/InboxThread.tsx:254:30)
+        at child.host [as render] (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:56:48)
+        at Host.flush (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:43:23)
+        at inspect (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:103:16)
+        at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-review-host.test.ts:89:51
+        at node:internal/process/task_queues:150:7
+        at AsyncResource.runInAsyncScope (node:async_hooks:227:14)
+        at AsyncResource.runMicrotask (node:internal/process/task_queues:147:8),
+    expected: undefined,
+    operator: 'doesNotReject',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:168:3
+✖ C A8 list404 is scoped inbox unavailable in en, never an empty list or conversation denial (1.009333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + 'This conversation is unavailable in the current store.'
+  - 'The inbox is unavailable for this store.'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:180:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'This conversation is unavailable in the current store.',
+    expected: 'The inbox is unavailable for this store.',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:168:3
+✖ C A8 list404 is scoped inbox unavailable in zh-TW, never an empty list or conversation denial (0.7015ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + '目前店鋪無法使用此對話。'
+  - '目前店鋪的收件匣無法使用。'
+         ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:180:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '目前店鋪無法使用此對話。',
+    expected: '目前店鋪的收件匣無法使用。',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:168:3
+✖ C A8 list404 is scoped inbox unavailable in zh-CN, never an empty list or conversation denial (0.761792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + '当前店铺无法使用此对话。'
+  - '当前店铺的收件箱无法使用。'
+         ^
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:180:12)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '当前店铺无法使用此对话。',
+    expected: '当前店铺的收件箱无法使用。',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:190:1
+✖ C click-sweep Go harness mounts existing Inbox/templates services (STRUCTURE_ONLY, Go NOT_RUN) (0.898958ms)
+  AssertionError [ERR_ASSERTION]: click-sweep actual router Options must mount real inbox service
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:196:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at tests/admin/inbox-entry.test.ts:201:1
+✖ C click-sweep includes actual-router owner200 empty inbox assertion (STRUCTURE_ONLY, Go NOT_RUN) (0.285958ms)
+  AssertionError [ERR_ASSERTION]: existing owner call helper must assert real A8 GET200 through mounted router
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-pr8-tests/tests/admin/inbox-entry.test.ts:209:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+strict test TypeScript argv: ["node", "--input-type=module", "-e", "import ts from \"typescript-api\"; const file=\"apps/admin/tsconfig.json\"; const parsed=ts.parseJsonConfigFileContent(ts.readConfigFile(file,ts.sys.readFile).config,ts.sys,\"apps/admin\"); parsed.options.incremental=false; parsed.options.types=[\"node\",\"react\"]; parsed.options.typeRoots=[\"apps/admin/node_modules/@types\"]; const program=ts.createProgram([\"tests/admin/inbox-entry.test.ts\",\"apps/admin/next-env.d.ts\"],parsed.options); const errors=ts.getPreEmitDiagnostics(program); console.log(ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:ts.sys.getCurrentDirectory,getCanonicalFileName:f=>f,getNewLine:()=>\"\\n\"})); process.exit(errors.length?1:0);"]
+exit_code: 0

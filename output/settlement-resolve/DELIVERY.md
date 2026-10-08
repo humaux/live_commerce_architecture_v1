@@ -82,7 +82,7 @@ SANDBOX and LIVE: `settlement-resolve` against a real SANDBOX ledger after a rea
 (contract §8). Full foundation suite and browser/visual gates (CI). The two UI node gates of `check-gates.sh` (missing `node_modules`).
 
 ## Integrator to-do
-Migration number 0163 was given. W3-U4's 0164 lands later: the R2 pin becomes 90 then (comment lines keep migration order). `slsApplyWithout` holds 0163
+Migration number 0163 was given. W3-U4 now follows merged 0165 as 0166: the combined R2 pin becomes 91 (historical command results below keep their original counts). `slsApplyWithout` holds 0163
 back by name with 0150 (not "the newest"). No shared schema, OpenAPI or lockfile touched.
 
 ---

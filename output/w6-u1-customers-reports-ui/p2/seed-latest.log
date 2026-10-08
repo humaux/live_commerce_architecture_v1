@@ -1,0 +1,9 @@
+# Purpose: preserve latest-origin local evidence after this prologue.
+# Depends on: current source/commands and original main SHA256=03baf6136adc377c878a27824550b70bd3954d84cc2a10f3a9f2fbb2f221cdea.
+# Used by: integrator normal/calibration retry.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+=== RUN   TestW6UISeedFocused
+--- PASS: TestW6UISeedFocused (2.50s)
+PASS
+ok  	livecommerce/tests/foundation	4.783s
+test-focused: top-level PASS=1 FAIL=0 SKIP=0 exit=0

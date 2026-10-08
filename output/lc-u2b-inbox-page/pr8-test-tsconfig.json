@@ -1,0 +1,27 @@
+{
+  "extends": "../../apps/admin/tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "../../tests/admin/inbox-review.test.ts",
+    "../../tests/admin/inbox-review-recovery.test.ts",
+    "../../tests/admin/inbox-window.test.ts",
+    "../../tests/admin/inbox-evidence.test.ts",
+    "../../tests/admin/inbox-entry.test.ts",
+    "../../tests/admin/inbox-browser-source.test.ts",
+    "../../tests/admin/inbox-ui.spec.ts",
+    "../../apps/admin/next-env.d.ts",
+    "../../tests/admin/inbox-unknown.test.ts",
+    "../../tests/admin/inbox-bundle-browser.test.ts",
+    "../../tests/admin/inbox-recovery-env.test.ts",
+    "../../tests/admin/inbox-bundle-ui.spec.ts",
+    "../../tests/admin/inbox-browser-support.ts",
+    "../../tests/admin/inbox-discovery.test.ts",
+    "../../tests/admin/inbox-credential-artifacts.test.ts",
+    "../../tests/admin/inbox-shell-navigation.test.ts",
+    "../../tests/admin/inbox-recovery-locale.test.ts",
+    "../../tests/admin/inbox-browser-session.test.ts",
+    "../../tests/admin/inbox-bff.test.ts"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "tested_sha": "a0c6ec2bfcd8a1a20c112330d5658de5525c579b",
+  "roots": {
+    "internal": "63b08064eafb0e026d1b224a334ca6010cdeec6c",
+    "tests": "23b3be63ac3ba3e2efd7d63641d190ecb5a3892f",
+    "migrations": "fca9984a041f67b9070529710f5c2e59def8ebab",
+    "contracts": "2c10fccf147a10411b38fd61d85f39449cd891c9",
+    "scripts": "249e984ad1a26a896187f95b8f29a2b97a9c3c05",
+    "go.mod": "a7939a4857e74b8f1eb8b1ebab0d0e49878d13ef",
+    "go.sum": "0a1cba68473ad090d79b01a47a61c221ef88f63d"
+  },
+  "final_focused_result": "test-focused: top-level PASS=65 FAIL=0 SKIP=0 exit=0",
+  "gates": {
+    "final-focused.status": 0,
+    "final-vet.status": 0,
+    "final-build.status": 0,
+    "final-check-gates.status": 0
+  }
+}

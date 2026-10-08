@@ -1,0 +1,96 @@
+✖ OrderHistory renders server order instant in Taipei (6.591042ms)
+✖ ClaimLink renders claim expiry in Taipei (3.142875ms)
+✖ BankTransfer renders deadline and proof instant in Taipei (1.571584ms)
+✖ ShopFooter uses Taipei year across UTC year boundary (1.42425ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 94.024167
+
+✖ failing tests:
+
+test at apps/storefront/tests/timezone.test.mjs:47:1
+✖ OrderHistory renders server order instant in Taipei (6.591042ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /01\/01\/2027|1\/1\/2027|Jan 01, 2027|Jan 1, 2027/. Input:
+
+  ' Your orders Orders available to this shopping session. Keep access to this browser; a new session cannot recover an expired one.  Dec 31, 2026, 8:30 AM Order confirmed NT$1 order-1 View order  '
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-storefront/apps/storefront/tests/timezone.test.mjs:54:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: ' Your orders Orders available to this shopping session. Keep access to this browser; a new session cannot recover an expired one.  Dec 31, 2026, 8:30 AM Order confirmed NT$1 order-1 View order  ',
+    expected: /01\/01\/2027|1\/1\/2027|Jan 01, 2027|Jan 1, 2027/,
+    operator: 'match',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:58:1
+✖ ClaimLink renders claim expiry in Taipei (3.142875ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(text(component({ locale: "en" })).includes(fmt))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-storefront/apps/storefront/tests/timezone.test.mjs:64:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:67:1
+✖ BankTransfer renders deadline and proof instant in Taipei (1.571584ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  0 !== 2
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-storefront/apps/storefront/tests/timezone.test.mjs:74:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 2,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at apps/storefront/tests/timezone.test.mjs:77:1
+✖ ShopFooter uses Taipei year across UTC year boundary (1.42425ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+
+    assert.ok(text(component({ locale: "en", design, preview: null })).includes("© 2027 Shop"))
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/tz-audit-storefront/apps/storefront/tests/timezone.test.mjs:87:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

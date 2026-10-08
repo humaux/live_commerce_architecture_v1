@@ -1,0 +1,23 @@
+{
+  "_header": {
+    "Purpose": "bind current P2 command or test source evidence",
+    "Depends on": "recorded command/hash/base/exit fields",
+    "Used by": "integrator CI retry"
+  },
+  "run_id": "w6-p2-node-red",
+  "pid": 89202,
+  "command": [
+    "node",
+    "--test",
+    "--experimental-strip-types",
+    "tests/admin/w6-route-seam.test.mjs",
+    "tests/admin/w6-integration.test.ts"
+  ],
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w6-u1-customers-reports-ui/p2/red.log",
+  "timeout_seconds": 120,
+  "started_at": 1791374406.4185832,
+  "state": "finished",
+  "wake": "child monitors tool, then messages root before source edits",
+  "exit_code": 1,
+  "finished_at": 1791374407.019891
+}

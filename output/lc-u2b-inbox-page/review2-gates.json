@@ -1,0 +1,63 @@
+[
+  {
+    "command": [
+      "node",
+      "--test",
+      "--experimental-strip-types",
+      "tests/admin/inbox-review.test.ts",
+      "tests/admin/inbox-review-recovery.test.ts"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/review2-components-green.log",
+    "source": "e5a70499a204c2e227bfc49ed7527a7b90596860"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/test-node.sh"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/review2-node.log",
+    "source": "e5a70499a204c2e227bfc49ed7527a7b90596860"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/dev/check-gates.sh"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/review2-check-gates.log",
+    "source": "e5a70499a204c2e227bfc49ed7527a7b90596860"
+  },
+  {
+    "command": [
+      "pnpm",
+      "--filter",
+      "@live-commerce/admin",
+      "exec",
+      "tsc",
+      "--noEmit"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/review2-admin-typecheck.log",
+    "source": "e5a70499a204c2e227bfc49ed7527a7b90596860"
+  },
+  {
+    "command": [
+      "pnpm",
+      "exec",
+      "tsc",
+      "--noEmit",
+      "-p",
+      "output/lc-u2b-inbox-page/pr8-test-tsconfig.json"
+    ],
+    "exit": 0,
+    "timeout": false,
+    "log": "output/lc-u2b-inbox-page/review2-test-typecheck.log",
+    "source": "e5a70499a204c2e227bfc49ed7527a7b90596860"
+  }
+]

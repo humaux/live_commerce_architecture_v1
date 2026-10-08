@@ -1,0 +1,273 @@
+/* Purpose: scoped responsive inbox layout in the existing navy/teal workspace.
+ * Depends on: shared workspace tokens; native semantic controls.
+ * Used by: Inbox, InboxThread and BuyerPanel; no buyer content in generated styles. */
+.page {
+  color: var(--ink, #142d42);
+  padding: 24px;
+}
+.heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.heading h1 {
+  font-size: 28px;
+  margin: 0 0 6px;
+  letter-spacing: -0.5px;
+}
+.heading p {
+  margin: 0;
+  color: #506375;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.toolbar select,
+.composer select,
+.panel input {
+  border: 1px solid #bac7d1;
+  border-radius: 5px;
+  padding: 9px;
+  background: white;
+  color: inherit;
+  min-height: 42px;
+  max-width: 100%;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.65fr) minmax(
+      225px,
+      0.9fr
+    );
+  border: 1px solid #cdd7df;
+  border-radius: 6px;
+  background: #fff;
+  min-height: 530px;
+  overflow: hidden;
+}
+.list {
+  border-right: 1px solid #cdd7df;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.row {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid #dce3e9;
+  background: #fff;
+  padding: 16px;
+  color: inherit;
+  cursor: pointer;
+  min-height: 92px;
+}
+.row[aria-pressed="true"] {
+  background: #eaf4f5;
+  box-shadow: inset 3px 0 #087a80;
+}
+.row:hover {
+  background: #f2f6f8;
+}
+.row strong {
+  display: block;
+  margin-bottom: 5px;
+  overflow-wrap: anywhere;
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  font-size: 12px;
+  color: #506375;
+  line-height: 1.65;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid #a5c4c9;
+  border-radius: 3px;
+  font-size: 12px;
+  color: #165663;
+  background: #eff8f8;
+}
+.thread {
+  padding: 20px;
+  min-width: 0;
+}
+.thread h2,
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.messages {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 460px;
+  overflow: auto;
+}
+.message {
+  max-width: 94%;
+  padding: 12px;
+  background: #f0f4f7;
+  border-left: 2px solid #b0bdc8;
+  overflow-wrap: anywhere;
+}
+.message[data-direction="out"] {
+  margin-left: auto;
+  background: #eaf5f4;
+  border-color: #087a80;
+}
+.message p {
+  white-space: pre-wrap;
+  margin: 0 0 6px;
+  line-height: 1.6;
+}
+.composer {
+  border-top: 1px solid #dce3e9;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.composer textarea {
+  resize: vertical;
+  width: 100%;
+  min-height: 104px;
+  box-sizing: border-box;
+  border: 1px solid #a8bac8;
+  border-radius: 5px;
+  padding: 10px;
+  color: inherit;
+  background: #fff;
+  font: inherit;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.button {
+  background: #fff;
+  border: 1px solid #a4b6c4;
+  color: #18394d;
+  border-radius: 5px;
+  padding: 9px 13px;
+  cursor: pointer;
+  min-height: 42px;
+  font: inherit;
+}
+.primary {
+  background: #08767c;
+  color: #fff;
+  border-color: #08767c;
+}
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+.button:focus-visible,
+.row:focus-visible,
+.composer textarea:focus-visible,
+.toolbar select:focus-visible {
+  outline: 3px solid #38a5b8;
+  outline-offset: 3px;
+}
+.notice {
+  padding: 12px;
+  color: #4e6070;
+  background: #f1f5f8;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.error {
+  color: #8c3028;
+  background: #fff2ed;
+}
+.panel {
+  border-left: 1px solid #cdd7df;
+  padding: 20px;
+  min-width: 0;
+  background: #f9fbfc;
+}
+.panel dl {
+  margin: 0 0 20px;
+}
+.panel dt {
+  color: #526678;
+  font-size: 12px;
+  margin: 12px 0 4px;
+}
+.panel dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.panel h3 {
+  font-size: 14px;
+  margin: 20px 0 8px;
+}
+.panel ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.empty {
+  padding: 24px;
+  color: #536879;
+  line-height: 1.6;
+}
+.back {
+  display: none;
+}
+@media (max-width: 1150px) {
+  .layout {
+    grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.5fr);
+  }
+  .panel {
+    grid-column: 2;
+    border-top: 1px solid #cdd7df;
+  }
+}
+@media (max-width: 650px) {
+  .page {
+    padding: 16px 10px;
+  }
+  .heading h1 {
+    font-size: 24px;
+  }
+  .layout {
+    display: block;
+    min-height: 350px;
+  }
+  .list {
+    border-right: 0;
+  }
+  .thread,
+  .panel {
+    padding: 16px;
+    border-left: 0;
+  }
+  .selected .list {
+    display: none;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 14px;
+  }
+  .messages {
+    max-height: 420px;
+  }
+}

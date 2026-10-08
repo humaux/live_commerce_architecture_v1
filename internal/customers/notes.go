@@ -22,6 +22,8 @@ import (
 )
 
 // Note is one private merchant note. AuthorID is the staff principal who wrote it; EditedAt is null until edited.
+// Own is computed by Go (AuthorID == the caller's principal) after the definer JSON is decoded, never stored or taken
+// from the database, so a staff member without customers:privacy can tell which notes they may edit or delete.
 type Note struct {
 	ID        string  `json:"id"`
 	Body      string  `json:"body"`
@@ -29,6 +31,14 @@ type Note struct {
 	CreatedAt string  `json:"created_at"`
 	EditedAt  *string `json:"edited_at"`
 	Version   int64   `json:"version"`
+	Own       bool    `json:"own"`
+}
+
+// markOwn sets Own on every note for the calling principal.
+func markOwn(notes []Note, scope platform.Scope) {
+	for i := range notes {
+		notes[i].Own = notes[i].AuthorID == scope.PrincipalID
+	}
 }
 
 // NoteInput is the create body.
@@ -112,7 +122,7 @@ func AddNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, c
 	if err != nil {
 		return Note{}, err
 	}
-	return Note{rec.ID, in.Body, rec.AuthorID, rec.CreatedAt, rec.EditedAt, rec.Version}, nil
+	return Note{rec.ID, in.Body, rec.AuthorID, rec.CreatedAt, rec.EditedAt, rec.Version, rec.AuthorID == scope.PrincipalID}, nil
 }
 
 // EditNote replaces a note body (DB: customers.edit_note). ErrVersionChanged on a stale version; platform.ErrForbidden
@@ -131,7 +141,7 @@ func EditNote(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, key, 
 	if err != nil {
 		return Note{}, err
 	}
-	return Note{rec.ID, in.Body, rec.AuthorID, rec.CreatedAt, rec.EditedAt, rec.Version}, nil
+	return Note{rec.ID, in.Body, rec.AuthorID, rec.CreatedAt, rec.EditedAt, rec.Version, rec.AuthorID == scope.PrincipalID}, nil
 }
 
 // DeleteNote removes a note (DB: customers.delete_note); same authorship rule as EditNote.
@@ -189,6 +199,7 @@ func ListNotes(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, cust
 			return empty, ErrUnavailable
 		}
 	}
+	markOwn(notes, scope)
 	empty.Items = notes
 	if len(notes) > limit {
 		empty.Items = notes[:limit]

@@ -1,0 +1,41 @@
+depmap: docs/engineering/dependency-map.md is stale; run: bash scripts/dev/depmap.sh
+--- docs/engineering/dependency-map.md	2026-10-06 05:03:28
++++ /var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp.WaL3LsS1nV	2026-10-06 12:23:47
+@@ -195,7 +195,7 @@
+ 
+ - Depends on (internal): `internal/buyer`, `internal/claims/grammar`, `internal/command`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/storefront`
+ - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+-- Used by: `cmd/api`, `cmd/claims-worker`, `internal/buyerhttp`, `internal/claimsintake`, `internal/httpapi`, `internal/integrations/metareply`, `internal/live`
++- Used by: `cmd/api`, `cmd/claims-worker`, `internal/buyerhttp`, `internal/claimsintake`, `internal/httpapi`, `internal/integrations/metareply`, `internal/live`, `internal/merchanttools`
+ 
+ ## `internal/claims/grammar`
+ 
+@@ -226,8 +226,8 @@
+ Package customers owns consent and owner-level privacy actions (contracts/customers-billing-v1.md, FROZEN 2026-09-30): the merchant customer list/detail read-time projection over buyer.owners (CD1-CD3), append-only consent with the single gate customers.consent_allows (CD4/CD5), and the synchronous export and erasure of one owner with tombstone replay (CD6-CD8).
+ 
+ - Depends on (internal): `internal/buyer`, `internal/command`, `internal/merchantorders`, `internal/pagination`, `internal/platform`
+-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+-- Used by: `internal/buyerhttp`, `internal/httpapi`
++- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `golang.org/x/text/unicode/norm`
++- Used by: `internal/buyerhttp`, `internal/httpapi`, `internal/merchanttools`
+ 
+ ## `internal/design`
+ 
+@@ -289,9 +289,9 @@
+ 
+ Package inbox owns the merchant inbox read side (contracts/live-console-v1.md §3.2/§3.6/§3.7, §11 A8-A11/A13/A14): the payload keyring that opens the inbound message bodies (A9), the frozen-classifier replay that extracts text and attachments, and the definer callers for conversation listing, thread reads, read/unread, takeover/release and the customer link.
+ 
+-- Depends on (internal): `internal/command`, `internal/integrations/meta`
+-- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
+-- Used by: `cmd/api`, `internal/httpapi`
++- Depends on (internal): `internal/command`, `internal/integrations/core`, `internal/integrations/meta`, `internal/integrations/meta/pagetoken`, `internal/msgtemplates`, `internal/platform`
++- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgtype`, `github.com/riverqueue/river`, `golang.org/x/text/unicode/norm`
++- Used by: `cmd/api`, `internal/httpapi`, `internal/merchanttools`
+ 
+ ## `internal/integrations/accounts`
+ 
+@@ -307,7 +307,7 @@
+ 
+ - Depends on (internal): `internal/command`, `internal/platform`
+ - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
+-- Used by: `cmd/ads-worker`, `cmd/api`, `cmd/claims-worker`, `internal/ads`, `internal/attribution`, `internal/attribution/capiroute`, `internal/claimsintake`, `internal/fulfillment`, `internal/integrations/accounts`, `internal/integrations/meta_ads`, `internal/integrations/metareply`, `internal/integrations/shipping/ecpay/ecpayroute`, `internal/live`, `internal/metaconnect`, `internal/payments`

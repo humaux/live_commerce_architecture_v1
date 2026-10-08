@@ -1,10 +1,15 @@
 "use client";
 
-// Shipment section of the merchant order detail row (contracts/manual-fulfilment-v1.md §5.1, §5.4).
+// Purpose: Shipment section of the merchant order detail row (contracts/manual-fulfilment-v1.md §5.1, §5.4), plus the
+//   W3-U4 extracted ShipmentFields/shipmentFieldsError shared with the parcel-group waybill form (ParcelGroup.tsx).
+// Depends on: @/lib/orders-client (PUT shipment, GET history), @/lib/orders-model, @/lib/orders-copy, ./OrderRefunds (errorText).
+// Used by: ./OrderDetailPanel (per-order section), ./ParcelGroup (ShipmentFields + shipmentFieldsError only).
 // BFF routes: PUT /api/stores/{store}/orders/{id}/shipment (Idempotency-Key), GET .../shipment/history
 // -> Go internal/httpapi/shipments.go (PUT fulfillment:write, GET orders:read). Record, correct and void are
 // one command route; the server owns eligibility (MD6) and the version CAS. Nothing here is optimistic:
 // after every response the order and history are re-read, and this UI never claims transit or delivery (MD3).
+// W3-07B: parcelBlock replaces the record form with the group hint when the order sits in an OPEN parcel group;
+// the server `in_parcel_group` guard (internal/httpapi/shipments.go) stays the authority.
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
@@ -29,6 +34,76 @@ function carrierLabel(c: OrdersCopy, item: { carrier_code: CarrierCode; carrier_
   return item.carrier_name ?? c.carriers[item.carrier_code];
 }
 
+// The five record/correct fields (W3-U4: extracted, no behaviour change) shared by the per-order form below and the
+// parcel-group waybill form in ParcelGroup.tsx. testidPrefix keeps the historical ship-* test ids here; the group
+// form passes parcel-ship so both forms may be on the page at once.
+export type ShipmentFieldValues = {
+  carrier: CarrierCode | "";
+  carrierName: string;
+  tracking: string;
+  url: string;
+  note: string;
+};
+
+/** The record/correct field validation of manual-fulfilment-v1 §3.2 (client hint only; SQL re-checks). "" = valid. */
+export function shipmentFieldsError(c: OrdersCopy, v: ShipmentFieldValues): string {
+  if (!v.carrier) return c.errors.invalid_carrier;
+  const name = v.carrierName.trim();
+  if ((v.carrier === "other" && name === "") || Array.from(name).length > 80) return c.shipCarrierNameRequired;
+  if (!trackingNumber.test(v.tracking.trim())) return c.shipInvalidTracking;
+  if (v.url.trim() !== "" && trackingURLHost(v.url.trim()) === null) return c.shipInvalidUrl;
+  if (Array.from(v.note.trim()).length > 200) return c.shipNoteTooLong;
+  return "";
+}
+
+/** Carrier/tracking/url/note inputs of the manual shipment form. Pure presentation: no fetch, no side effects. */
+export function ShipmentFields({
+  c,
+  value,
+  disabled,
+  onChange,
+  testidPrefix = "ship",
+}: {
+  c: OrdersCopy;
+  value: ShipmentFieldValues;
+  disabled: boolean;
+  onChange: (patch: Partial<ShipmentFieldValues>) => void;
+  testidPrefix?: string;
+}) {
+  return (
+    <>
+      <label>
+        {c.shipCarrier}
+        <select data-testid={`${testidPrefix}-carrier`} value={value.carrier} disabled={disabled}
+          onChange={(event) => onChange({ carrier: event.target.value as CarrierCode | "" })}>
+          <option value="">—</option>
+          {carrierCodes.map((v) => <option key={v} value={v}>{c.carriers[v]}</option>)}
+        </select>
+      </label>
+      <label>
+        {c.shipCarrierName}{value.carrier === "other" ? " *" : ""}
+        <input data-testid={`${testidPrefix}-carrier-name`} value={value.carrierName} maxLength={80} autoComplete="off"
+          required={value.carrier === "other"} disabled={disabled} onChange={(event) => onChange({ carrierName: event.target.value })} />
+      </label>
+      <label>
+        {c.shipTracking}
+        <input data-testid={`${testidPrefix}-tracking`} value={value.tracking} maxLength={64} autoComplete="off" required
+          disabled={disabled} onChange={(event) => onChange({ tracking: event.target.value })} />
+      </label>
+      <label>
+        {c.shipUrl}
+        <input data-testid={`${testidPrefix}-url`} type="url" inputMode="url" value={value.url} maxLength={512} autoComplete="off"
+          disabled={disabled} onChange={(event) => onChange({ url: event.target.value })} />
+      </label>
+      <label>
+        {c.shipNote}
+        <input data-testid={`${testidPrefix}-note`} value={value.note} maxLength={200} autoComplete="off" disabled={disabled}
+          onChange={(event) => onChange({ note: event.target.value })} />
+      </label>
+    </>
+  );
+}
+
 export function OrderShipment({
   store,
   detail,
@@ -37,6 +112,8 @@ export function OrderShipment({
   canWrite,
   boundary,
   onChanged,
+  parcelBlock,
+  onRefused,
 }: {
   store: string;
   detail: OrderDetail;
@@ -45,6 +122,11 @@ export function OrderShipment({
   canWrite: boolean;
   boundary: string;
   onChanged: () => Promise<boolean>;
+  // W3-07B: set when the order sits in an OPEN parcel group (client-side knowledge from this session's groups; the
+  // server guard `in_parcel_group` stays the authority). The record form is then replaced by this hint.
+  parcelBlock?: string;
+  // Called with the refusal code of a failed submit so the page can re-read the parcel state on in_parcel_group.
+  onRefused?: (code: string) => void;
 }) {
   const orderID = detail.order_id;
   const head: Shipment | null = detail.shipment;
@@ -110,13 +192,7 @@ export function OrderShipment({
     setMode(next);
   }
   function invalid() {
-    if (!carrier) return c.errors.invalid_carrier;
-    const name = carrierName.trim();
-    if ((carrier === "other" && name === "") || Array.from(name).length > 80) return c.shipCarrierNameRequired;
-    if (!trackingNumber.test(tracking.trim())) return c.shipInvalidTracking;
-    if (url.trim() !== "" && trackingURLHost(url.trim()) === null) return c.shipInvalidUrl;
-    if (Array.from(note.trim()).length > 200) return c.shipNoteTooLong;
-    return "";
+    return shipmentFieldsError(c, { carrier, carrierName, tracking, url, note });
   }
   async function send() {
     if (busy) return;
@@ -164,6 +240,7 @@ export function OrderShipment({
     }
     pending.current = null;
     setProblem(errorText(c, result.code));
+    onRefused?.(result.code);
     if (result.code === "version_changed") {
       setTick((value) => value + 1);
       void onChanged();
@@ -189,36 +266,18 @@ export function OrderShipment({
           </select>
         </label>
       ) : (
-        <>
-          <label>
-            {c.shipCarrier}
-            <select data-testid="ship-carrier" value={carrier} disabled={uncertain}
-              onChange={(event) => setCarrier(event.target.value as CarrierCode | "")}>
-              <option value="">—</option>
-              {carrierCodes.map((value) => <option key={value} value={value}>{c.carriers[value]}</option>)}
-            </select>
-          </label>
-          <label>
-            {c.shipCarrierName}{carrier === "other" ? " *" : ""}
-            <input data-testid="ship-carrier-name" value={carrierName} maxLength={80} autoComplete="off"
-              required={carrier === "other"} disabled={uncertain} onChange={(event) => setCarrierName(event.target.value)} />
-          </label>
-          <label>
-            {c.shipTracking}
-            <input data-testid="ship-tracking" value={tracking} maxLength={64} autoComplete="off" required
-              disabled={uncertain} onChange={(event) => setTracking(event.target.value)} />
-          </label>
-          <label>
-            {c.shipUrl}
-            <input data-testid="ship-url" type="url" inputMode="url" value={url} maxLength={512} autoComplete="off"
-              disabled={uncertain} onChange={(event) => setURL(event.target.value)} />
-          </label>
-          <label>
-            {c.shipNote}
-            <input data-testid="ship-note" value={note} maxLength={200} autoComplete="off" disabled={uncertain}
-              onChange={(event) => setNote(event.target.value)} />
-          </label>
-        </>
+        <ShipmentFields
+          c={c}
+          value={{ carrier, carrierName, tracking, url, note }}
+          disabled={uncertain}
+          onChange={(patch) => {
+            if (patch.carrier !== undefined) setCarrier(patch.carrier);
+            if (patch.carrierName !== undefined) setCarrierName(patch.carrierName);
+            if (patch.tracking !== undefined) setTracking(patch.tracking);
+            if (patch.url !== undefined) setURL(patch.url);
+            if (patch.note !== undefined) setNote(patch.note);
+          }}
+        />
       )}
       {problem && <p className="orders-bad" role="alert" data-testid="shipment-problem">{problem}</p>}
       <div className="orders-form-actions">
@@ -269,9 +328,10 @@ export function OrderShipment({
           </button>
         </div>
       )}
-      {canWrite && !head && !eligible && <p className="orders-hint" data-testid="shipment-ineligible">{c.shipNotEligible}</p>}
+      {canWrite && !head && !eligible && !parcelBlock && <p className="orders-hint" data-testid="shipment-ineligible">{c.shipNotEligible}</p>}
+      {canWrite && !head && parcelBlock && <p className="orders-hint" data-testid="shipment-parcel-block">{parcelBlock}</p>}
       {canWrite && head && collectionRecorded && <p className="orders-hint" id={`shipment-collection-${orderID}`}>{c.shipVoidCollection}</p>}
-      {canWrite && status === "ready" && ((!head && eligible) || (head && mode !== "record")) && form}
+      {canWrite && status === "ready" && !(parcelBlock && !head) && ((!head && eligible) || (head && mode !== "record")) && form}
       {notice && <p className="orders-notice" role="status" data-testid="shipment-notice">{notice}</p>}
       {history && (
         <details className="orders-history" data-testid="shipment-history">

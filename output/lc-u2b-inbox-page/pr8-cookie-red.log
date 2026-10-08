@@ -1,0 +1,36 @@
+✔ A8/A9/A13 and published templates: exact reads forward once with no-store (27.324084ms)
+✔ real streamed POST bodies: A10-A14 exact keys reach upstream (14.723959ms)
+✔ query, read headers, methods and body allowlists refuse before upstream (7.377167ms)
+✔ session, CSRF and store authority precede content forwarding (4.302083ms)
+✔ A12 fixed codes preserved; arbitrary upstream diagnostics stripped (7.088ms)
+✔ client preserves codes and receipt; changed/aborted session cannot publish private response (10.872042ms)
+✔ A9 admits a full page of valid Unicode replies while bounding private response bytes (4.504125ms)
+✖ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.381084ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 241.86625
+
+✖ failing tests:
+
+test at tests/admin/inbox-bff.test.ts:440:1
+✖ non-JSON upstream 401 still expires both authentication cookies without diagnostic leakage (1.381084ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+  503 !== 401
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/lc-u2b-inbox-page/tests/admin/inbox-bff.test.ts:443:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 503,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
