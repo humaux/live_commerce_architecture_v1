@@ -128,7 +128,16 @@ func TestStripeUntrackedReservationRefusals(t *testing.T) {
 					slrReplica(t, e.f, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{quote,lines}','[]'::jsonb) WHERE id=$1`, order)
 				case "foreign_sku":
 					other := psSetupItemsOn(t, fixture(t), 1)
-					slrReplica(t, e.f, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{quote,lines,0,sku_id}',to_jsonb($2::text)) WHERE id=$1`, order, other.stock.skus[0].ID)
+					cap := int64(3)
+					foreign, err := k3Doc(t, other.f, t04Key("suc-foreign"), catalog.ProductDocumentInput{
+						Name: "Synthetic foreign untracked", Status: catalog.StatusActive,
+						SKUs: []catalog.DocumentSKUInput{{PriceMinor: 2500, Stock: &catalog.DocumentStock{Mode: "untracked", MaxPerOrder: &cap}}},
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					// False tracking in the OTHER store must not authorize this order's empty reservation.
+					slrReplica(t, e.f, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{quote,lines,0,sku_id}',to_jsonb($2::text)) WHERE id=$1`, order, foreign.SKUs[0].ID)
 				case "missing_reservation":
 					slrReplica(t, e.f, `DELETE FROM inventory.reservations WHERE id=$1`, order)
 				}
