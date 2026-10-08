@@ -14,9 +14,13 @@ import (
 
 // sucOrder creates its order through real Begin (never by deleting a valid hold's stock lines).
 // Only provider session pins/observations and explicitly named corruption cases use the owner pool.
-func sucOrder(t *testing.T, tracked bool) (*slrEnv, string, string) {
+func sucOrder(t *testing.T, tracked bool, isolated ...*testFixture) (*slrEnv, string, string) {
 	t.Helper()
-	p := psSetupItemsOn(t, fixture(t), 1)
+	base := fixture(t)
+	if len(isolated) != 0 {
+		base = isolated[0]
+	}
+	p := psSetupItemsOn(t, base, 1)
 	cap := int64(3)
 	doc, err := k3Doc(t, p.f, t04Key("suc-product"), catalog.ProductDocumentInput{
 		Name: "Synthetic untracked", Status: catalog.StatusActive,

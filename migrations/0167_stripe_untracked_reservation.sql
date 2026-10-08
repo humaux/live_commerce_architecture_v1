@@ -5,7 +5,7 @@
 -- Invariants: nonempty reservations keep their existing sorted locks and ledger transitions; missing tracked
 --   stock never qualifies for the zero-line exception, including after a tracked-to-untracked catalogue edit.
 -- Only the two zero-iteration guards change. Existing owner, ACL, SECURITY DEFINER, search_path and comment stay exact.
--- A post-order untracked-to-tracked edit still fails closed: historical tracking flags are not in the order snapshot.
+-- Paid catalogue drift fails closed to the existing durable review path; it never authorizes fulfillment.
 
 CREATE OR REPLACE FUNCTION payments.apply_stripe_observation(p_attempt uuid,p_report_hash bytea)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -189,14 +189,33 @@ BEGIN
     OR EXISTS (
      SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
      WHERE jsonb_typeof(q.line) IS DISTINCT FROM 'object'
-      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$'
-      OR NOT EXISTS (SELECT 1 FROM catalog.skus s
-       WHERE s.tenant_id=a.tenant_id AND s.store_id=a.store_id
-        AND s.id::text=q.line->>'sku_id' AND NOT s.inventory_tracked))
+      OR coalesce(q.line->>'quantity','') !~ '^[1-9][0-9]{0,8}$')
     OR EXISTS (SELECT 1 FROM inventory.ledger l
      WHERE l.tenant_id=a.tenant_id AND l.store_id=a.store_id AND l.kind='RESERVE'
       AND (l.reservation_id=ord.id OR l.checkout_id=ord.id)) THEN
     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+   END IF;
+   IF EXISTS (
+    SELECT 1 FROM jsonb_array_elements(ord.snapshot->'quote'->'lines') q(line)
+    WHERE NOT EXISTS (SELECT 1 FROM catalog.skus s
+     WHERE s.tenant_id=a.tenant_id AND s.store_id=a.store_id
+      AND s.id::text=q.line->>'sku_id' AND NOT s.inventory_tracked)) THEN
+    -- Begin verified this immutable quote before accepting an empty plan (post_river/0021).
+    -- A changed/deleted catalogue row cannot authorize settlement; a forged snapshot is still refused.
+    IF NOT EXISTS (SELECT 1 FROM storefront.quotes q
+     WHERE q.tenant_id=a.tenant_id AND q.store_id=a.store_id AND q.owner_id=a.owner_id
+      AND q.id=ord.quote_id AND q.snapshot=ord.snapshot->'quote') THEN
+     RAISE EXCEPTION 'payment reservation empty' USING ERRCODE='PT409';
+    END IF;
+    -- Preserve the observed CAPTURED money fact, but use the existing compensation/review queue.
+    -- Returning commits this evidence; the query worker sees captured=true and stops polling.
+    INSERT INTO payments.review_cases(tenant_id,store_id,attempt_id,reason,source_report_hash)
+     VALUES(a.tenant_id,a.store_id,a.id,'PAID_ALLOCATION_FAILED',obs.report_hash)
+     ON CONFLICT DO NOTHING;
+    INSERT INTO fulfillment.payment_work_items(tenant_id,store_id,owner_id,order_id,attempt_id,state)
+     VALUES(a.tenant_id,a.store_id,a.owner_id,ord.id,a.id,'REVIEW_REQUIRED')
+     ON CONFLICT(tenant_id,store_id,order_id) DO UPDATE SET state='REVIEW_REQUIRED';
+    RETURN;
    END IF;
   END IF;
   -- End A6 empty-reservation proof.
