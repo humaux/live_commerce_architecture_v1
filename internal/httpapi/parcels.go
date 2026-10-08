@@ -42,7 +42,7 @@ func registerParcelRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		}
 	}))
 	// GET open groups: the store's OPEN groups with members (masked recipients), so the UI can rebuild ship/dissolve panels after a
-	// reload (orders:read, no query). Calls fulfillment.read_open_parcel_groups via merchantorders.OpenParcelGroups (migration 0164).
+	// reload (orders:read, no query). Calls fulfillment.read_open_parcel_groups via merchantorders.OpenParcelGroups (migration 0166).
 	mux.HandleFunc("GET "+base+"/parcel-groups", shipmentRoute(http.MethodGet, func(w http.ResponseWriter, r *http.Request) {
 		result, ok := shipmentScope(w, r, pool, "orders:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 			items, err := merchantorders.OpenParcelGroups(ctx, tx, s, bearerToken(r))

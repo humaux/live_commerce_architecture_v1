@@ -49,7 +49,7 @@ test("merge suggestions accept the frozen shape (server-masked recipient) and re
     {},
     { items: {}, },
     { items: [{ recipient_masked: "x***", order_ids: [a, b], extra: 1 }] },
-    { items: [{ recipient_name: "Synthetic Buyer", order_ids: [a, b] }] }, // the pre-0164 shape: a full name must never be accepted
+    { items: [{ recipient_name: "Synthetic Buyer", order_ids: [a, b] }] }, // the pre-0166 shape: a full name must never be accepted
     { items: [{ recipient_masked: "Synthetic Buyer", order_ids: [a, b] }] }, // a full name in the mask slot
     { items: [{ recipient_masked: "ab***", order_ids: [a, b] }] }, // two characters + ***
     { items: [{ recipient_masked: "x**", order_ids: [a, b] }] },

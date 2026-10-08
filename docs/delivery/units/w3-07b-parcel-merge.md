@@ -48,7 +48,7 @@ worktree `.worktrees/w3-07b-parcel-merge`（branch `unit/w3-07b-parcel-merge`）
   SECURITY DEFINER，`search_path=pg_catalog`，`identity.resolve_access(…,'fulfillment:write')`，订单 `FOR UPDATE` 按 id 排序（防死锁），
   EXECUTE 仅 `commerce_runtime`。`destination_hash` 在定义者内从订单 snapshot 计算，不收客户端值。
 - 只读 `fulfillment.read_merge_suggestions(p_token, p_store)`（`orders:read`）。
-- 修订 W3-U4（迁移 `0164_open_parcel_groups.sql`）：只读 `fulfillment.read_open_parcel_groups(p_hash, p_store)`（`orders:read`）+ 路由
+- 修订 W3-U4（迁移 `0166_open_parcel_groups.sql`）：只读 `fulfillment.read_open_parcel_groups(p_hash, p_store)`（`orders:read`）+ 路由
   `GET …/parcel-groups`（无 query/body/key）→ `{items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]}`，
   仅 OPEN 组、新→旧、≤200；`recipient_masked` 与订单列表同一掩码，不返回姓名/电话/地址/金额。UI 刷新后据此重建出货/解除面板。
 - ACL 钉子：`tests/foundation/manual_fulfilment_schema_test.go`（MF 期望行）、`merchant_orders_v2_acl_test.go`、`worker_authority_split_test.go` WAS02。

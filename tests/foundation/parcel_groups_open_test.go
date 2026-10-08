@@ -1,14 +1,14 @@
 package foundation_test
 
-// Purpose: W3-U4 amendment of W3-07B over REAL_PG and the real HTTP handler: GET /parcel-groups (migration 0164
+// Purpose: W3-U4 amendment of W3-07B over REAL_PG and the real HTTP handler: GET /parcel-groups (migration 0166
 //   fulfillment.read_open_parcel_groups) lists exactly the store's OPEN groups with version and masked members, so the orders page
 //   can rebuild ship/dissolve panels after a reload. Pins: empty store, newest first, SHIPPED/DISSOLVED absent, other store absent,
 //   orders:read authority (no token 401, fulfillment:write-only 403, foreign-store member 404), masking identical to the orders
 //   list (incl. leading ideographic space and a blank name), and no name/phone/address/amount in the body. W3-U4 finisher:
-//   GET /orders/merge-suggestions (0146 read_merge_suggestions, amended in place by 0164) is a LIST-level read the orders page
+//   GET /orders/merge-suggestions (0146 read_merge_suggestions, amended in place by 0166) is a LIST-level read the orders page
 //   fires on every load, so it returns recipient_masked (the list mask), never the full recipient name or phone.
 // Depends on: tcvEnv (stripe mode, card home orders), pgHome/pgCreate/pgShip helpers of parcel_groups_test.go, e.pgMemberOn
-//   (promotions_gate_test.go), the 0164 definer, routes /parcel-groups, /orders (v2 list), DELETE /parcel-groups/{id}.
+//   (promotions_gate_test.go), the 0166 definer, routes /parcel-groups, /orders (v2 list), DELETE /parcel-groups/{id}.
 // Used by: go test ./tests/foundation (-run '^TestParcelGroupOpenRead'); evidence class REAL_PG with MOCK Stripe fakes.
 
 import (

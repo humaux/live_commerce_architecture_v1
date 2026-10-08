@@ -31,7 +31,7 @@ export async function readMergeSuggestions(store: string, signal: AbortSignal): 
   }
 }
 
-/** Read the store's OPEN parcel groups (Go GET parcel-groups, orders:read; migration 0164). Throws OrderReadError like the order reads. */
+/** Read the store's OPEN parcel groups (Go GET parcel-groups, orders:read; migration 0166). Throws OrderReadError like the order reads. */
 export async function readOpenParcelGroups(store: string, signal: AbortSignal): Promise<OpenParcelGroup[]> {
   try {
     return parseOpenParcelGroups(await read(`/api/stores/${store}/parcel-groups`, signal));

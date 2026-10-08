@@ -104,7 +104,7 @@ export function ParcelMerge({
         setProblem(c.suggestionsUnavailable);
       },
     );
-    // Calls BFF GET parcel-groups -> Go fulfillment.read_open_parcel_groups (migration 0164): the OPEN groups, so ship/dissolve
+    // Calls BFF GET parcel-groups -> Go fulfillment.read_open_parcel_groups (migration 0166): the OPEN groups, so ship/dissolve
     // panels exist after a reload; the server's version replaces the session's so the dissolve CAS is live.
     readOpenParcelGroups(store, active.signal).then(
       (open) => {

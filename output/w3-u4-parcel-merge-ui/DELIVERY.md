@@ -1,5 +1,30 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+Migration references in historical prose below are normalized to the current allocation **0166**. Original command outputs and their historical counts/checksums remain unchanged; current merged R2 pin is **91** (0165 already merged).
+
+## Codex-4 migration addendum 2 — 2026-10-08 (current)
+
+**E3: requested migration-sensitive REAL_PG set passed, 9 PASS / 0 FAIL / 0 SKIP.** This addendum supersedes the earlier migration allocation and R2 pin. The separate CVS test-synchronization scope question remains pending; no CVS product/test changes are included here.
+
+- `git fetch origin && git merge origin/r3/integration`: fetched `18f82636efcda03351e141d9bbd14b523161dd26`, which includes PR #12 `9dcd6c54`; merge commit `28a154bff04944eca03b19040202faadea1b3f68`. The only conflict was the R2 comment/pin; retained trunk 90 first to capture the actual RED count mismatch before correcting it.
+- Renamed this unmerged parcel migration to `migrations/0166_open_parcel_groups.sql`; current code, SQL version labels, test comments, contract and unit-doc references now use 0166. SQL logic is unchanged. R2 pin is exactly **91**, after merged 0165's 90.
+- CRP02 manual hold-back now records 0166 with its real checksum, removes it from the ledger for the ordered populated upgrade, applies it, and asserts exactly one checksum-matching ledger row. KC03 and MCI02 derive held migrations by numeric glob, automatically including 0166.
+- All **155 files under merged trunk's migrations directory** compare byte-for-byte equal (including 0165); relative to trunk the only migration addition is 0166. `codex4-migration-integrity.json` records trunk/base hashes, every verified migration path, changed-source hashes, and all nine selected test names. Historical raw logs/hash evidence remain original.
+
+| Command | Exit | Evidence |
+|---|---:|---|
+| `git fetch origin && git merge origin/r3/integration` | fetch 0; initial merge 1 (one conflict), resolution/commit 0 | `28a154bf`; ancestor check for 9dcd6c54 exit 0 |
+| `bash scripts/dev/test-focused.sh '^TestR2IntegrationUpgradeFromReleaseHead$'` (before correction) | **1 RED** | actual migration count 91, expected 90; `codex4-migration-pin-red.*` |
+| `bash scripts/dev/test-focused.sh '^(TestR2IntegrationUpgradeFromReleaseHead\|TestLiveClaimsKC03Schema\|TestClaimsRetentionCRP02Schema\|TestParcel.*)$'` | **0 GREEN** | 9 PASS, 0 FAIL, 0 SKIP; `codex4-migration-focused-green.*` (exact argv in JSON) |
+| `bash scripts/dev/test-node.sh` | 0 | 648 tests; `codex4-migration-node.*` |
+| `bash scripts/dev/check-gates.sh` | 0 | `codex4-migration-check-gates.*` |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | `codex4-migration-typecheck.*` |
+| `git diff --check` and source-hash verification | 0 | Source bytes match focused-gate manifest |
+
+NOT_RUN after this merge/renumber: browser modes and Linux CI (prior browser results remain bound to their recorded earlier source). The user's migration-sensitive REAL_PG set and local Node/structural/type gates above were rerun. No push, deployed/shared database mutation or modification of a merged migration.
+
+---
+
 ## Codex-4 owner batch — 2026-10-08 (current handoff)
 
 **Status: local requested gates GREEN; privacy P1 fixed (E3, MOCK/REAL_PG). Original Linux CVS close-stall root cause remains UNKNOWN.** This record does not claim that the historical CI failure has a proven product fix. Integrator K3 review and same-head Linux CI remain required; no push or production action performed.
@@ -87,9 +112,9 @@
 
 ## Finisher (Sonnet)
 
-- Role/model: Claude Sonnet 5.5 (finisher), same worktree/branch `unit/w3-u4-parcel-merge-ui`, base = Kimi UI + trunk `0d6b4b5f` (`0adb2e8e`). Fixes the independent Opus review that BLOCKED the unit. Migration number 0164 was given by the integrator.
+- Role/model: Claude Sonnet 5.5 (finisher), same worktree/branch `unit/w3-u4-parcel-merge-ui`, base = Kimi UI + trunk `0d6b4b5f` (`0adb2e8e`). Fixes the independent Opus review that BLOCKED the unit. Migration number 0166 was given by the integrator.
 - Evidence class: REAL_PG (backend read, focused) + MOCK (stub upstream for the BFF route test) + BROWSER NOT_RUN (specs written, CI-only).
-- Commits: `0a414f43` BFF, `17e0e58e` + docs commit backend (0164), `3b133aa1` UI + model tests, `b4177737` spec + Go harness, `2b181589` header, `1f857118` test-node, `0a5bd9e8` spec label; final SHA in the hand-off message.
+- Commits: `0a414f43` BFF, `17e0e58e` + docs commit backend (0166), `3b133aa1` UI + model tests, `b4177737` spec + Go harness, `2b181589` header, `1f857118` test-node, `0a5bd9e8` spec label; final SHA in the hand-off message.
 
 ### Findings -> change -> test -> result
 
@@ -97,8 +122,8 @@
 |---|---|---|---|
 | P1-1 BFF dissolve always 422 (`request.body !== null` on a DELETE; Next 16 gives every non-GET an empty body stream) | `route.ts` ~l.168: only a GET is judged by `request.body === null`; the DELETE keeps the content-length / transfer-encoding / Idempotency-Key fences (its body is never forwarded: `init` has none) | NEW `tests/admin/parcels-bff.test.ts` imports the REAL `[...resource]/route.ts` (node:module `registerHooks` resolves `@/`, extensionless libs, `server-only`, `next/*.js`; stub Go upstream) and sends a DELETE with an empty body stream like Next. Red: `red-finisher-bff.log` (422 !== 200). Green: `green-finisher-bff.log` | red 1 -> green 0 (5/5) |
 | P2 CAS query only checked when the URL has `?` | `route.ts`: `parcel === "delete" ? !validParcelDeleteQuery(url) : parcel && url.includes("?")` -> 422 | same file, "every parcel DELETE must carry exactly one expected_version" (9 bad queries incl. none, `?`, 0, 03, dup, extra). Red after fixing only the body fence: `red-finisher-bff-2.log` (200 !== 422); green after | red 1 -> green 0 |
-| P1-2 OPEN groups stranded after reload | **0164** `fulfillment.read_open_parcel_groups(p_hash,p_store)` (SECURITY DEFINER, owner commerce_checkout_writer, EXECUTE commerce_runtime only, REVOKE PUBLIC, COMMENT, `orders:read`, final access recheck like its siblings, <=200 OPEN groups newest first, members `{order_id, order_number, recipient_masked}`; mask = the 0110 list expression verbatim). Go `merchantorders.OpenParcelGroups` (+ `normalizeRecipientMask` extracted from `list_v2.go` so list and group read share ONE mask rule; any malformed mask degrades to "—") and route `GET /v1/admin/stores/{store_id}/parcel-groups` (orders:read) in `registerParcelRoutes`. BFF allowlist (exact grammar, no query), strict `parseOpenParcelGroups`, `readOpenParcelGroups`, pure `reconcileGroups`; `ParcelMerge` reads the groups on every load/tick (a read that started before a create is discarded) so ship/dissolve panels, row badges and the single-order hint exist after a reload; the server's version replaces the session's so the dissolve CAS is live | DB-free `TestParcelRoutesTransportRules` +4 cases (401 admitted, `?state=OPEN` 422, bare `?` 422, key 422): red with the route removed `red-finisher-open-route.log` (405), green. REAL_PG `TestParcelGroupOpenRead`: empty -> `"items":[]`; OPEN group listed with version 1 + masked members, exact keys, no name/phone/address/amount in the body; newest first; SHIPPED + DISSOLVED + other store absent (4 groups in PG, 2 listed); no token 401, `fulfillment:write` alone 403, foreign-store member 404, other store (own member) empty; mask identical to the v2 orders list row by row incl. leading U+3000 and a blank name; read writes no rows; EXECUTE limited to commerce_runtime. Red without the migration: `red-finisher-open-read.log` (503), green `green-finisher-open-read.log`. Node: `parcels-model.test.ts` parser + reconcile (red `red-finisher-model.log`: no such exports) | focused PG exit 0 |
-| Pins | `r2_integration_upgrade_test.go`: 87 -> **88** with the comment line `0164 (W3-U4 open parcel-group read) adds one more: 87 -> 88` (integrator re-unions with 0162/0163 at merge); `manual_fulfilment_schema_test.go` MF02, `merchant_orders_v2_acl_test.go` PickListReadAuthority and `worker_authority_split_test.go` WAS02 gain the new definer (no function-count pin exists for the fulfillment schema; the T06 count is integration.* only) | `TestR2IntegrationUpgradeFromReleaseHead`, `TestManualFulfilmentMF02Schema`, `TestMerchantOrdersV2PickListReadAuthority`, `TestWAS02*` all PASS in the focused run | 0 |
+| P1-2 OPEN groups stranded after reload | **0166** `fulfillment.read_open_parcel_groups(p_hash,p_store)` (SECURITY DEFINER, owner commerce_checkout_writer, EXECUTE commerce_runtime only, REVOKE PUBLIC, COMMENT, `orders:read`, final access recheck like its siblings, <=200 OPEN groups newest first, members `{order_id, order_number, recipient_masked}`; mask = the 0110 list expression verbatim). Go `merchantorders.OpenParcelGroups` (+ `normalizeRecipientMask` extracted from `list_v2.go` so list and group read share ONE mask rule; any malformed mask degrades to "—") and route `GET /v1/admin/stores/{store_id}/parcel-groups` (orders:read) in `registerParcelRoutes`. BFF allowlist (exact grammar, no query), strict `parseOpenParcelGroups`, `readOpenParcelGroups`, pure `reconcileGroups`; `ParcelMerge` reads the groups on every load/tick (a read that started before a create is discarded) so ship/dissolve panels, row badges and the single-order hint exist after a reload; the server's version replaces the session's so the dissolve CAS is live | DB-free `TestParcelRoutesTransportRules` +4 cases (401 admitted, `?state=OPEN` 422, bare `?` 422, key 422): red with the route removed `red-finisher-open-route.log` (405), green. REAL_PG `TestParcelGroupOpenRead`: empty -> `"items":[]`; OPEN group listed with version 1 + masked members, exact keys, no name/phone/address/amount in the body; newest first; SHIPPED + DISSOLVED + other store absent (4 groups in PG, 2 listed); no token 401, `fulfillment:write` alone 403, foreign-store member 404, other store (own member) empty; mask identical to the v2 orders list row by row incl. leading U+3000 and a blank name; read writes no rows; EXECUTE limited to commerce_runtime. Red without the migration: `red-finisher-open-read.log` (503), green `green-finisher-open-read.log`. Node: `parcels-model.test.ts` parser + reconcile (red `red-finisher-model.log`: no such exports) | focused PG exit 0 |
+| Pins | `r2_integration_upgrade_test.go`: 87 -> **88** with the comment line `0166 (W3-U4 open parcel-group read) adds one more: 87 -> 88` (integrator re-unions with 0162/0163 at merge); `manual_fulfilment_schema_test.go` MF02, `merchant_orders_v2_acl_test.go` PickListReadAuthority and `worker_authority_split_test.go` WAS02 gain the new definer (no function-count pin exists for the fulfillment schema; the T06 count is integration.* only) | `TestR2IntegrationUpgradeFromReleaseHead`, `TestManualFulfilmentMF02Schema`, `TestMerchantOrdersV2PickListReadAuthority`, `TestWAS02*` all PASS in the focused run | 0 |
 | Contract | `contracts/manual-fulfilment-v1.md` Amendment W3-07B Routes line + Evidence line; `docs/delivery/units/w3-07b-parcel-merge.md` and `w3-u4-...md` notes | - | - |
 | P2 banner shows the full recipient name | Chose the smaller change: **mask client-side at parse time** (`maskRecipient`, the 0110 rule: first non-blank char + `***`, "—" for blank/unprintable; the full name is dropped in `parseMergeSuggestions`, never kept in React state). Not changing `read_merge_suggestions` (0146 is applied and frozen; a CREATE OR REPLACE of a 40-line definer + Go struct + contract field + the 0146 tests would be a larger, riskier diff for the same visible result; the orders:read caller already sees the name in the order detail). Banner and panel members show `S***` | `parcels-model.test.ts` mask vectors (王小明, leading U+3000 / NBSP / zero-width, emoji initial, blank, control) + "the full name must not survive parsing"; spec step A asserts `S***` and no `Synthetic Buyer` | node 0 |
 | P2 merge error vanishes when no suggestions remain | `ParcelGroup.tsx`: the banner section (rule + problem) renders while `problem` is set even with 0 suggestions; early return only when nothing to show | spec step "uncertain dissolve reconciled" asserts `parcel-merge-problem` with 0 suggestions of that pair | NOT_RUN (CI) |
@@ -130,7 +155,7 @@
 
 ### CI gates (integrator; RAM-heavy, NOT run locally)
 
-`--browser-merchant-orders-ui` (orders-ui.spec + parcel-merge.spec + PG assertions), `--browser-merchant-orders-bff`, `--browser-home-cod`, `--browser-picklist`, `--browser-click-sweep`, `--browser-visual-lint`, foundation shards (incl. `TestParcelGroupOpenRead` in g06; full `TestR2IntegrationUpgrade*` and legacy upgrade shards because 0164 adds a function).
+`--browser-merchant-orders-ui` (orders-ui.spec + parcel-merge.spec + PG assertions), `--browser-merchant-orders-bff`, `--browser-home-cod`, `--browser-picklist`, `--browser-click-sweep`, `--browser-visual-lint`, foundation shards (incl. `TestParcelGroupOpenRead` in g06; full `TestR2IntegrationUpgrade*` and legacy upgrade shards because 0166 adds a function).
 
 ### NOT_RUN / BLOCKED
 
@@ -141,7 +166,7 @@
 
 ### Integrator to-do
 
-- Migration `0164_open_parcel_groups.sql` (given number); re-union the R2 count (87 -> 88 here) with 0162/0163; privilege pins updated in MF02, PickListReadAuthority, WAS02 (EXECUTE commerce_runtime only).
+- Migration `0166_open_parcel_groups.sql` (given number); re-union the R2 count (87 -> 88 here) with 0162/0163; privilege pins updated in MF02, PickListReadAuthority, WAS02 (EXECUTE commerce_runtime only).
 - Regenerate `docs/architecture/DEPENDENCIES.md`; optionally `node scripts/dev/shard-plan.mjs --write` so `TestParcelGroupOpenRead` leaves the catch-all shard.
 - Risk accepted: the open-groups read lists the 200 newest OPEN groups (ponytail comment in the migration); it fails closed (503 at the Go validator) on an OPEN group with <2 or >20 members, which W3-08B's cancel keeps from existing.
 
@@ -151,14 +176,14 @@
 
 - Role/model: Claude Sonnet 5.5, same worktree/branch, HEAD before this round `03277408`. Fixes the independent Opus review (MERGE-AFTER-FIXES) P1-A and the MOU browser-gate failure (CI run 37609774297 job 112754029498: all 10 orders-ui.spec cases fail at `expect(detailCalls).toBe(before)` 0 -> 1).
 - Evidence class: REAL_PG (backend) + node (UI model) + BROWSER NOT_RUN (CI).
-- Root cause: `fulfillment.read_merge_suggestions` (0146) returned the FULL `recipient_name`; the orders page fetches it on every load, so a detail-level field reached the browser without an expand. The previous finisher's client-side `maskRecipient` only hid it on screen (the 0146 "frozen" argument is void: 0164 is unmerged and applied to no shared DB, so CREATE OR REPLACE inside 0164 is safe). The harness also counted the suggestions path as a detail read (any `/orders/<x>`).
+- Root cause: `fulfillment.read_merge_suggestions` (0146) returned the FULL `recipient_name`; the orders page fetches it on every load, so a detail-level field reached the browser without an expand. The previous finisher's client-side `maskRecipient` only hid it on screen (the 0146 "frozen" argument is void: 0166 is unmerged and applied to no shared DB, so CREATE OR REPLACE inside 0166 is safe). The harness also counted the suggestions path as a detail read (any `/orders/<x>`).
 
 | Change | File | Test (red -> green) |
 |---|---|---|
-| 0164 `CREATE OR REPLACE FUNCTION fulfillment.read_merge_suggestions(bytea,uuid)` emits `{recipient_masked, order_ids}`; body = 0146's, mask applied AFTER the GROUP BY on `min(c.recipient_name)` with the 0110 expression and escapes verbatim; `SECURITY DEFINER SET search_path=pg_catalog` repeated, then OWNER/REVOKE/GRANT/COMMENT re-run (COMMENT says recipient_masked) | `migrations/0164_open_parcel_groups.sql` | NEW REAL_PG `TestParcelGroupMergeSuggestionsMasked`: 3 buyers (plain, leading U+3000, blank name) -> exactly `{recipient_masked, order_ids}`, masks `王***` / `王***` / `—`, equal to the v2 orders-list mask per order, raw body free of the full name, phone, `recipient_name`. Red on the old function: `red-finisher2-suggestions-mask.log` (leaks 王小明, exit 1). Green: `green-finisher2-focused.log` |
+| 0166 `CREATE OR REPLACE FUNCTION fulfillment.read_merge_suggestions(bytea,uuid)` emits `{recipient_masked, order_ids}`; body = 0146's, mask applied AFTER the GROUP BY on `min(c.recipient_name)` with the 0110 expression and escapes verbatim; `SECURITY DEFINER SET search_path=pg_catalog` repeated, then OWNER/REVOKE/GRANT/COMMENT re-run (COMMENT says recipient_masked) | `migrations/0166_open_parcel_groups.sql` | NEW REAL_PG `TestParcelGroupMergeSuggestionsMasked`: 3 buyers (plain, leading U+3000, blank name) -> exactly `{recipient_masked, order_ids}`, masks `王***` / `王***` / `—`, equal to the v2 orders-list mask per order, raw body free of the full name, phone, `recipient_name`. Red on the old function: `red-finisher2-suggestions-mask.log` (leaks 王小明, exit 1). Green: `green-finisher2-focused.log` |
 | P2: the open-groups function's regex used invisible literal U+200B..U+200F/U+2028/U+FEFF characters -> the 0110 escaped form (behaviour identical, `TestParcelGroupOpenRead` still green incl. U+3000/blank rows) | same | `TestParcelGroupOpenRead` |
 | `MergeSuggestion.RecipientMasked` (`json:"recipient_masked"`), each item validated with `normalizeRecipientMask` like `OpenParcelGroups` | `internal/merchantorders/parcels.go` | REAL_PG test above (through the real HTTP handler) |
-| UI: `parseMergeSuggestions` takes `{recipient_masked, order_ids}` with the same mask-shape check as `parseOpenParcelGroups` (shared `maskedRecipient`); the pre-0164 `{recipient_name}` shape and a full name in the mask slot are refused; `maskRecipient`, `leadingBlank`, `recipient()` and their test vectors DELETED | `apps/admin/lib/parcels-model.ts`, `tests/admin/parcels-model.test.ts` | red against the old model `red-finisher2-model.log` (1 fail), green 9/9 |
+| UI: `parseMergeSuggestions` takes `{recipient_masked, order_ids}` with the same mask-shape check as `parseOpenParcelGroups` (shared `maskedRecipient`); the pre-0166 `{recipient_name}` shape and a full name in the mask slot are refused; `maskRecipient`, `leadingBlank`, `recipient()` and their test vectors DELETED | `apps/admin/lib/parcels-model.ts`, `tests/admin/parcels-model.test.ts` | red against the old model `red-finisher2-model.log` (1 fail), green 9/9 |
 | Contract: suggestions DTO is `{items:[{recipient_masked, order_ids}]}` | `contracts/manual-fulfilment-v1.md` (Routes line) | - |
 | Harness: only the exact `/orders/merge-suggestions` suffix is exempt from `detailCalls` (list-level, server-masked read); the wrapper records that endpoint's response bodies and fails the run (`t.Errorf` in the handler, `t.Fatalf` after the parcel run) if one contains `Synthetic Buyer`, `900000001` or `recipient_name`, or if none was observed (non-vacuous). `orderCalls` / `stripped` unchanged | `tests/foundation/browser_merchant_orders_ui_test.go` | `go vet -tags browser ./tests/foundation` exit 0; browser NOT_RUN |
 
@@ -176,7 +201,7 @@
 
 ### Integrator to-do
 
-- No new migration file (R2 pin stays 89; T06 function count unchanged: the suggestions function is replaced, not added). 0164 now also carries the masked `read_merge_suggestions`; if 0164 was ever applied to a shared DB, ship the replace as a new migration instead.
+- No new migration file (R2 pin stays 89; T06 function count unchanged: the suggestions function is replaced, not added). 0166 now also carries the masked `read_merge_suggestions`; if 0166 was ever applied to a shared DB, ship the replace as a new migration instead.
 
 ---
 
@@ -195,7 +220,7 @@ Commands: `bash scripts/dev/test-focused.sh '^(TestParcel|TestManualFulfilmentMF
 
 ## Finisher 4 (Sonnet) — PR #2 round: MOU root cause 2, Codex P2s, trunk merge
 
-- Trunk merged (`origin/r3/integration` 1aad42d0, PR #6 + PR #4 0163): clean, R2 pin is 90 (0163 + 0164).
+- Trunk merged (`origin/r3/integration` 1aad42d0, PR #6 + PR #4 0163): clean, R2 pin is 90 (0163 + 0166).
 - **MOU run 37623124987 root cause** (log: `pf[ship-a] begin: conflicting request or version`, the FIRST parcel order): the harness flips the shared delivery service to `cvs_familymart` (version 2) for its pickup fixture before the parcel stage, and `bcHarness.prepare` hard-codes `ServiceVersion: 1`; `checkout.go:315` refuses a stale service version (and a home destination on a CVS service). Reproduced REAL_PG in `TestParcelFixtureSameBuyerTwoOrders` (flip the service first): red `red-finisher4-service-flip.log`. Fix: `pfRestoreHome` flips the service back to home (expected version 2 -> 3) and `pfBuyer` stamps every checkout input with that live version; the harness calls it before the parcel stage. parcel-merge.spec.ts never ran in that CI (setup failed first), so there is still no browser evidence for steps A-H.
 - Codex P2 4207192912: `groupOfOrder` (parcels-model.ts) prefers the OPEN group over retained history; MerchantOrders `groupOf` uses it. Red: `red-finisher4-groupof.log` (missing export), green in `node-finisher4.log`.
 - Codex P2 4207192932: `ParcelMerge.commit()` moves `groupsRef.current` before `onGroups`; `replace`/`dismiss`/create/reconcile all start from the ref, never from the render-time `groups` closure.

@@ -1,11 +1,11 @@
--- 0164_open_parcel_groups.sql — W3-U4 (unit w3-u4-parcel-merge-ui): read the store's OPEN parcel groups so the orders page can show
+-- 0166_open_parcel_groups.sql — W3-U4 (unit w3-u4-parcel-merge-ui): read the store's OPEN parcel groups so the orders page can show
 --   their ship/dissolve panels after a reload (0146 gave the UI no way to list groups; a reload used to strand an OPEN group).
 -- Purpose: one read-only SECURITY DEFINER, fulfillment.read_open_parcel_groups(p_hash, p_store) -> jsonb
 --   [{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}], newest group first, at most 200
 --   groups (2..20 members each, so at most 4000 member rows). Display fields only: the recipient is MASKED with the exact
 --   expression the orders list uses (0110 `recipient_masked`: first non-whitespace character + '***', '—' for a blank name);
 --   no full name, phone, address, amount or payment field is ever returned. SHIPPED and DISSOLVED groups are not listed.
---   Also amends fulfillment.read_merge_suggestions (0146) IN PLACE (CREATE OR REPLACE; 0164 is unmerged and applied to no shared
+--   Also amends fulfillment.read_merge_suggestions (0146) IN PLACE (CREATE OR REPLACE; 0166 is unmerged and applied to no shared
 --   DB): it returned the full recipient_name on a read the orders page fires on every load, so it now returns
 --   {recipient_masked, order_ids} with the same list mask, computed after the GROUP BY (P1-A of the independent review).
 -- Depends on: 0146 (fulfillment.parcel_groups / parcel_group_orders and their commerce_checkout_writer SELECT + RLS policies),
@@ -13,7 +13,7 @@
 --   commerce_runtime and commerce_checkout_writer.
 -- Used by: internal/merchantorders/parcels.go (OpenParcelGroups), internal/httpapi/parcels.go (GET /parcel-groups), the admin
 --   orders page (both reads). Tests: TestParcelGroupOpenRead and TestParcelGroupMergeSuggestionsMasked (REAL_PG),
---   TestMerchantOrdersV2PickListReadAuthority, MF02, WAS02, r2_integration_upgrade_test (count 87 -> 88; the replace adds none).
+--   TestMerchantOrdersV2PickListReadAuthority, MF02, WAS02, r2_integration_upgrade_test (count 90 -> 91 after merged 0165; the replace adds none).
 -- Invariants: orders:read only (no write, no lock, no GUC left behind: set_config is transaction-local); tenant and store come
 --   from identity.resolve_access, never from the caller; SECURITY DEFINER SET search_path=pg_catalog, REVOKE ALL FROM PUBLIC,
 --   EXECUTE commerce_runtime only (same shape as read_merge_suggestions / read_parcel_group_ids); I05 (reads no payments.*).
@@ -22,7 +22,7 @@
 DO $$
 BEGIN
  IF to_regclass('fulfillment.parcel_groups') IS NULL OR to_regclass('fulfillment.parcel_group_orders') IS NULL THEN
-  RAISE EXCEPTION '0164 requires 0146 (parcel groups)'; END IF;
+  RAISE EXCEPTION '0166 requires 0146 (parcel groups)'; END IF;
 END $$;
 
 CREATE FUNCTION fulfillment.read_open_parcel_groups(p_hash bytea,p_store uuid) RETURNS jsonb
@@ -109,4 +109,4 @@ END $$;
 ALTER FUNCTION fulfillment.read_merge_suggestions(bytea,uuid) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION fulfillment.read_merge_suggestions(bytea,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fulfillment.read_merge_suggestions(bytea,uuid) TO commerce_runtime;
-COMMENT ON FUNCTION fulfillment.read_merge_suggestions(bytea,uuid) IS 'internal/fulfillment Parcels.Suggestions only; EXECUTE commerce_runtime. orders:read; [{recipient_masked, order_ids}] of one owner + one destination hash, every order passing parcel_merge_block. recipient_masked is the orders-list mask (first non-blank character + ***, or the dash placeholder), never the full name or phone (0164). Read only.';
+COMMENT ON FUNCTION fulfillment.read_merge_suggestions(bytea,uuid) IS 'internal/fulfillment Parcels.Suggestions only; EXECUTE commerce_runtime. orders:read; [{recipient_masked, order_ids}] of one owner + one destination hash, every order passing parcel_merge_block. recipient_masked is the orders-list mask (first non-blank character + ***, or the dash placeholder), never the full name or phone (0166). Read only.';

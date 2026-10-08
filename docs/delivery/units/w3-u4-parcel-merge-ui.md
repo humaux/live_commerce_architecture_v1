@@ -7,7 +7,7 @@
 ## Integrator 裁决（覆盖正文）
 - 文案必须写明「只合併包裹，不合併付款或金額；每張訂單仍各自計價、各自收到出貨通知」。COD 与超商订单不显示合并入口。
 - `MerchantOrders.tsx` 串行：在 W3-U1（回填）与 W3-U1b（拣货）之后。
-- 修订（Opus 审查后，finisher）：reload 后 OPEN 组不得搁浅 → 新增只读 `GET …/parcel-groups`（迁移 0164，见 `w3-07b-parcel-merge.md`），订单页每次加载据此重建出货/解除面板；
+- 修订（Opus 审查后，finisher）：reload 后 OPEN 组不得搁浅 → 新增只读 `GET …/parcel-groups`（迁移 0166，见 `w3-07b-parcel-merge.md`），订单页每次加载据此重建出货/解除面板；
   提示条只显示掩码收件人（与列表行同规则）；合并错误在无建议时仍可见；不确定的解除合并在 `group_not_open` 后对账（重取 OPEN 组）。
 
 ## 范围

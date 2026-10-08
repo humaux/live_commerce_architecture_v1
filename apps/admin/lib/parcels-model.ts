@@ -1,6 +1,6 @@
 // Purpose: strict exact-key parsers for the W3-07B parcel-group DTOs (BFF parcel routes -> Go internal/httpapi/parcels.go
 //   -> internal/merchantorders/parcels.go; manual-fulfilment-v1 Amendment W3-07B) and the pure reconcile of the session's group
-//   panels with the server's OPEN-groups read (W3-U4, migration 0164), plus groupOfOrder (OPEN group before retained history). The server stays the authority for every write and for the
+//   panels with the server's OPEN-groups read (W3-U4, migration 0166), plus groupOfOrder (OPEN group before retained history). The server stays the authority for every write and for the
 //   recipient mask (suggestions and group members both arrive masked); these parsers only refuse malformed reads, so a drifting
 //   Go response fails closed.
 // Depends on: ./orders-model.ts (canonicalUUID, parseShipmentVersion, ShipmentVersion).
@@ -69,7 +69,7 @@ function version(value: unknown): number {
   return value as number;
 }
 
-// recipient_masked as the server sends it (orders-list rule, migrations 0110/0164): "—" or exactly one character + "***". The UI
+// recipient_masked as the server sends it (orders-list rule, migrations 0110/0166): "—" or exactly one character + "***". The UI
 // only validates the shape; any other value (a full name from a drifting server) fails closed instead of being shown.
 function maskedRecipient(value: unknown): string {
   if (typeof value !== "string" || (value !== "—" && (Array.from(value).length !== 4 || !value.endsWith("***"))))
@@ -77,7 +77,7 @@ function maskedRecipient(value: unknown): string {
   return value;
 }
 
-/** GET orders/merge-suggestions: {items:[{recipient_masked, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps, mask 0164). */
+/** GET orders/merge-suggestions: {items:[{recipient_masked, order_ids}]}; at most 100 suggestions of 2..20 orders (0146 caps, mask 0166). */
 export function parseMergeSuggestions(value: unknown): MergeSuggestion[] {
   const v = exact(value, ["items"]);
   if (!Array.isArray(v.items) || v.items.length > 100) throw new Error("unavailable");
@@ -90,7 +90,7 @@ export function parseMergeSuggestions(value: unknown): MergeSuggestion[] {
 const isoInstant = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
 
 /**
- * GET parcel-groups (migration 0164): {items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]};
+ * GET parcel-groups (migration 0166): {items:[{group_id, version, created_at, members:[{order_id, order_number, recipient_masked}]}]};
  * at most 200 OPEN groups of 2..20 members; a group id or an order id appears once in the whole answer; order_number is LC-<id>
  * and recipient_masked is "—" or one character + "***" (the list rule). Anything else fails closed.
  */

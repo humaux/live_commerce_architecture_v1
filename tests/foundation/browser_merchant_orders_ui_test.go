@@ -279,7 +279,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 		if strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/orders") {
 			orderCalls.Add(1)
 			// Only the exact /orders/merge-suggestions suffix is exempt from the detail count: it is a LIST-level read the orders page
-			// fires on every load (like the list itself), and since migration 0164 it is server-masked. Any other /orders/<x> path,
+			// fires on every load (like the list itself), and since migration 0166 it is server-masked. Any other /orders/<x> path,
 			// including a longer merge-suggestions path, still counts as a detail read.
 			suggestions := strings.HasSuffix(r.URL.Path, "/orders/merge-suggestions")
 			if !suggestions && strings.Contains(strings.TrimPrefix(r.URL.Path, "/v1/admin/stores/"), "/orders/") {

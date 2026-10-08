@@ -4,7 +4,7 @@
 //   of the single/bulk shipment commands. A group merges PARCELS only: it never reads or writes payments, totals or refunds (I05).
 // Depends on: fulfillment.read_merge_suggestions / create_parcel_group / dissolve_parcel_group / begin_parcel_group_shipment /
 //   mark_parcel_group_shipped / guard_parcel_group_orders / read_parcel_group_ids (migration 0146), fulfillment.read_open_parcel_groups
-//   and the masked read_merge_suggestions replacement (migration 0164, W3-U4), normalizeRecipientMask (list_v2.go), RecordShipment (shipments.go,
+//   and the masked read_merge_suggestions replacement (migration 0166, W3-U4), normalizeRecipientMask (list_v2.go), RecordShipment (shipments.go,
 //   fulfillment.record_manual_shipment 0107), platform.RequirePermission (second authority fence), command.
 // Used by: internal/httpapi/parcels.go (routes), internal/httpapi/shipments.go (single PUT guard), internal/merchanttools/
 //   tracking_import.go (bulk guard), picklist.go / carrier_export.go (group annotation + adjacency).
@@ -53,7 +53,7 @@ type ParcelGroup struct {
 }
 
 // MergeSuggestion is one "same buyer, same address" candidate set (2..20 orders) for the merchant to confirm. The recipient is
-// MASKED like the orders list (0164): the orders page fetches suggestions on every load, so this list-level read never carries the
+// MASKED like the orders list (0166): the orders page fetches suggestions on every load, so this list-level read never carries the
 // full name.
 type MergeSuggestion struct {
 	RecipientMasked string   `json:"recipient_masked"`
@@ -146,7 +146,7 @@ var parcelSQL = map[string]string{
 }
 
 // MergeSuggestions lists the mergeable same-buyer same-address order sets (orders:read). Read only; the recipient is masked in SQL
-// (fulfillment.read_merge_suggestions, 0164) and re-validated here with normalizeRecipientMask, so a bad mask degrades to "—".
+// (fulfillment.read_merge_suggestions, 0166) and re-validated here with normalizeRecipientMask, so a bad mask degrades to "—".
 func MergeSuggestions(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) ([]MergeSuggestion, error) {
 	if tx == nil || !validAuthorityInput(scope, token) {
 		return nil, command.ErrInvalid
@@ -169,7 +169,7 @@ func MergeSuggestions(ctx context.Context, tx pgx.Tx, scope platform.Scope, toke
 }
 
 // OpenParcelGroups lists the store's OPEN parcel groups, newest first, at most 200 (orders:read). Read only: SHIPPED and DISSOLVED
-// groups never appear, members carry masked recipients only. Calls fulfillment.read_open_parcel_groups (0164, W3-U4 amendment).
+// groups never appear, members carry masked recipients only. Calls fulfillment.read_open_parcel_groups (0166, W3-U4 amendment).
 func OpenParcelGroups(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string) ([]OpenParcelGroup, error) {
 	if tx == nil || !validAuthorityInput(scope, token) {
 		return nil, command.ErrInvalid
