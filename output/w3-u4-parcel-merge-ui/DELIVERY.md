@@ -1,5 +1,29 @@
 # W3-U4 合并出货 UI (parcel-merge UI) — delivery record
 
+## Inbox trunk union merge — current PR #2 batch
+
+Merge commit **`4c51ddff25e4cb43590fedcdf565429a00b12d58`** combines local `1ee8afaa12082c66ac6a13b0a8ed2226686e5ff0` with fetched `origin/r3/integration` **`f2ac619f15be832475b37ffabd4bbd497e5c4bb3`**, which contains merged PR #8. No rebase, force-push or push.
+
+Actual conflicts were the shared BFF route-admission condition and Playwright suite table. Both were resolved as a union: retain parcel AND inbox admission, `parcel-merge-ui` with parcel-merge.spec.ts AND `inbox` with inbox-ui.spec.ts/inbox-bundle-ui.spec.ts. The script usage/allow lists, GATES rows and contract merged automatically. Both parents'79 allowed modes and79 documented mode identifiers remain; inbox calibration guidance and the existing merchant-orders/parcel invocation remain intact. No product-choice conflict occurred.
+
+**E3 validation on merge source4c51ddff:**
+
+| Command / check | Exit | Evidence in inbox-union/ |
+|---|---:|---|
+| `git fetch origin && git merge origin/r3/integration` | initial merge1 (two conflicts), resolution/commit0 | parents and merge SHA in union-proof.json |
+| Automated comparison against BOTH parents' mode/usage/GATES sets, both suite mappings and route union | 0 | union-proof.json, source hashes verified |
+| `bash -n scripts/dev/test-local.sh` | 0 | shell syntax checked |
+| `bash scripts/dev/check-gates.sh` | 0 | **79 modes, all documented; every tracked test file is run**; check-gates.json/log |
+| `bash scripts/dev/test-node.sh` | 0 | 792 tests, including both real-route families; node.json/log |
+| `pnpm --filter @live-commerce/admin exec tsc --noEmit` | 0 | typecheck.json/log |
+| Diff whitespace check of the resolved/registry files against incoming trunk | 0 | resolution scope only |
+
+The pre-merge whole-index whitespace check returned2 only for incoming historical PR8 raw logs (`cvs-addendum-baseline.log` progress carriage returns and `protocol-private-evidence-typecheck.log` trailing blank line). Those already-merged evidence files were preserved. Resolution source passes its scoped check; no ignored failure is represented as a green whole-index check.
+
+This merge does **not** resolve the previous round's unproven Studio native-picker root. That remains the explicit open item in the following section. Browser/PG reruns after this registry merge are NOT_RUN; this turn's requested mode-documentation gate and the additional Node/type checks are green. Authoritative logs are retained in the primary checkout at `output/w3-u4-parcel-merge-ui/inbox-union/`.
+
+---
+
 ## Round packet 973ed2d0 — picklist repaired; Studio root UNRESOLVED
 
 **Partial handoff, not a claim that both CI failures are fixed.** Picklist is repaired with E3 red→green evidence. Studio's first failed operation is identified, but a product root cause has not been proven; no speculative Studio product or acceptance-test change is included. CVS passed Linux CI on973 per integrator and is CLOSED; this round's requested local CVS regression also passed.
