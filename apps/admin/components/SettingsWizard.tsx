@@ -75,6 +75,12 @@ import {
 } from "@/lib/settings-draft";
 import "./settings.css";
 
+// A missing/unresolved read is not a version conflict. Do not offer Save until
+// the target's baseline is known; retain baseline()'s real stale-version guard.
+function hasBaseline(observed: Observation | null, target: string) {
+  return !!observed && !!target && observed.target === target && observed.version >= 0;
+}
+
 /** Owns the merchant setup sequence and composes integration settings cards. User actions submit setup changes through settings-client; nested cards own their commands. */
 export function SettingsWizard({
   locale,
@@ -1124,7 +1130,7 @@ export function SettingsWizard({
         const saved = value as Policy;
         setPolicy(saved);
         saveDraft({
-          ...draft,
+          ...draftRef.current,
           reference: "",
           policyObservation: {
             target: `${saved.market_id}:${saved.country}:${draft.serviceCode}`,
@@ -1159,7 +1165,7 @@ export function SettingsWizard({
         ]);
         commitDraft(
           {
-            ...draft,
+            ...draftRef.current,
             serviceObservation: {
               target: `${saved.market_id}:${saved.country}:${saved.code}`,
               version: saved.version,
@@ -1189,10 +1195,8 @@ export function SettingsWizard({
     currentVersion: number,
   ) {
     if (
+      !hasBaseline(observed, target) ||
       !observed ||
-      !target ||
-      observed.target !== target ||
-      observed.version < 0 ||
       observed.version !== currentVersion
     ) {
       setError({ ...unknown, code: "conflict" });
@@ -1489,8 +1493,10 @@ export function SettingsWizard({
       (value) => {
         const saved = value as Policy;
         setPolicy(saved);
+        // A sibling service GET may have completed during this PUT. Applying
+        // the render-time draft would discard that baseline and fake a conflict.
         saveDraft({
-          ...draft,
+          ...draftRef.current,
           reference: "",
           policyObservation: {
             target: serviceTarget,
@@ -1558,7 +1564,7 @@ export function SettingsWizard({
         ]);
         commitDraft(
           {
-            ...draft,
+            ...draftRef.current,
             serviceObservation: {
               target: serviceTarget,
               version: saved.version,
@@ -2193,6 +2199,7 @@ export function SettingsWizard({
                                 !ready ||
                                 !!pending ||
                                 busy ||
+                                !hasBaseline(draft.methodObservation, methodTarget) ||
                                 !activeAccount ||
                                 store.currency !== "TWD"
                               }
@@ -2440,12 +2447,16 @@ export function SettingsWizard({
                           </label>
                           {needsPolicySave && (
                             <div className="settings-actions">
+                              {!hasBaseline(draft.policyObservation, serviceTarget) && (
+                                <p role="status">{c.loading}</p>
+                              )}
                               <button
                                 className="primary"
                                 disabled={
                                   !ready ||
                                   !!pending ||
                                   busy ||
+                                  !hasBaseline(draft.policyObservation, serviceTarget) ||
                                   !activeMarket.active
                                 }
                                 type="submit"
@@ -2530,6 +2541,9 @@ export function SettingsWizard({
                               {c.visible}
                             </label>
                             <p className="settings-note">{c.prereq}</p>
+                            {!hasBaseline(draft.serviceObservation, serviceTarget) && (
+                              <p role="status">{c.loading}</p>
+                            )}
                             <div className="settings-actions">
                               <button type="button" onClick={() => goStep(2)}>
                                 {c.back}
@@ -2541,6 +2555,8 @@ export function SettingsWizard({
                                   !ready ||
                                   !!pending ||
                                   busy ||
+                                  !hasBaseline(draft.serviceObservation, serviceTarget) ||
+                                  !hasBaseline(draft.policyObservation, serviceTarget) ||
                                   !policy?.enabled ||
                                   !activeMarket.active
                                 }

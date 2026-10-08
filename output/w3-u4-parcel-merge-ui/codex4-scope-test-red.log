@@ -1,0 +1,192 @@
+task_id: 0cb19bd4-sub-parcel-tests
+base_commit: b4495ba280527bb692227e12c6230be9e47e8ef9
+status: MOCK direct actual lifecycle AST callbacks plus real clients/errors; React/browser/Go/PG NOT_RUN
+command: node --test --experimental-strip-types tests/admin/parcels-scope.test.ts
+exit_code: 1
+sha256 01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257 tests/admin/parcels-scope.test.ts
+sha256 0f3418fd2af212eddb57a3884ae1e481474d4425a924202642b18263b52d9cf7 apps/admin/components/ParcelGroup.tsx
+sha256 ec6cb2bf0da22a4d8197f4d4aa18bb1a06115c988d28978a98381d7a0dd3e797 apps/admin/components/MerchantOrders.tsx
+sha256 c0fe2cea16501eb3290dcca5046209932a85027873366b99235c4f207f108b2a apps/admin/lib/orders-client.ts
+sha256 c93110cfe280ea38ceeb1435f6450d3b093605fbf27978ca89f40245e0f0cfdd apps/admin/lib/parcels-client.ts
+✖ readMergeSuggestions 401 immediately purges parent scope and refuses late sibling 200 (15.073542ms)
+✖ readMergeSuggestions 403 immediately purges parent scope and refuses late sibling 200 (3.783125ms)
+✖ readMergeSuggestions 404 immediately purges parent scope and refuses late sibling 200 (3.295208ms)
+✖ readOpenParcelGroups 401 immediately purges parent scope and refuses late sibling 200 (2.491416ms)
+✖ readOpenParcelGroups 403 immediately purges parent scope and refuses late sibling 200 (2.37725ms)
+✖ readOpenParcelGroups 404 immediately purges parent scope and refuses late sibling 200 (2.107083ms)
+✔ readMergeSuggestions 503 preserves parent and local retry recovers actual DTOs (6.104417ms)
+✔ readOpenParcelGroups 503 preserves parent and local retry recovers actual DTOs (4.659375ms)
+✖ captured parent groups callback refuses hidden scope (1.861375ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 2
+ℹ fail 7
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 283.282333
+
+✖ failing tests:
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readMergeSuggestions 401 immediately purges parent scope and refuses late sibling 200 (15.073542ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readMergeSuggestions 403 immediately purges parent scope and refuses late sibling 200 (3.783125ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readMergeSuggestions 404 immediately purges parent scope and refuses late sibling 200 (3.295208ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readOpenParcelGroups 401 immediately purges parent scope and refuses late sibling 200 (2.491416ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readOpenParcelGroups 403 immediately purges parent scope and refuses late sibling 200 (2.37725ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:177:5
+✖ readOpenParcelGroups 404 immediately purges parent scope and refuses late sibling 200 (2.107083ms)
+  AssertionError [ERR_ASSERTION]: authoritative parcel denial must purge cached parent orders immediately
+  + actual - expected
+
+  + {
+  +   items: [
+  +     'MOCK_ORDER'
+  +   ]
+  + }
+  - null
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:192:14)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { items: [ 'MOCK_ORDER' ] },
+    expected: null,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/parcels-scope.test.ts:242:1
+✖ captured parent groups callback refuses hidden scope (1.861375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    [
+  +   'MOCK_LATE_HIDDEN_GROUP'
+  -   'MOCK_GROUP'
+    ]
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/pr2-parcel-privacy-tests/tests/admin/parcels-scope.test.ts:246:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'MOCK_LATE_HIDDEN_GROUP' ],
+    expected: [ 'MOCK_GROUP' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

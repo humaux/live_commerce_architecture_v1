@@ -1,0 +1,44 @@
+[
+  {
+    "file": "assertion-union.json",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/assertion-union.json",
+    "raw_sha256": "34c0f7b5d139f0938e27fa56ee0f24ac607914a95822ea90f33076620824187e",
+    "view_sha256": "34c0f7b5d139f0938e27fa56ee0f24ac607914a95822ea90f33076620824187e"
+  },
+  {
+    "file": "ctui-playwright.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/ctui-playwright.log",
+    "raw_sha256": "6a029f89d38b54f617aae4c693f08d3304b44b7e484eb3f81269831eb31d5b9c",
+    "view_sha256": "6a029f89d38b54f617aae4c693f08d3304b44b7e484eb3f81269831eb31d5b9c"
+  },
+  {
+    "file": "customers.json",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/customers.json",
+    "raw_sha256": "0b2ce0abea079ebd1a4bb2364b75aebf6db52dd5b45b1cbae7a919670b2119a4",
+    "view_sha256": "0b2ce0abea079ebd1a4bb2364b75aebf6db52dd5b45b1cbae7a919670b2119a4"
+  },
+  {
+    "file": "customers.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/customers.log",
+    "raw_sha256": "d7def578fb3f55c1bf001478597716575330c72d2c93fbe74ec371cae87586ed",
+    "view_sha256": "10feaf027df69d2ee9cb91cb02b15c2032d18596f28d5852ef02be876def463b"
+  },
+  {
+    "file": "migration-import.json",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/migration-import.json",
+    "raw_sha256": "4f9d87abb673618896064342fa8c8996f43fd7c6df5ef7add6155755365d9cc8",
+    "view_sha256": "4f9d87abb673618896064342fa8c8996f43fd7c6df5ef7add6155755365d9cc8"
+  },
+  {
+    "file": "migration-import.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/migration-import.log",
+    "raw_sha256": "fd8826d9c3ccdb0b2211be5f946788c0477daa4525518cb1f90cc07adf7c7843",
+    "view_sha256": "418a8829a9e1d13871e849432b8fdf26dfbdb87782f6d295721e8a2e03e86ed0"
+  },
+  {
+    "file": "migration-playwright.log",
+    "raw_path": "/Volumes/data/live_commerce_architecture_v1/output/w3-u4-parcel-merge-ui/ctui-w5-union/migration-playwright.log",
+    "raw_sha256": "70f1fe75fb20bc3db94c1c84765042a6f2fa599c8d2c4b2f62c27397e214f47b",
+    "view_sha256": "70f1fe75fb20bc3db94c1c84765042a6f2fa599c8d2c4b2f62c27397e214f47b"
+  }
+]

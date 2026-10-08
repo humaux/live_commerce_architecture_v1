@@ -1,0 +1,27 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-focused.sh",
+    "^(TestR2IntegrationUpgradeFromReleaseHead|TestLiveClaimsKC03Schema|TestClaimsRetentionCRP02Schema|TestParcel.*)$"
+  ],
+  "source_sha": "28a154bff04944eca03b19040202faadea1b3f68",
+  "file_hashes": {
+    "apps/admin/components/ParcelGroup.tsx": "157a3e7c1ba08ddacdb41afb34d312f8839244f422fab331654cca22d4d4948b",
+    "apps/admin/lib/parcels-client.ts": "4d0344581365bc7bd7ffb9e57665db6396835295b54b56e5da1b5ae71bdf05aa",
+    "apps/admin/lib/parcels-model.ts": "b78d8cec44c35408f019140f997e3896d3fe509b18cc4fc28a39ac05fcc5d6cb",
+    "contracts/manual-fulfilment-v1.md": "4444561a90186c6b26fecbede4819e3654149f49754ed0b8bdd5a9e3bb7e755b",
+    "internal/httpapi/parcels.go": "2a5eb96c3c4dfc6958bfaef12ba5556bf8678753c9432786eb9464673d1a7940",
+    "internal/merchantorders/parcels.go": "17e054b314f9a3d71e053d074006e02043de3a761244969f4257479cd3f1b6e7",
+    "migrations/0166_open_parcel_groups.sql": "4b9f6f5e4dbbfc5f0cfcbb212d900e72b73a9b0c332e41defd35519642d24be7",
+    "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
+    "tests/foundation/browser_merchant_orders_ui_test.go": "cc248e0abafaabfcb17bf636fbe9e5712e2f4ca06db876f14176fc533207a7c9",
+    "tests/foundation/claims_retention_test.go": "0bc56350d8257c942f76504b49e7b8e2208523892b474e642fc6c2d816fcf2c5",
+    "tests/foundation/manual_fulfilment_schema_test.go": "a54898289f19d2472f9491f7af0af749ffb1742c5fba46ffcd42e55c41afd46f",
+    "tests/foundation/merchant_orders_v2_acl_test.go": "8a492d9e1f1ff7d79c187890f289a04de48e3a0ca62608287540b25151bda003",
+    "tests/foundation/parcel_groups_open_test.go": "b6c99307a4fee479c6ab52707c0f681b4623abb2c35096df616eae73f60a6ebe",
+    "tests/foundation/r2_integration_upgrade_test.go": "8f9e243bc46553b9dc3798a91ec0c33040cd6dad1aa492000cdfa28d42991bab",
+    "tests/foundation/worker_authority_split_test.go": "7e5b5e2e1b47606647bc49ab0b793f3b1fcff5a12807eab60bb6a86289a02e38"
+  },
+  "exit_code": 0,
+  "elapsed_seconds": 84.145
+}

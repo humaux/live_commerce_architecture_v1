@@ -1,0 +1,12 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-migration-import"
+  ],
+  "sha": "9c82aaf9c613816fe3975c0502a648f85c14c4c1",
+  "spec_sha256": "5298e1505fb5ebd0f378f2f1ff0db2c7d23cb506540d201cb2ba9fabc6b8bcf8",
+  "source_unchanged": true,
+  "exit_code": 0,
+  "seconds": 36.41
+}

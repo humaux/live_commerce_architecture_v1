@@ -1,0 +1,66 @@
+# Purpose: preserve current K3 command output after this prologue.
+# Depends on: original raw SHA256=9dec97f0e8a7109d25181023fbcb8bac8c2ac41126ab553ff8b9eca35e288afb.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+✔ real coded errors retain baseline classification and normalize import leaf cache to private,no-store (226.563167ms)
+✔ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (9.2305ms)
+✔ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (13.104792ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (7.542333ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (150.439417ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (3.773917ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (24.99625ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (2.079375ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (9.67675ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (53.141958ms)
+✔ copy still exposes specific merchant field reasons across three locales (230.668083ms)
+✔ all real local and upstream import refusals including HEAD/unsupported are exact private,no-store (9.723791ms)
+✔ fresh mismatched receipt stays UNKNOWN, exact manual replay mismatch becomes terminal without a third send (13.655041ms)
+✔ terminal is impossible for malformed replay receipts or matching replayed counts (8.644833ms)
+✔ Big5 bytes pass unchanged to upstream and real422 import envelope surfaces encoding_not_utf8 (7.517708ms)
+✔ commit uses the original requested mapping, including an empty optional field, not resolved preview metadata (36.704166ms)
+✔ an UNKNOWN commit remains locked through a later forbidden retry and only explicit same-file success unlocks (9.955708ms)
+✔ leaving during a dispatched commit drops its payload and keeps an unconfirmed boolean without replay (2.110666ms)
+✔ a definite first preflight refusal clears pending before sign-out and does not invent an unconfirmed import (4.27125ms)
+✔ a replayed mismatched receipt ends UNKNOWN without offering another retry or unlocking historical orders (3.127416ms)
+✔ real cookie and CSRF helpers generate and validate the actual host-cookie pair (1.223416ms)
+✔ exact route rejects methods/keys/body/query/scope before any upstream request using real localError (4.034417ms)
+✔ missing/duplicate session cookies reject and real clearAuthCookies expires session and CSRF (1.61125ms)
+✔ actual authenticatedStores denies a store absent from the server projection (82.959291ms)
+✔ private success routes server cookie token and exact canonical after, never caller bearer/cookie to Go (36.448667ms)
+✔ actual safeError/localError preserve coded status with no-store and redact upstream diagnostics (8.828917ms)
+✔ actual readBody and strict projection refuse MIME/oversize/extra private fields/city; network loss stays private (70.8165ms)
+✔ actual client issues GET50/after through real route/private successful projection (31.285042ms)
+✔ actual helper-issued browser fence rejects changed parent before dispatch (2.268042ms)
+✔ private success from real route is discarded when the browser session changes during upstream read (4.391208ms)
+✔ real localError no-store 401/403/404/503 preserves correct read category with no retry (11.540542ms)
+✔ malformed sensitive backend projection becomes real unavailable, never a fake BFF success (2.632042ms)
+✔ strict archive rows decode external order text, safe minor units and public keys (8.11375ms)
+✔ PII-shaped city and extra sensitive fields never pass the safe projection (0.305375ms)
+✔ all canonical Go cities pass; malformed types/bounds/order/time/money/cursor fail (1.767708ms)
+✔ read grammar is exact limit/after, not the stale brief's cursor name (109.107708ms)
+✔ three locales retain truthful history-not-revenue basis and copy parity (0.946667ms)
+✔ SSR renders actual safe rows, shared money/time, total count and read-only three-locale basis (35.459666ms)
+✔ SSR distinguishes empty archive, 403, session loss and unavailable without stale rows/count (148.158ms)
+✔ actual pagination callbacks use opaque trail; double click cannot skip; refresh/scope reset page1 (2.242625ms)
+✔ the static import subpage wins over customer detail and leaves the single customers nav intact (0.368ms)
+✔ the actual list offers import only to privacy holders and carries the current authorized store (548.056167ms)
+✔ the actual detail mounts archive only for an active imported customer and passes its fenced identity (183.324208ms)
+✔ failure verdicts precede successful rows, by source row number, without mutating the input (0.832666ms)
+✔ the failure download contains only failed row metadata, with no source cell or success identifier (0.582291ms)
+✔ reads quoted/BOM header only, without decoding malformed bytes from data rows (7.523875ms)
+✔ guess only unique metadata aliases with explicit unmapped values (0.852333ms)
+✔ shared dynamic leaf admits only exact import methods/actions and bounded mapping/count (19.641583ms)
+✔ failed CSV emits only row/outcome/code, refusing any unexpected identifier or raw cell (0.212417ms)
+✔ raw-byte cap does not decode/rebuild uploads and cancels oversized chunks (3.564875ms)
+✔ backend privacy projection strips all source IDs on successful and failed rows (0.911708ms)
+✔ closed preview parser refuses data-bearing rows, unknown keys and inconsistent counts (0.236417ms)
+✔ order preview counts units while first CSV record numbers can exceed rows_total (0.072625ms)
+✔ commit receipt has exactly five keys and no extra customer cells (0.102ms)
+ℹ tests 54
+ℹ suites 0
+ℹ pass 54
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3499.546583

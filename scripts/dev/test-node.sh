@@ -43,11 +43,19 @@ node --test --experimental-strip-types tests/admin/product-media-ui-model.test.t
 node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts
 # W3-U1b pure selection, wire and request boundary negatives (no browser).
 node --test --experimental-strip-types tests/admin/picklist-model.test.ts
+# W3-U4 parcel merge: DTO parsers + reconcile + copy ruling pins, BFF route grammar, and the REAL route handler against a stub upstream (no browser/PG).
+node --test --experimental-strip-types tests/admin/parcels-model.test.ts tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts tests/admin/parcels-scope.test.ts tests/admin/parcels-discovery.test.ts
 
 # W6-U1 frozen tags/notes/report DTOs, exact authority fences, real component effects and integration (no browser/PG).
 node --test --experimental-strip-types tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts \
   tests/admin/customer-tags-ui.test.mjs tests/admin/customer-tags-client.test.mjs tests/admin/customer-tags-draft.test.mjs tests/admin/guarded-read-logout.test.mjs tests/admin/customer-tags-write.test.mjs tests/admin/customer-tags-scope.test.mjs \
   tests/admin/reports-bff.test.ts tests/admin/reports-render.test.mjs tests/admin/w6-integration.test.ts tests/admin/w6-route-seam.test.mjs
+
+# W5-U1 immutable raw CSV import, private row projection, read-only archive and form lifecycle (no browser/PG).
+node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tests/admin/import-wire-header.test.ts \
+  tests/admin/import-client.test.mjs tests/admin/import-history-model.test.ts tests/admin/import-history-client.test.mjs \
+  tests/admin/import-history-bff.test.mjs tests/admin/import-history-ui.test.mjs tests/admin/import-view.test.ts \
+  tests/admin/import-integration.test.ts tests/admin/import-coordinator.test.mjs tests/admin/import-readiness.test.mjs
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 node --test --experimental-strip-types tests/ui/sweep-shard-lib.test.mjs

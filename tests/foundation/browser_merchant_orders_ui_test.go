@@ -3,7 +3,13 @@
 package foundation_test
 
 // Purpose: real merchant order browser fixtures and read-only authority proof; focused MOU07 is a separate local subset.
-// Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts.
+//   W3-07B/W3-U4: after the read-only guard passes, three mergeable buyer pairs plus a COD and a CVS order of the first pair's
+//   buyer (same owner and address, must never be suggested) are created and parcel-merge.spec.ts runs against the same chain
+//   (merge -> group waybill -> members shipped; OPEN panel rebuilt after a reload -> dissolve/ship; uncertain dissolve reconciled;
+//   stale second tab -> 409), then PG group state is asserted.
+//   The API wrapper exempts only the exact /orders/merge-suggestions suffix from the detail-read count (a list-level, server-masked
+//   read) and fails the run if any of its responses carries the fixture's full recipient name or phone.
+// Depends on: isolated PG, production admin Next, signed MOCK OIDC and orders-ui.spec.ts + parcel-merge.spec.ts.
 // Used by: --browser-merchant-orders-ui; focused test-focused invocations do not certify full MOU/native acceptance.
 
 import (
@@ -22,6 +28,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/claims"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
@@ -45,7 +52,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if os.Getenv("LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-merchant-orders-ui")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 270*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 540*time.Second)
 	defer cancel()
 	q := pqSetup(t)
 	moGrant(t, q.f, q.f.tenantA, q.f.storeA1, q.f.principalA)
@@ -262,7 +269,7 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", httpapi.NewHandler(q.f.runtime, httpapi.Options{SessionStoreList: true}))
-	var orderCalls, detailCalls, stripped atomic.Int64
+	var orderCalls, detailCalls, stripped, suggestionCalls, suggestionLeaks atomic.Int64
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/__test/order-observation" {
 			w.Header().Set("Content-Type", "application/json")
@@ -271,11 +278,34 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 		}
 		if strings.HasPrefix(r.URL.Path, "/v1/admin/stores/") && strings.Contains(r.URL.Path, "/orders") {
 			orderCalls.Add(1)
-			if strings.Contains(strings.TrimPrefix(r.URL.Path, "/v1/admin/stores/"), "/orders/") {
+			// Only the exact /orders/merge-suggestions suffix is exempt from the detail count: it is a LIST-level read the orders page
+			// fires on every load (like the list itself), and since migration 0166 it is server-masked. Any other /orders/<x> path,
+			// including a longer merge-suggestions path, still counts as a detail read.
+			suggestions := strings.HasSuffix(r.URL.Path, "/orders/merge-suggestions")
+			if !suggestions && strings.Contains(strings.TrimPrefix(r.URL.Path, "/v1/admin/stores/"), "/orders/") {
 				detailCalls.Add(1)
 			}
 			if r.Header.Get("Cookie") != "" || r.Header.Get("X-Tenant-ID") != "" || r.Header.Get("X-Forwarded-Host") != "" {
 				stripped.Add(1)
+			}
+			if suggestions {
+				// Capture the response the browser would receive: the full recipient name or phone must never appear in it (P1-A).
+				rec := httptest.NewRecorder()
+				mux.ServeHTTP(rec, r)
+				suggestionCalls.Add(1)
+				body := rec.Body.String()
+				for _, leak := range []string{"Synthetic Buyer", "900000001", "recipient_name"} {
+					if strings.Contains(body, leak) {
+						suggestionLeaks.Add(1)
+						t.Errorf("merge-suggestions leaked %q to the browser: %s", leak, body) // Errorf (not Fatal): safe off the test goroutine
+					}
+				}
+				for k, v := range rec.Header() {
+					w.Header()[k] = v
+				}
+				w.WriteHeader(rec.Code)
+				_, _ = w.Write(rec.Body.Bytes())
+				return
 			}
 		}
 		mux.ServeHTTP(w, r)
@@ -384,5 +414,103 @@ func merchantOrdersUIBrowser(t *testing.T, focused bool) {
 	if len(native.Events) != 2 || native.Events[0].State != "hidden" || !native.Events[0].Trusted || native.Events[1].State != "visible" || !native.Events[1].Trusted || native.BeforeHide != native.WhileHidden || native.AfterReturn <= native.WhileHidden || !native.PiiCleared || !native.Revalidated {
 		t.Fatalf("MOU03 native visibility proof violated: events=%v before=%d hidden=%d return=%d piiCleared=%t revalidated=%t; evidence=%s", native.Events, native.BeforeHide, native.WhileHidden, native.AfterReturn, native.PiiCleared, native.Revalidated, evidence)
 	}
-	t.Logf("MOU real-chain browser cases, trusted native visibility, and PG read-only facts checked; evidence=%s", evidence)
+	// W3-07B parcel-merge UI (Amendment W3-07B): the read-only guard above passed, so only now create real mergeable
+	// fixtures (they write checkout/payment tables) and drive parcel-merge.spec.ts against the same Next + Go + PG.
+	// One buyer capability per pair: same owner + identical bdHome destination -> exactly one suggestion per pair.
+	// parcelOrder places one order of buyerCap through pfBuyer (parcel_fixture_test.go, proven by TestParcelFixtureSameBuyerTwoOrders):
+	// the first order of a capability prepares cart + destination + quote, later ones re-select them at the live versions (prepare is
+	// single-use) and every order has two units (a one-unit total is not whole TWD and cannot start payment). paid=false stops at the
+	// hold (a DRAFT order that is never captured).
+	// The read-only phase left a CVS service and a non-whole-TWD catalogue price sentinel. Reset fresh-checkout inputs only
+	// after all of its frozen-detail, read-only and native-visibility assertions above have passed.
+	homeService := pfRestoreParcelInputs(t, q, 2)
+	parcelBuyers := map[string]*pfBuyer{}
+	parcelOrder := func(buyerCap buyer.Capability, tag string, paid bool) string {
+		t.Helper()
+		pb := parcelBuyers[buyerCap.Token]
+		if pb == nil {
+			pb = pfNewBuyer(q, buyerCap, homeService)
+			parcelBuyers[buyerCap.Token] = pb
+		}
+		return pb.order(t, tag, paid)
+	}
+	parcelPair := func(buyerCap buyer.Capability, tag string) [2]string {
+		// Distinct tags per member keep the keys readable in logs (they are random per call anyway).
+		return [2]string{parcelOrder(buyerCap, tag+"-a", true), parcelOrder(buyerCap, tag+"-b", true)}
+	}
+	shipCap := mustIssue(t, q.cqHarness.service, q.f.storeA1)
+	shipPair := parcelPair(shipCap, "ship")
+	dissolvePair := parcelPair(mustIssue(t, q.cqHarness.service, q.f.storeA1), "dissolve")
+	stalePair := parcelPair(mustIssue(t, q.cqHarness.service, q.f.storeA1), "stale")
+	// W3-07B owner ruling: COD and CVS orders never merge. Two more orders of the SHIP pair's buyer (same owner, same home address,
+	// so they WOULD join its suggestion if they were mergeable) are turned into a COD and a CVS order. Disclosed owner-pool fixtures,
+	// shaped like real rows and proven against the order list/detail in a REAL_PG probe: the COD order is an unpaid hold in the COD
+	// state (a paid card order flipped to COD makes the v2 list answer 503), the CVS order is a paid order whose destination kind is
+	// cvs_711 (no home address, so no destination hash).
+	codOrder := parcelOrder(shipCap, "cod", false)
+	cvsOrder := parcelOrder(shipCap, "cvs", true)
+	mustExec(t, q.f.owner, `UPDATE checkout.orders SET payment_mode='cash_on_delivery',collection_state='PENDING',cod_surcharge_minor=0,cod_carrier='black_cat',commercial_state='AWAITING_COLLECTION' WHERE id=$1`, codOrder)
+	mustExec(t, q.f.owner, `UPDATE checkout.orders SET snapshot=jsonb_set(snapshot,'{destination,kind}','"cvs_711"') WHERE id=$1`, cvsOrder)
+	parcelFixtures, _ := json.Marshal(map[string][]string{"ship": shipPair[:], "dissolve": dissolvePair[:], "stale": stalePair[:], "excluded": {codOrder, cvsOrder}})
+	parcelLog := browserLog(t, filepath.Join(evidence, "playwright-parcel.log"))
+	parcelBrowser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/parcel-merge.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results-parcel"))
+	parcelBrowser.Dir = root
+	parcelBrowser.Env = browserEnvironment(map[string]string{"LC_BROWSER_SUITE": "parcel-merge-ui", "LC_BROWSER_PUBLIC_ORIGIN": origin, "LC_BROWSER_API_ORIGIN": api.URL, "LC_BROWSER_ORDER_STORE": q.f.storeA1, "LC_BROWSER_PARCEL_ORDERS": string(parcelFixtures), "LC_BROWSER_EVIDENCE": evidence})
+	parcelBrowser.Stdout, parcelBrowser.Stderr = parcelLog, parcelLog
+	if err = parcelBrowser.Run(); err != nil {
+		t.Fatalf("W3-07B parcel-merge browser gate failed: %v; evidence=%s", err, evidence)
+	}
+	// Server truth after the real clicks: the ship pair sits in one SHIPPED group; the dissolve pair was dissolved twice (history
+	// kept, members deleted), re-merged and shipped from the RELOADED panel (a second SHIPPED group); the stale pair stays in one
+	// OPEN group (its stale single-order submit was refused); the COD and CVS orders never joined any group.
+	groupMembers := func(state string, ids ...string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders m JOIN fulfillment.parcel_groups g ON (g.tenant_id,g.store_id,g.id)=(m.tenant_id,m.store_id,m.group_id) WHERE m.tenant_id=$1 AND m.store_id=$2 AND g.state=$3 AND m.order_id=ANY($4::uuid[])`, q.f.tenantA, q.f.storeA1, state, ids).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	orderCount := func(where string, ids ...string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=ANY($3::uuid[]) AND `+where, q.f.tenantA, q.f.storeA1, ids).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	var dissolvedGroups, groupedExcluded int
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_groups WHERE tenant_id=$1 AND store_id=$2 AND state='DISSOLVED'`, q.f.tenantA, q.f.storeA1).Scan(&dissolvedGroups); err != nil {
+		t.Fatal(err)
+	}
+	if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.parcel_group_orders WHERE tenant_id=$1 AND store_id=$2 AND order_id=ANY($3::uuid[])`, q.f.tenantA, q.f.storeA1, []string{codOrder, cvsOrder}).Scan(&groupedExcluded); err != nil {
+		t.Fatal(err)
+	}
+	shippedBoth := append(append([]string(nil), shipPair[:]...), dissolvePair[:]...)
+	shippedMembers, openStale, shippedOrders := groupMembers("SHIPPED", shippedBoth...), groupMembers("OPEN", stalePair[:]...), orderCount("fulfillment_state='MERCHANT_SHIPPED'", shippedBoth...)
+	staleShipped := orderCount("fulfillment_state='MERCHANT_SHIPPED'", append(stalePair[:], codOrder, cvsOrder)...)
+	if shippedMembers != 4 || openStale != 2 || dissolvedGroups != 2 || shippedOrders != 4 || staleShipped != 0 || groupedExcluded != 0 {
+		t.Fatalf("W3-07B parcel server state: shippedMembers=%d openStale=%d dissolved=%d shippedOrders=%d staleOrExcludedShipped=%d groupedExcluded=%d; evidence=%s", shippedMembers, openStale, dissolvedGroups, shippedOrders, staleShipped, groupedExcluded, evidence)
+	}
+	// Group waybill persistence (Codex P1, PR #2): every member of the two shipped groups carries the carrier, optional carrier name,
+	// tracking number, https link and note the spec typed (values mirror shipWaybill / knownWaybill in parcel-merge.spec.ts).
+	waybillRows := func(ids []string, code, name, tracking, url, note string) (n int) {
+		t.Helper()
+		if err = q.f.owner.QueryRow(ctx, `SELECT count(*) FROM fulfillment.manual_shipment_heads h
+			JOIN fulfillment.manual_shipment_versions v ON (v.tenant_id,v.store_id,v.order_id,v.version)=(h.tenant_id,h.store_id,h.order_id,h.current_version)
+			WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.order_id=ANY($3::uuid[]) AND v.status='SHIPPED' AND v.carrier_code=$4
+			 AND coalesce(v.carrier_name,'')=$5 AND v.tracking_number=$6 AND v.tracking_url=$7 AND v.note=$8`,
+			q.f.tenantA, q.f.storeA1, ids, code, name, tracking, url, note).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	shipRows := waybillRows(shipPair[:], "other", "Synthetic Courier", "SYPARCEL1234567890", "https://track.example.com/t/SYPARCEL1234567890", "Group waybill: handle with care")
+	knownRows := waybillRows(dissolvePair[:], "black_cat", "", "RELOAD1234567890", "https://track.example.org/r/RELOAD1234567890", "Reloaded panel waybill")
+	if shipRows != 2 || knownRows != 2 {
+		t.Fatalf("W3-07B group waybill values in PG: other-carrier members=%d known-carrier members=%d, want 2 and 2; evidence=%s", shipRows, knownRows, evidence)
+	}
+	// P1-A: the wrapper saw the suggestions responses of every orders-page load plus the parcel merge flows, none with a full name/phone.
+	if suggestionCalls.Load() == 0 || suggestionLeaks.Load() != 0 {
+		t.Fatalf("merge-suggestions observed=%d leaked=%d (want >0 and 0); evidence=%s", suggestionCalls.Load(), suggestionLeaks.Load(), evidence)
+	}
+	t.Logf("MOU real-chain browser cases, trusted native visibility, PG read-only facts and W3-07B parcel-merge clicks checked; evidence=%s", evidence)
 }

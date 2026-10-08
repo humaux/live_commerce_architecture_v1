@@ -1,0 +1,26 @@
+[
+  {
+    "file": "baseline.log",
+    "raw_sha256": "e69c5a0fcf85c9175b7f03b1a8ca4b62b3507a0f74a29a90c20f1200b8c4f668",
+    "view_sha256": "fc648f4686128fea99d7776c136d0881b8a92a69a43299a3e9fb30eaa3d5d5dc",
+    "raw_gzip": "baseline.log.raw.gz"
+  },
+  {
+    "file": "ci-red-playwright.log",
+    "raw_sha256": "b528b581304ab9d5291f4ce996f96c5fb65e3ce3b3c2a738b6c4c97c12887020",
+    "view_sha256": "95bfd0d5293729b25f67e9ad77893d40013208ec97c05af3e6885c0148c96406",
+    "raw_gzip": "ci-red-playwright.log.raw.gz"
+  },
+  {
+    "file": "customers.log",
+    "raw_sha256": "8abe28632fcf33d9f564c8748a405c8914b5f1de64c2796e613cc34cd5715d06",
+    "view_sha256": "6ec28bfb08bb8768e2e698e48742161fa77e36aa1fadf06026a254d46b5a112d",
+    "raw_gzip": "customers.log.raw.gz"
+  },
+  {
+    "file": "cvs.log",
+    "raw_sha256": "4438951c097ac31d0f03203f16fb4ddcbd220075bad3721da67482832716e290",
+    "view_sha256": "3ff9e6341868a25b701ba6a5c275c96f9d605f85218669b82413363bc2bdec70",
+    "raw_gzip": "cvs.log.raw.gz"
+  }
+]

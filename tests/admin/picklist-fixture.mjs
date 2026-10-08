@@ -127,6 +127,10 @@ export async function pickFixture() {
     if (!path.startsWith(`/v1/admin/stores/${storeID}/`))
       return json({ code: "not_found" }, 404);
     const route = path.slice(`/v1/admin/stores/${storeID}/`.length);
+    // W3-U4 mounts these orders:read collections on the same page. This isolated fixture has no parcel groups.
+    // Keep both reads behind the session/store checks above; unknown methods still fall through to 404.
+    if (req.method === "GET" && ["orders/merge-suggestions", "parcel-groups"].includes(route))
+      return json({ items: [] });
     if (route === "order-actions")
       return json({
         refund: false,

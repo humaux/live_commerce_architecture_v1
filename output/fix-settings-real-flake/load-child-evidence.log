@@ -1,0 +1,10 @@
+  PID  PPID NI  %CPU      TIME COMM
+50226 50214 19  70.5   1:23.66 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50227 50211 19  71.9   1:23.67 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50228 50213 19  73.6   1:23.83 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50229 50212 19  70.2   1:23.80 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+  PID  PPID NI  %CPU      TIME COMM
+50226 50214 19  63.3   2:17.89 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50227 50211 19  64.1   2:17.98 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50228 50213 19  68.3   2:18.15 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node
+50229 50212 19  60.7   2:18.35 /opt/homebrew/lib/python3.14/site-packages/nodejs_wheel/bin/node

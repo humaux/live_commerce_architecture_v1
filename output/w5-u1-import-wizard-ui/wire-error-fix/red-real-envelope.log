@@ -1,0 +1,103 @@
+# Purpose: preserve actual local-error seam command output after this prologue.
+# Depends on: worker6d61a1d4 and original raw log SHA256=6e58c0e60fb6f9995ae2ebe174e5c315a535ce3e87ade6b930489e22d33f1fdc.
+# Used by: root/integrator; browser acceptance remains pending.
+# Evidence normalization: trailing whitespace/blank EOF only; original raw bytes and SHA256 retained in main checkout/provenance above.
+✖ real localError no-store coded 401/403/413/415/422/409 reaches client without retry_later replacement (24.3545ms)
+✖ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (1.125125ms)
+✖ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (2.578875ms)
+✔ actual client/route preserves original Blob bytes, trusted transport and privacy projection on200/409 (1.782333ms)
+✔ success or stale preview must remain private; malformed/unknown/mismatched coded errors are uncertain after commit (2.431625ms)
+✔ lost/unreadable/session-changed dispatched commit remains UNKNOWN; no automatic retry (0.803458ms)
+✔ actual failed-only result route strips IDs and real final session/cancel fence exposes no download (1.306916ms)
+✔ actual route refuses unknown resource/query and duplicate session cookies before any upstream call (0.291166ms)
+✔ actual route incoming cancellation aborts one dispatched transport and preserves client UNKNOWN (0.606375ms)
+✔ real coded error cache may not be public, and closed payload may not acquire data-bearing fields (1.011584ms)
+✔ copy still exposes specific merchant field reasons across three locales (6.200958ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 8
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 332.876583
+
+✖ failing tests:
+
+test at tests/admin/import-client.test.mjs:54:1
+✖ real localError no-store coded 401/403/413/415/422/409 reaches client without retry_later replacement (24.3545ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   code: 'retry_later',
+  -   code: 'unauthorized',
+      kind: 'error',
+  +   uncertain: true
+  -   uncertain: false
+    }
+
+      at seam.upstream.json.code.code (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:56:61)
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:55:196)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'error', code: 'retry_later', uncertain: true },
+    expected: { kind: 'error', code: 'unauthorized', uncertain: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-client.test.mjs:61:1
+✖ preflight missing CSRF is definite and sends nothing; actual route CSRF and session refusals stay definite (1.125125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   code: 'retry_later',
+  -   code: 'unauthorized',
+      kind: 'error',
+  +   uncertain: true
+  -   uncertain: false
+    }
+
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:64:10
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:63:213)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'error', code: 'retry_later', uncertain: true },
+    expected: { kind: 'error', code: 'unauthorized', uncertain: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests/admin/import-client.test.mjs:68:1
+✖ actual route uses real cookies/store membership and method/error envelopes, no helper substitutions (2.578875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+    {
+  +   code: 'retry_later',
+  -   code: 'not_found',
+      kind: 'error',
+  +   uncertain: true
+  -   uncertain: false
+    }
+
+      at seam.stores.stores (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:74:132)
+      at async seam (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:49:6)
+      at async TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w5-u1-wire-worker/tests/admin/import-client.test.mjs:74:104)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'error', code: 'retry_later', uncertain: true },
+    expected: { kind: 'error', code: 'not_found', uncertain: false },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

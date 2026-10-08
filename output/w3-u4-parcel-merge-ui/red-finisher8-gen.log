@@ -1,0 +1,25 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/parcels-model.test.ts:8
+  parcelGenAfterPoll,
+  ^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../../apps/admin/lib/parcels-model.ts' does not provide an export named 'parcelGenAfterPoll'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:326:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:429:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0
+✖ tests/admin/parcels-model.test.ts (77.06775ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 80.666958
+
+✖ failing tests:
+
+test at tests/admin/parcels-model.test.ts:1:1
+✖ tests/admin/parcels-model.test.ts (77.06775ms)
+  'test failed'

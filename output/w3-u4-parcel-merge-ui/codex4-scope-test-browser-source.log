@@ -1,0 +1,7 @@
+task_id: 0cb19bd4-sub-parcel-tests
+base_commit: b4495ba280527bb692227e12c6230be9e47e8ef9
+existing_browser_prefix_byte_identical: true
+base_prefix_sha256: 2702c85529b8d86e6a3a52f188eab6b3befc2b159af7933cb5ed10fa507dd7f9
+final_spec_sha256: f787a4cb29a21b16ed9f306efa1df2e17086b7c5982213813a3d246e0e913de3
+status: E1 TS/source only; browser NOT_RUN
+exit_code: 0

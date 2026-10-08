@@ -1,0 +1,21 @@
+{
+  "_header": {
+    "Purpose": "pin readiness source/command/exit",
+    "Depends on": "actualhelper/currentrun",
+    "Used by": "integrator CI retry"
+  },
+  "run_id": "w5-readiness-node-green",
+  "pid": 96375,
+  "command": [
+    "node",
+    "--test",
+    "tests/admin/import-readiness.test.mjs"
+  ],
+  "log": "/Volumes/data/live_commerce_architecture_v1/output/w5-u1-import-wizard-ui/readiness/green.log",
+  "timeout_seconds": 120,
+  "started_at": 1791379743.537222,
+  "state": "finished",
+  "wake": "child monitors then notifies parent root with green/testcommit",
+  "exit_code": 0,
+  "finished_at": 1791379744.180237
+}

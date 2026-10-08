@@ -1,0 +1,13 @@
+# Purpose: preserve W5 visible readiness command output after this prologue.
+# Depends on: original main raw SHA256=cee8856f44f1a306183900132e2deb8ab975cd53ad8450e36ec6836a4019165c.
+# Used by: integrator normal/calibration CI.
+# Evidence normalization: trailing whitespace/blank EOF only; main raw retained.
+✔ MIUI-READY-VISIBLE-STORE actual signed helper waits on the visible selector and retains cookie/wizard assertions (153.4065ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 418.222166
