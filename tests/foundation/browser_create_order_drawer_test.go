@@ -146,7 +146,11 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
 	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" && r.URL.Path == "/__test/drawer-request-facts" {
+		if r.Method == "POST" && (r.URL.Path == "/__test/drawer-request-facts" || r.URL.Path == "/__test/manual-request-facts") {
+			operation := "merchanttools.order.for_buyer"
+			if r.URL.Path == "/__test/manual-request-facts" {
+				operation = "merchanttools.order.manual"
+			}
 			var input struct {
 				Keys []string `json:"keys"`
 			}
@@ -165,7 +169,7 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 			var orders, receipts int
 			if err := e.p.f.owner.QueryRow(r.Context(), `SELECT count(DISTINCT o.id),count(*) FROM ops.command_results c
      JOIN checkout.orders o ON o.id=(c.response->>'order_id')::uuid AND o.tenant_id=c.tenant_id AND o.store_id=c.store_id
-     WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation='merchanttools.order.for_buyer' AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, input.Keys).Scan(&orders, &receipts); err != nil {
+     WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.principal_id=$3 AND c.operation=$5 AND c.idempotency_key=ANY($4::text[])`, e.tenant(), e.store(), e.p.f.principalA, input.Keys, operation).Scan(&orders, &receipts); err != nil {
 				http.Error(w, "observation failed", 500)
 				return
 			}
@@ -223,15 +227,16 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND source='merchant_manual'`, e.tenant(), e.store()).Scan(&orders); err != nil {
 		t.Fatal(err)
 	}
-	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 13, "single_order": orders == 13})
+	// One history + twelve drawer orders + one manual UNKNOWN/edit/replay order, each additionally bound to its request receipts.
+	pg, _ := json.Marshal(map[string]any{"orders": orders, "expected": 14, "single_order": orders == 14})
 	if err := os.WriteFile(filepath.Join(evidence, "pg-readback.json"), pg, 0600); err != nil {
 		t.Fatal(err)
 	}
 	if runErr != nil {
-		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=13; evidence=%s", runErr, orders, evidence)
+		t.Fatalf("drawer browser gate failed: %v; PG orders=%d expected=14; evidence=%s", runErr, orders, evidence)
 	}
-	if orders != 13 {
-		t.Fatalf("drawer single-order PG readback orders=%d expected=13; evidence=%s", orders, evidence)
+	if orders != 14 {
+		t.Fatalf("drawer single-order PG readback orders=%d expected=14; evidence=%s", orders, evidence)
 	}
 	for _, fx := range fixtures {
 		if n := e.count(`SELECT count(*) FROM inbox.order_for_buyer WHERE store_id=$1 AND bundle_id=$2 AND state='placed'`, e.store(), fx.Bundle); n != 1 {
@@ -246,8 +251,8 @@ func runCreateOrderDrawerBrowser(t *testing.T) {
 		Cases  int      `json:"cases"`
 		Failed []string `json:"failed"`
 	}
-	if json.Unmarshal(data, &result) != nil || result.Cases != 24 || len(result.Failed) != 0 {
-		t.Fatal("drawer exact 24-case matrix result missing")
+	if json.Unmarshal(data, &result) != nil || result.Cases != 25 || len(result.Failed) != 0 {
+		t.Fatal("drawer exact 25-case matrix result missing")
 	}
 	t.Logf("PASS LC-U3 real browser/Go/PG matrix cases=%d orders=%d; evidence=%s", result.Cases, orders, evidence)
 }

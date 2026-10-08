@@ -49,28 +49,28 @@ async function submit(page,drawer) {
  assert(response.headers()["cache-control"]?.includes("no-store"));
  return response;
 }
-async function fillEmpty(drawer) {
- await drawer.getByTestId("drawer-name").fill("SYNTHETIC Drawer Buyer");
- await drawer.getByTestId("drawer-phone").fill("0912345678");
- await drawer.getByTestId("drawer-email").fill("drawer@example.invalid");
- await drawer.getByTestId("drawer-option").selectOption(home);
- await drawer.getByTestId("drawer-region").fill("Taipei Region");
- await drawer.getByTestId("drawer-postal").fill("100");
- await drawer.getByTestId("drawer-line2").fill("Synthetic Floor 1");
- await drawer.getByTestId("drawer-buyer-locale").selectOption("en");
- await drawer.getByTestId("drawer-city").fill("Taipei");
- await drawer.getByTestId("drawer-line1").fill("1 Synthetic Drawer Road");
- await drawer.getByTestId("drawer-mode-bank_transfer").check();
+async function fillEmpty(drawer,prefix="drawer") {
+ await drawer.getByTestId(`${prefix}-name`).fill("SYNTHETIC Drawer Buyer");
+ await drawer.getByTestId(`${prefix}-phone`).fill("0912345678");
+ await drawer.getByTestId(`${prefix}-email`).fill("drawer@example.invalid");
+ await drawer.getByTestId(`${prefix}-option`).selectOption(home);
+ await drawer.getByTestId(`${prefix}-region`).fill("Taipei Region");
+ await drawer.getByTestId(`${prefix}-postal`).fill("100");
+ await drawer.getByTestId(`${prefix}-line2`).fill("Synthetic Floor 1");
+ await drawer.getByTestId(`${prefix}-buyer-locale`).selectOption("en");
+ await drawer.getByTestId(`${prefix}-city`).fill("Taipei");
+ await drawer.getByTestId(`${prefix}-line1`).fill("1 Synthetic Drawer Road");
+ await drawer.getByTestId(`${prefix}-mode-bank_transfer`).check();
 }
-async function addCatalog(drawer) {
- await drawer.getByTestId("drawer-search").fill("LC-U3 synthetic catalog");
- await drawer.getByTestId("drawer-search-button").click();
+async function addCatalog(drawer,prefix="drawer") {
+ await drawer.getByTestId(`${prefix}-search`).fill("LC-U3 synthetic catalog");
+ await drawer.getByTestId(`${prefix}-search-button`).click();
  const row=drawer.locator(".mt-results > li").first();
  await row.locator(":scope > div button").click();
  const variant=drawer.locator(".mt-variants li").filter({hasText:skuCode});
  await expect(variant).toHaveCount(1);
  await variant.getByRole("button").click();
- await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toBeVisible();
+ await expect(prefix==="drawer"?drawer.getByTestId(`drawer-quantity-${sku}`):drawer.getByTestId("mo-lines").locator('input[type="number"]')).toBeVisible();
  record("catalog search and variant","fill/search/expand/add","one real catalog SKU selected");
 }
 async function privateBoundary(page,link="") {
@@ -99,6 +99,42 @@ try {
  }
  assert(ready,"owned standalone Next readiness");
  browser=await launch({headless:true});
+ // Separate signed context and the ordinary ManualOrder page; the only injected fault is loss of a real committed response.
+ {
+  const context=await browser.newContext(ctxOpts({ignoreHTTPSErrors:true,viewport:{width:1440,height:900}})),page=await context.newPage();
+  current="DU3-manual-unknown-draft-edit";
+  await page.goto(`${origin}/en`);await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await expect(page.getByTestId("dashboard-page")).toBeVisible();
+  await page.goto(`${origin}/en/orders/new?store=${store}`);
+  const form=page.getByTestId("manual-order-form");await expect(form).toBeVisible();
+  await addCatalog(form,"mo");await fillEmpty(form,"mo");
+  const manualPath=`/api/stores/${store}/tools/orders/manual`,attempts=[];
+  const before=await (await fetch(`${api}/__test/drawer-facts`)).json();
+  await page.route(`**${manualPath}`,async route=>{
+   const req=route.request();attempts.push({key:req.headers()["idempotency-key"],body:req.postData()});
+   const real=await route.fetch();
+   if(attempts.length===1){assert.equal(real.status(),201,"manual lost reply must first commit through real Go");await real.dispose();await route.abort("failed");}
+   else await route.fulfill({response:real});
+  });
+  await form.getByTestId("manual-order-submit").click();await expect(form.getByTestId("manual-order-error")).toBeVisible();
+  await expect(form.getByTestId("manual-order-submit")).toBeEnabled();
+  // Real merchant draft edits must never replace the unresolved attempt's immutable body/key.
+  await form.getByTestId("mo-name").fill("SYNTHETIC Edited Draft");
+  const quantity=form.getByTestId("mo-lines").locator('input[type="number"]');await quantity.fill("2");
+  await expect(form.getByTestId("mo-name")).toHaveValue("SYNTHETIC Edited Draft");await expect(quantity).toHaveValue("2");
+  const [replay]=await Promise.all([page.waitForResponse(r=>r.request().method()==="POST"&&new URL(r.url()).pathname===manualPath),form.getByTestId("manual-order-submit").click()]);
+  await expect(page.getByTestId("manual-order-result")).toBeVisible();await page.unroute(`**${manualPath}`);
+  const after=await (await fetch(`${api}/__test/drawer-facts`)).json();
+  const factsReply=await fetch(`${api}/__test/manual-request-facts`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:attempts.map(a=>a.key)})});
+  assert.equal(factsReply.status,200);const exact=await factsReply.json();
+  const outcome={case:current,attempts:attempts.length,same_key:attempts.length===2&&attempts[0].key===attempts[1].key,same_body:attempts.length===2&&attempts[0].body===attempts[1].body,pg_delta:after.orders-before.orders,pg_request_orders:exact.orders,pg_request_receipts:exact.receipts,replay_status:replay.status()};
+  results.push(outcome);cases++;
+  await privateBoundary(page);
+  if(outcome.attempts!==2||!outcome.same_key||!outcome.same_body||outcome.pg_delta!==1||exact.orders!==1||exact.receipts!==1||replay.status()!==200){
+   failed.push(current);ledger.push({case:current,control:"manual UNKNOWN draft edit retry",action:"commit/abort/fill/click",actual:outcome,status:"FAIL"});
+  }else record("manual UNKNOWN draft edit retry","commit/abort/fill/click","edited draft; original key/body; real replay 200; exact one order and receipt in PG");
+  await context.close();
+ }
  let index=0;
  for(const locale of ["en","zh-TW","zh-CN"]) for(const width of [1440,390]) {
   const fixture=fixtures[index++];
@@ -191,6 +227,9 @@ try {
   });
   await drawer.getByTestId("drawer-submit").click();
   await expect(drawer.getByTestId("drawer-error")).toBeVisible();
+  await expect(drawer.getByTestId("drawer-name")).toBeDisabled();
+  await expect(drawer.getByTestId(`drawer-quantity-${sku}`)).toBeDisabled();
+  record("UNKNOWN draft edit protection","inspect native disabled fields","customer and quantity cannot alter unresolved attempt");
   // UNKNOWN remains open: retry the same explicit submit, never close/reopen or silently retry.
   await expect(drawer.getByTestId("drawer-submit")).toBeEnabled();
   const replay=await submit(page,drawer);
