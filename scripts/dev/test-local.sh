@@ -189,12 +189,18 @@ fi
 if [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
   test -f tests/foundation/browser_merchant_orders_ui_test.go
   test -f tests/admin/orders-ui.spec.ts
+  # W3-07B parcel-merge real-click spec (runs after orders-ui.spec inside the Go harness).
+  test -f tests/admin/parcel-merge.spec.ts
   # Pure model contract behind the UI (orders/refunds/shipments parsers); was run by no gate before.
   node --test --experimental-strip-types tests/admin/orders-model.test.ts
   # checkout-offline (storefront-v2 §C): bank-transfer DTO parsers, copy parity and the finance row shape.
   node --test --experimental-strip-types tests/admin/transfer-model.test.ts
   # storefront-publish R3 (base defect found by check-gates: this tracked file was run by no gate).
   node --test --experimental-strip-types tests/admin/storefront-model.test.ts
+  # W3-07B: parcel DTO parsers + three-locale copy parity (incl. the owner ruling sentence and refusal codes).
+  node --test --experimental-strip-types tests/admin/parcels-model.test.ts
+  # W3-07B: BFF parcel route grammar + dissolve query validator (shared with the --browser-merchant-orders-bff gate).
+  node --test --experimental-strip-types tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
@@ -203,6 +209,11 @@ if [[ "$test_mode" == --browser-merchant-orders-bff ]]; then
   # Raw URL grammar is shared by Proxy and route; real HTTP below additionally
   # proves that the framework cannot normalize a rejected request past it.
   node --test --experimental-strip-types tests/admin/orders-request.test.ts
+  # W3-07B: parcel route grammar (DELETE dissolve + merge-suggestions read + keyed commands).
+  node --test --experimental-strip-types tests/admin/parcels-request.test.ts
+  # W3-U4: the REAL route handler with a stub Go upstream: bodyless dissolve DELETE (Next 16 empty body stream), CAS query on every
+  # DELETE, GET parcel-groups grammar (node:module registerHooks, no browser/PG).
+  node --test --experimental-strip-types tests/admin/parcels-bff.test.ts
   mkdir -p output/playwright
 fi
 if [[ "$test_mode" == --browser-studio-ui ]]; then
@@ -682,8 +693,8 @@ elif [[ "$test_mode" == --browser-merchant-orders-ui ]]; then
     command -v xvfb-run >/dev/null || { printf 'MOU: headed native checks require xvfb-run on Linux without DISPLAY\n' >&2; exit 2; }
     mou_browser_command=(xvfb-run --auto-servernum go)
   fi
-  LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 "${mou_browser_command[@]}" test -race -tags browser -count=1 -timeout=300s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
-  printf 'PASS: isolated merchant C order UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.\n'
+  LC_BROWSER_MERCHANT_ORDERS_UI_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 "${mou_browser_command[@]}" test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserMerchantOrdersUIRealChain$' -v ./tests/foundation
+  printf 'PASS: isolated merchant C order UI + W3-07B parcel-merge UI; signed MOCK IdP and local payment fixtures, not production/provider acceptance.\n'
 elif [[ "$test_mode" == --browser-buyer ]]; then
   LC_BROWSER_BUYER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.1 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerRealChain$' -v ./tests/foundation
   printf 'PASS: isolated PG + real buyer browser transport; not UI/PSP/deployment acceptance.\n'

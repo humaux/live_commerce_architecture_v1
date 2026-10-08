@@ -42,6 +42,8 @@ node --test --experimental-strip-types tests/admin/product-media-ui-model.test.t
 node --test --experimental-transform-types tests/admin/photo-preprocess.test.ts
 # W3-U1b pure selection, wire and request boundary negatives (no browser).
 node --test --experimental-strip-types tests/admin/picklist-model.test.ts
+# W3-U4 parcel merge: DTO parsers + reconcile + copy ruling pins, BFF route grammar, and the REAL route handler against a stub upstream (no browser/PG).
+node --test --experimental-strip-types tests/admin/parcels-model.test.ts tests/admin/parcels-request.test.ts tests/admin/parcels-bff.test.ts tests/admin/parcels-scope.test.ts tests/admin/parcels-discovery.test.ts
 
 # W6-U1 frozen tags/notes/report DTOs, exact authority fences, real component effects and integration (no browser/PG).
 node --test --experimental-strip-types tests/admin/customer-tags-bff.test.ts tests/admin/customer-tags-proxy.test.ts \

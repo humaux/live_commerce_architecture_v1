@@ -1,0 +1,32 @@
+✖ merge suggestions accept the frozen shape (server-masked recipient) and reject drift (0.605792ms)
+✔ created group requires the OPEN state and its members (0.74825ms)
+✔ dissolved group is exactly id/state/version (0.10125ms)
+✔ group shipment carries one SHIPPED version per member (1.603041ms)
+✔ open groups (GET parcel-groups) accept the frozen shape and fail closed on drift (1.7865ms)
+✔ reconcile: a reload rebuilds OPEN panels, a vanished OPEN group is dropped, history and live versions are kept (0.237833ms)
+✔ three locales cover the same keys and every refusal code (0.187916ms)
+✔ the owner-ruling sentence is exact in all three locales (0.037083ms)
+✔ the in_parcel_group copy is the same sentence in parcels-copy (blocked + errors) and orders-copy, in every locale (0.120125ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 8
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119.020417
+
+✖ failing tests:
+
+test at tests/admin/parcels-model.test.ts:39:1
+✖ merge suggestions accept the frozen shape (server-masked recipient) and reject drift (0.605792ms)
+  Error: unavailable
+      at exact (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin/lib/parcels-model.ts:54:82)
+      at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin/lib/parcels-model.ts:95:15
+      at Array.map (<anonymous>)
+      at parseMergeSuggestions (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/apps/admin/lib/parcels-model.ts:94:18)
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/.worktrees/w3-u4-parcel-merge-ui/tests/admin/parcels-model.test.ts:41:20)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

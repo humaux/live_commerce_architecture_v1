@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/dev/test-local.sh",
+    "--browser-studio-ui"
+  ],
+  "source_sha": "973ed2d02f10caa4f233566d7e32be25257f53a5",
+  "exit": 0,
+  "elapsed_seconds": 67.425
+}

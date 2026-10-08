@@ -1,3 +1,11 @@
+// Purpose: the merchant orders v2 list read (GET /orders?view=v2 and POST /orders/search): filter normalization, cursor binding and the
+//   strict decode of each row (order_number, masked recipient, delivery kind, live sessions); normalizeRecipientMask is the single
+//   recipient-mask rule, shared with the open parcel-group read.
+// Depends on: identity.read_merchant_orders_v2 (migration 0110, READ COMMITTED scope transaction), pagination, command, platform.
+// Used by: internal/httpapi/orders.go (list + search routes), internal/merchantorders/parcels.go (normalizeRecipientMask).
+// Invariants: read only; a malformed recipient mask degrades that one row to the placeholder (hides, never reveals) and never
+//   fails the whole list.
+
 package merchantorders
 
 import (
@@ -164,9 +172,7 @@ func ListV2(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, 
 		row.Source = src
 		// A mask that is not exactly one printable rune + "***" (an unprintable first rune in a legacy name, or a projection
 		// bug) degrades THIS row to the placeholder: it hides, never reveals, and never makes the whole store list 503.
-		if row.RecipientMasked != "—" && (!textValue(row.RecipientMasked, 4, true) || len([]rune(row.RecipientMasked)) != 4 || !strings.HasSuffix(row.RecipientMasked, "***")) {
-			row.RecipientMasked = "—"
-		}
+		row.RecipientMasked = normalizeRecipientMask(row.RecipientMasked)
 		if err != nil || seen[row.OrderID] || (src != "storefront" && src != "merchant_manual") ||
 			row.OrderNumber != "LC-"+strings.ToUpper(strings.ReplaceAll(row.OrderID, "-", "")) ||
 			(row.DeliveryKind != "unknown" && !slices.Contains(orderDeliveries, row.DeliveryKind)) || !validOrderSessions(row.LiveSessions, 100) {
@@ -200,4 +206,14 @@ func validOrderSessions(items []OrderSession, max int) bool {
 		seen[item.ID] = true
 	}
 	return true
+}
+
+// normalizeRecipientMask keeps a recipient_masked projection only when it is "—" or exactly one printable rune + "***"; anything else
+// (an unprintable first rune in a legacy name, or a projection bug) degrades to the placeholder: it hides, never reveals. Shared by the
+// orders list and the open parcel-group read so both show the same mask.
+func normalizeRecipientMask(mask string) string {
+	if mask != "—" && (!textValue(mask, 4, true) || len([]rune(mask)) != 4 || !strings.HasSuffix(mask, "***")) {
+		return "—"
+	}
+	return mask
 }
