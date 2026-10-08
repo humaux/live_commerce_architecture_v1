@@ -91,7 +91,7 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
   const index = localeIndex * 2 + sizeIndex;
   const scene = scenes[index]!;
   const name = `${locale}-${size.width}`;
-  test(`LC-U1 MOCK contract real clicks ${name}`, async ({ page, request }) => {
+  test(`LC-U1 MOCK contract real clicks ${name}`, async ({ page, request, context }) => {
     await page.setViewportSize(size);
     await login(page);
     await page.goto(route(locale, scene));
@@ -164,6 +164,52 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     expect(stockReceipt.input).toMatchObject({ delta: 5, expected_version: 1, reason: "live_console_edit" });
     await page.reload();
     await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
+
+    // FIXTURE/STIMULUS: another operator changes this MOCK inventory through the
+    // real authenticated BFF. It is not a replacement for the editing merchant's
+    // clicks below, and does not patch the DOM or intercept the A1 response.
+    const externalStock = async (delta: number, version: number) => {
+      const csrf = (await authorityCookies(context)).find((cookie) => cookie.name === "__Host-commerce_csrf")?.value;
+      expect(!!csrf).toBe(true);
+      const currentOrigin = new URL(page.url()).origin;
+      const response = await context.request.post(`${currentOrigin}/api/stores/${store}/inventory/adjustments`, {
+        headers: { Cookie: await authorityCookie(context), Origin: currentOrigin, "X-CSRF-Token": csrf!, "Idempotency-Key": randomBytes(16).toString("hex") },
+        data: { warehouse_id: initial.Warehouse, sku_id: initial.SKU, delta, expected_version: version, reason: "live_console_edit" },
+      });
+      expect(response.status()).toBe(200);
+    };
+    // Idle rows follow polled stock without any refresh button.
+    await externalStock(1, 2);
+    const stockInput = page.getByTestId(`live-stock-${offer}`);
+    await expect(stockInput).toHaveValue("18");
+    await stockInput.fill("23");
+    const changedPoll = page.waitForResponse(async (response) =>
+      response.request().method() === "GET" && new URL(response.url()).pathname.endsWith(`/${scene}/console`) &&
+      (await response.json()).offers.some((item: { offer_id: string; stock: { balance_version: number } }) => item.offer_id === offer && item.stock.balance_version === 4),
+    { timeout: 15_000 });
+    await externalStock(2, 3);
+    await changedPoll;
+    await expect(stockInput).toHaveValue("23");
+    await expect(stockInput).toBeFocused();
+    const changed = page.getByTestId(`live-stock-changed-${offer}`);
+    await expect(changed).toBeVisible();
+    await expect(changed).toContainText("20");
+    await expect(page.getByTestId(`live-stock-save-${offer}`)).toBeDisabled();
+    await screenshot(page, `${name}-stock-edit-poll`);
+    const beforeConfirm = (await facts(request)).receipts.length;
+    await page.getByTestId(`live-stock-confirm-${offer}`).click();
+    expect((await facts(request)).receipts).toHaveLength(beforeConfirm);
+    await expect(stockInput).toHaveValue("23");
+    await page.getByTestId(`live-stock-save-${offer}`).click();
+    await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(23);
+    expect((await facts(request)).receipts.at(-1)!.input).toMatchObject({ delta: 3, expected_version: 4, reason: "live_console_edit" });
+    await page.reload();
+    await expect(stockInput).toHaveValue("23");
+    const beforeCancel = (await facts(request)).receipts.length;
+    await stockInput.fill("24");
+    await page.getByTestId(`live-offer-${offer}`).getByRole("button", { name: workspaceCopy[locale].cancel, exact: true }).click();
+    await expect(stockInput).toHaveValue("23");
+    expect((await facts(request)).receipts).toHaveLength(beforeCancel);
     await page.getByTestId(`live-recommend-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Recommended).toEqual({ offer_id: offer, at: "2030-01-01T00:00:00Z" });
     expect((await facts(request)).receipts.at(-1)!.input.post_comment).toBe(false);

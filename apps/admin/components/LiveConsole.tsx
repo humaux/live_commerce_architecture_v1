@@ -104,11 +104,11 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
         <section className="live-products"><h3>{c.offers}</h3>
           {!editable && manage && !["draft", "live"].includes(data.session.lifecycle) && <p>{c.endReadOnly}</p>}
           {!data.offers.length && <p>{c.empty}</p>}
-          <ul>{data.offers.map((offer) => <OfferRow key={`${offer.offer_id}:${offer.version}:${offer.stock.balance_version}`} offer={offer} c={c} locale={locale} currency={data.stats.currency}
+          <ul>{data.offers.map((offer) => <OfferRow key={offer.offer_id} offer={offer} c={c} locale={locale} currency={data.stats.currency}
             editable={editable} stockEditable={sessionEditable} canToggle={controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version)} canStock={liveStockAllowed(store)} recommended={data.recommended?.offer_id === offer.offer_id}
             onToggle={() => { const control = controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}`, "PATCH", { expected_version: offer.version, active: !offer.active, max_quantity_per_claim: control.max_quantity_per_claim })); }}
             onRecommend={() => command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}/recommend`, "POST", { expected_version: offer.version, post_comment: false }))}
-            onStock={(delta) => offer.stock.warehouse_id ? command.run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: offer.stock.balance_version, reason: "live_console_edit" })) : Promise.resolve()}
+            onStock={(delta, version, saved) => offer.stock.warehouse_id ? command.run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: version, reason: "live_console_edit" }), saved) : Promise.resolve()}
           />)}</ul>
         </section>
       </div>
@@ -118,9 +118,13 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
 
 function OfferRow({ offer, c, locale, currency, editable, stockEditable, canToggle, canStock, recommended, onToggle, onRecommend, onStock }: {
   offer: ConsoleOffer; c: WorkspaceCopy; locale: Locale; currency: string; editable: boolean; stockEditable: boolean; canToggle: boolean; canStock: boolean; recommended: boolean;
-  onToggle: () => Promise<void>; onRecommend: () => Promise<void>; onStock: (delta: number) => Promise<void>;
+  onToggle: () => Promise<void>; onRecommend: () => Promise<void>; onStock: (delta: number, version: number, saved: () => void) => Promise<void>;
 }) {
-  const [quantity, setQuantity] = useState(String(offer.stock.sellable)), [invalid, setInvalid] = useState(false);
+  // Idle values follow A1 directly. Once edited, retain the input and its CAS
+  // snapshot until explicit confirmation/save/cancel; a poll must not rebase it.
+  const [edit, setEdit] = useState<{ quantity: string; stock: ConsoleOffer["stock"] } | null>(null), [invalid, setInvalid] = useState(false);
+  const quantity = edit?.quantity ?? String(offer.stock.sellable), baseline = edit?.stock ?? offer.stock;
+  const changed = !!edit && (baseline.balance_version !== offer.stock.balance_version || baseline.sellable !== offer.stock.sellable || baseline.warehouse_id !== offer.stock.warehouse_id || baseline.tracked !== offer.stock.tracked);
   const canAdjust = stockEditable && canStock && offer.stock.tracked && !!offer.stock.warehouse_id;
   const reason = !canStock ? c.stockPermission : !offer.stock.warehouse_id ? c.missingWarehouse : "";
   return <li className="live-offer" data-testid={`live-offer-${offer.offer_id}`} data-recommended={recommended || undefined}>
@@ -128,11 +132,16 @@ function OfferRow({ offer, c, locale, currency, editable, stockEditable, canTogg
       <label className="live-offer-toggle"><input type="checkbox" role="switch" data-testid={`live-offer-toggle-${offer.offer_id}`} checked={offer.active} disabled={!editable || !canToggle} onChange={() => void onToggle()} />{offer.active ? c.open : c.closed}</label>
     </div>
     <div className="live-offer-facts"><strong>{money(locale, currency, offer.live_price_minor ?? offer.sku_price_minor)}</strong><span>{c.claimed} {offer.claimed.quantity}</span><span>{c.paidQty} {offer.paid_qty}</span>{offer.sold_out && <span>{c.soldOut}</span>}{offer.low_stock && <span>{c.lowStock}</span>}</div>
-    <form className="live-stock-form" onSubmit={(event) => { event.preventDefault(); const delta = stockDelta(quantity, offer.stock.sellable); if (delta === null || delta === 0) { setInvalid(delta === null); return; } setInvalid(false); void onStock(delta); }}>
-      <label>{c.stock}{offer.stock.tracked ? <input inputMode="numeric" data-testid={`live-stock-${offer.offer_id}`} value={quantity} disabled={!canAdjust} aria-describedby={reason ? `stock-reason-${offer.offer_id}` : undefined} onChange={(event) => { setQuantity(event.target.value); setInvalid(false); }} /> : <strong>{c.untracked} ∞</strong>}</label>
-      {offer.stock.tracked && <button type="submit" data-testid={`live-stock-save-${offer.offer_id}`} disabled={!canAdjust || stockDelta(quantity, offer.stock.sellable) === 0}>{c.saveStock}</button>}
+    <form className="live-stock-form" onSubmit={(event) => { event.preventDefault(); if (!canAdjust || changed) return; const delta = stockDelta(quantity, baseline.sellable); if (delta === null || delta === 0) { setInvalid(delta === null); return; } setInvalid(false); void onStock(delta, baseline.balance_version, () => setEdit(null)); }}>
+      <label>{c.stock}{offer.stock.tracked ? <input inputMode="numeric" data-testid={`live-stock-${offer.offer_id}`} value={quantity} disabled={!canAdjust} aria-describedby={[reason ? `stock-reason-${offer.offer_id}` : "", changed ? `stock-changed-${offer.offer_id}` : ""].filter(Boolean).join(" ") || undefined} onChange={(event) => { setEdit({ quantity: event.target.value, stock: edit?.stock ?? { ...offer.stock } }); setInvalid(false); }} /> : <strong>{c.untracked} ∞</strong>}</label>
+      {offer.stock.tracked && <button type="submit" data-testid={`live-stock-save-${offer.offer_id}`} disabled={!canAdjust || changed || stockDelta(quantity, baseline.sellable) === 0}>{c.saveStock}</button>}
+      {edit && <button type="button" disabled={!canAdjust} onClick={() => { setEdit(null); setInvalid(false); }}>{c.cancel}</button>}
       <button type="button" data-testid={`live-recommend-${offer.offer_id}`} disabled={!editable || !offer.active} title={c.recommendHint} onClick={() => void onRecommend()}>{recommended ? c.recommended : c.recommend}</button>
     </form>
+    {changed && <div className="live-helper" role="status" id={`stock-changed-${offer.offer_id}`} data-testid={`live-stock-changed-${offer.offer_id}`}>
+      <p>{c.stockChanged} {offer.stock.sellable}</p>
+      <button type="button" data-testid={`live-stock-confirm-${offer.offer_id}`} disabled={!canAdjust} onClick={() => { setEdit({ quantity, stock: { ...offer.stock } }); setInvalid(false); }}>{c.confirmStock}</button>
+    </div>}
     {reason && offer.stock.tracked && <p className="live-helper" id={`stock-reason-${offer.offer_id}`}>{reason}</p>}
     {invalid && <p role="alert">{c.stockInvalid}</p>}
     <p className="live-helper">{c.recommendHint}</p>
