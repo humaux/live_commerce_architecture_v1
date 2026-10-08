@@ -15,11 +15,15 @@ import {
   commentDelay,
   emptyComments,
   parseCommentPage,
+  commentSendState,
 } from "../../apps/admin/src/features/live/comment-model.ts";
 
 const sid = "22222222-2222-4222-8222-222222222222";
 const path = `live-sessions/${sid}/comments`;
 const signedCursor = `eyJ0ZXN0IjoxfQ.${"a".repeat(43)}`;
+test("SQL operation marks map to every merchant-visible delivery state",()=>{
+  assert.deepEqual(["READY","DISPATCHING","SUCCEEDED","ACKNOWLEDGED","FAILED_FINAL","BLOCKED_POLICY","STALE_BINDING","CANCELLED","UNKNOWN"].map(commentSendState),["queued","queued","sent","sent","failed","blocked","blocked","blocked","unknown"]);
+});
 test("real bridge sealCursor uses payload.signature rather than plain base64url", () => {
   assert.equal(
     validCommentRequest(req(`?before_cursor=${signedCursor}`), path),

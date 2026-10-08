@@ -2,6 +2,14 @@
 // Depends on: live-console-v1 CommentStream DTO; no browser storage or identity inference.
 // Used by: CommentStream hook and Node acceptance tests.
 export type CommentFilter = "all" | "keyword" | "private" | "unreplied";
+/** A2 SQL marks carry operation enums; render the same five delivery states as Go inbox.sendState. */
+export function commentSendState(state:string):"queued"|"sent"|"failed"|"blocked"|"unknown" {
+  if(["READY","DISPATCHING","queued"].includes(state))return "queued";
+  if(["SUCCEEDED","ACKNOWLEDGED","sent"].includes(state))return "sent";
+  if(["FAILED_FINAL","failed"].includes(state))return "failed";
+  if(["BLOCKED_POLICY","STALE_BINDING","CANCELLED","blocked"].includes(state))return "blocked";
+  return "unknown";
+}
 export type CommentCursor = { epoch: number; seq: number };
 export type StreamComment = {
   ref: string;

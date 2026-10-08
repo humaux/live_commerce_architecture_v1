@@ -13,6 +13,7 @@ import type { ConsoleCapabilities } from "@/src/features/live/console-model";
 import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import {
   commentViewResource,
+  commentSendState,
   type CommentFilter,
 } from "@/src/features/live/comment-model";
 import { useCommentStream } from "@/src/features/live/use-comment-stream";
@@ -240,7 +241,7 @@ export function CommentStream({
                   )}
                   {row.marks.private_reply && (
                     <p className="live-helper">
-                      {commentReason(locale, row.marks.private_reply.state)}
+                      {commentReason(locale, commentSendState(row.marks.private_reply.state))}
                     </p>
                   )}
                   <button

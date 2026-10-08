@@ -27,6 +27,12 @@ const { CommentReply } =
 const { commentCopy } =
   await import("../../apps/admin/src/features/live/comment-copy.ts");
 const sid = "22222222-2222-4222-8222-222222222222";
+test("real SQL UNKNOWN mark blocks public-mode switching without a local receipt",async t=>{
+  const env=environment(t);globalThis.fetch=async()=>response({items:[]});
+  const h=env.mount(()=>CommentReply({store,session:sid,comment:{...row,marks:{...row.marks,private_reply:{kind:"manual",state:"UNKNOWN",blocked_reason:null},private_reply_available:false,private_reply_unavailable_reason:"auto_pending"}},locale:"en",platform:"facebook",capabilities:{facebook:{private_reply:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null},reply_public:{state:"ok",reason:"ok",evidence:"MOCK",checked_at:null}}},onSent(){},onDenied(){}} as any));
+  await h.settle();assert.ok(textOf(h.output).includes(commentCopy("en").verify));
+  assert.equal(node(h,n=>n.type==="button"&&textOf(n)==="Public reply").props.disabled,true);
+});
 test("UNKNOWN and queued public receipt survive selection remount without storing private identifiers", async (t) => {
   const env = environment(t);
   let sends = 0;

@@ -13,6 +13,7 @@ import {
 } from "@/src/features/messages/privacy";
 import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import type { StreamComment } from "@/src/features/live/comment-model";
+import { commentSendState } from "@/src/features/live/comment-model";
 import type { ConsoleCapabilities } from "@/src/features/live/console-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { CommentReceipt } from "@/src/features/live/comment-receipt";
@@ -64,7 +65,7 @@ export function CommentReply({
   const terminalUnknown =
     receiptBlocked ||
     state === "unknown" ||
-    comment.marks.private_reply?.state === "unknown";
+    (!!comment.marks.private_reply && commentSendState(comment.marks.private_reply.state) === "unknown");
   useEffect(() => {
     let alive = true;
     void sessionBoundary()
