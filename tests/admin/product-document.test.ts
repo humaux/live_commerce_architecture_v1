@@ -1,6 +1,7 @@
 // PE12/13/14 model negatives. UI writes still require browser click + persisted readback.
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   newRow,
   syncMatrix,
@@ -113,4 +114,20 @@ test("matrix refuses over 100 SKUs before expansion", () => {
       [],
     ),
   );
+});
+test("PR #1 4212540344: per-row matrix labels reappear where the matrix header is not visible (≤900px), desktop untouched", () => {
+  const css = readFileSync(new URL("../../apps/admin/components/ProductDocument.css", import.meta.url), "utf8");
+  const variants = readFileSync(new URL("../../apps/admin/components/ProductDocumentVariants.tsx", import.meta.url), "utf8");
+  // Desktop keeps the header-only layout…
+  assert.match(css, /\.pe-matrix-row label > span \{\n\s+display: none;\n\s*\}/);
+  // …but the same selector is overridden to visible inside the ≤900px block, after it.
+  const hide = css.indexOf(".pe-matrix-row label > span");
+  const media = css.indexOf("@media (max-width: 900px)");
+  const show = css.indexOf(".pe-matrix-row label > span", media);
+  assert.notEqual(media, -1);
+  assert.ok(show > media && show > hide, "label visibility override must live in the ≤900px block");
+  assert.match(css.slice(show), /\.pe-matrix-row label > span \{\n\s+display: block;/);
+  // Accessible names survive at every width: inputs keep aria-label, labels wrap input + span.
+  assert.equal((variants.match(/aria-label=\{/g) ?? []).length >= 7, true);
+  assert.match(variants, /<label>\n\s+<span>\{c\.price\}<\/span>/);
 });

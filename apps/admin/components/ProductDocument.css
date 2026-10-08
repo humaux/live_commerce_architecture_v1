@@ -755,6 +755,15 @@
     flex: none;
     white-space: nowrap;
   }
+  /* Matrix header text scrolls out of view at this width, so the per-row labels it replaces on
+     desktop must be visible here (PR #1 review comment 4212540344). Desktop rule is untouched;
+     the inputs keep their aria-labels either way. */
+  .pe-matrix-row label > span {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 11px;
+    color: var(--pe-muted);
+  }
   .pe-index section {
     display: none;
   }
