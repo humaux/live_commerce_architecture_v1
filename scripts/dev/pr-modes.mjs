@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Purpose: the deterministic gate set of a pull request into r3/integration, computed from the PR's changed paths (owner decision: the repo fixes the required checks, the merging
-//   agent never picks modes). Always `foundation-shards`; any path outside the backend-only set adds every CI-runnable `--browser-*` mode of the test-local.sh usage line.
+//   agent never picks modes). Always `foundation-shards`; any path outside the backend-only set adds every CI-runnable `--browser-*` mode of the test-local.sh mode registry.
 //   Browser-tagged foundation inputs additionally select every real registry branch that compiles that tag (including non-browser-named modes).
 //   Deploy runtime, smoke workflow/helpers and deploy-test edits select deploy-smoke. Unknown/missing foundation Go sources conservatively select tagged runners.
 //   CLI unions legacy quoted/trimmed path classification; only raw paths are used for source lookup.
-// Depends on: test-local.sh usage/dispatch registry, Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
+// Depends on: test-local.sh case registry (historical usage/dispatch fallback), Go build-constraint headers, git merge-base/head sources and NUL-delimited changed paths; env GITHUB_OUTPUT (modes, deploy).
 // Used by: .github/workflows/gates.yml (plan job, pull_request only; the output feeds scripts/dev/ci-plan.mjs), tests/ci/pr-modes.test.mjs.
 // Invariants: foundation-shards is ALWAYS present (so the one `required` check exists for docs-only PRs too); a mode is only ever dropped through EXCLUDED_MODES below.
 //
@@ -27,10 +27,41 @@ export const EXCLUDED_MODES = {
   "--stripe-browser": "SANDBOX: needs a Stripe test-mode key from secrets.env (STRIPE_SECRET_KEY, STRIPE_BROWSER=1, STRIPE_SANDBOX=1); gates.yml carries no secrets, so it would only be NOT_RUN",
 };
 
-/** Declared mode universe, shared by browser and tagged-foundation discovery. */
-function registryModes(testLocalSource) {
-  const m = /Usage: bash scripts\/dev\/test-local\.sh \[(.*)\]\\n'/.exec(testLocalSource);
-  if (!m) throw new Error("cannot parse the usage line of scripts/dev/test-local.sh");
+/** Read the native case registry as data. Never execute a script fetched from a Git revision. */
+export function modeEntries(source) {
+  const begin = source.indexOf("# BEGIN MODE REGISTRY"), end = source.indexOf("# END MODE REGISTRY");
+  if (begin < 0 || end <= begin) throw new Error("missing mode registry");
+  const registry = source.slice(begin, end);
+  const entries = [...registry.matchAll(/^[ \t]+(--[a-z0-9-]+|foundation)\)[ \t]*\n([\s\S]*?)(?=^[ \t]+(?:--[a-z0-9-]+|foundation|\*)\)|^esac$)/gm)].map((m) => {
+    const body = m[2], build = /^    lc_build=(none|admin|storefront|both)$/m.exec(body)?.[1];
+    const fixture = /^    lc_fixture=(none|pg)$/m.exec(body)?.[1];
+    const prepare = /^    lc_prepare\(\) \{\n([\s\S]*?)^    \}$/m.exec(body)?.[1];
+    const run = /^    lc_run\(\) \{\n([\s\S]*?)^    \}$/m.exec(body)?.[1];
+    if (!build || !fixture || prepare === undefined || run === undefined) throw new Error(`invalid mode entry ${m[1]}`);
+    return { name: m[1], build, fixture, prepare, run, body };
+  });
+  if (!entries.length || new Set(entries.map((entry) => entry.name)).size !== entries.length) throw new Error("empty or duplicate mode registry");
+  // Strip command functions before checking every case arm. A legal-but-unsupported
+  // alias/label must fail closed, never disappear from the selector's universe.
+  const declarations = registry.replace(/^([ \t]+)lc_(?:prepare|run)\(\) \{\n[\s\S]*?^\1\}/gm, "")
+    .replace(/^[ \t]+lc_(?:prepare|run)\(\) \{[^\n]*\}[ \t]*$/gm, "");
+  const arms = [];
+  for (const line of declarations.split("\n").map((line) => line.trim())) {
+    if (!line || line.startsWith("#") || ["lc_select_mode() {", 'case "$1" in', "fi", ";;", "esac", "}", "*) return 1 ;;"].includes(line)) continue;
+    if (/^lc_(?:build|fixture)=[a-z]+$/.test(line) || /^if \[\[ .* \]\]; then$/.test(line)) continue;
+    const arm = /^(--[a-z0-9-]+|foundation)\)$/.exec(line);
+    if (!arm) throw new Error("unsupported mode registry declaration");
+    arms.push(arm[1]);
+  }
+  if (arms.length !== entries.length || arms.some((arm, i) => arm !== entries[i].name)) throw new Error("unparsed mode registry arm");
+  return entries;
+}
+
+/** Mode names from the sole current registry; the legacy format is read only for historical Git refs. */
+export function registryModes(source) {
+  if (source.includes("# BEGIN MODE REGISTRY")) return modeEntries(source).map((entry) => entry.name);
+  const m = /Usage: bash scripts\/dev\/test-local\.sh \[(.*)\]\\n'/.exec(source);
+  if (!m) throw new Error("cannot parse the mode registry or historical usage line");
   return m[1].split("|");
 }
 /** Every CI-runnable browser mode, using release-gate's pattern and the existing secret-dependent exclusions. */
@@ -43,6 +74,14 @@ export function browserModes(testLocalSource) {
 // The registry uses if/elif dispatch branches. Read their actual tag/package commands,
 // including arrays and continued lines; do not invent per-file/test-name mode mappings.
 function taggedFoundationModes(source) {
+  if (source.includes("# BEGIN MODE REGISTRY")) {
+    const modes = modeEntries(source).filter(({ body }) => {
+      const flat = body.replace(/\\\r?\n/g, " ");
+      return /-tags(?:["']?\s+|=)["']?[^\s"')]*\bbrowser\b/.test(flat) && flat.includes("./tests/foundation");
+    }).map(({ name }) => name).filter((name) => !(name in EXCLUDED_MODES));
+    if (!modes.length) throw new Error("no browser-tagged foundation runners in registry");
+    return modes;
+  }
   const flat = source.replace(/\\\r?\n/g, " ");
   const branches = [...flat.matchAll(/^(?:el)?if[^\n]*\$test_mode[^\n]*\bthen[ \t]*(?:#[^\n]*)?$/gm)];
   const selected = new Set();

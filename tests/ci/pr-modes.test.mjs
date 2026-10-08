@@ -15,6 +15,24 @@ const usage = readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8")
 const FOUNDATION = ["foundation-shards"];
 const full = browserModes(usage);
 
+
+// Append exactly one native registry entry; mode position/usage spelling is irrelevant.
+function appendMode(source, name, command) {
+  const entry = `  ${name})
+    lc_build=none
+    lc_fixture=pg
+    lc_prepare() {
+  :
+    }
+    lc_run() {
+${command}
+    }
+    ;;
+`;
+  assert.ok(source.includes("  # APPEND MODES HERE"));
+  return source.replace("  # APPEND MODES HERE", entry + "  # APPEND MODES HERE");
+}
+
 test("backend-only paths run foundation-shards only", () => {
   const r = planPr(["internal/orders/x.go", "cmd/api/main.go", "migrations/0130_x.sql", "contracts/invariants.json", "go.mod", "go.sum", "tests/foundation/orders_test.go", "deploy/compose.yml", "README.md", "apps/admin/NOTES.md"], usage, () => ["package foundation_test\n"]);
   assert.deepEqual(r.modes, FOUNDATION);
@@ -54,7 +72,7 @@ test("legacy deploy prefixes remain selected and unrelated paths do not select s
 
 test("the browser set is release-gate's browser-mode universe minus the documented exclusions", () => {
   const src = readFileSync(path.join(root, "scripts/dev/release-gate.sh"), "utf8").split("\n");
-  const derive = src.filter((l) => /^modes=\$\(sed /.test(l) || /^browser_modes=\$\(printf /.test(l)).join("\n");
+  const derive = src.filter((l) => /^modes=\$\(bash scripts\/dev\/test-local\.sh --list\)/.test(l) || /^browser_modes=\$\(printf /.test(l)).join("\n");
   assert.equal(derive.split("\n").length, 2, "release-gate.sh derivation lines not found; update this test with the script");
   const universe = execFileSync("bash", ["-c", `${derive}\nprintf '%s\\n' $browser_modes`], { cwd: root, encoding: "utf8" }).trim().split("\n");
   assert.ok(universe.length > 20);
@@ -74,8 +92,7 @@ test("every real browser-tagged foundation file selects registry browser modes, 
 });
 
 test("tagged runner discovery follows registry additions, command arrays and line continuations", () => {
-  const source = usage.replace("[--browser-meta-health-ui|", "[--browser-meta-health-ui|--new-tagged-process|") +
-    '\nif [[ "$test_mode" == --new-tagged-process ]]; then\n  args=(-race -tags=browser \\\n    -run TestFuture ./tests/foundation)\n  go test "${args[@]}"\nfi\n';
+  const source = appendMode(usage, "--new-tagged-process", '  args=(-race -tags=browser \\\n    -run TestFuture ./tests/foundation)\n  go test "${args[@]}"');
   const plan = planPr(["tests/foundation/account_process_test.go"], source);
   assert.ok(plan.modes.includes("--new-tagged-process"), "registry additions must not need a planner hand-list");
   assert.ok(!plan.modes.includes("--stripe-browser"), "existing secret-dependent exclusion remains");
@@ -147,7 +164,7 @@ test("explicit-head CLI derives tagged runner modes from that head's real regist
   const r = repository(t), file = "tests/foundation/new_process_test.go";
   r.put(file, "package foundation_test\n"); const base = r.commit();
   r.put(file, "//go:build browser\n\npackage foundation_test\n");
-  r.put("scripts/dev/test-local.sh", usage.replace("[--browser-meta-health-ui|", "[--browser-meta-health-ui|--head-tagged-process|") + '\nif [[ "$test_mode" == --head-tagged-process ]]; then\n  go test -tags browser ./tests/foundation\nfi\n');
+  r.put("scripts/dev/test-local.sh", appendMode(usage, "--head-tagged-process", "  go test -tags browser ./tests/foundation"));
   const head = r.commit(); r.git("checkout", "--quiet", base);
   assert.ok(r.cli([base, head]).modes.includes("--head-tagged-process"));
 });

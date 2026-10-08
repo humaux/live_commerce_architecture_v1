@@ -3,7 +3,7 @@
 # Depends on: git grep, node (registry/architecture tests), scripts/dev/check-headers.sh, scripts/dev/ui-architecture-gate.mjs.
 # Used by: CI (.github/workflows/foundation.yml), scripts/dev/release-gate.sh, every unit self-check (AGENT-PREAMBLE §2).
 # check-gates.sh — keep docs/delivery/GATES.md and the test runners honest (unit maintainability).
-#  1. every mode in test-local.sh's usage line has a row in GATES.md, and every mode GATES.md names
+#  1. every mode in test-local.sh's registry has a row in GATES.md, and every mode GATES.md names
 #     exists (no undocumented gate, no stale row);
 #  2. every tracked *.spec.*|*.test.* file (git ls-files, whole repo) is run by some gate: its file name
 #     appears in scripts/dev/test-local.sh or tests/foundation/*.go, it matches a glob written in
@@ -36,15 +36,11 @@ node scripts/dev/ui-architecture-gate.mjs
 # every shard (a test in no list lands in the catch-all group; a duplicate, or a plan without a catch-all, fails here). Regenerate: node scripts/dev/shard-plan.mjs --write.
 node scripts/dev/shard-plan.mjs --check
 # Syntax first: a merge can leave a gate script that no longer parses (R4: a lost `fi` broke every mode).
-for s in scripts/dev/test-local.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
+for s in scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh scripts/dev/test-node.sh scripts/dev/test-focused.sh scripts/dev/release-gate.sh; do
   bash -n "$s" || { echo "check-gates: $s does not parse (bash -n)" >&2; exit 1; }
 done
-# A merge can also duplicate a mode's run branch: only the first `elif` runs, so a later copy is dead code that silently
-# keeps stale commands (R4: the webkit..purchase-entry run branches existed three times, catalog-media twice with old text).
-dup_modes=$(grep -oE '^elif \[\[ "\$test_mode" == --[a-z0-9-]+ \]\]' scripts/dev/test-local.sh | sort | uniq -d)
-if [[ -n "$dup_modes" ]]; then
-  echo "check-gates: duplicated run branch in scripts/dev/test-local.sh: $dup_modes" >&2; exit 1
-fi
+# Validate the same registry the selector reads; duplicate cases cannot silently shadow a mode.
+node --input-type=module -e 'import {readFileSync} from "node:fs"; import {modeEntries} from "./scripts/dev/pr-modes.mjs"; modeEntries(readFileSync("scripts/dev/test-local.sh","utf8"));'
 # Worker-authority split (0096): no migration numbered after it may grant to the retired shared commerce_worker role
 # (a grant there reaches no worker login; post_river/0019 asserts the same at apply time — this fails earlier, in CI).
 for f in $(ls migrations/0*.sql | awk -F/ '$2 > "0096"'); do
@@ -55,12 +51,12 @@ import fnmatch, glob, os, re, subprocess, sys
 bad = []
 sh = open("scripts/dev/test-local.sh").read()
 gates = open("docs/delivery/GATES.md").read()
-usage = re.search(r"Usage: bash scripts/dev/test-local\.sh \[(.*?)\]", sh)
-if not usage:
-    sys.exit("check-gates: no usage line in test-local.sh")
-modes = set(usage.group(1).split("|"))
+names = subprocess.check_output(["bash", "scripts/dev/test-local.sh", "--list"], text=True).splitlines()
+if len(names) != len(set(names)):
+    sys.exit("check-gates: duplicate mode in registry")
+modes = set(names) - {"foundation"}
 rows = set(re.findall(r"^\| `(--[a-z0-9-]+)` \|", gates, re.M))
-bad += [f"mode {m} is in test-local.sh usage but has no GATES.md row" for m in sorted(modes - rows)]
+bad += [f"mode {m} is in test-local.sh registry but has no GATES.md row" for m in sorted(modes - rows)]
 bad += [f"GATES.md row {m} names a mode test-local.sh does not accept" for m in sorted(rows - modes)]
 go = "".join(open(f).read() for f in glob.glob("tests/foundation/*.go"))
 config = open("playwright.config.ts").read()
